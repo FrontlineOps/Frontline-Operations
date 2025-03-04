@@ -143,8 +143,7 @@ if (count (nearestObjects [(getPos thisTrigger), ['House'], 300]) != 0) then {
 _dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 300]) select 0);
 };
 
-private _SafePos = [getPos thisTrigger, 0, 300, 30, 0, 0, 0] call BIS_fnc_findSafePos;
-_COM = [ selectRandom BRKC, _SafePos, [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
+_COM = [ selectRandom BRKC, (getPos thisTrigger), [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
 _ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
 {_x setVectorUp [0,0,1];} forEach _ARRAY;
 
