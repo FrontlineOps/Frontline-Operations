@@ -123,10 +123,10 @@ if (isNil "FLO_TaskForce_System") then {
                 
                 private _sizeCost = switch (toLower _size) do {
                     case "fireteam": {1};
-                    case "squad": {2};
-                    case "platoon": {3};
-                    case "company": {6};
-                    default {2};
+                    case "squad": {5};
+                    case "platoon": {15};
+                    case "company": {30};
+                    default {5};
                 };
                 
                 _typeCost * _sizeCost
@@ -150,30 +150,30 @@ if (isNil "FLO_TaskForce_System") then {
                 // Define size multipliers
                 private _sizeMultiplier = switch (toLower _size) do {
                     case "fireteam": {1};
-                    case "squad": {2};
-                    case "platoon": {3};
-                    case "company": {4};
-                    default {2}; // Default to squad size
+                    case "squad": {1.25};
+                    case "platoon": {1.5};
+                    case "company": {2};
+                    default {1}; // Default to squad size
                 };
                 
                 // Define base compositions per type
                 private _baseComposition = switch (toLower _type) do {
                     case "infantry": {
                         [
-                            ["infantry", East_Units, 6 * _sizeMultiplier]
+                            ["infantry", East_Units, 5 * _sizeMultiplier]
                         ]
                     };
                     case "mechanized": {
                         // 15% chance to add a fire observer to mechanized units
                         if (random 1 < 0.15) then {
                             [
-                                ["infantry", East_Units, 6 * _sizeMultiplier],
+                                ["infantry", East_Units, 4 * _sizeMultiplier],
                                 ["vehicle", East_Ground_Vehicles_Light, 1 * ceil(_sizeMultiplier/2)],
                                 ["fireObserver", East_FireObserver, 1]
                             ]
                         } else {
                             [
-                                ["infantry", East_Units, 6 * _sizeMultiplier],
+                                ["infantry", East_Units, 4 * _sizeMultiplier],
                                 ["vehicle", East_Ground_Vehicles_Light, 1 * ceil(_sizeMultiplier/2)]
                             ]
                         }
@@ -195,13 +195,13 @@ if (isNil "FLO_TaskForce_System") then {
                     };
                     case "fortification": {
                         [
-                            ["infantry", East_Units, 6 * _sizeMultiplier],
+                            ["infantry", East_Units, 3 * _sizeMultiplier],
                             ["fortification", ["Land_BagBunker_Small_F", "Land_BagFence_Long_F", "Land_BagFence_Round_F"], 2 * _sizeMultiplier]
                         ]
                     };
                     default {
                         [
-                            ["infantry", East_Units, 4 * _sizeMultiplier]
+                            ["infantry", East_Units, 2 * _sizeMultiplier]
                         ]
                     };
                 };
