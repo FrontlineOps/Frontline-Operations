@@ -31,6 +31,11 @@ if (isNil "FLO_Global_TaskForces") then {
     FLO_Global_TaskForces = createHashMap;
 };
 
+// Add global virtualization state cooldown tracker
+if (isNil "FLO_TaskForce_VirtualStateChanges") then {
+    FLO_TaskForce_VirtualStateChanges = createHashMap;
+};
+
 params [
     ["_mode", "", [""]],
     ["_params", [], [[]]]
@@ -50,6 +55,8 @@ if (isNil "FLO_TaskForce_System") then {
         ["lastUpdate", time],
         ["lastTaskForceId", 0],
         ["lastTaskForceScan", time],
+        ["virtualizationBuffer", 300],
+        ["virtualizationCooldown", 60],
         
         // Constructor - Called when object is created
         ["#create", {
@@ -57,6 +64,8 @@ if (isNil "FLO_TaskForce_System") then {
             _self set ["lastUpdate", time];
             _self set ["lastTaskForceId", 0];
             _self set ["lastTaskForceScan", time];
+            _self set ["virtualizationBuffer", 300];
+            _self set ["virtualizationCooldown", 60];
             diag_log "[FLO][TaskForce] System initialized";
         }],
         
@@ -248,6 +257,8 @@ if (isNil "FLO_TaskForce_System") then {
             private _taskForceKeys = keys _taskForces;
             private _playersPos = allPlayers apply {getPosWorld _x};
             private _activationDistance = VSDistance - 500; // Use a buffer from the virtualization distance
+            private _virtualizationBuffer = _self get "virtualizationBuffer";
+            private _virtualizationCooldown = _self get "virtualizationCooldown";
             
             if (count _taskForceKeys == 0) exitWith {}; 
             
@@ -273,129 +284,175 @@ if (isNil "FLO_TaskForce_System") then {
                     "_isVirtualized"
                 ];
                 
+                // Get last state change timestamp
+                private _lastStateChange = FLO_TaskForce_VirtualStateChanges getOrDefault [_taskForceId, 0];
+                private _stateChangeCooldown = (time - _lastStateChange) < _virtualizationCooldown;
+                
                 // Process deployed but not virtualized task forces
                 if (_isDeployed && !_isVirtualized) then {
-                    // Check if Task Force should be virtualized (far from all players)
-                    private _shouldVirtualize = true;
-                    private _taskForcePos = _basePos; // Use last known position
-                    
-                    if (count _deployedUnits > 0) then {
-                        // If units exist, use their average position
-                        private _unitPositions = _deployedUnits apply {
-                            if (!isNull _x) then {getPosWorld _x} else {[0,0,0]}
-                        };
+                    // Only check for virtualization if not in cooldown period
+                    if (!_stateChangeCooldown) then {
+                        // Check if Task Force should be virtualized (far from all players)
+                        private _shouldVirtualize = true;
+                        private _taskForcePos = _basePos; // Use last known position
                         
-                        // Filter out null positions
-                        _unitPositions = _unitPositions select {!(_x isEqualTo [0,0,0])};
-                        
-                        if (count _unitPositions > 0) then {
-                            // Calculate average position
-                            private _totalPos = [0,0,0];
-                            {_totalPos = _totalPos vectorAdd _x} forEach _unitPositions;
-                            _taskForcePos = _totalPos vectorMultiply (1 / count _unitPositions);
-                        };
-                    };
-                    
-                    // Check distance from all players
-                    {
-                        if (_x distance _taskForcePos < VSDistance) exitWith {
-                            _shouldVirtualize = false;
-                        };
-                    } forEach _playersPos;
-                    
-                    // Virtualize the Task Force if needed
-                    if (_shouldVirtualize) then {
-                        // Store Task Force data in VS_VirtualizedTaskForces
-                        private _virtualTaskForceData = [
-                            _taskForceId,
-                            _taskForcePos,
-                            _type,
-                            _size,
-                            _composition,
-                            _deployedUnits apply {if (!isNull _x) then {typeOf _x} else {""}},
-                            _resourceValue
-                        ];
-                        
-                        // Store in virtualization system
-                        private _key = format ["TF_%1_%2", _taskForcePos, floor random 999999];
-                        VS_VirtualizedTaskForces set [_key, _virtualTaskForceData];
-                        
-                        // Delete units
-                        {
-                            if (!isNull _x) then {
-                                if (_x isKindOf "Man") then {
-                                    private _group = group _x;
-                                    deleteVehicle _x;
-                                    if (count units _group == 0) then {
-                                        deleteGroup _group;
-                                    };
-                                } else {
-                                    deleteVehicle _x;
-                                };
+                        if (count _deployedUnits > 0) then {
+                            // If units exist, use their average position
+                            private _unitPositions = _deployedUnits apply {
+                                if (!isNull _x) then {getPosWorld _x} else {[0,0,0]}
                             };
-                        } forEach _deployedUnits;
+                            
+                            // Filter out null positions
+                            _unitPositions = _unitPositions select {!(_x isEqualTo [0,0,0])};
+                            
+                            if (count _unitPositions > 0) then {
+                                // Calculate average position
+                                private _totalPos = [0,0,0];
+                                {_totalPos = _totalPos vectorAdd _x} forEach _unitPositions;
+                                _taskForcePos = _totalPos vectorMultiply (1 / count _unitPositions);
+                            };
+                        };
                         
-                        // Update Task Force data
-                        _taskForceData set [7, []]; // Clear deployed units
-                        _taskForceData set [11, [_taskForcePos, _targetPos] call BIS_fnc_dirTo]; // Update direction
-                        _taskForceData set [14, true]; // Mark as virtualized
+                        // Use a larger distance for virtualization (VSDistance + buffer)
+                        // This creates hysteresis - units virtualize at a further distance than they devirtualize
+                        private _virtualizeDistance = VSDistance + _virtualizationBuffer;
                         
-                        diag_log format ["[FLO][TaskForce] Virtualized Task Force %1 at position %2",
-                            _taskForceId, _taskForcePos];
+                        // Check distance from all players
+                        {
+                            if (_x distance _taskForcePos < _virtualizeDistance) exitWith {
+                                _shouldVirtualize = false;
+                            };
+                        } forEach _playersPos;
+                        
+                        // Virtualize the Task Force if needed
+                        if (_shouldVirtualize) then {
+                            // Store Task Force data in VS_VirtualizedTaskForces
+                            private _virtualTaskForceData = [
+                                _taskForceId,
+                                _taskForcePos,
+                                _type,
+                                _size,
+                                _composition,
+                                _deployedUnits apply {if (!isNull _x) then {typeOf _x} else {""}},
+                                _resourceValue
+                            ];
+                            
+                            // Store in virtualization system
+                            private _key = format ["TF_%1_%2", _taskForcePos, floor random 999999];
+                            VS_VirtualizedTaskForces set [_key, _virtualTaskForceData];
+                            
+                            // Delete units
+                            {
+                                if (!isNull _x) then {
+                                    if (_x isKindOf "Man") then {
+                                        private _group = group _x;
+                                        deleteVehicle _x;
+                                        if (count units _group == 0) then {
+                                            deleteGroup _group;
+                                        };
+                                    } else {
+                                        deleteVehicle _x;
+                                    };
+                                };
+                            } forEach _deployedUnits;
+                            
+                            // Update Task Force data
+                            _taskForceData set [7, []]; // Clear deployed units
+                            _taskForceData set [11, [_taskForcePos, _targetPos] call BIS_fnc_dirTo]; // Update direction
+                            _taskForceData set [14, true]; // Mark as virtualized
+                            
+                            // Record state change time
+                            FLO_TaskForce_VirtualStateChanges set [_taskForceId, time];
+                            
+                            diag_log format ["[FLO][TaskForce] Virtualized Task Force %1 at position %2",
+                                _taskForceId, _taskForcePos];
+                        };
                     };
                 };
                 
-                // Process virtualized task forces with targets
-                if (_isVirtualized && !(_targetPos isEqualTo [0,0,0])) then {
-                    // Calculate movement since last update
-                    private _timeSinceLastUpdate = time - (_self get "lastUpdate");
-                    private _distanceMoved = _movementSpeed * _timeSinceLastUpdate;
-                    
-                    // Update virtual distance moved
-                    _virtualDistance = _virtualDistance + _distanceMoved;
-                    _taskForceData set [10, _virtualDistance];
-                    
-                    // Calculate new position based on movement
-                    private _totalDistance = _basePos distance _targetPos;
-                    
-                    // If Task Force has reached target, deploy it
-                    if (_virtualDistance >= _totalDistance) then {
-                        _taskForceData set [1, _targetPos]; // Update position to target
-                        _taskForceData set [10, 0]; // Reset virtual distance
+                // Process virtualized task forces
+                if (_isVirtualized) then {
+                    // Handling movement for virtualized task forces with targets
+                    if (!(_targetPos isEqualTo [0,0,0])) then {
+                        // Calculate movement since last update
+                        private _timeSinceLastUpdate = time - (_self get "lastUpdate");
+                        private _distanceMoved = _movementSpeed * _timeSinceLastUpdate;
                         
-                        // Check if it's near any players
-                        private _shouldDeploy = false;
-                        {
-                            if (_x distance _targetPos < _activationDistance) exitWith {
-                                _shouldDeploy = true;
+                        // Update virtual distance moved
+                        _virtualDistance = _virtualDistance + _distanceMoved;
+                        _taskForceData set [10, _virtualDistance];
+                        
+                        // Calculate new position based on movement
+                        private _totalDistance = _basePos distance _targetPos;
+                        
+                        // If Task Force has reached target, deploy it
+                        if (_virtualDistance >= _totalDistance) then {
+                            _taskForceData set [1, _targetPos]; // Update position to target
+                            _taskForceData set [10, 0]; // Reset virtual distance
+                            
+                            // Check if it's near any players - only if not in cooldown
+                            if (!_stateChangeCooldown) then {
+                                private _shouldDeploy = false;
+                                {
+                                    // Use a smaller distance for devirtualization (normal activation distance)
+                                    // This maintains the hysteresis effect
+                                    if (_x distance _targetPos < _activationDistance) exitWith {
+                                        _shouldDeploy = true;
+                                    };
+                                } forEach _playersPos;
+                                
+                                if (_shouldDeploy) then {
+                                    // Deploy the Task Force at target
+                                    [_self, _taskForceId, _targetPos, true] call ["deployTaskForce", [_taskForceId, _targetPos, true]];
+                                    // Record state change time
+                                    FLO_TaskForce_VirtualStateChanges set [_taskForceId, time];
+                                };
                             };
-                        } forEach _playersPos;
-                        
-                        if (_shouldDeploy) then {
-                            // Deploy the Task Force at target
-                            [_self, _taskForceId, _targetPos, true] call ["deployTaskForce", [_taskForceId, _targetPos, true]];
+                        } else {
+                            // Calculate new virtual position (for tracking purposes)
+                            private _dirVector = _targetPos vectorDiff _basePos;
+                            _dirVector = _dirVector vectorMultiply (1 / (_basePos distance _targetPos));
+                            private _movementVector = _dirVector vectorMultiply _virtualDistance;
+                            private _newVirtualPos = _basePos vectorAdd _movementVector;
+                            
+                            // Update the base position to track progress
+                            _taskForceData set [1, _newVirtualPos];
+                            
+                            // Check if any players are near this virtual position - only if not in cooldown
+                            if (!_stateChangeCooldown) then {
+                                private _shouldDeploy = false;
+                                {
+                                    // Use normal activation distance for devirtualization
+                                    if (_x distance _newVirtualPos < _activationDistance) exitWith {
+                                        _shouldDeploy = true;
+                                    };
+                                } forEach _playersPos;
+                                
+                                if (_shouldDeploy) then {
+                                    // Deploy the Task Force at current virtual position
+                                    [_self, _taskForceId, _newVirtualPos, false] call ["deployTaskForce", [_taskForceId, _newVirtualPos, false]];
+                                    // Record state change time
+                                    FLO_TaskForce_VirtualStateChanges set [_taskForceId, time];
+                                };
+                            };
                         };
                     } else {
-                        // Calculate new virtual position (for tracking purposes)
-                        private _dirVector = _targetPos vectorDiff _basePos;
-                        _dirVector = _dirVector vectorMultiply (1 / (_basePos distance _targetPos));
-                        private _movementVector = _dirVector vectorMultiply _virtualDistance;
-                        private _newVirtualPos = _basePos vectorAdd _movementVector;
-                        
-                        // Update the base position to track progress
-                        _taskForceData set [1, _newVirtualPos];
-                        
-                        // Check if any players are near this virtual position
-                        private _shouldDeploy = false;
-                        {
-                            if (_x distance _newVirtualPos < _activationDistance) exitWith {
-                                _shouldDeploy = true;
+                        // Handle static virtualized task forces - only if not in cooldown
+                        if (!_stateChangeCooldown) then {
+                            private _shouldDeploy = false;
+                            {
+                                // Use normal activation distance for devirtualization
+                                if (_x distance _basePos < _activationDistance) exitWith {
+                                    _shouldDeploy = true;
+                                };
+                            } forEach _playersPos;
+                            
+                            if (_shouldDeploy) then {
+                                // Deploy the Task Force at its last known position
+                                [_self, _taskForceId, _basePos, true] call ["deployTaskForce", [_taskForceId, _basePos, true]];
+                                // Record state change time
+                                FLO_TaskForce_VirtualStateChanges set [_taskForceId, time];
                             };
-                        } forEach _playersPos;
-                        
-                        if (_shouldDeploy) then {
-                            // Deploy the Task Force at current virtual position
-                            [_self, _taskForceId, _newVirtualPos, false] call ["deployTaskForce", [_taskForceId, _newVirtualPos, false]];
                         };
                     };
                 };
