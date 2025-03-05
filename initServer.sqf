@@ -45,7 +45,7 @@ waitUntil {StartingLocationDone};
 
 // Dedicated server needs to know factions too
 if (isDedicated) then {
-    execVM "Scripts\init\init_groups.sqf"; 
+    execVM "Scripts\Init\init_groups.sqf"; 
     setViewDistance 3000; // for knowsabout
     sleep 1;
     waitUntil {F_Init};

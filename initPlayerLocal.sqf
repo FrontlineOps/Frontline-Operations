@@ -36,7 +36,7 @@ waitUntil {StartingLocationDone};
 hintSilent "LOADING . . . "; 
 
 F_Init = false;
-execVM "Scripts\init\init_groups.sqf"; 
+execVM "Scripts\Init\init_groups.sqf"; 
 
 enableSaving [false, false];
 
