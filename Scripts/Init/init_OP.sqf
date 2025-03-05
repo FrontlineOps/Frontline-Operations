@@ -51,7 +51,7 @@ if (isClass(configFile >> "CfgPatches" >> "ace_main")) then {
 
 [FOBB,[
     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>REQUEST MENU",
-    "Scripts\Dialog_Request_OP.sqf",
+    "Scripts\RequestMenu\Dialog_Request_OP.sqf",
     nil,
     99999,
     true,

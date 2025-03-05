@@ -50,7 +50,7 @@ false
 
 [FOBB,[
 	"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>REQUEST MENU",
-	"Scripts\Dialog_Request.sqf",
+	"Scripts\RequestMenu\Dialog_Request.sqf",
 	nil,
 	99999,
 	true,
