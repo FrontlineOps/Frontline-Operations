@@ -5,9 +5,7 @@ East_Ground_Transport = ["I_C_Van_01_transport_F",  "I_C_Van_02_transport_F","I_
 
 East_Air_Transport = ["I_C_Heli_Light_01_civil_F"];
 East_Air_Heli = ["I_C_Heli_Light_01_civil_F"]; 
-East_Air_Jet = ["I_C_Heli_Light_01_civil_F"];
-East_Ground_Artillery = ["O_MBT_02_arty_F"];
-East_Air_Drone = ["O_UAV_01_F"]; 
+East_Air_Jet = ["I_C_Heli_Light_01_civil_F"]; 
 
 East_Units = ["I_C_Soldier_Para_8_F","I_C_Soldier_Para_7_F","I_C_Soldier_Para_6_F","I_C_Soldier_Para_5_F","I_C_Soldier_Para_4_F","I_C_Soldier_Para_3_F","I_C_Soldier_Para_2_F", "I_C_Soldier_Para_1_F"];
 East_FireObserver = ["I_C_Soldier_Para_4_F"];
