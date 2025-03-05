@@ -113,18 +113,18 @@ waitUntil {!isNil "EtVInitialized"};
 //Resource Loops//Convoy Loops//Radio Tower Loops
 [] spawn {  
     while { sleep 90 ; time > 0 } do {  
-        private _allENMMarks = allMapMarkers select {markerShape _x == "RECTANGLE" && markerBrush _x == "FDiagonal"};
+        private _allENMMarks = allMapMarkers select {markerShape _x isEqualTo "RECTANGLE" && markerBrush _x isEqualTo "FDiagonal"};
         {deleteMarker _x} forEach _allENMMarks;
 
-        if (count (allMapMarkers select { markerType _x == "loc_Transmitter" && markerColor _x == "colorBLUFOR"}) > 0) then {
+        if (count (allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" && markerColor _x isEqualTo "colorBLUFOR"}) > 0) then {
             remoteExec ["FLO_fnc_ICS", 2];
         };
 
         // Why is this here?
         // This is a convoy loop, move it to it's own file so we can preprocessFileLineNumbers it and pass CGM Properly
         // This causes convoys to be broken due to no CGM being passed
-        if (ConVLocc == 1) then {
-            private _RoadMrks = allMapMarkers select {markerType _x == "mil_dot" && markerColor _x == "colorCivilian" && markerAlpha _x == 0.3};
+        if (ConVLocc isEqualTo 1) then {
+            private _RoadMrks = allMapMarkers select {markerType _x isEqualTo "mil_dot" && markerColor _x isEqualTo "colorCivilian" && markerAlpha _x isEqualTo 0.3};
             {deleteMarker _x} forEach _RoadMrks;
 
             // Get the CGM from missionNamespace
@@ -166,7 +166,7 @@ waitUntil {!isNil "EtVInitialized"};
             };
         };
 
-        private _BluezoneMarks = allMapMarkers select { markerType _x == "b_installation" && (markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST") };
+        private _BluezoneMarks = allMapMarkers select { markerType _x isEqualTo "b_installation" && (markerColor _x isEqualTo "colorBLUFOR" or markerColor _x isEqualTo "ColorWEST") };
         { [1] call FLO_fnc_addReward; } foreach _BluezoneMarks;
     };
 };
@@ -187,7 +187,7 @@ remoteExec ["FLO_fnc_MissionStartup", 2];
 AutoSaveSwitchVal = "AutoSaveSwitch" call BIS_fnc_getParamValue;
 AutoSaveIntervalVal = "AutoSaveInterval" call BIS_fnc_getParamValue;
 
-if (AutoSaveSwitchVal == 1) then {
+if (AutoSaveSwitchVal isEqualTo 1) then {
     [] spawn {  
         while { true } do {  
             call FLO_fnc_MissionSave;
@@ -231,8 +231,8 @@ diag_log "[FLO] Task Force system initialized";
         
         // First try to find markers that are explicitly marked as frontline
         private _explicitFrontlineMarkers = allMapMarkers select {
-            markerType _x == "mil_flag" && 
-            markerColor _x == "ColorEAST"
+            markerType _x isEqualTo "mil_flag" && 
+            markerColor _x isEqualTo "ColorEAST"
         };
         
         if (count _explicitFrontlineMarkers > 0) then {
@@ -281,7 +281,7 @@ diag_log "[FLO] Task Force system initialized";
             ["DefenseLine", 3, format ["Processing %1 frontline markers", count _frontlineMarkers]] call FLO_fnc_log;
             
             // Get the aggression level to determine strength of defense
-            private _aggressionMarkers = allMapMarkers select {markerColor _x == "Color6_FD_F"};
+            private _aggressionMarkers = allMapMarkers select {markerColor _x isEqualTo "Color6_FD_F"};
             private _aggrScore = 5; // Default medium aggression
             
             if (count _aggressionMarkers > 0) then {
@@ -328,9 +328,9 @@ diag_log "[FLO] Task Force system initialized";
                     
                     // Determine if we should create a new line or reinforce an existing one
                     private _taskForceMarkers = allMapMarkers select {
-                        markerType _x == "mil_triangle" && 
-                        markerColor _x == "ColorEAST" &&
-                        markerAlpha _x == 0.6 &&
+                        markerType _x isEqualTo "mil_triangle" && 
+                        markerColor _x isEqualTo "ColorEAST" &&
+                        markerAlpha _x isEqualTo 0.6 &&
                         getMarkerPos _x distance (getMarkerPos _x) < 1000
                     };
                     

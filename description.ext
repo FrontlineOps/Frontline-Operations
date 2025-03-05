@@ -165,6 +165,15 @@ class Params
 		default = 0;
 		isGlobal = 1;
 	};	
+
+	class RestrictedArsenal
+	{
+		title = "Restricted Arsenal";
+		texts[] = { "Enable", "Disable"};		
+		values[] = { 0, 1 };
+		default = 1;
+		isGlobal = 1;
+	};	
 	
 };
 
