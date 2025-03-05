@@ -1,4 +1,4 @@
-#include "..\config.sqf"
+#include "..\..\config.sqf"
 // TOREMOVE
 private _is_debug = call is_debug;
 
