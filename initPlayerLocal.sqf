@@ -38,18 +38,11 @@ hintSilent "LOADING . . . ";
 F_Init = false;
 execVM "Scripts\init\init_groups.sqf"; 
 
-sleep 1;
-
-HCIV = 0;
-cooldn = 0 ;
-
-enableSaving [false, false] ;
+enableSaving [false, false];
 
 waitUntil {F_Init};
 
 (findDisplay 46) displayAddEventHandler ["MouseButtonDown", "params ['_displayOrControl', '_button', '_xPos', '_yPos', '_shift', '_ctrl', '_alt'];  if ((_ctrl) && (_button isEqualTo 1) && ((ctrlMapMouseOver (findDisplay 12 displayCtrl 51)) select 0 isEqualTo 'marker')) then {[(ctrlMapMouseOver (findDisplay 12 displayCtrl 51)) select 1] execVM 'Scripts\MarkerIntro.sqf';}"]; 
-// (findDisplay 46) displayAddEventHandler ["KeyDown", {params ["_displayorcontrol", "_key", "_shift", "_ctrl", "_alt"]; if ((_ctrl) && (_key isEqualTo 24) && (!dialog)) then { createDialog "Satellite_Control_Tablet"; HCAM_0 cameraEffect ["Internal", "Back", "HCAM_S"]; }; }];
-// (findDisplay 46) displayAddEventHandler ["KeyDown", {params ["_displayorcontrol", "_key", "_shift", "_ctrl", "_alt"]; if (_key isEqualTo 24) then { titleFadeOut 0.01;}; }];
 (findDisplay 46) displayAddEventHandler ["KeyDown", {params ["_displayorcontrol", "_key", "_shift", "_ctrl", "_alt"]; if ((_ctrl) && (_key isEqualTo 37) && (!dialog)) then {execVM "Scripts\TEAMS.sqf" ;};}];
 
 // R3F Init - Everyone 
