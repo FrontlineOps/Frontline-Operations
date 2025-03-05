@@ -1,3 +1,9 @@
+# Ignore Custom Faction File Updates for Release Version  
+CUSTOM_PLAYER_FACTION.sqf
+CUSTOM_ENEMY_FACTION.sqf
+CUSTOM_CIVILIAN_FACTION.sqf
 mission.sqm
+
+# Ignore VSCode Files
 .cursor
 .vscode

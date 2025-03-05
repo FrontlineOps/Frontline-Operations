@@ -5,7 +5,9 @@ East_Ground_Transport = ["CUP_O_LR_Transport_TKA",  "CUP_O_Ural_TKA", "CUP_O_UAZ
 
 East_Air_Transport = ["CUP_O_UH1H_TKA","CUP_O_Mi17_TK"];
 East_Air_Heli = ["CUP_O_UH1H_gunship_TKA",  "CUP_O_Mi24_D_Dynamic_TK"]; 
-East_Air_Jet = ["CUP_O_Su25_Dyn_TKA"]; 
+East_Air_Jet = ["CUP_O_Su25_Dyn_TKA"];
+East_Ground_Artillery = ["O_MBT_02_arty_F"];
+East_Air_Drone = ["O_UAV_01_F"];
 
 East_Units = ["CUP_O_TK_Soldier_SL","CUP_O_TK_Soldier","CUP_O_TK_Soldier_Backpack","CUP_O_TK_Soldier_AT","CUP_O_TK_Soldier_GL","CUP_O_TK_Soldier_AR","CUP_O_TK_Soldier_MG","CUP_O_TK_Sniper","CUP_O_TK_Soldier_HAT","CUP_O_TK_Engineer"];
 East_FireObserver = ["CUP_O_TK_Soldier_SL"];
