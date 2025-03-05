@@ -22,6 +22,7 @@ class FLO {
         class requestQRF            {};
         class requestOffensiveOps   {};
         class heliInsert            {};
+        class aiCommander           {};
     };
 
     class Logistics {

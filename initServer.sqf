@@ -362,3 +362,9 @@ diag_log "[FLO] Task Force system initialized";
         sleep 600; // 10 minutes
     };
 };
+
+// Initialize AI Commander with default operation mode
+["Server", "Initializing AI Commander..."] call FLO_fnc_log;
+FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
+publicVariable "FLO_AICommander";
+["Server", "AI Commander initialized!"] call FLO_fnc_log;
