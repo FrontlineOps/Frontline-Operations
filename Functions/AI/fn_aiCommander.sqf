@@ -1,6 +1,6 @@
 /*
  * Function: FLO_fnc_aiCommander
- * Author: [Your Name]
+ * Author: Azraeelian Angel
  * Description:
  * Creates an AI Commander that controls overall OPFOR operations.
  * Sets operation modes (Attack, Defend, Skirmish) and coordinates task forces.
@@ -13,14 +13,12 @@
  *
  * Example:
  * ["ATTACK"] call FLO_fnc_aiCommander;
- *
- * Public: No
  */
 
 params [["_operationMode", "DEFEND", [""]]];
 
 // Log function start
-["AI Commander", format["Starting AI Commander with operation mode: %1", _operationMode]] call FLO_fnc_log;
+["AI Commander", 3, format["Starting AI Commander with operation mode: %1", _operationMode]] call FLO_fnc_log;
 
 // Initialize variables
 private _hasSpecialOps = false;
@@ -33,7 +31,7 @@ private _threatThreshold = 0.6; // Threshold to switch to defensive mode if unde
 private _taskForceStrengthFactor = 1.0; // Multiplier for task force size
 
 // Set up the Commander object using a HashMap
-private _aiCommander = createHashMapObject [
+private _aiCommander = createHashMapObject [[
     ["_operationMode", _operationMode],
     ["_hasSpecialOps", _hasSpecialOps],
     ["_threatLevel", _currentThreatLevel],
@@ -45,12 +43,12 @@ private _aiCommander = createHashMapObject [
     
     // Methods
     ["_updateOperationMode", {
-        params ["_self", "_newMode"];
+        params ["_newMode"];
         private _oldMode = _self get "_operationMode";
         
         if (_oldMode != _newMode) then {
             _self set ["_operationMode", _newMode];
-            ["AI Commander", format["Operation mode changed from %1 to %2", _oldMode, _newMode]] call FLO_fnc_log;
+            ["AI Commander", 3, format["Operation mode changed from %1 to %2", _oldMode, _newMode]] call FLO_fnc_log;
             
             // Adjust task force behavior based on new mode
             switch (_newMode) do {
@@ -68,8 +66,6 @@ private _aiCommander = createHashMapObject [
     }],
     
     ["_assessThreat", {
-        params ["_self"];
-        
         // Get all OPFOR outposts - updated with correct marker criteria
         private _outposts = (allMapMarkers select {
             markerColor _x in ["colorOPFOR", "ColorEAST"] && 
@@ -105,21 +101,19 @@ private _aiCommander = createHashMapObject [
         
         // Auto-adjust operation mode based on threat
         if (_totalThreat > (_self get "_threatThreshold") && (_self get "_operationMode") == "ATTACK") then {
-            ["_updateOperationMode", "DEFEND"] call _self;
+            _self call ["_updateOperationMode", ["DEFEND"]];
         };
         
         if (_totalThreat < 0.3 && (_self get "_operationMode") == "DEFEND") then {
-            ["_updateOperationMode", "SKIRMISH"] call _self;
+            _self call ["_updateOperationMode", ["SKIRMISH"]];
         };
         
-        ["AI Commander", format["Current threat assessment: %1", _totalThreat]] call FLO_fnc_log;
+        ["AI Commander", 3, format["Current threat assessment: %1", _totalThreat]] call FLO_fnc_log;
         
         _totalThreat
     }],
     
-    ["_deployTaskForces", {
-        params ["_self"];
-        
+    ["_deployTaskForces", {  
         // Get the current operation mode
         private _mode = _self get "_operationMode";
         private _taskForceStrengthFactor = _self get "_taskForceStrengthFactor";
@@ -132,7 +126,12 @@ private _aiCommander = createHashMapObject [
         };
         
         if (count _availableOutposts == 0) exitWith {
-            ["AI Commander", "No outposts available to deploy task forces"] call FLO_fnc_log;
+            ["AI Commander", 3, "No outposts available to deploy task forces"] call FLO_fnc_log;
+        };
+        
+        // Initialize the garrison integration system if not done already
+        if (isNil "FLO_TaskForce_Garrison_Integration") then {
+            FLO_TaskForce_Garrison_Integration = call FLO_fnc_taskForceGarrisonIntegration;
         };
         
         // Logic varies by operation mode
@@ -148,13 +147,31 @@ private _aiCommander = createHashMapObject [
                     private _targetObj = selectRandom _bluforObjectives;
                     private _sourceOutpost = selectRandom _availableOutposts;
                     
-                    // Deploy offensive task force
-                    [_sourceOutpost, getMarkerPos _targetObj, "ATTACK", _taskForceStrengthFactor] call FLO_fnc_TaskForceSystem;
-                    ["AI Commander", format["Deploying offensive task force from %1 to %2", _sourceOutpost, _targetObj]] call FLO_fnc_log;
+                    // Calculate task force size based on outpost garrison strength and type
+                    private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                    private _taskForceSize = round((_garrisonStrength * 0.4) * _taskForceStrengthFactor);
+                    _taskForceSize = _taskForceSize max 8 min 40; // Ensure reasonable size limits
+                    
+                    // Generate a unique task force ID
+                    private _taskForceID = format ["TF_ATTACK_%1_%2", _sourceOutpost, floor(random 1000)];
+                    
+                    // Define unit composition for offensive operations
+                    private _unitTypes = East_Units + East_Units_Officers;
+                    
+                    // Pull units from the garrison
+                    private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                    
+                    if (count _units > 0) then {
+                        // Deploy offensive task force with the pulled units
+                        [_sourceOutpost, getMarkerPos _targetObj, "ATTACK", _taskForceStrengthFactor, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
+                        ["AI Commander", 3, format["Deploying offensive task force from %1 to %2 with %3 units", _sourceOutpost, _targetObj, count _units]] call FLO_fnc_log;
+                    } else {
+                        ["AI Commander", 3, format["Failed to pull units from garrison at %1 for offensive task force", _sourceOutpost]] call FLO_fnc_log;
+                    };
                 };
                 
                 // Also check for BLUFOR troops in the field
-                ["_attackBluforInField", [], _taskForceStrengthFactor * 1.2] call _self;
+                _self call ["_attackBluforInField", [_taskForceStrengthFactor * 1.2]];
             };
             
             case "DEFEND": {
@@ -169,9 +186,39 @@ private _aiCommander = createHashMapObject [
                     private _sourceOutpost = selectRandom (_availableOutposts - [_targetOutpost]);
                     
                     if (!isNil "_sourceOutpost") then {
-                        // Deploy defensive task force
-                        [_sourceOutpost, getMarkerPos _targetOutpost, "DEFEND", _taskForceStrengthFactor] call FLO_fnc_TaskForceSystem;
-                        ["AI Commander", format["Reinforcing %1 with defensive task force from %2", _targetOutpost, _sourceOutpost]] call FLO_fnc_log;
+                        // Calculate task force size based on outpost garrison strength and type
+                        private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                        private _taskForceSize = round((_garrisonStrength * 0.3) * _taskForceStrengthFactor);
+                        _taskForceSize = _taskForceSize max 6 min 30; // Ensure reasonable size limits
+                        
+                        // Generate a unique task force ID
+                        private _taskForceID = format ["TF_DEFEND_%1_%2", _sourceOutpost, floor(random 1000)];
+                        
+                        // Define unit composition for defensive operations - use array with AT specialists
+                        // For defensive operations, prioritize units good for defense
+                        private _defensiveUnits = East_Units select {
+                            _x find "_AT_F" > 0 ||   // AT specialists
+                            _x find "_AR_F" > 0 ||   // Autoriflemen
+                            _x find "_MG_F" > 0 ||   // Machine gunners
+                            _x find "_medic_F" > 0   // Medics
+                        };
+                        
+                        private _unitTypes = if (count _defensiveUnits > 0) then {
+                            East_Units + _defensiveUnits  // Add defensive specialists with extra weight
+                        } else {
+                            East_Units
+                        };
+                        
+                        // Pull units from the garrison
+                        private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                        
+                        if (count _units > 0) then {
+                            // Deploy defensive task force with the pulled units
+                            [_sourceOutpost, getMarkerPos _targetOutpost, "DEFEND", _taskForceStrengthFactor, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
+                            ["AI Commander", 3, format["Reinforcing %1 with defensive task force from %2 with %3 units", _targetOutpost, _sourceOutpost, count _units]] call FLO_fnc_log;
+                        } else {
+                            ["AI Commander", 3, format["Failed to pull units from garrison at %1 for defensive task force", _sourceOutpost]] call FLO_fnc_log;
+                        };
                     };
                 };
             };
@@ -186,9 +233,27 @@ private _aiCommander = createHashMapObject [
                     if (count _roads > 0) then {
                         private _targetRoad = selectRandom _roads;
                         
-                        // Deploy patrol task force
-                        [_sourceOutpost, getPos _targetRoad, "PATROL", _taskForceStrengthFactor * 0.7] call FLO_fnc_TaskForceSystem;
-                        ["AI Commander", format["Deploying patrol from %1", _sourceOutpost]] call FLO_fnc_log;
+                        // Calculate task force size based on outpost garrison strength and type
+                        private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                        private _taskForceSize = round((_garrisonStrength * 0.2) * _taskForceStrengthFactor * 0.7);
+                        _taskForceSize = _taskForceSize max 4 min 16; // Smaller patrol groups
+                        
+                        // Generate a unique task force ID
+                        private _taskForceID = format ["TF_PATROL_%1_%2", _sourceOutpost, floor(random 1000)];
+                        
+                        // Define unit composition for patrol operations
+                        private _unitTypes = East_Units;
+                        
+                        // Pull units from the garrison
+                        private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                        
+                        if (count _units > 0) then {
+                            // Deploy patrol task force with the pulled units
+                            [_sourceOutpost, getPos _targetRoad, "PATROL", _taskForceStrengthFactor * 0.7, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
+                            ["AI Commander", 3, format["Deploying patrol from %1 with %2 units", _sourceOutpost, count _units]] call FLO_fnc_log;
+                        } else {
+                            ["AI Commander", 3, format["Failed to pull units from garrison at %1 for patrol task force", _sourceOutpost]] call FLO_fnc_log;
+                        };
                     };
                 } else {
                     // Small raids against blufor positions - updated with correct marker criteria
@@ -201,14 +266,32 @@ private _aiCommander = createHashMapObject [
                         private _targetPos = selectRandom _bluforPositions;
                         private _sourceOutpost = selectRandom _availableOutposts;
                         
-                        // Deploy skirmish task force
-                        [_sourceOutpost, getMarkerPos _targetPos, "SKIRMISH", _taskForceStrengthFactor * 0.8] call FLO_fnc_TaskForceSystem;
-                        ["AI Commander", format["Deploying skirmish force from %1 to %2", _sourceOutpost, _targetPos]] call FLO_fnc_log;
+                        // Calculate task force size based on outpost garrison strength and type
+                        private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                        private _taskForceSize = round((_garrisonStrength * 0.25) * _taskForceStrengthFactor * 0.8);
+                        _taskForceSize = _taskForceSize max 5 min 20; // Balanced skirmish size
+                        
+                        // Generate a unique task force ID
+                        private _taskForceID = format ["TF_SKIRMISH_%1_%2", _sourceOutpost, floor(random 1000)];
+                        
+                        // Define unit composition for skirmish operations
+                        private _unitTypes = East_Units + East_Units_Officers;
+                        
+                        // Pull units from the garrison
+                        private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                        
+                        if (count _units > 0) then {
+                            // Deploy skirmish task force with the pulled units
+                            [_sourceOutpost, getMarkerPos _targetPos, "SKIRMISH", _taskForceStrengthFactor * 0.8, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
+                            ["AI Commander", 3, format["Deploying skirmish force from %1 to %2 with %3 units", _sourceOutpost, _targetPos, count _units]] call FLO_fnc_log;
+                        } else {
+                            ["AI Commander", 3, format["Failed to pull units from garrison at %1 for skirmish task force", _sourceOutpost]] call FLO_fnc_log;
+                        };
                     };
                     
                     // Also occasionally attack BLUFOR in the field during skirmish mode
                     if (random 1 > 0.7) then {
-                        ["_attackBluforInField", [], _taskForceStrengthFactor * 0.9] call _self;
+                        _self call ["_attackBluforInField", [_taskForceStrengthFactor * 0.9]];
                     };
                 };
             };
@@ -216,7 +299,7 @@ private _aiCommander = createHashMapObject [
     }],
     
     ["_attackBluforInField", {
-        params ["_self", "_taskForceStrengthFactor"];
+        params ["_taskForceStrengthFactor"];
         
         // Get outposts that can deploy task forces
         private _outposts = keys (_self get "_outpostStatus");
@@ -226,7 +309,7 @@ private _aiCommander = createHashMapObject [
         };
         
         if (count _availableOutposts == 0) exitWith {
-            ["AI Commander", "No outposts available to deploy attack forces"] call FLO_fnc_log;
+            ["AI Commander", 3, "No outposts available to deploy attack forces"] call FLO_fnc_log;
             false
         };
         
@@ -251,7 +334,7 @@ private _aiCommander = createHashMapObject [
         
         // If no units detected, exit
         if (count _allDetectedUnits == 0) exitWith {
-            ["AI Commander", "No BLUFOR units detected in the field to attack"] call FLO_fnc_log;
+            ["AI Commander", 3, "No BLUFOR units detected in the field to attack"] call FLO_fnc_log;
             false
         };
         
@@ -290,7 +373,7 @@ private _aiCommander = createHashMapObject [
         
         // If no significant groups, exit
         if (count _significantGroups == 0) exitWith {
-            ["AI Commander", "No significant BLUFOR groups in the field to attack"] call FLO_fnc_log;
+            ["AI Commander", 3, "No significant BLUFOR groups in the field to attack"] call FLO_fnc_log;
             false
         };
         
@@ -322,35 +405,63 @@ private _aiCommander = createHashMapObject [
             selectRandom _availableOutposts
         };
         
-        // Deploy attack force
-        [_sourceOutpost, _position, "ATTACK", _attackStrength] call FLO_fnc_TaskForceSystem;
+        // Calculate task force size based on BLUFOR group size and our strength factor
+        private _taskForceSize = round(_unitCount * 1.5 * _attackStrength);
+        _taskForceSize = _taskForceSize max 6 min 30; // Ensure reasonable size limits
         
-        // Create a temporary marker for the target location (for debugging and visual reference)
-        private _markerName = format ["blufor_detected_%1_%2", floor random 1000, floor diag_tickTime];
-        private _marker = createMarker [_markerName, _position];
-        _marker setMarkerType "o_unknown";
-        _marker setMarkerColor "ColorRed";
-        _marker setMarkerAlpha 0.7;
-        _marker setMarkerText format ["Detected BLUFOR (%1)", _unitCount];
+        // Generate a unique task force ID
+        private _taskForceID = format ["TF_FIELDATTACK_%1_%2", _sourceOutpost, floor(random 1000)];
         
-        // Set up marker deletion after 5 minutes
-        [_markerName] spawn {
-            params ["_markerName"];
-            sleep 300;
-            deleteMarker _markerName;
+        // Define unit composition for field attack operations - combat-focused with specialists
+        // For field attacks, we want combat specialists and heavy firepower
+        private _combatSpecialists = East_Units select {
+            _x find "_AT_F" > 0 ||   // AT specialists
+            _x find "_AR_F" > 0 ||   // Autoriflemen
+            _x find "_GL_F" > 0 ||   // Grenadiers
+            _x find "_M_F" > 0       // Marksmen
         };
         
-        ["AI Commander", format["Deploying force from %1 to attack %2 BLUFOR units in the field", _sourceOutpost, _unitCount]] call FLO_fnc_log;
-        true
+        private _unitTypes = if (count _combatSpecialists > 0) then {
+            East_Units + _combatSpecialists  // Add combat specialists with extra weight
+        } else {
+            East_Units
+        };
+        
+        // Pull units from the garrison
+        private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+        
+        if (count _units > 0) then {
+            // Deploy attack force with pulled units
+            [_sourceOutpost, _position, "ATTACK", _attackStrength, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
+            
+            // Create a temporary marker for the target location (for debugging and visual reference)
+            private _markerName = format ["blufor_detected_%1_%2", floor random 1000, floor diag_tickTime];
+            private _marker = createMarker [_markerName, _position];
+            _marker setMarkerType "o_unknown";
+            _marker setMarkerColor "ColorRed";
+            _marker setMarkerAlpha 0.7;
+            _marker setMarkerText format ["Detected BLUFOR (%1)", _unitCount];
+            
+            // Set up marker deletion after 5 minutes
+            [_markerName] spawn {
+                params ["_markerName"];
+                sleep 300;
+                deleteMarker _markerName;
+            };
+            
+            ["AI Commander", 3, format["Deploying force from %1 to attack %2 BLUFOR units in the field with %3 of our units", _sourceOutpost, _unitCount, count _units]] call FLO_fnc_log;
+            true
+        } else {
+            ["AI Commander", 3, format["Failed to pull units from garrison at %1 for field attack task force", _sourceOutpost]] call FLO_fnc_log;
+            false
+        };
     }],
     
-    ["_deploySpecialOperations", {
-        params ["_self"];
-        
+    ["_deploySpecialOperations", {   
         // Only deploy special ops at night
         private _hour = date select 3;
         if (_hour < 20 && _hour > 4) exitWith {
-            ["AI Commander", "Special operations only deploy at night (20:00-04:00)"] call FLO_fnc_log;
+            ["AI Commander", 3, "Special operations only deploy at night (20:00-04:00)"] call FLO_fnc_log;
             false
         };
         
@@ -361,7 +472,7 @@ private _aiCommander = createHashMapObject [
         };
         
         if (count _bluforPositions == 0) exitWith {
-            ["AI Commander", "No suitable targets for special operations"] call FLO_fnc_log;
+            ["AI Commander", 3, "No suitable targets for special operations"] call FLO_fnc_log;
             false
         };
         
@@ -374,7 +485,7 @@ private _aiCommander = createHashMapObject [
         private _bluforUnits = _nearUnits select {side _x == west && !(captive _x)};
         
         if (count _bluforUnits > 10) exitWith {
-            ["AI Commander", format["Target %1 too heavily defended for special operations", _targetPos]] call FLO_fnc_log;
+            ["AI Commander", 3, format["Target %1 too heavily defended for special operations", _targetPos]] call FLO_fnc_log;
             false
         };
         
@@ -386,14 +497,23 @@ private _aiCommander = createHashMapObject [
         
         // Add special forces operators
         for "_i" from 1 to 8 do {
-            private _unitType = selectRandom [
-                "O_Soldier_TL_F", 
-                "O_Soldier_AR_F", 
-                "O_soldier_M_F", 
-                "O_soldier_exp_F",
-                "O_medic_F",
-                "O_Soldier_GL_F"
-            ];
+            // Select appropriate unit types for special operations
+            // Prefer marksmen, special forces, and specialists
+            private _specialOpsCandidates = East_Units select {
+                _x find "_M_F" > 0 ||    // Marksmen
+                _x find "_TL_F" > 0 ||   // Team leaders  
+                _x find "_exp_F" > 0 ||  // Explosive specialists
+                _x find "_medic_F" > 0 || // Medics
+                _x find "_GL_F" > 0      // Grenadiers
+            };
+            
+            // If no specialized units found, fall back to regular units
+            private _unitType = if (count _specialOpsCandidates > 0) then {
+                selectRandom _specialOpsCandidates
+            } else {
+                selectRandom East_Units
+            };
+            
             private _unit = _specialOpsGroup createUnit [_unitType, _insertionPoint, [], 0, "NONE"];
             _unit allowDamage false; // Temporarily prevent damage during spawn
             
@@ -407,7 +527,7 @@ private _aiCommander = createHashMapObject [
             _unit linkItem "NVGoggles_OPFOR";
             
             // Special loadout for demo expert
-            if (_unitType == "O_soldier_exp_F") then {
+            if (_unitType find "_exp_F" > 0) then {
                 for "_m" from 1 to 3 do {
                     _unit addMagazine "DemoCharge_Remote_Mag";
                 }; 
@@ -467,13 +587,12 @@ private _aiCommander = createHashMapObject [
         _self set ["_hasSpecialOps", true];
         _self set ["_lastSpecialOps", diag_tickTime];
         
-        ["AI Commander", format["Deployed special operations team to %1", _targetPos]] call FLO_fnc_log;
+        ["AI Commander", 3, format["Deployed special operations team to %1", _targetPos]] call FLO_fnc_log;
         true
     }],
     
     ["_update", {
-        params ["_self"];
-        
+     
         private _currentTime = diag_tickTime;
         private _lastUpdate = _self get "_lastUpdate";
         private _updateInterval = _self get "_commanderUpdateInterval";
@@ -482,15 +601,15 @@ private _aiCommander = createHashMapObject [
         if (_currentTime - _lastUpdate < _updateInterval) exitWith {};
         
         // Assess current threat situation
-        private _threat = ["_assessThreat"] call _self;
+        private _threat = _self call ["_assessThreat", []];
         
         // Deploy task forces as needed
-        ["_deployTaskForces"] call _self;
+        _self call ["_deployTaskForces", []];
         
         // Occasionally check for BLUFOR in the field even outside regular task force deployment
         // This ensures direct response to BLUFOR incursions
         if (_self get "_operationMode" != "DEFEND" && random 1 > 0.7) then {
-            ["_attackBluforInField", _self get "_taskForceStrengthFactor"] call _self;
+            _self call ["_attackBluforInField", [_self get "_taskForceStrengthFactor"]];
         };
         
         // Check if it's time for special operations (and we don't have an active team)
@@ -498,13 +617,13 @@ private _aiCommander = createHashMapObject [
         private _specialOpsInterval = _self get "_specialOpsUpdateInterval";
         
         if (_currentTime - _lastSpecialOps > _specialOpsInterval && !(_self get "_hasSpecialOps")) then {
-            ["_deploySpecialOperations"] call _self;
+            _self call ["_deploySpecialOperations", []];
         };
         
         // Update last update time
         _self set ["_lastUpdate", _currentTime];
     }]
-];
+]];
 
 // Initialize Commander
 _aiCommander set ["_commanderUpdateInterval", 300]; // 5 minutes
@@ -517,7 +636,7 @@ _aiCommander set ["_threatThreshold", 0.6];
     
     while {true} do {
         // Update the commander
-        ["_update"] call _commander;
+        _commander call ["_update", []];
         
         // Sleep for a bit to prevent excessive CPU usage
         sleep 60;

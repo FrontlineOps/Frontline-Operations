@@ -22,7 +22,7 @@ params [
 
 // Debug Level Control: 0 = Off, 1 = Errors, 2 = Warnings, 3 = Info, 4 = Debug, 5 = All
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 0;  // Default to Info level
+    FLO_Debug_Level = 3;  // Default to Info level
 };
 
 // Only log if the current level is high enough

@@ -364,7 +364,14 @@ diag_log "[FLO] Task Force system initialized";
 };
 
 // Initialize AI Commander with default operation mode
-["Server", "Initializing AI Commander..."] call FLO_fnc_log;
+["Server", 3, "Initializing AI Commander..."] call FLO_fnc_log;
+
+// Initialize Task Force Garrison Integration system
+["Server", 3, "Initializing Task Force Garrison Integration System..."] call FLO_fnc_log;
+FLO_TaskForce_Garrison_Integration = call FLO_fnc_taskForceGarrisonIntegration;
+["Server", 3, "Task Force Garrison Integration System initialized!"] call FLO_fnc_log;
+
+// Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
 publicVariable "FLO_AICommander";
-["Server", "AI Commander initialized!"] call FLO_fnc_log;
+["Server", 3, "AI Commander initialized!"] call FLO_fnc_log;

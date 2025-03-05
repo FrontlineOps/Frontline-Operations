@@ -13,16 +13,17 @@ class FLO {
     class AI {
         file = "Functions\AI";
 
-        class artilleryPrep         {};
-        class airRecon              {};
-        class airSupport            {};
-        class executeAttackPattern  {};
-        class fireObserver          {};
-        class calculateQRFResponse  {};
-        class requestQRF            {};
-        class requestOffensiveOps   {};
-        class heliInsert            {};
-        class aiCommander           {};
+        class artilleryPrep                {};
+        class airRecon                     {};
+        class airSupport                   {};
+        class executeAttackPattern         {};
+        class fireObserver                 {};
+        class calculateQRFResponse         {};
+        class requestQRF                   {};
+        class requestOffensiveOps          {};
+        class heliInsert                   {};
+        class aiCommander                  {};
+        class taskForceGarrisonIntegration {};
     };
 
     class Logistics {
