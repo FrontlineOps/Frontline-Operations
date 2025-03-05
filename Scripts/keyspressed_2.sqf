@@ -484,7 +484,7 @@ _trgMine setTriggerArea [1000, 1000, 0, false, 60];
 _trgMine setTriggerTimeout [2, 2, 2, true];
 _trgMine setTriggerActivation ["WEST", "PRESENT", false];
 _trgMine setTriggerStatements [
-"this","[thisTrigger] execVM 'Scripts\Minefield.sqf';", ""];
+"this","[thisTrigger] execVM 'Scripts\Objectives\Minefield.sqf';", ""];
 				 		
 	};	
 

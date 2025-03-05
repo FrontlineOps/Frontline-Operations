@@ -1,4 +1,3 @@
-
 if (ConVLocc == 0) then {
 	
 	
@@ -82,7 +81,7 @@ V0 = createVehicle [ selectRandom East_Ground_Vehicles_Light, (_nearRoad getRelP
 _azimuth = (getMarkerPos "ConvoyStrt") getDir (getMarkerPos "ConvoyDest") ;
 V0 setDir _azimuth;
 _SCount = [(typeOf V0), true] call BIS_fnc_crewCount;
-CGM = [getPosATL _nearRoad, east, _SCount] call BIS_fnc_spawnGroup;
+missionNamespace setVariable ["CGM", [getPosATL _nearRoad, east, _SCount] call BIS_fnc_spawnGroup, true];
 {_x moveInAny V0} foreach units CGM;  
 V0 setUnloadInCombat [true, false];	
 
@@ -174,11 +173,11 @@ _Veh = nearestObjects [(_this select 0),["LandVehicle"],100] select 0;
  doGetOut _x;  
 _x allowDammage true;
  } foreach units group ((crew _Veh) select 0); 
- [50] execVM 'Scripts\Reward.sqf';
+ [50] call FLO_fnc_addReward;
 deleteMarker 'ConvoyStrt' ;
 deleteMarker 'ConvoyDest' ;
 
-				[50, "SUPPORT CONVOY"] execVM "Scripts\NOtification.sqf" ;
+				[50, "SUPPORT CONVOY"] call FLO_fnc_notification;
 
 
 if (alive V0) then {
@@ -289,9 +288,9 @@ _TRGT setTriggerActivation ["NONE", "PRESENT", false];
 _TRGT setTriggerStatements [  
 "!alive V0 && !alive V1 && !alive V2 && !alive V3 && !alive V4 && !alive V5 && !alive V6", 
 " 
- [100] execVM 'Scripts\Reward.sqf';
+ [100] call FLO_fnc_addReward;
 
-				[100, 'SUPPORT CONVOY'] execVM 'Scripts\NOtification.sqf' ;
+				[100, 'SUPPORT CONVOY'] call FLO_fnc_notification;
  
  	ConVLocc = 0 ;
 	publicVariable 'ConVLocc';

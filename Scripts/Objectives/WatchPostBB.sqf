@@ -23,6 +23,7 @@ if (isNull _nearRoad) exitWith {
 private _watchpostData = createHashMapObject [[
     ["position", getPos _nearRoad],
     ["direction", _dir],
+    ["marker", ""],
     ["units", []],
     ["groups", []]
 ]];
@@ -49,58 +50,33 @@ private _composition = [
     true
 ] call LARs_fnc_spawnComp;
 
-// Spawn patrol groups
-private _spawnPatrolGroup = {
-    params ["_pos", "_radius"];
-    private _group = [
-        _pos getPos [10 + random 20, random 360],
-        East,
-        [selectRandom East_Units, selectRandom East_Units]
-    ] call BIS_fnc_spawnGroup;
-    
-    [_group, _pos, _radius] call BIS_fnc_taskPatrol;
-    _group deleteGroupWhenEmpty true;
-    (_watchpostData get "groups") pushBack _group;
-    _group
+// Create marker for the road watchpost
+private _pos = _watchpostData get "position";
+private _markerName = format ["rdMark_%1_%2", floor (_pos select 0), floor (_pos select 1)];
+createMarker [_markerName, _pos];
+_markerName setMarkerType "o_service";
+_markerName setMarkerColor "ColorEAST";
+_markerName setMarkerAlpha 0.0; // Invisible on map
+
+// Store marker in watchpost data
+_watchpostData set ["marker", _markerName];
+
+// Define garrison size - roadblocks typically smaller than mountain watchposts
+private _garrisonSize = 6;
+
+// Create the garrison using the garrison manager
+private _units = ["spawn", [_markerName, _garrisonSize, true]] call FLO_fnc_garrisonManager;
+_watchpostData set ["units", _units];
+
+diag_log format ["[FLO][Roadblock] Created roadblock garrison at %1 with size %2", _markerName, _garrisonSize];
+
+// Add patrol vehicle if needed
+if (random 1 < 0.5) then {
+    ["patrol", [_markerName, 400, selectRandom East_Ground_Vehicles_Light]] call FLO_fnc_vehicleGarrison;
+    diag_log format ["[FLO][Roadblock] Added patrol vehicle to roadblock at %1", _markerName];
 };
 
-[_watchpostData get "position", 50] call _spawnPatrolGroup;
-
-// Initialize building positions
-private _buildings = nearestObjects [_watchpostData get "position", ["HOUSE", "Strategic"], 20];
-private _positions = [];
-{
-    _positions append (_x buildingPos -1);
-} forEach _buildings;
-
-// Spawn static defenders
-private _spawnStaticDefender = {
-    params ["_pos", "_disablePath"];
-    private _group = [_pos, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
-    if (_disablePath) then {
-        (units _group select 0) disableAI "PATH";
-    };
-    _group deleteGroupWhenEmpty true;
-    (_watchpostData get "groups") pushBack _group;
-    _group
-};
-
-// Spawn building defenders
-for "_i" from 1 to 3 do {
-    if !(_positions isEqualTo []) then {
-        [selectRandom _positions, true] call _spawnStaticDefender;
-    };
-};
-
-// Spawn perimeter defenders
-for "_i" from 1 to 5 do {
-    private _pos = (_watchpostData get "position") getPos [15 + random 15, random 360];
-    [_pos, true] call _spawnStaticDefender;
-};
-
-[(_watchpostData get "position") getPos [15 + random 15, random 360], false] call _spawnStaticDefender;
-
-// Setup heavy weapons
+// Setup heavy weapons if present in the composition
 private _weaponSetup = {
     {
         [_x, 3, position _x, "ATL"] call BIS_fnc_setHeight;
@@ -110,14 +86,6 @@ private _weaponSetup = {
 
 private _heavyWeapons = nearestObjects [_watchpostData get "position", ["O_G_HMG_02_high_F", "O_G_Mortar_01_F"], 100];
 _heavyWeapons call _weaponSetup;
-
-if !(_heavyWeapons isEqualTo []) then {
-    private _heavyGun = _heavyWeapons select 0;
-    if (!isNil "_heavyGun") then {
-        private _crew = createVehicleCrew _heavyGun;
-        (_watchpostData get "units") pushBack (crew _heavyGun # 0);
-    };
-};
 
 // Return the watchpost data
 _watchpostData

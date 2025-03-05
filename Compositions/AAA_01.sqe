@@ -123,7 +123,7 @@ class items
 				side="Empty";
 				class Attributes
 				{
-					init="this addEventHandler [""Killed"", {  " \n "_MMarks = allMapMarkers select { markerType _x == ""o_antiair""}; " \n "_M = [_MMarks,  (_this select 0)] call BIS_fnc_nearestPosition; " \n "deleteMarker _M ;      " \n "[""ScoreAdded"", [""AAA Site Destroyed"", 30]] call BIS_fnc_showNotification;  " \n "[30] execVM ""Scripts\Reward.sqf"";" \n "" \n " playMusic ""EventTrack01_F_Curator"";  " \n "}];";
+					init="this addEventHandler [""Killed"", {  " \n "_MMarks = allMapMarkers select { markerType _x == ""o_antiair""}; " \n "_M = [_MMarks,  (_this select 0)] call BIS_fnc_nearestPosition; " \n "deleteMarker _M ;      " \n "[""ScoreAdded"", [""AAA Site Destroyed"", 30]] call BIS_fnc_showNotification;  " \n "[30] call FLO_fnc_addReward;" \n "" \n " playMusic ""EventTrack01_F_Curator"";  " \n "}];";
 					receiveRemoteTargets=1;
 					reportOwnPosition=1;
 					aiRadarUsage=1;

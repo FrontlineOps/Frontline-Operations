@@ -61,7 +61,7 @@ if (isNil "FLO_airSupport") then {
             };
             
             // Check if we have enough resources
-            if (!["spend", [_cost]] call FLO_fnc_opforResources) exitWith {
+            if !(["spend", [_cost]] call FLO_fnc_opforResources) exitWith {
                 diag_log "[FLO][AirSupport] Insufficient resources for new aircraft";
                 objNull
             };

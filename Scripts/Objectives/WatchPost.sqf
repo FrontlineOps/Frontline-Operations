@@ -23,6 +23,7 @@ if (isNull _mountSel || _watchpostComp == "") exitWith {
 private _watchpostData = createHashMapObject [[
     ["position", locationPosition _mountSel],
     ["composition", _watchpostComp],
+    ["marker", ""],
     ["units", []],
     ["groups", []]
 ]];
@@ -61,45 +62,35 @@ private _composition = [
     _x setVectorUp [0,0,1];
 } forEach ([_composition] call LARs_fnc_getCompObjects);
 
-// Initialize building positions
-private _buildings = nearestObjects [_watchpostData get "position", ["HOUSE", "Strategic"], 20];
-private _positions = [];
-{
-    _positions append (_x buildingPos -1);
-} forEach _buildings;
+// Create marker for the watchpost
+private _pos = _watchpostData get "position";
+private _markerName = format ["wpMark_%1_%2", floor (_pos select 0), floor (_pos select 1)];
+createMarker [_markerName, _pos];
+_markerName setMarkerType "o_recon";
+_markerName setMarkerColor "ColorEAST";
+_markerName setMarkerAlpha 0.0; // Invisible on map
 
-// Spawn static defenders
-private _spawnStaticDefender = {
-    params ["_pos", "_disablePath"];
-    private _group = [_pos, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
-    if (_disablePath) then {
-        (units _group select 0) disableAI "PATH";
-    };
-    _group deleteGroupWhenEmpty true;
-    (_watchpostData get "groups") pushBack _group;
-    _group
-};
+// Store marker in watchpost data
+_watchpostData set ["marker", _markerName];
 
-// Spawn initial defenders
-for "_i" from 1 to 6 do {
-    if !(_positions isEqualTo []) then {
-        [selectRandom _positions, true] call _spawnStaticDefender;
-    };
-};
+// Define garrison size based on aggression
+private _garrisonSize = 4; // Base size
 
-// Spawn additional defenders based on aggression score
+// Scale garrison size based on aggression
 if (_aggrScore > 5) then {
-    for "_i" from 1 to 6 do {
-        private _pos = if (_positions isEqualTo []) then {
-            _watchpostData get "position" getPos [10 + random 10, random 360]
-        } else {
-            selectRandom _positions
-        };
-        [_pos, true] call _spawnStaticDefender;
-    };
+    _garrisonSize = 10;
+};
+if (_aggrScore > 10) then {
+    _garrisonSize = 16;
 };
 
-// Setup heavy weapons
+// Create the garrison using the garrison manager
+private _units = ["spawn", [_markerName, _garrisonSize, false]] call FLO_fnc_garrisonManager;
+_watchpostData set ["units", _units];
+
+diag_log format ["[FLO][Watchpost] Created watchpost garrison at %1 with size %2", _markerName, _garrisonSize];
+
+// Setup heavy weapons if present in the composition
 private _weaponSetup = {
     {
         [_x, 3, position _x, "ATL"] call BIS_fnc_setHeight;
@@ -109,21 +100,6 @@ private _weaponSetup = {
 
 private _heavyWeapons = nearestObjects [_watchpostData get "position", ["O_G_HMG_02_high_F", "O_G_Mortar_01_F"], 100];
 _heavyWeapons call _weaponSetup;
-
-if !(_heavyWeapons isEqualTo []) then {
-    {
-        private _crewGroup = createVehicleCrew _x;
-        if (!isNull _crewGroup) then {
-            _crewGroup deleteGroupWhenEmpty true;
-            (_watchpostData get "groups") pushBack _crewGroup;
-            
-            // Add crew members to units array
-            {
-                (_watchpostData get "units") pushBack _x;
-            } forEach (units _crewGroup);
-        };
-    } forEach _heavyWeapons;
-};
 
 // Return the watchpost data
 _watchpostData

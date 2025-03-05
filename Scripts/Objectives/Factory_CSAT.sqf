@@ -27,7 +27,7 @@ _objectLoc = nearestobjects [getPos _thisFactoryTrigger, ["O_MBT_02_cannon_F"], 
 	sleep 1;
 		_NewVeh addEventHandler ["Killed", {
 	["ScoreAdded", ["Enemy Armor Sabotaged", 10]] remoteExec ["BIS_fnc_showNotification", 0];
-	[10] execVM "Scripts\Reward.sqf"; 
+	[10] call FLO_fnc_addReward; 
 	playMusic "EventTrack01_F_Curator"; 
 	execVM 'Scripts\ArmorDis.sqf';
 	}];
@@ -162,7 +162,7 @@ _triggers = _alltriggers select {position _x inArea thisTrigger};
 
 ', ''];
 
-[50] execVM 'Scripts\Reward.sqf';
+[50] call FLO_fnc_addReward;
 [thisTrigger, 1000] call FLO_fnc_requestQRF;
 
 _markerName = ""AssaultMark"" + (str (position player));  

@@ -65,8 +65,8 @@ class CfgRemoteExec
 
 #include "compositions\compositions.cfg"
 #include "Scripts\defines.hpp"
-#include "Scripts\Dialog_Faction.hpp"
-#include "Scripts\Dialog_Request.hpp"
+#include "Scripts\MissionSetupMenu\Dialog_Faction.hpp"
+#include "Scripts\RequestMenu\Dialog_Request.hpp"
 #include "Scripts\GUI_Satellite_Classes.hpp"
 #include "Scripts\GUI_Satellite_Macros.hpp" 
 #include "Scripts\GUI_Satellite_Console.hpp"
@@ -163,6 +163,15 @@ class Params
 		texts[] = { "Load Mission Progress", "Reset Mission Progress"};		
 		values[] = { 0, 1 };
 		default = 0;
+		isGlobal = 1;
+	};	
+
+	class RestrictedArsenal
+	{
+		title = "Restricted Arsenal";
+		texts[] = { "Enable", "Disable"};		
+		values[] = { 0, 1 };
+		default = 1;
 		isGlobal = 1;
 	};	
 	

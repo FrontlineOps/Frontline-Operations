@@ -99,30 +99,9 @@ publicVariable "FOBB";
 		false
 		] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
 
-		[ _x,
-		"<img size=2 color='#59ff58' image='Screens\FOBA\iconParachute_ca.paa'/><t font='PuristaBold' color='#59ff58'>H.A.L.O (250)",
-		"Screens\FOBA\b_hq.paa",
-		"Screens\FOBA\b_hq.paa",
-		"true",       
-		"_caller distance _target < 40",  
-		{},
-		{},
-		{
-			
-		[player] execVM "Scripts\HALO1.sqf"; 
-
-		},
-		{},
-		[],
-		5,
-		2,
-		false,
-		false
-		] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
-
 		[_x,[
 			"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>REQUEST MENU",
-			"Scripts\Dialog_Request.sqf",
+			"Scripts\RequestMenu\Dialog_Request.sqf",
 			nil,
 			99999,
 			true,
@@ -146,8 +125,8 @@ publicVariable "FOBB";
 		_HOS = nearestobjects [thisTrigger,East_Units_Officers,10] select 0 ;    
 		deleteVehicle _HOS ; 
 			[] execVM 'Scripts\INTL.sqf';	
-		[125] execVM 'Scripts\Reward.sqf';
-			[125, 'ENEMY OFFICER'] execVM 'Scripts\NOtification.sqf' ;
+		[125] call FLO_fnc_addReward;
+			[125, 'ENEMY OFFICER'] call FLO_fnc_notification ;
 
 		", ""]; 
 
@@ -163,8 +142,8 @@ publicVariable "FOBB";
 		_HOS = nearestobjects [thisTrigger,East_Units,10] select 0 ;    
 		deleteVehicle _HOS ; 
 			[] execVM 'Scripts\INTL.sqf';	
-		[50] execVM 'Scripts\Reward.sqf';
-			[50, 'ENEMY SOLDIER'] execVM 'Scripts\NOtification.sqf' ;
+		[50] call FLO_fnc_addReward;
+			[50, 'ENEMY SOLDIER'] call FLO_fnc_notification ;
 
 		", ""]; 
 
@@ -182,13 +161,13 @@ publicVariable "FOBB";
 		_CIVIL = (nearestObjects [thisTrigger ,['Man'], 7] select {(alive _x) && ((side _x) == civilian)}) select 0 ;
 		
 		if ( _CIVIL getUnitTrait 'engineer' == true) then {
-			[50, 'INSURGENT'] execVM 'Scripts\NOtification.sqf' ;
-			[50] execVM 'Scripts\Reward.sqf';
+			[50, 'INSURGENT'] call FLO_fnc_notification ;
+			[50] call FLO_fnc_addReward;
 			deleteVehicle _CIVIL ; 
 			[] execVM 'Scripts\INTL_Civ.sqf';	
 			[] execVM 'Scripts\ReputationPlus.sqf';
 		}else{
-			[0, 'CIVILIAN'] execVM 'Scripts\NOtification.sqf' ;
+			[0, 'CIVILIAN'] call FLO_fnc_notification ;
 			deleteVehicle _CIVIL ; 
 			[] execVM 'Scripts\ReputationMinus.sqf';
 		};
@@ -207,7 +186,7 @@ publicVariable "FOBB";
 		"  
 		_RES = nearestobjects [thisTrigger,['CargoNet_01_box_F'],10] select 0 ;    
 		deleteVehicle _RES ; 
-			[100, 'RESOURCE'] execVM 'Scripts\NOtification.sqf' ;
+			[100, 'RESOURCE'] call FLO_fnc_notification ;
 
 		[100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
 		", ""]; 
@@ -351,7 +330,7 @@ false
 "_caller distance _target < 40",  
 {},
 {},
-{ { null = execVM "Scripts\init_Weather.sqf" ;} remoteExec ["call", 2];},
+{ { null = execVM "Scripts\Init\init_Weather.sqf" ;} remoteExec ["call", 2];},
 {},
 [],
 5,
@@ -520,7 +499,7 @@ false
 
 [_x,[
 	"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>REQUEST MENU",
-	"Scripts\Dialog_Request_OP.sqf",
+	"Scripts\RequestMenu\Dialog_Request_OP.sqf",
 	nil,
 	99999,
 	true,
@@ -545,9 +524,9 @@ _TFOBH setTriggerStatements [
 "  
 _HOS = nearestobjects [thisTrigger,East_Units_Officers,10] select 0 ;    
 deleteVehicle _HOS ; 
-[125] execVM 'Scripts\Reward.sqf';
+[125] call FLO_fnc_addReward;
 [] execVM 'Scripts\INTL.sqf';
-	[125, 'ENEMY OFFICER'] execVM 'Scripts\NOtification.sqf' ;
+	[125, 'ENEMY OFFICER'] call FLO_fnc_notification ;
 
  ", ""]; 
 
@@ -563,9 +542,9 @@ _TFOBH setTriggerStatements [
 _HOS = nearestobjects [thisTrigger,East_Units,10] select 0 ;    
 deleteVehicle _HOS ; 
 
-[50] execVM 'Scripts\Reward.sqf';
+[50] call FLO_fnc_addReward;
 [] execVM 'Scripts\INTL.sqf';
-	[50, 'ENEMY SOLDIER'] execVM 'Scripts\NOtification.sqf' ;
+	[50, 'ENEMY SOLDIER'] call FLO_fnc_notification ;
 
  ", ""]; 
 
@@ -582,13 +561,13 @@ _CIVTRG setTriggerStatements [
 _CIVIL = (nearestObjects [thisTrigger ,['Man'], 7] select {(alive _x) && ((side _x) == civilian)}) select 0 ;
   
 if ( _CIVIL getUnitTrait 'engineer' == true) then {
-	[50, 'INSURGENT'] execVM 'Scripts\NOtification.sqf' ;
-	[50] execVM 'Scripts\Reward.sqf';
+	[50, 'INSURGENT'] call FLO_fnc_notification ;
+	[50] call FLO_fnc_addReward;
 	deleteVehicle _CIVIL ; 
 	[] execVM 'Scripts\INTL_Civ.sqf';	
 	[] execVM 'Scripts\ReputationPlus.sqf';
 }else{
-	[0, 'CIVILIAN'] execVM 'Scripts\NOtification.sqf' ;
+	[0, 'CIVILIAN'] call FLO_fnc_notification ;
 	deleteVehicle _CIVIL ; 
 	[] execVM 'Scripts\ReputationMinus.sqf';
 };
@@ -606,7 +585,7 @@ _TFOBA setTriggerStatements [
 "  
 _RES = nearestobjects [thisTrigger,['CargoNet_01_box_F'],10] select 0 ;    
 deleteVehicle _RES ; 
-	[100, 'RESOURCE'] execVM 'Scripts\NOtification.sqf' ;
+	[100, 'RESOURCE'] call FLO_fnc_notification ;
 
 [100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
  ", ""]; 
@@ -872,9 +851,9 @@ TWRs = nearestobjects [(getMarkerPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig
 				[] execVM "Scripts\ReputationMinus.sqf";
 
 				  
-				[30, "RADIO TOWER"] execVM "Scripts\NOtification.sqf" ;
+				[30, "RADIO TOWER"] call FLO_fnc_notification ;
 
-				[30] execVM "Scripts\Reward.sqf";
+				[30] call FLO_fnc_addReward;
 				 execVM "Scripts\COMDIS.sqf";
 				}];
 		};

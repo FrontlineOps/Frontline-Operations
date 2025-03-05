@@ -39,8 +39,8 @@ private _fnc_createAircraft = {
             
             deleteMarker _nearestMarker;
             
-            [50, "AIR PATROL"] execVM "Scripts\NOtification.sqf";
-            [50] execVM "Scripts\Reward.sqf";
+            [50, "AIR PATROL"] call FLO_fnc_notification;
+            [50] call FLO_fnc_addReward;
             [] execVM "Scripts\DangerPlus.sqf";
         }];
     };

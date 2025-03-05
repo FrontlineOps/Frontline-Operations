@@ -24,6 +24,7 @@ private _zoneData = createHashMapObject [[
     ["position", getPos _triggerObj],
     ["radius", _radius],
     ["watchpostPositions", []],
+    ["watchpostMarkers", []],
     ["mounts", []],
     ["aggrScore", 0]
 ]];
@@ -83,13 +84,53 @@ private _scorePosition = {
 // Sort mounts by score
 private _sortedMounts = [_allMounts, [], {-([locationPosition _x] call _scorePosition)}] call BIS_fnc_sortBy;
 
+// Function to create a watchpost with garrison
+private _createWatchpostGarrison = {
+    params ["_mountPos", "_compName"];
+    
+    // Create marker for the watchpost
+    private _markerName = format ["wpMark_%1_%2", floor (_mountPos select 0), floor (_mountPos select 1)];
+    createMarker [_markerName, _mountPos];
+    _markerName setMarkerType "o_recon";
+    _markerName setMarkerColor "ColorEAST";
+    _markerName setMarkerAlpha 0.0; // Invisible on map
+    
+    // Store the marker
+    (_zoneData get "watchpostMarkers") pushBack _markerName;
+    
+    // Get aggression score for garrison size
+    private _aggrScore = _zoneData get "aggrScore";
+    private _garrisonSize = 4; // Base size
+    
+    // Scale garrison size based on aggression
+    if (_aggrScore > 5) then {
+        _garrisonSize = 6;
+    };
+    if (_aggrScore > 10) then {
+        _garrisonSize = 8;
+    };
+    
+    // Spawn the composition
+    [_mountPos, _compName] execVM "Scripts\Objectives\WatchPostComp.sqf";
+    
+    // Create the garrison with the garrison manager
+    ["spawn", [_markerName, _garrisonSize, false]] call FLO_fnc_garrisonManager;
+    
+    diag_log format ["[FLO][Zone] Created watchpost garrison at %1 with size %2", _markerName, _garrisonSize];
+    
+    // Return the marker
+    _markerName
+};
+
 // Place initial watchposts with direction consideration
 {
     private _mountPos = locationPosition _x;
     if ([_mountPos] call _isSuitablePosition) then {
         private _score = [_mountPos] call _scorePosition;
         if (_score > 0.5) then { // Only place if reasonably facing enemies
-            [_x, selectRandom _allWatchposts] execVM "Scripts\Objectives\WatchPost.sqf";
+            // Create garrison at this position
+            private _selectedComp = selectRandom _allWatchposts;
+            [_mountPos, _selectedComp] call _createWatchpostGarrison;
             (_zoneData get "watchpostPositions") pushBack _mountPos;
         };
     };
@@ -104,8 +145,10 @@ if ((_zoneData get "aggrScore") > 5) then {
             private _sortedMounts = [_validMounts, [], {-([locationPosition _x] call _scorePosition)}] call BIS_fnc_sortBy;
             private _mount = _sortedMounts select 0;
             if ([locationPosition _mount] call _scorePosition > 0.5) then {
-                [_mount, selectRandom _allWatchposts] execVM "Scripts\Objectives\WatchPost.sqf";
-                (_zoneData get "watchpostPositions") pushBack (locationPosition _mount);
+                private _mountPos = locationPosition _mount;
+                private _selectedComp = selectRandom _allWatchposts;
+                [_mountPos, _selectedComp] call _createWatchpostGarrison;
+                (_zoneData get "watchpostPositions") pushBack _mountPos;
             };
         };
     };
@@ -116,8 +159,10 @@ if ((_zoneData get "aggrScore") > 5) then {
             private _sortedMounts = [_validMounts, [], {-([locationPosition _x] call _scorePosition)}] call BIS_fnc_sortBy;
             private _mount = _sortedMounts select 0;
             if ([locationPosition _mount] call _scorePosition > 0.5) then {
-                [_mount, selectRandom _allWatchposts] execVM "Scripts\Objectives\WatchPost.sqf";
-                (_zoneData get "watchpostPositions") pushBack (locationPosition _mount);
+                private _mountPos = locationPosition _mount;
+                private _selectedComp = selectRandom _allWatchposts;
+                [_mountPos, _selectedComp] call _createWatchpostGarrison;
+                (_zoneData get "watchpostPositions") pushBack _mountPos;
             };
         };
     };
@@ -132,8 +177,10 @@ if ((_zoneData get "aggrScore") > 10) then {
                 private _sortedMounts = [_validMounts, [], {-([locationPosition _x] call _scorePosition)}] call BIS_fnc_sortBy;
                 private _mount = _sortedMounts select 0;
                 if ([locationPosition _mount] call _scorePosition > 0.5) then {
-                    [_mount, selectRandom _allWatchposts] execVM "Scripts\Objectives\WatchPost.sqf";
-                    (_zoneData get "watchpostPositions") pushBack (locationPosition _mount);
+                    private _mountPos = locationPosition _mount;
+                    private _selectedComp = selectRandom _allWatchposts;
+                    [_mountPos, _selectedComp] call _createWatchpostGarrison;
+                    (_zoneData get "watchpostPositions") pushBack _mountPos;
                 };
             };
         };

@@ -17,34 +17,6 @@ ShowHUD [true, true, true, true, true, true, true, true, true, true];
 
 removeAllActions player;
 
-if ((typeOf  player == F_Recon_Eod) || (typeOf  player == F_Recon_Med) || (typeOf  player == F_Recon_Eng) ||  (typeOf  player == F_Recon_Mg) || (typeOf  player == F_Recon_AT) || (typeOf  player == F_Recon_Mrk) || (typeOf  player == F_Recon_TL) || (typeOf player == "B_G_Soldier_TL_F") || (typeOf player == "F_Assault_Amm")  || (typeOf player == "B_G_Soldier_AR_F") || (typeOf player == "B_G_Soldier_M_F")  || (typeOf player == "B_G_Soldier_LAT_F") || (typeOf player == "B_G_Soldier_exp_F")) then {
-
-[
-	player,											
-	'H.A.L.O',										
-	'Screens\FOBA\iconParachute_ca.paa',	
-	'Screens\FOBA\iconParachute_ca.paa',	
-	' (getPosATL vehicle player) select 2 > 500 ',					
-	'true',					
-	{},												
-	{},												
-	{ 
-
-{_x setPos ((getPos (vehicle player)) vectorAdd [(0 + (random 10)),(0 + (random 10)),(0 - (random 10))])} forEach units group player;
-_Height = Position player select 2 ;
-{[_x,_Height]  spawn BIS_fnc_halo} forEach units group player;
-//playMusic 'LeadTrack02_F_Mark';
-[player] execVM "Scripts\HALO.sqf"; 
-	},				
-	{},													
-	[],													
-	3,													
-	0,													
-	false,												
-	false												
-] call BIS_fnc_holdActionAdd;	
-};
-
 if ((typeOf player == F_Diver_Eod) || (typeOf player == F_Diver_Rfl) || (typeOf player == F_Diver_TL) || (typeOf player == "B_T_Diver_F")) then {
 [player] call EtV_Actions;
 };

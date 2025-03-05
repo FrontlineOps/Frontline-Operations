@@ -4,8 +4,8 @@ _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
 _mrkr = _mrkrs select 0;
 _AGGRSCORE = parseNumber (markerText _mrkr) ;  
 
-				[50, 'INTEL'] execVM 'Scripts\NOtification.sqf' ;
-				[50] execVM 'Scripts\Reward.sqf';
+				[50, 'INTEL'] call FLO_fnc_notification ;
+				[50] call FLO_fnc_addReward;
 
 _CRT = [
 "Box_IND_WpsSpecial_F",
@@ -326,9 +326,9 @@ if (count _humanPlayers == 1 ) then {
 
 			playSound3D [(getMissionPath 'Sounds\c_eb_35_natojoin_MEM_0.ogg'), ((units _Group) select 0)];
 			
-[50, 'MISSING SQUAD'] execVM 'Scripts\NOtification.sqf' ;
+[50, 'MISSING SQUAD'] call FLO_fnc_notification ;
 [thisTrigger, 1500] call FLO_fnc_requestQRF;
-[50] execVM 'Scripts\Reward.sqf';
+[50] call FLO_fnc_addReward;
  ", ""]; 
  
 }; 

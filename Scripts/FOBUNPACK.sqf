@@ -20,7 +20,7 @@ _FOBTV setDir _dir + 180 ;
 
 
 sleep 1 ;
-_FOBADD = execVM "Scripts\init_FOB.sqf";  
+_FOBADD = execVM "Scripts\Init\init_FOB.sqf";  
 waitUntil { scriptDone _FOBADD };
 
 

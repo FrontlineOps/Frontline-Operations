@@ -28,7 +28,7 @@ deleteMarker _M ;
   
 ["ScoreAdded", ["Insurgent Stash Destroyed", 30]] call BIS_fnc_showNotification; 
 
-[30] execVM "Scripts\Reward.sqf";
+[30] call FLO_fnc_addReward;
 [] execVM "Scripts\DangerMinus.sqf";
 
 execVM "Scripts\Civ_Relations.sqf";
