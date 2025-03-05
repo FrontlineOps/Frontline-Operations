@@ -28,7 +28,7 @@ if !_is_debug then
 		ReputationName = _Reputationbox lbText lbCurSel _Reputationbox;
 		DifficultyName = _Difficultybox lbText lbCurSel _Difficultybox;
 
-		if ((PlayerfactionName == "") or (EnemyfactionName == "") or (CivilianfactionName == "") or (PresenceName == "") or (ResourcesName == "") or (ReputationName == "") or (DifficultyName == "")) then {execVM "Scripts\Dialog_Faction.sqf";} else {
+		if ((PlayerfactionName == "") or (EnemyfactionName == "") or (CivilianfactionName == "") or (PresenceName == "") or (ResourcesName == "") or (ReputationName == "") or (DifficultyName == "")) then {execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";} else {
 
 		hint "Done";
 
