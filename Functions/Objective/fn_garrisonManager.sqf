@@ -96,6 +96,9 @@ if (isNil "FLO_Garrison_Manager") then {
             // Load saved garrison sizes if available
             _self call ["loadGarrisonSizes", []];
             
+            // Initialize default garrison entries for all OPFOR objectives
+            _self call ["initializeDefaultGarrisons", []];
+            
             // Start the maintenance loop
             [] spawn {
                 while {true} do {
@@ -108,6 +111,55 @@ if (isNil "FLO_Garrison_Manager") then {
                     sleep 30;
                 };
             };
+        }],
+        
+        // Initialize default garrison entries for all OPFOR objectives
+        ["initializeDefaultGarrisons", {
+            private _garrisons = _self get "garrisons";
+            
+            // Find all OPFOR markers that can have garrisons
+            private _opforMarkers = allMapMarkers select {
+                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
+                markerType _x in ["o_support", "n_support", "n_installation", "o_installation", 
+                                "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"]
+            };
+            
+            // Create a default garrison entry for each marker if it doesn't exist already
+            {
+                private _marker = _x;
+                // Skip if garrison already exists
+                if (_marker in keys _garrisons) then {
+                    continue;
+                };
+                
+                // Get the marker type to determine size limits
+                private _markerType = markerType _marker;
+                private _sizeLimits = _self call ["getSizeLimits", [_markerType]];
+                private _baseSize = _sizeLimits select 0;
+                private _maxSize = _sizeLimits select 1;
+                
+                // Set initial size to base size
+                private _initialSize = _baseSize;
+                
+                // Get saved garrison size if available
+                private _garrisonSizes = _self get "garrisonSizes";
+                if (_marker in keys _garrisonSizes) then {
+                    _initialSize = (_garrisonSizes get _marker) min _maxSize;
+                };
+                
+                // Create an empty garrison entry
+                _garrisons set [_marker, [
+                    [], // No units
+                    [], // No vehicles
+                    grpNull, // No group
+                    time, // Creation timestamp
+                    _baseSize, // Base size
+                    _maxSize, // Max size
+                    _initialSize // Current intended size
+                ]];
+            } forEach _opforMarkers;
+            
+            diag_log format ["[FLO][Garrison] Initialized default garrison entries for %1 OPFOR objectives", count _opforMarkers];
         }],
         
         // Save garrison sizes to profileNamespace
@@ -129,8 +181,8 @@ if (isNil "FLO_Garrison_Manager") then {
                 private _garrisonData = _garrisons get _marker;
                 
                 if (!isNil "_garrisonData") then {
-                    // The structure of garrisonData is [_units, _group, _vehicles, _garrison, _size, _queuedReinforcements]
-                    private _size = _garrisonData param [4, 0];
+                    // Get the current intended size from the data
+                    private _size = _garrisonData param [6, 0];
                     
                     // Only save if size is greater than 0
                     if (_size > 0) then {
@@ -278,13 +330,13 @@ if (isNil "FLO_Garrison_Manager") then {
                         if (count (_garrisonData select 0) == 0) then {
                             _queuedGarrison = true;
                             
-                            // Get any queued reinforcements to include in spawn
-                            _additionalUnits = _garrisonData param [5, 0];
+                            // Get intended size for spawning
+                            _additionalUnits = _garrisonData param [6, 0];
                             
                             // Remove the inactive garrison entry
                             _garrisons deleteAt _marker;
                             
-                            diag_log format ["[FLO][Garrison] Found queued garrison at %1 with %2 additional units", _marker, _additionalUnits];
+                            diag_log format ["[FLO][Garrison] Found queued garrison at %1 with %2 intended size", _marker, _additionalUnits];
                         };
                     };
                     
@@ -687,15 +739,13 @@ if (isNil "FLO_Garrison_Manager") then {
             // Store in garrisons hashmap
             private _garrisons = _self get "garrisons";
             
-            // Extended garrison data structure:
-            // [units, vehicles, group, timestamp, virtualStrength, queuedReinforcements, baseSize, maxSize, currentSize]
+            // Garrison data structure:
+            // [units, vehicles, group, timestamp, baseSize, maxSize, currentSize, isVirtualized]
             _garrisons set [_marker, [
                 _spawnedUnits,                // Actual spawned units
                 _spawnedVehicles,             // Spawned vehicles
                 _group,                       // Main group
                 time,                         // Creation timestamp
-                0,                            // Virtual strength (reinforcements available but not yet spawned)
-                0,                            // Queued reinforcements (for inactive garrisons)
                 _baseSize,                    // Base size from marker type
                 _maxSize,                     // Maximum allowed size
                 _size                         // Current intended size
@@ -719,120 +769,64 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Check if garrison exists
             if (!(_marker in keys _garrisons)) then {
-                // Garrison doesn't exist yet - create a placeholder entry if the marker exists
-                if (markerShape _marker != "") then {
-                    diag_log format ["[FLO][Garrison] Creating placeholder for non-activated garrison at %1", _marker];
-                    
-                    // Get the marker type to determine size limits
-                    private _markerType = markerType _marker;
-                    private _sizeLimits = _self call ["getSizeLimits", [_markerType]];
-                    private _baseSize = _sizeLimits select 0;
-                    private _maxSize = _sizeLimits select 1;
-                    
-                    // Create an empty garrison entry with queued reinforcements
-                    _garrisons set [_marker, [
-                        [], // No units
-                        [], // No vehicles
-                        grpNull, // No group
-                        time, // Creation timestamp
-                        0, // No virtual strength
-                        _amount, // Queued reinforcements
-                        _baseSize, // Base size
-                        _maxSize, // Max size
-                        _amount // Current size is just the reinforcements for now
-                    ]];
-                    
-                    // Update total units count for tracking
-                    _self set ["totalUnits", (_self get "totalUnits") + _amount];
-                    
-                    diag_log format ["[FLO][Garrison] Created placeholder garrison at %1 with %2 queued reinforcements", 
-                        _marker, _amount];
-                    
-                    // Update saved garrison size for persistence
-                    private _garrisonSizes = _self get "garrisonSizes";
-                    private _currentSize = _garrisonSizes getOrDefault [_marker, 0];
-                    _garrisonSizes set [_marker, (_currentSize + _amount) min _maxSize];
-                    _self set ["garrisonSizes", _garrisonSizes];
-                    
-                    _result = true;
-                } else {
-                    diag_log format ["[FLO][Garrison] Error: Invalid marker '%1' for reinforcement", _marker];
-                    _result = false;
-                };
+                diag_log format ["[FLO][Garrison] Cannot reinforce non-existent garrison at %1", _marker];
+                _result = false;
             } else {
+                // Garrison exists - check if it's active (has spawned units)
                 private _garrisonData = _garrisons get _marker;
-                _garrisonData params ["_units", "_vehicles", "_group", "_timestamp", "_virtualStrength", "_queuedReinforcements"];
+                _garrisonData params ["_units", "_vehicles", "_group", "_timestamp"];
                 
                 // Get the size limits
-                private _baseSize = _garrisonData param [6, 4]; // Default base size of 4 if not stored
-                private _maxSize = _garrisonData param [7, 8];  // Default max size of 8 if not stored
-                private _currentSize = _garrisonData param [8, count (_units select {alive _x})]; // Current size
+                private _baseSize = _garrisonData param [4, 4];
+                private _maxSize = _garrisonData param [5, 8];
+                private _currentSize = _garrisonData param [6, 0];
                 
-                // Check if we've already reached max size
-                if (_currentSize >= _maxSize) then {
-                    diag_log format ["[FLO][Garrison] Garrison at %1 already at maximum size (%2), reinforcement rejected", _marker, _maxSize];
+                // Check if this garrison is active (has spawned units)
+                private _isActive = count (_units select {alive _x}) > 0;
+                
+                if (_isActive) then {
+                    // Garrison is active - don't add reinforcements as per user request
+                    diag_log format ["[FLO][Garrison] Not reinforcing active garrison at %1 (already processed)", _marker];
                     _result = false;
                 } else {
-                    // Calculate how many reinforcements can be added before reaching max
-                    private _availableSpace = _maxSize - _currentSize;
-                    private _reinforcementCount = _amount min _availableSpace;
-                    
-                    // Log if we're capping reinforcements
-                    if (_reinforcementCount < _amount) then {
-                        diag_log format ["[FLO][Garrison] Reinforcement for %1 limited from %2 to %3 units due to size cap (%4/%5)", 
-                            _marker, _amount, _reinforcementCount, _currentSize, _maxSize];
-                    };
-                    
-                    // Check if this garrison is active (has spawned units)
-                    private _isActive = count (_units select {alive _x}) > 0;
-                    
-                    // Update the appropriate counter
-                    if (_isActive) then {
-                        // Garrison is active - track reinforcements virtually
-                        diag_log format ["[FLO][Garrison] Reinforcement available for active garrison at %1: +%2 units (tracked only)", 
-                            _marker, _reinforcementCount];
-                        
-                        // Update virtual strength
-                        _virtualStrength = _virtualStrength + _reinforcementCount;
-                        _garrisonData set [4, _virtualStrength];
-                        
-                        // Update current size
-                        _currentSize = _currentSize + _reinforcementCount;
-                        _garrisonData set [8, _currentSize];
-                        
+                    // Check if we've already reached max size
+                    if (_currentSize >= _maxSize) then {
+                        diag_log format ["[FLO][Garrison] Garrison at %1 already at maximum size (%2), reinforcement rejected", _marker, _maxSize];
+                        _result = false;
                     } else {
-                        // Garrison is not active - queue reinforcements for later
-                        diag_log format ["[FLO][Garrison] Reinforcement queued for inactive garrison at %1: +%2 units", 
+                        // Calculate how many reinforcements can be added before reaching max
+                        private _availableSpace = _maxSize - _currentSize;
+                        private _reinforcementCount = _amount min _availableSpace;
+                        
+                        // Log if we're capping reinforcements
+                        if (_reinforcementCount < _amount) then {
+                            diag_log format ["[FLO][Garrison] Reinforcement for %1 limited from %2 to %3 units due to size cap (%4/%5)", 
+                                _marker, _amount, _reinforcementCount, _currentSize, _maxSize];
+                        };
+                        
+                        // Update current intended size
+                        _currentSize = _currentSize + _reinforcementCount;
+                        _garrisonData set [6, _currentSize];
+                        
+                        // Save updated garrison data
+                        _garrisons set [_marker, _garrisonData];
+                        
+                        diag_log format ["[FLO][Garrison] Reinforced non-active garrison at %1: added %2 units to intended size", 
                             _marker, _reinforcementCount];
                         
-                        // Update queued reinforcements
-                        _queuedReinforcements = _queuedReinforcements + _reinforcementCount;
-                        _garrisonData set [5, _queuedReinforcements];
+                        // Update saved garrison size for persistence
+                        private _garrisonSizes = _self get "garrisonSizes";
+                        _garrisonSizes set [_marker, _currentSize min _maxSize];
                         
-                        // Update current size
-                        _currentSize = _currentSize + _reinforcementCount;
-                        _garrisonData set [8, _currentSize];
+                        _result = true;
                     };
-                    
-                    // Save updated garrison data
-                    _garrisons set [_marker, _garrisonData];
-                    
-                    // Update total units count (only for tracking purposes)
-                    _self set ["totalUnits", (_self get "totalUnits") + _reinforcementCount];
-                    
-                    // Update saved garrison size for persistence
-                    private _garrisonSizes = _self get "garrisonSizes";
-                    _garrisonSizes set [_marker, _currentSize min _maxSize];
-                    _self set ["garrisonSizes", _garrisonSizes];
-                    
-                    _result = true;
                 };
             };
             
             _result
         }],
         
-        // Maintain all garrisons
+        // Maintain all garrisons - simplified without queued/virtual reinforcements
         ["maintainGarrisons", {
             private _garrisons = _self get "garrisons";
             private _totalCount = 0;
@@ -841,22 +835,21 @@ if (isNil "FLO_Garrison_Manager") then {
             {
                 private _marker = _x;
                 private _data = _garrisons get _marker;
-                _data params ["_units", "_vehicles", "_group", "_timestamp", "_virtualStrength", "_queuedReinforcements"];
+                _data params ["_units", "_vehicles", "_group", "_timestamp"];
                 
                 // Get size data
-                private _baseSize = _data param [6, 4]; 
-                private _maxSize = _data param [7, 8];
-                private _currentSize = _data param [8, count _units];
+                private _baseSize = _data param [4, 4]; 
+                private _maxSize = _data param [5, 8];
+                private _intendedSize = _data param [6, _baseSize];
                 
                 // Check for virtualized state for this marker's garrison
                 private _wasVirtualized = false;
                 private _markerPos = getMarkerPos _marker;
-                private _allVirtualizedKeys = [];
                 
-                // Check if we are using the virtualization system
+                // Handle virtualization system (if used)
                 if (!isNil "VS_VirtualizedGroups") then {
-                    // Look for virtualized groups that belong to this garrison
-                    _allVirtualizedKeys = keys VS_VirtualizedGroups;
+                    // Code to handle virtualized groups - preserved from original
+                    private _allVirtualizedKeys = keys VS_VirtualizedGroups;
                     
                     {
                         private _vsKey = _x;
@@ -874,10 +867,7 @@ if (isNil "FLO_Garrison_Manager") then {
                                 // Only process EAST (OPFOR) virtualized groups
                                 if (_vsSide == east) then {
                                     diag_log format ["[FLO][Garrison] Found virtualized garrison for marker %1", _marker];
-                                    
-                                    // We don't delete from VS_VirtualizedGroups - the virtualization system will handle that
-                                    // But we update our tracking to know this was virtualized
-                                    _data set [9, true]; // Mark as virtualized
+                                    _data set [7, true]; // Mark as virtualized
                                 };
                             };
                         };
@@ -887,7 +877,7 @@ if (isNil "FLO_Garrison_Manager") then {
                 // Handle normal (non-virtualized) garrisons
                 if (!_wasVirtualized) then {
                     // Check if this was previously virtualized but now restored
-                    if (_data param [9, false]) then {
+                    if (_data param [7, false]) then {
                         // This garrison was previously virtualized, now it's restored
                         // We need to find the newly created units near this marker
                         
@@ -903,17 +893,12 @@ if (isNil "FLO_Garrison_Manager") then {
                             _data set [0, _nearUnits];
                             _data set [1, _nearVehicles];
                             _data set [2, _newGroup];
-                            _data set [9, false]; // No longer virtualized
-                            
-                            // Set actual size to match current units (preserve virtual and queued counts)
-                            private _actualSize = count _nearUnits;
-                            _currentSize = _actualSize + _virtualStrength + _queuedReinforcements;
-                            _data set [8, _currentSize];
+                            _data set [7, false]; // No longer virtualized
                         } else {
-                            // Was virtualized but now no units found - treat as dead
+                            // Was virtualized but now no units found - treat as empty
                             _data set [0, []];
                             _data set [1, []];
-                            _data set [9, false];
+                            _data set [7, false];
                         };
                     } else {
                         // Normal non-virtualized garrison processing
@@ -941,47 +926,25 @@ if (isNil "FLO_Garrison_Manager") then {
                             } forEach _nonEastUnits;
                         };
                         
-                        // Update actual vs intended size
-                        private _actualSize = count _aliveUnits;
-                        if (_actualSize != _currentSize - _virtualStrength - _queuedReinforcements) then {
-                            // There's a discrepancy between actual units and tracked size
-                            // This means some units died but haven't been accounted for
-                            private _lostUnits = _currentSize - _virtualStrength - _queuedReinforcements - _actualSize;
-                            if (_lostUnits > 0) then {
-                                diag_log format ["[FLO][Garrison] Garrison at %1 lost %2 units, adjusting tracked size", _marker, _lostUnits];
-                                // Reduce the current size by the number of lost units
-                                _currentSize = _currentSize - _lostUnits;
-                                _data set [8, _currentSize];
-                            };
-                        };
-                        
-                        // Update garrison data with alive units only
+                        // Update actual unit count
                         _data set [0, _aliveUnits];
                         _data set [1, _aliveVehicles];
                     };
                 };
                 
-                // Check if garrison is completely gone (0 active units, 0 virtual strength, 0 queued units)
-                if ((count (_data select 0) == 0) && _virtualStrength == 0 && _queuedReinforcements == 0 && !(_data param [9, false])) then {
-                    // All units dead and no reinforcements queued, clean up
-                    {deleteVehicle _x} forEach (_data select 1);
-                    _garrisons deleteAt _marker;
-                    diag_log format ["[FLO][Garrison] Garrison at %1 wiped out, removed", _marker];
-                } else {
-                    // Update garrison data timestamp
-                    _data set [3, time]; // Update timestamp
-                    _garrisons set [_marker, _data];
-                    
-                    // Count both physical and virtual units for total
-                    private _physicalUnits = count (_data select 0);
-                    _totalCount = _totalCount + _physicalUnits + _virtualStrength + _queuedReinforcements;
-                    
-                    // Don't log during virtualization (it's not useful)
-                    if (!(_data param [9, false])) then {
-                        // Log info about garrison status
-                        diag_log format ["[FLO][Garrison] Garrison at %1: %2 active units, %3 virtual, %4 queued (%5/%6 capacity)", 
-                            _marker, _physicalUnits, _virtualStrength, _queuedReinforcements, _currentSize, _maxSize];
-                    };
+                // Update garrison data timestamp
+                _data set [3, time];
+                _garrisons set [_marker, _data];
+                
+                // Get current count of units for total
+                private _physicalUnits = count (_data select 0);
+                _totalCount = _totalCount + _physicalUnits;
+                
+                // Don't log during virtualization (it's not useful)
+                if (!(_data param [7, false])) then {
+                    // Log info about garrison status
+                    diag_log format ["[FLO][Garrison] Garrison at %1: %2 active units (%3/%4 capacity)", 
+                        _marker, _physicalUnits, _physicalUnits, _data param [6, 0]];
                 };
             } forEach keys _garrisons;
             
@@ -992,25 +955,44 @@ if (isNil "FLO_Garrison_Manager") then {
             diag_log format ["[FLO][Garrison] Maintenance complete. Total units: %1", _totalCount];
         }],
         
-        // Get garrison info for a marker
-        ["getGarrisonInfo", {
+        // Get info about a specific garrison
+        ["getGarrison", {
             params ["_marker"];
             
             private _garrisons = _self get "garrisons";
-            if (!(_marker in keys _garrisons)) exitWith {
-                []
+            private _result = [];
+            
+            if (_marker in keys _garrisons) then {
+                private _data = _garrisons get _marker;
+                _data params ["_units", "_vehicles", "_group", "_timestamp"];
+                
+                // Count alive units
+                private _aliveUnits = _units select {alive _x};
+                private _aliveVehicles = _vehicles select {alive _x};
+                
+                // Get size data
+                private _baseSize = _data param [4, 4]; 
+                private _maxSize = _data param [5, 8];
+                private _intendedSize = _data param [6, count _aliveUnits];
+                
+                // Get virtualization status
+                private _isVirtualized = _data param [7, false];
+                
+                // Return data in a structured array for external access
+                _result = [
+                    _aliveUnits,         // [0] Alive units array
+                    _aliveVehicles,      // [1] Alive vehicles array
+                    _group,              // [2] Group
+                    count _aliveUnits,   // [3] Current unit count
+                    _intendedSize,       // [4] Intended size
+                    _marker,             // [5] Marker
+                    _isVirtualized,      // [6] Is virtualized flag
+                    _baseSize,           // [7] Base size
+                    _maxSize             // [8] Max size
+                ];
             };
             
-            private _data = _garrisons get _marker;
-            _data params ["_units", "_vehicles", "_group", "_timestamp", "_virtualStrength", "_queuedReinforcements"];
-            private _baseSize = _data param [6, 4];
-            private _maxSize = _data param [7, 8];
-            private _currentSize = _data param [8, count _units];
-            
-            private _aliveUnits = _units select {alive _x};
-            private _aliveVehicles = _vehicles select {alive _x};
-            
-            [count _aliveUnits, count _aliveVehicles, _timestamp, _virtualStrength, _queuedReinforcements, _baseSize, _maxSize, _currentSize]
+            _result
         }],
         
         // Check if a group is from a garrison

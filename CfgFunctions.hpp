@@ -26,6 +26,21 @@ class FLO {
         class taskForceGarrisonIntegration {};
     };
 
+    class Actions {
+        file = "Functions\AI\Actions";
+
+        class attackArea        {};
+        class defendArea        {};
+        class patrolArea        {};
+        class reconArea         {};
+        class taskAttack        {};
+        class taskDefend        {};
+        class taskPatrol        {};
+        class addWaypoint       {};
+        class reconAreaAction   {};
+        class getTargetType     {};
+    };
+
     class Logistics {
         file = "Functions\Logistics";
 
