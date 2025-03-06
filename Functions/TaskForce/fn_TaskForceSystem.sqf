@@ -52,6 +52,7 @@ if (isNil "FLO_TaskForce_System") then {
         
         // Properties
         ["taskForces", createHashMap],
+        ["activatedTaskForces", createHashMap],
         ["lastUpdate", time],
         ["lastTaskForceId", 0],
         ["lastTaskForceScan", time],
@@ -61,6 +62,7 @@ if (isNil "FLO_TaskForce_System") then {
         // Constructor - Called when object is created
         ["#create", {
             _self set ["taskForces", createHashMap];
+            _self set ["activatedTaskForces", createHashMap];
             _self set ["lastUpdate", time];
             _self set ["lastTaskForceId", 0];
             _self set ["lastTaskForceScan", time];
@@ -92,7 +94,8 @@ if (isNil "FLO_TaskForce_System") then {
                 ["_baseMarker", "", [""]],
                 ["_taskForceType", "infantry", [""]],
                 ["_taskForceSize", "squad", [""]],
-                ["_targetMarker", "", [""]]
+                ["_targetMarker", "", [""]],
+                ["_providedTaskForceId", "", [""]]
             ];
             
             // Validate base marker
@@ -113,10 +116,22 @@ if (isNil "FLO_TaskForce_System") then {
                 _targetPos = getMarkerPos _targetMarker;
             };
             
-            // Generate a unique ID for this Task Force
-            private _lastId = _self getOrDefault ["lastTaskForceId", 0];
-            private _taskForceId = format ["TF_%1_%2", _lastId + 1, floor random 10000];
-            _self set ["lastTaskForceId", _lastId + 1];
+            // Generate a unique ID for this Task Force - use provided ID if available
+            private _taskForceId = "";
+            if (_providedTaskForceId != "") then {
+                _taskForceId = _providedTaskForceId;
+                diag_log format["[FLO][TaskForce] Using provided task force ID: %1", _taskForceId];
+            } else {
+                private _lastId = _self getOrDefault ["lastTaskForceId", 0];
+                _taskForceId = format ["TF_%1_%2", _lastId + 1, floor random 10000];
+                _self set ["lastTaskForceId", _lastId + 1];
+            };
+            
+            // Sanitize the task force ID if it contains coordinates
+            if (_taskForceId find "[" > 0) then {
+                _taskForceId = _self call ["_sanitizeTaskForceId", [_taskForceId]];
+                diag_log format["[FLO][TaskForce] Sanitized task force ID to: %1", _taskForceId];
+            };
             
             // Calculate resource cost based on type and size
             private _resourceCost = [_taskForceType, _taskForceSize] call {
@@ -469,21 +484,40 @@ if (isNil "FLO_TaskForce_System") then {
         ["deployTaskForce", {
             params ["_taskForceId", "_position", "_defensive"];
             
+            // Sanitize the task force ID to handle coordinates in the name
+            private _originalId = _taskForceId;
+            private _sanitizedId = _self call ["_sanitizeTaskForceId", [_taskForceId]];
+            
             // Get the Task Force data using dual lookup
             private _taskForces = _self getOrDefault ["taskForces", createHashMap];
             private _taskForceData = nil;
             
-            // First try object hashmap
-            if (_taskForceId in keys _taskForces) then {
-                _taskForceData = _taskForces get _taskForceId;
+            // First try object hashmap with original and sanitized IDs
+            if (_originalId in keys _taskForces) then {
+                _taskForceData = _taskForces get _originalId;
             } else {
-                // Then try global backup hashmap
-                if (!isNil "FLO_Global_TaskForces" && {_taskForceId in keys FLO_Global_TaskForces}) then {
-                    _taskForceData = FLO_Global_TaskForces get _taskForceId;
-                    // Copy to object hashmap
-                    _taskForces set [_taskForceId, _taskForceData];
-                    _self set ["taskForces", _taskForces];
-                    diag_log format ["[FLO][TaskForce] Restored Task Force %1 from global backup", _taskForceId];
+                if (_sanitizedId in keys _taskForces) then {
+                    _taskForceData = _taskForces get _sanitizedId;
+                    _taskForceId = _sanitizedId; // Use sanitized ID for subsequent operations
+                } else {
+                    // Then try global backup hashmap
+                    if (!isNil "FLO_Global_TaskForces") then {
+                        if (_originalId in keys FLO_Global_TaskForces) then {
+                            _taskForceData = FLO_Global_TaskForces get _originalId;
+                        } else {
+                            if (_sanitizedId in keys FLO_Global_TaskForces) then {
+                                _taskForceData = FLO_Global_TaskForces get _sanitizedId;
+                                _taskForceId = _sanitizedId; // Use sanitized ID for subsequent operations
+                            };
+                        };
+                        
+                        if (!isNil "_taskForceData") then {
+                            // Copy to object hashmap
+                            _taskForces set [_taskForceId, _taskForceData];
+                            _self set ["taskForces", _taskForces];
+                            diag_log format ["[FLO][TaskForce] Restored Task Force %1 from global backup", _taskForceId];
+                        };
+                    };
                 };
             };
             
@@ -493,7 +527,7 @@ if (isNil "FLO_TaskForce_System") then {
                 if (!isNil "FLO_Global_TaskForces") then {
                     diag_log format ["[FLO][TaskForce] Available global task forces: %1", keys FLO_Global_TaskForces];
                 };
-                false
+                grpNull // Return grpNull instead of false
             };
             
             // Check if any player is within 700 meters of the deployment position
@@ -507,7 +541,7 @@ if (isNil "FLO_TaskForce_System") then {
             
             if (_tooCloseToPlayer) exitWith {
                 diag_log format ["[FLO][TaskForce] Task Force %1 deployment canceled - position %2 is within 700m of a player", _taskForceId, _position];
-                false
+                grpNull // Return grpNull instead of false
             };
             
             _taskForceData params [
@@ -531,7 +565,20 @@ if (isNil "FLO_TaskForce_System") then {
             // If already deployed and not virtualized, exit
             if (_isDeployed && !_isVirtualized) exitWith {
                 diag_log format ["[FLO][TaskForce] Task Force %1 is already deployed", _taskForceId];
-                false
+                
+                // Try to get the existing infantry group if it exists
+                private _existingGroup = grpNull;
+                if (count _taskForceData > 15) then {
+                    _existingGroup = _taskForceData select 15;
+                    if (!isNull _existingGroup) then {
+                        // Return the existing group if it's valid
+                        _existingGroup
+                    } else {
+                        grpNull
+                    };
+                } else {
+                    grpNull
+                };
             };
             
             // Extract direction if position is passed in special format "markerName|direction"
@@ -603,6 +650,9 @@ if (isNil "FLO_TaskForce_System") then {
             
             // Create infantry group
             private _infantryGroup = createGroup [east, true];  // Added true for deleteWhenEmpty
+            
+            // Set the group ID to match the task force ID for easier identification
+            _infantryGroup setGroupIdGlobal [_taskForceId];
             
             {
                 _x params ["_unitType", "_unitClasses", "_unitCount"];
@@ -761,7 +811,7 @@ if (isNil "FLO_TaskForce_System") then {
             // Verify units were created
             if (count _allCreatedUnits == 0) exitWith {
                 diag_log format ["[FLO][TaskForce] Error: No units created for Task Force %1", _taskForceId];
-                false
+                grpNull // Return grpNull instead of false
             };
             
             // Set up behavior based on deployment type
@@ -868,6 +918,9 @@ if (isNil "FLO_TaskForce_System") then {
             _taskForceData set [7, _allCreatedUnits];
             _taskForceData set [14, false];
             
+            // Store the infantry group in the task force data for easy access
+            _taskForceData set [15, _infantryGroup];
+            
             // Update the hashmap
             _taskForces set [_taskForceId, _taskForceData];
             _self set ["taskForces", _taskForces];
@@ -875,19 +928,47 @@ if (isNil "FLO_TaskForce_System") then {
             diag_log format ["[FLO][TaskForce] Successfully deployed Task Force %1 at position %2 with %3 units facing %4°",
                 _taskForceId, _position, count _allCreatedUnits, _bluforDirection];
             
-            true
+            // Return the infantry group
+            _infantryGroup
         }],
         
         // Get information about a specific Task Force
         ["getTaskForce", {
-            params ["_taskForceId"];
+            params ["_taskForceId", ["_returnGroup", false, [false]]];
+            
+            // Sanitize the task force ID to handle coordinates in the name
+            private _originalId = _taskForceId;
+            private _sanitizedId = _self call ["_sanitizeTaskForceId", [_taskForceId]];
             
             private _taskForces = _self get "taskForces";
-            if (!(_taskForceId in keys _taskForces)) exitWith {
-                []
+            private _taskForceData = [];
+            
+            // Try both original and sanitized IDs
+            if (_originalId in keys _taskForces) then {
+                _taskForceData = _taskForces get _originalId;
+            } else {
+                if (_sanitizedId in keys _taskForces) then {
+                    _taskForceData = _taskForces get _sanitizedId;
+                } else {
+                    // Check global backup if not found in local hashmap
+                    if (!isNil "FLO_Global_TaskForces") then {
+                        if (_originalId in keys FLO_Global_TaskForces) then {
+                            _taskForceData = FLO_Global_TaskForces get _originalId;
+                        } else {
+                            if (_sanitizedId in keys FLO_Global_TaskForces) then {
+                                _taskForceData = FLO_Global_TaskForces get _sanitizedId;
+                            };
+                        };
+                    };
+                };
             };
             
-            _taskForces get _taskForceId
+            // Return the group if requested and available
+            if (_returnGroup && count _taskForceData > 15) then {
+                _taskForceData select 15
+            } else {
+                _taskForceData
+            };
         }],
         
         // Strengthen a deployed defensive line
@@ -913,13 +994,31 @@ if (isNil "FLO_TaskForce_System") then {
             };
             
             // Create a fortification Task Force to strengthen the line
-            _self call ["createTaskForce", ["", "fortification", "squad", ""]];
+            _self call ["createTaskForce", ["", "fortification", "squad", "", ""]];
             
             // Deploy the Task Force at the position
             _self call ["deployTaskForce", [_taskForceId, _position, true]];
             
             diag_log format ["[FLO][TaskForce] Reinforced defensive line at %1", _position];
             true
+        }],
+        
+        // Utility function to sanitize task force IDs
+        ["_sanitizeTaskForceId", {
+            params ["_taskForceId"];
+            private _sanitizedId = _taskForceId;
+            
+            // Check if the ID contains coordinates (using square bracket as indicator)
+            if (_taskForceId find "[" > 0) then {
+                // Extract main parts of the ID
+                private _parts = _taskForceId splitString "_";
+                if (count _parts >= 3) then {
+                    // Keep the prefix and number, replace the coordinates part
+                    _sanitizedId = format ["%1_OutpMark_%2", _parts#0, _parts#(count _parts - 1)];
+                };
+            };
+            
+            _sanitizedId
         }]
     ];
     
@@ -942,7 +1041,8 @@ switch (_mode) do {
             ["_baseMarker", "", [""]],
             ["_taskForceType", "infantry", [""]],
             ["_taskForceSize", "squad", [""]],
-            ["_targetMarker", "", [""]]
+            ["_targetMarker", "", [""]],
+            ["_providedTaskForceId", "", [""]]
         ];
         
         private _self = FLO_TaskForce_System;
@@ -953,7 +1053,7 @@ switch (_mode) do {
             diag_log "[FLO][TaskForce] Created new taskForces hashmap";
         };
         
-        _result = _self call ["createTaskForce", [_baseMarker, _taskForceType, _taskForceSize, _targetMarker]];
+        _result = _self call ["createTaskForce", [_baseMarker, _taskForceType, _taskForceSize, _targetMarker, _providedTaskForceId]];
     };
     
     // Update all Task Force positions and statuses
@@ -964,10 +1064,13 @@ switch (_mode) do {
     
     // Get information about a specific Task Force
     case "getTaskForce": {
-        _params params [["_taskForceId", "", [""]]];
+        _params params [
+            ["_taskForceId", "", [""]],
+            ["_returnGroup", false, [false]]
+        ];
         
         private _self = FLO_TaskForce_System;
-        _result = _self call ["getTaskForce", [_taskForceId]];
+        _result = _self call ["getTaskForce", [_taskForceId, _returnGroup]];
     };
     
     // Deploy a Task Force at a specific position
@@ -980,6 +1083,13 @@ switch (_mode) do {
         
         private _self = FLO_TaskForce_System;
         _result = _self call ["deployTaskForce", [_taskForceId, _position, _defensive]];
+        
+        // Log whether we got a group back (for debugging)
+        if (_result isEqualType grpNull) then {
+            diag_log format ["[FLO][TaskForce] deployTaskForce returned group %1", _result];
+        } else {
+            diag_log format ["[FLO][TaskForce] deployTaskForce returned unexpected result type (%1) for task force ID: %2", typeName _result, _taskForceId];
+        };
     };
 };
 

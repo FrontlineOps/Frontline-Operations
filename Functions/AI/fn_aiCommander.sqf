@@ -23,7 +23,7 @@ params [["_operationMode", "DEFEND", [""]]];
 // Initialize variables
 private _hasSpecialOps = false;
 private _lastCommanderUpdate = diag_tickTime;
-private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
+private _commanderUpdateInterval = 150; // 2.5 minutes between strategy updates
 private _specialOpsUpdateInterval = 900; // 15 minutes between special ops deployments
 private _lastSpecialOpsTime = diag_tickTime - 600; // Start with a delay
 private _currentThreatLevel = 0;
@@ -62,7 +62,7 @@ private _aiCommander = createHashMapObject [[
                     _self set ["_taskForceStrengthFactor", 1.2]; // Balanced approach
                 };
             };
-        };
+        }
     }],
     
     ["_assessThreat", {
@@ -153,7 +153,13 @@ private _aiCommander = createHashMapObject [[
                     _taskForceSize = _taskForceSize max 8 min 40; // Ensure reasonable size limits
                     
                     // Generate a unique task force ID
-                    private _taskForceID = format ["TF_ATTACK_%1_%2", _sourceOutpost, floor(random 1000)];
+                    private _sanitizedOutpost = _sourceOutpost;
+                    // Check if the outpost ID contains coordinates (has square brackets)
+                    if (_sourceOutpost find "[" > 0) then {
+                        // Extract just the base name without coordinates
+                        _sanitizedOutpost = "OutpMark" + (str floor random 100000);
+                    };
+                    private _taskForceID = format ["TF_ATTACK_%1_%2", _sanitizedOutpost, floor(random 1000)];
                     
                     // Define unit composition for offensive operations
                     private _unitTypes = East_Units + East_Units_Officers;
@@ -162,12 +168,31 @@ private _aiCommander = createHashMapObject [[
                     private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                     
                     if (count _units > 0) then {
-                        // Deploy offensive task force with the pulled units
-                        private _taskForceGroup = [_sourceOutpost, getMarkerPos _targetObj, "ATTACK", _taskForceStrengthFactor, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
-                        ["AI Commander", 3, format["Deploying offensive task force from %1 to %2 with %3 units", _sourceOutpost, _targetObj, count _units]] call FLO_fnc_log;
-                        
-                        // Assign attack actions to the task force
-                        _self call ["_assignTaskForceActions", [_taskForceGroup, getMarkerPos _targetObj, "ATTACK"]];
+                        // Create the task force in the system first
+                        private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                        if (_createResult != "") then {
+                            // Use the returned task force ID for deployment
+                            private _systemTaskForceID = _createResult;
+                            // Deploy offensive task force with the pulled units
+                            private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _targetObj, false]] call FLO_fnc_TaskForceSystem;
+                            ["AI Commander", 3, format["Deploying offensive task force from %1 to %2 with %3 units", _sourceOutpost, _targetObj, count _units]] call FLO_fnc_log;
+                            
+                            // Assign attack actions to the task force
+                            if (_taskForceGroup isEqualType grpNull && {isNull _taskForceGroup}) then {
+                                // Group wasn't returned directly, try to get it from task force data
+                                private _deployedGroup = ["getTaskForce", [_systemTaskForceID, true]] call FLO_fnc_TaskForceSystem;
+                                
+                                if (_deployedGroup isEqualType grpNull && {!isNull _deployedGroup}) then {
+                                    _self call ["_assignTaskForceActions", [_deployedGroup, getMarkerPos _targetObj, "ATTACK"]];
+                                } else {
+                                    ["AI Commander", 3, format["Could not find deployed group for task force ID: %1", _systemTaskForceID]] call FLO_fnc_log;
+                                };
+                            } else {
+                                _self call ["_assignTaskForceActions", [_taskForceGroup, getMarkerPos _targetObj, "ATTACK"]];
+                            };
+                        } else {
+                            ["AI Commander", 3, format["Failed to create task force in system for offensive task force from %1", _sourceOutpost]] call FLO_fnc_log;
+                        };
                     } else {
                         ["AI Commander", 3, format["Failed to pull units from garrison at %1 for offensive task force", _sourceOutpost]] call FLO_fnc_log;
                     };
@@ -195,7 +220,13 @@ private _aiCommander = createHashMapObject [[
                         _taskForceSize = _taskForceSize max 6 min 30; // Ensure reasonable size limits
                         
                         // Generate a unique task force ID
-                        private _taskForceID = format ["TF_DEFEND_%1_%2", _sourceOutpost, floor(random 1000)];
+                        private _sanitizedOutpost = _sourceOutpost;
+                        // Check if the outpost ID contains coordinates (has square brackets)
+                        if (_sourceOutpost find "[" > 0) then {
+                            // Extract just the base name without coordinates
+                            _sanitizedOutpost = "OutpMark" + (str floor random 100000);
+                        };
+                        private _taskForceID = format ["TF_DEFEND_%1_%2", _sanitizedOutpost, floor(random 1000)];
                         
                         // Define unit composition for defensive operations - use array with AT specialists
                         // For defensive operations, prioritize units good for defense
@@ -216,12 +247,31 @@ private _aiCommander = createHashMapObject [[
                         private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                         
                         if (count _units > 0) then {
-                            // Deploy defensive task force with the pulled units
-                            private _taskForceGroup = [_sourceOutpost, getMarkerPos _targetOutpost, "DEFEND", _taskForceStrengthFactor, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
-                            ["AI Commander", 3, format["Reinforcing %1 with defensive task force from %2 with %3 units", _targetOutpost, _sourceOutpost, count _units]] call FLO_fnc_log;
-                            
-                            // Assign defend actions to the task force
-                            _self call ["_assignTaskForceActions", [_taskForceGroup, getMarkerPos _targetOutpost, "DEFEND"]];
+                            // Create the task force in the system first
+                            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                            if (_createResult != "") then {
+                                // Use the returned task force ID for deployment
+                                private _systemTaskForceID = _createResult;
+                                // Deploy defensive task force with the pulled units
+                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _targetOutpost, false]] call FLO_fnc_TaskForceSystem;
+                                ["AI Commander", 3, format["Reinforcing %1 with defensive task force from %2 with %3 units", _targetOutpost, _sourceOutpost, count _units]] call FLO_fnc_log;
+                                
+                                // Assign defend actions to the task force
+                                if (_taskForceGroup isEqualType grpNull && {isNull _taskForceGroup}) then {
+                                    // Group wasn't returned directly, try to get it from task force data
+                                    private _deployedGroup = ["getTaskForce", [_systemTaskForceID, true]] call FLO_fnc_TaskForceSystem;
+                                    
+                                    if (_deployedGroup isEqualType grpNull && {!isNull _deployedGroup}) then {
+                                        _self call ["_assignTaskForceActions", [_deployedGroup, getMarkerPos _targetOutpost, "DEFEND"]];
+                                    } else {
+                                        ["AI Commander", 3, format["Could not find deployed group for task force ID: %1", _systemTaskForceID]] call FLO_fnc_log;
+                                    };
+                                } else {
+                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getMarkerPos _targetOutpost, "DEFEND"]];
+                                };
+                            } else {
+                                ["AI Commander", 3, format["Failed to create task force in system for defensive task force from %1", _sourceOutpost]] call FLO_fnc_log;
+                            };
                         } else {
                             ["AI Commander", 3, format["Failed to pull units from garrison at %1 for defensive task force", _sourceOutpost]] call FLO_fnc_log;
                         };
@@ -245,7 +295,13 @@ private _aiCommander = createHashMapObject [[
                         _taskForceSize = _taskForceSize max 4 min 16; // Smaller patrol groups
                         
                         // Generate a unique task force ID
-                        private _taskForceID = format ["TF_PATROL_%1_%2", _sourceOutpost, floor(random 1000)];
+                        private _sanitizedOutpost = _sourceOutpost;
+                        // Check if the outpost ID contains coordinates (has square brackets)
+                        if (_sourceOutpost find "[" > 0) then {
+                            // Extract just the base name without coordinates
+                            _sanitizedOutpost = "OutpMark" + (str floor random 100000);
+                        };
+                        private _taskForceID = format ["TF_PATROL_%1_%2", _sanitizedOutpost, floor(random 1000)];
                         
                         // Define unit composition for patrol operations
                         private _unitTypes = East_Units;
@@ -254,12 +310,31 @@ private _aiCommander = createHashMapObject [[
                         private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                         
                         if (count _units > 0) then {
-                            // Deploy patrol task force with the pulled units
-                            private _taskForceGroup = [_sourceOutpost, getPos _targetRoad, "PATROL", _taskForceStrengthFactor * 0.7, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
-                            ["AI Commander", 3, format["Deploying patrol from %1 with %2 units", _sourceOutpost, count _units]] call FLO_fnc_log;
-                            
-                            // Assign patrol actions to the task force
-                            _self call ["_assignTaskForceActions", [_taskForceGroup, getPos _targetRoad, "PATROL"]];
+                            // Create the task force in the system first
+                            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                            if (_createResult != "") then {
+                                // Use the returned task force ID for deployment
+                                private _systemTaskForceID = _createResult;
+                                // Deploy patrol task force with the pulled units
+                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getPos _targetRoad, false]] call FLO_fnc_TaskForceSystem;
+                                ["AI Commander", 3, format["Deploying patrol from %1 with %2 units", _sourceOutpost, count _units]] call FLO_fnc_log;
+                                
+                                // Assign patrol actions to the task force
+                                if (_taskForceGroup isEqualType grpNull && {isNull _taskForceGroup}) then {
+                                    // Group wasn't returned directly, try to get it from task force data
+                                    private _deployedGroup = ["getTaskForce", [_systemTaskForceID, true]] call FLO_fnc_TaskForceSystem;
+                                    
+                                    if (_deployedGroup isEqualType grpNull && {!isNull _deployedGroup}) then {
+                                        _self call ["_assignTaskForceActions", [_deployedGroup, getPos _targetRoad, "PATROL"]];
+                                    } else {
+                                        ["AI Commander", 3, format["Could not find deployed group for task force ID: %1", _systemTaskForceID]] call FLO_fnc_log;
+                                    };
+                                } else {
+                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getPos _targetRoad, "PATROL"]];
+                                };
+                            } else {
+                                ["AI Commander", 3, format["Failed to create task force in system for patrol task force from %1", _sourceOutpost]] call FLO_fnc_log;
+                            };
                         } else {
                             ["AI Commander", 3, format["Failed to pull units from garrison at %1 for patrol task force", _sourceOutpost]] call FLO_fnc_log;
                         };
@@ -281,7 +356,13 @@ private _aiCommander = createHashMapObject [[
                         _taskForceSize = _taskForceSize max 5 min 20; // Balanced skirmish size
                         
                         // Generate a unique task force ID
-                        private _taskForceID = format ["TF_SKIRMISH_%1_%2", _sourceOutpost, floor(random 1000)];
+                        private _sanitizedOutpost = _sourceOutpost;
+                        // Check if the outpost ID contains coordinates (has square brackets)
+                        if (_sourceOutpost find "[" > 0) then {
+                            // Extract just the base name without coordinates
+                            _sanitizedOutpost = "OutpMark" + (str floor random 100000);
+                        };
+                        private _taskForceID = format ["TF_SKIRMISH_%1_%2", _sanitizedOutpost, floor(random 1000)];
                         
                         // Define unit composition for skirmish operations
                         private _unitTypes = East_Units + East_Units_Officers;
@@ -290,12 +371,31 @@ private _aiCommander = createHashMapObject [[
                         private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                         
                         if (count _units > 0) then {
-                            // Deploy skirmish task force with the pulled units
-                            private _taskForceGroup = [_sourceOutpost, getMarkerPos _targetPos, "SKIRMISH", _taskForceStrengthFactor * 0.8, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
-                            ["AI Commander", 3, format["Deploying skirmish force from %1 to %2 with %3 units", _sourceOutpost, _targetPos, count _units]] call FLO_fnc_log;
-                            
-                            // Assign skirmish actions to the task force
-                            _self call ["_assignTaskForceActions", [_taskForceGroup, getMarkerPos _targetPos, "SKIRMISH"]];
+                            // Create the task force in the system first
+                            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                            if (_createResult != "") then {
+                                // Use the returned task force ID for deployment
+                                private _systemTaskForceID = _createResult;
+                                // Deploy skirmish task force with the pulled units
+                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _targetPos, false]] call FLO_fnc_TaskForceSystem;
+                                ["AI Commander", 3, format["Deploying skirmish force from %1 to %2 with %3 units", _sourceOutpost, _targetPos, count _units]] call FLO_fnc_log;
+                                
+                                // Assign skirmish actions to the task force
+                                if (_taskForceGroup isEqualType grpNull && {isNull _taskForceGroup}) then {
+                                    // Group wasn't returned directly, try to get it from task force data
+                                    private _deployedGroup = ["getTaskForce", [_systemTaskForceID, true]] call FLO_fnc_TaskForceSystem;
+                                    
+                                    if (_deployedGroup isEqualType grpNull && {!isNull _deployedGroup}) then {
+                                        _self call ["_assignTaskForceActions", [_deployedGroup, getMarkerPos _targetPos, "SKIRMISH"]];
+                                    } else {
+                                        ["AI Commander", 3, format["Could not find deployed group for task force ID: %1", _systemTaskForceID]] call FLO_fnc_log;
+                                    };
+                                } else {
+                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getMarkerPos _targetPos, "SKIRMISH"]];
+                                };
+                            } else {
+                                ["AI Commander", 3, format["Failed to create task force in system for skirmish task force from %1", _sourceOutpost]] call FLO_fnc_log;
+                            };
                         } else {
                             ["AI Commander", 3, format["Failed to pull units from garrison at %1 for skirmish task force", _sourceOutpost]] call FLO_fnc_log;
                         };
@@ -422,7 +522,13 @@ private _aiCommander = createHashMapObject [[
         _taskForceSize = _taskForceSize max 6 min 30; // Ensure reasonable size limits
         
         // Generate a unique task force ID
-        private _taskForceID = format ["TF_FIELDATTACK_%1_%2", _sourceOutpost, floor(random 1000)];
+        private _sanitizedOutpost = _sourceOutpost;
+        // Check if the outpost ID contains coordinates (has square brackets)
+        if (_sourceOutpost find "[" > 0) then {
+            // Extract just the base name without coordinates
+            _sanitizedOutpost = "OutpMark" + (str floor random 100000);
+        };
+        private _taskForceID = format ["TF_FIELDATTACK_%1_%2", _sanitizedOutpost, floor(random 1000)];
         
         // Define unit composition for field attack operations - combat-focused with specialists
         // For field attacks, we want combat specialists and heavy firepower
@@ -443,11 +549,30 @@ private _aiCommander = createHashMapObject [[
         private _units = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
         
         if (count _units > 0) then {
-            // Deploy attack force with pulled units
-            private _taskForceGroup = [_sourceOutpost, _position, "ATTACK", _attackStrength, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
-            
-            // Assign attack actions to the task force
-            _self call ["_assignTaskForceActions", [_taskForceGroup, _position, "ATTACK"]];
+            // Create the task force in the system first
+            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+            if (_createResult != "") then {
+                // Use the returned task force ID for deployment
+                private _systemTaskForceID = _createResult;
+                // Deploy attack force with pulled units
+                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, _position, false]] call FLO_fnc_TaskForceSystem;
+                
+                // Assign attack actions to the task force
+                if (_taskForceGroup isEqualType grpNull && {isNull _taskForceGroup}) then {
+                    // Group wasn't returned directly, try to get it from task force data
+                    private _deployedGroup = ["getTaskForce", [_systemTaskForceID, true]] call FLO_fnc_TaskForceSystem;
+                    
+                    if (_deployedGroup isEqualType grpNull && {!isNull _deployedGroup}) then {
+                        _self call ["_assignTaskForceActions", [_deployedGroup, _position, "ATTACK"]];
+                    } else {
+                        ["AI Commander", 3, format["Could not find deployed group for task force ID: %1", _systemTaskForceID]] call FLO_fnc_log;
+                    };
+                } else {
+                    _self call ["_assignTaskForceActions", [_taskForceGroup, _position, "ATTACK"]];
+                };
+            } else {
+                ["AI Commander", 3, format["Failed to create task force in system for field attack from %1", _sourceOutpost]] call FLO_fnc_log;
+            };
             
             // Create a temporary marker for the target location (for debugging and visual reference)
             private _markerName = format ["blufor_detected_%1_%2", floor random 1000, floor diag_tickTime];
@@ -606,48 +731,130 @@ private _aiCommander = createHashMapObject [[
         params ["_taskForceGroup", "_targetPosition", "_operationType"];
         
         // Ensure we have a valid group
-        if (isNull _taskForceGroup) exitWith {
-            ["AI Commander", 3, "Cannot assign actions to null group"] call FLO_fnc_log;
+        if (!(_taskForceGroup isEqualType grpNull) || {isNull _taskForceGroup}) exitWith {
+            ["AI Commander", 3, "Cannot assign actions to null or invalid group"] call FLO_fnc_log;
             false
         };
         
-        // Assign the appropriate action based on the operation type
+        // Determine enemy types at target position for vehicle selection
+        private _enemyTypes = [];
+        private _nearEntities = _targetPosition nearEntities ["Man", 500];
+        private _bluforUnits = _nearEntities select {side _x == west && !(captive _x)};
+        
+        // Log number of enemies detected
+        private _enemyCount = count _bluforUnits;
+        ["AI Commander", 3, format["Detected %1 BLUFOR units near target position", _enemyCount]] call FLO_fnc_log;
+        
+        // Detect enemy types
+        private _armor = false;
+        private _air = false;
+        private _vehicles = false;
+        
+        {
+            if (vehicle _x != _x) then {
+                private _veh = vehicle _x;
+                _vehicles = true;
+                
+                if (_veh isKindOf "Tank" || _veh isKindOf "Wheeled_APC") then {
+                    _armor = true;
+                };
+                
+                if (_veh isKindOf "Air") then {
+                    _air = true;
+                };
+            };
+        } forEach _bluforUnits;
+        
+        // Add detected enemy types
+        if (_enemyCount > 0) then {
+            _enemyTypes pushBack "MAN";
+        };
+        
+        if (_vehicles) then {
+            _enemyTypes pushBack "CAR";
+        };
+        
+        if (_armor) then {
+            _enemyTypes pushBack "ARMOR";
+        };
+        
+        if (_air) then {
+            _enemyTypes pushBack "AIR";
+        };
+        
+        // Get task force ID for vehicle assignment
+        private _taskForceID = groupId _taskForceGroup;
+        if (_taskForceID == "") then {
+            _taskForceID = format ["TF_%1_%2", _operationType, floor(random 1000)];
+            _taskForceGroup setGroupIdGlobal [_taskForceID];
+        };
+        
+        // Find source outpost (extract from task force ID if possible)
+        private _sourceOutpost = "";
+        if (_taskForceID find "_" > 0) then {
+            private _parts = _taskForceID splitString "_";
+            if (count _parts > 2) then {
+                _sourceOutpost = _parts select 2;
+            };
+        };
+        
+        // If we couldn't find the source outpost, use the first available one
+        if (_sourceOutpost == "") then {
+            private _outposts = keys (_self get "_outpostStatus");
+            if (count _outposts > 0) then {
+                _sourceOutpost = _outposts select 0;
+            };
+        };
+        
+        // Get vehicle support based on operation type and enemy presence
+        private _vehicleGroups = [];
+        if (_sourceOutpost != "") then {
+            _vehicleGroups = _self call ["_getVehicleForTaskForce", [_operationType, _sourceOutpost, _targetPosition, _enemyTypes, _taskForceID]];
+        };
+        
+        // Assign the appropriate action based on the operation type for infantry
         switch (_operationType) do {
             case "ATTACK": {
                 [_taskForceGroup, _targetPosition] call FLO_fnc_attackArea;
-                ["AI Commander", 3, format["Assigned attack actions to group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
+                ["AI Commander", 3, format["Assigned attack actions to infantry group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
             };
             
             case "DEFEND": {
                 [_taskForceGroup, _targetPosition] call FLO_fnc_defendArea;
-                ["AI Commander", 3, format["Assigned defend actions to group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
+                ["AI Commander", 3, format["Assigned defend actions to infantry group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
             };
             
             case "PATROL": {
                 [_taskForceGroup, _targetPosition] call FLO_fnc_patrolArea;
-                ["AI Commander", 3, format["Assigned patrol actions to group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
+                ["AI Commander", 3, format["Assigned patrol actions to infantry group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
             };
             
             case "SKIRMISH": {
                 // For skirmish, we alternate between attack and recon based on the situation
                 if (random 1 > 0.5) then {
                     [_taskForceGroup, _targetPosition] call FLO_fnc_attackArea;
-                    ["AI Commander", 3, format["Assigned attack actions (skirmish) to group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
+                    ["AI Commander", 3, format["Assigned attack actions (skirmish) to infantry group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
                 } else {
                     [_taskForceGroup, _targetPosition] call FLO_fnc_reconArea;
-                    ["AI Commander", 3, format["Assigned recon actions (skirmish) to group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
+                    ["AI Commander", 3, format["Assigned recon actions (skirmish) to infantry group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
                 };
             };
             
             case "RECON": {
                 [_taskForceGroup, _targetPosition] call FLO_fnc_reconArea;
-                ["AI Commander", 3, format["Assigned recon actions to group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
+                ["AI Commander", 3, format["Assigned recon actions to infantry group %1 at position %2", _taskForceGroup, _targetPosition]] call FLO_fnc_log;
             };
             
             default {
                 ["AI Commander", 3, format["Unknown operation type %1 for group %2", _operationType, _taskForceGroup]] call FLO_fnc_log;
                 false
             };
+        };
+        
+        // If we have vehicle groups, assign appropriate vehicle actions
+        if (count _vehicleGroups > 0) then {
+            _self call ["_assignVehicleActions", [_vehicleGroups, _taskForceGroup, _targetPosition, _operationType]];
+            ["AI Commander", 3, format["Assigned %1 vehicle groups to support task force %2", count _vehicleGroups, _taskForceID]] call FLO_fnc_log;
         };
         
         true
@@ -761,7 +968,13 @@ private _aiCommander = createHashMapObject [[
                 _taskForceSize = _taskForceSize max 6 min 30; // Ensure reasonable size limits
                 
                 // Generate a unique task force ID
-                private _taskForceID = format ["TF_RECON_RESPONSE_%1_%2", _sourceOutpost, floor(random 1000)];
+                private _sanitizedOutpost = _sourceOutpost;
+                // Check if the outpost ID contains coordinates (has square brackets)
+                if (_sourceOutpost find "[" > 0) then {
+                    // Extract just the base name without coordinates
+                    _sanitizedOutpost = "OutpMark" + (str floor random 100000);
+                };
+                private _taskForceID = format ["TF_RECON_RESPONSE_%1_%2", _sanitizedOutpost, floor(random 1000)];
                 
                 // Choose appropriate unit types based on enemy composition
                 private _unitTypes = [];
@@ -786,7 +999,7 @@ private _aiCommander = createHashMapObject [[
                 
                 if (count _units > 0) then {
                     // Deploy task force with the pulled units
-                    private _taskForceGroup = [_sourceOutpost, _position, _responseType, _taskForceStrengthFactor, _units, _taskForceID] call FLO_fnc_TaskForceSystem;
+                    private _taskForceGroup = ["deployTaskForce", [_taskForceID, _position, false]] call FLO_fnc_TaskForceSystem;
                     
                     // Assign appropriate actions based on response type
                     _self call ["_assignTaskForceActions", [_taskForceGroup, _position, _responseType]];
@@ -815,12 +1028,411 @@ private _aiCommander = createHashMapObject [[
         } else {
             ["AI Commander", 3, "Recon report noted but no response required"] call FLO_fnc_log;
         };
+    }],
+    
+    ["_evaluateVehicleCapabilities", {
+        params ["_vehicle"];
+        
+        // Create empty hashmaps for storing vehicle data
+        private _magTypes = createHashMap;
+        private _weaponCapabilities = [0,1,2,3,4,5,6,7,8,9] createHashMapFromArray [[],[],[],[],[],[],[],[],[],[]];
+        
+        // Analyze all magazines in all turrets
+        private _magazines = magazinesAllTurrets [_vehicle, true];
+        {
+            private _key = [_x select 1, _x select 0];
+            if (_key in _magTypes) then {
+                private _data = _magTypes get _key; 
+                _data set [1, (_data select 1) + (_x select 2)]
+            } else {
+                private _name = _x select 0;
+                private _turret = _x select 1;
+                private _ammoCount = _x select 2;
+                private _usageFlags = [0,0,0,0,0,0,0,0,0,0];
+                private _ammo = getText (configFile >> "CfgMagazines" >> _name >> "ammo");
+                private _ufValue = getNumber (configFile >> "CfgAmmo" >> _ammo >> "aiAmmoUsageFlags");
+                
+                if (_ufValue > 0) then {
+                    _usageFlags = [_ufValue, 10] call BIS_fnc_decodeFlags2;
+                } else {
+                    if (_ammo isKindOf "GrenadeBase") then {_usageFlags = [0,0,0,0,0,0,1,0,0,0]};
+                    if (_ammo isKindOf "RocketBase") then {_usageFlags = [0,0,0,0,0,0,0,1,0,1]};
+                };
+                
+                private _cost = getNumber (configFile >> "CfgAmmo" >> _ammo >> "cost");
+                private _hit = getNumber (configFile >> "CfgAmmo" >> _ammo >> "hit");
+                
+                _magTypes set [_key, [_name, _ammoCount, _usageFlags, _hit]];
+            };
+        } forEach _magazines;
+        
+        // Analyze all turrets and weapons
+        private _turrets = [[-1]] + allTurrets _vehicle;
+        {
+            private _weapons = _vehicle weaponsTurret _x;
+            private _turret = _x;
+            
+            {
+                private _weaponName = _x;
+                private _minRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "minRange");
+                private _midRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "midRange");
+                private _maxRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "maxRange");
+                private _minRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "minRangeProbab");
+                private _midRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "midRangeProbab");
+                private _maxRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "maxRangeProbab");
+                private _wMags = getArray (configFile >> "CfgWeapons" >> _x >> "magazines");
+                
+                {
+                    private _key = [_turret, _x];
+                    if (_key in _magTypes) then {
+                        private _mag = _magTypes get _key;
+                        for "_i" from 0 to 9 do {
+                            if ((_mag select 2) select _i == 1) then {
+                                private _prev = _weaponCapabilities get _i;
+                                private _new = [_weaponName, _turret, _minRange, _midRange, _maxRange, _minRangeProbab, _midRangeProbab, _maxRangeProbab];
+                                _new append _mag;
+                                _new set [12, (_mag#1) * (_mag#3)];
+                                _prev pushBack _new;
+                            };
+                        };
+                    };
+                } forEach _wMags;
+            } forEach _weapons;
+        } forEach _turrets;
+        
+        // Store capabilities in vehicle variables
+        _vehicle setVariable ["FLO_weaponCapabilities", _weaponCapabilities];
+        _vehicle setVariable ["FLO_magTypes", _magTypes];
+        
+        // Return the weapon capabilities
+        _weaponCapabilities
+    }],
+    
+    ["_getVehicleForTaskForce", {
+        params ["_operationType", "_sourceOutpost", "_targetPosition", "_enemyTypes", "_taskForceID"];
+        
+        // Determine what kind of vehicle support is needed based on operation type and enemy composition
+        private _vehicleTypes = [];
+        private _vehiclePriority = [];
+        private _vehiclesNeeded = 1; // Default to 1 vehicle
+        
+        // Enemy composition affects vehicle selection
+        private _hasEnemyArmor = "ARMOR" in _enemyTypes;
+        private _hasEnemyAir = "AIR" in _enemyTypes || "HELI" in _enemyTypes || "PLANE" in _enemyTypes;
+        private _hasEnemyInfantry = "MAN" in _enemyTypes;
+        
+        // Adjust vehicle selection based on operation type and enemy composition
+        switch (_operationType) do {
+            case "ATTACK": {
+                if (_hasEnemyArmor) then {
+                    _vehicleTypes = ["Tank", "APC"];
+                    // Use the faction-specific vehicles from the global arrays
+                    _vehiclePriority = East_Ground_Vehicles_Heavy;
+                } else {
+                    if (_hasEnemyAir) then {
+                        _vehicleTypes = ["AA"];
+                        // Find AA-specific vehicles
+                        _vehiclePriority = East_Ground_Vehicles_Heavy select {
+                            _x find "AA" > -1 || _x find "_AA_" > -1 || _x find "aa_" > -1
+                        };
+                        if (count _vehiclePriority == 0) then {
+                            _vehiclePriority = East_Ground_Vehicles_Heavy;
+                        };
+                    } else {
+                        // Default to IFVs and APCs for infantry support
+                        _vehicleTypes = ["APC", "MRAP"];
+                        _vehiclePriority = East_Ground_Vehicles_Light;
+                    };
+                };
+                
+                // For large attacks, consider multiple vehicles
+                if (random 1 > 0.7) then {
+                    _vehiclesNeeded = 2;
+                };
+            };
+            
+            case "DEFEND": {
+                if (_hasEnemyArmor) then {
+                    _vehicleTypes = ["Tank", "APC"];
+                    _vehiclePriority = East_Ground_Vehicles_Heavy;
+                } else {
+                    // Default to more defensive vehicles
+                    _vehicleTypes = ["APC", "MRAP"];
+                    _vehiclePriority = East_Ground_Vehicles_Light;
+                };
+            };
+            
+            case "PATROL": {
+                // Lighter, faster vehicles for patrol
+                _vehicleTypes = ["MRAP", "Car"];
+                _vehiclePriority = East_Ground_Vehicles_Light + East_Ground_Vehicles_Ambient;
+            };
+            
+            case "SKIRMISH": {
+                if (_hasEnemyArmor) then {
+                    _vehicleTypes = ["Tank", "APC"];
+                    _vehiclePriority = East_Ground_Vehicles_Heavy;
+                } else {
+                    // Mix of vehicle types for skirmish
+                    _vehicleTypes = ["APC", "MRAP"];
+                    _vehiclePriority = East_Ground_Vehicles_Light;
+                };
+            };
+            
+            case "RECON": {
+                // Lighter, faster vehicles for recon
+                _vehicleTypes = ["MRAP", "Car"];
+                // Prefer unarmed or lightly armed vehicles for stealth
+                _vehiclePriority = East_Ground_Vehicles_Ambient + East_Ground_Transport;
+            };
+        };
+        
+        // Attempt to pull vehicles from the garrison
+        private _vehicleGroups = [];
+        private _vehiclesAcquired = 0;
+        
+        // If we have a garrison integration system, try to get vehicles from there
+        if (!isNil "FLO_TaskForce_Garrison_Integration") then {
+            for "_i" from 1 to _vehiclesNeeded do {
+                if (_vehiclesAcquired >= _vehiclesNeeded) exitWith {};
+                
+                // Try to pull a vehicle of the preferred type
+                private _vehicle = FLO_TaskForce_Garrison_Integration call ["_pullVehicleFromGarrison", [_sourceOutpost, _vehicleTypes, _vehiclePriority, _taskForceID]];
+                
+                if (!isNull _vehicle) then {
+                    // Create a group for the vehicle crew
+                    private _vehGroup = createGroup [east, true];
+                    
+                    // Create crew for the vehicle
+                    private _crew = [];
+                    private _crewType = selectRandom East_Units; // Use faction crew
+                    
+                    // If it's a helicopter or plane, use pilot type
+                    if (_vehicle isKindOf "Air") then {
+                        if (count East_Units_Officers > 0) then {
+                            _crewType = selectRandom East_Units_Officers;
+                        };
+                    };
+                    
+                    // Create crew members based on vehicle type
+                    {
+                        private _unit = _vehGroup createUnit [_crewType, getPos _vehicle, [], 0, "NONE"];
+                        _crew pushBack _unit;
+                    } forEach (fullCrew [_vehicle, "", true]);
+                    
+                    // Assign crew to vehicle
+                    {
+                        _x params ["_role", "_turretPath"];
+                        if (_forEachIndex < count _crew) then {
+                            private _unit = _crew select _forEachIndex;
+                            _unit moveInAny _vehicle;
+                        };
+                    } forEach (fullCrew [_vehicle, "", true]);
+                    
+                    // Evaluate the vehicle's capabilities
+                    _self call ["_evaluateVehicleCapabilities", [_vehicle]];
+                    
+                    // Set group ID for the vehicle group
+                    _vehGroup setGroupIdGlobal [format ["%1_VEH_%2", _taskForceID, _vehiclesAcquired]];
+                    
+                    // Add the vehicle group to our return array
+                    _vehicleGroups pushBack [_vehGroup, _vehicle];
+                    _vehiclesAcquired = _vehiclesAcquired + 1;
+                    
+                    ["AI Commander", 3, format["Acquired vehicle %1 for task force %2", typeOf _vehicle, _taskForceID]] call FLO_fnc_log;
+                };
+            };
+        } else {
+            // If no garrison integration system, try to spawn vehicles
+            // This is a fallback method if garrison integration isn't available
+            for "_i" from 1 to _vehiclesNeeded do {
+                if (_vehiclesAcquired >= _vehiclesNeeded) exitWith {};
+                
+                // Get a position to spawn the vehicle
+                private _spawnPos = [getMarkerPos _sourceOutpost, 50, 200, 7, 0, 0.2, 0] call BIS_fnc_findSafePos;
+                
+                // Select a vehicle type to spawn from the faction arrays
+                private _vehType = "";
+                if (count _vehiclePriority > 0) then {
+                    _vehType = selectRandom _vehiclePriority;
+                } else {
+                    // Determine the appropriate array based on vehicle types needed
+                    private _possibleVehicles = [];
+                    if ("Tank" in _vehicleTypes || "APC" in _vehicleTypes) then {
+                        _possibleVehicles = East_Ground_Vehicles_Heavy;
+                    } else {
+                        if ("MRAP" in _vehicleTypes) then {
+                            _possibleVehicles = East_Ground_Vehicles_Light;
+                        } else {
+                            if ("Car" in _vehicleTypes) then {
+                                _possibleVehicles = East_Ground_Vehicles_Ambient + East_Ground_Transport;
+                            } else {
+                                _possibleVehicles = East_Ground_Vehicles_Light; // Default fallback
+                            };
+                        };
+                    };
+                    
+                    if (count _possibleVehicles > 0) then {
+                        _vehType = selectRandom _possibleVehicles;
+                    } else {
+                        _vehType = selectRandom East_Ground_Vehicles_Light; // Final fallback
+                    };
+                };
+                
+                // Create the vehicle
+                private _vehicle = createVehicle [_vehType, _spawnPos, [], 0, "NONE"];
+                
+                // Create a group for the vehicle crew
+                private _vehGroup = createGroup [east, true];
+                
+                // Create crew for the vehicle
+                private _crew = [];
+                private _crewType = selectRandom East_Units; // Use faction crew
+                
+                // If it's a helicopter or plane, use pilot type or officer
+                if (_vehicle isKindOf "Air") then {
+                    if (count East_Units_Officers > 0) then {
+                        _crewType = selectRandom East_Units_Officers;
+                    };
+                };
+                
+                // Create crew members based on vehicle type
+                {
+                    private _unit = _vehGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+                    _crew pushBack _unit;
+                } forEach (fullCrew [_vehicle, "", true]);
+                
+                // Assign crew to vehicle
+                {
+                    _x params ["_role", "_turretPath"];
+                    if (_forEachIndex < count _crew) then {
+                        private _unit = _crew select _forEachIndex;
+                        _unit moveInAny _vehicle;
+                    };
+                } forEach (fullCrew [_vehicle, "", true]);
+                
+                // Evaluate the vehicle's capabilities
+                _self call ["_evaluateVehicleCapabilities", [_vehicle]];
+                
+                // Set group ID for the vehicle group
+                _vehGroup setGroupIdGlobal [format ["%1_VEH_%2", _taskForceID, _vehiclesAcquired]];
+                
+                // Add the vehicle group to our return array
+                _vehicleGroups pushBack [_vehGroup, _vehicle];
+                _vehiclesAcquired = _vehiclesAcquired + 1;
+                
+                ["AI Commander", 3, format["Created vehicle %1 for task force %2", _vehType, _taskForceID]] call FLO_fnc_log;
+            };
+        };
+        
+        // Return the array of vehicle groups
+        _vehicleGroups
+    }],
+    
+    ["_assignVehicleActions", {
+        params ["_vehicleGroups", "_infantryGroup", "_targetPosition", "_operationType"];
+        
+        // Ensure we have valid groups
+        if (count _vehicleGroups == 0 || isNull _infantryGroup) exitWith {
+            ["AI Commander", 3, "Cannot assign vehicle actions - no vehicles or invalid infantry group"] call FLO_fnc_log;
+            false
+        };
+        
+        // Get the infantry group leader for position reference
+        private _infantryLeader = leader _infantryGroup;
+        
+        // Assign actions based on the operation type
+        {
+            _x params ["_vehicleGroup", "_vehicle"];
+            
+            // Set initial formation and combat settings
+            _vehicleGroup setBehaviour "AWARE";
+            _vehicleGroup setCombatMode "YELLOW";
+            
+            switch (_operationType) do {
+                case "ATTACK": {
+                    // For attack, assign vehicles to support the infantry attack
+                    [_vehicleGroup, _targetPosition, "ATTACK", _infantryGroup] call FLO_fnc_attackArea;
+                    
+                    // Handle different vehicle types appropriately
+                    if (_vehicle isKindOf "Tank") then {
+                        // Tanks lead the assault
+                        _vehicleGroup setFormation "WEDGE";
+                        _vehicleGroup setSpeedMode "NORMAL";
+                    } else {
+                        if (_vehicle isKindOf "APC") then {
+                            // APCs provide close support
+                            _vehicleGroup setFormation "LINE";
+                            _vehicleGroup setSpeedMode "LIMITED";
+                        } else {
+                            // MRAPs and other vehicles provide perimeter security
+                            _vehicleGroup setFormation "DIAMOND";
+                            _vehicleGroup setSpeedMode "NORMAL";
+                        };
+                    };
+                };
+                
+                case "DEFEND": {
+                    // For defense, position vehicles at strategic points
+                    [_vehicleGroup, _targetPosition, "DEFEND", _infantryGroup] call FLO_fnc_defendArea;
+                    
+                    // Position different vehicle types appropriately
+                    if (_vehicle isKindOf "Tank") then {
+                        // Tanks cover the most likely approach
+                        _vehicleGroup setFormation "LINE";
+                        _vehicleGroup setSpeedMode "LIMITED";
+                    } else {
+                        // Other vehicles provide perimeter security
+                        _vehicleGroup setFormation "DIAMOND";
+                        _vehicleGroup setSpeedMode "LIMITED";
+                    };
+                };
+                
+                case "PATROL": {
+                    // For patrol, vehicles provide mobile reconnaissance
+                    [_vehicleGroup, _targetPosition, "PATROL", _infantryGroup] call FLO_fnc_patrolArea;
+                    _vehicleGroup setFormation "COLUMN";
+                    _vehicleGroup setSpeedMode "NORMAL";
+                };
+                
+                case "SKIRMISH": {
+                    // For skirmish, vehicles provide fire support
+                    if (random 1 > 0.5) then {
+                        [_vehicleGroup, _targetPosition, "ATTACK", _infantryGroup] call FLO_fnc_attackArea;
+                    } else {
+                        [_vehicleGroup, _targetPosition, "PATROL", _infantryGroup] call FLO_fnc_patrolArea;
+                    };
+                    
+                    _vehicleGroup setFormation "WEDGE";
+                    _vehicleGroup setSpeedMode "NORMAL";
+                };
+                
+                case "RECON": {
+                    // For recon, vehicles provide overwatch
+                    [_vehicleGroup, _targetPosition, "RECON", _infantryGroup] call FLO_fnc_reconArea;
+                    _vehicleGroup setFormation "DIAMOND";
+                    _vehicleGroup setSpeedMode "LIMITED";
+                    _vehicleGroup setBehaviour "STEALTH";
+                };
+                
+                default {
+                    // Default behavior
+                    [_vehicleGroup, _targetPosition] call FLO_fnc_patrolArea;
+                };
+            };
+            
+            ["AI Commander", 3, format["Assigned %1 actions to vehicle group %2 supporting infantry group %3", 
+                _operationType, _vehicleGroup, _infantryGroup]] call FLO_fnc_log;
+            
+        } forEach _vehicleGroups;
+        
+        true
     }]
 ]];
 
 // Initialize Commander
-_aiCommander set ["_commanderUpdateInterval", 300]; // 5 minutes
-_aiCommander set ["_specialOpsUpdateInterval", 900]; // 15 minutes
+_aiCommander set ["_commanderUpdateInterval", 150];
+_aiCommander set ["_specialOpsUpdateInterval", 900];
 _aiCommander set ["_threatThreshold", 0.6];
 
 // Start the commander loop

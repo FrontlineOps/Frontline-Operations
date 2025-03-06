@@ -23,6 +23,12 @@ Author:
 
 params ["_target"];
 
+// Validate target parameter
+if (isNil "_target" || {!(_target isEqualType objNull)}) exitWith {
+    diag_log format ["[FLO][AI Commander][ERROR] getTargetType called with invalid target: %1", _target];
+    "UNKNOWN" // Return a default type for invalid inputs
+};
+
 // Default type
 private _type = "MAN";
 

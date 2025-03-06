@@ -815,6 +815,150 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
             _pulledUnits
         }],
         
+        ["_pullVehicleFromGarrison", {
+            params ["_marker", "_vehicleTypes", "_vehiclePriority", "_taskForceID"];
+            
+            // Log the request
+            ["AI Commander", 3, format["Task force %1 is requesting vehicle from garrison at %2 (types: %3, priority: %4)", 
+                _taskForceID, _marker, _vehicleTypes, _vehiclePriority]] call FLO_fnc_log;
+            
+            // Check if we have a garrison vehicle at the outpost
+            private _garrisonVehicles = [];
+            
+            // Try to get vehicles from the garrison
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                _garrisonVehicles = _garrisonData param [1, []];
+            };
+            
+            // If we have vehicles in the garrison, try to use one of them
+            if (count _garrisonVehicles > 0) then {
+                // Find a vehicle that matches the requested types
+                private _matchingVehicles = [];
+                
+                {
+                    private _veh = _x;
+                    
+                    // Check if vehicle is of the requested type
+                    private _isRequestedType = false;
+                    
+                    {
+                        private _vehType = _x;
+                        
+                        // Check if vehicle matches this type
+                        switch (_vehType) do {
+                            case "Tank": { if (_veh isKindOf "Tank") then { _isRequestedType = true; }; };
+                            case "APC": { if (_veh isKindOf "Wheeled_APC" || _veh isKindOf "Tracked_APC") then { _isRequestedType = true; }; };
+                            case "MRAP": { if (_veh isKindOf "MRAP_01_base_F" || _veh isKindOf "MRAP_02_base_F" || _veh isKindOf "MRAP_03_base_F") then { _isRequestedType = true; }; };
+                            case "Car": { if (_veh isKindOf "Car" && !(_veh isKindOf "Wheeled_APC") && !(_veh isKindOf "MRAP_01_base_F") && !(_veh isKindOf "MRAP_02_base_F") && !(_veh isKindOf "MRAP_03_base_F")) then { _isRequestedType = true; }; };
+                            case "AA": { if (_veh isKindOf "APC_Tracked_02_AA_F" || _veh isKindOf "LT_01_AA_base_F" || _veh isKindOf "Truck_02_aa_base_F") then { _isRequestedType = true; }; };
+                        };
+                    } forEach _vehicleTypes;
+                    
+                    // If it's a requested type or a priority type, add it to matching vehicles
+                    if (_isRequestedType || (typeOf _veh) in _vehiclePriority) then {
+                        _matchingVehicles pushBack _veh;
+                    };
+                } forEach _garrisonVehicles;
+                
+                // If we found matching vehicles, use one
+                if (count _matchingVehicles > 0) then {
+                    // Prioritize vehicles that match the priority list
+                    private _priorityMatches = _matchingVehicles select { (typeOf _x) in _vehiclePriority };
+                    private _selectedVehicle = objNull;
+                    
+                    if (count _priorityMatches > 0) then {
+                        _selectedVehicle = selectRandom _priorityMatches;
+                    } else {
+                        _selectedVehicle = selectRandom _matchingVehicles;
+                    };
+                    
+                    // Remove the vehicle from the garrison
+                    private _index = _garrisonVehicles find _selectedVehicle;
+                    if (_index != -1) then {
+                        _garrisonVehicles deleteAt _index;
+                        _garrisonData set [1, _garrisonVehicles];
+                        _garrisons set [_marker, _garrisonData];
+                        
+                        // Set a variable to identify that the vehicle was pulled from garrison
+                        _selectedVehicle setVariable ["FLO_TaskForce_FromGarrison", [_marker, _taskForceID], true];
+                        
+                        ["AI Commander", 3, format["Pulled vehicle %1 from garrison at %2 for task force %3", typeOf _selectedVehicle, _marker, _taskForceID]] call FLO_fnc_log;
+                        
+                        // Set the result to the selected vehicle
+                        _result = _selectedVehicle;
+                        
+                        // No need for exitWith - we'll just break out of the loop using true
+                        break;
+                    };
+                };
+            };
+            
+            // If we couldn't find a matching vehicle in the garrison, try to spawn one from available types
+            // Use the faction vehicle arrays from CUSTOM_ENEMY_FACTION.sqf
+            private _vehicleClassname = "";
+            private _spawnPos = getMarkerPos _marker;
+            
+            // Convert our generic vehicle types to the appropriate global arrays
+            private _candidateVehicles = [];
+            
+            // Check which types we need
+            {
+                switch (_x) do {
+                    case "Tank": { 
+                        _candidateVehicles append East_Ground_Vehicles_Heavy; 
+                    };
+                    case "APC": { 
+                        _candidateVehicles append East_Ground_Vehicles_Heavy; 
+                        _candidateVehicles append East_Ground_Vehicles_Light select { _x isKindOf "APC" }; 
+                    };
+                    case "MRAP": { 
+                        _candidateVehicles append East_Ground_Vehicles_Light select { _x isKindOf "MRAP_01_base_F" || _x isKindOf "MRAP_02_base_F" || _x isKindOf "MRAP_03_base_F" }; 
+                    };
+                    case "Car": { 
+                        _candidateVehicles append East_Ground_Vehicles_Ambient; 
+                        _candidateVehicles append East_Ground_Transport select { _x isKindOf "Car" }; 
+                    };
+                    case "AA": { 
+                        // Find AA vehicles in the arrays
+                        _candidateVehicles append (East_Ground_Vehicles_Heavy + East_Ground_Vehicles_Light) select { 
+                            _x find "AA" > -1 || _x find "_AA_" > -1 || _x find "aa_" > -1 
+                        }; 
+                    };
+                };
+            } forEach _vehicleTypes;
+            
+            // If we have priority vehicles that exist in our faction, use those
+            private _priorityExists = _vehiclePriority select { _x in _candidateVehicles };
+            
+            if (count _priorityExists > 0) then {
+                _vehicleClassname = selectRandom _priorityExists;
+            } else {
+                // Otherwise select from candidates or use fallback
+                if (count _candidateVehicles > 0) then {
+                    _vehicleClassname = selectRandom _candidateVehicles;
+                } else {
+                    // Ultimate fallback - use ambient vehicles
+                    _vehicleClassname = selectRandom East_Ground_Vehicles_Ambient;
+                };
+            };
+            
+            // Find a suitable spawn position
+            _spawnPos = [_spawnPos, 50, 200, 7, 0, 0.2, 0] call BIS_fnc_findSafePos;
+            
+            // Create the vehicle
+            private _vehicle = createVehicle [_vehicleClassname, _spawnPos, [], 0, "NONE"];
+            
+            // Set a variable to identify this vehicle is for a task force
+            _vehicle setVariable ["FLO_TaskForce_FromGarrison", [_marker, _taskForceID], true];
+            
+            ["AI Commander", 3, format["Created vehicle %1 for task force %2 from outpost %3", _vehicleClassname, _taskForceID, _marker]] call FLO_fnc_log;
+            
+            // Return the vehicle
+            _vehicle
+        }],
+        
         ["_returnUnitsToGarrison", {
             params [ "_taskForceID", "_marker", "_units"];
             
@@ -876,6 +1020,97 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
             ["AI Commander", 3, format["Returned %1 units to garrison at %2 from Task Force %3", count _aliveUnits, _targetOutpost, _taskForceID]] call FLO_fnc_log;
             
             true
+        }],
+        
+        ["_returnVehicleToGarrison", {
+            params ["_vehicle", "_targetOutpost"];
+            
+            // Verify the vehicle is valid
+            if (isNull _vehicle) exitWith {
+                ["AI Commander", 3, "Cannot return null vehicle to garrison"] call FLO_fnc_log;
+                false
+            };
+            
+            // Check if the vehicle has the garrison source variable
+            private _sourceData = _vehicle getVariable ["FLO_TaskForce_FromGarrison", []];
+            private _sourceOutpost = "";
+            private _taskForceID = "";
+            
+            if (count _sourceData == 2) then {
+                _sourceOutpost = _sourceData select 0;
+                _taskForceID = _sourceData select 1;
+            };
+            
+            // Use the specified target outpost, or the source outpost if target is empty
+            if (_targetOutpost == "") then {
+                _targetOutpost = _sourceOutpost;
+            };
+            
+            // If we still don't have a target outpost, find the nearest one
+            if (_targetOutpost == "") then {
+                private _garrisons = FLO_Garrison_Manager get "garrisons";
+                private _outposts = keys _garrisons;
+                
+                if (count _outposts > 0) then {
+                    private _nearestOutpost = "";
+                    private _nearestDistance = 100000;
+                    
+                    {
+                        private _outpostPos = getMarkerPos _x;
+                        private _distance = _outpostPos distance (getPos _vehicle);
+                        
+                        if (_distance < _nearestDistance) then {
+                            _nearestDistance = _distance;
+                            _nearestOutpost = _x;
+                        };
+                    } forEach _outposts;
+                    
+                    if (_nearestOutpost != "") then {
+                        _targetOutpost = _nearestOutpost;
+                    };
+                };
+            };
+            
+            // If we have a valid target outpost, add the vehicle to that garrison
+            if (_targetOutpost != "") then {
+                private _garrisons = FLO_Garrison_Manager get "garrisons";
+                
+                if (_targetOutpost in keys _garrisons) then {
+                    private _garrisonData = _garrisons get _targetOutpost;
+                    private _garrisonVehicles = _garrisonData param [1, []];
+                    
+                    // Check if the vehicle is still operational
+                    if (alive _vehicle && canMove _vehicle) then {
+                        // Add the vehicle to the garrison's vehicle array
+                        _garrisonVehicles pushBack _vehicle;
+                        _garrisonData set [1, _garrisonVehicles];
+                        _garrisons set [_targetOutpost, _garrisonData];
+                        
+                        // Clear task force variable
+                        _vehicle setVariable ["FLO_TaskForce_FromGarrison", nil, true];
+                        
+                        ["AI Commander", 3, format["Added vehicle %1 to garrison at %2", typeOf _vehicle, _targetOutpost]] call FLO_fnc_log;
+                        _result = true;
+                    } else {
+                        // The vehicle is damaged or destroyed, log this
+                        ["AI Commander", 3, format["Vehicle %1 cannot be returned to garrison - damaged or destroyed", typeOf _vehicle]] call FLO_fnc_log;
+                        
+                        // Delete the vehicle if it's destroyed
+                        if (!alive _vehicle) then {
+                            deleteVehicle _vehicle;
+                        };
+                        
+                        _result = false;
+                    };
+                } else {
+                    ["AI Commander", 3, format["Cannot return vehicle to non-existent outpost %1", _targetOutpost]] call FLO_fnc_log;
+                    _result = false;
+                };
+            } else {
+                ["AI Commander", 3, "Cannot return vehicle - no valid target outpost found"] call FLO_fnc_log;
+                _result = false;
+            };
+            _result
         }],
         
         ["_addUnitsToGarrison", {
@@ -958,6 +1193,103 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
             ["AI Commander", 3, format["Added %1 units to garrison at %2", _count, _marker]] call FLO_fnc_log;
             
             true
+        }],
+        
+        ["_addVehicleToGarrison", {
+            params ["_marker", "_vehicleType", "_count", "_position"];
+            
+            // Ensure the marker exists and is appropriate
+            if (_marker == "" || {markerColor _marker != "colorOPFOR" && markerColor _marker != "ColorEAST"}) exitWith {
+                ["AI Commander", 3, format["Invalid marker for garrison vehicle: %1", _marker]] call FLO_fnc_log;
+                false
+            };
+            
+            // If position not provided, use marker position
+            if (isNil "_position") then {
+                _position = getMarkerPos _marker;
+            };
+            
+            // Ensure vehicle type is valid
+            if (_vehicleType == "") exitWith {
+                ["AI Commander", 3, "No vehicle type specified for garrison addition"] call FLO_fnc_log;
+                false
+            };
+            
+            // Access garrison data
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
+            
+            // Check if this garrison exists already
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                private _garrisonVehicles = _garrisonData param [1, []];
+                
+                // Find a safe position near the outpost
+                private _safePos = [_position, 10, 100, 5, 0, 0.2, 0] call BIS_fnc_findSafePos;
+                
+                // Create the vehicles
+                for "_i" from 1 to _count do {
+                    private _veh = createVehicle [_vehicleType, _safePos, [], 20, "NONE"];
+                    
+                    // Set variable to indicate this is a garrison vehicle
+                    _veh setVariable ["FLO_GarrisonVehicle", true, true];
+                    
+                    // Add to garrison vehicles
+                    _garrisonVehicles pushBack _veh;
+                };
+                
+                // Update garrison data
+                _garrisonData set [1, _garrisonVehicles];
+                _garrisons set [_marker, _garrisonData];
+                
+                ["AI Commander", 3, format["Added %1 %2 vehicle(s) to garrison at %3", _count, _vehicleType, _marker]] call FLO_fnc_log;
+                
+                true
+            } else {
+                // If the garrison doesn't exist yet, we'll create it with just vehicles
+                private _garrisonVehicles = [];
+                
+                // Find a safe position near the outpost
+                private _safePos = [_position, 10, 100, 5, 0, 0.2, 0] call BIS_fnc_findSafePos;
+                
+                // Create the vehicles
+                for "_i" from 1 to _count do {
+                    private _veh = createVehicle [_vehicleType, _safePos, [], 20, "NONE"];
+                    
+                    // Set variable to indicate this is a garrison vehicle
+                    _veh setVariable ["FLO_GarrisonVehicle", true, true];
+                    
+                    // Add to garrison vehicles
+                    _garrisonVehicles pushBack _veh;
+                };
+                
+                // Create empty group for the garrison
+                private _garrisonGroup = createGroup [east, true];
+                
+                // Create garrison data structure
+                private _markerType = markerType _marker;
+                private _sizeLimits = FLO_Garrison_Manager call ["getSizeLimits", [_markerType]];
+                private _baseSize = _sizeLimits select 0;
+                private _maxSize = _sizeLimits select 1;
+                
+                private _newGarrisonData = [
+                    [],             // Units (empty initially)
+                    _garrisonVehicles, // Vehicles
+                    _garrisonGroup, // Group
+                    time,           // Timestamp
+                    0,              // Virtual strength
+                    0,              // Queued reinforcements
+                    _baseSize,      // Base size
+                    _maxSize,       // Max size
+                    0               // Current size (0 units initially)
+                ];
+                
+                // Add to garrisons hashmap
+                _garrisons set [_marker, _newGarrisonData];
+                
+                ["AI Commander", 3, format["Created new garrison at %1 with %2 %3 vehicle(s)", _marker, _count, _vehicleType]] call FLO_fnc_log;
+                
+                true
+            };
         }],
         
         // Add a method to analyze vehicle weapon capabilities in detail
