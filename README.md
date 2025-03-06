@@ -135,7 +135,7 @@ select Faction, Starting Aggression levels, Starting Civilian Relations, and Mor
 - Adjust dynamic spawning ranges in garrison manager
 
 ### Arsenal Customization
-The mission uses a restricted arsenal system (`fn_restrictedArsenal.sqf`) that works with both ACE and vanilla arsenals. You can customize available equipment in the following categories:
+The mission uses a restricted arsenal system (`fn_restrictedArsenal.sqf`) that works with both ACE and vanilla arsenals. It can be disabled & enabled in Lobby Parameters before Mission Start. You can customize available equipment in the following categories:
 
 #### Weapons and Attachments
 ```sqf
