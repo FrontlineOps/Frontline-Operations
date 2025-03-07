@@ -266,75 +266,70 @@ if (isNil "FLO_Logistics_Network") then {
                 };
             } forEach _outposts;
             
-            // Calculate supply distribution based on resource availability
-            private _availableResources = ["get", []] call FLO_fnc_opforResources;
-            private _routeCount = count _supplyRoutes;
-            
-            if (_routeCount > 0 && _availableResources > 0) then {
-                // Calculate base resource allocation per route
-                private _baseAllocation = (_availableResources / 3) / _routeCount; // Use 1/3 of resources for logistics
-                private _resourcesUsed = 0;
+            // Process reinforcements for outposts with established supply routes
+            {
+                private _outpost = _x;
                 
-                // Process each route
-                {
-                    private _target = _x;
-                    private _routeData = _supplyRoutes get _target;
-                    _routeData params ["_source", "_quality", "_distance", "_timestamp"];
-                    
-                    // Calculate supply delivery based on quality and distance
-                    private _supplyAmount = _baseAllocation * _quality;
-                    
-                    // Priority multiplier for o_support and n_support
-                    private _markerType = markerType _target;
-                    if (_markerType in ["o_support", "n_support"]) then {
-                        _supplyAmount = _supplyAmount * 1.5; // 50% more supplies for priority outposts
+                // Get the garrison data for this outpost
+                private _garrisonData = [];
+                if (!isNil "FLO_Garrison_Manager") then {
+                    private _garrisons = FLO_Garrison_Manager get "garrisons";
+                    if (_outpost in keys _garrisons) then {
+                        _garrisonData = _garrisons get _outpost;
                     };
+                };
+                
+                // Only process if garrison data exists 
+                if (count _garrisonData > 0) then {
+                    private _units = _garrisonData select 0;
                     
-                    // Longer routes are more expensive
-                    if (_distance > 3000) then {
-                        _supplyAmount = _supplyAmount * 0.7;
-                    };
+                    // Check if this garrison is already activated (has units spawned)
+                    private _isActivated = count (_units select {alive _x}) > 0;
                     
-                    // Apply supply to target
-                    private _currentSupply = _supplyLevels getOrDefault [_target, 0];
-                    private _newSupply = (_currentSupply + _supplyAmount) min 100;
-                    _supplyLevels set [_target, _newSupply];
-                    
-                    // Adjust resource usage
-                    _resourcesUsed = _resourcesUsed + _supplyAmount;
-                    
-                    // Determine reinforcement threshold based on marker type
-                    private _reinforcementThreshold = 80;
-                    if (_markerType in ["o_support", "n_support"]) then {
-                        _reinforcementThreshold = 70; // Lower threshold for priority outposts
-                    };
-                    
-                    // If supply level high enough, reinforce garrison
-                    if (_newSupply >= _reinforcementThreshold) then {
-                        // Spend supply to reinforce
-                        _supplyLevels set [_target, _newSupply - 40]; // Reduce supply level after reinforcing
+                    // Only reinforce non-activated garrisons
+                    if (!_isActivated) then {
+                        // Determine reinforcement amount based on marker type
+                        private _markerType = markerType _outpost;
+                        private _reinforceAmount = 2; // Default amount
                         
-                        // Add some units to garrison based on outpost size and type
-                        private _markerSize = getMarkerSize _target;
-                        private _size = (_markerSize select 0) max (_markerSize select 1);
-                        private _reinforceAmount = round (_size / 50) max 2;
-                        
-                        // Bonus reinforcements for priority outposts
-                        if (_markerType in ["o_support", "n_support"]) then {
-                            _reinforceAmount = _reinforceAmount + 2;
+                        // Higher reinforcements for important outposts
+                        switch (_markerType) do {
+                            case "o_installation": { _reinforceAmount = 6; };
+                            case "n_installation": { _reinforceAmount = 8; };
+                            case "o_support": { _reinforceAmount = 5; };
+                            case "n_support": { _reinforceAmount = 6; };
+                            case "loc_Power": { _reinforceAmount = 4; };
+                            case "o_service": { _reinforceAmount = 3; };
+                            case "o_antiair": { _reinforceAmount = 4; };
+                            case "loc_Ruin": { _reinforceAmount = 5; };
                         };
                         
-                        // Call garrison reinforce function
-                        ["reinforce", [_target, _reinforceAmount]] call FLO_fnc_garrisonManager;
+                        // Consider distance from supply depot for reinforcement amount
+                        private _routeData = _supplyRoutes getOrDefault [_outpost, []];
+                        if (count _routeData > 0) then {
+                            private _distance = _routeData select 2;
+                            
+                            // Reduce reinforcements for distant outposts
+                            if (_distance > 3000) then {
+                                _reinforceAmount = round (_reinforceAmount * 0.7);
+                            };
+                        };
                         
-                        diag_log format ["[FLO][Logistics] Reinforcing %1 with %2 units (priority: %3)", 
-                            _target, _reinforceAmount, _markerType in ["o_support", "n_support"]];
+                        // Check available resources and only reinforce if we have enough
+                        private _availableResources = ["get", []] call FLO_fnc_opforResources;
+                        if (_availableResources >= _reinforceAmount) then {
+                            // Call garrison reinforce function
+                            ["reinforce", [_outpost, _reinforceAmount]] call FLO_fnc_garrisonManager;
+                            
+                            // Spend the resources
+                            ["spend", [_reinforceAmount]] call FLO_fnc_opforResources;
+                            
+                            diag_log format ["[FLO][Logistics] Reinforcing non-activated garrison at %1 with %2 units", 
+                                _outpost, _reinforceAmount];
+                        };
                     };
-                } forEach keys _supplyRoutes;
-                
-                // Spend the resources used
-                ["spend", [round _resourcesUsed]] call FLO_fnc_opforResources;
-            };
+                };
+            } forEach keys _supplyRoutes;
             
             // Clean up any invalid routes
             private _toDelete = [];

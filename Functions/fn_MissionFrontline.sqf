@@ -57,7 +57,6 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_calculateOperationDelay", {
-        params ["_self"];
         private _aggressionScore = _self call ["_getAggressionScore", []];
         private _operationDelay = 900;
         
@@ -69,7 +68,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_calculateOffensiveProbability", {
-        params ["_self", "_aggressionScore"];
+        params ["_aggressionScore"];
         
         // Get current players excluding headless clients
         private _headlessClients = entities "HeadlessClient_F";
@@ -93,7 +92,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_launchOffensiveOperation", {
-        params ["_self", "_aggressionScore"];
+        params ["_aggressionScore"];
         
         // Notify players that OPFOR is preparing an offensive
         ["showNotification", ["! INTELLIGENCE !", "Enemy is preparing a major offensive operation!", "warning"]] call FLO_fnc_intelSystem;
@@ -115,7 +114,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_findSuitableLocations", {
-        params ["_self", "_locationType"];
+        params ["_locationType"];
         
         // Find suitable OPFOR and BLUFOR installations
         private _opforInstallations = allMapMarkers select {
@@ -179,7 +178,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_createOutpost", {
-        params ["_self", "_validPositions"];
+        params ["_validPositions"];
         
         // Select a random position for the outpost
         private _selectedPosition = selectRandom _validPositions;
@@ -270,7 +269,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_createRoadblock", {
-        params ["_self", "_validPositions"];
+        params ["_validPositions"];
         
         // Select a random position for the roadblock
         private _selectedPosition = selectRandom _validPositions;
@@ -411,9 +410,7 @@ private _frontlineManagerDeclaration = [
         {deleteMarker _x;} forEach _assaultMarkers;
     }],
     
-    ["_executeOperation", {
-        params ["_self"];
-        
+    ["_executeOperation", { 
         // Clean up any existing bunker markers
         _self call ["_cleanupBunkerMarkers", []];
         
@@ -474,8 +471,6 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["run", {
-        params ["_self"];
-        
         // Announce system activation
         [[west,"HQ"], "Mission FrontLines System Activated ..."] remoteExec ["sideChat", 0];
         
