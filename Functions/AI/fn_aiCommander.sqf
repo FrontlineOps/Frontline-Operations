@@ -1433,13 +1433,20 @@ private _aiCommander = createHashMapObject [[
                     // Create crew for the vehicle
                     private _crew = [];
                     
-                    // Create crew members based on vehicle type with proper variety
+                    // Get full crew configuration to know what positions we need to fill
+                    private _crewPositions = fullCrew [_vehicle, "", true];
+                    
+                    // First create all the crew members
                     {
+                        // The fullCrew command returns arrays in format [unit, role, turretPath, canFire, personTurret]
+                        private _role = _x select 1; // Role is the second element
+                        private _turretPath = _x select 2; // Turret path is the third element
+                        
                         // Select appropriate crew type for each position
                         private _crewType = "";
                         
                         // If it's a helicopter or plane, use pilot type for pilot positions
-                        if (_vehicle isKindOf "Air" && (_x select 1) == "driver") then {
+                        if (_vehicle isKindOf "Air" && _role == "driver") then {
                             if (count East_Units_Officers > 0) then {
                                 _crewType = selectRandom East_Units_Officers;
                             } else {
@@ -1451,17 +1458,58 @@ private _aiCommander = createHashMapObject [[
                         };
                         
                         private _unit = _vehGroup createUnit [_crewType, getPos _vehicle, [], 0, "NONE"];
-                        _crew pushBack _unit;
-                    } forEach (fullCrew [_vehicle, "", true]);
-                    
-                    // Assign crew to vehicle
-                    {
-                        _x params ["_role", "_turretPath"];
-                        if (_forEachIndex < count _crew) then {
-                            private _unit = _crew select _forEachIndex;
-                            _unit moveInAny _vehicle;
+                        
+                        // Ensure the unit is on EAST side
+                        if (side _unit != east) then {
+                            ["AI Commander", 2, format["Crew member %1 has incorrect side %2, fixing to EAST", _unit, side _unit]] call FLO_fnc_log;
+                            
+                            // Create a new unit with the correct side
+                            private _newUnit = createGroup [east, true] createUnit [_crewType, [0,0,0], [], 0, "NONE"];
+                            deleteVehicle _unit;
+                            _unit = _newUnit;
+                            [_unit] joinSilent _vehGroup;
                         };
-                    } forEach (fullCrew [_vehicle, "", true]);
+                        
+                        _crew pushBack [_unit, _role, _turretPath];
+                    } forEach _crewPositions;
+                    
+                    // Then assign them to specific roles in the vehicle
+                    {
+                        _x params ["_unit", "_role", "_path"];
+                        
+                        // Assign to specific role instead of using moveInAny
+                        switch (_role) do {
+                            case "driver": {
+                                _unit assignAsDriver _vehicle;
+                                _unit moveInDriver _vehicle;
+                            };
+                            case "gunner": {
+                                _unit assignAsGunner _vehicle;
+                                _unit moveInGunner _vehicle;
+                            };
+                            case "commander": {
+                                _unit assignAsCommander _vehicle;
+                                _unit moveInCommander _vehicle;
+                            };
+                            case "turret": {
+                                _unit assignAsTurret [_vehicle, _path];
+                                _unit moveInTurret [_vehicle, _path];
+                            };
+                            case "cargo": {
+                                _unit assignAsCargo _vehicle;
+                                _unit moveInCargo _vehicle;
+                            };
+                            default {
+                                _unit moveInAny _vehicle;
+                            };
+                        };
+                        
+                        // Double-check that the unit maintained EAST side after moving in
+                        if (side _unit != east) then {
+                            ["AI Commander", 2, format["Crew member %1 lost EAST side after vehicle assignment, fixing", _unit]] call FLO_fnc_log;
+                            [_unit] joinSilent _vehGroup;
+                        };
+                    } forEach _crew;
                     
                     // Evaluate the vehicle's capabilities
                     _self call ["_evaluateVehicleCapabilities", [_vehicle]];
@@ -1522,13 +1570,20 @@ private _aiCommander = createHashMapObject [[
                 // Create crew for the vehicle
                 private _crew = [];
                 
-                // Create crew members based on vehicle type with proper variety
+                // Get full crew configuration to know what positions we need to fill
+                private _crewPositions = fullCrew [_vehicle, "", true];
+                
+                // First create all the crew members
                 {
+                    // The fullCrew command returns arrays in format [unit, role, turretPath, canFire, personTurret]
+                    private _role = _x select 1; // Role is the second element
+                    private _turretPath = _x select 2; // Turret path is the third element
+                    
                     // Select appropriate crew type for each position
                     private _crewType = "";
                     
                     // If it's a helicopter or plane, use pilot type for pilot positions
-                    if (_vehicle isKindOf "Air" && (_x select 1) == "driver") then {
+                    if (_vehicle isKindOf "Air" && _role == "driver") then {
                         if (count East_Units_Officers > 0) then {
                             _crewType = selectRandom East_Units_Officers;
                         } else {
@@ -1539,18 +1594,59 @@ private _aiCommander = createHashMapObject [[
                         _crewType = selectRandom East_Units;
                     };
                     
-                    private _unit = _vehGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
-                    _crew pushBack _unit;
-                } forEach (fullCrew [_vehicle, "", true]);
-                
-                // Assign crew to vehicle
-                {
-                    _x params ["_role", "_turretPath"];
-                    if (_forEachIndex < count _crew) then {
-                        private _unit = _crew select _forEachIndex;
-                        _unit moveInAny _vehicle;
+                    private _unit = _vehGroup createUnit [_crewType, getPos _vehicle, [], 0, "NONE"];
+                    
+                    // Ensure the unit is on EAST side
+                    if (side _unit != east) then {
+                        ["AI Commander", 2, format["Crew member %1 has incorrect side %2, fixing to EAST", _unit, side _unit]] call FLO_fnc_log;
+                        
+                        // Create a new unit with the correct side
+                        private _newUnit = createGroup [east, true] createUnit [_crewType, [0,0,0], [], 0, "NONE"];
+                        deleteVehicle _unit;
+                        _unit = _newUnit;
+                        [_unit] joinSilent _vehGroup;
                     };
-                } forEach (fullCrew [_vehicle, "", true]);
+                    
+                    _crew pushBack [_unit, _role, _turretPath];
+                } forEach _crewPositions;
+                
+                // Then assign them to specific roles in the vehicle
+                {
+                    _x params ["_unit", "_role", "_path"];
+                    
+                    // Assign to specific role instead of using moveInAny
+                    switch (_role) do {
+                        case "driver": {
+                            _unit assignAsDriver _vehicle;
+                            _unit moveInDriver _vehicle;
+                        };
+                        case "gunner": {
+                            _unit assignAsGunner _vehicle;
+                            _unit moveInGunner _vehicle;
+                        };
+                        case "commander": {
+                            _unit assignAsCommander _vehicle;
+                            _unit moveInCommander _vehicle;
+                        };
+                        case "turret": {
+                            _unit assignAsTurret [_vehicle, _path];
+                            _unit moveInTurret [_vehicle, _path];
+                        };
+                        case "cargo": {
+                            _unit assignAsCargo _vehicle;
+                            _unit moveInCargo _vehicle;
+                        };
+                        default {
+                            _unit moveInAny _vehicle;
+                        };
+                    };
+                    
+                    // Double-check that the unit maintained EAST side after moving in
+                    if (side _unit != east) then {
+                        ["AI Commander", 2, format["Crew member %1 lost EAST side after vehicle assignment, fixing", _unit]] call FLO_fnc_log;
+                        [_unit] joinSilent _vehGroup;
+                    };
+                } forEach _crew;
                 
                 // Evaluate the vehicle's capabilities
                 _self call ["_evaluateVehicleCapabilities", [_vehicle]];
