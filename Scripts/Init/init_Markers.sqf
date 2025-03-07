@@ -7,7 +7,7 @@ FLO_MarkerPositions = [];
 FLO_MinMarkerDistance = 100;
 
 // Array of marker types that don't need distance validation
-FLO_ExcludedMarkerTypes = ["o_installation", "n_installation", "o_inf"];
+FLO_ExcludedMarkerTypes = ["o_installation", "n_installation", "o_inf", "o_service"];
 
 // Function to check if a position is too close to coastline
 FLO_fnc_isNearCoast = {
