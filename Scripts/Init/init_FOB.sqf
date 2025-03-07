@@ -64,39 +64,39 @@ false
 ]] remoteExec ["addAction",0,true];
 
 
-_TFOBH = createTrigger ["EmptyDetector", getPos FOBB];  
-_TFOBH setTriggerArea [5, 5, 0, false, 7];  
-_TFOBH setTriggerTimeout [3, 3, 3, true];
-_TFOBH setTriggerActivation ["NONE", "PRESENT", true];  
-_TFOBH setTriggerStatements [  
-"count (nearestobjects [thisTrigger,East_Units_Officers,5]) > 0 ",  
-"  
-_HOS = nearestobjects [thisTrigger,East_Units_Officers,10] select 0 ;    
-deleteVehicle _HOS ; 
-	[] execVM 'Scripts\INTL.sqf';
-	[125, 'ENEMY OFFICER'] call FLO_fnc_notification ;
-[125] call FLO_fnc_addReward;
+// _TFOBH = createTrigger ["EmptyDetector", getPos FOBB];  
+// _TFOBH setTriggerArea [5, 5, 0, false, 7];  
+// _TFOBH setTriggerTimeout [3, 3, 3, true];
+// _TFOBH setTriggerActivation ["NONE", "PRESENT", true];  
+// _TFOBH setTriggerStatements [  
+// "count (nearestobjects [thisTrigger,East_Units_Officers,5]) > 0 ",  
+// "  
+// _HOS = nearestobjects [thisTrigger,East_Units_Officers,10] select 0 ;    
+// deleteVehicle _HOS ; 
+// 	[] execVM 'Scripts\INTL.sqf';
+// 	[125, 'ENEMY OFFICER'] call FLO_fnc_notification ;
+// [125] call FLO_fnc_addReward;
 
- ", ""]; 
+//  ", ""]; 
 
-_TFOBH attachTo [FOBB, [0, 0, 0]]; 
+// _TFOBH attachTo [FOBB, [0, 0, 0]]; 
 
-_TFOBH = createTrigger ["EmptyDetector", getPos FOBB];  
-_TFOBH setTriggerArea [5, 5, 0, false, 7];  
-_TFOBH setTriggerTimeout [3, 3, 3, true];
-_TFOBH setTriggerActivation ["NONE", "PRESENT", true];  
-_TFOBH setTriggerStatements [  
-"count (nearestobjects [thisTrigger,East_Units,5]) > 0 ",  
-"  
-_HOS = nearestobjects [thisTrigger,East_Units,10] select 0 ;    
-deleteVehicle _HOS ; 
-[25] call FLO_fnc_addReward;
-[] execVM 'Scripts\INTL.sqf';
-	[25, 'ENEMY SOLDIER'] call FLO_fnc_notification ;
+// _TFOBH = createTrigger ["EmptyDetector", getPos FOBB];  
+// _TFOBH setTriggerArea [5, 5, 0, false, 7];  
+// _TFOBH setTriggerTimeout [3, 3, 3, true];
+// _TFOBH setTriggerActivation ["NONE", "PRESENT", true];  
+// _TFOBH setTriggerStatements [  
+// "count (nearestobjects [thisTrigger,East_Units,5]) > 0 ",  
+// "  
+// _HOS = nearestobjects [thisTrigger,East_Units,10] select 0 ;    
+// deleteVehicle _HOS ; 
+// [25] call FLO_fnc_addReward;
+// [] execVM 'Scripts\INTL.sqf';
+// 	[25, 'ENEMY SOLDIER'] call FLO_fnc_notification ;
 
- ", ""]; 
+//  ", ""]; 
 
-_TFOBH attachTo [FOBB, [0, 0, 0]]; 
+// _TFOBH attachTo [FOBB, [0, 0, 0]]; 
 
 
 _CIVTRG = createTrigger ["EmptyDetector", getPos FOBB];  
