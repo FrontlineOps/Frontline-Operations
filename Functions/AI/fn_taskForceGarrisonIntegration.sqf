@@ -426,393 +426,161 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
         ["_checkGarrisonStrength", {
             params ["_marker"];
             
-            // First try to get actual units
-            private _garrisonUnits = _self call ["_getGarrisonUnits", [_marker]];
-            private _actualStrength = count _garrisonUnits;
+            // Get garrison data directly from the garrison manager
+            private _strength = 0;
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
             
-            // If no units are found, check the intended size from the garrison data structure
-            if (_actualStrength == 0) then {
-                private _garrisons = FLO_Garrison_Manager get "garrisons";
-                if (_marker in keys _garrisons) then {
-                    private _garrisonData = _garrisons get _marker;
-                    // Get the intended size which is now at index 6
-                    _actualStrength = _garrisonData param [6, 0]; 
-                };
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                // Get the intended size which is now at index 6 - always use this value
+                // regardless of whether units are physically spawned or not
+                _strength = _garrisonData param [6, 0];
+                
+                // Log the garrison strength
+                ["AI Commander", 3, format["Checking garrison strength at %1: %2 units", _marker, _strength]] call FLO_fnc_log;
             };
             
-            _actualStrength
+            _strength
         }],
         
         ["_canGarrisonProvideUnits", {
-            params [ "_marker", "_count"];
+            params ["_marker", "_count"];
             
             // Get current garrison strength
             private _currentStrength = _self call ["_checkGarrisonStrength", [_marker]];
             
-            // Get minimum required garrison size
-            private _minSize = 8;  // Default minimum
+            // Get minimum required garrison size (baseline)
+            private _baseMinSize = 4;  // Default minimum
             private _markerType = markerType _marker;
             
-            // Apply different minimums based on outpost type
+            // Apply different base minimums based on outpost type
             switch (_markerType) do {
-                case "o_installation": { _minSize = 15; };
-                case "n_installation": { _minSize = 12; };
-                case "o_support": { _minSize = 8; };
-                case "n_support": { _minSize = 10; };
-                case "loc_Power": { _minSize = 6; };
-                case "o_recon": { _minSize = 2; };
-                case "o_service": { _minSize = 6; };
-                case "o_antiair": { _minSize = 8; };
-                case "loc_Ruin": { _minSize = 12; };
+                case "o_installation": { _baseMinSize = 15; };
+                case "n_installation": { _baseMinSize = 12; };
+                case "o_support": { _baseMinSize = 8; };
+                case "n_support": { _baseMinSize = 10; };
+                case "loc_Power": { _baseMinSize = 6; };
+                case "o_recon": { _baseMinSize = 2; };
+                case "o_service": { _baseMinSize = 6; };
+                case "o_antiair": { _baseMinSize = 8; };
+                case "loc_Ruin": { _baseMinSize = 12; };
+                case "BarrackMark": { _baseMinSize = 6; }; // Allow barracks to give more units
             };
             
-            // Check if garrison can provide units while maintaining minimum strength
-            _currentStrength - _count >= _minSize
+            // Calculate adjusted minimum - for larger garrisons, we can pull more units
+            // This creates a more balanced system where larger garrisons can provide more units
+            private _adjustedMin = switch (true) do {
+                case (_currentStrength >= 75): { _baseMinSize * 0.5 }; // Very large garrisons can go down to 50% of min
+                case (_currentStrength >= 50): { _baseMinSize * 0.6 }; // Large garrisons can go down to 60% of min
+                case (_currentStrength >= 30): { _baseMinSize * 0.7 }; // Medium garrisons can go down to 70% of min
+                case (_currentStrength >= 20): { _baseMinSize * 0.8 }; // Smaller garrisons can go down to 80% of min
+                default { _baseMinSize }; // Base minimum for small garrisons
+            };
+            
+            _adjustedMin = round _adjustedMin max 2; // Ensure at least 2 units remain
+            
+            // Simple check if garrison has enough units after pull
+            private _remainingAfterPull = _currentStrength - _count;
+            
+            // Log the evaluation with both base and adjusted minimums
+            ["AI Commander", 3, format["Evaluating garrison at %1: Current strength %2, Base minimum: %3, Adjusted minimum: %4, Requested: %5, Remaining: %6", 
+                _marker, _currentStrength, _baseMinSize, _adjustedMin, _count, _remainingAfterPull]] call FLO_fnc_log;
+            
+            // The garrison can provide units if the remaining count is at least the adjusted minimum required
+            _remainingAfterPull >= _adjustedMin
         }],
         
         ["_pullUnitsFromGarrison", {
-            params [ "_marker", "_desiredTypes", "_count", "_taskForceID"];
+            params ["_marker", "_unitTypes", "_requestedCount", "_taskForceId"];
             
-            // Get current garrison strength for logging
-            private _garrisonStrength = _self call ["_checkGarrisonStrength", [_marker]];
+            // Track this marker as the source for this task force
+            private _taskForceSourceMap = _self get "_taskForceSourceMap";
+            _taskForceSourceMap set [_taskForceId, _marker];
             
-            // Check if garrison can provide the requested number of units
-            if !(_self call ["_canGarrisonProvideUnits", [_marker, _count]]) exitWith {
-                ["AI Commander", 3, format["Task force %1 has insufficient outpost garrison strength (%2) to pull %3 units (adjusted garrison strength)", _taskForceID, _garrisonStrength, _count]] call FLO_fnc_log;
-                []
-            };
+            // Track contributions from this garrison
+            private _garrisonContributions = _self get "_garrisonContributions";
+            private _currentContribution = _garrisonContributions getOrDefault [_marker, 0];
             
-            // Register task force source
-            _self call ["_registerTaskForceSource", [_taskForceID, _marker]];
+            ["TaskForce-Garrison", 3, format["Attempting to pull %1 units from garrison at %2 for task force %3", 
+                _requestedCount, _marker, _taskForceId]] call FLO_fnc_log;
             
-            // Get available unit types in the garrison
-            private _availableTypes = _self call ["_getAvailableGarrisonUnitTypes", [_marker]];
-            private _garrisonUnits = _self call ["_getGarrisonUnits", [_marker]];
+            // Initialize result variable
+            private _extractedCount = 0;
             
-            // Check if the garrison exists but has no physical units (non-activated garrison)
-            if (count _garrisonUnits == 0) then {
-                private _garrisons = FLO_Garrison_Manager get "garrisons";
-                if (_marker in keys _garrisons) then {
-                    private _garrisonData = _garrisons get _marker;
-                    private _intendedSize = _garrisonData param [6, 0];
+            // Verify parameters before calling
+            if (_marker == "" || _requestedCount <= 0 || _taskForceId == "") then {
+                ["TaskForce-Garrison", 1, format["Invalid parameters: marker=%1, count=%2, taskForceId=%3",
+                    _marker, _requestedCount, _taskForceId]] call FLO_fnc_log;
+            } else {
+                // Only process if parameters are valid
+                if (!isNil "FLO_Garrison_Manager") then {
+                    // Ensure the count parameter is passed as a number
+                    _requestedCount = _requestedCount call BIS_fnc_parseNumber;
+                    if (_requestedCount <= 0) then { _requestedCount = 1; }; // Fallback if parsing fails
                     
-                    if (_intendedSize > 0) then {
-                        // Create actual units for the task force since the garrison exists but hasn't been activated
-                        ["AI Commander", 3, format["Creating %1 units for task force %2 from non-activated garrison at %3 (intended size: %4)", 
-                            _count, _taskForceID, _marker, _intendedSize]] call FLO_fnc_log;
-                            
-                        // Get marker position
-                        private _pos = getMarkerPos _marker;
-                        
-                        // Create a temporary group
-                        private _tempGroup = createGroup [east, true];
-                        
-                        // Create the requested number of units (or what's available)
-                        private _actualCount = (_intendedSize - 2) min _count; // Leave at least 2 units in garrison
-                        
-                        for "_i" from 1 to _actualCount do {
-                            private _unitType = "";
-                            
-                            // If no specified types, use available OPFOR types
-                            if (count _desiredTypes > 0) then {
-                                _unitType = selectRandom _desiredTypes;
-                            } else {
-                                _unitType = selectRandom East_Units;
-                            };
-                            
-                            // Create the unit
-                            private _unit = _tempGroup createUnit [_unitType, _pos, [], 50, "NONE"];
-                            _unit setVariable ["FLO_TaskForce_FromGarrison", [_marker, _taskForceID], true];
-                            _garrisonUnits pushBack _unit;
-                        };
-                        
-                        // Update the garrison's intended size
-                        _garrisonData set [6, _intendedSize - _actualCount];
-                        _garrisons set [_marker, _garrisonData];
-                        
-                        ["AI Commander", 3, format["Created %1 units for task force %2 and reduced garrison intended size at %3 from %4 to %5", 
-                            _actualCount, _taskForceID, _marker, _intendedSize, _intendedSize - _actualCount]] call FLO_fnc_log;
-                    };
-                };
-            };
-            
-            // Units to be transferred to the task force
-            private _pulledUnits = [];
-            private _remainingCount = _count;
-            
-            // Parse task force ID to determine mission type
-            private _missionType = "STANDARD";
-            
-            if (_taskForceID find "ATTACK" > -1) then {
-                _missionType = "ATTACK";
-            };
-            if (_taskForceID find "DEFEND" > -1) then {
-                _missionType = "DEFEND";
-            };
-            if (_taskForceID find "PATROL" > -1) then {
-                _missionType = "PATROL";
-            };
-            if (_taskForceID find "SKIRMISH" > -1) then {
-                _missionType = "SKIRMISH";
-            };
-            if (_taskForceID find "FIELDATTACK" > -1) then {
-                _missionType = "FIELDATTACK";
-            };
-            
-            // Define priorities based on mission type
-            private _unitPriorities = createHashMap;
-            
-            switch (_missionType) do {
-                case "ATTACK": {
-                    _unitPriorities = createHashMapFromArray [
-                        ["leader", 9],
-                        ["at", 8],
-                        ["hmg", 7],
-                        ["autorifle", 7],
-                        ["grenadier", 6],
-                        ["marksman", 5],
-                        ["medic", 8],
-                        ["basic", 4],
-                        ["aa", 2],
-                        ["engineer", 2],
-                        ["demo", 3]
-                    ];
-                };
-                
-                case "DEFEND": {
-                    _unitPriorities = createHashMapFromArray [
-                        ["leader", 8],
-                        ["at", 7],
-                        ["hmg", 9],
-                        ["autorifle", 9],
-                        ["grenadier", 5],
-                        ["marksman", 8],
-                        ["medic", 7],
-                        ["basic", 4],
-                        ["aa", 3],
-                        ["engineer", 2],
-                        ["demo", 3]
-                    ];
-                };
-                
-                case "PATROL": {
-                    _unitPriorities = createHashMapFromArray [
-                        ["leader", 8],
-                        ["at", 4],
-                        ["hmg", 3],
-                        ["autorifle", 6],
-                        ["grenadier", 7],
-                        ["marksman", 6],
-                        ["medic", 5],
-                        ["basic", 9],
-                        ["aa", 2],
-                        ["engineer", 1],
-                        ["demo", 1]
-                    ];
-                };
-                
-                case "SKIRMISH": {
-                    _unitPriorities = createHashMapFromArray [
-                        ["leader", 8],
-                        ["at", 5],
-                        ["hmg", 4],
-                        ["autorifle", 7],
-                        ["grenadier", 7],
-                        ["marksman", 7],
-                        ["medic", 6],
-                        ["basic", 5],
-                        ["aa", 2],
-                        ["engineer", 2],
-                        ["demo", 2]
-                    ];
-                };
-                
-                case "FIELDATTACK": {
-                    _unitPriorities = createHashMapFromArray [
-                        ["leader", 9],
-                        ["at", 7],
-                        ["hmg", 6],
-                        ["autorifle", 8],
-                        ["grenadier", 6],
-                        ["marksman", 7],
-                        ["medic", 8],
-                        ["basic", 5],
-                        ["aa", 2],
-                        ["engineer", 1],
-                        ["demo", 2]
-                    ];
-                };
-                
-                default {
-                    _unitPriorities = createHashMapFromArray [
-                        ["leader", 7],
-                        ["at", 6],
-                        ["hmg", 5],
-                        ["autorifle", 7],
-                        ["grenadier", 6],
-                        ["marksman", 5],
-                        ["medic", 7],
-                        ["basic", 5],
-                        ["aa", 3],
-                        ["engineer", 3],
-                        ["demo", 3]
-                    ];
-                };
-            };
-            
-            // Group available units by role with their types
-            private _availableByRole = createHashMap;
-            {
-                private _unit = _x;
-                private _type = typeOf _unit;
-                private _role = _self call ["_getUnitTypeRole", [_type]];
-                
-                private _roleUnits = _availableByRole getOrDefault [_role, []];
-                _roleUnits pushBack _unit;
-                _availableByRole set [_role, _roleUnits];
-            } forEach _garrisonUnits;
-            
-            // First, ensure we have leadership
-            if ("leader" in _availableByRole) then {
-                private _leaders = _availableByRole get "leader";
-                if (count _leaders > 0 && _remainingCount > 0) then {
-                    private _leader = _leaders select 0;
-                    _pulledUnits pushBack _leader;
-                    _leaders deleteAt 0;
-                    _availableByRole set ["leader", _leaders];
-                    _remainingCount = _remainingCount - 1;
+                    // Call extractUnits with clear parameter names for debugging
+                    _extractedCount = FLO_Garrison_Manager call ["extractUnits", [_marker, _requestedCount, _taskForceId]];
                     
-                    ["AI Commander", 3, format["Selected leader (%1) for task force %2", typeOf _leader, _taskForceID]] call FLO_fnc_log;
+                    // Update contribution tracking - extractedCount is already a number, no need for count
+                    _garrisonContributions set [_marker, _currentContribution + _extractedCount];
+                    
+                    ["TaskForce-Garrison", 3, format["Successfully pulled %1 units from garrison at %2 for task force %3", 
+                        _extractedCount, _marker, _taskForceId]] call FLO_fnc_log;
+                } else {
+                    ["TaskForce-Garrison", 1, "Garrison Manager not available for unit extraction"] call FLO_fnc_log;
                 };
             };
             
-            // Then ensure we have a medic if possible
-            if ("medic" in _availableByRole) then {
-                private _medics = _availableByRole get "medic";
-                if (count _medics > 0 && _remainingCount > 0) then {
-                    private _medic = _medics select 0;
-                    _pulledUnits pushBack _medic;
-                    _medics deleteAt 0;
-                    _availableByRole set ["medic", _medics];
-                    _remainingCount = _remainingCount - 1;
-                    
-                    ["AI Commander", 3, format["Selected medic (%1) for task force %2", typeOf _medic, _taskForceID]] call FLO_fnc_log;
-                };
+            // Return the extracted count
+            _extractedCount
+        }],
+        
+        ["_returnUnitsToGarrison", {
+            params ["_taskForceId", "_targetMarker", "_count"];
+            
+            // Ensure count is a number
+            if (typeName _count != "SCALAR") then {
+                _count = count _count; // In case an array of units is passed
             };
             
-            // Sort roles by priority for this mission type
-            private _sortedRoles = [];
-            {
-                _sortedRoles pushBack [_x, _unitPriorities getOrDefault [_x, 1]];
-            } forEach keys _availableByRole;
+            // Get the original source marker for this task force
+            private _taskForceSourceMap = _self get "_taskForceSourceMap";
+            private _sourceMarker = _taskForceSourceMap getOrDefault [_taskForceId, _targetMarker];
             
-            _sortedRoles = [_sortedRoles, [], {_x # 1}, "DESCEND"] call BIS_fnc_sortBy;
+            ["TaskForce-Garrison", 3, format["Returning %1 units from task force %2 to garrison at %3", 
+                _count, _taskForceId, _sourceMarker]] call FLO_fnc_log;
             
-            // Add units by priority until we reach the desired count
-            {
-                private _roleData = _x;
-                private _role = _roleData # 0;
-                private _priority = _roleData # 1;
+            // IMPROVED: Use the new returnUnits method directly from the garrison manager
+            private _returnedCount = 0;
+            if (!isNil "FLO_Garrison_Manager") then {
+                _returnedCount = FLO_Garrison_Manager call ["returnUnits", [_count, _taskForceId, _sourceMarker]];
                 
-                // Skip if we already processed leaders and medics
-                if (_role != "leader" && _role != "medic") then {
-                    private _roleUnits = _availableByRole get _role;
-                    
-                    // Calculate how many units of this role to take based on priority and remaining count
-                    private _totalCount = count _roleUnits;
-                    private _takeCount = 0;
-                    
-                    // Higher priority gets more units
-                    switch (true) do {
-                        case (_priority >= 8): { _takeCount = ceil(_totalCount * 0.8) min _remainingCount };
-                        case (_priority >= 6): { _takeCount = ceil(_totalCount * 0.6) min _remainingCount };
-                        case (_priority >= 4): { _takeCount = ceil(_totalCount * 0.4) min _remainingCount };
-                        default { _takeCount = ceil(_totalCount * 0.2) min _remainingCount };
-                    };
-                    
-                    // Cap based on role type to ensure garrison diversity
-                    switch (_role) do {
-                        case "at": { _takeCount = _takeCount min 2 };
-                        case "aa": { _takeCount = _takeCount min 1 };
-                        case "hmg": { _takeCount = _takeCount min 2 };
-                        case "demo": { _takeCount = _takeCount min 1 };
-                        case "engineer": { _takeCount = _takeCount min 1 };
-                    };
-                    
-                    // Take the units
-                    for "_i" from 0 to (_takeCount - 1) do {
-                        if (_i < count _roleUnits && _remainingCount > 0) then {
-                            _pulledUnits pushBack (_roleUnits select _i);
-                            _remainingCount = _remainingCount - 1;
-                        };
-                    };
-                    
-                    // Update the available units
-                    _roleUnits = _roleUnits select [_takeCount, count _roleUnits];
-                    _availableByRole set [_role, _roleUnits];
-                    
-                    ["AI Commander", 3, format["Selected %1 %2 units for task force %3", _takeCount, _role, _taskForceID]] call FLO_fnc_log;
-                };
+                // Update contribution tracking
+                private _garrisonContributions = _self get "_garrisonContributions";
+                private _currentContribution = _garrisonContributions getOrDefault [_sourceMarker, 0];
+                _garrisonContributions set [_sourceMarker, (_currentContribution - _returnedCount) max 0];
                 
-                // Exit if we have enough units
-                if (_remainingCount <= 0) exitWith {};
+                ["TaskForce-Garrison", 3, format["Successfully returned %1 units to garrison at %2 from task force %3", 
+                    _returnedCount, _sourceMarker, _taskForceId]] call FLO_fnc_log;
+            } else {
+                ["TaskForce-Garrison", 1, "Garrison Manager not available for unit return"] call FLO_fnc_log;
                 
-            } forEach _sortedRoles;
-            
-            // If we still need more units, take any available
-            if (_remainingCount > 0) then {
-                private _allRemainingUnits = [];
-                
+                // If we can't return units to garrison, delete them
                 {
-                    _allRemainingUnits append (_availableByRole get _x);
-                } forEach keys _availableByRole;
+                    if (!isNull _x && {alive _x}) then {
+                        deleteVehicle _x;
+                    };
+                } forEach _units;
                 
-                private _takeCount = count _allRemainingUnits min _remainingCount;
-                
-                for "_i" from 0 to (_takeCount - 1) do {
-                    _pulledUnits pushBack (_allRemainingUnits select _i);
-                };
-                
-                ["AI Commander", 3, format["Selected %1 additional units to complete task force %2", _takeCount, _taskForceID]] call FLO_fnc_log;
+                ["TaskForce-Garrison", 3, format["Deleted %1 units since Garrison Manager was unavailable", count _units]] call FLO_fnc_log;
             };
             
-            // Remove the units from the garrison
-            {
-                private _unit = _x;
-                private _group = group _unit;
-                
-                // Set a variable to identify the unit was pulled from garrison
-                _unit setVariable ["FLO_TaskForce_FromGarrison", [_marker, _taskForceID], true];
-                
-                // Remove from garrison tracking
-                // Direct manipulation of garrison data structure since removeUnitFromGarrison doesn't exist
-                private _garrisons = FLO_Garrison_Manager get "garrisons";
-                if (_marker in keys _garrisons) then {
-                    private _garrisonData = _garrisons get _marker;
-                    private _garrisonUnits = _garrisonData select 0;
-                    
-                    // Remove the unit from the garrison's unit array
-                    private _index = _garrisonUnits find _unit;
-                    if (_index != -1) then {
-                        _garrisonUnits deleteAt _index;
-                        _garrisonData set [0, _garrisonUnits];
-                        _garrisons set [_marker, _garrisonData];
-                        
-                        ["AI Commander", 3, format["Removed unit %1 from garrison at %2", _unit, _marker]] call FLO_fnc_log;
-                    };
-                };
-                
-            } forEach _pulledUnits;
+            // Clean up task force mapping if all units returned
+            if (count _units == _returnedCount) then {
+                _taskForceSourceMap deleteAt _taskForceId;
+            };
             
-            // Update contribution counter
-            private _contributions = _self get "_garrisonContributions";
-            private _currentContribution = _contributions getOrDefault [_marker, 0];
-            _contributions set [_marker, _currentContribution + count _pulledUnits];
-            
-            ["AI Commander", 3, format["Pulled %1 units from garrison at %2 for Task Force %3", count _pulledUnits, _marker, _taskForceID]] call FLO_fnc_log;
-            
-            // Return the list of pulled units
-            _pulledUnits
+            _returnedCount
         }],
         
         ["_pullVehicleFromGarrison", {
@@ -959,69 +727,6 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
             _vehicle
         }],
         
-        ["_returnUnitsToGarrison", {
-            params [ "_taskForceID", "_marker", "_units"];
-            
-            // Filter for alive units
-            private _aliveUnits = _units select {alive _x};
-            
-            if (count _aliveUnits == 0) exitWith {
-                ["AI Commander", 3, format["No units to return to garrison at %1 from Task Force %2", _marker, _taskForceID]] call FLO_fnc_log;
-                false
-            };
-            
-            // Get the source outpost (use provided marker or lookup from task force ID)
-            private _targetOutpost = if (_marker != "") then {
-                _marker
-            } else {
-                _self call ["_getTaskForceSourceOutpost", [_taskForceID]]
-            };
-            
-            // If no valid outpost, exit
-            if (_targetOutpost == "") exitWith {
-                ["AI Commander", 3, format["No valid outpost found to return units from Task Force %1", _taskForceID]] call FLO_fnc_log;
-                false
-            };
-            
-            // Return units to the garrison
-            {
-                private _unit = _x;
-                
-                // Clear task force variable
-                _unit setVariable ["FLO_TaskForce_FromGarrison", nil, true];
-                
-                // Add to garrison
-                private _garrisons = FLO_Garrison_Manager get "garrisons";
-                if (_targetOutpost in keys _garrisons) then {
-                    private _garrisonData = _garrisons get _targetOutpost;
-                    private _garrisonUnits = _garrisonData select 0;
-                    
-                    // Add the unit to the garrison's unit array
-                    _garrisonUnits pushBack _unit;
-                    _garrisonData set [0, _garrisonUnits];
-                    _garrisons set [_targetOutpost, _garrisonData];
-                    
-                    // Make sure the unit joins the garrison group
-                    private _garrisonGroup = _garrisonData select 2;
-                    if (!isNull _garrisonGroup) then {
-                        [_unit] joinSilent _garrisonGroup;
-                    };
-                    
-                    ["AI Commander", 3, format["Added unit %1 to garrison at %2", _unit, _targetOutpost]] call FLO_fnc_log;
-                };
-                
-            } forEach _aliveUnits;
-            
-            // Update contribution counter
-            private _contributions = _self get "_garrisonContributions";
-            private _currentContribution = _contributions getOrDefault [_targetOutpost, 0];
-            _contributions set [_targetOutpost, _currentContribution - count _aliveUnits];
-            
-            ["AI Commander", 3, format["Returned %1 units to garrison at %2 from Task Force %3", count _aliveUnits, _targetOutpost, _taskForceID]] call FLO_fnc_log;
-            
-            true
-        }],
-        
         ["_returnVehicleToGarrison", {
             params ["_vehicle", "_targetOutpost"];
             
@@ -1111,88 +816,6 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
                 _result = false;
             };
             _result
-        }],
-        
-        ["_addUnitsToGarrison", {
-            params [ "_marker", "_unitTypes", "_count"];
-            
-            // Ensure the marker exists and is appropriate
-            if (_marker == "" || {markerColor _marker != "colorOPFOR" && markerColor _marker != "ColorEAST"}) exitWith {
-                ["AI Commander", 3, format["Invalid marker for garrison: %1", _marker]] call FLO_fnc_log;
-                false
-            };
-            
-            // Verify unitTypes is not empty
-            if (count _unitTypes == 0) exitWith {
-                ["AI Commander", 3, "No unit types specified for garrison addition"] call FLO_fnc_log;
-                false
-            };
-            
-            // Get marker position
-            private _position = getMarkerPos _marker;
-            
-            // Create a temporary group for the new units
-            private _group = createGroup [east, true];
-            
-            // Spawn the requested units
-            for "_i" from 1 to _count do {
-                private _unitType = selectRandom _unitTypes;
-                private _unit = _group createUnit [_unitType, _position, [], 0, "NONE"];
-                
-                // Set variable to indicate this is a garrison unit
-                _unit setVariable ["FLO_GarrisonUnit", true, true];
-            };
-            
-            // Add the group to the garrison - direct manipulation
-            private _garrisons = FLO_Garrison_Manager get "garrisons";
-            
-            if (_marker in keys _garrisons) then {
-                // Update existing garrison
-                private _garrisonData = _garrisons get _marker;
-                private _garrisonUnits = _garrisonData select 0;
-                private _garrisonVehicles = _garrisonData select 1;
-                private _garrisonGroup = _garrisonData select 2;
-                
-                // Merge with existing garrison group if it exists
-                if (!isNull _garrisonGroup) then {
-                    (units _group) joinSilent _garrisonGroup;
-                    _garrisonUnits append (units _group);
-                } else {
-                    // Use the new group as the garrison group
-                    _garrisonData set [2, _group];
-                    _garrisonUnits append (units _group);
-                };
-                
-                // Update the units in the garrison data
-                _garrisonData set [0, _garrisonUnits];
-                _garrisons set [_marker, _garrisonData];
-            } else {
-                // Create a new garrison entry
-                private _markerType = markerType _marker;
-                private _sizeLimits = FLO_Garrison_Manager call ["getSizeLimits", [_markerType]];
-                private _baseSize = _sizeLimits select 0;
-                private _maxSize = _sizeLimits select 1;
-                
-                // Create garrison data structure
-                private _newGarrisonData = [
-                    units _group,   // Units
-                    [],             // Vehicles
-                    _group,         // Group
-                    time,           // Timestamp
-                    0,              // Virtual strength
-                    0,              // Queued reinforcements
-                    _baseSize,      // Base size
-                    _maxSize,       // Max size
-                    count (units _group) // Current size
-                ];
-                
-                // Add to garrisons hashmap
-                _garrisons set [_marker, _newGarrisonData];
-            };
-            
-            ["AI Commander", 3, format["Added %1 units to garrison at %2", _count, _marker]] call FLO_fnc_log;
-            
-            true
         }],
         
         ["_addVehicleToGarrison", {
@@ -1334,7 +957,7 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
                     // Create new entry
                     private _name = _x select 0;
                     private _ammoCount = _x select 1;
-                    private _usageFlags = [0,0,0,0,0,0,0,0,0,0];
+                    private _usageFlags = [0,0,0,0,0,0,0,0,0,0,0];
                     
                     // Get ammo info
                     private _ammo = getText (configFile >> "CfgMagazines" >> _name >> "ammo");

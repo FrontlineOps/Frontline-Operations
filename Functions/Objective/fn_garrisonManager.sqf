@@ -76,7 +76,7 @@ if (isNil "FLO_Garrison_Manager") then {
             
             _self set ["markerSizeLimits", _sizeLimits];
             
-            diag_log "[FLO][Garrison] Manager initialized with size limits";
+            ["Garrison", 3, "Manager initialized with size limits"] call FLO_fnc_log;
         }],
         
         // Get size limits for marker type
@@ -159,7 +159,7 @@ if (isNil "FLO_Garrison_Manager") then {
                 ]];
             } forEach _opforMarkers;
             
-            diag_log format ["[FLO][Garrison] Initialized default garrison entries for %1 OPFOR objectives", count _opforMarkers];
+            ["Garrison", 3, format["Initialized default garrison entries for %1 OPFOR objectives", count _opforMarkers]] call FLO_fnc_log;
         }],
         
         // Save garrison sizes to profileNamespace
@@ -217,11 +217,11 @@ if (isNil "FLO_Garrison_Manager") then {
             if (_logDetails != "") then {
                 // Remove trailing comma and space
                 _logDetails = _logDetails select [0, count _logDetails - 2];
-                diag_log format ["[FLO][Garrison] Saved sizes for %1 garrisons with %2 total units. Breakdown by type: %3", 
-                    count keys _garrisonSizes, _totalSize, _logDetails];
+                ["Garrison", 3, format["Saved sizes for %1 garrisons with %2 total units. Breakdown by type: %3",
+                    count keys _garrisonSizes, _totalSize, _logDetails]] call FLO_fnc_log;
             } else {
-                diag_log format ["[FLO][Garrison] Saved sizes for %1 garrisons with %2 total units.", 
-                    count keys _garrisonSizes, _totalSize];
+                ["Garrison", 3, format["Saved sizes for %1 garrisons with %2 total units.", 
+                    count keys _garrisonSizes, _totalSize]] call FLO_fnc_log;
             };
             
             true
@@ -269,16 +269,16 @@ if (isNil "FLO_Garrison_Manager") then {
                 if (_logDetails != "") then {
                     // Remove trailing comma and space
                     _logDetails = _logDetails select [0, count _logDetails - 2];
-                    diag_log format ["[FLO][Garrison] Loaded sizes for %1 garrisons with %2 total units. Breakdown by type: %3", 
-                        count keys _savedGarrisonSizes, _totalSize, _logDetails];
+                    ["Garrison", 3, format["Loaded sizes for %1 garrisons with %2 total units. Breakdown by type: %3", 
+                        count keys _savedGarrisonSizes, _totalSize, _logDetails]] call FLO_fnc_log;
                 } else {
-                    diag_log format ["[FLO][Garrison] Loaded sizes for %1 garrisons with %2 total units.", 
-                        count keys _savedGarrisonSizes, _totalSize];
+                    ["Garrison", 3, format["Loaded sizes for %1 garrisons with %2 total units.", 
+                        count keys _savedGarrisonSizes, _totalSize]] call FLO_fnc_log;
                 };
                 
                 true
             } else {
-                diag_log "[FLO][Garrison] No saved garrison sizes found";
+                ["Garrison", 3, "No saved garrison sizes found"] call FLO_fnc_log;
                 false
             };
         }],
@@ -300,9 +300,11 @@ if (isNil "FLO_Garrison_Manager") then {
             private _opforMarkers = allMapMarkers select {
                 markerColor _x in ["colorOPFOR", "ColorEAST"] && 
                 markerType _x in ["o_support", "n_support", "n_installation", "o_installation", "loc_Ruin", "loc_Power", "o_recon", "o_service", "o_antiair"] &&
-                !(_x in _processedMarkers) &&
-                !(_x in keys _garrisons)
+                !(_x in _processedMarkers)
             };
+            
+            // Debug log
+            ["Garrison", 4, format["Checking %1 OPFOR markers for garrison activation", count _opforMarkers]] call FLO_fnc_log;
             
             {
                 private _marker = _x;
@@ -322,21 +324,49 @@ if (isNil "FLO_Garrison_Manager") then {
                     // Check if there's an unactivated garrison with queued reinforcements
                     private _queuedGarrison = false;
                     private _additionalUnits = 0;
+                    private _existingGarrison = false;
+                    private _intendedSize = 0;
                     
                     if (_marker in keys _garrisons) then {
+                        _existingGarrison = true;
                         private _garrisonData = _garrisons get _marker;
                         
-                        // Check if this garrison has no active units but queued reinforcements
-                        if (count (_garrisonData select 0) == 0) then {
-                            _queuedGarrison = true;
+                        // Get the current and intended unit counts
+                        private _units = _garrisonData select 0;
+                        private _aliveUnits = _units select {!isNil "_x" && {alive _x}};
+                        _intendedSize = _garrisonData param [6, 0];
+                        
+                        // Debug logs for existing garrison
+                        ["Garrison", 4, format["Existing garrison at %1 with %2 alive units (intended size: %3)",
+                            _marker, count _aliveUnits, _intendedSize]] call FLO_fnc_log;
+                        
+                        // Calculate units needed to fulfill intended size
+                        if (count _aliveUnits < _intendedSize) then {
+                            _additionalUnits = _intendedSize - count _aliveUnits;
                             
-                            // Get intended size for spawning
-                            _additionalUnits = _garrisonData param [6, 0];
-                            
-                            // Remove the inactive garrison entry
-                            _garrisons deleteAt _marker;
-                            
-                            diag_log format ["[FLO][Garrison] Found queued garrison at %1 with %2 intended size", _marker, _additionalUnits];
+                            // If existing garrison needs more units, queue reinforcements
+                            if (_additionalUnits > 0) then {
+                                _queuedGarrison = true;
+                                // More debug logs
+                                ["Garrison", 4, format["Garrison at %1 needs %2 additional units to match intended size %3",
+                                    _marker, _additionalUnits, _intendedSize]] call FLO_fnc_log;
+                            };
+                        };
+                        
+                        // If no physical units exist but intended size is positive
+                        if (count _aliveUnits == 0 && _intendedSize > 0) then {
+                            // Either virtualized or never activated - check if available unit helper says true
+                            if (_self call ["_hasAvailableUnits", [_marker]]) then {
+                                _queuedGarrison = true;
+                                _additionalUnits = _intendedSize;
+                                
+                                // Remove existing data since we'll respawn completely
+                                _garrisons deleteAt _marker;
+                                
+                                // Debug log for respawning
+                                ["Garrison", 4, format["Respawning non-activated garrison at %1 with intended size %2",
+                                    _marker, _intendedSize]] call FLO_fnc_log;
+                            };
                         };
                     };
                     
@@ -349,11 +379,17 @@ if (isNil "FLO_Garrison_Manager") then {
                     private _size = _baseSize;
                     private _withVehicles = false;
                     
-                    // Check if we have a saved size for this garrison
-                    if (_marker in keys _garrisonSizes) then {
-                        _size = (_garrisonSizes get _marker) min _maxSize;
-                        diag_log format ["[FLO][Garrison] Using saved size for garrison at %1: %2 (base: %3, max: %4)", 
-                            _marker, _size, _baseSize, _maxSize];
+                    // If existing garrison, use the intended size, otherwise use saved or baseline size
+                    if (_existingGarrison && _intendedSize > 0) then {
+                        _size = _intendedSize;
+                    } else {
+                        // Check if we have a saved size for this garrison
+                        if (_marker in keys _garrisonSizes) then {
+                            _size = (_garrisonSizes get _marker) min _maxSize;
+                            // Debug log for saved size
+                            ["Garrison", 4, format["Using saved size for garrison at %1: %2 (base: %3, max: %4)",
+                                _marker, _size, _baseSize, _maxSize]] call FLO_fnc_log;
+                        };
                     };
                     
                     // Determine vehicle presence based on marker type
@@ -370,10 +406,12 @@ if (isNil "FLO_Garrison_Manager") then {
                     if (_additionalUnits > 0) then {
                         _size = (_size + _additionalUnits) min _maxSize;
                         if (_size == _maxSize && _additionalUnits > (_maxSize - _baseSize)) then {
-                            diag_log format ["[FLO][Garrison] Garrison at %1 reached maximum size (%2), capping reinforcements", _marker, _maxSize];
+                            // Logs for max size
+                            ["Garrison", 2, format["Garrison at %1 reached maximum size (%2), capping reinforcements", _marker, _maxSize]] call FLO_fnc_log;
                         };
-                        diag_log format ["[FLO][Garrison] Adjusted garrison size at %1 from %2 to %3 including reinforcements (max: %4)", 
-                            _marker, _baseSize, _size, _maxSize];
+                        // Logs for size adjustment
+                        ["Garrison", 3, format["Adjusted garrison size at %1 from %2 to %3 including reinforcements (max: %4)",
+                            _marker, _baseSize, _size, _maxSize]] call FLO_fnc_log;
                     };
                     
                     if (_size > 0) then {
@@ -419,13 +457,15 @@ if (isNil "FLO_Garrison_Manager") then {
             params ["_marker", "_size", "_withVehicles", ["_baseSize", 0], ["_maxSize", 0]];
             
             if (_marker == "") exitWith {
-                diag_log "[FLO][Garrison] Error: Empty marker name";
+                // Error logs
+                ["Garrison", 1, "Error: Empty marker name"] call FLO_fnc_log;
                 []
             };
             
             private _pos = getMarkerPos _marker;
             if (_pos isEqualTo [0,0,0]) exitWith {
-                diag_log format ["[FLO][Garrison] Error: Invalid marker position for %1", _marker];
+                // Error logs with params
+                ["Garrison", 1, format["Error: Invalid marker position for %1", _marker]] call FLO_fnc_log;
                 []
             };
             
@@ -533,7 +573,7 @@ if (isNil "FLO_Garrison_Manager") then {
                                 private _qrfChance = if (_isOfficer) then {0.8} else {0.4}; // 80% for officers, 40% for others
                                 
                                 if (_markerData != "" && random 1 < _qrfChance) then {
-                                    diag_log format ["[FLO][Garrison] Unit killed at %1 triggered QRF request (officer: %2)", _markerData, _isOfficer];
+                                    ["Garrison", 3, format["Unit killed at %1 triggered QRF request (officer: %2)", _markerData, _isOfficer]] call FLO_fnc_log;
                                     [_unitPos, 500] call FLO_fnc_requestQRF;
                                 };
                             };
@@ -543,7 +583,7 @@ if (isNil "FLO_Garrison_Manager") then {
                         _unit setVariable ["FLO_IsOfficer", _isOfficer, false];
                         
                         if (_isOfficer) then {
-                            diag_log format ["[FLO][Garrison] Officer unit %1 assigned QRF trigger capability", _unit];
+                            ["Garrison", 3, format["Officer unit %1 assigned QRF trigger capability", _unit]] call FLO_fnc_log;
                         };
                     };
                     
@@ -553,13 +593,13 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Verify that all units are properly assigned to EAST
             if (side _group != east) then {
-                diag_log "[FLO][Garrison] WARNING: Group side is not EAST after creation. Creating new EAST group...";
+                ["Garrison", 2, "WARNING: Group side is not EAST after creation. Creating new EAST group..."] call FLO_fnc_log;
                 private _eastGroup = createGroup [east, true];
                 {
                     [_x] joinSilent _eastGroup;
                     // Double-check individual unit sides
                     if (side _x != east) then {
-                        diag_log format ["[FLO][Garrison] WARNING: Unit %1 is not EAST after joining group", _x];
+                        ["Garrison", 2, format["WARNING: Unit %1 is not EAST after joining group", _x]] call FLO_fnc_log;
                         // Alternative: create a new unit and delete the old one
                         private _pos = getPosATL _x;
                         private _type = typeOf _x;
@@ -632,7 +672,7 @@ if (isNil "FLO_Garrison_Manager") then {
                                     
                                     // 60% chance for vehicle crew to actually call QRF (higher than regular infantry)
                                     if (_markerData != "" && random 1 < 0.6) then {
-                                        diag_log format ["[FLO][Garrison] Vehicle crew killed at %1 triggered QRF request", _markerData];
+                                        ["Garrison", 3, format["Vehicle crew killed at %1 triggered QRF request", _markerData]] call FLO_fnc_log;
                                         [_unitPos, 500] call FLO_fnc_requestQRF;
                                     };
                                 };
@@ -643,7 +683,7 @@ if (isNil "FLO_Garrison_Manager") then {
                     // Verify crew is EAST
                     {
                         if (side _x != east) then {
-                            diag_log format ["[FLO][Garrison] WARNING: Vehicle crew member %1 is not EAST after creation", _x];
+                            ["Garrison", 2, format["WARNING: Vehicle crew member %1 is not EAST after creation", _x]] call FLO_fnc_log;
                         };
                     } forEach (crew _veh);
                 };
@@ -679,7 +719,7 @@ if (isNil "FLO_Garrison_Manager") then {
                         
                         // Verify unit is EAST after joining garrison group
                         if (side _unit != east) then {
-                            diag_log format ["[FLO][Garrison] WARNING: Unit %1 lost EAST side after joining garrison group", _unit];
+                            ["Garrison", 2, format["WARNING: Unit %1 lost EAST side after joining garrison group", _unit]] call FLO_fnc_log;
                             // Force the unit back to EAST if needed
                             [_unit] joinSilent createGroup [east, true];
                         };
@@ -709,7 +749,7 @@ if (isNil "FLO_Garrison_Manager") then {
                         
                         // Verify unit is EAST after joining patrol group
                         if (side _x != east) then {
-                            diag_log format ["[FLO][Garrison] WARNING: Unit %1 lost EAST side after joining patrol group", _x];
+                            ["Garrison", 2, format["WARNING: Unit %1 lost EAST side after joining patrol group", _x]] call FLO_fnc_log;
                             // Force the unit back to EAST if needed
                             [_x] joinSilent createGroup [east, true];
                             [_x] joinSilent _patrolGroup;
@@ -732,9 +772,29 @@ if (isNil "FLO_Garrison_Manager") then {
             // Final verification that all units are EAST
             {
                 if (side _x != east) then {
-                    diag_log format ["[FLO][Garrison] FINAL CHECK: Unit %1 is not EAST after all processing", _x];
+                    ["Garrison", 2, format["FINAL CHECK: Unit %1 is not EAST after all processing", _x]] call FLO_fnc_log;
                 };
             } forEach (_spawnedUnits select {alive _x});
+            
+            // ADDED: Assign military-style group ID
+            private _squadNames = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima"];
+            private _markerNum = count(_self get "processedMarkers") + 1;
+            private _squadNamePrefix = _squadNames select ((_markerNum - 1) mod (count _squadNames));
+            private _platoonNum = floor((_markerNum - 1) / count _squadNames) + 1;
+            private _squadNum = floor(random 5) + 1;
+            
+            private _squadID = format ["%1 %2-%3", _squadNamePrefix, _platoonNum, _squadNum];
+            
+            // Set the group ID for the main group
+            _group setGroupIdGlobal [_squadID];
+            
+            // If we created a patrol group, name it too
+            if (count _spawnedUnits > 3 && count _buildingPositions > 3) then {
+                private _patrolID = format ["%1 %2-%3 Patrol", _squadNamePrefix, _platoonNum, _squadNum + 1];
+                _patrolGroup setGroupIdGlobal [_patrolID];
+            };
+            
+            ["Garrison", 3, format["Set group ID for garrison at %1 to '%2'", _marker, _squadID]] call FLO_fnc_log;
             
             // Store in garrisons hashmap
             private _garrisons = _self get "garrisons";
@@ -754,8 +814,8 @@ if (isNil "FLO_Garrison_Manager") then {
             // Update total units count
             _self set ["totalUnits", (_self get "totalUnits") + count _spawnedUnits];
             
-            diag_log format ["[FLO][Garrison] Created garrison at %1 with %2 units and %3 vehicles (Size: %4/%5)", 
-                _marker, count _spawnedUnits, count _spawnedVehicles, _size, _maxSize];
+            ["Garrison", 3, format["Created garrison at %1 with %2 units and %3 vehicles (Size: %4/%5)", 
+                _marker, count _spawnedUnits, count _spawnedVehicles, _size, _maxSize]] call FLO_fnc_log;
             
             // Return spawned units
             _spawnedUnits
@@ -769,57 +829,47 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Check if garrison exists
             if (!(_marker in keys _garrisons)) then {
-                diag_log format ["[FLO][Garrison] Cannot reinforce non-existent garrison at %1", _marker];
+                ["Garrison", 3, format["Cannot reinforce non-existent garrison at %1", _marker]] call FLO_fnc_log;
                 _result = false;
             } else {
-                // Garrison exists - check if it's active (has spawned units)
+                // Garrison exists - process reinforcement based on size limits only
                 private _garrisonData = _garrisons get _marker;
-                _garrisonData params ["_units", "_vehicles", "_group", "_timestamp"];
                 
                 // Get the size limits
                 private _baseSize = _garrisonData param [4, 4];
                 private _maxSize = _garrisonData param [5, 8];
                 private _currentSize = _garrisonData param [6, 0];
                 
-                // Check if this garrison is active (has spawned units)
-                private _isActive = count (_units select {alive _x}) > 0;
-                
-                if (_isActive) then {
-                    // Garrison is active - don't add reinforcements as per user request
-                    diag_log format ["[FLO][Garrison] Not reinforcing active garrison at %1 (already processed)", _marker];
+                // Check if we've already reached max size
+                if (_currentSize >= _maxSize) then {
+                    ["Garrison", 3, format["Garrison at %1 already at maximum size (%2), reinforcement rejected", _marker, _maxSize]] call FLO_fnc_log;
                     _result = false;
                 } else {
-                    // Check if we've already reached max size
-                    if (_currentSize >= _maxSize) then {
-                        diag_log format ["[FLO][Garrison] Garrison at %1 already at maximum size (%2), reinforcement rejected", _marker, _maxSize];
-                        _result = false;
-                    } else {
-                        // Calculate how many reinforcements can be added before reaching max
-                        private _availableSpace = _maxSize - _currentSize;
-                        private _reinforcementCount = _amount min _availableSpace;
-                        
-                        // Log if we're capping reinforcements
-                        if (_reinforcementCount < _amount) then {
-                            diag_log format ["[FLO][Garrison] Reinforcement for %1 limited from %2 to %3 units due to size cap (%4/%5)", 
-                                _marker, _amount, _reinforcementCount, _currentSize, _maxSize];
-                        };
-                        
-                        // Update current intended size
-                        _currentSize = _currentSize + _reinforcementCount;
-                        _garrisonData set [6, _currentSize];
-                        
-                        // Save updated garrison data
-                        _garrisons set [_marker, _garrisonData];
-                        
-                        diag_log format ["[FLO][Garrison] Reinforced non-active garrison at %1: added %2 units to intended size", 
-                            _marker, _reinforcementCount];
-                        
-                        // Update saved garrison size for persistence
-                        private _garrisonSizes = _self get "garrisonSizes";
-                        _garrisonSizes set [_marker, _currentSize min _maxSize];
-                        
-                        _result = true;
+                    // Calculate how many reinforcements can be added before reaching max
+                    private _availableSpace = _maxSize - _currentSize;
+                    private _reinforcementCount = _amount min _availableSpace;
+                    
+                    // Log if we're capping reinforcements
+                    if (_reinforcementCount < _amount) then {
+                        ["Garrison", 3, format["Reinforcement for %1 limited from %2 to %3 units due to size cap (%4/%5)", 
+                            _marker, _amount, _reinforcementCount, _currentSize, _maxSize]] call FLO_fnc_log;
                     };
+                    
+                    // Update current intended size
+                    _currentSize = _currentSize + _reinforcementCount;
+                    _garrisonData set [6, _currentSize];
+                    
+                    // Save updated garrison data
+                    _garrisons set [_marker, _garrisonData];
+                    
+                    ["Garrison", 3, format["Reinforced garrison at %1: added %2 units to intended size (now %3/%4)", 
+                        _marker, _reinforcementCount, _currentSize, _maxSize]] call FLO_fnc_log;
+                    
+                    // Update saved garrison size for persistence
+                    private _garrisonSizes = _self get "garrisonSizes";
+                    _garrisonSizes set [_marker, _currentSize min _maxSize];
+                    
+                    _result = true;
                 };
             };
             
@@ -866,7 +916,7 @@ if (isNil "FLO_Garrison_Manager") then {
                                 
                                 // Only process EAST (OPFOR) virtualized groups
                                 if (_vsSide == east) then {
-                                    diag_log format ["[FLO][Garrison] Found virtualized garrison for marker %1", _marker];
+                                    ["Garrison", 3, format["Found virtualized garrison for marker %1", _marker]] call FLO_fnc_log;
                                     _data set [7, true]; // Mark as virtualized
                                 };
                             };
@@ -885,8 +935,8 @@ if (isNil "FLO_Garrison_Manager") then {
                         private _nearVehicles = _markerPos nearEntities ["LandVehicle", 100] select {side _x == east};
                         
                         if (count _nearUnits > 0) then {
-                            diag_log format ["[FLO][Garrison] Found %1 restored units for previously virtualized garrison at %2", 
-                                count _nearUnits, _marker];
+                            ["Garrison", 3, format["Found %1 restored units for previously virtualized garrison at %2", 
+                                count _nearUnits, _marker]] call FLO_fnc_log;
                             
                             // Update our tracking with the restored units
                             private _newGroup = group (_nearUnits select 0);
@@ -910,7 +960,6 @@ if (isNil "FLO_Garrison_Manager") then {
                         // Check for any units that aren't EAST and fix them
                         private _nonEastUnits = _aliveUnits select {side _x != east};
                         if (count _nonEastUnits > 0) then {
-                            diag_log format ["[FLO][Garrison] Found %1 non-EAST units in garrison at %2, attempting to fix", count _nonEastUnits, _marker];
                             
                             private _eastGroup = createGroup [east, true];
                             {
@@ -943,8 +992,8 @@ if (isNil "FLO_Garrison_Manager") then {
                 // Don't log during virtualization (it's not useful)
                 if (!(_data param [7, false])) then {
                     // Log info about garrison status
-                    diag_log format ["[FLO][Garrison] Garrison at %1: %2 active units (%3/%4 capacity)", 
-                        _marker, _physicalUnits, _physicalUnits, _data param [6, 0]];
+                    ["Garrison", 3, format["Garrison at %1: %2 active units (%3/%4 capacity)", 
+                        _marker, _physicalUnits, _physicalUnits, _data param [6, 0]]] call FLO_fnc_log;
                 };
             } forEach keys _garrisons;
             
@@ -952,7 +1001,7 @@ if (isNil "FLO_Garrison_Manager") then {
             _self set ["totalUnits", _totalCount];
             _self set ["lastUpdate", time];
             
-            diag_log format ["[FLO][Garrison] Maintenance complete. Total units: %1", _totalCount];
+            ["Garrison", 3, format["Maintenance complete. Total units: %1", _totalCount]] call FLO_fnc_log;
         }],
         
         // Get info about a specific garrison
@@ -995,6 +1044,118 @@ if (isNil "FLO_Garrison_Manager") then {
             _result
         }],
         
+        // Extract units from a garrison for use by other systems
+        ["extractUnits", {
+            params [
+                ["_marker", "", [""]],
+                ["_count", 0, [0]],
+                ["_requesterId", "", [""]]
+            ];
+            
+            // Debug log for tracing issues
+            ["Garrison", 4, format["Starting extraction of %1 units from %2 for %3", 
+                _count, _marker, _requesterId]] call FLO_fnc_log;
+            
+            private _garrisons = _self get "garrisons";
+            private _extractedCount = 0;
+            
+            // Check if this garrison exists
+            if (!(_marker in keys _garrisons)) exitWith {
+                ["Garrison", 3, format["Cannot extract units from non-existent garrison at %1", _marker]] call FLO_fnc_log;
+                []
+            };
+            
+            // Get garrison data
+            private _garrisonData = _garrisons get _marker;
+            private _intendedSize = _garrisonData param [6, 0];
+            
+            // Debug output for tracing issues
+            ["Garrison", 4, format["Garrison data: intended size: %1, requested: %2", 
+                _intendedSize, _count]] call FLO_fnc_log;
+            
+            // Validate count parameter
+            if (_count <= 0) then {
+                ["Garrison", 3, format["Invalid count parameter: %1", _count]] call FLO_fnc_log;
+                _count = 0;
+            };
+            
+            // Check if we can extract the requested count
+            _extractedCount = _count min _intendedSize;
+            
+            if (_extractedCount > 0) then {
+                // Update the garrison data with reduced intended size
+                _garrisonData set [6, (_intendedSize - _extractedCount) max 0];
+                _garrisons set [_marker, _garrisonData];
+                
+                // Uncomment and convert to FLO_fnc_log
+                ["Garrison", 3, format["Successfully extracted %1 units from garrison at %2 for %3 (reduced intended size to %4)",
+                    _extractedCount, _marker, _requesterId, _garrisonData select 6]] call FLO_fnc_log;
+            };
+            
+            // Return the extracted count - let the task force system handle unit creation
+            _extractedCount
+        }],
+        
+        // Return units to their original garrison
+        ["returnUnits", {
+            params [
+                ["_count", 0, [0]],
+                ["_requesterId", "", [""]],
+                ["_targetMarker", "", [""]]  // Optional - can specify a different target marker
+            ];
+            
+            // Debug log for tracing issues
+            // Uncomment and convert to FLO_fnc_log
+            ["Garrison", 4, format["Starting return of %1 units from %2 to target %3", 
+                _count, _requesterId, if (_targetMarker == "") then {"original garrisons"} else {_targetMarker}]] call FLO_fnc_log;
+            
+            private _garrisons = _self get "garrisons";
+            private _returnedCount = 0;
+            
+            // Validate count
+            if (_count <= 0) exitWith {
+                0
+            };
+            
+            // Get the target marker
+            private _marker = _targetMarker;
+            
+            // Only proceed if we have a valid marker
+            if (_marker != "" && _marker in keys _garrisons) then {
+                // Get garrison data
+                private _garrisonData = _garrisons get _marker;
+                private _intendedSize = _garrisonData param [6, 0];
+                private _maxSize = _garrisonData param [5, 0];
+                
+                // Determine how many units can be returned based on max size
+                _returnedCount = (_count min (_maxSize - _intendedSize)) max 0;
+                
+                if (_returnedCount > 0) then {
+                    // Increase intended size
+                    _garrisonData set [6, _intendedSize + _returnedCount];
+                    _garrisons set [_marker, _garrisonData];
+                    
+                    // Uncomment and convert to FLO_fnc_log
+                    ["Garrison", 4, format["Successfully returned %1 units to garrison at %2 (new intended size: %3)",
+                        _returnedCount, _marker, _intendedSize + _returnedCount]] call FLO_fnc_log;
+                        
+                    // Update total units tracking
+                    _self set ["totalUnits", (_self get "totalUnits") + _returnedCount];
+                } else {
+                    ["Garrison", 3, format["Garrison at %1 is at max capacity (%2), cannot return units", 
+                        _marker, _maxSize]] call FLO_fnc_log;
+                }
+            } else {
+                ["Garrison", 3, format["Cannot return units to invalid garrison: %1", _marker]] call FLO_fnc_log;
+            };
+            
+            // Uncomment and convert to FLO_fnc_log
+            ["Garrison", 3, format["Returned %1 units to garrisons from requester %2",
+                _returnedCount, _requesterId]] call FLO_fnc_log;
+            
+            _returnedCount
+        }],
+        
         // Check if a group is from a garrison
         ["isGarrisonGroup", {
             params ["_checkGroup"];
@@ -1018,6 +1179,41 @@ if (isNil "FLO_Garrison_Manager") then {
             } forEach keys _garrisons;
             
             [_isGarrisonGroup, _marker]
+        }],
+        
+        // Check if a garrison at marker has available units
+        ["_hasAvailableUnits", {
+            params ["_marker"];
+            
+            private _garrisons = _self get "garrisons";
+            private _hasUnits = false;
+            
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                private _units = _garrisonData select 0;
+                private _intendedSize = _garrisonData param [6, 0];
+                
+                // Check both actual units and intended size
+                if (count _units > 0) then {
+                    // Check for alive units
+                    private _aliveUnits = _units select {!isNil "_x" && {alive _x}};
+                    _hasUnits = count _aliveUnits > 0;
+                    
+                    ["Garrison", 4, format["Garrison at %1 has %2 alive units out of %3 total", 
+                        _marker, count _aliveUnits, count _units]] call FLO_fnc_log;
+                } else {
+                    // Check if intended size indicates there should be units 
+                    // (garrison might not be physically spawned yet)
+                    _hasUnits = _intendedSize > 0;
+                    
+                    if (_hasUnits) then {
+                        ["Garrison", 4, format["Garrison at %1 has no physical units but intended size of %2", 
+                            _marker, _intendedSize]] call FLO_fnc_log;
+                    };
+                };
+            };
+            
+            _hasUnits
         }]
     ];
     
@@ -1089,7 +1285,7 @@ switch (_mode) do {
     };
     
     default {
-        diag_log format ["[FLO][Garrison] Error: Unknown mode '%1'", _mode];
+        ["Garrison", 3, format["Error: Unknown mode '%1'", _mode]] call FLO_fnc_log;
         _result = false;
     };
 };

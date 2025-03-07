@@ -26,9 +26,9 @@ if (isNil "VS_VirtualizedObjects") then {
 };
 
 // Initialize the Task Force virtualization hashmap if it doesn't exist
-if (isNil "VS_VirtualizedTaskForces") then {
-    VS_VirtualizedTaskForces = createHashMap;
-};
+// if (isNil "VS_VirtualizedTaskForces") then {
+//     VS_VirtualizedTaskForces = createHashMap;
+// };
 
 // Efficient static object handling
 private _excludedTypes = FLO_configCache get "SOVbuildings";
@@ -287,52 +287,52 @@ _mustRestore = false;
     };
 } forEach _enemyGroupsToVirtualize;
 
-// Handle Task Force virtualization (restore virtualized Task Forces)
-// First check for Task Forces that need to be restored
-_keysToRemove = [];
-{
-    private _key = _x;
-    private _taskForceData = VS_VirtualizedTaskForces get _key;
+// // Handle Task Force virtualization (restore virtualized Task Forces)
+// // First check for Task Forces that need to be restored
+// _keysToRemove = [];
+// {
+//     private _key = _x;
+//     private _taskForceData = VS_VirtualizedTaskForces get _key;
     
-    if (isNil "_taskForceData") then {
-        _keysToRemove pushBack _key;
-        continue;
-    };
+//     if (isNil "_taskForceData") then {
+//         _keysToRemove pushBack _key;
+//         continue;
+//     };
     
-    _taskForceData params [
-        "_taskForceId",
-        "_position",
-        "_type",
-        "_size",
-        "_composition",
-        "_unitTypes",
-        "_resourceValue"
-    ];
+//     _taskForceData params [
+//         "_taskForceId",
+//         "_position",
+//         "_type",
+//         "_size",
+//         "_composition",
+//         "_unitTypes",
+//         "_resourceValue"
+//     ];
     
-    // Check if this Task Force should be restored (any player is near)
-    private _shouldRestore = false;
-    {
-        if (_x distance _position < VSDistance) exitWith {
-            _shouldRestore = true;
-        };
-    } forEach _players;
+//     // Check if this Task Force should be restored (any player is near)
+//     private _shouldRestore = false;
+//     {
+//         if (_x distance _position < VSDistance) exitWith {
+//             _shouldRestore = true;
+//         };
+//     } forEach _players;
     
-    if (_shouldRestore) then {
-        // Get the task force from the system if it exists
-        if (!isNil "FLO_TaskForce_System") then {
-            // Deploy the Task Force
-            ["deployTaskForce", [_taskForceId, _position, true]] call FLO_fnc_TaskForceSystem;
+//     if (_shouldRestore) then {
+//         // Get the task force from the system if it exists
+//         if (!isNil "FLO_TaskForce_System") then {
+//             // Deploy the Task Force
+//             ["deployTaskForce", [_taskForceId, _position, true]] call FLO_fnc_TaskForceSystem;
             
-            // Mark for removal from virtualized task forces
-            _keysToRemove pushBack _key;
+//             // Mark for removal from virtualized task forces
+//             _keysToRemove pushBack _key;
             
-            diag_log format ["[CDVS] Restored Task Force %1 at position %2", _taskForceId, _position];
-        };
-    };
-} forEach keys VS_VirtualizedTaskForces;
+//             diag_log format ["[CDVS] Restored Task Force %1 at position %2", _taskForceId, _position];
+//         };
+//     };
+// } forEach keys VS_VirtualizedTaskForces;
 
-// Clean up restored Task Forces from virtualization hashmap
-{VS_VirtualizedTaskForces deleteAt _x} forEach _keysToRemove;
+// // Clean up restored Task Forces from virtualization hashmap
+// {VS_VirtualizedTaskForces deleteAt _x} forEach _keysToRemove;
 
 // Optimize trigger handling
 private _allTriggers = entities "EmptyDetector";
