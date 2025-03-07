@@ -1,27 +1,151 @@
 private _centerPosition = [worldSize / 2, worldsize / 2, 0];
 
-// Helper function to create markers with default parameters
-FLO_fnc_createMarkerWithDefaults = {
-    params ["_position", "_name", "_type", "_color", "_size", "_alpha", ["_useSafePos", true], ["_safeRadius", 100]];
+// Array to store all placed marker positions for distance checking
+FLO_MarkerPositions = [];
+
+// Minimum distance between markers (in meters)
+FLO_MinMarkerDistance = 100;
+
+// Array of marker types that don't need distance validation
+FLO_ExcludedMarkerTypes = ["o_installation", "n_installation", "o_inf"];
+
+// Function to check if a position is too close to coastline
+FLO_fnc_isNearCoast = {
+    params ["_position", ["_checkDistance", 50]];
     
-    // Find a safe position if requested
-    private _finalPosition = _position;
-    if (_useSafePos) then {
-        _finalPosition = [_position, 0, _safeRadius, 3, 0, 0.5, 0, [], [_position, _position]] call BIS_fnc_findSafePos;
+    // Check points in cardinal directions around the position
+    private _isNearWater = false;
+    
+    // Check in four directions
+    private _dirs = [0, 90, 180, 270];
+    {
+        private _checkPos = _position getPos [_checkDistance, _x];
+        if (surfaceIsWater _checkPos) exitWith {
+            _isNearWater = true;
+        };
+    } forEach _dirs;
+    
+    _isNearWater
+};
+
+// Function to check if a position is too close to existing markers
+FLO_fnc_isPositionValid = {
+    params ["_position", ["_minDistance", FLO_MinMarkerDistance], ["_markerType", ""]];
+    
+    // If marker type is in the excluded list, skip distance validation
+    if (_markerType in FLO_ExcludedMarkerTypes) exitWith {true};
+    
+    private _isTooClose = false;
+    {
+        if (_position distance _x < _minDistance) exitWith {
+            _isTooClose = true;
+        };
+    } forEach FLO_MarkerPositions;
+    
+    !_isTooClose
+};
+
+// Function to find a valid position near the original one
+FLO_fnc_findValidPosition = {
+    params ["_originalPos", ["_maxAttempts", 20], ["_searchRadius", 300], ["_coastalBuffer", 150], ["_markerType", ""]];
+    
+    // Immediately return original position for excluded marker types - no position adjustment at all
+    if (_markerType in FLO_ExcludedMarkerTypes) exitWith {
+        _originalPos
+    };
+    
+    private _validPos = _originalPos;
+    private _attempts = 0;
+    
+    // If original position is already valid, not in water, and not near coast, return it
+    if ([_originalPos, FLO_MinMarkerDistance, _markerType] call FLO_fnc_isPositionValid && 
+        {!(surfaceIsWater _originalPos)} && 
+        {!([_originalPos, _coastalBuffer] call FLO_fnc_isNearCoast)}) exitWith {_originalPos};
+    
+    // Try to find a valid position that's not in water and not near coast
+    while {_attempts < _maxAttempts} do {
+        // Fixed random calculation with proper number handling
+        private _randomOffsetX = (random (_searchRadius * 2)) - _searchRadius;
+        private _randomOffsetY = (random (_searchRadius * 2)) - _searchRadius;
         
-        // If findSafePos returns the original position array, it failed to find a safe position
-        // In that case, we'll try with more relaxed parameters
-        if (_finalPosition isEqualTo [_position, _position]) then {
-            _finalPosition = [_position, 0, _safeRadius * 2, 5, 0, 0.7, 0] call BIS_fnc_findSafePos;
+        private _randomPos = [
+            (_originalPos select 0) + _randomOffsetX,
+            (_originalPos select 1) + _randomOffsetY,
+            0
+        ];
+        
+        // Check if position is valid (not too close to other markers) AND not in water AND not near coast
+        if ([_randomPos, FLO_MinMarkerDistance, _markerType] call FLO_fnc_isPositionValid && 
+            {!(surfaceIsWater _randomPos)} && 
+            {!([_randomPos, _coastalBuffer] call FLO_fnc_isNearCoast)}) exitWith {
+            _validPos = _randomPos;
+        };
+        
+        _attempts = _attempts + 1;
+    };
+    
+    // If we couldn't find a good position after all attempts, try BIS_fnc_findSafePos as a fallback
+    if (_validPos isEqualTo _originalPos && 
+        {surfaceIsWater _validPos || {[_validPos, _coastalBuffer] call FLO_fnc_isNearCoast}}) then {
+        
+        // First try using a larger search radius
+        private _safePosParams = [_originalPos, _coastalBuffer, _searchRadius * 1.5, 5, 0, 0.4, 0];
+        private _safePos = _safePosParams call BIS_fnc_findSafePos;
+        
+        // Only use the safe position if it's different from the original and not near coast
+        if (!(_safePos isEqualTo _originalPos) && {!([_safePos, _coastalBuffer] call FLO_fnc_isNearCoast)}) then {
+            _validPos = _safePos;
+        } else {
+            // Desperate fallback - just try to stay out of water, ignore coastal buffer
+            _safePosParams = [_originalPos, 0, _searchRadius * 2, 3, 0, 0.5, 0];
+            _safePos = _safePosParams call BIS_fnc_findSafePos;
+            
+            if (!(_safePos isEqualTo _originalPos) && {!(surfaceIsWater _safePos)}) then {
+                _validPos = _safePos;
+            };
         };
     };
     
+    _validPos
+};
+
+// Helper function to create markers with default parameters
+FLO_fnc_createMarkerWithDefaults = {
+    params ["_position", "_name", "_type", "_color", "_size", "_alpha", ["_useSafePos", true], ["_safeRadius", 100]];
+ 
+    // Find a safe position if requested (not in water)
+    private _finalPosition = _position;
+    
+    // For excluded marker types, skip all position adjustments
+    if !(_type in FLO_ExcludedMarkerTypes) then {
+        if (_useSafePos) then {
+            _finalPosition = [_position, 0, _safeRadius, 3, 0, 0.5, 0, [], [_position, _position]] call BIS_fnc_findSafePos;
+            
+            // If findSafePos returns the original position array, it failed to find a safe position
+            // In that case, we'll try with more relaxed parameters
+            if (_finalPosition isEqualTo [_position, _position]) then {
+                _finalPosition = [_position, 0, _safeRadius * 2, 5, 0, 0.7, 0] call BIS_fnc_findSafePos;
+            };
+        };
+        
+        // Check if the position is too close to existing markers - pass correct parameters
+        _finalPosition = [_finalPosition, 20, 300, 150, _type] call FLO_fnc_findValidPosition;
+    };
+    
+    // Create the marker (local first for optimization)
     private _markerName = _name + (str _position);
-    private _marker = createMarker [_markerName, _finalPosition];
-    _marker setMarkerType _type;
-    _marker setMarkerColor _color;
-    _marker setMarkerSize _size;
+    private _marker = createMarkerLocal [_markerName, _finalPosition];
+    _marker setMarkerTypeLocal _type;
+    _marker setMarkerColorLocal _color;
+    _marker setMarkerSizeLocal _size;
+    
+    // Final global operation to broadcast the marker
     _marker setMarkerAlpha _alpha;
+    
+    // Add this marker's position to our tracking array
+    if !(_type in FLO_ExcludedMarkerTypes) then {
+        FLO_MarkerPositions pushBack _finalPosition;
+    };
     
     _marker
 };
@@ -34,7 +158,7 @@ FLO_fnc_calculateDistribution = {
     private _adjustedCount = round (_count / _divisionFactor);
     private _finalCount = round (_adjustedCount / EnemyPrec);
     
-    if (_ensureMinimum && {_finalCount == 0}) then {
+    if (_ensureMinimum && {_finalCount isEqualTo 0}) then {
         _finalCount = 1;
     };
     
@@ -71,20 +195,27 @@ FLO_fnc_createMarkersFromSearch = {
             !isNil {_x getVariable _variableName} || {typeOf _x in _objectTypes}
         };
         
+        private _markerPosition = nil;
+        
         if (count _targetObjects > 0) then {
             private _target = selectRandom _targetObjects;
-            [getPos _target, _markerPrefix, _markerType, _markerColor, _markerSize, _markerAlpha, _useSafePos, _safeRadius] call FLO_fnc_createMarkerWithDefaults;
+            _markerPosition = getPos _target;
         } else {
             private _fallbackLocation = selectRandom nearestLocations [getPos _x, [_fallbackLocationType], _searchRadius];
-            [locationPosition _fallbackLocation, _markerPrefix, _markerType, _markerColor, _markerSize, _markerAlpha, _useSafePos, _safeRadius] call FLO_fnc_createMarkerWithDefaults;
-            
-            // For radio tower: create physical tower if none exists and it's a radio tower marker
-            if (_variableName == "RadioTower") then {
-                private _towerTypes = ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"];
-                private _newTower = createVehicle [selectRandom _towerTypes, (locationPosition _fallbackLocation), [], 5, "NONE"];
-                _newTower setVectorUp [0,0,1];
-                _newTower setVariable ["RadioTower", true, true];
-            };
+            _markerPosition = locationPosition _fallbackLocation;
+        };
+        
+        // Create the marker and get the final position it was placed at
+        private _marker = [_markerPosition, _markerPrefix, _markerType, _markerColor, _markerSize, _markerAlpha, _useSafePos, _safeRadius] call FLO_fnc_createMarkerWithDefaults;
+        private _finalMarkerPos = getMarkerPos _marker;
+        
+        // For radio tower: create physical tower if none exists and it's a radio tower marker
+        // Create it at the FINAL marker position, not the original planned position
+        if (_variableName isEqualTo "RadioTower") then {
+            private _towerTypes = ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"];
+            private _newTower = createVehicle [selectRandom _towerTypes, _finalMarkerPos, [], 5, "NONE"];
+            _newTower setVectorUp [0,0,1];
+            _newTower setVariable ["RadioTower", true, true];
         };
     } forEach _searchPositions;
 };
@@ -173,7 +304,7 @@ private _distributedFobPoints = [_fobPoints, _fobPointCount] call FLO_fnc_getRan
 // Convert some outpost markers to different type
 sleep 5;
 
-private _outpostMarkers = allMapMarkers select {markerType _x == "o_support"};
+private _outpostMarkers = allMapMarkers select {markerType _x isEqualTo "o_support"};
 private _selectedOutpostCount = [_outpostMarkers, 6] call FLO_fnc_calculateDistribution;
 private _selectedOutposts = [_outpostMarkers, _selectedOutpostCount] call FLO_fnc_getRandomSubset;
 
@@ -186,7 +317,7 @@ _x setMarkerColor "colorOPFOR";
 
 // Base markers - use only LocationBase_F objects
 private _baseLocations = nearestObjects [_centerPosition, ["Logic", "LocationBase_F"], 40000] select {
-    typeOf _x == "LocationBase_F" || !isNil {_x getVariable "BaseLocation"}
+    typeOf _x isEqualTo "LocationBase_F" || !isNil {_x getVariable "BaseLocation"}
 };
 
 // Calculate number of base locations to use
@@ -199,7 +330,7 @@ private _selectedBases = [_baseLocations, _baseCount] call FLO_fnc_getRandomSubs
 
 // Capital cities - use logic markers with "Capital" variable or LocationCityCapital_F
 private _capitalLocations = nearestObjects [_centerPosition, ["Logic", "LocationCityCapital_F"], 40000] select {
-    typeOf _x == "LocationCityCapital_F" || !isNil {_x getVariable "Capital"}
+    typeOf _x isEqualTo "LocationCityCapital_F" || !isNil {_x getVariable "Capital"}
 };
 
 private _capitalCount = [_capitalLocations] call FLO_fnc_calculateDistribution;
@@ -211,7 +342,7 @@ private _selectedCapitals = [_capitalLocations, _capitalCount] call FLO_fnc_getR
 
 // Cities - use logic markers with "City" variable or LocationCity_F
 private _cityLocations = nearestObjects [_centerPosition, ["Logic", "LocationCity_F"], 40000] select {
-    typeOf _x == "LocationCity_F" || !isNil {_x getVariable "City"}
+    typeOf _x isEqualTo "LocationCity_F" || !isNil {_x getVariable "City"}
 };
 
 private _cityCount = [_cityLocations] call FLO_fnc_calculateDistribution;
@@ -288,7 +419,7 @@ private _distributedMinePoints = [_minePoints, _minePointCount] call FLO_fnc_get
 sleep 3;
 
 // Remove mine markers near villages/cities
-private _mineMarkers = allMapMarkers select {markerType _x == 'loc_mine'};
+private _mineMarkers = allMapMarkers select {markerType _x isEqualTo 'loc_mine'};
 {
     if (count (nearestObjects [(getMarkerPos _x), ["LocationVillage_F", "LocationCity_F", "LocationCityCapital_F"], 400]) > 0) then {
         deleteMarker _x;
@@ -310,7 +441,7 @@ private _distributedArmorPoints = [_armorPoints, _armorPointCount] call FLO_fnc_
 
 // Additional armor markers from logic objects with "ArmorPosition" variable or sideOPFOR_F
 private _armorLogicMarkers = nearestObjects [_centerPosition, ["Logic", "sideOPFOR_F"], 40000] select {
-    !isNil {_x getVariable "ArmorPosition"} || typeOf _x == "sideOPFOR_F"
+    !isNil {_x getVariable "ArmorPosition"} || typeOf _x isEqualTo "sideOPFOR_F"
 };
 
 if (count _armorLogicMarkers > 0) then {
@@ -337,7 +468,7 @@ private _distributedServicePoints = [_servicePoints, _servicePointCount] call FL
 
 // Infantry markers in villages
 private _villageLocations = nearestObjects [_centerPosition, ["Logic", "LocationVillage_F"], 40000] select {
-    typeOf _x == "LocationVillage_F" || !isNil {_x getVariable "Village"}
+    typeOf _x isEqualTo "LocationVillage_F" || !isNil {_x getVariable "Village"}
 };
 
 {
@@ -382,25 +513,28 @@ private _distributedAircraftPoints = [_aircraftPoints, _aircraftPointCount] call
 // Remove markers near the commander
 sleep 2;
 
-private _allMarks = allMapMarkers select {
-    markerType _x == "o_support" || 
-    markerType _x == "n_support" || 
-    markerType _x == "o_installation" || 
-    markerType _x == "n_installation" || 
-    markerType _x == "o_antiair" || 
-    markerType _x == "o_armor" || 
-    markerType _x == "o_service" || 
-    markerType _x == "o_plane" || 
-    markerType _x == "o_maint" || 
-    markerType _x == "loc_mine" || 
-    markerType _x == "loc_Power" || 
-    markerType _x == "loc_Ruin" || 
-    markerType _x == "mil_unknown" || 
-    markerType _x == "mil_warning" || 
-    markerType _x == "o_naval" || 
-    markerType _x == "o_recon" || 
-    markerType _x == "o_inf"
-};
+// Define all marker types to consider
+private _validMarkerTypes = [
+    "o_support", 
+    "n_support", 
+    "o_installation", 
+    "n_installation", 
+    "o_antiair", 
+    "o_armor", 
+    "o_service", 
+    "o_plane", 
+    "o_maint", 
+    "loc_mine", 
+    "loc_Power", 
+    "loc_Ruin", 
+    "mil_unknown", 
+    "mil_warning", 
+    "o_naval", 
+    "o_recon", 
+    "o_inf"
+];
+
+private _allMarks = allMapMarkers select {markerType _x in _validMarkerTypes};
 
 private _commanderNearbyMarkers = _allMarks select {getPos TheCommander distance getMarkerPos _x < 2000};
 {
