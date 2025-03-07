@@ -1113,7 +1113,46 @@ if (isNil "FLO_TaskForce_System") then {
                                 
                                 // Create crew with appropriate skill
                                 private _vehicleGroup = createGroup [east, true];
-                                [_vehicle, _vehicleGroup] call BIS_fnc_spawnCrew;
+                                
+                                // BIS_fnc_spawnCrew can sometimes create crews with incorrect side
+                                // Instead, create crew manually with explicit east side
+                                createVehicleCrew _vehicle;
+                                
+                                // Check if any crew members are NOT east side and fix them
+                                {
+                                    if (side _x != east) then {
+                                        ["TaskForce", 2, format["Crew member %1 has incorrect side %2, fixing to EAST", _x, side _x]] call FLO_fnc_log;
+                                        
+                                        // Get position and role
+                                        private _unitPos = getPosATL _x;
+                                        private _unitType = typeOf _x;
+                                        private _role = assignedVehicleRole _x;
+                                        
+                                        // Remove incorrect crew member
+                                        _x leaveVehicle _vehicle;
+                                        deleteVehicle _x;
+                                        
+                                        // Create new crew member with correct side
+                                        private _newUnit = _vehicleGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
+                                        
+                                        // Assign to correct vehicle role
+                                        if (count _role > 0) then {
+                                            switch (_role select 0) do {
+                                                case "driver": { _newUnit assignAsDriver _vehicle; _newUnit moveInDriver _vehicle; };
+                                                case "gunner": { _newUnit assignAsGunner _vehicle; _newUnit moveInGunner _vehicle; };
+                                                case "commander": { _newUnit assignAsCommander _vehicle; _newUnit moveInCommander _vehicle; };
+                                                case "turret": { _newUnit assignAsTurret [_vehicle, _role select 1]; _newUnit moveInTurret [_vehicle, _role select 1]; };
+                                                case "cargo": { _newUnit assignAsCargo _vehicle; _newUnit moveInCargo _vehicle; };
+                                                default { _newUnit moveInAny _vehicle; };
+                                            };
+                                        } else {
+                                            _newUnit moveInAny _vehicle;
+                                        };
+                                    } else {
+                                        // If side is correct, just move to our group
+                                        [_x] joinSilent _vehicleGroup;
+                                    };
+                                } forEach (crew _vehicle);
                                 
                                 // Set group ID for easier identification
                                 _vehicleGroup setGroupIdGlobal [format ["%1_Vehicle_%2", _taskForceId, _vehicleCount]];
