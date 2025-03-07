@@ -790,8 +790,11 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // If we created a patrol group, name it too
             if (count _spawnedUnits > 3 && count _buildingPositions > 3) then {
-                private _patrolID = format ["%1 %2-%3 Patrol", _squadNamePrefix, _platoonNum, _squadNum + 1];
-                _patrolGroup setGroupIdGlobal [_patrolID];
+                // Only set group ID if _patrolGroup is defined
+                if (!isNil "_patrolGroup" && {!isNull _patrolGroup}) then {
+                    private _patrolID = format ["%1 %2-%3 Patrol", _squadNamePrefix, _platoonNum, _squadNum + 1];
+                    _patrolGroup setGroupIdGlobal [_patrolID];
+                };
             };
             
             ["Garrison", 3, format["Set group ID for garrison at %1 to '%2'", _marker, _squadID]] call FLO_fnc_log;
