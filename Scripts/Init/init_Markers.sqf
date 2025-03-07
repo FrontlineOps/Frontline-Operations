@@ -1,471 +1,394 @@
+private _centerPosition = [worldSize / 2, worldsize / 2, 0];
 
-_Centerposition = [worldSize / 2, worldsize / 2, 0];
+// Helper function to create markers with default parameters
+FLO_fnc_createMarkerWithDefaults = {
+    params ["_position", "_name", "_type", "_color", "_size", "_alpha"];
+    
+    private _markerName = _name + (str _position);
+    private _marker = createMarker [_markerName, _position];
+    _marker setMarkerType _type;
+    _marker setMarkerColor _color;
+    _marker setMarkerSize _size;
+    _marker setMarkerAlpha _alpha;
+    
+    _marker
+};
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 1.5 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
+// Helper function to calculate distribution count based on EnemyPrec
+FLO_fnc_calculateDistribution = {
+    params ["_objectArray", ["_divisionFactor", 1], ["_ensureMinimum", true]];
+    
+    private _count = count _objectArray;
+    private _adjustedCount = round (_count / _divisionFactor);
+    private _finalCount = round (_adjustedCount / EnemyPrec);
+    
+    if (_ensureMinimum && {_finalCount == 0}) then {
+        _finalCount = 1;
+    };
+    
+    _finalCount
+};
 
-{if (count (nearestObjects [(getPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"], 1500]) > 0) then {
-_Tower =  selectRandom nearestObjects [(getPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"], 1500]  ;
-_markerName = "TowerMark" + (str (getPos _x));  
-_mrkr = createMarker [_markerName,getPos _Tower];   
-_mrkr setMarkerType "loc_Transmitter";
-_mrkr setMarkerColor "colorOPFOR";
-_mrkr setMarkerSize [1, 1]; 
-_mrkr setMarkerAlpha 1; 
+// Helper function to get a subset of shuffled objects based on distribution
+FLO_fnc_getRandomSubset = {
+    params ["_objectArray", "_count"];
+    
+    private _shuffled = _objectArray call BIS_fnc_arrayShuffle;
+    _shuffled select [0, _count]
+};
 
-};}forEach _allobjectsNew; 
+// Helper function to create markers based on search for objects with variable or specific type
+FLO_fnc_createMarkersFromSearch = {
+    params [
+        "_searchPositions",          // Array of positions to search from
+        "_searchRadius",             // Radius to search around each position
+        "_variableName",             // Variable name to look for in objects
+        "_objectTypes",              // Array of object types to consider as alternatives
+        "_fallbackLocationType",     // Type of location to use as fallback
+        "_markerPrefix",             // Prefix for marker names
+        "_markerType",               // Type of marker to create
+        "_markerColor",              // Color of marker
+        "_markerSize",               // Size of marker
+        "_markerAlpha"               // Alpha (transparency) of marker
+    ];
+    
+    {
+        private _targetObjects = nearestObjects [(getPos _x), [], _searchRadius] select {
+            !isNil {_x getVariable _variableName} || {typeOf _x in _objectTypes}
+        };
+        
+        if (count _targetObjects > 0) then {
+            private _target = selectRandom _targetObjects;
+            [getPos _target, _markerPrefix, _markerType, _markerColor, _markerSize, _markerAlpha] call FLO_fnc_createMarkerWithDefaults;
+        } else {
+            private _fallbackLocation = selectRandom nearestLocations [getPos _x, [_fallbackLocationType], _searchRadius];
+            [locationPosition _fallbackLocation, _markerPrefix, _markerType, _markerColor, _markerSize, _markerAlpha] call FLO_fnc_createMarkerWithDefaults;
+            
+            // For radio tower: create physical tower if none exists and it's a radio tower marker
+            if (_variableName == "RadioTower") then {
+                private _towerTypes = ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"];
+                private _newTower = createVehicle [selectRandom _towerTypes, (locationPosition _fallbackLocation), [], 5, "NONE"];
+                _newTower setVectorUp [0,0,1];
+                _newTower setVariable ["RadioTower", true, true];
+            };
+        };
+    } forEach _searchPositions;
+};
 
+// Start of main script execution
 
-{if (count (nearestObjects [(getPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"], 1500]) == 0) then {
-_Mount = selectRandom nearestLocations [getPos _x, ["Mount"], 1500];   
-_markerName = "TowerMark" + (str (locationPosition _Mount));  
-_mrkr = createMarker [_markerName,locationPosition _Mount];   
-_mrkr setMarkerType "loc_Transmitter";
-_mrkr setMarkerColor "colorOPFOR";
-_mrkr setMarkerSize [1, 1]; 
-_mrkr setMarkerAlpha 1;  
+// Get central evacuation points for distribution calculations
+private _evacuationPoints = nearestObjects [_centerPosition, ["LocationEvacPoint_F"], 40000];
+private _evacuationPointCount = [_evacuationPoints, 1.5] call FLO_fnc_calculateDistribution;
+private _distributedEvacPoints = [_evacuationPoints, _evacuationPointCount] call FLO_fnc_getRandomSubset;
 
-_P1 =  ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"]; 	
-_TWR = createVehicle [ selectRandom _P1, (locationPosition _Mount), [], 5, "NONE"];
-_TWR setVectorUp [0,0,1];
+// Create Radio Tower markers
+[
+    _distributedEvacPoints,
+    1500,
+    "RadioTower",
+    [],
+    "Mount",
+    "TowerMark",
+    "loc_Transmitter",
+    "colorOPFOR",
+    [1, 1],
+    1
+] call FLO_fnc_createMarkersFromSearch;
 
-};}forEach _allobjectsNew; 
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-_missionTag = missionName;
+// Clear persistent data
+private _missionTag = missionName;
 _missionTag = [_missionTag] call BIS_fnc_filterString;
 
-private _MarkerTimeName = _missionTag + "_Time";
-private _MarkerDataName = _missionTag + "_markers";
-private _VehicleDataName = _missionTag + "_Vehicles";
-private _ObjectDataName = _missionTag + "_Objects";
+private _markerTimeName = _missionTag + "_Time";
+private _markerDataName = _missionTag + "_markers";
+private _vehicleDataName = _missionTag + "_Vehicles";
+private _objectDataName = _missionTag + "_Objects";
 
 sleep 2;
 
-profileNamespace setVariable [_MarkerTimeName, nil];
-profileNamespace setVariable [_MarkerDataName, nil];
-profileNamespace setVariable [_VehicleDataName, nil];
-profileNamespace setVariable [_ObjectDataName, nil];
+profileNamespace setVariable [_markerTimeName, nil];
+profileNamespace setVariable [_markerDataName, nil];
+profileNamespace setVariable [_vehicleDataName, nil];
+profileNamespace setVariable [_objectDataName, nil];
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+// Get points for Factory/Resupply markers
+private _resupplyPoints = nearestObjects [_centerPosition, ["LocationEvacPoint_F", "LocationResupplyPoint_F"], 40000];
+private _resupplyPointCount = [_resupplyPoints, 1] call FLO_fnc_calculateDistribution;
+private _distributedResupplyPoints = [_resupplyPoints, _resupplyPointCount] call FLO_fnc_getRandomSubset;
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 1 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
+// Create Resupply Point markers
+[
+    _distributedResupplyPoints,
+    1500,
+    "ResupplyPoint",
+    ["LocationResupplyPoint_F"],
+    "Mount",
+    "FactMark",
+    "o_support",
+    "colorOPFOR",
+    [1.2, 1.2],
+    0.001
+] call FLO_fnc_createMarkersFromSearch;
 
-{if (count (nearestObjects [(getPos _x), ["Sign_Pointer_Blue_F"], 1500]) > 0) then {
-_Factory =  selectRandom nearestObjects [(getPos _x), ["Sign_Pointer_Blue_F"], 1500]  ;
-_markerName = "FactMark" + (str (getPos _x));  
-_mrkr = createMarker [_markerName,getPos _Factory];   
-_mrkr setMarkerType "o_support";
-_mrkr setMarkerColor "colorOPFOR";
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;
+// Get points for Outpost/FOB markers
+private _fobPoints = nearestObjects [_centerPosition, ["LocationEvacPoint_F", "LocationFOB_F"], 40000];
+private _fobPointCount = [_fobPoints, 1] call FLO_fnc_calculateDistribution;
+private _distributedFobPoints = [_fobPoints, _fobPointCount] call FLO_fnc_getRandomSubset;
 
-};}forEach _allobjectsNew; 
+// Create FOB markers
+[
+    _distributedFobPoints,
+    1500,
+    "FOB",
+    ["LocationFOB_F"],
+    "Mount",
+    "OutpMark",
+    "o_support",
+    "colorOPFOR",
+    [1.2, 1.2],
+    0.001
+] call FLO_fnc_createMarkersFromSearch;
 
-
-{if (count (nearestObjects [(getPos _x), ["Sign_Pointer_Blue_F"], 1500]) == 0) then {
-_Mount = selectRandom nearestLocations [getPos _x, ["Mount"], 1500];   
-_markerName = "TowerMark" + (str (locationPosition _Mount));  
-_mrkr = createMarker [_markerName,locationPosition _Mount];   
-_mrkr setMarkerType "o_support";
-_mrkr setMarkerColor "colorOPFOR";
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;
-
-};}forEach _allobjectsNew; 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 1 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-{if (count (nearestObjects [(getPos _x), ["Land_Cargo_Tower_V3_F", "Land_Cargo_Tower_V2_F", "Land_Cargo_Tower_V1_F", "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V2_F", "Land_Cargo_HQ_V1_F"], 1500]) > 0) then {
-_Outp =  selectRandom nearestObjects [(getPos _x), ["Land_Cargo_Tower_V3_F", "Land_Cargo_Tower_V2_F", "Land_Cargo_Tower_V1_F", "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V2_F", "Land_Cargo_HQ_V1_F"], 1500]  ;
-_markerName = "OutpMark" + (str (getPos _x));  
-_mrkr = createMarker [_markerName,getPos _Outp];   
-_mrkr setMarkerType "o_support";
-_mrkr setMarkerColor "colorOPFOR";   
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;  
-
-};}forEach _allobjectsNew; 
-
-
-{if (count (nearestObjects [(getPos _x), ["Land_Cargo_Tower_V3_F", "Land_Cargo_Tower_V2_F", "Land_Cargo_Tower_V1_F", "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V2_F", "Land_Cargo_HQ_V1_F"], 1500]) == 0) then {
-_Mount = selectRandom nearestLocations [getPos _x, ["Mount"], 1500];   
-_markerName = "OutpMark" + (str (locationPosition _Mount));  
-_mrkr = createMarker [_markerName,locationPosition _Mount];   
-_mrkr setMarkerType "o_support";
-_mrkr setMarkerColor "colorOPFOR";   
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;  
-
-};}forEach _allobjectsNew; 
-
-//////////////////////////////////////////////////////////////////////////////////////////////
+// Convert some outpost markers to different type
 sleep 5;
 
-_OutpMarks = allMapMarkers select {markerType _x == "o_support"};
-_OutpMarkCountFull = count _OutpMarks;
-_OutpMarkCount = round ( _OutpMarkCountFull / 6 );
-if (_OutpMarkCount == 0) then {_OutpMarkCount = 1;};
-_allobjectsShuffled = _OutpMarks call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _OutpMarkCount];
-
-{ 
-_x setMarkerType "n_support";  
-_x setMarkerSize [1.4, 1.4];   
-_x setMarkerColor "colorOPFOR"; 
-_x setMarkerAlpha 1 ; 
-   
-} forEach _allobjectsNew;  
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLoc = nearestobjects [_Centerposition, ["Land_InvisibleBarrier_F"], 40000]; 
- _objectCount = count _objectLoc;
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-{ 
- 
-_mrkr = createMarker [str(_x),getPos _x]; 
-_mrkr setMarkerType "n_support";  
-_mrkr setMarkerSize [1.4, 1.4];   
-_mrkr setMarkerColor "colorOPFOR"; 
-_mrkr setMarkerAlpha 1 ;  
-   
-} forEach _allobjectsNew;  
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-
-_objectLoc = nearestobjects [_Centerposition, ["LocationCityCapital_F"], 40000]; 
- _objectCount = count _objectLoc;
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-{
-
-_mrkr = createMarker [str(_x),getPos _x];
-_mrkr setMarkerType "n_installation"; 
-_mrkr setMarkerSize [1.4, 1.4];   
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerAlpha 1 ;
- 
-} forEach _allobjectsNew; 
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLoc = nearestobjects [_Centerposition, ["LocationCity_F"], 40000]; 
- _objectCount = count _objectLoc;
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
+private _outpostMarkers = allMapMarkers select {markerType _x == "o_support"};
+private _selectedOutpostCount = [_outpostMarkers, 6] call FLO_fnc_calculateDistribution;
+private _selectedOutposts = [_outpostMarkers, _selectedOutpostCount] call FLO_fnc_getRandomSubset;
 
 {
-_mrkr = createMarker [str(_x),getPos _x];
-_mrkr setMarkerType "o_installation"; 
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerColor "colorOPFOR";
-_mrkr setMarkerAlpha 0.001;  
+    _x setMarkerType "n_support";
+    _x setMarkerSize [1.4, 1.4];
+    _x setMarkerColor "colorOPFOR";
+    _x setMarkerAlpha 1;
+} forEach _selectedOutposts;
 
-} forEach _allobjectsNew; 
+// Base markers - use LocationBase_F or logic markers with BaseLocation variable
+private _baseLocations = nearestObjects [_centerPosition, ["LocationBase_F"], 40000];
+private _baseLogicMarkers = nearestObjects [_centerPosition, ["Logic"], 40000] select {!isNil {_x getVariable "BaseLocation"}};
+_baseLocations append _baseLogicMarkers;
 
+private _baseCount = [_baseLocations] call FLO_fnc_calculateDistribution;
+private _selectedBases = [_baseLocations, _baseCount] call FLO_fnc_getRandomSubset;
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+{
+    [getPos _x, str(_x), "n_support", "colorOPFOR", [1.4, 1.4], 1] call FLO_fnc_createMarkerWithDefaults;
+} forEach _selectedBases;
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 2 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
+// Capital cities - use logic markers with "Capital" variable or LocationCityCapital_F
+private _capitalLocations = nearestObjects [_centerPosition, ["Logic", "LocationCityCapital_F"], 40000] select {
+    typeOf _x == "LocationCityCapital_F" || !isNil {_x getVariable "Capital"}
+};
 
-{if (count (nearestObjects [(getPos _x), ["Land_i_Barracks_V1_F", "Land_u_Barracks_V2_F", "Land_i_Barracks_V2_F", "Land_Barracks_01_grey_F", "Land_Barracks_01_dilapidated_F", "Land_vn_barracks_01_camo_f", "Land_Barracks_01_camo_F"], 1500]) > 0) then {
-_Factory =  selectRandom nearestObjects [(getPos _x), ["Land_i_Barracks_V1_F", "Land_u_Barracks_V2_F", "Land_i_Barracks_V2_F", "Land_Barracks_01_grey_F", "Land_Barracks_01_dilapidated_F", "Land_vn_barracks_01_camo_f", "Land_Barracks_01_camo_F"], 1500]  ;
-_markerName = "BarrackMark" + (str (getPos _x));  
-_mrkr = createMarker [_markerName,getPos _Factory ];   
-_mrkr setMarkerType "loc_Ruin";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;  
+private _capitalCount = [_capitalLocations] call FLO_fnc_calculateDistribution;
+private _selectedCapitals = [_capitalLocations, _capitalCount] call FLO_fnc_getRandomSubset;
 
-};}forEach _allobjectsNew; 
+{
+    [getPos _x, str(_x), "n_installation", "colorOPFOR", [1.4, 1.4], 1] call FLO_fnc_createMarkerWithDefaults;
+} forEach _selectedCapitals;
 
+// Cities - use logic markers with "City" variable or LocationCity_F
+private _cityLocations = nearestObjects [_centerPosition, ["Logic", "LocationCity_F"], 40000] select {
+    typeOf _x == "LocationCity_F" || !isNil {_x getVariable "City"}
+};
 
-{if (count (nearestObjects [(getPos _x), ["Land_i_Barracks_V1_F", "Land_u_Barracks_V2_F", "Land_i_Barracks_V2_F", "Land_Barracks_01_grey_F", "Land_Barracks_01_dilapidated_F", "Land_vn_barracks_01_camo_f", "Land_Barracks_01_camo_F"], 1500]) == 0) then {
-_Mount = selectRandom nearestLocations [getPos _x, ["Mount"], 1500];   
-_markerName = "BarrackMark" + (str (locationPosition _Mount));  
-_mrkr = createMarker [_markerName,locationPosition _Mount];   
-_mrkr setMarkerType "loc_Ruin";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;  
+private _cityCount = [_cityLocations] call FLO_fnc_calculateDistribution;
+private _selectedCities = [_cityLocations, _cityCount] call FLO_fnc_getRandomSubset;
 
-};}forEach _allobjectsNew; 
+{
+    [getPos _x, str(_x), "o_installation", "colorOPFOR", [1.2, 1.2], 0.001] call FLO_fnc_createMarkerWithDefaults;
+} forEach _selectedCities;
 
+// Get points for Barracks markers
+private _barracksPoints = nearestObjects [_centerPosition, ["LocationEvacPoint_F", "LocationCamp_F"], 40000];
+private _barracksPointCount = [_barracksPoints, 2] call FLO_fnc_calculateDistribution;
+private _distributedBarracksPoints = [_barracksPoints, _barracksPointCount] call FLO_fnc_getRandomSubset;
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+// Create Barracks markers
+[
+    _distributedBarracksPoints,
+    1500,
+    "Barracks",
+    ["LocationCamp_F"],
+    "Mount",
+    "BarrackMark",
+    "loc_Ruin",
+    "colorOPFOR",
+    [1.2, 1.2],
+    0.001
+] call FLO_fnc_createMarkersFromSearch;
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 2 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
+// Get points for Radar markers
+private _radarPoints = nearestObjects [_centerPosition, ["LocationEvacPoint_F"], 40000];
+private _radarPointCount = [_radarPoints, 2] call FLO_fnc_calculateDistribution;
+private _distributedRadarPoints = [_radarPoints, _radarPointCount] call FLO_fnc_getRandomSubset;
 
-{if (count (nearestObjects [(getPos _x), ["Land_Radar_F"], 1500]) > 0) then {
-_Factory =  selectRandom nearestObjects [(getPos _x), ["Land_Radar_F"], 1500]  ;
-_markerName = "RadarSMark" + (str (getPos _x));  
-_mrkr = createMarker [_markerName,getPos _Factory ];   
-_mrkr setMarkerType "loc_Power";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1, 1]; 
-_mrkr setMarkerAlpha 0.001;    
+// Create Radar markers
+[
+    _distributedRadarPoints,
+    1500,
+    "RadarS",
+    [],
+    "Mount",
+    "RadarSMark",
+    "loc_Power",
+    "colorOPFOR",
+    [1, 1],
+    0.001
+] call FLO_fnc_createMarkersFromSearch;
 
-};}forEach _allobjectsNew; 
+// Get points for Investigation markers
+private _investigationPoints = _evacuationPoints;
+private _investigationPointCount = [_investigationPoints, 1] call FLO_fnc_calculateDistribution;
+private _distributedInvestigationPoints = [_investigationPoints, _investigationPointCount] call FLO_fnc_getRandomSubset;
 
+// Create Investigation markers
+{
+    private _mount = selectRandom nearestLocations [(getPos _x), ["Mount"], 2000];
+    [locationPosition _mount, "InvesMark", "o_recon", "colorOPFOR", [0.8, 0.8], 0.001] call FLO_fnc_createMarkerWithDefaults;
+} forEach _distributedInvestigationPoints;
 
-{if (count (nearestObjects [(getPos _x), ["Land_Radar_F"], 1500]) == 0) then {
-_Mount = selectRandom nearestLocations [getPos _x, ["Mount"], 1500];   
-_markerName = "RadarSMark" + (str (locationPosition _Mount));  
-_mrkr = createMarker [_markerName,locationPosition _Mount];   
-_mrkr setMarkerType "loc_Power";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1, 1]; 
-_mrkr setMarkerAlpha 0.001;  
+// Get points for Mine field markers
+private _minePoints = _evacuationPoints;
+private _minePointCount = [_minePoints, 1] call FLO_fnc_calculateDistribution;
+private _distributedMinePoints = [_minePoints, _minePointCount] call FLO_fnc_getRandomSubset;
 
-};}forEach _allobjectsNew; 
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 1 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-{ 
-_Mount = selectRandom nearestLocations [(getPos _x), ["Mount"], 2000];
-_markerName = "InvesMark" + (str (getPos _x));   
-_mrkr = createMarker [_markerName, locationPosition _Mount];   
-_mrkr setMarkerType "o_recon";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [0.8, 0.8]; 
-_mrkr setMarkerAlpha 0.001;  
-
-} foreach _allobjectsNew;
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 1 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-{ 
-_pos = [ getPos _x, 10, 2000, 3, 0, 1, 0] call BIS_fnc_findSafePos;
-_markerName = "MineMark" + (str (getPos _x));
-_mrkr = createMarker [_markerName, _pos];
-_mrkr setMarkerType "loc_mine"; 
-_mrkr setMarkerSize [1, 1];  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerAlpha 0.001;
-
-} foreach _allobjectsNew;
-
-
+// Create Mine field markers
+{
+    private _pos = [getPos _x, 10, 2000, 3, 0, 1, 0] call BIS_fnc_findSafePos;
+    [_pos, "MineMark", "loc_mine", "colorOPFOR", [1, 1], 0.001] call FLO_fnc_createMarkerWithDefaults;
+} forEach _distributedMinePoints;
 
 sleep 3;
 
-_objectLocT = allMapMarkers select { markerType _x == 'loc_mine' };
-	{
-if (count (nearestobjects [(getMarkerPos _x), ["LocationVillage_F", "LocationCity_F", "LocationCityCapital_F"], 400]) > 0) then { 
-deleteMarker _x ; 
+// Remove mine markers near villages/cities
+private _mineMarkers = allMapMarkers select {markerType _x == 'loc_mine'};
+{
+    if (count (nearestObjects [(getMarkerPos _x), ["LocationVillage_F", "LocationCity_F", "LocationCityCapital_F"], 400]) > 0) then {
+        deleteMarker _x;
+    };
+} forEach _mineMarkers;
 
-};} foreach _objectLocT;
+// Get points for Armor markers
+private _armorPoints = _evacuationPoints;
+private _armorPointCount = [_armorPoints, 2] call FLO_fnc_calculateDistribution;
+private _distributedArmorPoints = [_armorPoints, _armorPointCount] call FLO_fnc_getRandomSubset;
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+// Create Armor markers on roads
+{
+    private _nearRoad = selectRandom ((getPos _x) nearRoads 3500);
+    if (!isNull _nearRoad) then {
+        [getPos _nearRoad, "ArmorMark", "o_armor", "colorOPFOR", [1.2, 1.2], 0.001] call FLO_fnc_createMarkerWithDefaults;
+    };
+} forEach _distributedArmorPoints;
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCount = round ( _objectCountFull / 2 );
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-{ 
-_nearRoad = selectRandom ((getPos _x) nearRoads 3500) ; 
-_markerName = "ArmorMark" + (str (getPos _x));
-_mrkr = createMarker [_markerName, getPos _nearRoad];   
-_mrkr setMarkerType "o_armor";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1.2, 1.2];   
-_mrkr setMarkerAlpha 0.001;  
-
-} foreach _allobjectsNew;
-
-_objectLoc = nearestobjects [_Centerposition, ["Sign_Pointer_Cyan_F"], 40000]; 
-
-
-if (count _objectLoc > 0) then {
-	
-_objectLoc = nearestobjects [_Centerposition, ["Sign_Pointer_Cyan_F"], 40000]; 
-	
-_objectCountFull = count _objectLoc;
-_objectCountNew = round ( _objectCountFull / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-		
-		{ 
-
-_markerName = "ArmorMark" + (str (getPos _x));
-_mrkr = createMarker [_markerName, getPos _x];   
-_mrkr setMarkerType "o_armor";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1.2, 1.2];   
-_mrkr setMarkerAlpha 0.001;  
-
-
-		} foreach _allobjectsNew;
-	
+// Additional armor markers from logic objects with "ArmorPosition" variable or sideOPFOR_F
+private _armorLogicMarkers = nearestObjects [_centerPosition, ["Logic", "sideOPFOR_F"], 40000] select {
+    !isNil {_x getVariable "ArmorPosition"} || typeOf _x == "sideOPFOR_F"
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+if (count _armorLogicMarkers > 0) then {
+    private _logicArmorCount = [_armorLogicMarkers] call FLO_fnc_calculateDistribution;
+    private _selectedArmorLogic = [_armorLogicMarkers, _logicArmorCount] call FLO_fnc_getRandomSubset;
+    
+    {
+        [getPos _x, "ArmorMark", "o_armor", "colorOPFOR", [1.2, 1.2], 0.001] call FLO_fnc_createMarkerWithDefaults;
+    } forEach _selectedArmorLogic;
+};
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCount = count _objectLoc;
-_objectCountNew = round ( _objectCount / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-{ 
-_nearRoad = selectRandom ( (getPos _x) nearRoads 2500 ) ; 
-_mrkr = createMarker [str(_nearRoad), getPos _nearRoad];   
-_mrkr setMarkerType "o_service";  
-_mrkr setMarkerColor "colorOPFOR"; 
-_mrkr setMarkerSize [0.8, 0.8]; 
-_mrkr setMarkerAlpha 0.001;  
+// Get points for Service markers
+private _servicePoints = _evacuationPoints;
+private _servicePointCount = [_servicePoints] call FLO_fnc_calculateDistribution;
+private _distributedServicePoints = [_servicePoints, _servicePointCount] call FLO_fnc_getRandomSubset;
 
-} foreach _allobjectsNew;
+// Create Service markers on roads
+{
+    private _nearRoad = selectRandom ((getPos _x) nearRoads 2500);
+    if (!isNull _nearRoad) then {
+        [getPos _nearRoad, str(_nearRoad), "o_service", "colorOPFOR", [0.8, 0.8], 0.001] call FLO_fnc_createMarkerWithDefaults;
+    };
+} forEach _distributedServicePoints;
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLoc = nearestobjects [_Centerposition, ["LocationVillage_F"], 40000]; 
+// Infantry markers in villages
+private _villageLocations = nearestObjects [_centerPosition, ["Logic", "LocationVillage_F"], 40000] select {
+    typeOf _x == "LocationVillage_F" || !isNil {_x getVariable "Village"}
+};
 
 {
-_markerName = "InsurVillMark" + (str (_x getPos [(0 +(random 100)), (0 + (random 360))])) ;  
-_mrkr = createMarker [_markerName, (getPos _x)] ;   
-_mrkr setMarkerType "o_inf"; 
-_mrkr setMarkerSize [0.7, 0.7]; 
-_mrkr setMarkerColor "colorOPFOR";
-_mrkr setMarkerAlpha 0.001;  
+    private _randomPos = _x getPos [(0 + (random 100)), (0 + (random 360))];
+    private _markerName = "InsurVillMark" + (str _randomPos);
+    [getPos _x, _markerName, "o_inf", "colorOPFOR", [0.7, 0.7], 0.001] call FLO_fnc_createMarkerWithDefaults;
+} forEach _villageLocations;
 
-} forEach _objectLoc; 
+// Get points for AA site markers
+private _aaPoints = _evacuationPoints;
+private _aaPointCount = [_aaPoints, 2] call FLO_fnc_calculateDistribution;
+private _distributedAAPoints = [_aaPoints, _aaPointCount] call FLO_fnc_getRandomSubset;
 
+// Create AA site markers
+[
+    _distributedAAPoints,
+    2000,
+    "AASite",
+    [],
+    "Mount",
+    "AAMark",
+    "o_antiair",
+    "colorOPFOR",
+    [1.2, 1.2],
+    0.001
+] call FLO_fnc_createMarkersFromSearch;
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+// Get points for Aircraft markers
+private _aircraftPoints = _evacuationPoints;
+private _aircraftPointCount = [_aircraftPoints, 2] call FLO_fnc_calculateDistribution;
+private _distributedAircraftPoints = [_aircraftPoints, _aircraftPointCount] call FLO_fnc_getRandomSubset;
 
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000]; 
-_objectCount = count _objectLoc;
-_AASlash = round ( _objectCount / 2 );
-_objectCountNew = round ( _AASlash / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
+// Create Aircraft markers
+{
+    private _randomPos = _x getPos [(0 + (random 300)), (0 + (random 350))];
+    private _markName = "marker" + (str(_forEachIndex + 1));
+    [_randomPos, _markName, "o_plane", "colorOPFOR", [1, 1], 0.001] call FLO_fnc_createMarkerWithDefaults;
+} forEach _distributedAircraftPoints;
 
-{ 
-_Mount = selectRandom nearestLocations [(getPos _x), ["Mount"], 2000];
-_markerName = "AAMark" + (str (getPos _x));   
-_mrkr = createMarker [_markerName, locationPosition _Mount];   
-_mrkr setMarkerType "o_antiair";  
-_mrkr setMarkerColor "colorOPFOR";  
-_mrkr setMarkerSize [1.2, 1.2]; 
-_mrkr setMarkerAlpha 0.001;  
-
-} foreach _allobjectsNew;
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLoc = nearestobjects [_Centerposition, ["LocationEvacPoint_F"], 40000];  
-_objectCount = count _objectLoc;
-_AASlash = round ( _objectCount / 2 );
-_objectCountNew = round ( _AASlash / EnemyPrec );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-{  
-_markName = "marker" + (str(_forEachIndex + 1)); 
-_mrkr = createMarker [_markName, _x getPos [(0 + (random 300)), (0 + (random 350))]];    
-_mrkr setMarkerType "o_plane";   
-_mrkr setMarkerColor "colorOPFOR";   
-_mrkr setMarkerSize [1, 1]; 
-_mrkr setMarkerAlpha 0.001;   
-    
-} foreach _allobjectsNew;
-//////////////////////////////////////////////////////////////////////////////////////////////
-
+// Remove markers near the commander
 sleep 2;
 
-_AllMarks = allMapMarkers select {markerType _x == "o_support" or markerType _x == "n_support" or markerType _x == "o_installation" or markerType _x == "n_installation" or markerType _x == "o_antiair" or markerType _x == "o_armor" or markerType _x == "o_service" or markerType _x == "o_plane" or markerType _x == "o_maint" or markerType _x == "loc_mine" or markerType _x == "loc_Power" or markerType _x == "loc_Ruin" or markerType _x == "mil_unknown" or markerType _x == "mil_warning" or markerType _x == "o_naval" or markerType _x == "o_recon" or markerType _x == "o_inf" };     
-_AllMarksNear = _AllMarks select {getPos TheCommander distance getMarkerpos _x < 2000};
-	{  
-deleteMarker _x ; 
-	} forEach _AllMarksNear;
+private _allMarks = allMapMarkers select {
+    markerType _x == "o_support" || 
+    markerType _x == "n_support" || 
+    markerType _x == "o_installation" || 
+    markerType _x == "n_installation" || 
+    markerType _x == "o_antiair" || 
+    markerType _x == "o_armor" || 
+    markerType _x == "o_service" || 
+    markerType _x == "o_plane" || 
+    markerType _x == "o_maint" || 
+    markerType _x == "loc_mine" || 
+    markerType _x == "loc_Power" || 
+    markerType _x == "loc_Ruin" || 
+    markerType _x == "mil_unknown" || 
+    markerType _x == "mil_warning" || 
+    markerType _x == "o_naval" || 
+    markerType _x == "o_recon" || 
+    markerType _x == "o_inf"
+};
 
+private _commanderNearbyMarkers = _allMarks select {getPos TheCommander distance getMarkerPos _x < 2000};
+{
+    deleteMarker _x;
+} forEach _commanderNearbyMarkers;
 
+// Create respawn marker
 sleep 2;
 
-_markerName = "respawn_west" + (str (position player));  
-_mrkr = createMarker [_markerName, (position player)];  
-_mrkr setMarkerType "b_unknown";
-_mrkr setMarkerSize [0.6, 0.6]; 
-_mrkr setMarkerText "Respawn"; 
-_mrkr setMarkerAlpha 1;
- 
-
+private _respawnMarkerName = "respawn_west" + (str (position player));
+private _respawnMarker = createMarker [_respawnMarkerName, (position player)];
+_respawnMarker setMarkerType "b_unknown";
+_respawnMarker setMarkerSize [0.6, 0.6];
+_respawnMarker setMarkerText "Respawn";
+_respawnMarker setMarkerAlpha 1;
 
 MarLOCC = 1;
 publicVariable "MarLOCC";
