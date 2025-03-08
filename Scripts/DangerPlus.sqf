@@ -6,7 +6,7 @@ _AGGRSCORE = parseNumber (markerText _mrkr) ;
 
 if (_AGGRSCORE < 16) then {
 
-["showNotification", ["AGGRESSION", "Increased + + +", "warning"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["AGGRESSION", "Increased + + +", "warning"]];
 
 _NewScore = _AGGRSCORE + 0.75; 
 _mrkr setMarkerText str _NewScore;

@@ -49,7 +49,7 @@ private _artilleryMagazines = [
 
 // Create new batteries if under cap and resources available
 if (_newBatteriesCount > 0) then {
-    ["showNotification", ["! WARNING !", "Enemy artillery batteries detected deploying!", "warning"]] call FLO_fnc_intelSystem;
+    FLO_Intel_System call ["showNotification", ["! WARNING !", "Enemy artillery batteries detected deploying!", "warning"]];
     for "_i" from 1 to _newBatteriesCount do {
         // Find position far from target but with good firing position
         private _artPos = [_targetPos, 5000, 10000, 10, 0] call BIS_fnc_findSafePos;

@@ -18,7 +18,7 @@ openMap true;
  
 sleep 5;
 
-["showNotification", ["CIVILIAN MISSION", "Repair Vehicle - Find and Repair the Damaged Vehicle", "info"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["CIVILIAN MISSION", "Repair Vehicle - Find and Repair the Damaged Vehicle", "info"]];
 
 _V = createVehicle [ selectRandom CivVehArray, getpos _nearRoad, [], 4, "NONE"]; 
 _nextRoad = ( roadsConnectedTo _nearRoad ) select 0;

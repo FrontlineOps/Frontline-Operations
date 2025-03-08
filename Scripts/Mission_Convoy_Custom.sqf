@@ -52,10 +52,10 @@ _mrkr setMarkerText "Convoy End" ;
 _mrkr setMarkerSize [1.5, 1.5] ;
 _mrkr setMarkerAlpha 0.7 ;  
 
-	["showNotification", ["! WARNING !", "Intel Suggests Enemy Support Convoy Incoming, ETA 10 Mikes", "warning"]] call FLO_fnc_intelSystem;
+	FLO_Intel_System call ["showNotification", ["! WARNING !", "Intel Suggests Enemy Support Convoy Incoming, ETA 10 Mikes", "warning"]];
 
 	sleep 600 ;
-		["showNotification", ["! WARNING !", "Enemy Support Convoy Mobolizing To the AO", "warning"]] call FLO_fnc_intelSystem;
+		FLO_Intel_System call ["showNotification", ["! WARNING !", "Enemy Support Convoy Mobolizing To the AO", "warning"]];
 
 
 	ConVLocc = 1 ;

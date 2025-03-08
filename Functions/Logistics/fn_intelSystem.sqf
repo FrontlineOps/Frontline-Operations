@@ -6,27 +6,11 @@
     Intel decays over time but can be increased through intel collection and radio tower control.
     
     Parameter(s):
-    _mode - The function mode to execute ["init", "get", "add", "notify", "showNotification"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - No parameters needed
-        get: [] - No parameters needed
-        add: [_amount, _source] - Amount to add and source of intel
-        notify: [_message, _importance] - Message to broadcast and its importance (1-3)
-        showNotification: [_title, _message, _type] - Title, message and type ("warning", "intel", "success", "info")
+        None
     
     Returns:
-    Based on mode:
-        init: Nothing
-        get: Number - Current intel level
-        add: Number - New intel level
-        notify: Boolean - True if message was broadcast
-        showNotification: Boolean - True if notification was shown
+        Nothing
 */
-
-params [
-    ["_mode", "init", [""]],
-    ["_params", [], [[]]]
-];
 
 // System configuration constants
 private _INTEL_DECAY_RATE = 0.1;        // Intel points lost per minute
@@ -263,50 +247,5 @@ if (isServer && isNil "FLO_Intel_System") then {
     
     // Create the intel management object and make it public
     FLO_Intel_System = createHashMapObject [_intelClass, 0];
+    FLO_Intel_System call ["initDecayLoop", []];
 };
-
-// Handle different operation modes
-switch (_mode) do {
-    // Initialize the intel system and start decay loop
-    case "init": {
-        _self = FLO_Intel_System;
-        _self call ["initDecayLoop", []];
-    };
-    
-    // Get current intel level
-    case "get": {
-        _self = FLO_Intel_System;
-        _self call ["getIntelLevel", []]
-    };
-    
-    // Add intel from a source
-    case "add": {
-        _params params [
-            ["_amount", 0, [0]],
-            ["_source", "", [""]]
-        ];
-        _self = FLO_Intel_System;
-        _self call ["addIntel", [_amount, _source]]
-    };
-    
-    // Send an intel notification
-    case "notify": {
-        _params params [
-            ["_message", "", [""]],
-            ["_importance", 1, [0]]
-        ];
-        _self = FLO_Intel_System;
-        _self call ["notify", [_message, _importance]]
-    };
-    
-    // Show a styled notification
-    case "showNotification": {
-        _params params [
-            ["_title", "", [""]],
-            ["_message", "", [""]],
-            ["_type", "info", [""]]
-        ];
-        _self = FLO_Intel_System;
-        _self call ["showNotification", [_title, _message, _type]]
-    };
-}; 

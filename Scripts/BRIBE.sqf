@@ -15,7 +15,7 @@ _mrkr setMarkerText str _NewScore;
 
 sleep 12;
 
-["showNotification", ["REPUTATION", "Increased + + + (Bribe Successful)", "success"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["REPUTATION", "Increased + + + (Bribe Successful)", "success"]];
 
 }else{hint "Not enough Resources"; };
 }else{  hint "You are not authorized for this Request Soldier!"; };

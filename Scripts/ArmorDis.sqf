@@ -1,7 +1,7 @@
 sleep 18 ;
 
 
-["showNotification", ["SUPPORT DISABLED", "Enemy Armored Support Dismantled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["SUPPORT DISABLED", "Enemy Armored Support Dismantled For the Next Hour", "success"]];
 
 
 

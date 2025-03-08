@@ -95,7 +95,7 @@ private _frontlineManagerDeclaration = [
         params ["_aggressionScore"];
         
         // Notify players that OPFOR is preparing an offensive
-        ["showNotification", ["! INTELLIGENCE !", "Enemy is preparing a major offensive operation!", "warning"]] call FLO_fnc_intelSystem;
+        FLO_Intel_System call ["showNotification", ["! INTELLIGENCE !", "Enemy is preparing a major offensive operation!", "warning"]];
         [[west,"HQ"], "INTELLIGENCE: We have reports of enemy forces mobilizing for a major operation."] remoteExec ["sideChat", 0];
         
         // Add a delay before the actual attack to build tension
@@ -262,7 +262,7 @@ private _frontlineManagerDeclaration = [
         ];
         
         // Notify players
-        ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]] call FLO_fnc_intelSystem;
+        FLO_Intel_System call ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]];
         private _outpostGrid = mapGridPosition getMarkerPos _outpostMarkerName;
         [[west,"HQ"], "Enemy Deployed New Military Installation at grid " + _outpostGrid] remoteExec ["sideChat", 0];
     }],
@@ -398,7 +398,7 @@ private _frontlineManagerDeclaration = [
         ];
 
         // Notify players
-        ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]] call FLO_fnc_intelSystem;
+        FLO_Intel_System call ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]];
         private _roadblockGrid = mapGridPosition getMarkerPos _roadblockMarkerName;
         [[west,"HQ"], "Enemy Deployed New Military Installation at grid " + _roadblockGrid] remoteExec ["sideChat", 0];
     }],

@@ -83,7 +83,7 @@ PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] ca
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 //////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] ca
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 //////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
@@ -303,7 +303,7 @@ _HQB = _SH select 0 ;
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 								

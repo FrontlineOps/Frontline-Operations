@@ -1,6 +1,6 @@
 sleep 18;
 
-["showNotification", ["SUPPORT DISABLED", "Enemy Logistics Support Dismantled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["SUPPORT DISABLED", "Enemy Logistics Support Dismantled For the Next Hour", "success"]];
 
 LOGDIS = 1;
 publicVariable "LOGDIS";

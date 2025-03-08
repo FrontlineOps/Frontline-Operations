@@ -416,7 +416,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         if ([_elementApproachPos] call _fnc_hasRadioCoverage) then {
             // Announce reinforcements periodically
             if (_spawnIndex == 1) then {
-                ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound!", "warning"]] call FLO_fnc_intelSystem;
+                FLO_Intel_System call ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound!", "warning"]];
                 private _attackingAtGrid = mapGridPosition _elementApproachPos;
                 [[west,"HQ"], "Enemy QRF forces detected moving at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
             } else {
@@ -426,7 +426,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                         "More hostile units approaching!",
                         "Enemy reinforcements moving in!"
                     ];
-                    ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
+                    FLO_Intel_System call ["showNotification", ["! WARNING !", _msg, "warning"]];
                 };
             };
         };

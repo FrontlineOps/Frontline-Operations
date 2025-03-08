@@ -44,7 +44,7 @@ ENMASSMAINmarkerName setMarkerColor "colorOPFOR" ;
 ENMASSMAINmarkerName setMarkerSize [2, 2] ;
 ENMASSMAINmarkerName setMarkerAlpha 0.5 ;  
 
-["showNotification", ["! WARNING !", "Intel Suggests There is a Large Enemy Combined Group Preparing to Attack!", "warning"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["! WARNING !", "Intel Suggests There is a Large Enemy Combined Group Preparing to Attack!", "warning"]];
 
 
 sleep 1.5 ;
@@ -55,7 +55,7 @@ sleep 600 ;
 
 
 
-["showNotification", ["! WARNING !", "Reports Confirm Enemy Forces are Mobilizing, Prepare for Combat!", "warning"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["! WARNING !", "Reports Confirm Enemy Forces are Mobilizing, Prepare for Combat!", "warning"]];
 _attackingAtGrid = mapGridPosition getMarkerPos ENMASSMAINmarkerName;
 [[west,"HQ"], "Friendly Location Under Enemy attack at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 

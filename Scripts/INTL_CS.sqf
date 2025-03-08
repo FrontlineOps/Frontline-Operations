@@ -11,7 +11,7 @@ _mrkr setMarkerSize [0.7, 0.7];
 _mrkr setMarkerColor "colorCivilian";  
 _mrkr setMarkerAlpha 0.7;
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "POW Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "POW Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 

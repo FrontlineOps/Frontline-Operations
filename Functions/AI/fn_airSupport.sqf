@@ -373,7 +373,7 @@ if (!isNull (_airSupport get "vehicle")) then {
         default {"Enemy aircraft detected!"};
     };
     
-    ["showNotification", ["! WARNING !", _notificationText, "warning"]] call FLO_fnc_intelSystem;
+    FLO_Intel_System call ["showNotification", ["! WARNING !", _notificationText, "warning"]];
 };
 
 _airSupport

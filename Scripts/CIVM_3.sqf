@@ -16,7 +16,7 @@ openMap true;
 
 sleep 5;
 
-["showNotification", ["CIVILIAN MISSION", "Clear Minefield - Disarm Every Mine in the Area", "info"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["CIVILIAN MISSION", "Clear Minefield - Disarm Every Mine in the Area", "info"]];
 
 
 _V = createVehicle [ VP,getpos _nearRoad, [], 4, "NONE"]; 

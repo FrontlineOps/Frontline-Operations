@@ -29,7 +29,7 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
 
             if (markerAlpha _M in [0.001, 0]) then {
                 _M setMarkerAlpha 1;
-                ["showNotification", ["+ NEW INTEL", "Scout Intel Received", "intel"]] call FLO_fnc_intelSystem;
+                FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Scout Intel Received", "intel"]];
 
                 private _attackingAtGrid = mapGridPosition getMarkerPos _M;
                 [[west, "HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
@@ -55,7 +55,7 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
                 if (_x in _items) then {
                     player removeItem _x;
                     //diag_log format ["Removed intel item: %1", _x];
-                    ["add", [0, "intel_item"]] call FLO_fnc_intelSystem;
+                    FLO_Intel_System call ["addIntel", [0, "intel_item"]];
                 };
             } forEach _intelItems;
 

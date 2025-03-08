@@ -15,7 +15,7 @@ if (_Chance == 5) then {
 						_x setMarkerAlpha 1;
 
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _x;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 
@@ -44,7 +44,7 @@ if (_Chance == 3) then {
 						_x setMarkerAlpha 1;
 
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _x;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 						} ;
@@ -84,7 +84,7 @@ if (_Chance == 3) then {
 								", ""];
 								
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 						  };
@@ -108,7 +108,7 @@ if (_Chance == 4) then {
 						_x setMarkerAlpha 1;
 
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _x;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 						} ;
@@ -148,7 +148,7 @@ if (_Chance == 4) then {
 								", ""];
 						
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 						  };
@@ -164,7 +164,7 @@ _x = [_INTL,  player] call BIS_fnc_nearestPosition;
 _x setMarkerAlpha 1;
 
 								sleep 1;
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
+								FLO_Intel_System call ["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]];
 									_attackingAtGrid = mapGridPosition getMarkerPos _x;
 								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
 };

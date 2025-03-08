@@ -1,6 +1,6 @@
 sleep 8;
 
-["showNotification", ["AGGRESSION", "Increased + + +", "warning"]] call FLO_fnc_intelSystem;
+FLO_Intel_System call ["showNotification", ["AGGRESSION", "Increased + + +", "warning"]];
 
 _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
 _mrkr = _mrkrs select 0;
