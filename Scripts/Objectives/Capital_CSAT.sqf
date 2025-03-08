@@ -112,7 +112,6 @@ private _fnc_setupAvenger = {
         "this && AVENGLOCC == 1 && ({((side _x) == east) && (getPos _x distance thisTrigger < 200)} count allUnits < 25)",
         "
         AVENGLOCC = 0;
-        publicVariable 'AVENGLOCC';
         
         if (({((side _x) == east) && (position _x inArea thisTrigger)} count allUnits < 25) && ({(getNumber (configfile >> 'CfgVehicles' >> typeOf _x >> 'side') == 0) && (getPos _x inArea thisTrigger)} count allDeadMen > 0)) then {
             private _allDEAD = allDeadMen select {(getNumber (configfile >> 'CfgVehicles' >> typeOf _x >> 'side') == 0) && (getPos _x inArea thisTrigger)};
@@ -127,7 +126,7 @@ private _fnc_setupAvenger = {
             _wp setWaypointType 'SAD';
         };
         
-        execVM 'Scripts\AVENGLOCCER.sqf';
+        AVENGLOCC = 1;
         ",
         ""
     ];

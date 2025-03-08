@@ -100,7 +100,6 @@ if (_capturingSide == "west") then {
     // Update objective count for mission completion if needed
     if (!isNil "FLO_oneMoreObjectiveCaptured" && !isNil "FLO_objectivesToCapture") then {
         FLO_oneMoreObjectiveCaptured = FLO_oneMoreObjectiveCaptured + 1;
-        publicVariable "FLO_oneMoreObjectiveCaptured";
         
         // Check for mission completion
         if (FLO_oneMoreObjectiveCaptured >= FLO_objectivesToCapture) then {

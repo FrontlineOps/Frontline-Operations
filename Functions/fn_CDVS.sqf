@@ -1,6 +1,19 @@
 if (!isServer) exitWith {};
 if (VS_IsWorking || {VSCurrentTime + VSTimeDelay > diag_tickTime}) exitwith {};
 
+/*
+* CDVS - Combat Dynamic Virtualization System
+*
+* IMPORTANT NOTE ABOUT TASK FORCES:
+* Task Forces are completely excluded from virtualization to ensure they function properly.
+* This is accomplished by:
+* 1. In this file, we explicitly exclude any groups that:
+*    - Have the FLO_TaskForce_ID variable set
+*    - Have the FLO_TaskForce_VehicleGroup variable set to true
+*    - Have group IDs that start with "TF_"
+*    - Have group IDs that contain "_Vehicle_" (indicating TaskForce vehicle groups)
+*/
+
 // Update FPS tracking using circular buffer
 if (isNil "VS_FPS") then { VS_FPS = [] };
 VS_FPS = [round diag_fps] + VS_FPS;
@@ -20,10 +33,15 @@ if ((diag_tickTime - VSCurrentTime) > VSTimeDelay) then {
 
 VS_IsWorking = true;
 
-// Initialize or get virtualization hashmap
+// Initialize or get virtualization hashmaps
 if (isNil "VS_VirtualizedObjects") then {
     VS_VirtualizedObjects = createHashMap;
 };
+
+// Initialize the Task Force virtualization hashmap if it doesn't exist
+// if (isNil "VS_VirtualizedTaskForces") then {
+//     VS_VirtualizedTaskForces = createHashMap;
+// };
 
 // Efficient static object handling
 private _excludedTypes = FLO_configCache get "SOVbuildings";
@@ -159,7 +177,11 @@ if (isNil "VS_VirtualizedGroups") then {
 // Handle enemy groups virtualization
 private _enemyGroups = allGroups select {
     private _leader = leader _x;
+    private _isTaskForceGroup = (_x getVariable ["FLO_TaskForce_ID", ""] != ""); // Check if it's a Task Force group
+    
+    // Only select groups that are not Task Force groups
     ( 
+        !_isTaskForceGroup &&                   // EXCLUDE Task Force groups
         !(_leader isKindOf "B_Pilot_F") && 
         {isNull objectParent _leader && 
         {side _x in [independent, east] }}
@@ -248,9 +270,19 @@ _mustRestore = false;
 {
     private _grp = _x;
     private _units = units _grp;
+    
+    // SAFETY CHECK: Skip this group if it's a Task Force group
+    if ((_grp getVariable ["FLO_TaskForce_ID", ""] != "") || 
+        (_grp getVariable ["FLO_TaskForce_VehicleGroup", false]) ||
+        (groupId _grp find "TF_" == 0) ||
+        (groupId _grp find "_Vehicle_" > 0)) then {
+        ["TaskForce", 2, format["CDVS attempted to virtualize Task Force group %1, skipping!", groupId _grp]] call FLO_fnc_log;
+        continue;
+    };
+    
     if (count _units > 0) then {
         // Check if this is a garrison group
-        private _garrisonCheck = ["isGarrisonGroup", [_grp]] call FLO_fnc_garrisonManager;
+        private _garrisonCheck = FLO_Garrison_Manager call ["isGarrisonGroup", [_grp]]; 
         private _isGarrisonGroup = _garrisonCheck select 0;
         private _garrisonMarker = _garrisonCheck select 1;
         
@@ -281,6 +313,53 @@ _mustRestore = false;
         deleteGroup _grp;
     };
 } forEach _enemyGroupsToVirtualize;
+
+// // Handle Task Force virtualization (restore virtualized Task Forces)
+// // First check for Task Forces that need to be restored
+// _keysToRemove = [];
+// {
+//     private _key = _x;
+//     private _taskForceData = VS_VirtualizedTaskForces get _key;
+    
+//     if (isNil "_taskForceData") then {
+//         _keysToRemove pushBack _key;
+//         continue;
+//     };
+    
+//     _taskForceData params [
+//         "_taskForceId",
+//         "_position",
+//         "_type",
+//         "_size",
+//         "_composition",
+//         "_unitTypes",
+//         "_resourceValue"
+//     ];
+    
+//     // Check if this Task Force should be restored (any player is near)
+//     private _shouldRestore = false;
+//     {
+//         if (_x distance _position < VSDistance) exitWith {
+//             _shouldRestore = true;
+//         };
+//     } forEach _players;
+    
+//     if (_shouldRestore) then {
+//         // Get the task force from the system if it exists
+//         if (!isNil "FLO_TaskForce_System") then {
+//             // Deploy the Task Force
+//             ["deployTaskForce", [_taskForceId, _position, true]] call FLO_fnc_TaskForceSystem;
+            
+//             // Mark for removal from virtualized task forces
+//             _keysToRemove pushBack _key;
+            
+//             diag_log format ["[CDVS] Restored Task Force %1 at position %2", _taskForceId, _position];
+//         };
+//     };
+// } forEach keys VS_VirtualizedTaskForces;
+
+// // Clean up restored Task Forces from virtualization hashmap
+// {VS_VirtualizedTaskForces deleteAt _x} forEach _keysToRemove;
 
 // Optimize trigger handling
 private _allTriggers = entities "EmptyDetector";

@@ -79,9 +79,9 @@ _M = [_MMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 deleteMarker _M ; 
 
-				[50, 'SHIP'] execVM 'Scripts\NOtification.sqf' ;
+				[50, 'SHIP'] call FLO_fnc_notification ;
 
-[50] execVM 'Scripts\Reward.sqf';
+[50] call FLO_fnc_addReward;
 [] execVM 'Scripts\DangerPlus.sqf';
 
  ", ""]; 

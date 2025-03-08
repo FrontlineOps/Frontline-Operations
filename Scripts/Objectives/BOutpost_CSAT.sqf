@@ -24,7 +24,7 @@ sleep 3;
 
 _V addEventHandler ["Killed", {  
 ["ScoreAdded", ["Enemy Aircraft Sabotaged", 20]] remoteExec ["BIS_fnc_showNotification", 0];
-[20] execVM "Scripts\Reward.sqf";
+[20] call FLO_fnc_addReward;
  playMusic "EventTrack01_F_Curator"; 
  execVM 'Scripts\HeliDis.sqf';
 }];
@@ -45,7 +45,7 @@ _PRL = [_HPAD getPos [(10 +(random 20)), (0 + (random 360))], East, [selectRando
 
 _V addEventHandler ["Killed", {  
 ["ScoreAdded", ["Enemy Aircraft Sabotaged", 20]] remoteExec ["BIS_fnc_showNotification", 0];
-[20] execVM "Scripts\Reward.sqf";
+[20] call FLO_fnc_addReward;
  playMusic "EventTrack01_F_Curator"; 
 
 }];

@@ -122,10 +122,10 @@ _surrenderTrigger setTriggerStatements [
     private _nearestMarker = [_markers, thisTrigger] call BIS_fnc_nearestPosition;
     deleteMarker _nearestMarker;
 
-    [30] execVM 'Scripts\Reward.sqf';
+    [30] call FLO_fnc_addReward;
     [thisTrigger, 1000] call FLO_fnc_requestQRF;
     [] execVM 'Scripts\DangerPlusSurr.sqf';
-    [30, 'ROADBLOCK'] execVM 'Scripts\NOtification.sqf';
+    [30, 'ROADBLOCK'] call FLO_fnc_notification;
     ",
     ""
 ];

@@ -27,7 +27,7 @@ _objectLoc = nearestobjects [getPos _thisFactoryTrigger, ["O_MBT_02_cannon_F"], 
 	sleep 1;
 		_NewVeh addEventHandler ["Killed", {
 	["ScoreAdded", ["Enemy Armor Sabotaged", 10]] remoteExec ["BIS_fnc_showNotification", 0];
-	[10] execVM "Scripts\Reward.sqf"; 
+	[10] call FLO_fnc_addReward; 
 	playMusic "EventTrack01_F_Curator"; 
 	execVM 'Scripts\ArmorDis.sqf';
 	}];
@@ -162,7 +162,7 @@ _triggers = _alltriggers select {position _x inArea thisTrigger};
 
 ', ''];
 
-[50] execVM 'Scripts\Reward.sqf';
+[50] call FLO_fnc_addReward;
 [thisTrigger, 1000] call FLO_fnc_requestQRF;
 
 _markerName = ""AssaultMark"" + (str (position player));  
@@ -230,20 +230,3 @@ _trgA setTriggerStatements [
 [_thisFactoryTrigger, 200] execVM "Scripts\INTLitems.sqf";
 
 sleep 2 ;
-
-
-
-if ((!isMultiplayer) or (isServer)) then {
-UNIT_LIMIT = 50 ;
-	publicVariable "UNIT_LIMIT";
-} ;
-
-if (isDedicated) then {
-UNIT_LIMIT = 100 ;
-	publicVariable "UNIT_LIMIT";
-};
-
-if (!(isServer) && !(hasInterface)) then {
-UNIT_LIMIT = 150 ;
-	publicVariable "UNIT_LIMIT";
-} ; 

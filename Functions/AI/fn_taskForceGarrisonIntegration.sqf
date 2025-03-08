@@ -1,0 +1,1249 @@
+/*
+ * Function: FLO_fnc_taskForceGarrisonIntegration
+ * Author: Azraeelian Angel
+ * Description:
+ * Integrates the Task Force system with the Garrison system, allowing task forces
+ * to draw units from outpost garrisons rather than from the logistics system.
+ * Also allows outposts to accept any unit type for garrison use in task forces.
+ *
+ * This function initializes and returns the Task Force Garrison Integration system object.
+ * All functionality is accessed through direct method calls on the returned object.
+ *
+ * Arguments:
+ * None
+ *
+ * Return Value:
+ * <HASHMAP> - The integration system object with methods:
+ * - _pullUnitsFromGarrison: Pull units from a garrison for a task force
+ * - _returnUnitsToGarrison: Return units to a garrison from a task force
+ * - _addUnitsToGarrison: Add new units to a garrison
+ * - Plus analysis and utility methods
+ *
+ * Example:
+ * _integrationSystem = call FLO_fnc_taskForceGarrisonIntegration;
+ * _units = _integrationSystem call ["_pullUnitsFromGarrison", ["marker_outpost_1", ["O_Soldier_F", "O_Soldier_GL_F"], 5, "TF_123"]];
+ */
+
+if (!isServer) exitWith {};
+
+// Initialize the integration system if it doesn't exist
+if (isNil "FLO_TaskForce_Garrison_Integration") then {
+    ["AI Commander", 3, "Initializing Task Force Garrison Integration System"] call FLO_fnc_log;
+    
+    private _integrationSystem = createHashMapObject [[
+        // Properties
+        ["_taskForceSourceMap", createHashMap], // Maps task force IDs to their source outposts
+        ["_garrisonContributions", createHashMap], // Tracks how many units each garrison has contributed
+        ["_unitCapabilities", createHashMap], // Maps unit types to their capabilities
+        
+        // Methods
+        ["_initUnitCapabilities", {
+            private _capMap = _self get "_unitCapabilities";
+            
+            // More dynamic unit capability analysis - unit types and their capabilities
+            {
+                private _type = _x;
+                
+                // Create a new unit to analyze its capabilities
+                private _dummyGroup = createGroup [east, true];
+                private _unit = _dummyGroup createUnit [_type, [0,0,0], [], 0, "NONE"];
+                _unit allowDamage false;
+                
+                // Analyze weapons and ammo
+                private _weaponCapabilities = createHashMap;
+                private _hasAT = false;
+                private _hasAA = false;
+                private _hasGrenade = false;
+                private _hasAutorifle = false;
+                private _hasSniperRifle = false;
+                private _hasHMG = false;
+                
+                // Check primary weapon capabilities
+                private _primaryWeapon = primaryWeapon _unit;
+                if (_primaryWeapon != "") then {
+                    private _weaponType = getText (configFile >> "CfgWeapons" >> _primaryWeapon >> "baseWeapon");
+                    
+                    // Get weapon characteristics
+                    private _minRange = getNumber (configFile >> "CfgWeapons" >> _primaryWeapon >> "minRange");
+                    private _midRange = getNumber (configFile >> "CfgWeapons" >> _primaryWeapon >> "midRange");
+                    private _maxRange = getNumber (configFile >> "CfgWeapons" >> _primaryWeapon >> "maxRange");
+                    
+                    // Default if not specified
+                    if (_minRange == 0) then { _minRange = 5 };
+                    if (_midRange == 0) then { _midRange = 150 };
+                    if (_maxRange == 0) then { _maxRange = 500 };
+                    
+                    // Categorize weapon
+                    private _weaponCat = "standard";
+                    
+                    // Check weapon class to categorize
+                    switch (true) do {
+                        // Machine guns
+                        case (_primaryWeapon find "LMG" > -1 || 
+                              _primaryWeapon find "_MG" > -1 || 
+                              _primaryWeapon find "MMG" > -1): {
+                            _weaponCat = "autorifle";
+                            _hasAutorifle = true;
+                            _maxRange = _maxRange max 800;
+                        };
+                        
+                        // Sniper rifles
+                        case (_primaryWeapon find "_DMR" > -1 || 
+                              _primaryWeapon find "srifle" > -1): {
+                            _weaponCat = "marksman";
+                            _hasSniperRifle = true;
+                            _maxRange = _maxRange max 1000;
+                        };
+                        
+                        // Heavy machine guns
+                        case (_primaryWeapon find "HMG" > -1): {
+                            _weaponCat = "hmg";
+                            _hasHMG = true;
+                            _maxRange = _maxRange max 1200;
+                        };
+                    };
+                    
+                    _weaponCapabilities set ["primary", [_weaponCat, _minRange, _midRange, _maxRange]];
+                };
+                
+                // Check secondary weapons (launchers)
+                private _secondaryWeapon = secondaryWeapon _unit;
+                if (_secondaryWeapon != "") then {
+                    private _ammoType = "";
+                    private _mags = getArray (configFile >> "CfgWeapons" >> _secondaryWeapon >> "magazines");
+                    
+                    if (count _mags > 0) then {
+                        private _ammo = getText (configFile >> "CfgMagazines" >> (_mags select 0) >> "ammo");
+                        _ammoType = _ammo;
+                    };
+                    
+                    // Determine if AT or AA
+                    switch (true) do {
+                        case (_secondaryWeapon find "_AT_" > -1 || 
+                              _ammoType find "_AT_" > -1 || 
+                              _secondaryWeapon find "LAT" > -1 || 
+                              _secondaryWeapon find "launcher" > -1): {
+                            _hasAT = true;
+                        };
+                        
+                        case (_secondaryWeapon find "_AA_" > -1 || 
+                              _ammoType find "_AA_" > -1): {
+                            _hasAA = true;
+                        };
+                    };
+                    
+                    private _launcherMaxRange = getNumber (configFile >> "CfgWeapons" >> _secondaryWeapon >> "maxRange");
+                    if (_launcherMaxRange == 0) then { _launcherMaxRange = 300 }; // Default
+                    
+                    _weaponCapabilities set ["secondary", [
+                        [_hasAT, _hasAA], 
+                        50,  // min range
+                        150, // mid range
+                        _launcherMaxRange
+                    ]];
+                };
+                
+                // Check for grenades
+                {
+                    if (_x find "HandGrenade" > -1) then {
+                        _hasGrenade = true;
+                    };
+                } forEach (magazines _unit);
+                
+                // Set unit role based on capabilities and special equipment
+                private _category = "infantry";
+                private _role = "basic";
+                
+                // Specific unit role checks
+                switch (true) do {
+                    case (_type find "_TL_" > -1): { _role = "leader" };
+                    case (_type find "_SL_" > -1): { _role = "leader" };
+                    case (_type find "_medic_" > -1): { _role = "medic" };
+                    case (_type find "_engineer_" > -1): { _role = "engineer" };
+                    case (_type find "_exp_" > -1): { _role = "demo" };
+                    case (_hasAA): { _role = "aa" };
+                    case (_hasAT): { _role = "at" };
+                    case (_hasHMG): { _role = "hmg" };
+                    case (_hasSniperRifle): { _role = "marksman" };
+                    case (_hasAutorifle): { _role = "autorifle" };
+                    case (_hasGrenade && _type find "_GL_" > -1): { _role = "grenadier" };
+                    default { _role = "basic" };
+                };
+                
+                // Add detailed capabilities to the unit type
+                _capMap set [_type, [
+                    _category, 
+                    _role, 
+                    _weaponCapabilities
+                ]];
+                
+                // Clean up
+                deleteVehicle _unit;
+                deleteGroup _dummyGroup;
+                
+            } forEach (East_Units + East_Units_Officers);
+            
+            // Vehicle capabilities - more simplified but could be enhanced
+            // Using a different approach for vehicles since creating dummy vehicles is expensive
+            
+            // Light vehicles
+            {
+                private _armor = getNumber (configFile >> "CfgVehicles" >> _x >> "armor");
+                private _armorStructural = getNumber (configFile >> "CfgVehicles" >> _x >> "armorStructural");
+                private _maxSpeed = getNumber (configFile >> "CfgVehicles" >> _x >> "maxSpeed");
+                private _weapons = getArray (configFile >> "CfgVehicles" >> _x >> "weapons");
+                
+                private _isArmed = count (_weapons - ["TruckHorn", "CarHorn"]) > 0;
+                private _subRole = if (_isArmed) then {"armed"} else {"transport"};
+                
+                _capMap set [_x, [
+                    "vehicle", 
+                    _subRole, 
+                    createHashMapFromArray [
+                        ["armor", _armor],
+                        ["armorStructural", _armorStructural],
+                        ["maxSpeed", _maxSpeed],
+                        ["isArmed", _isArmed]
+                    ]
+                ]];
+            } forEach (East_Ground_Vehicles_Ambient + East_Ground_Vehicles_Light + East_Ground_Transport);
+            
+            // APCs and tanks
+            {
+                private _armor = getNumber (configFile >> "CfgVehicles" >> _x >> "armor");
+                private _armorStructural = getNumber (configFile >> "CfgVehicles" >> _x >> "armorStructural");
+                private _maxSpeed = getNumber (configFile >> "CfgVehicles" >> _x >> "maxSpeed");
+                private _weapons = getArray (configFile >> "CfgVehicles" >> _x >> "weapons");
+                
+                private _subRole = if (_x find "APC" > -1) then {"apc"} else {"tank"};
+                
+                _capMap set [_x, [
+                    "vehicle", 
+                    _subRole, 
+                    createHashMapFromArray [
+                        ["armor", _armor],
+                        ["armorStructural", _armorStructural],
+                        ["maxSpeed", _maxSpeed],
+                        ["weapons", _weapons]
+                    ]
+                ]];
+            } forEach East_Ground_Vehicles_Heavy;
+            
+            // Air assets
+            {
+                private _armor = getNumber (configFile >> "CfgVehicles" >> _x >> "armor");
+                private _maxSpeed = getNumber (configFile >> "CfgVehicles" >> _x >> "maxSpeed");
+                private _weapons = getArray (configFile >> "CfgVehicles" >> _x >> "weapons");
+                
+                private _isArmed = count (_weapons - ["CMFlareLauncher"]) > 0;
+                private _subRole = if (_isArmed) then {
+                    if (_x find "Attack" > -1) then {"attack"} else {"armed"}
+                } else {"transport"};
+                
+                _capMap set [_x, [
+                    "air", 
+                    _subRole, 
+                    createHashMapFromArray [
+                        ["armor", _armor],
+                        ["maxSpeed", _maxSpeed],
+                        ["isArmed", _isArmed]
+                    ]
+                ]];
+            } forEach (East_Air_Transport + East_Air_Heli + East_Air_Jet);
+        }],
+        
+        ["_getUnitTypeCategory", {
+            params ["_unitType"];
+            private _capabilities = (_self get "_unitCapabilities") getOrDefault [_unitType, ["unknown", "unknown"]];
+            _capabilities # 0
+        }],
+        
+        ["_getUnitTypeRole", {
+            params ["_unitType"];
+            private _capabilities = (_self get "_unitCapabilities") getOrDefault [_unitType, ["unknown", "unknown"]];
+            _capabilities # 1
+        }],
+        
+        // New method to get detailed weapons capabilities
+        ["_getUnitWeaponCapabilities", {
+            params ["_unitType"];
+            private _capabilities = (_self get "_unitCapabilities") getOrDefault [_unitType, ["unknown", "unknown", createHashMap]];
+            if (count _capabilities > 2) then {
+                _capabilities # 2
+            } else {
+                createHashMap // Return empty hashmap if not available
+            }
+        }],
+        
+        // New method to get effective range of a unit
+        ["_getUnitEffectiveRange", {
+            params ["_unitType"];
+            private _weaponCaps = _self call ["_getUnitWeaponCapabilities", [_unitType]];
+            
+            private _maxRange = 0;
+            
+            // Check primary weapon
+            if ("primary" in _weaponCaps) then {
+                private _primaryData = _weaponCaps get "primary";
+                if (count _primaryData >= 4) then {
+                    _maxRange = _primaryData # 3; // Max range from primary weapon
+                };
+            };
+            
+            // Check secondary weapon (launchers often have longer range)
+            if ("secondary" in _weaponCaps) then {
+                private _secondaryData = _weaponCaps get "secondary";
+                if (count _secondaryData >= 4) then {
+                    _maxRange = _maxRange max (_secondaryData # 3);
+                };
+            };
+            
+            // Default range if nothing found
+            if (_maxRange == 0) then {
+                private _role = _self call ["_getUnitTypeRole", [_unitType]];
+                switch (_role) do {
+                    case "marksman": { _maxRange = 800 };
+                    case "at": { _maxRange = 500 };
+                    case "aa": { _maxRange = 1000 };
+                    case "hmg": { _maxRange = 1000 };
+                    case "autorifle": { _maxRange = 600 };
+                    default { _maxRange = 300 };
+                };
+            };
+            
+            _maxRange
+        }],
+        
+        // New method to determine if a unit is effective against a specific target type
+        ["_isUnitEffectiveAgainst", {
+            params [ "_unitType", "_targetType"];
+            
+            private _role = _self call ["_getUnitTypeRole", [_unitType]];
+            private _weaponCaps = _self call ["_getUnitWeaponCapabilities", [_unitType]];
+            
+            private _isEffective = false;
+            
+            switch (_targetType) do {
+                case "infantry": {
+                    // Most units are effective against infantry
+                    _isEffective = true;
+                };
+                
+                case "vehicle": {
+                    // AT units, heavy weapons are effective against vehicles
+                    _isEffective = _role in ["at", "hmg"];
+                    
+                    // Also check for AT capabilities in secondary weapons
+                    if (!_isEffective && "secondary" in _weaponCaps) then {
+                        private _secondaryData = _weaponCaps get "secondary";
+                        if (count _secondaryData > 0) then {
+                            _isEffective = (_secondaryData # 0) # 0; // Check for AT capability
+                        };
+                    };
+                };
+                
+                case "air": {
+                    // AA units are effective against air
+                    _isEffective = _role == "aa";
+                    
+                    // Also check for AA capabilities in secondary weapons
+                    if (!_isEffective && "secondary" in _weaponCaps) then {
+                        private _secondaryData = _weaponCaps get "secondary";
+                        if (count _secondaryData > 0) then {
+                            _isEffective = (_secondaryData # 0) # 1; // Check for AA capability
+                        };
+                    };
+                };
+                
+                case "armor": {
+                    // Only dedicated AT is effective against armor
+                    _isEffective = _role == "at";
+                    
+                    // Also check for AT capabilities in secondary weapons
+                    if (!_isEffective && "secondary" in _weaponCaps) then {
+                        private _secondaryData = _weaponCaps get "secondary";
+                        if (count _secondaryData > 0) then {
+                            _isEffective = (_secondaryData # 0) # 0; // Check for AT capability
+                        };
+                    };
+                };
+            };
+            
+            _isEffective
+        }],
+        
+        ["_getTaskForceSourceOutpost", {
+            params [ "_taskForceID"];
+            private _sourceMap = _self get "_taskForceSourceMap";
+            _sourceMap getOrDefault [_taskForceID, ""]
+        }],
+        
+        ["_registerTaskForceSource", {
+            params [ "_taskForceID", "_sourceMarker"];
+            private _sourceMap = _self get "_taskForceSourceMap";
+            _sourceMap set [_taskForceID, _sourceMarker];
+            
+            ["AI Commander", 3, format["Registered Task Force %1 from source outpost %2", _taskForceID, _sourceMarker]] call FLO_fnc_log;
+        }],
+        
+        ["_getGarrisonUnits", {
+            params [ "_marker"];
+            
+            // Get all garrison units from the garrison manager
+            private _garrisonInfo = FLO_Garrison_Manager call ["getGarrison", [_marker]];
+            
+            if (_garrisonInfo isEqualTo []) exitWith {[]};
+            
+            // Access the actual garrison data structure
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
+            if (!(_marker in keys _garrisons)) exitWith {[]};
+            
+            // Get the full garrison data which includes the units array
+            private _garrisonData = _garrisons get _marker;
+            private _units = _garrisonData select 0; // Units are at index 0
+            
+            // Filter for alive units
+            private _garrisonUnits = _units select {alive _x};
+            
+            _garrisonUnits
+        }],
+        
+        ["_getAvailableGarrisonUnitTypes", {
+            params [ "_marker"];
+            
+            private _garrisonUnits = _self call ["_getGarrisonUnits", [_marker]];
+            private _unitTypes = createHashMap;
+            
+            {
+                private _type = typeOf _x;
+                private _count = _unitTypes getOrDefault [_type, 0];
+                _unitTypes set [_type, _count + 1];
+            } forEach _garrisonUnits;
+            
+            _unitTypes
+        }],
+        
+        ["_checkGarrisonStrength", {
+            params ["_marker"];
+            
+            // Get garrison data directly from the garrison manager
+            private _strength = 0;
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
+            
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                // Get the intended size which is now at index 6 - always use this value
+                // regardless of whether units are physically spawned or not
+                _strength = _garrisonData param [6, 0];
+                
+                // Log the garrison strength
+                ["AI Commander", 3, format["Checking garrison strength at %1: %2 units", _marker, _strength]] call FLO_fnc_log;
+            };
+            
+            _strength
+        }],
+        
+        ["_canGarrisonProvideUnits", {
+            params ["_marker", "_count"];
+            
+            // Get current garrison strength
+            private _currentStrength = _self call ["_checkGarrisonStrength", [_marker]];
+            
+            // Get minimum required garrison size (baseline)
+            private _baseMinSize = 4;  // Default minimum
+            private _markerType = markerType _marker;
+            
+            // Apply different base minimums based on outpost type
+            switch (_markerType) do {
+                case "o_installation": { _baseMinSize = 15; };
+                case "n_installation": { _baseMinSize = 12; };
+                case "o_support": { _baseMinSize = 8; };
+                case "n_support": { _baseMinSize = 10; };
+                case "loc_Power": { _baseMinSize = 6; };
+                case "o_recon": { _baseMinSize = 2; };
+                case "o_service": { _baseMinSize = 6; };
+                case "o_antiair": { _baseMinSize = 8; };
+                case "loc_Ruin": { _baseMinSize = 12; };
+                case "BarrackMark": { _baseMinSize = 6; }; // Allow barracks to give more units
+            };
+            
+            // Calculate adjusted minimum - for larger garrisons, we can pull more units
+            // This creates a more balanced system where larger garrisons can provide more units
+            private _adjustedMin = switch (true) do {
+                case (_currentStrength >= 75): { _baseMinSize * 0.5 }; // Very large garrisons can go down to 50% of min
+                case (_currentStrength >= 50): { _baseMinSize * 0.6 }; // Large garrisons can go down to 60% of min
+                case (_currentStrength >= 30): { _baseMinSize * 0.7 }; // Medium garrisons can go down to 70% of min
+                case (_currentStrength >= 20): { _baseMinSize * 0.8 }; // Smaller garrisons can go down to 80% of min
+                default { _baseMinSize }; // Base minimum for small garrisons
+            };
+            
+            _adjustedMin = round _adjustedMin max 2; // Ensure at least 2 units remain
+            
+            // Simple check if garrison has enough units after pull
+            private _remainingAfterPull = _currentStrength - _count;
+            
+            // Log the evaluation with both base and adjusted minimums
+            ["AI Commander", 3, format["Evaluating garrison at %1: Current strength %2, Base minimum: %3, Adjusted minimum: %4, Requested: %5, Remaining: %6", 
+                _marker, _currentStrength, _baseMinSize, _adjustedMin, _count, _remainingAfterPull]] call FLO_fnc_log;
+            
+            // The garrison can provide units if the remaining count is at least the adjusted minimum required
+            _remainingAfterPull >= _adjustedMin
+        }],
+        
+        ["_pullUnitsFromGarrison", {
+            params ["_marker", "_unitTypes", "_requestedCount", "_taskForceId"];
+            
+            // Track this marker as the source for this task force
+            private _taskForceSourceMap = _self get "_taskForceSourceMap";
+            _taskForceSourceMap set [_taskForceId, _marker];
+            
+            // Track contributions from this garrison
+            private _garrisonContributions = _self get "_garrisonContributions";
+            private _currentContribution = _garrisonContributions getOrDefault [_marker, 0];
+            
+            ["TaskForce-Garrison", 3, format["Attempting to pull %1 units from garrison at %2 for task force %3", 
+                _requestedCount, _marker, _taskForceId]] call FLO_fnc_log;
+            
+            // Initialize result variable
+            private _extractedCount = 0;
+            
+            // Verify parameters before calling
+            if (_marker == "" || _requestedCount <= 0 || _taskForceId == "") then {
+                ["TaskForce-Garrison", 1, format["Invalid parameters: marker=%1, count=%2, taskForceId=%3",
+                    _marker, _requestedCount, _taskForceId]] call FLO_fnc_log;
+            } else {
+                // Only process if parameters are valid
+                if (!isNil "FLO_Garrison_Manager") then {
+                    // Ensure the count parameter is passed as a number
+                    _requestedCount = _requestedCount call BIS_fnc_parseNumber;
+                    if (_requestedCount <= 0) then { _requestedCount = 1; }; // Fallback if parsing fails
+                    
+                    // Call extractUnits with clear parameter names for debugging
+                    _extractedCount = FLO_Garrison_Manager call ["extractUnits", [_marker, _requestedCount, _taskForceId]];
+                    
+                    // Update contribution tracking - extractedCount is already a number, no need for count
+                    _garrisonContributions set [_marker, _currentContribution + _extractedCount];
+                    
+                    ["TaskForce-Garrison", 3, format["Successfully pulled %1 units from garrison at %2 for task force %3", 
+                        _extractedCount, _marker, _taskForceId]] call FLO_fnc_log;
+                } else {
+                    ["TaskForce-Garrison", 1, "Garrison Manager not available for unit extraction"] call FLO_fnc_log;
+                };
+            };
+            
+            // Return the extracted count
+            _extractedCount
+        }],
+        
+        ["_returnUnitsToGarrison", {
+            params ["_taskForceId", "_targetMarker", "_count"];
+            
+            // Ensure count is a number
+            if (typeName _count != "SCALAR") then {
+                _count = count _count; // In case an array of units is passed
+            };
+            
+            // Get the original source marker for this task force
+            private _taskForceSourceMap = _self get "_taskForceSourceMap";
+            private _sourceMarker = _taskForceSourceMap getOrDefault [_taskForceId, _targetMarker];
+            
+            ["TaskForce-Garrison", 3, format["Returning %1 units from task force %2 to garrison at %3", 
+                _count, _taskForceId, _sourceMarker]] call FLO_fnc_log;
+            
+            // IMPROVED: Use the new returnUnits method directly from the garrison manager
+            private _returnedCount = 0;
+            if (!isNil "FLO_Garrison_Manager") then {
+                _returnedCount = FLO_Garrison_Manager call ["returnUnits", [_count, _taskForceId, _sourceMarker]];
+                
+                // Update contribution tracking
+                private _garrisonContributions = _self get "_garrisonContributions";
+                private _currentContribution = _garrisonContributions getOrDefault [_sourceMarker, 0];
+                _garrisonContributions set [_sourceMarker, (_currentContribution - _returnedCount) max 0];
+                
+                ["TaskForce-Garrison", 3, format["Successfully returned %1 units to garrison at %2 from task force %3", 
+                    _returnedCount, _sourceMarker, _taskForceId]] call FLO_fnc_log;
+            } else {
+                ["TaskForce-Garrison", 1, "Garrison Manager not available for unit return"] call FLO_fnc_log;
+                
+                // If we can't return units to garrison, delete them
+                {
+                    if (!isNull _x && {alive _x}) then {
+                        deleteVehicle _x;
+                    };
+                } forEach _units;
+                
+                ["TaskForce-Garrison", 3, format["Deleted %1 units since Garrison Manager was unavailable", count _units]] call FLO_fnc_log;
+            };
+            
+            // Clean up task force mapping if all units returned
+            if (count _units == _returnedCount) then {
+                _taskForceSourceMap deleteAt _taskForceId;
+            };
+            
+            _returnedCount
+        }],
+        
+        ["_pullVehicleFromGarrison", {
+            params ["_marker", "_vehicleTypes", "_vehiclePriority", "_taskForceID"];
+            
+            // Log the request
+            ["AI Commander", 3, format["Task force %1 is requesting vehicle from garrison at %2 (types: %3, priority: %4)", 
+                _taskForceID, _marker, _vehicleTypes, _vehiclePriority]] call FLO_fnc_log;
+            
+            // Check if we have a garrison vehicle at the outpost
+            private _garrisonVehicles = [];
+            
+            // Try to get vehicles from the garrison
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                _garrisonVehicles = _garrisonData param [1, []];
+            };
+            
+            // If we have vehicles in the garrison, try to use one of them
+            if (count _garrisonVehicles > 0) then {
+                // Find a vehicle that matches the requested types
+                private _matchingVehicles = [];
+                
+                {
+                    private _veh = _x;
+                    
+                    // Check if vehicle is of the requested type
+                    private _isRequestedType = false;
+                    
+                    {
+                        private _vehType = _x;
+                        
+                        // Check if vehicle matches this type
+                        switch (_vehType) do {
+                            case "Tank": { if (_veh isKindOf "Tank") then { _isRequestedType = true; }; };
+                            case "APC": { if (_veh isKindOf "Wheeled_APC" || _veh isKindOf "Tracked_APC") then { _isRequestedType = true; }; };
+                            case "MRAP": { if (_veh isKindOf "MRAP_01_base_F" || _veh isKindOf "MRAP_02_base_F" || _veh isKindOf "MRAP_03_base_F") then { _isRequestedType = true; }; };
+                            case "Car": { if (_veh isKindOf "Car" && !(_veh isKindOf "Wheeled_APC") && !(_veh isKindOf "MRAP_01_base_F") && !(_veh isKindOf "MRAP_02_base_F") && !(_veh isKindOf "MRAP_03_base_F")) then { _isRequestedType = true; }; };
+                            case "AA": { if (_veh isKindOf "APC_Tracked_02_AA_F" || _veh isKindOf "LT_01_AA_base_F" || _veh isKindOf "Truck_02_aa_base_F") then { _isRequestedType = true; }; };
+                        };
+                    } forEach _vehicleTypes;
+                    
+                    // If it's a requested type or a priority type, add it to matching vehicles
+                    if (_isRequestedType || (typeOf _veh) in _vehiclePriority) then {
+                        _matchingVehicles pushBack _veh;
+                    };
+                } forEach _garrisonVehicles;
+                
+                // If we found matching vehicles, use one
+                if (count _matchingVehicles > 0) then {
+                    // Prioritize vehicles that match the priority list
+                    private _priorityMatches = _matchingVehicles select { (typeOf _x) in _vehiclePriority };
+                    private _selectedVehicle = objNull;
+                    
+                    if (count _priorityMatches > 0) then {
+                        _selectedVehicle = selectRandom _priorityMatches;
+                    } else {
+                        _selectedVehicle = selectRandom _matchingVehicles;
+                    };
+                    
+                    // Remove the vehicle from the garrison
+                    private _index = _garrisonVehicles find _selectedVehicle;
+                    if (_index != -1) then {
+                        _garrisonVehicles deleteAt _index;
+                        _garrisonData set [1, _garrisonVehicles];
+                        _garrisons set [_marker, _garrisonData];
+                        
+                        // Set a variable to identify that the vehicle was pulled from garrison
+                        _selectedVehicle setVariable ["FLO_TaskForce_FromGarrison", [_marker, _taskForceID], true];
+                        
+                        ["AI Commander", 3, format["Pulled vehicle %1 from garrison at %2 for task force %3", typeOf _selectedVehicle, _marker, _taskForceID]] call FLO_fnc_log;
+                        
+                        // Set the result to the selected vehicle
+                        _result = _selectedVehicle;
+                        
+                        // No need for exitWith - we'll just break out of the loop using true
+                        break;
+                    };
+                };
+            };
+            
+            // If we couldn't find a matching vehicle in the garrison, try to spawn one from available types
+            // Use the faction vehicle arrays from CUSTOM_ENEMY_FACTION.sqf
+            private _vehicleClassname = "";
+            private _spawnPos = getMarkerPos _marker;
+            
+            // Convert our generic vehicle types to the appropriate global arrays
+            private _candidateVehicles = [];
+            
+            // Check which types we need
+            {
+                switch (_x) do {
+                    case "Tank": { 
+                        _candidateVehicles append East_Ground_Vehicles_Heavy; 
+                    };
+                    case "APC": { 
+                        _candidateVehicles append East_Ground_Vehicles_Heavy; 
+                        _candidateVehicles append East_Ground_Vehicles_Light select { _x isKindOf "APC" }; 
+                    };
+                    case "MRAP": { 
+                        _candidateVehicles append East_Ground_Vehicles_Light select { _x isKindOf "MRAP_01_base_F" || _x isKindOf "MRAP_02_base_F" || _x isKindOf "MRAP_03_base_F" }; 
+                    };
+                    case "Car": { 
+                        _candidateVehicles append East_Ground_Vehicles_Ambient; 
+                        _candidateVehicles append East_Ground_Transport select { _x isKindOf "Car" }; 
+                    };
+                    case "AA": { 
+                        // Find AA vehicles in the arrays
+                        _candidateVehicles append (East_Ground_Vehicles_Heavy + East_Ground_Vehicles_Light) select { 
+                            _x find "AA" > -1 || _x find "_AA_" > -1 || _x find "aa_" > -1 
+                        }; 
+                    };
+                };
+            } forEach _vehicleTypes;
+            
+            // If we have priority vehicles that exist in our faction, use those
+            private _priorityExists = _vehiclePriority select { _x in _candidateVehicles };
+            
+            if (count _priorityExists > 0) then {
+                _vehicleClassname = selectRandom _priorityExists;
+            } else {
+                // Otherwise select from candidates or use fallback
+                if (count _candidateVehicles > 0) then {
+                    _vehicleClassname = selectRandom _candidateVehicles;
+                } else {
+                    // Ultimate fallback - use ambient vehicles
+                    _vehicleClassname = selectRandom East_Ground_Vehicles_Ambient;
+                };
+            };
+            
+            // Find a suitable spawn position
+            _spawnPos = [_spawnPos, 50, 200, 7, 0, 0.2, 0] call BIS_fnc_findSafePos;
+            
+            // Create the vehicle
+            private _vehicle = createVehicle [_vehicleClassname, _spawnPos, [], 0, "NONE"];
+            
+            // Set a variable to identify this vehicle is for a task force
+            _vehicle setVariable ["FLO_TaskForce_FromGarrison", [_marker, _taskForceID], true];
+            
+            ["AI Commander", 3, format["Created vehicle %1 for task force %2 from outpost %3", _vehicleClassname, _taskForceID, _marker]] call FLO_fnc_log;
+            
+            // Return the vehicle
+            _vehicle
+        }],
+        
+        ["_returnVehicleToGarrison", {
+            params ["_vehicle", "_targetOutpost"];
+            
+            // Verify the vehicle is valid
+            if (isNull _vehicle) exitWith {
+                ["AI Commander", 3, "Cannot return null vehicle to garrison"] call FLO_fnc_log;
+                false
+            };
+            
+            // Check if the vehicle has the garrison source variable
+            private _sourceData = _vehicle getVariable ["FLO_TaskForce_FromGarrison", []];
+            private _sourceOutpost = "";
+            private _taskForceID = "";
+            
+            if (count _sourceData == 2) then {
+                _sourceOutpost = _sourceData select 0;
+                _taskForceID = _sourceData select 1;
+            };
+            
+            // Use the specified target outpost, or the source outpost if target is empty
+            if (_targetOutpost == "") then {
+                _targetOutpost = _sourceOutpost;
+            };
+            
+            // If we still don't have a target outpost, find the nearest one
+            if (_targetOutpost == "") then {
+                private _garrisons = FLO_Garrison_Manager get "garrisons";
+                private _outposts = keys _garrisons;
+                
+                if (count _outposts > 0) then {
+                    private _nearestOutpost = "";
+                    private _nearestDistance = 100000;
+                    
+                    {
+                        private _outpostPos = getMarkerPos _x;
+                        private _distance = _outpostPos distance (getPos _vehicle);
+                        
+                        if (_distance < _nearestDistance) then {
+                            _nearestDistance = _distance;
+                            _nearestOutpost = _x;
+                        };
+                    } forEach _outposts;
+                    
+                    if (_nearestOutpost != "") then {
+                        _targetOutpost = _nearestOutpost;
+                    };
+                };
+            };
+            
+            // If we have a valid target outpost, add the vehicle to that garrison
+            if (_targetOutpost != "") then {
+                private _garrisons = FLO_Garrison_Manager get "garrisons";
+                
+                if (_targetOutpost in keys _garrisons) then {
+                    private _garrisonData = _garrisons get _targetOutpost;
+                    private _garrisonVehicles = _garrisonData param [1, []];
+                    
+                    // Check if the vehicle is still operational
+                    if (alive _vehicle && canMove _vehicle) then {
+                        // Add the vehicle to the garrison's vehicle array
+                        _garrisonVehicles pushBack _vehicle;
+                        _garrisonData set [1, _garrisonVehicles];
+                        _garrisons set [_targetOutpost, _garrisonData];
+                        
+                        // Clear task force variable
+                        _vehicle setVariable ["FLO_TaskForce_FromGarrison", nil, true];
+                        
+                        ["AI Commander", 3, format["Added vehicle %1 to garrison at %2", typeOf _vehicle, _targetOutpost]] call FLO_fnc_log;
+                        _result = true;
+                    } else {
+                        // The vehicle is damaged or destroyed, log this
+                        ["AI Commander", 3, format["Vehicle %1 cannot be returned to garrison - damaged or destroyed", typeOf _vehicle]] call FLO_fnc_log;
+                        
+                        // Delete the vehicle if it's destroyed
+                        if (!alive _vehicle) then {
+                            deleteVehicle _vehicle;
+                        };
+                        
+                        _result = false;
+                    };
+                } else {
+                    ["AI Commander", 3, format["Cannot return vehicle to non-existent outpost %1", _targetOutpost]] call FLO_fnc_log;
+                    _result = false;
+                };
+            } else {
+                ["AI Commander", 3, "Cannot return vehicle - no valid target outpost found"] call FLO_fnc_log;
+                _result = false;
+            };
+            _result
+        }],
+        
+        ["_addVehicleToGarrison", {
+            params ["_marker", "_vehicleType", "_count", "_position"];
+            
+            // Ensure the marker exists and is appropriate
+            if (_marker == "" || {markerColor _marker != "colorOPFOR" && markerColor _marker != "ColorEAST"}) exitWith {
+                ["AI Commander", 3, format["Invalid marker for garrison vehicle: %1", _marker]] call FLO_fnc_log;
+                false
+            };
+            
+            // If position not provided, use marker position
+            if (isNil "_position") then {
+                _position = getMarkerPos _marker;
+            };
+            
+            // Ensure vehicle type is valid
+            if (_vehicleType == "") exitWith {
+                ["AI Commander", 3, "No vehicle type specified for garrison addition"] call FLO_fnc_log;
+                false
+            };
+            
+            // Access garrison data
+            private _garrisons = FLO_Garrison_Manager get "garrisons";
+            
+            // Check if this garrison exists already
+            if (_marker in keys _garrisons) then {
+                private _garrisonData = _garrisons get _marker;
+                private _garrisonVehicles = _garrisonData param [1, []];
+                
+                // Find a safe position near the outpost
+                private _safePos = [_position, 10, 100, 5, 0, 0.2, 0] call BIS_fnc_findSafePos;
+                
+                // Create the vehicles
+                for "_i" from 1 to _count do {
+                    private _veh = createVehicle [_vehicleType, _safePos, [], 20, "NONE"];
+                    
+                    // Set variable to indicate this is a garrison vehicle
+                    _veh setVariable ["FLO_GarrisonVehicle", true, true];
+                    
+                    // Add to garrison vehicles
+                    _garrisonVehicles pushBack _veh;
+                };
+                
+                // Update garrison data
+                _garrisonData set [1, _garrisonVehicles];
+                _garrisons set [_marker, _garrisonData];
+                
+                ["AI Commander", 3, format["Added %1 %2 vehicle(s) to garrison at %3", _count, _vehicleType, _marker]] call FLO_fnc_log;
+                
+                true
+            } else {
+                // If the garrison doesn't exist yet, we'll create it with just vehicles
+                private _garrisonVehicles = [];
+                
+                // Find a safe position near the outpost
+                private _safePos = [_position, 10, 100, 5, 0, 0.2, 0] call BIS_fnc_findSafePos;
+                
+                // Create the vehicles
+                for "_i" from 1 to _count do {
+                    private _veh = createVehicle [_vehicleType, _safePos, [], 20, "NONE"];
+                    
+                    // Set variable to indicate this is a garrison vehicle
+                    _veh setVariable ["FLO_GarrisonVehicle", true, true];
+                    
+                    // Add to garrison vehicles
+                    _garrisonVehicles pushBack _veh;
+                };
+                
+                // Create empty group for the garrison
+                private _garrisonGroup = createGroup [east, true];
+                
+                // Create garrison data structure
+                private _markerType = markerType _marker;
+                private _sizeLimits = FLO_Garrison_Manager call ["getSizeLimits", [_markerType]];
+                private _baseSize = _sizeLimits select 0;
+                private _maxSize = _sizeLimits select 1;
+                
+                private _newGarrisonData = [
+                    [],             // Units (empty initially)
+                    _garrisonVehicles, // Vehicles
+                    _garrisonGroup, // Group
+                    time,           // Timestamp
+                    0,              // Virtual strength
+                    0,              // Queued reinforcements
+                    _baseSize,      // Base size
+                    _maxSize,       // Max size
+                    0               // Current size (0 units initially)
+                ];
+                
+                // Add to garrisons hashmap
+                _garrisons set [_marker, _newGarrisonData];
+                
+                ["AI Commander", 3, format["Created new garrison at %1 with %2 %3 vehicle(s)", _marker, _count, _vehicleType]] call FLO_fnc_log;
+                
+                true
+            };
+        }],
+        
+        // Add a method to analyze vehicle weapon capabilities in detail
+        ["_analyzeVehicleWeapons", {
+            params [ "_vehicle"];
+            
+            // If the vehicle is a string (class name), create a temporary vehicle
+            private _tempVehicle = objNull;
+            private _vehicleObj = _vehicle;
+            
+            if (_vehicle isEqualType "") then {
+                _tempVehicle = createVehicle [_vehicle, [0,0,0], [], 0, "NONE"];
+                _tempVehicle allowDamage false;
+                _vehicleObj = _tempVehicle;
+            };
+            
+            // Initialize capabilities maps
+            private _magTypes = createHashMap;
+            private _weaponCapabilities = createHashMapFromArray [
+                [0, []], // Anti-Infantry
+                [1, []], // Anti-Vehicle Light
+                [2, []], // Anti-Vehicle Medium
+                [3, []], // Anti-Vehicle Heavy
+                [4, []], // Anti-Air
+                [5, []], // Anti-Structure
+                [6, []], // Anti-Personnel (grenades)
+                [7, []], // Anti-Armor (rockets)
+                [8, []], // Ground-To-Air
+                [9, []]  // Ground-To-Ground
+            ];
+            
+            // Analyze magazines
+            private _magazines = magazinesAmmoFull [_vehicleObj, false];
+            {
+                private _key = _x select 0;
+                
+                if (_key in _magTypes) then {
+                    // Update existing entry
+                    private _data = _magTypes get _key;
+                    _data set [1, (_data select 1) + (_x select 1)];
+                } else {
+                    // Create new entry
+                    private _name = _x select 0;
+                    private _ammoCount = _x select 1;
+                    private _usageFlags = [0,0,0,0,0,0,0,0,0,0,0];
+                    
+                    // Get ammo info
+                    private _ammo = getText (configFile >> "CfgMagazines" >> _name >> "ammo");
+                    private _ufValue = getNumber (configFile >> "CfgAmmo" >> _ammo >> "aiAmmoUsageFlags");
+                    
+                    // Decode flags or determine based on ammo type
+                    if (_ufValue > 0) then {
+                        _usageFlags = [_ufValue, 10] call BIS_fnc_decodeFlags2;
+                    } else {
+                        if (_ammo isKindOf "GrenadeBase") then {
+                            _usageFlags = [0,0,0,0,0,0,1,0,0,0];
+                        };
+                        if (_ammo isKindOf "RocketBase") then {
+                            _usageFlags = [0,0,0,0,0,0,0,1,0,1];
+                        };
+                    };
+                    
+                    // Get hit power
+                    private _hit = getNumber (configFile >> "CfgAmmo" >> _ammo >> "hit");
+                    
+                    // Store data
+                    _magTypes set [_key, [_name, _ammoCount, _usageFlags, _hit]];
+                };
+            } forEach _magazines;
+            
+            // Analyze weapons
+            private _weapons = weapons _vehicleObj;
+            {
+                private _weaponName = _x;
+                
+                // Get weapon characteristics
+                private _minRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "minRange");
+                private _midRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "midRange");
+                private _maxRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "maxRange");
+                private _minRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "minRangeProbab");
+                private _midRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "midRangeProbab");
+                private _maxRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "maxRangeProbab");
+                
+                // Get compatible magazines
+                private _wMags = getArray (configFile >> "CfgWeapons" >> _weaponName >> "magazines");
+                
+                // Associate weapon with magazine capabilities
+                {
+                    private _key = _x;
+                    if (_key in _magTypes) then {
+                        private _mag = _magTypes get _key;
+                        
+                        // Add weapon to each capability category based on magazine usage flags
+                        for "_i" from 0 to 9 do {
+                            if ((_mag select 2) select _i == 1) then {
+                                private _prev = _weaponCapabilities get _i;
+                                private _new = [
+                                    _weaponName,           // Weapon name
+                                    0,                     // Generic index
+                                    _minRange,             // Min range
+                                    _midRange,             // Mid range
+                                    _maxRange,             // Max range
+                                    _minRangeProbab,       // Min range probability
+                                    _midRangeProbab,       // Mid range probability
+                                    _maxRangeProbab        // Max range probability
+                                ];
+                                
+                                // Append magazine info
+                                _new append _mag;
+                                
+                                // Calculate total damage potential
+                                _new set [12, (_mag # 1) * (_mag # 3)];
+                                
+                                _prev pushBack _new;
+                            };
+                        };
+                    };
+                } forEach _wMags;
+            } forEach _weapons;
+            
+            // Clean up temporary vehicle if created
+            if (!isNull _tempVehicle) then {
+                deleteVehicle _tempVehicle;
+            };
+            
+            // Return the capabilities map
+            [_weaponCapabilities, _magTypes]
+        }],
+        
+        // Add a method to update a unit's weapon capabilities in the field
+        ["_updateUnitWeaponCapabilities", {
+            params [ "_unit"];
+            
+            if (isNull _unit || !alive _unit) exitWith {false};
+            
+            // If this is a vehicle, use the vehicle analysis method
+            if (_unit isKindOf "LandVehicle" || _unit isKindOf "Air" || _unit isKindOf "Ship") then {
+                private _capabilities = _self call ["_analyzeVehicleWeapons", [_unit]];
+                _unit setVariable ["FLO_weaponCapabilities", _capabilities # 0];
+                _unit setVariable ["FLO_magTypes", _capabilities # 1];
+                
+                ["AI Commander", 3, format["Updated vehicle %1 weapon capabilities", typeOf _unit]] call FLO_fnc_log;
+                true
+            } else {
+                // For infantry, do a simpler analysis
+                private _primaryWeapon = primaryWeapon _unit;
+                private _secondaryWeapon = secondaryWeapon _unit;
+                
+                private _capabilities = createHashMap;
+                
+                if (_primaryWeapon != "") then {
+                    private _maxRange = getNumber (configFile >> "CfgWeapons" >> _primaryWeapon >> "maxRange");
+                    if (_maxRange == 0) then { _maxRange = 500 }; // Default
+                    
+                    _capabilities set ["primary", [
+                        _primaryWeapon,
+                        getArray (configFile >> "CfgWeapons" >> _primaryWeapon >> "magazines"),
+                        _maxRange
+                    ]];
+                };
+                
+                if (_secondaryWeapon != "") then {
+                    private _maxRange = getNumber (configFile >> "CfgWeapons" >> _secondaryWeapon >> "maxRange");
+                    if (_maxRange == 0) then { _maxRange = 300 }; // Default
+                    
+                    private _mags = getArray (configFile >> "CfgWeapons" >> _secondaryWeapon >> "magazines");
+                    private _isAT = false;
+                    private _isAA = false;
+                    
+                    // Check first magazine to determine launcher type
+                    if (count _mags > 0) then {
+                        private _ammo = getText (configFile >> "CfgMagazines" >> (_mags select 0) >> "ammo");
+                        
+                        // Determine if AT or AA
+                        _isAT = _secondaryWeapon find "_AT_" > -1 || 
+                               _ammo find "_AT_" > -1 || 
+                               _secondaryWeapon find "LAT" > -1 ||
+                               _secondaryWeapon find "launcher" > -1;
+                                
+                        _isAA = _secondaryWeapon find "_AA_" > -1 || 
+                               _ammo find "_AA_" > -1;
+                    };
+                    
+                    _capabilities set ["secondary", [
+                        _secondaryWeapon,
+                        _mags,
+                        _maxRange,
+                        [_isAT, _isAA]
+                    ]];
+                };
+                
+                _unit setVariable ["FLO_infantryCapabilities", _capabilities];
+                
+                true
+            };
+        }],
+        
+        // Add a method to get the most effective weapons for a specific target type
+        ["_getEffectiveWeaponsForTarget", {
+            params [ "_unit", "_targetType"];
+            
+            if (isNull _unit || !alive _unit) exitWith {[]};
+            
+            // Check if it's a vehicle
+            if (_unit isKindOf "LandVehicle" || _unit isKindOf "Air" || _unit isKindOf "Ship") then {
+                // If weapon capabilities are not analyzed yet, do it now
+                if (isNil {_unit getVariable "FLO_weaponCapabilities"}) then {
+                    _self call ["_updateUnitWeaponCapabilities", [_unit]];
+                };
+                
+                private _weaponCapabilities = _unit getVariable ["FLO_weaponCapabilities", createHashMap];
+                
+                // Select appropriate capabilities based on target type
+                private _effectiveWeapons = [];
+                
+                switch (_targetType) do {
+                    case "infantry": {
+                        // Anti-infantry capabilities (index 0)
+                        _effectiveWeapons = _weaponCapabilities getOrDefault [0, []];
+                    };
+                    
+                    case "vehicle": {
+                        // Combine anti-vehicle capabilities (indices 1, 2, 3)
+                        _effectiveWeapons = [];
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [1, []]);
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [2, []]);
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [3, []]);
+                    };
+                    
+                    case "armor": {
+                        // Heavy anti-vehicle capabilities (index 3) and anti-armor rockets (index 7)
+                        _effectiveWeapons = [];
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [3, []]);
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [7, []]);
+                    };
+                    
+                    case "air": {
+                        // Anti-air capabilities (index 4) and ground-to-air (index 8)
+                        _effectiveWeapons = [];
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [4, []]);
+                        _effectiveWeapons append (_weaponCapabilities getOrDefault [8, []]);
+                    };
+                    
+                    case "structure": {
+                        // Anti-structure capabilities (index 5)
+                        _effectiveWeapons = _weaponCapabilities getOrDefault [5, []];
+                    };
+                    
+                    default {
+                        // Return all available weapons
+                        {
+                            _effectiveWeapons append (_weaponCapabilities getOrDefault [_x, []]);
+                        } forEach [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+                    };
+                };
+                
+                // Sort by damage potential (highest first)
+                _effectiveWeapons = [_effectiveWeapons, [], {_x # 12}, "DESCEND"] call BIS_fnc_sortBy;
+                
+                _effectiveWeapons
+            } else {
+                // For infantry, check weapon capabilities
+                if (isNil {_unit getVariable "FLO_infantryCapabilities"}) then {
+                    _self call ["_updateUnitWeaponCapabilities", [_unit]];
+                };
+                
+                private _capabilities = _unit getVariable ["FLO_infantryCapabilities", createHashMap];
+                private _effectiveWeapons = [];
+                
+                switch (_targetType) do {
+                    case "infantry": {
+                        // Primary weapon is typically most effective against infantry
+                        if ("primary" in _capabilities) then {
+                            _effectiveWeapons pushBack (_capabilities get "primary");
+                        };
+                    };
+                    
+                    case "vehicle": 
+                    case "armor": {
+                        // Secondary AT weapon for vehicles
+                        if ("secondary" in _capabilities) then {
+                            private _secondaryData = _capabilities get "secondary";
+                            if (count _secondaryData >= 4 && (_secondaryData # 3) # 0) then {
+                                _effectiveWeapons pushBack _secondaryData;
+                            };
+                        };
+                        
+                        // Also add primary if no secondary
+                        if (count _effectiveWeapons == 0 && "primary" in _capabilities) then {
+                            _effectiveWeapons pushBack (_capabilities get "primary");
+                        };
+                    };
+                    
+                    case "air": {
+                        // Secondary AA weapon for air
+                        if ("secondary" in _capabilities) then {
+                            private _secondaryData = _capabilities get "secondary";
+                            if (count _secondaryData >= 4 && (_secondaryData # 3) # 1) then {
+                                _effectiveWeapons pushBack _secondaryData;
+                            };
+                        };
+                        
+                        // Also add primary if no secondary
+                        if (count _effectiveWeapons == 0 && "primary" in _capabilities) then {
+                            _effectiveWeapons pushBack (_capabilities get "primary");
+                        };
+                    };
+                    
+                    default {
+                        // Return all available weapons
+                        {
+                            if (_x in _capabilities) then {
+                                _effectiveWeapons pushBack (_capabilities get _x);
+                            };
+                        } forEach ["primary", "secondary"];
+                    };
+                };
+                
+                _effectiveWeapons
+            };
+        }]
+    ]];
+    
+    // Initialize unit capabilities
+    _integrationSystem call ["_initUnitCapabilities", []];
+    
+    // Store the system globally
+    FLO_TaskForce_Garrison_Integration = _integrationSystem;
+    
+    ["AI Commander", 3, "Task Force Garrison Integration System Initialized"] call FLO_fnc_log;
+};
+
+// Return the integration system
+FLO_TaskForce_Garrison_Integration 

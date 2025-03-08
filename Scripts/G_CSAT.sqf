@@ -75,7 +75,7 @@ _V addEventHandler ["Killed", {
  
 ["ScoreAdded", ["Insurgent Stash Destroyed", 30]] call BIS_fnc_showNotification; 
 
-[30] execVM "Scripts\Reward.sqf";
+[30] call FLO_fnc_addReward;
 [] execVM "Scripts\ReputationPlus.sqf";
 
 execVM "Scripts\Civ_Relations.sqf";

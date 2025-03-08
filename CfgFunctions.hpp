@@ -13,15 +13,32 @@ class FLO {
     class AI {
         file = "Functions\AI";
 
-        class artilleryPrep         {};
-        class airRecon              {};
-        class airSupport            {};
-        class executeAttackPattern  {};
-        class fireObserver          {};
-        class calculateQRFResponse  {};
-        class requestQRF            {};
-        class requestOffensiveOps   {};
-        class heliInsert            {};
+        class artilleryPrep                {};
+        class airRecon                     {};
+        class airSupport                   {};
+        class executeAttackPattern         {};
+        class fireObserver                 {};
+        class calculateQRFResponse         {};
+        class requestQRF                   {};
+        class requestOffensiveOps          {};
+        class heliInsert                   {};
+        class aiCommander                  {};
+        class taskForceGarrisonIntegration {};
+    };
+
+    class Actions {
+        file = "Functions\AI\Actions";
+
+        class attackArea        {};
+        class defendArea        {};
+        class patrolArea        {};
+        class reconArea         {};
+        class taskAttack        {};
+        class taskDefend        {};
+        class taskPatrol        {};
+        class addWaypoint       {};
+        class reconAreaAction   {};
+        class getTargetType     {};
     };
 
     class Logistics {
@@ -30,6 +47,13 @@ class FLO {
         class opforResources        {};
         class intelSystem           {};
         class logisticsNetwork      {};
+    };
+
+    class TaskForce {
+        file = "Functions\TaskForce";
+
+        class TaskForceSystem      {};
+        class TaskForceDefenseLine {};
     };
 
     class Arsenal {
@@ -52,5 +76,8 @@ class FLO {
         file = "Functions\Utilities";
 
         class findNearestMarker   {};
+        class log                 {};
+        class addReward           {};
+        class notification        {};
     };
 };

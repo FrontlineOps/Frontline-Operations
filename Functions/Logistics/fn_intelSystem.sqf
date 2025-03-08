@@ -79,7 +79,13 @@ if (isServer && isNil "FLO_Intel_System") then {
         
         // Get number of controlled radio towers
         ["getRadioTowers", {
-            _self getOrDefault ["radioTowers", 0]
+            private _towers = _self getOrDefault ["radioTowers", 0];
+            // Ensure we return a number even if radioTowers is stored as an array
+            if (_towers isEqualType []) then {
+                count _towers
+            } else {
+                _towers
+            }
         }],
         
         // Update and return the count of BLUFOR-controlled radio towers
