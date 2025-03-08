@@ -6,29 +6,13 @@
     Uses resource system to allocate supplies, which boosts garrison strength over time.
     
     Parameters:
-    _mode - The function mode to execute ["init", "update", "calculateRoute", "getSupplyLevel"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - Initialize the logistics network
-        update: [] - Force an update of all supply routes
-        calculateRoute: [_sourceMarker, _targetMarker] - Calculate and establish a supply route
-        getSupplyLevel: [_marker] - Get current supply level for a marker
+        None
     
     Returns:
-    Based on mode:
-        init: HashMapObject - The logistics network object
-        update: Nothing
-        calculateRoute: Boolean - Success of route creation
-        getSupplyLevel: Number - Current supply level (0-100)
+        Nothing
 */
 
 if (!isServer) exitWith {};
-
-params [
-    ["_mode", "", [""]],
-    ["_params", [], [[]]]
-];
-
-private _result = false;
 
 // Initialize the Logistics Network object if it doesn't exist
 if (isNil "FLO_Logistics_Network") then {
@@ -48,6 +32,8 @@ if (isNil "FLO_Logistics_Network") then {
             _self set ["supplyLevels", createHashMap];
             _self set ["lastUpdate", time];
             ["Logistics", 3, "Network initialized"] call FLO_fnc_log;
+
+            _self call ["initialize",[]];
         }],
         
         // Initialize logistics network and start update loop
@@ -444,38 +430,3 @@ if (isNil "FLO_Logistics_Network") then {
     // Create the logistics network object
     FLO_Logistics_Network = createHashMapObject [_logisticsNetworkClass];
 };
-
-// Execute the requested mode
-switch (_mode) do {
-    // Initialize the logistics network
-    case "init": {
-        FLO_Logistics_Network call ["initialize", []];
-        _result = FLO_Logistics_Network;
-    };
-    
-    // Force an update of all supply routes
-    case "update": {
-        FLO_Logistics_Network call ["updateSupplyNetwork", []]
-    };
-    
-    // Calculate and establish a supply route
-    case "calculateRoute": {
-        _params params [
-            ["_sourceMarker", "", [""]],
-            ["_targetMarker", "", [""]]
-        ];
-        
-        _result = FLO_Logistics_Network call ["calculateSupplyRoute", [_sourceMarker, _targetMarker]]
-    };
-    
-    // Get current supply level for a marker
-    case "getSupplyLevel": {
-        _params params [
-            ["_marker", "", [""]]
-        ];
-        
-        _result = FLO_Logistics_Network call ["getMarkerSupplyLevel", [_marker]]
-    };
-};
-
-_result 
