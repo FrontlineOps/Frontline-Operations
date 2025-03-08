@@ -741,9 +741,12 @@ if (isNil "FLO_Garrison_Manager") then {
             } forEach _nearBuildings;
             
             // Only keep a reasonable number of positions
-            if (count _buildingPositions > 30) then {
-                _buildingPositions resize 30;
+            if (count _buildingPositions > 200) then {
+                _buildingPositions resize 200;
             };
+            
+            // Log the number of available positions for reference
+            ["Garrison", 3, format["Found %1 building positions for garrison at %2", count _buildingPositions, _marker]] call FLO_fnc_log;
             
             // Split the group based on buildings available and garrison size
             if (count _buildingPositions > 3 && count _spawnedUnits > 3) then {

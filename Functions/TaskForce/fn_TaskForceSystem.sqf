@@ -1113,9 +1113,6 @@ if (isNil "FLO_TaskForce_System") then {
                                 
                                 // Create crew with appropriate skill
                                 private _vehicleGroup = createGroup [east, true];
-                                
-                                // BIS_fnc_spawnCrew can sometimes create crews with incorrect side
-                                // Instead, create crew manually with explicit east side
                                 createVehicleCrew _vehicle;
                                 
                                 // Check if any crew members are NOT east side and fix them
