@@ -4,39 +4,34 @@
     Description:
     Manages garrison spawning and maintenance for objectives.
     Uses OOP approach with HashMapObject for better organization and state management.
+    Handles vehicle limits and tracking to prevent excessive vehicle spawning.
     
     Parameters:
-    _mode - The function mode to execute ["init", "spawn", "reinforce", "maintain", "checkAndSpawn", "saveGarrisonSizes", "loadGarrisonSizes", "isGarrisonGroup"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - No parameters needed
-        spawn: [_marker, _size, _withVehicles] - Create a new garrison at marker
-        reinforce: [_marker, _amount] - Add units to existing garrison
-        maintain: [] - Run maintenance on all garrisons
-        checkAndSpawn: [_activationDistance] - Check all markers and spawn garrisons near players
-        saveGarrisonSizes: [] - Save current garrison sizes to profileNamespace
-        loadGarrisonSizes: [] - Load garrison sizes from profileNamespace
-        isGarrisonGroup: [_group] - Check if a group is from a garrison
+        Based on calling FLO_Garrison_Manager:
+            initialize: [] - No parameters needed
+            spawnGarrison: [_marker, _size, _withVehicles] - Create a new garrison at marker
+            reinforceGarrison: [_marker, _amount] - Add units to existing garrison
+            maintainGarrisons: [] - Run maintenance on all garrisons
+            checkNearbyGarrisons: [_activationDistance] - Check all markers and spawn garrisons near players
+            saveGarrisonSizes: [] - Save current garrison sizes to profileNamespace
+            loadGarrisonSizes: [] - Load garrison sizes from profileNamespace
+            isGarrisonGroup: [_group] - Check if a group is from a garrison
+            getGarrison: [_marker] - Get garrison data for a marker
+            extractUnits: [_marker] - Extract units from a garrison
+            returnUnits: [_marker] - Return units to pool
+            canAddVehicle: [_marker, _vehicleType] - Check if a marker can accept another vehicle
+            addVehicleToCount: [_marker, _vehicleType] - Add a vehicle to the tracking count
+            removeVehicleFromCount: [_marker, _vehicleType] - Remove a vehicle from the count
+            getVehicleLimits: [_markerType] - Get limit configuration for a marker type
+            getSizeLimits: [_markerType] - Get size limit configuration for a marker type
+            _hasAvailableUnits: [_marker] - Check if a marker has available units
+        i.e: FLO_Garrison_Manager call ["spawnGarrison", [_marker, _size, _withVehicles]]
     
     Returns:
-    Based on mode:
-        init: HashMapObject - The garrison manager object
-        spawn: Array - The spawned garrison units
-        reinforce: Boolean - Success of reinforcement
-        maintain: Nothing
-        checkAndSpawn: Number - Count of newly spawned garrisons
-        saveGarrisonSizes: Boolean - Success of save operation
-        loadGarrisonSizes: Boolean - Success of load operation
-        isGarrisonGroup: Boolean - Success of check operation
+        May Return a Boolean or an Array depending on the Method called.
 */
 
 if (!isServer) exitWith {};
-
-params [
-    ["_mode", "", [""]],
-    ["_params", [], [[]]]
-];
-
-private _result = false;
 
 // Initialize the Garrison Manager object if it doesn't exist
 if (isNil "FLO_Garrison_Manager") then {
@@ -50,8 +45,10 @@ if (isNil "FLO_Garrison_Manager") then {
         ["lastUpdate", time],
         ["totalUnits", 0],
         ["processedMarkers", []],
-        ["markerSizeLimits", createHashMap], // New property to store min/max sizes for marker types
-        ["garrisonSizes", createHashMap],    // New property to store saved garrison sizes
+        ["markerSizeLimits", createHashMap], // Property to store min/max sizes for marker types
+        ["vehicleLimits", createHashMap],    // Property to store vehicle limits by marker type
+        ["garrisonSizes", createHashMap],    // Property to store saved garrison sizes
+        ["vehicleCounts", createHashMap],    // Property to track current vehicles at locations
         
         // Constructor - Called when object is created
         ["#create", {
@@ -60,6 +57,7 @@ if (isNil "FLO_Garrison_Manager") then {
             _self set ["totalUnits", 0];
             _self set ["processedMarkers", []];
             _self set ["garrisonSizes", createHashMap];
+            _self set ["vehicleCounts", createHashMap];
             
             // Define size limits for each marker type [baseSize, maxSize]
             private _sizeLimits = createHashMap;
@@ -76,7 +74,26 @@ if (isNil "FLO_Garrison_Manager") then {
             
             _self set ["markerSizeLimits", _sizeLimits];
             
-            ["Garrison", 3, "Manager initialized with size limits"] call FLO_fnc_log;
+            // Define vehicle limits for each marker type
+            // Format: [lightVehiclesMax, heavyVehiclesMax, totalVehiclesMax]
+            private _vehicleLimits = createHashMap;
+            _vehicleLimits set ["n_installation", [4, 2, 6]];
+            _vehicleLimits set ["o_installation", [3, 1, 4]];
+            _vehicleLimits set ["n_support", [3, 1, 4]];
+            _vehicleLimits set ["o_support", [2, 1, 3]];
+            _vehicleLimits set ["loc_Power", [2, 0, 2]];
+            _vehicleLimits set ["o_recon", [1, 0, 1]];
+            _vehicleLimits set ["o_service", [2, 0, 2]];
+            _vehicleLimits set ["o_antiair", [1, 1, 2]];
+            _vehicleLimits set ["loc_Ruin", [2, 0, 2]];
+            _vehicleLimits set ["default", [1, 0, 1]];
+            
+            _self set ["vehicleLimits", _vehicleLimits];
+            
+            ["Garrison", 3, "Manager initialized with size and vehicle limits"] call FLO_fnc_log;
+
+            // Initialize garrison system and start maintenance loop
+            _self call ["initialize", []];
         }],
         
         // Get size limits for marker type
@@ -91,6 +108,18 @@ if (isNil "FLO_Garrison_Manager") then {
             }
         }],
         
+        // Get vehicle limits for marker type
+        ["getVehicleLimits", {
+            params ["_markerType"];
+            
+            private _vehicleLimits = _self get "vehicleLimits";
+            if (_markerType in keys _vehicleLimits) then {
+                _vehicleLimits get _markerType
+            } else {
+                _vehicleLimits get "default"
+            }
+        }],
+        
         // Initialize garrison system and start maintenance loop
         ["initialize", {
             // Load saved garrison sizes if available
@@ -100,19 +129,21 @@ if (isNil "FLO_Garrison_Manager") then {
             _self call ["initializeDefaultGarrisons", []];
             
             // Start the maintenance loop
-            [] spawn {
+            [_self] spawn {
+                params ["_self"];
                 while {true} do {
                     // Run maintenance every 5 minutes
-                    ["maintain", []] call FLO_fnc_garrisonManager;
+                    _self call ["maintainGarrisons", []];
                     sleep 300;
                 };
             };
             
             // Start the spawn check loop
-            [] spawn {
+            [_self] spawn {
+                params ["_self"];
                 while {true} do {
                     // Check for new garrisons to spawn
-                    ["checkAndSpawn", [1500]] call FLO_fnc_garrisonManager;
+                    _self call ["checkNearbyGarrisons", [1500]];
                     sleep 30;
                 };
             };
@@ -342,7 +373,7 @@ if (isNil "FLO_Garrison_Manager") then {
                         // If no physical units exist, delete the garrison entry to allow respawning
                         if (_existingUnits == 0) then {
                             ["Garrison", 4, format["Deleting empty garrison entry for %1 to allow fresh spawn", _marker]] call FLO_fnc_log;
-                            _garrisons deleteAt _marker;
+                                _garrisons deleteAt _marker;
                         };
                     };
                     
@@ -368,45 +399,25 @@ if (isNil "FLO_Garrison_Manager") then {
                         _garrisonSizes set [_marker, _baseSize];
                     };
                     
-                    // Determine vehicle presence based on marker type
-                    private _withVehicles = false;
-                    switch (_markerType) do {
-                        case "n_installation": { _withVehicles = true; };
-                        case "o_installation": { _withVehicles = true; };
-                        case "o_support": { _withVehicles = true; };
-                        case "n_support": { _withVehicles = true; };
-                        case "loc_Power": { _withVehicles = true; };
-                        case "o_service": { _withVehicles = true; };
-                        case "o_antiair": { _withVehicles = true; };
-                        default { _withVehicles = false; };
-                    };
-                    
                     // If existing units < desired size and desired size > 0, spawn the garrison
                     if (_size > _existingUnits && _size > 0) then {
                         ["Garrison", 3, format["Spawning garrison at %1 with size %2 (existing units: %3)", 
                             _marker, _size, _existingUnits]] call FLO_fnc_log;
                         
-                        // Spawn garrison with current size from garrisonSizes
-                        _self call ["spawnGarrison", [_marker, _size, _withVehicles, _baseSize, _maxSize]];
+                        // Determine if vehicles should be spawned based on marker type and size
+                        private _withVehicles = true; // Set to true to enable vehicle spawning
                         
-                        // Add defensive vehicle at installations with vehicles
-                        if (_withVehicles) then {
-                            private _defenseVehicle = "";
-                            
-                            // Defense vehicle selection - simplified
-                            if (count East_Ground_Vehicles_Heavy > 0) then {
-                                _defenseVehicle = selectRandom East_Ground_Vehicles_Heavy;
-                            } else {
-                                _defenseVehicle = selectRandom East_Ground_Vehicles_Light;
-                            };
-                            
-                            ["defend", [_marker, _defenseVehicle]] call FLO_fnc_vehicleGarrison;
-                            
-                            // Add patrol for larger installations
-                            if (_markerType in ["n_installation", "o_installation"]) then {
-                                ["patrol", [_marker, 800, selectRandom East_Ground_Vehicles_Light]] call FLO_fnc_vehicleGarrison;
-                            };
+                        // Get vehicle limits for this marker type
+                        private _vehicleLimits = _self call ["getVehicleLimits", [_markerType]];
+                        _vehicleLimits params ["_lightMax", "_heavyMax", "_totalMax"];
+                        
+                        // Don't spawn vehicles if this marker type has no vehicle allowance
+                        if (_totalMax <= 0) then {
+                            _withVehicles = false;
                         };
+                        
+                        // Spawn garrison with current size from garrisonSizes and appropriate vehicle setting
+                        _self call ["spawnGarrison", [_marker, _size, _withVehicles, _baseSize, _maxSize]];
                         
                         _spawnCount = _spawnCount + 1;
                     };
@@ -465,46 +476,186 @@ if (isNil "FLO_Garrison_Manager") then {
             // Generate compositions based on size
             // MODIFIED: No size categories, just create the exact number requested
             for "_i" from 1 to _size do {
-                _composition pushBack [selectRandom _availableUnits, 1];
+                        _composition pushBack [selectRandom _availableUnits, 1];
             };
             
             // Add logging to verify unit composition generation
             ["Garrison", 2, format["SPAWNING: Generated composition of %1 units for garrison at marker '%2' (requested size: %3)", 
                 count _composition, _marker, _size]] call FLO_fnc_log;
             
+            // Create main group before spawning vehicles
+            private _spawnedUnits = [];
+            private _spawnedVehicles = [];
+            private _group = createGroup [east, true];
+            
             // Add vehicles if requested
-            private _vehicles = [];
             if (_withVehicles) then {
                 // Use vehicle types from global variables
                 private _lightVehicles = East_Ground_Vehicles_Light;
                 private _heavyVehicles = East_Ground_Vehicles_Heavy;
                 
-                _vehicles = switch (true) do {
-                    case (_size <= 4): { 
-                        [
-                            [selectRandom _lightVehicles, 1]
-                        ]
+                // Get the marker type
+                private _markerType = markerType _marker;
+                
+                // Get vehicle limits for this marker type
+                private _limits = _self call ["getVehicleLimits", [_markerType]];
+                _limits params ["_lightMax", "_heavyMax", "_totalMax"];
+                
+                // Get current vehicle counts
+                private _vehicleCounts = _self get "vehicleCounts";
+                private _currentCounts = _vehicleCounts getOrDefault [_marker, [0, 0, 0]];
+                _currentCounts params ["_currentLight", "_currentHeavy", "_currentTotal"];
+                
+                // Calculate how many vehicles we can add
+                private _availableLightSlots = _lightMax - _currentLight;
+                private _availableHeavySlots = _heavyMax - _currentHeavy;
+                private _availableTotalSlots = _totalMax - _currentTotal;
+                
+                // Define vehicle composition based on size and available slots
+                private _vehicles = [];
+                
+                // Add light vehicles first
+                if (_availableLightSlots > 0 && _availableTotalSlots > 0 && _size >= 4) then {
+                    private _lightToAdd = 1 min _availableLightSlots min _availableTotalSlots;
+                    
+                    if (_size >= 8 && _availableLightSlots >= 2 && _availableTotalSlots >= 2) then {
+                        _lightToAdd = 2;
                     };
-                    case (_size <= 8): {
-                        [
-                            [selectRandom _lightVehicles, 1],
-                            [selectRandom _lightVehicles, 1]
-                        ]
+                    
+                    for "_i" from 1 to _lightToAdd do {
+                        _vehicles pushBack [selectRandom _lightVehicles, 1];
                     };
-                    default {
-                        [
-                            [selectRandom _lightVehicles, 1],
-                            [selectRandom _lightVehicles, 1],
-                            [selectRandom _heavyVehicles, 1]
-                        ]
-                    };
+                    
+                    // Update counts
+                    _availableLightSlots = _availableLightSlots - _lightToAdd;
+                    _availableTotalSlots = _availableTotalSlots - _lightToAdd;
+                    
+                    // Add to vehicle counts
+                    _currentLight = _currentLight + _lightToAdd;
+                    _currentTotal = _currentTotal + _lightToAdd;
                 };
+                
+                // Then add heavy vehicle if appropriate
+                if (_availableHeavySlots > 0 && _availableTotalSlots > 0 && _size >= 12) then {
+                    _vehicles pushBack [selectRandom _heavyVehicles, 1];
+                    
+                    // Update counts
+                    _currentHeavy = _currentHeavy + 1;
+                    _currentTotal = _currentTotal + 1;
+                };
+                
+                // Update the vehicle counts in the hashmap
+                _vehicleCounts set [_marker, [_currentLight, _currentHeavy, _currentTotal]];
+                
+                // Log the vehicle composition
+                ["Garrison", 3, format["Adding %1 vehicles to garrison at %2 (counts now: [%3,%4,%5])", 
+                    count _vehicles, _marker, _currentLight, _currentHeavy, _currentTotal]] call FLO_fnc_log;
+                
+                // Spawn each vehicle
+                {
+                    _x params ["_type", "_count"];
+                    for "_i" from 1 to _count do {
+                        private _vehPos = [_pos, 10, 100, 5, 0, 0.5, 0, [], [_pos, _pos]] call BIS_fnc_findSafePos;
+                        private _veh = createVehicle [_type, _vehPos, [], 0, "NONE"];
+
+                        ["Garrison", 3, format["Created vehicle %1 of type %2", _veh, _type]] call FLO_fnc_log;
+                        
+                        // Create crew with explicit EAST side and get reference to the crew
+                        private _crew = units (east createVehicleCrew _veh);
+                        // Get the crew's group - when createVehicleCrew is called, it creates a new group automatically
+                        private _vehGroup = if (count _crew > 0) then {group (_crew select 0)} else {createGroup [east, true]};
+
+                        ["Garrison", 3, format["createVehicleCrew resulted in %1 crew members", count _crew]] call FLO_fnc_log;
+                        {
+                            // Check if crew member is not EAST
+                            if (side _x != east) then {
+                                // Replace with a new EAST unit
+                                private _role = assignedVehicleRole _x;
+                                private _type = typeOf _x;
+                                unassignVehicle _x;
+                                deleteVehicle _x;
+                                
+                                // Create new crew member of correct side
+                                private _newUnit = _vehGroup createUnit [_type, [0,0,0], [], 0, "NONE"];
+                                _newUnit assignAsDriver _veh;
+                                _newUnit moveInDriver _veh;
+                                _crew set [_forEachIndex, _newUnit];
+                            } else {
+                                // Just transfer the unit to our group
+                                [_x] joinSilent _vehGroup;
+                            }
+                        } forEach _crew;
+                        
+                        // Add QRF EventHandler to vehicle crew with higher chance
+                        {
+                            // Store the marker on the crew member for QRF reference
+                            _x setVariable ["FLO_Garrison_Marker", _marker, false];
+                            
+                            // Vehicle crews have higher chance to call QRF (35%)
+                            if (random 1 < 0.35) then {
+                                // Store crew status for QRF chance calculation - vehicle crews are treated as semi-officers
+                                _x setVariable ["FLO_IsOfficer", true, false];
+                                
+                                _x addEventHandler ["Killed", {
+                                    params ["_unit", "_killer"];
+                                    
+                                    // Only trigger QRF if killed by BLUFOR
+                                    if (side _killer == west) then {
+                                        private _unitPos = getPos _unit;
+                                        private _markerData = _unit getVariable ["FLO_Garrison_Marker", ""];
+                                        
+                                        // 60% chance for vehicle crew to actually call QRF (higher than regular infantry)
+                                        if (_markerData != "" && random 1 < 0.6) then {
+                                            ["Garrison", 3, format["Vehicle crew killed at %1 triggered QRF request", _markerData]] call FLO_fnc_log;
+                                            [_unitPos, 500] call FLO_fnc_requestQRF;
+                                        };
+                                    };
+                                }];
+                            };
+                        } forEach (crew _veh);
+                        
+                        // Verify crew is EAST
+                        {
+                            if (side _x != east) then {
+                                ["Garrison", 2, format["WARNING: Vehicle crew member %1 is not EAST after creation", _x]] call FLO_fnc_log;
+                            };
+                        } forEach (crew _veh);
+                        
+                        // Determine if vehicle should patrol or defend (70% defend, 30% patrol)
+                        if (random 1 < 0.7) then {
+                            // DEFEND - Set up a defensive position or small area patrol
+                            private _vehGroup = group driver _veh;
+                            
+                            // Give the group a defensive stance
+                            _vehGroup setCombatMode "RED";
+                            _vehGroup setBehaviour "AWARE";
+                            
+                            // Small area defense pattern
+                            [_vehGroup, _vehPos, 50, 2, 0.3, 0.5] call BIS_fnc_taskDefend;
+                            
+                            ["Garrison", 3, format["Vehicle %1 assigned to DEFENSE at %2", _veh, markerText _marker]] call FLO_fnc_log;
+                        } else {
+                            // PATROL - Set up a patrol pattern around the area
+                            private _vehGroup = group driver _veh;
+                            
+                            // Set up the patrol parameters
+                            _vehGroup setCombatMode "RED";
+                            _vehGroup setBehaviour "AWARE";
+                            _vehGroup setSpeedMode "LIMITED";
+                            
+                            // Create a patrol route
+                            [_vehGroup, _pos, 300] call BIS_fnc_taskPatrol;
+                            
+                            ["Garrison", 3, format["Vehicle %1 assigned to PATROL around %2", _veh, markerText _marker]] call FLO_fnc_log;
+                        };
+                        
+                        // Add vehicle to our tracking
+                        _spawnedVehicles pushBack _veh;
+                    };
+                } forEach _vehicles;
             };
             
             // Spawn units
-            private _spawnedUnits = [];
-            private _group = createGroup [east, true];
-            
             {
                 _x params ["_type", "_count"];
                 for "_i" from 1 to _count do {
@@ -576,84 +727,6 @@ if (isNil "FLO_Garrison_Manager") then {
                 } forEach units _group;
                 _group = _eastGroup;
             };
-            
-            // Spawn vehicles
-            private _spawnedVehicles = [];
-            {
-                _x params ["_type", "_count"];
-                for "_i" from 1 to _count do {
-                    private _vehPos = [_pos, 10, 100, 5, 0, 0.5, 0, [], [_pos, _pos]] call BIS_fnc_findSafePos;
-                    private _veh = createVehicle [_type, _vehPos, [], 0, "NONE"];
-                    
-                    // Create crew with explicit EAST side
-                    private _vehGroup = createGroup [east, true];
-                    createVehicleCrew _veh;
-                    
-                    // Transfer crew to our controlled EAST group
-                    private _crew = crew _veh;
-                    {
-                        // Check if crew member is not EAST
-                        if (side _x != east) then {
-                            // Replace with a new EAST unit
-                            private _role = assignedVehicleRole _x;
-                            private _type = typeOf _x;
-                            unassignVehicle _x;
-                            deleteVehicle _x;
-                            
-                            // Create new crew member of correct side
-                            private _newUnit = _vehGroup createUnit [_type, [0,0,0], [], 0, "NONE"];
-                            _newUnit assignAsDriver _veh;
-                            _newUnit moveInDriver _veh;
-                            _crew set [_forEachIndex, _newUnit];
-                        } else {
-                            // Just transfer the unit to our group
-                            [_x] joinSilent _vehGroup;
-                        }
-                    } forEach _crew;
-                    
-                    // Join the vehicle group to the main group
-                    (units _vehGroup) joinSilent _group;
-                    
-                    // Update our units and vehicles tracking
-                    _spawnedUnits append (crew _veh);
-                    _spawnedVehicles pushBack _veh;
-                    
-                    // Add QRF EventHandler to vehicle crew with higher chance
-                    {
-                        // Store the marker on the crew member for QRF reference
-                        _x setVariable ["FLO_Garrison_Marker", _marker, false];
-                        
-                        // Vehicle crews have higher chance to call QRF (35%)
-                        if (random 1 < 0.35) then {
-                            // Store crew status for QRF chance calculation - vehicle crews are treated as semi-officers
-                            _x setVariable ["FLO_IsOfficer", true, false];
-                            
-                            _x addEventHandler ["Killed", {
-                                params ["_unit", "_killer"];
-                                
-                                // Only trigger QRF if killed by BLUFOR
-                                if (side _killer == west) then {
-                                    private _unitPos = getPos _unit;
-                                    private _markerData = _unit getVariable ["FLO_Garrison_Marker", ""];
-                                    
-                                    // 60% chance for vehicle crew to actually call QRF (higher than regular infantry)
-                                    if (_markerData != "" && random 1 < 0.6) then {
-                                        ["Garrison", 3, format["Vehicle crew killed at %1 triggered QRF request", _markerData]] call FLO_fnc_log;
-                                        [_unitPos, 500] call FLO_fnc_requestQRF;
-                                    };
-                                };
-                            }];
-                        };
-                    } forEach (crew _veh);
-                    
-                    // Verify crew is EAST
-                    {
-                        if (side _x != east) then {
-                            ["Garrison", 2, format["WARNING: Vehicle crew member %1 is not EAST after creation", _x]] call FLO_fnc_log;
-                        };
-                    } forEach (crew _veh);
-                };
-            } forEach _vehicles;
             
             // Enhanced garrison behavior - find buildings and suitable positions
             private _nearBuildings = _pos nearObjects ["Building", 150];
@@ -758,8 +831,8 @@ if (isNil "FLO_Garrison_Manager") then {
             if (count _spawnedUnits > 3 && count _buildingPositions > 3) then {
                 // Only set group ID if _patrolGroup is defined
                 if (!isNil "_patrolGroup" && {!isNull _patrolGroup}) then {
-                    private _patrolID = format ["%1 %2-%3 Patrol", _squadNamePrefix, _platoonNum, _squadNum + 1];
-                    _patrolGroup setGroupIdGlobal [_patrolID];
+                private _patrolID = format ["%1 %2-%3 Patrol", _squadNamePrefix, _platoonNum, _squadNum + 1];
+                _patrolGroup setGroupIdGlobal [_patrolID];
                 };
             };
             
@@ -792,14 +865,13 @@ if (isNil "FLO_Garrison_Manager") then {
         
         // Reinforce an existing garrison - ONLY UPDATES TRACKED COUNT, NEVER SPAWNS UNITS
         ["reinforceGarrison", {
-            params ["_marker", "_amount"];
+            params ["_marker", "_amount", ["_withVehicles", false, [true]]];
             
             private _garrisons = _self get "garrisons";
             
             // Check if garrison exists
             if (!(_marker in keys _garrisons)) then {
                 ["Garrison", 3, format["Cannot reinforce non-existent garrison at %1", _marker]] call FLO_fnc_log;
-                _result = false;
             } else {
                 // Garrison exists - process reinforcement based on size limits only
                 private _garrisonData = _garrisons get _marker;
@@ -812,7 +884,6 @@ if (isNil "FLO_Garrison_Manager") then {
                 // Check if we've already reached max size
                 if (_currentSize >= _maxSize) then {
                     ["Garrison", 3, format["Garrison at %1 already at maximum size (%2), reinforcement rejected", _marker, _maxSize]] call FLO_fnc_log;
-                    _result = false;
                 } else {
                     // Calculate how many reinforcements can be added before reaching max
                     private _availableSpace = _maxSize - _currentSize;
@@ -838,17 +909,63 @@ if (isNil "FLO_Garrison_Manager") then {
                     private _garrisonSizes = _self get "garrisonSizes";
                     _garrisonSizes set [_marker, _currentSize min _maxSize];
                     
-                    _result = true;
+                    // Handle vehicle reinforcement (just update counts, don't spawn anything)
+                    if (_withVehicles) then {
+                        // Determine vehicle type based on marker type and rarity
+                        private _markerType = markerType _marker;
+                        private _vehicleType = "";
+                        private _isHeavyVehicle = false;
+                        
+                        // Higher chance of heavy vehicles at important installations
+                        if (_markerType in ["n_installation", "o_installation"] && random 1 < 0.3) then {
+                            // 30% chance of heavy vehicle at major installations
+                            _isHeavyVehicle = true;
+                        } else {
+                            if (_markerType in ["n_support", "o_support"] && random 1 < 0.2) then {
+                                // 20% chance of heavy vehicle at support locations
+                                _isHeavyVehicle = true;
+                            } else {
+                                if (_markerType == "o_antiair" && random 1 < 0.4) then {
+                                    // 40% chance of heavy vehicle at AA sites
+                                    _isHeavyVehicle = true;
+                                };
+                            };
+                        };
+                        
+                        // Select vehicle based on type
+                        if (_isHeavyVehicle) then {
+                            if (count East_Ground_Vehicles_Heavy > 0) then {
+                                _vehicleType = selectRandom East_Ground_Vehicles_Heavy;
+                            } else {
+                                _vehicleType = selectRandom East_Ground_Vehicles_Light;
+                            };
+                        } else {
+                            _vehicleType = selectRandom East_Ground_Vehicles_Light;
+                        };
+                        
+                        // Check if we can add a vehicle to this location with our own method
+                        private _canAddVehicle = _self call ["canAddVehicle", [_marker, _vehicleType]];
+                        
+                        if (_canAddVehicle) then {
+                            // Add the vehicle to our own vehicle count ONLY (don't spawn it)
+                            _self call ["addVehicleToCount", [_marker, _vehicleType]];
+                            
+                            // Log the addition
+                            ["Garrison", 3, format["Added %1 to vehicle count for %2 during reinforcement", 
+                                if (_isHeavyVehicle) then {"heavy vehicle"} else {"light vehicle"}, _marker]] call FLO_fnc_log;
+                        } else {
+                            ["Garrison", 3, format["Cannot add vehicle to %1, vehicle limits reached", _marker]] call FLO_fnc_log;
+                        };
+                    };
                 };
             };
-            
-            _result
         }],
         
         // Maintain all garrisons - simplified without queued/virtual reinforcements
         ["maintainGarrisons", {
             private _garrisons = _self get "garrisons";
             private _garrisonSizes = _self get "garrisonSizes";
+            private _vehicleCounts = _self get "vehicleCounts";
             private _totalCount = 0;
             
             // Process each garrison
@@ -904,14 +1021,14 @@ if (isNil "FLO_Garrison_Manager") then {
                     // Check if this was previously virtualized but now restored
                     if (_data param [7, false]) then {
                         // This garrison was previously virtualized, now it's restored
-                        // We need to find the newly created units near this marker
+                        // We need to find the newly created units and vehicles near this marker
                         
                         private _nearUnits = _markerPos nearEntities ["CAManBase", 100] select {side _x == east};
-                        private _nearVehicles = _markerPos nearEntities ["LandVehicle", 100] select {side _x == east};
+                        private _nearVehicles = _markerPos nearEntities [["Car", "Tank", "Truck"], 100] select {side _x == east};
                         
                         if (count _nearUnits > 0) then {
-                            ["Garrison", 3, format["Found %1 restored units for previously virtualized garrison at %2", 
-                                count _nearUnits, _marker]] call FLO_fnc_log;
+                            ["Garrison", 3, format["Found %1 restored units and %2 vehicles for previously virtualized garrison at %3", 
+                                count _nearUnits, count _nearVehicles, _marker]] call FLO_fnc_log;
                             
                             // Update our tracking with the restored units
                             private _newGroup = group (_nearUnits select 0);
@@ -926,6 +1043,25 @@ if (isNil "FLO_Garrison_Manager") then {
                                     _marker, _currentSize, count _nearUnits]] call FLO_fnc_log;
                                 
                                 _garrisonSizes set [_marker, count _nearUnits];
+                            };
+                            
+                            // Also update vehicle counts based on found vehicles
+                            if (count _nearVehicles > 0) then {
+                                private _lightCount = 0;
+                                private _heavyCount = 0;
+                                
+                                {
+                                    private _vehType = typeOf _x;
+                                    if (_vehType in East_Ground_Vehicles_Heavy) then {
+                                        _heavyCount = _heavyCount + 1;
+                                    } else {
+                                        _lightCount = _lightCount + 1;
+                                    };
+                                } forEach _nearVehicles;
+                                
+                                _vehicleCounts set [_marker, [_lightCount, _heavyCount, _lightCount + _heavyCount]];
+                                ["Garrison", 3, format["Updated vehicle counts for %1 to [%2,%3,%4] based on restored vehicles", 
+                                    _marker, _lightCount, _heavyCount, _lightCount + _heavyCount]] call FLO_fnc_log;
                             };
                         } else {
                             // Was virtualized but now no units found - treat as empty
@@ -944,12 +1080,18 @@ if (isNil "FLO_Garrison_Manager") then {
                                 
                                 // Optionally reset the garrison data so it can be respawned
                                 _garrisons deleteAt _marker;
+                                
+                                // Reset vehicle counts for this marker
+                                if (_marker in keys _vehicleCounts) then {
+                                    _vehicleCounts deleteAt _marker;
+                                    ["Garrison", 3, format["Reset vehicle counts for %1 after no units found post-virtualization", _marker]] call FLO_fnc_log;
+                                };
                             };
                         };
                     } else {
                         // Normal non-virtualized garrison processing
                 
-                        // Check for alive units
+                        // Check for alive units and vehicles
                         private _aliveUnits = _units select {alive _x};
                         private _aliveVehicles = _vehicles select {alive _x};
                         
@@ -971,7 +1113,7 @@ if (isNil "FLO_Garrison_Manager") then {
                             } forEach _nonEastUnits;
                         };
                         
-                        // Update actual unit count
+                        // Update actual unit count and vehicles list
                         _data set [0, _aliveUnits];
                         _data set [1, _aliveVehicles];
                         
@@ -988,6 +1130,40 @@ if (isNil "FLO_Garrison_Manager") then {
                                 _marker, _currentSize, _aliveCount, _aliveCount, count _units]] call FLO_fnc_log;
                             
                             _garrisonSizes set [_marker, _aliveCount];
+                        };
+                        
+                        // Update vehicle counts based on what's still alive
+                        if (count _vehicles > 0) then {
+                            private _deadVehicles = _vehicles - _aliveVehicles;
+                            
+                            if (count _deadVehicles > 0 && _marker in keys _vehicleCounts) then {
+                                private _currentCounts = _vehicleCounts get _marker;
+                                private _lightLosses = 0;
+                                private _heavyLosses = 0;
+                                
+                                {
+                                    private _vehType = typeOf _x;
+                                    if (_vehType in East_Ground_Vehicles_Heavy) then {
+                                        _heavyLosses = _heavyLosses + 1;
+                                    } else {
+                                        _lightLosses = _lightLosses + 1;
+                                    };
+                                } forEach _deadVehicles;
+                                
+                                // Only update if we detected losses
+                                if (_lightLosses > 0 || _heavyLosses > 0) then {
+                                    // Reduce counts but don't go below 0
+                                    private _newLightCount = (_currentCounts select 0) - _lightLosses;
+                                    private _newHeavyCount = (_currentCounts select 1) - _heavyLosses;
+                                    _newLightCount = _newLightCount max 0;
+                                    _newHeavyCount = _newHeavyCount max 0;
+                                    private _newTotalCount = _newLightCount + _newHeavyCount;
+                                    
+                                    _vehicleCounts set [_marker, [_newLightCount, _newHeavyCount, _newTotalCount]];
+                                    ["Garrison", 3, format["Combat losses for vehicles at %1: Lost %2 light and %3 heavy. New counts: [%4,%5,%6]", 
+                                        _marker, _lightLosses, _heavyLosses, _newLightCount, _newHeavyCount, _newTotalCount]] call FLO_fnc_log;
+                                };
+                            };
                         };
                     };
                 };
@@ -1014,6 +1190,9 @@ if (isNil "FLO_Garrison_Manager") then {
             // Update total count
             _self set ["totalUnits", _totalCount];
             _self set ["lastUpdate", time];
+            
+            // Update and cleanup vehicle counts - moved logic directly into the maintenance loop above
+            // to avoid spawning a separate thread
             
             // Save garrisonSizes to profileNamespace to persist combat losses
             _self call ["saveGarrisonSizes", []];
@@ -1215,7 +1394,7 @@ if (isNil "FLO_Garrison_Manager") then {
                 private _garrisonData = _garrisons get _marker;
                 private _units = _garrisonData select 0;
                 
-                // Check for alive units
+                    // Check for alive units
                 if (count _units > 0) then {
                     private _aliveUnits = _units select {!isNil "_x" && {alive _x}};
                     _hasUnits = count _aliveUnits > 0;
@@ -1226,6 +1405,107 @@ if (isNil "FLO_Garrison_Manager") then {
             };
             
             _hasUnits
+        }],
+        
+        // Check if a marker can receive more vehicles of a specific type
+        ["canAddVehicle", {
+            params ["_marker", "_vehicleType"];
+            
+            // Get the marker type
+            private _markerType = markerType _marker;
+            
+            // Get vehicle limits for this marker type
+            private _limits = _self call ["getVehicleLimits", [_markerType]];
+            _limits params ["_lightMax", "_heavyMax", "_totalMax"];
+            
+            // Get current vehicle counts
+            private _vehicleCounts = _self get "vehicleCounts";
+            private _currentCounts = _vehicleCounts getOrDefault [_marker, [0, 0, 0]];
+            _currentCounts params ["_currentLight", "_currentHeavy", "_currentTotal"];
+            
+            // Determine if this is a heavy vehicle
+            private _isHeavy = (_vehicleType in East_Ground_Vehicles_Heavy);
+            
+            // Check if we can add this vehicle type
+            private _canAdd = false;
+            
+            if (_isHeavy) then {
+                _canAdd = (_currentHeavy < _heavyMax) && (_currentTotal < _totalMax);
+            } else {
+                _canAdd = (_currentLight < _lightMax) && (_currentTotal < _totalMax);
+            };
+            
+            ["Garrison", 4, format["Vehicle check for %1: %2 (Heavy: %3). Current: [%4,%5,%6], Limits: [%7,%8,%9], Result: %10", 
+                _marker, _vehicleType, _isHeavy, _currentLight, _currentHeavy, _currentTotal, _lightMax, _heavyMax, _totalMax, _canAdd]] call FLO_fnc_log;
+            
+            _canAdd
+        }],
+        
+        // Add a vehicle to the count for a marker
+        ["addVehicleToCount", {
+            params ["_marker", "_vehicleType"];
+            
+            // Initialize if needed
+            private _vehicleCounts = _self get "vehicleCounts";
+            if (!(_marker in keys _vehicleCounts)) then {
+                _vehicleCounts set [_marker, [0, 0, 0]];
+            };
+            
+            // Get current counts
+            private _currentCounts = _vehicleCounts get _marker;
+            _currentCounts params ["_lightCount", "_heavyCount", "_totalCount"];
+            
+            // Determine if this is a heavy vehicle
+            private _isHeavy = (_vehicleType in East_Ground_Vehicles_Heavy);
+            
+            // Update counts
+            if (_isHeavy) then {
+                _currentCounts set [1, _heavyCount + 1];
+            } else {
+                _currentCounts set [0, _lightCount + 1];
+            };
+            _currentCounts set [2, _totalCount + 1];
+            
+            // Update the hashmap
+            _vehicleCounts set [_marker, _currentCounts];
+            
+            ["Garrison", 3, format["Added vehicle %1 to %2. New counts: %3", _vehicleType, _marker, _currentCounts]] call FLO_fnc_log;
+            
+            true
+        }],
+        
+        // Remove a vehicle from the count for a marker
+        ["removeVehicleFromCount", {
+            params ["_marker", "_vehicleType"];
+            
+            // Check if marker has any vehicles tracked
+            private _vehicleCounts = _self get "vehicleCounts";
+            if (!(_marker in keys _vehicleCounts)) exitWith {
+                ["Garrison", 3, format["No vehicles tracked for %1, nothing to remove", _marker]] call FLO_fnc_log;
+                false
+            };
+            
+            // Get current counts
+            private _currentCounts = _vehicleCounts get _marker;
+            _currentCounts params ["_lightCount", "_heavyCount", "_totalCount"];
+            
+            // Determine if this is a heavy vehicle
+            private _isHeavy = (_vehicleType in East_Ground_Vehicles_Heavy);
+            
+            // Update counts
+            if (_isHeavy) then {
+                _currentCounts set [1, (_heavyCount - 1) max 0];
+            } else {
+                _currentCounts set [0, (_lightCount - 1) max 0];
+            };
+            _currentCounts set [2, (_totalCount - 1) max 0];
+            
+            // Update the hashmap
+            _vehicleCounts set [_marker, _currentCounts];
+            
+            ["Garrison", 3, format["Removed vehicle %1 from %2. New counts: %3", _vehicleType, _marker, _currentCounts]] call FLO_fnc_log;
+            
+            true
         }]
     ];
     
@@ -1233,73 +1513,4 @@ if (isNil "FLO_Garrison_Manager") then {
     FLO_Garrison_Manager = createHashMapObject [_garrisonManagerClass];
 };
 
-// Execute the requested mode
-switch (_mode) do {
-    // Initialize the garrison system
-    case "init": {
-        FLO_Garrison_Manager call ["initialize", []];
-        _result = FLO_Garrison_Manager;
-    };
-    
-    // Spawn a new garrison
-    case "spawn": {
-        _params params [
-            ["_marker", "", [""]],
-            ["_size", 8, [0]],
-            ["_withVehicles", false, [false]]
-        ];
-        
-        _result = FLO_Garrison_Manager call ["spawnGarrison", [_marker, _size, _withVehicles]];
-    };
-    
-    // Reinforce an existing garrison
-    case "reinforce": {
-        _params params [
-            ["_marker", "", [""]],
-            ["_amount", 4, [0]]
-        ];
-        
-        _result = FLO_Garrison_Manager call ["reinforceGarrison", [_marker, _amount]];
-    };
-    
-    // Maintain all garrisons
-    case "maintain": {
-        FLO_Garrison_Manager call ["maintainGarrisons", []];
-        _result = true;
-    };
-    
-    // Check markers near players and spawn garrisons if needed
-    case "checkAndSpawn": {
-        _params params [
-            ["_activationDistance", 1500, [0]]
-        ];
-        
-        _result = FLO_Garrison_Manager call ["checkNearbyGarrisons", [_activationDistance]];
-    };
-    
-    // Save garrison sizes to profileNamespace
-    case "saveGarrisonSizes": {
-        _result = FLO_Garrison_Manager call ["saveGarrisonSizes", []];
-    };
-    
-    // Load garrison sizes from profileNamespace
-    case "loadGarrisonSizes": {
-        _result = FLO_Garrison_Manager call ["loadGarrisonSizes", []];
-    };
-    
-    // Check if a group is from a garrison
-    case "isGarrisonGroup": {
-        _params params [
-            ["_group", grpNull, [grpNull]]
-        ];
-        
-        _result = FLO_Garrison_Manager call ["isGarrisonGroup", [_group]];
-    };
-    
-    default {
-        ["Garrison", 3, format["Error: Unknown mode '%1'", _mode]] call FLO_fnc_log;
-        _result = false;
-    };
-};
-
-_result 
+FLO_Garrison_Manager 

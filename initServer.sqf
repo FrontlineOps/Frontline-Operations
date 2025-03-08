@@ -205,7 +205,7 @@ diag_log "[FLO] Intelligence System initialized";
 diag_log "[FLO] Resource system initialized";
 
 // Initialize the garrison management system
-["init", []] call FLO_fnc_garrisonManager;
+[] call FLO_fnc_garrisonManager;
 diag_log "[FLO] Garrison system initialized";
 
 // Initialize the logistics network

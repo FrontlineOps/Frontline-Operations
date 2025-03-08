@@ -47,7 +47,7 @@ if (isNil "FLO_Logistics_Network") then {
             _self set ["supplyRoutes", createHashMap];
             _self set ["supplyLevels", createHashMap];
             _self set ["lastUpdate", time];
-            diag_log "[FLO][Logistics] Network initialized";
+            ["Logistics", 3, "Network initialized"] call FLO_fnc_log;
         }],
         
         // Initialize logistics network and start update loop
@@ -67,7 +67,7 @@ if (isNil "FLO_Logistics_Network") then {
             params ["_sourceMarker", "_targetMarker"];
             
             if (_sourceMarker == "" || _targetMarker == "") exitWith {
-                diag_log "[FLO][Logistics] Error: Empty marker name for supply route";
+                ["Logistics", 1, "Error: Empty marker name for supply route"] call FLO_fnc_log;
                 false
             };
             
@@ -75,7 +75,7 @@ if (isNil "FLO_Logistics_Network") then {
             private _targetPos = getMarkerPos _targetMarker;
             
             if (_sourcePos isEqualTo [0,0,0] || _targetPos isEqualTo [0,0,0]) exitWith {
-                diag_log format ["[FLO][Logistics] Error: Invalid marker position for route %1 -> %2", _sourceMarker, _targetMarker];
+                ["Logistics", 1, format["Error: Invalid marker position for route %1 -> %2", _sourceMarker, _targetMarker]] call FLO_fnc_log;
                 false
             };
             
@@ -118,7 +118,7 @@ if (isNil "FLO_Logistics_Network") then {
                 _supplyLevels set [_targetMarker, 0];
             };
             
-            diag_log format ["[FLO][Logistics] Supply route established: %1 -> %2 (Quality: %3)", _sourceMarker, _targetMarker, _routeQuality];
+            ["Logistics", 4, format["Supply route established: %1 -> %2 (Quality: %3)", _sourceMarker, _targetMarker, _routeQuality]] call FLO_fnc_log;
             true
         }],
         
@@ -152,7 +152,7 @@ if (isNil "FLO_Logistics_Network") then {
                 };
             } forEach _opforInstallations;
             
-            diag_log format ["[FLO][Logistics] Found %1 valid supply depots", count _depots];
+            ["Logistics", 4, format["Found %1 valid supply depots", count _depots]] call FLO_fnc_log;
             _depots
         }],
         
@@ -194,8 +194,8 @@ if (isNil "FLO_Logistics_Network") then {
             // Combine lists with priority outposts first
             _outposts = _priorityOutposts + _secondaryOutposts;
             
-            diag_log format ["[FLO][Logistics] Found %1 outposts (%2 high priority) that need supplies", 
-                count _outposts, count _priorityOutposts];
+            ["Logistics", 4, format["Found %1 outposts (%2 high priority) that need supplies", 
+                count _outposts, count _priorityOutposts]] call FLO_fnc_log;
             
             _outposts
         }],
@@ -318,14 +318,57 @@ if (isNil "FLO_Logistics_Network") then {
                         // Check available resources and only reinforce if we have enough
                         private _availableResources = ["get", []] call FLO_fnc_opforResources;
                         if (_availableResources >= _reinforceAmount) then {
-                            // Call garrison reinforce function
-                            ["reinforce", [_outpost, _reinforceAmount]] call FLO_fnc_garrisonManager;
+                            // 20% chance to add a vehicle reinforcement if we have enough resources
+                            private _addVehicle = false;
+                            private _isHeavyVehicle = false;
+                            private _vehicleCost = 0;
                             
-                            // Spend the resources
-                            ["spend", [_reinforceAmount]] call FLO_fnc_opforResources;
+                            if (random 1 < 0.2 && _availableResources >= (_reinforceAmount + 5)) then {
+                                // Determine vehicle type based on marker type
+                                private _markerType = markerType _outpost;
+                                
+                                // Higher chance of heavy vehicles at important installations
+                                if (_markerType in ["n_installation", "o_installation"] && random 1 < 0.3) then {
+                                    // 30% chance of heavy vehicle at major installations
+                                    _isHeavyVehicle = true;
+                                } else {
+                                    if (_markerType in ["n_support", "o_support"] && random 1 < 0.2) then {
+                                        // 20% chance of heavy vehicle at support locations
+                                        _isHeavyVehicle = true;
+                                    } else {
+                                        if (_markerType == "o_antiair" && random 1 < 0.4) then {
+                                            // 40% chance of heavy vehicle at AA sites
+                                            _isHeavyVehicle = true;
+                                        };
+                                    };
+                                };
+                                
+                                // Calculate vehicle cost
+                                _vehicleCost = if (_isHeavyVehicle) then {10} else {5};
+                                
+                                // Only add vehicle if we have enough resources
+                                if (_availableResources >= (_reinforceAmount + _vehicleCost)) then {
+                                    _addVehicle = true;
+                                };
+                            };
                             
-                            diag_log format ["[FLO][Logistics] Reinforcing non-activated garrison at %1 with %2 units", 
-                                _outpost, _reinforceAmount];
+                            // Call garrison reinforce function with vehicle flag
+                            FLO_Garrison_Manager call ["reinforceGarrison", [_outpost, _reinforceAmount, _addVehicle]];
+                            
+                            // Create the actual vehicle if needed
+                            if (_addVehicle) then {
+                                // Spend resources for both units and vehicle
+                                ["spend", [_reinforceAmount + _vehicleCost]] call FLO_fnc_opforResources;
+                                
+                                ["Logistics", 4, format["Reinforcing garrison at %1 with %2 units and 1 vehicle, spending %3 resources", 
+                                    _outpost, _reinforceAmount, _reinforceAmount + _vehicleCost]] call FLO_fnc_log;
+                            } else {
+                                // Just spend resources for units
+                                ["spend", [_reinforceAmount]] call FLO_fnc_opforResources;
+                                
+                                ["Logistics", 4, format["Reinforcing non-activated garrison at %1 with %2 units", 
+                                    _outpost, _reinforceAmount]] call FLO_fnc_log;
+                            };
                         };
                     };
                 };
@@ -345,7 +388,7 @@ if (isNil "FLO_Logistics_Network") then {
                 // Check if the marker changed sides (captured by BLUFOR)
                 if (markerColor _target in ["colorBLUFOR", "ColorWEST"]) then {
                     _toDelete pushBack _target;
-                    diag_log format ["[FLO][Logistics] Route removed - target %1 was captured by BLUFOR", _target];
+                    ["Logistics", 4, format["Route removed - target %1 was captured by BLUFOR", _target]] call FLO_fnc_log;
                 };
             } forEach keys _supplyRoutes;
             
@@ -382,10 +425,10 @@ if (isNil "FLO_Logistics_Network") then {
                     _logDetails = _logDetails select [0, count _logDetails - 2];
                 };
                 
-                diag_log format ["[FLO][Logistics] Supply network updated. %1 active routes. By type: %2", 
-                    count keys _supplyRoutes, _logDetails];
+                ["Logistics", 4, format["Supply network updated. %1 active routes. By type: %2", 
+                    count keys _supplyRoutes, _logDetails]] call FLO_fnc_log;
             } else {
-                diag_log "[FLO][Logistics] Supply network updated. No active routes.";
+                ["Logistics", 4, "Supply network updated. No active routes."] call FLO_fnc_log;
             };
         }],
         

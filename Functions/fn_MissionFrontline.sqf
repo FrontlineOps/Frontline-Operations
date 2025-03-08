@@ -185,7 +185,6 @@ private _frontlineManagerDeclaration = [
         
         // Create marker for new outpost
         private _outpostMarkerName = "AssltOutpost" + (str ([0, 0, 0] getPos [(10 + (random 150)), (0 + (random 360))]));
-        publicVariable "_outpostMarkerName";
         
         createMarker [_outpostMarkerName, (locationPosition _selectedPosition)];
         _outpostMarkerName setMarkerType "o_support";
@@ -277,7 +276,6 @@ private _frontlineManagerDeclaration = [
         
         // Create marker for new roadblock
         private _roadblockMarkerName = "AssltOutpost" + (str ([0, 0, 0] getPos [(10 + (random 150)), (0 + (random 360))]));
-        publicVariable "_roadblockMarkerName";
         
         createMarker [_roadblockMarkerName, _positionCoords];
         _roadblockMarkerName setMarkerType "o_service";

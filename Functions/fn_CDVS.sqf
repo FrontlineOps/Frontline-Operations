@@ -282,7 +282,7 @@ _mustRestore = false;
     
     if (count _units > 0) then {
         // Check if this is a garrison group
-        private _garrisonCheck = ["isGarrisonGroup", [_grp]] call FLO_fnc_garrisonManager;
+        private _garrisonCheck = FLO_Garrison_Manager call ["isGarrisonGroup", [_grp]]; 
         private _isGarrisonGroup = _garrisonCheck select 0;
         private _garrisonMarker = _garrisonCheck select 1;
         

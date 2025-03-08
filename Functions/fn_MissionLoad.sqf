@@ -118,7 +118,7 @@ for "_x" from 0 to _CrewSelCnt do { _unit = _Group createunit [_crewType,[0,0,0]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Load garrison sizes and initialize garrisons for saved objectives
-private _garrisonLoadResult = ["loadGarrisonSizes", []] call FLO_fnc_garrisonManager;
+private _garrisonLoadResult = FLO_Garrison_Manager call ["loadGarrisonSizes", []]; 
 if (_garrisonLoadResult) then {
     [[west,"HQ"], "Garrison states loaded successfully..."] remoteExec ["sideChat", 0];
 } else {

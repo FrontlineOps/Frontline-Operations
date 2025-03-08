@@ -91,7 +91,6 @@ private _targetBuilding = (nearestObjects [
 
 // Create assault marker
 private _assaultMarkerName = "AssltDest" + (str ([0, 0, 0] getPos [(10 + (random 150)), (0 + (random 360))]));
-publicVariable "_assaultMarkerName";
 
 createMarker [_assaultMarkerName, getPos _targetBuilding];
 _assaultMarkerName setMarkerType "mil_marker_noShadow";
