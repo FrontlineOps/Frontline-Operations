@@ -42,7 +42,7 @@ if (isNil "FLO_Logistics_Network") then {
             [] spawn {
                 while {true} do {
                     // Update supply levels every 5 minutes
-                    ["update", []] call FLO_fnc_logisticsNetwork;
+                    FLO_Logistics_Network call ["updateSupplyNetwork", []];
                     sleep 300;
                 };
             };
