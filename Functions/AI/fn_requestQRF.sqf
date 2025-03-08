@@ -82,7 +82,7 @@ private _spawnCount = switch (true) do {
 private _totalCost = _baseCost * _spawnCount;
 
 // Try to spend resources for QRF
-if !(FLO_OPFOR_Resources call ["spendResources", [_totalCost]]) exitWith {
+if !(["spend", [_totalCost]] call FLO_fnc_opforResources) exitWith {
     diag_log "[FLO][QRF] Insufficient resources for QRF deployment";
     [false, []];
 };

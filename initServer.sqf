@@ -180,7 +180,7 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 diag_log "[FLO] Intelligence System initialized";
 
 // Initialize the resource system
-[] call FLO_fnc_opforResources;
+["init", []] call FLO_fnc_opforResources;
 diag_log "[FLO] Resource system initialized";
 
 // Initialize the garrison management system
