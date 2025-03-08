@@ -35,7 +35,7 @@ if (!isServer) then {
         }] call BIS_fnc_addStackedEventHandler;
     };
     // Exit here for clients after setting up notification handler
-    if (_mode != "showNotification") exitWith {};
+    if (!isServer) exitWith {};
 };
 
 // Initialize intel system if it doesn't exist (server only)
