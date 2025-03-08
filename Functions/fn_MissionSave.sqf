@@ -1,12 +1,8 @@
 if (!isServer) exitWith {};
 
-[[west,"HQ"], "Saving Mission ..."] remoteExec ["sideChat", 0];
-
-
-
+// [[west,"HQ"], "Saving Mission ..."] remoteExec ["sideChat", 0];
 
 Centerposition = [worldSize / 2, worldsize / 2, 0];
-
 
 _missionTag = missionName;
 _missionTag = [_missionTag] call BIS_fnc_filterString;
@@ -16,13 +12,10 @@ private _MarkerDataName = _missionTag + "_markers";
 private _VehicleDataName = _missionTag + "_Vehicles";
 private _ObjectDataName = _missionTag + "_Objects";
 
-
-
 profileNamespace setVariable [_MarkerTimeName, nil];
 profileNamespace setVariable [_MarkerDataName, nil];
 profileNamespace setVariable [_VehicleDataName, nil];
 profileNamespace setVariable [_ObjectDataName, nil];
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,35 +24,29 @@ if (count _spheres > 0) then {{deleteVehicle _x;} forEach _spheres ;} ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 _GroupMarks = allMapMarkers select {markerType _x == "b_unknown" && markerColor _x == "Color6_FD_F"};
 {deleteMarker _x; } forEach _GroupMarks;
-
-
-
 
 _SaveGroups = allGroups select {(typeOf (units _x select 0) == F_Diver_Eod or  typeOf (units _x select 0) == F_Diver_Rfl or typeOf (units _x select 0) == F_Diver_TL or typeOf (units _x select 0) == F_Recon_Eod or  typeOf (units _x select 0) == F_Recon_Med or  typeOf (units _x select 0) == F_Recon_Eng or  typeOf (units _x select 0) == F_Recon_Mg or typeOf (units _x select 0) == F_Recon_AT or typeOf (units _x select 0) == F_Recon_Mrk or typeOf (units _x select 0) == F_Assault_AT or typeOf (units _x select 0) == F_Assault_Amm or  typeOf (units _x select 0) == F_Assault_Mg or typeOf (units _x select 0) == F_Recon_Snp or typeOf (units _x select 0) == F_Recon_Sct or  typeOf (units _x select 0) == F_Recon_TL or typeOf (units _x select 0) == F_Assault_SL or typeOf (units _x select 0) == F_Assault_TL or  typeOf (units _x select 0) == F_Assault_Eng or typeOf (units _x select 0) == F_Officer or typeOf (units _x select 0) == F_Assault_Eod or typeOf (units _x select 0) == F_Assault_Mrk  or typeOf (units _x select 0) == F_Assault_Uav or typeOf (units _x select 0) == F_Assault_Med or typeOf (units _x select 0) == F_Officer) && (captive (units _x select 0) == false) && (side (units _x select 0) == west)  && (alive (units _x select 0) == true)};
 	{
 		_GrpUntCnt = (count (units _x)) -1 ; 
 		_UnitsArray = [] ;
-				for "_i" from 0 to _GrpUntCnt do {
-				_Uclass = typeOf ((units _x) select _i);	
-				_UnitsArray append [_Uclass] ;			
-				}; 
+		for "_i" from 0 to _GrpUntCnt do {
+			_Uclass = typeOf ((units _x) select _i);	
+			_UnitsArray append [_Uclass] ;			
+		}; 
 
-if (isPlayer ((units _x) select 0)) then {_UnitsArray deleteAt 0;};
-_mrkr = createMarkerLocal [str(units _x select 0), getPos (units _x select 0)];   
-_mrkr setMarkerType "b_unknown";  
-_mrkr setMarkerSize [0.5, 0.5];   
-_mrkr setMarkerColor "Color6_FD_F";   
-_mrkr setMarkerAlpha 0.006;  
-_mrkr setMarkerText str _UnitsArray; 
+		if (isPlayer ((units _x) select 0)) then {_UnitsArray deleteAt 0;};
+		_mrkr = createMarkerLocal [str(units _x select 0), getPos (units _x select 0)];   
+		_mrkr setMarkerType "b_unknown";  
+		_mrkr setMarkerSize [0.5, 0.5];   
+		_mrkr setMarkerColor "Color6_FD_F";   
+		_mrkr setMarkerAlpha 0.006;  
+		_mrkr setMarkerText str _UnitsArray; 
   
-	}forEach _SaveGroups;
+	} forEach _SaveGroups;
 	
-[[west,"HQ"], "Groups Saved Successfully ..."] remoteExec ["sideChat", 0];
-
-
+// [[west,"HQ"], "Groups Saved Successfully ..."] remoteExec ["sideChat", 0];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -104,7 +91,7 @@ _VehicleDataHash set [_VehicleName, _VehicleDataHashEach];
 
 profileNamespace setVariable [_VehicleDataName, _VehicleDataHash];
 
-[[west,"HQ"], "Vehicles Saved Successfully ..."] remoteExec ["sideChat", 0];
+// [[west,"HQ"], "Vehicles Saved Successfully ..."] remoteExec ["sideChat", 0];
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -163,7 +150,7 @@ private _ObjectName = vehicleVarName _x ;
 
 profileNamespace setVariable [_ObjectDataName, _ObjectDataHash];
 
-[[west,"HQ"], "Structures Saved Successfully ..."] remoteExec ["sideChat", 0];
+// [[west,"HQ"], "Structures Saved Successfully ..."] remoteExec ["sideChat", 0];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -235,16 +222,14 @@ _MarkerDataHash set [_x, _MarkerDataHashEach];
 
 profileNamespace setVariable [_MarkerDataName, _MarkerDataHash];
 
-[[west,"HQ"], "BattleField Saved Successfully ..."] remoteExec ["sideChat", 0];
+// [[west,"HQ"], "BattleField Saved Successfully ..."] remoteExec ["sideChat", 0];
 
 // Save garrisons state before finalizing the mission save
 private _garrisonSaveResult = FLO_Garrison_Manager call ["saveGarrisonSizes", []];
-if (_garrisonSaveResult) then {
-    [[west,"HQ"], "Garrison states saved successfully..."] remoteExec ["sideChat", 0];
-} else {
+if !(_garrisonSaveResult) then {
     [[west,"HQ"], "Warning: Failed to save garrison states"] remoteExec ["sideChat", 0];
 };
 
 saveProfileNamespace;
 
-[[west,"HQ"], "Mission Saved !"] remoteExec ["sideChat", 0];
+// [[west,"HQ"], "Mission Saved !"] remoteExec ["sideChat", 0];

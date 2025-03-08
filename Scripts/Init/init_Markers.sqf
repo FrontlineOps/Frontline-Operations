@@ -426,33 +426,6 @@ private _mineMarkers = allMapMarkers select {markerType _x isEqualTo 'loc_mine'}
     };
 } forEach _mineMarkers;
 
-// Get points for Armor markers
-private _armorPoints = _evacuationPoints;
-private _armorPointCount = [_armorPoints, 2] call FLO_fnc_calculateDistribution;
-private _distributedArmorPoints = [_armorPoints, _armorPointCount] call FLO_fnc_getRandomSubset;
-
-// Create Armor markers on roads
-{
-    private _nearRoad = selectRandom ((getPos _x) nearRoads 3500);
-    if (!isNull _nearRoad) then {
-        [getPos _nearRoad, "ArmorMark", "o_armor", "colorOPFOR", [1.2, 1.2], 0.001, true, 100] call FLO_fnc_createMarkerWithDefaults;
-    };
-} forEach _distributedArmorPoints;
-
-// Additional armor markers from logic objects with "ArmorPosition" variable or sideOPFOR_F
-private _armorLogicMarkers = nearestObjects [_centerPosition, ["Logic", "sideOPFOR_F"], 40000] select {
-    !isNil {_x getVariable "ArmorPosition"} || typeOf _x isEqualTo "sideOPFOR_F"
-};
-
-if (count _armorLogicMarkers > 0) then {
-    private _logicArmorCount = [_armorLogicMarkers] call FLO_fnc_calculateDistribution;
-    private _selectedArmorLogic = [_armorLogicMarkers, _logicArmorCount] call FLO_fnc_getRandomSubset;
-    
-    {
-        [getPos _x, "ArmorMark", "o_armor", "colorOPFOR", [1.2, 1.2], 0.001, true, 150] call FLO_fnc_createMarkerWithDefaults;
-    } forEach _selectedArmorLogic;
-};
-
 // Get points for Service markers
 private _servicePoints = _evacuationPoints;
 private _servicePointCount = [_servicePoints] call FLO_fnc_calculateDistribution;
@@ -497,18 +470,6 @@ private _distributedAAPoints = [_aaPoints, _aaPointCount] call FLO_fnc_getRandom
     true,
     150
 ] call FLO_fnc_createMarkersFromSearch;
-
-// Get points for Aircraft markers
-private _aircraftPoints = _evacuationPoints;
-private _aircraftPointCount = [_aircraftPoints, 2] call FLO_fnc_calculateDistribution;
-private _distributedAircraftPoints = [_aircraftPoints, _aircraftPointCount] call FLO_fnc_getRandomSubset;
-
-// Create Aircraft markers
-{
-    private _randomPos = _x getPos [(0 + (random 300)), (0 + (random 350))];
-    private _markName = "marker" + (str(_forEachIndex + 1));
-    [_randomPos, _markName, "o_plane", "colorOPFOR", [1, 1], 0.001, true, 200] call FLO_fnc_createMarkerWithDefaults;
-} forEach _distributedAircraftPoints;
 
 // Remove markers near the commander
 sleep 2;

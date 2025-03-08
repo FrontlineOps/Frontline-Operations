@@ -94,10 +94,8 @@ The mission includes an automatic marker system (`init_Markers.sqf`) that:
    - Installations (`o_installation`, `n_installation`) in cities and capitals
    - Barracks (`loc_Ruin`) near military buildings
    - Radar sites (`loc_Power`) near radar structures
-   - Armor positions (`o_armor`) near roads
    - AA positions (`o_antiair`) on high ground
    - Infantry positions (`o_inf`) in villages
-   - Aircraft positions (`o_plane`) in suitable areas
 
 Key features of the automatic system:
 - Centers around `LocationEvacPoint_F` objects
@@ -145,7 +143,6 @@ You can also use Logic objects with specific variable names:
 | `"Barracks"` | Barracks markers | Place near military areas |
 | `"RadarS"` | Radar stations | Place on high terrain |
 | `"AASite"` | Anti-Air positions | Place on mountaintops |
-| `"ArmorPosition"` | Armor positions | Place near roads |
 
 ##### Physical Objects Detection and Variable System
 The script primarily relies on Location objects and variables rather than detecting physical structures. Here's a more accurate explanation of how it works:
