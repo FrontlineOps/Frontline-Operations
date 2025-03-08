@@ -80,12 +80,14 @@ if (isNil "FLO_TaskForce_System") then {
         // Constructor - Called when object is created
         ["#create", {
             _self set ["taskForces", createHashMap];
+            diag_log "[FLO][TaskForce] Created new taskForces hashmap";
             _self set ["activatedTaskForces", createHashMap];
             _self set ["lastUpdate", time];
             _self set ["lastTaskForceId", 0];
             _self set ["lastTaskForceScan", time];
             _self set ["virtualizationBuffer", 300];
             _self set ["virtualizationCooldown", 60];
+            _self call ["initialize",[]];
             ["TaskForce", 3, "System initialized"] call FLO_fnc_log;
         }],
         
@@ -100,7 +102,7 @@ if (isNil "FLO_TaskForce_System") then {
             // [] spawn {
             //     while {true} do {
             //         // Update Task Forces every 30 seconds
-            //         ["updateTaskForces", []] call FLO_fnc_TaskForceSystem;
+            //         FLO_TaskForce_System call ["updateTaskForces", []];
             //         sleep 30;
             //     };
             // };
@@ -679,7 +681,7 @@ if (isNil "FLO_TaskForce_System") then {
                     _taskForceId, _position]] call FLO_fnc_log;
                     
                 // Clean up and remove this task force (it will be returned to garrison by the calling code)
-                ["removeTaskForce", [_taskForceId]] call FLO_fnc_TaskForceSystem;
+                FLO_TaskForce_System call ["removeTaskForce", [_taskForceId]];
                 grpNull
             };
             
@@ -1370,9 +1372,13 @@ if (isNil "FLO_TaskForce_System") then {
             ["TaskForce", 3, format["Successfully deployed Task Force %1 at position %2 with %3 units facing %4°",
                 _taskForceId, _position, count _allCreatedUnits, _bluforDirection]] call FLO_fnc_log;
             ["TaskForce", 4, "====================================================================="] call FLO_fnc_log;
-            
-            // Return the infantry group
-            _infantryGroup
+
+            // Log whether we got a group back (for debugging)
+            if (_infantryGroup isEqualType grpNull) then {
+                ["TaskForce", 4, format["deployTaskForce returned group %1", _result]] call FLO_fnc_log;
+            } else {
+                ["TaskForce", 4, format["deployTaskForce returned unexpected result type (%1) for task force ID: %2", typeName _result, _taskForceId]] call FLO_fnc_log;
+            };
         }],
         
         // Get information about a specific Task Force
@@ -1812,83 +1818,3 @@ if (isNil "FLO_TaskForce_System") then {
     // Create the TaskForceSystem with specified parameters
     FLO_TaskForce_System = createHashMapObject [_taskForceSystemClass];
 };
-
-// Handle different operation modes
-switch (_mode) do {
-    // Initialize the Task Force system and start background processes
-    case "init": {
-        private _self = FLO_TaskForce_System;
-        _self call ["initialize", []];
-        _result = FLO_TaskForce_System;
-    };
-    
-    // Create a new Task Force with specified parameters
-    case "createTaskForce": {
-        _params params [
-            ["_baseMarker", "", [""]],
-            ["_taskForceType", "infantry", [""]],
-            ["_taskForceSize", "squad", [""]],
-            ["_targetMarker", "", [""]],
-            ["_providedTaskForceId", "", [""]],
-            ["_providedComposition", [], [[]]]
-        ];
-        
-        private _self = FLO_TaskForce_System;
-        
-        // We need to ensure the HashMapObject is properly initialized
-        if (isNil {_self getOrDefault ["taskForces", nil]}) then {
-            _self set ["taskForces", createHashMap];
-            diag_log "[FLO][TaskForce] Created new taskForces hashmap";
-        };
-        
-        _result = _self call ["createTaskForce", [_baseMarker, _taskForceType, _taskForceSize, _targetMarker, _providedTaskForceId, _providedComposition]];
-    };
-    
-    // Remove an existing Task Force and clean up all resources
-    case "removeTaskForce": {
-        _params params [
-            ["_taskForceId", "", [""]]
-        ];
-        
-        private _self = FLO_TaskForce_System;
-        _result = _self call ["_removeTaskForce", [_taskForceId]];
-    };
-    
-    // Update all Task Force positions and statuses
-    case "updateTaskForces": {
-        private _self = FLO_TaskForce_System;
-        _self call ["updateTaskForces", []];
-    };
-    
-    // Get information about a specific Task Force
-    case "getTaskForce": {
-        _params params [
-            ["_taskForceId", "", [""]],
-            ["_returnGroup", false, [false]]
-        ];
-        
-        private _self = FLO_TaskForce_System;
-        _result = _self call ["getTaskForce", [_taskForceId, _returnGroup]];
-    };
-    
-    // Deploy a Task Force at a specific position
-    case "deployTaskForce": {
-        _params params [
-            ["_taskForceId", "", [""]],
-            ["_position", [0,0,0], [[]]],
-            ["_defensive", false, [false]]
-        ];
-        
-        private _self = FLO_TaskForce_System;
-        _result = _self call ["deployTaskForce", [_taskForceId, _position, _defensive]];
-        
-        // Log whether we got a group back (for debugging)
-        if (_result isEqualType grpNull) then {
-            ["TaskForce", 4, format["deployTaskForce returned group %1", _result]] call FLO_fnc_log;
-        } else {
-            ["TaskForce", 4, format["deployTaskForce returned unexpected result type (%1) for task force ID: %2", typeName _result, _taskForceId]] call FLO_fnc_log;
-        };
-    };
-};
-
-_result

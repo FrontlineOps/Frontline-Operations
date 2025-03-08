@@ -234,7 +234,7 @@ switch (_mode) do {
             _composition params ["_type", "_size"];
             
             // Create Task Force
-            private _taskForceId = ["createTaskForce", [_baseMarker, _type, _size, ""]] call FLO_fnc_TaskForceSystem;
+            private _taskForceId = FLO_TaskForce_System call ["createTaskForce", [_baseMarker, _type, _size, ""]];
             
             if (_taskForceId != "") then {
                 // Deploy immediately at the position (defensive posture)
@@ -243,7 +243,7 @@ switch (_mode) do {
                 diag_log format ["[FLO][DefenseLine] Deploying task force at %1 with blufor direction %2", 
                     _x, _bluforDirection];
                 
-                ["deployTaskForce", [_taskForceId, _x, true]] call FLO_fnc_TaskForceSystem;
+                FLO_TaskForce_System call ["deployTaskForce", [_taskForceId, _x, true]];
                 
                 // Add to result
                 _taskForceIds pushBack _taskForceId;
@@ -368,7 +368,7 @@ switch (_mode) do {
             _composition params ["_type", "_size"];
             
             // Create Task Force
-            private _taskForceId = ["createTaskForce", [_baseMarker, _type, _size, ""]] call FLO_fnc_TaskForceSystem;
+            private _taskForceId = FLO_TaskForce_System call ["createTaskForce", [_baseMarker, _type, _size, ""]];
             
             if (_taskForceId != "") then {
                 // Get position from existing marker
@@ -378,7 +378,7 @@ switch (_mode) do {
                 _pos = _pos getPos [10 + random 30, random 360];
                 
                 // Deploy at the position (defensive posture)
-                ["deployTaskForce", [_taskForceId, _pos, true]] call FLO_fnc_TaskForceSystem;
+                FLO_TaskForce_System call ["deployTaskForce", [_taskForceId, _pos, true]];
                 
                 _reinforcementCount = _reinforcementCount + 1;
                 

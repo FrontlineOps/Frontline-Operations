@@ -348,7 +348,7 @@ _mustRestore = false;
 //         // Get the task force from the system if it exists
 //         if (!isNil "FLO_TaskForce_System") then {
 //             // Deploy the Task Force
-//             ["deployTaskForce", [_taskForceId, _position, true]] call FLO_fnc_TaskForceSystem;
+//             FLO_TaskForce_System call ["deployTaskForce", [_taskForceId, _position, true]];
             
 //             // Mark for removal from virtualized task forces
 //             _keysToRemove pushBack _key;

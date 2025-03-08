@@ -176,12 +176,12 @@ private _aiCommander = createHashMapObject [[
                     
                     if (_unitsCount > 0) then {
                         // Create the task force in the system first
-                        private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                        private _createResult = FLO_TaskForce_System call ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]];
                         if (_createResult != "") then {
                             // Use the returned task force ID for deployment
                             private _systemTaskForceID = _createResult;
                             // Deploy offensive task force with the pulled units
-                            private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]] call FLO_fnc_TaskForceSystem;
+                            private _taskForceGroup = FLO_TaskForce_System call ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]];
                             
                             // Check if deployment was successful
                             if (!isNull _taskForceGroup) then {
@@ -198,7 +198,7 @@ private _aiCommander = createHashMapObject [[
                                 private _taskForceDataExists = false;
                                 
                                 // Get task force data to check for any created units or vehicles
-                                private _taskForceData = ["getTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceData = FLO_TaskForce_System call ["getTaskForce", [_systemTaskForceID]];
                                 if (count _taskForceData > 0) then {
                                     _taskForceDataExists = true;
                                     
@@ -243,7 +243,7 @@ private _aiCommander = createHashMapObject [[
                                 FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                 
                                 // Clean up the undeployed task force
-                                ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
+                                FLO_TaskForce_System call ["removeTaskForce", [_systemTaskForceID]];
                             }
                         } else {
                             ["AI Commander", 3, format["Failed to create task force in system for offensive task force from %1", _sourceOutpost]] call FLO_fnc_log;
@@ -313,12 +313,12 @@ private _aiCommander = createHashMapObject [[
                         
                         if (_unitsCount > 0) then {
                             // Create the task force in the system first
-                            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                            private _createResult = FLO_TaskForce_System call ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]];
                             if (_createResult != "") then {
                                 // Use the returned task force ID for deployment
                                 private _systemTaskForceID = _createResult;
                                 // Deploy defensive task force with the pulled units
-                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceGroup = FLO_TaskForce_System call ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]];
                                 
                                 // Check if deployment was successful
                                 if (!isNull _taskForceGroup) then {
@@ -334,7 +334,7 @@ private _aiCommander = createHashMapObject [[
                                     FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                     
                                     // Clean up the undeployed task force
-                                    ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
+                                    FLO_TaskForce_System call ["removeTaskForce", [_systemTaskForceID]];
                                 }
                             } else {
                                 ["AI Commander", 3, format["Failed to create task force in system for defensive task force from %1", _sourceOutpost]] call FLO_fnc_log;
@@ -387,12 +387,12 @@ private _aiCommander = createHashMapObject [[
                         
                         if (_unitsCount > 0) then {
                             // Create the task force in the system first
-                            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                            private _createResult = FLO_TaskForce_System call ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]];
                             if (_createResult != "") then {
                                 // Use the returned task force ID for deployment
                                 private _systemTaskForceID = _createResult;
                                 // Deploy patrol task force with the pulled units
-                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getPos _targetRoad, false]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceGroup = FLO_TaskForce_System call ["deployTaskForce", [_systemTaskForceID, getPos _targetRoad, false]];
                                 
                                 // Check if deployment was successful
                                 if (!isNull _taskForceGroup) then {
@@ -408,7 +408,7 @@ private _aiCommander = createHashMapObject [[
                                     FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                     
                                     // Clean up the undeployed task force
-                                    ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
+                                    FLO_TaskForce_System call ["removeTaskForce", [_systemTaskForceID]];
                                 }
                             } else {
                                 ["AI Commander", 3, format["Failed to create task force in system for patrol task force from %1", _sourceOutpost]] call FLO_fnc_log;
@@ -460,12 +460,12 @@ private _aiCommander = createHashMapObject [[
                         
                         if (_unitsCount > 0) then {
                             // Create the task force in the system first
-                            private _createResult = ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]] call FLO_fnc_TaskForceSystem;
+                            private _createResult = FLO_TaskForce_System call ["createTaskForce", [_sourceOutpost, "infantry", str(_taskForceSize), "", _taskForceID]];
                             if (_createResult != "") then {
                                 // Use the returned task force ID for deployment
                                 private _systemTaskForceID = _createResult;
                                 // Deploy skirmish task force with the pulled units
-                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceGroup = FLO_TaskForce_System call ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]];
                                 
                                 // Check if deployment was successful
                                 if (!isNull _taskForceGroup) then {
@@ -481,7 +481,7 @@ private _aiCommander = createHashMapObject [[
                                     FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                     
                                     // Clean up the undeployed task force
-                                    ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
+                                    FLO_TaskForce_System call ["removeTaskForce", [_systemTaskForceID]];
                                 }
                             } else {
                                 ["AI Commander", 3, format["Failed to create task force in system for skirmish task force from %1", _sourceOutpost]] call FLO_fnc_log;
@@ -745,7 +745,7 @@ private _aiCommander = createHashMapObject [[
             
             // Create the task force in the system first
             ["AI Commander", 3, format["Creating task force with parameters: %1", _createParams]] call FLO_fnc_log;
-            private _createResult = ["createTaskForce", _createParams] call FLO_fnc_TaskForceSystem;
+            private _createResult = FLO_TaskForce_System call ["createTaskForce", _createParams];
             
             if (_createResult != "") then {
                 // Use the returned task force ID for deployment
@@ -754,7 +754,7 @@ private _aiCommander = createHashMapObject [[
                 ["AI Commander", 3, format["Task Force %1 created successfully, deploying to position %2", _systemTaskForceID, _position]] call FLO_fnc_log;
                 
                 // Deploy attack force with pulled units
-                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, _position, false]] call FLO_fnc_TaskForceSystem;
+                private _taskForceGroup = FLO_TaskForce_System call ["deployTaskForce", [_systemTaskForceID, _position, false]];
                 
                 // Check if deployment was successful
                 if (!isNull _taskForceGroup) then {
@@ -797,7 +797,7 @@ private _aiCommander = createHashMapObject [[
                     FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                     
                     // Attempt to clean up the undeployed task force
-                    ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
+                    FLO_TaskForce_System call ["removeTaskForce", [_systemTaskForceID]];
                     
                     false
                 }
@@ -1270,7 +1270,7 @@ private _aiCommander = createHashMapObject [[
                 
                 if (_unitsCount > 0) then {
                     // Deploy task force with the pulled units
-                    private _taskForceGroup = ["deployTaskForce", [_taskForceID, _position, false]] call FLO_fnc_TaskForceSystem;
+                    private _taskForceGroup = FLO_TaskForce_System call ["deployTaskForce", [_taskForceID, _position, false]];
                     
                     // Assign appropriate actions based on response type
                     _self call ["_assignTaskForceActions", [_taskForceGroup, _position, _responseType]];
