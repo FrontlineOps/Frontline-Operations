@@ -206,7 +206,6 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Save to profileNamespace
             profileNamespace setVariable [_garrisonSizesDataName, _garrisonSizes];
-            saveProfileNamespace;
             
             // Store in object for quick access
             _self set ["garrisonSizes", _garrisonSizes];
