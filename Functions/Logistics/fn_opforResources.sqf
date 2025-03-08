@@ -11,26 +11,11 @@
     - Military Outpost (o_installation): 7 resources
     - Military Headquarters (n_installation): 15 resources
     
-    Parameter(s):
-    _mode - The function mode to execute ["init", "get", "add", "spend"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - No parameters needed
-        get: [] - No parameters needed
-        add: [_amount] - Amount to add
-        spend: [_amount] - Amount to spend
+    Parameter(s): None
     
     Returns:
-    Based on mode:
-        init: Nothing
-        get: Number - Current resources
-        add: Number - New resource total
-        spend: Boolean - True if successfully spent, false if insufficient resources
+        Nothing
 */
-
-params [
-    ["_mode", "init", [""]],
-    ["_params", [], [[]]]
-];
 
 // Only execute on server to prevent multiple resource systems running
 if (!isServer) exitWith {};
@@ -138,41 +123,21 @@ if (isNil "FLO_OPFOR_Resources") then {
                     sleep 600;
                 };
             };
+        }],
+        ["serialize",{
+            createhashmapfromarray [["resources",_self get "resources"],["lastUpdate",_self get "lastUpdate"]];
+        }],
+        ["deserialize",{
+            params ["dto"];
+            _self set ["resources", _dto get "resources"];
+            _self set ["lastUpdate", _dto get "lastUpdate"];
         }]
     ];
     
     // Create the resource management object with initial resources of 0
     FLO_OPFOR_Resources = createHashMapObject [_resourceClass, 0];
+    
+   //TODO Load data from data map
+   private _dto = FLO_dataMap get ["FLO_OPFOR_Resources"];
+   if !(isNil "_dto") then {FLOR_OPFOR_Resources call ["deserailize", [_dto]]};
 };
-
-// Handle different operation modes
-private _result = switch (_mode) do {
-    // Initialize the resource system and start generation loop
-    case "init": {
-        _self = FLO_OPFOR_Resources;
-        _self call ["initResourceLoop", []];
-        0
-    };
-    
-    // Get current resource amount
-    case "get": {
-        _self = FLO_OPFOR_Resources;
-        _self call ["getResources", []]
-    };
-    
-    // Add resources to the system
-    case "add": {
-        _params params [["_amount", 0, [0]]];
-        _self = FLO_OPFOR_Resources;
-        _self call ["addResources", [_amount]]
-    };
-    
-    // Attempt to spend resources
-    case "spend": {
-        _params params [["_amount", 0, [0]]];
-        _self = FLO_OPFOR_Resources;
-        _self call ["spendResources", [_amount]]
-    };
-};
-
-_result 
