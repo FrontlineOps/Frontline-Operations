@@ -29,7 +29,7 @@ OffensiveOperationUnderway = true;
 private _operationCost = 100 + (_aggressionScore * 10);
 
 // Try to spend resources for offensive operation
-if !(["spend", [_operationCost]] call FLO_fnc_opforResources) exitWith {
+if !(FLO_OPFOR_Resources call ["spendResources", [_operationCost]]) exitWith {
     diag_log "[FLO][OffensiveOps] Insufficient resources for offensive operation";
     // Reset the flag if we can't afford the operation
     OffensiveOperationUnderway = false;

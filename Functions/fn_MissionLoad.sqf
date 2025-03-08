@@ -3,9 +3,17 @@ if (!isServer) exitWith {};
 MissionLoadedLitterally = 0 ; 
 publicVariable "MissionLoadedLitterally";
 
-
 _missionTag = missionName;
 _missionTag = [_missionTag] call BIS_fnc_filterString;
+
+// Load master map of saved data (if available)
+FLO_dataMap = +(profileNamespace getVariable _missionTag + "_data");
+
+FLO_DATA_NEW = (isNil "FLO_dataMap" || ("FreshStart" call BIS_fnc_getParamValue) == 1);
+if (FLO_DATA_NEW) then {
+    //Create empty data map for saved data
+	FLO_dataMap = createhashmap;
+};
 
 private _MarkerDataName = _missionTag + "_markers";
 private _VehicleDataName = _missionTag + "_Vehicles";

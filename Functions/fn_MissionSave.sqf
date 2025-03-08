@@ -16,12 +16,13 @@ private _MarkerDataName = _missionTag + "_markers";
 private _VehicleDataName = _missionTag + "_Vehicles";
 private _ObjectDataName = _missionTag + "_Objects";
 
-
+FLO_dataMap set ["FLO_OPFOR_Resources",FLO_OPFOR_Resources call ["serialize",[]]];
 
 profileNamespace setVariable [_MarkerTimeName, nil];
 profileNamespace setVariable [_MarkerDataName, nil];
 profileNamespace setVariable [_VehicleDataName, nil];
 profileNamespace setVariable [_ObjectDataName, nil];
+profileNamespace setVariable ["FLO_dataMap",FLO_dataMap];
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -36,7 +36,7 @@ private _newBatteriesCount = (1 + floor(_intensity/3)) min (_maxBatteries - _cur
 
 // Check resources for new batteries
 private _totalBatteryCost = _BATTERY_COST * _newBatteriesCount;
-if !(["spend", [_totalBatteryCost]] call FLO_fnc_opforResources) exitWith {
+if !(FLO_OPFOR_Resources call ["spendResources", [_totalBatteryCost]]) exitWith {
     diag_log "[FLO][Artillery] Insufficient resources for new artillery batteries";
     false
 };
@@ -109,7 +109,7 @@ if (_newBatteriesCount > 0) then {
             private _reloadStartTime = _batteryInfo get "reloadStartTime";
             if ((time - _reloadStartTime) >= _RELOAD_TIME) then {
                 // Check resources for reload
-                if (["spend", [_RELOAD_COST]] call FLO_fnc_opforResources) then {
+                if (FLO_OPFOR_Resources call ["spendResources", [_RELOAD_COST]]) then {
                     _batteryInfo set ["state", "READY"];
                     _batteryInfo set ["ammoLevel", 1];
                     [_arty, 1] remoteExec ["setVehicleAmmo", _arty];
