@@ -2,6 +2,8 @@ if (!isServer) exitWith {};
 
 ["Mission", 3, "Saving Mission ..."] call FLO_fnc_log;
 
+private _Centerposition = [worldSize / 2, worldsize / 2, 0];
+
 private _missionTag = missionName;
 _missionTag = [_missionTag] call BIS_fnc_filterString;
 
@@ -21,7 +23,7 @@ profileNamespace setVariable [_missionStructureTypes, nil];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-private _spheres = nearestobjects [Centerposition,["Sign_Sphere10cm_F"],40000] ; 
+private _spheres = nearestobjects [_Centerposition,["Sign_Sphere10cm_F"],40000] ; 
 if (count _spheres > 0) then {{deleteVehicle _x;} forEach _spheres ;} ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -152,9 +154,9 @@ private _allNonFOBMarks = allMapMarkers select {
 } forEach _allNonFOBMarks;
 
 private _towerTypes = ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"];
-private _staticsNew = nearestobjects [Centerposition, _towerTypes, 40000];
+private _staticsNew = nearestobjects [_Centerposition, _towerTypes, 40000];
 private _staticsNewAlive = _staticsNew select {alive _x};
-private _staticsTerrain = nearestTerrainObjects [Centerposition, _towerTypes, 40000];
+private _staticsTerrain = nearestTerrainObjects [_Centerposition, _towerTypes, 40000];
 private _staticsSaving = _staticsNewAlive - _staticsTerrain;
 {
 	_SaveStatics pushBack _x;	
@@ -261,7 +263,7 @@ profileNamespace setVariable [_missionStructureTypes, [_fobTypeClass, _opTypeCla
 private _structureMarkerHash = createHashMap;
 
 // Find and save all FOB marker references
-private _fobBuildings = nearestObjects [Centerposition, [_fobTypeClass, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+private _fobBuildings = nearestObjects [_Centerposition, [_fobTypeClass, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
 {
     if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_FOB_Initialized", false]}) then {
         private _markerName = _x getVariable ["fobMarkerName", ""];
@@ -274,7 +276,7 @@ private _fobBuildings = nearestObjects [Centerposition, [_fobTypeClass, "Land_Ca
 } forEach _fobBuildings;
 
 // Find and save all OP marker references
-private _opBuildings = nearestObjects [Centerposition, [_opTypeClass], 40000];
+private _opBuildings = nearestObjects [_Centerposition, [_opTypeClass], 40000];
 {
     if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_OP_Initialized", false]}) then {
         private _markerName = _x getVariable ["opMarkerName", ""];
