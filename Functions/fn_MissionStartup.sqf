@@ -26,10 +26,8 @@ forceWeatherChange;
 ///////// Init FOBs //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Initialize FOB objects
-private _centerPosition = [worldSize / 2, worldsize / 2, 0];
-
 // Find all FOB buildings of type F_HQ_01
-private _fobBuildings = nearestObjects [_centerPosition, [F_HQ_01], 40000];
+private _fobBuildings = nearestObjects [Centerposition, [F_HQ_01], 40000];
 FOBB = _fobBuildings;
 publicVariable "FOBB";
 
@@ -42,7 +40,7 @@ publicVariable "FOBB";
 } forEach _fobBuildings;
 
 // Find additional FOB building types
-FOBB = nearestObjects [_centerPosition, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+FOBB = nearestObjects [Centerposition, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
 publicVariable "FOBB";
 
 { 
@@ -71,7 +69,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time",
     "Screens\FOBA\b_hq.paa",
     "Screens\FOBA\b_hq.paa",
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     "_caller distance _target < 40",  
     {},
     {},
@@ -88,7 +86,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather",
     "Screens\FOBA\b_hq.paa",
     "Screens\FOBA\b_hq.paa",
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     "_caller distance _target < 40",  
     {},
     {},
@@ -105,7 +103,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress",
     "Screens\FOBA\b_hq.paa",
     "Screens\FOBA\b_hq.paa",
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     "_caller distance _target < 40",  
     {},
     {},
@@ -124,7 +122,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress",
     'Screens\FOBA\b_hq.paa',
     'Screens\FOBA\b_hq.paa',
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     '_caller distance _target < 40',  
     {},
     {},
@@ -141,7 +139,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)",
     'Screens\FOBA\b_hq.paa',
     'Screens\FOBA\b_hq.paa',
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     '_caller distance _target < 40',  
     {},
     {},
@@ -158,7 +156,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Mission",
     'Screens\FOBA\b_hq.paa',
     'Screens\FOBA\b_hq.paa',
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     '_caller distance _target < 40',  
     {},
     {},
@@ -175,7 +173,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
     "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Zone",
     'Screens\FOBA\b_hq.paa',
     'Screens\FOBA\b_hq.paa',
-    "((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
+    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
     '_caller distance _target < 40',  
     {},
     {},
@@ -310,7 +308,7 @@ ALLFACVEHs = nearestobjects [Centerposition,[
     F_Plane_06
 ],40000] ;
 
-_EXCVEH = vehicles;
+_EXCVEH = vehicles - ALLFACVEHs;
 
 {
     deleteVehicleCrew _x; 
@@ -319,7 +317,7 @@ _EXCVEH = vehicles;
 
 ////////////////Radio Towers EHs/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-_objectLocT = allMapMarkers select { markerType _x == "loc_Transmitter" };
+_objectLocT = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" };
 {	
     TWRs = nearestobjects [(getMarkerPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"], 200];
 
@@ -328,7 +326,7 @@ _objectLocT = allMapMarkers select { markerType _x == "loc_Transmitter" };
 
         TWR removeAllEventHandlers "Killed";
         TWR addEventHandler ["Killed", { 
-            _MMarks = allMapMarkers select { markerType _x == "loc_Transmitter"};
+            _MMarks = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter"};
             _M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
             deleteMarker _M ; 
               
@@ -348,7 +346,7 @@ _objectLocT = allMapMarkers select { markerType _x == "loc_Transmitter" };
 //////////////Zones Capture Triggers ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-_objectLocT = allMapMarkers select { markerType _x == "b_installation" && markerColor _x == "ColorWEST"};
+_objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "ColorWEST"};
 
 {
     _trg = createTrigger ["EmptyDetector", (getMarkerPos _x), false];  
@@ -359,7 +357,7 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
         "this",  
         "  
             [parseText '<t color=""#FF3619"" font=""PuristaBold"" align = ""right"" shadow = ""1"" size=""2"">SITREP</t><br /><t color=""#7c7c7c""  align = ""right"" shadow = ""1"" size=""0.8"">Enemy Forces Dominating the Battle,</t><br /><t color=""#7c7c7c"" align = ""right"" shadow = ""1"" size=""0.8"">Keep Up the Fight, We Must Defend and Take Back the Outpost, </t>', [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ['BIS_fnc_textTiles', 0];
-            _allMarks = allMapMarkers select {markerType _x == 'b_installation'};  
+            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
             _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
             _FOBMrk setMarkerColor 'ColorGrey' ;	
             _attackingAtGrid = mapGridPosition getMarkerPos _FOBMrk;
@@ -368,14 +366,14 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
             [thisTrigger] execVM 'Scripts\City_CSAT_CAPTURE_East.sqf';
         ", 
         "
-            _allMarks = allMapMarkers select {markerType _x == 'b_installation'};  
+            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
             _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
             _FOBMrk setMarkerColor 'ColorWEST' ;		
         "
     ];				
 } forEach _objectLocT;	
 
-_objectLocT = allMapMarkers select { markerType _x == "b_installation" && markerColor _x == "colorBLUFOR"};
+_objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "colorBLUFOR"};
 
 {
     _trg = createTrigger ["EmptyDetector", (getMarkerPos _x), false];  
@@ -386,7 +384,7 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
         "this",  
         "  
             [parseText '<t color=""#FF3619"" font=""PuristaBold"" align = ""right"" shadow = ""1"" size=""2"">SITREP</t><br /><t color=""#7c7c7c""  align = ""right"" shadow = ""1"" size=""0.8"">Enemy Forces Dominating the Battle,</t><br /><t color=""#7c7c7c"" align = ""right"" shadow = ""1"" size=""0.8"">Keep Up the Fight, We Must Defend and Take Back the Outpost, </t>', [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ['BIS_fnc_textTiles', 0];
-            _allMarks = allMapMarkers select {markerType _x == 'b_installation'};  
+            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
             _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
             _FOBMrk setMarkerColor 'ColorGrey' ;	
             _attackingAtGrid = mapGridPosition getMarkerPos _FOBMrk;
@@ -395,7 +393,7 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
             [thisTrigger] execVM 'Scripts\Objectives\Outpost_CSAT_CAPTURE_East.sqf';
         ", 
         "
-            _allMarks = allMapMarkers select {markerType _x == 'b_installation'};  
+            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
             _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
             _FOBMrk setMarkerColor 'colorBLUFOR' ;		
         "
@@ -422,15 +420,15 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
             
             [_x, _x] remoteExec ["ace_medical_treatment_fnc_fullHeal", _x, false]; 
             
-            if (animationState _x == "ainjppnemstpsnonwrfldnon") then {
+            if (animationState _x isEqualTo "ainjppnemstpsnonwrfldnon") then {
                 [_x, "agonyStop"] remoteExec ["playActionNow", 0, false];
             };
-            if (animationState _x == "unconscious") then {
+            if (animationState _x isEqualTo "unconscious") then {
                 [_x, "agonyStop"] remoteExec ["playActionNow", 0, false];
             };
             _x enableAI "all";    
         } forEach (allUnits select {
-            ((side _x == civilian) || (side _x == west)) && 
+            ((side _x isEqualTo civilian) || (side _x isEqualTo west)) && 
             (count (nearestobjects [_x, [
                 "Land_Medevac_house_V1_F", 
                 "Land_Medevac_HQ_V1_F", 
@@ -443,15 +441,15 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
         sleep 3;  
         
         {
-            if (animationState _x == "ainjppnemstpsnonwrfldnon") then {
+            if (animationState _x isEqualTo "ainjppnemstpsnonwrfldnon") then {
                 [_x, "agonyStop"] remoteExec ["playActionNow", 0, false];
             };
-            if (animationState _x == "unconscious") then {
+            if (animationState _x isEqualTo "unconscious") then {
                 [_x, "agonyStop"] remoteExec ["playActionNow", 0, false];
             };
             _x enableAI "all";    
         } forEach (allUnits select {
-            ((side _x == civilian) || (side _x == west)) && 
+            ((side _x isEqualTo civilian) || (side _x isEqualTo west)) && 
             (count (nearestobjects [_x, [
                 "Land_Medevac_house_V1_F", 
                 "Land_Medevac_HQ_V1_F", 
@@ -470,7 +468,7 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
         {
             {_x setDamage 0; } remoteExec ["call", 0]; 
         } forEach (vehicles select {
-            ((side (gunner _x) == west) || (side (driver _x) == west)) && 
+            ((side (gunner _x) isEqualTo west) || (side (driver _x) isEqualTo west)) && 
             (count (nearestobjects [_x, [F_Truck_04, "B_Slingload_01_Repair_F"], 50]) > 0)
         }); 
         
@@ -483,7 +481,7 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
         {
             { _x setVehicleAmmo 1; } remoteExec ["call", 0]; 
         } forEach (vehicles select {
-            ((side (gunner _x) == west) || (side (driver _x) == west)) && 
+            ((side (gunner _x) isEqualTo west) || (side (driver _x) isEqualTo west)) && 
             (count (nearestobjects [_x, [F_Truck_03, "B_Slingload_01_Ammo_F", "Box_NATO_AmmoVeh_F"], 50]) > 0)
         }); 
         
@@ -494,15 +492,15 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
 [] spawn {  
     while { true } do {  
         _MOBRESMarks = allMapMarkers select {
-            markerType _x == "b_unknown" && 
-            markerColor _x == "ColorYellow" && 
-            markerAlpha _x == 0.7
+            markerType _x isEqualTo "b_unknown" && 
+            markerColor _x isEqualTo "ColorYellow" && 
+            markerAlpha _x isEqualTo 0.7
         };
         
         {deleteMarker _x} forEach _MOBRESMarks;
         
         _MOBRESVeh = vehicles select {
-            (typeOf _x == F_Truck_05 || typeOf _x == F_Heli_04) && 
+            (typeOf _x isEqualTo F_Truck_05 || typeOf _x isEqualTo F_Heli_04) && 
             alive _x
         };	
         
@@ -539,7 +537,7 @@ _MOBARS = nearestobjects [Centerposition, [F_Truck_03], 40000];
     {},
     {},
     {
-        if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
+        if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
             [player, player, true] call ace_arsenal_fnc_openBox;
         } else {
             ["Open", true] spawn BIS_fnc_arsenal;
@@ -585,7 +583,7 @@ _SUPPARS = nearestobjects [Centerposition, ["B_CargoNet_01_ammo_F"], 40000];
     {},
     {},
     {
-        if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
+        if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
             [player, player, true] call ace_arsenal_fnc_openBox;
         } else {
             ["Open", true] spawn BIS_fnc_arsenal;
@@ -648,8 +646,8 @@ _SUPPVEH = nearestobjects [Centerposition, ["Box_NATO_AmmoVeh_F"], 40000];
 
 // Set MRZR texture to olive mud if using woodland theme
 _mrzrVehicles = nearestobjects [Centerposition, ["rhsusf_mrzr4_d"], 40000]; 
-if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ CUP + RHS") || 
-     (markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ RHS")) && 
+if (((markerText "Friendly_Handle" isEqualTo "United States Armed Forces _ Woodland _ CUP + RHS") || 
+     (markerText "Friendly_Handle" isEqualTo "United States Armed Forces _ Woodland _ RHS")) && 
      (count _mrzrVehicles > 0)) then {
     {
         [_x, ["mud_olive", 1]] call BIS_fnc_initVehicle;
@@ -692,7 +690,7 @@ _antiAirSystems = nearestObjects [Centerposition, [
 //         [_x, 'MENU_COMMS_GRD', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
 //         [_x, 'MENU_COMMS_CAS_HELI', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
 //         [_x, 'MENU_COMMS_ARTI', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
-//     } forEach (allUnits select {side _x == west});
+//     } forEach (allUnits select {side _x isEqualTo west});
 // } remoteExec ["call", 0];
 
 // Notify mission startup completion

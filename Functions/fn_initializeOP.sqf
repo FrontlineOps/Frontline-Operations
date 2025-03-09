@@ -47,7 +47,7 @@ if (_preserveMarker && {_opBuilding getVariable ["FLO_OP_MarkersRestored", false
     // Check if marker already exists (from mission load)
     private _markerExists = false;
     {
-        if (_x == _markerName) exitWith {
+        if (_x isEqualTo _markerName) exitWith {
             _markerExists = true;
             ["OP", 3, format["Using existing OP marker %1", _markerName]] call FLO_fnc_log;
         };
@@ -81,7 +81,7 @@ if (!isNil "_opBuilding" && {!isNull _opBuilding}) then {
 {},
 {},
 {
-    if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
+    if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
         [player, player, true] call ace_arsenal_fnc_openBox;
     } else {
         ["Open", true] spawn BIS_fnc_arsenal;
@@ -135,11 +135,11 @@ _CIVTRG setTriggerArea [5, 5, 0, false, 7];
 _CIVTRG setTriggerTimeout [3, 3, 3, true];
 _CIVTRG setTriggerActivation ["NONE", "PRESENT", true];  
 _CIVTRG setTriggerStatements [  
-"{(alive _x) && (side _x == civilian)} count (thisTrigger nearEntities [['Man'], 5]) > 0",  
+"{(alive _x) && (side _x isEqualTo civilian)} count (thisTrigger nearEntities [['Man'], 5]) > 0",  
 "
-_CIVIL = (nearestObjects [thisTrigger ,['Man'], 7] select {(alive _x) && ((side _x) == civilian)}) select 0 ;
+_CIVIL = (nearestObjects [thisTrigger ,['Man'], 7] select {(alive _x) && ((side _x) isEqualTo civilian)}) select 0 ;
   
-if (_CIVIL getUnitTrait 'engineer' == true) then {
+if (_CIVIL getUnitTrait 'engineer' isEqualTo true) then {
     [50, 'INSURGENT'] call FLO_fnc_notification ;
     [50] call FLO_fnc_addReward;
     deleteVehicle _CIVIL ; 
@@ -198,8 +198,8 @@ _opBuilding addEventHandler ["Killed", {
     private _statusMarker = nil;
     
     while {alive _op} do {
-        private _bluforCount = {alive _x && side _x == WEST && (_x distance _op) < _areaRadius} count allUnits;
-        private _opforCount = {alive _x && side _x == EAST && (_x distance _op) < _areaRadius} count allUnits;
+        private _bluforCount = {alive _x && side _x isEqualTo west && (_x distance _op) < _areaRadius} count allUnits;
+        private _opforCount = {alive _x && side _x isEqualTo east && (_x distance _op) < _areaRadius} count allUnits;
 
         if (_opforCount > _bluforCount && _opforCount > 0) then {
             if (isNil "_statusMarker") then {
@@ -215,7 +215,7 @@ _opBuilding addEventHandler ["Killed", {
             private _seconds = _timeLeft % 60;
             _statusMarker setMarkerText format["OP UNDER SIEGE: %1:%2", _minutes, [_seconds, 2] call CBA_fnc_formatNumber];
             
-            if (_timeLeft % 60 == 0) then {
+            if (_timeLeft % 60 isEqualTo 0) then {
                 [format["OP under siege! %1 minutes remaining", ceil(_timeLeft/60)]] remoteExec ["hint", -2];
             };
             

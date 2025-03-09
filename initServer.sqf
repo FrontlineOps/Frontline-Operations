@@ -34,6 +34,7 @@ VS_FPS = [];
 VSTimeDelay = 20;
 VSCurrentTime = diag_tickTime;
 VS_IsWorking = false;
+Centerposition = [worldSize / 2, worldsize / 2, 0];
 
 if (isNil "F_Init") then {F_Init = false;};
 
