@@ -114,9 +114,9 @@ private _createWatchpostGarrison = {
     [_mountPos, _compName] execVM "Scripts\Objectives\WatchPostComp.sqf";
     
     // Create the garrison with the garrison manager
-    ["spawn", [_markerName, _garrisonSize, false]] call FLO_fnc_garrisonManager;
+    FLO_Garrison_Manager call ["spawnGarrison", [_markerName, _garrisonSize, false]];
     
-    diag_log format ["[FLO][Zone] Created watchpost garrison at %1 with size %2", _markerName, _garrisonSize];
+    ["Zone", 1, format ["Created watchpost garrison at %1 with size %2", _markerName, _garrisonSize]] call FLO_fnc_log;
     
     // Return the marker
     _markerName

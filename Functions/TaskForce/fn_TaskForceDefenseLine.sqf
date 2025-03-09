@@ -243,7 +243,7 @@ switch (_mode) do {
                 diag_log format ["[FLO][DefenseLine] Deploying task force at %1 with blufor direction %2", 
                     _x, _bluforDirection];
                 
-                ["deployTaskForce", [_taskForceId, _x, true]] call FLO_fnc_TaskForceSystem;
+                ["deployTaskForce", [_taskForceId, _x]] call FLO_fnc_TaskForceSystem;
                 
                 // Add to result
                 _taskForceIds pushBack _taskForceId;
@@ -378,7 +378,7 @@ switch (_mode) do {
                 _pos = _pos getPos [10 + random 30, random 360];
                 
                 // Deploy at the position (defensive posture)
-                ["deployTaskForce", [_taskForceId, _pos, true]] call FLO_fnc_TaskForceSystem;
+                ["deployTaskForce", [_taskForceId, _pos]] call FLO_fnc_TaskForceSystem;
                 
                 _reinforcementCount = _reinforcementCount + 1;
                 

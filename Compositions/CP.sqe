@@ -274,7 +274,7 @@ class items
 				flags=4;
 				class Attributes
 				{
-					init="call{this addAction [""<t color='#86FF33'>H.A.L.O Jump 30k</t>"",""Scripts\HALO.sqf""];" \n "this addAction [""<t color='#FF0000'>Fast Travel to Another FOB 30k</t>"",{execVM ""Scripts\FOBFT.sqf"";}];" \n "this addAction [""<t color='#FFE496'>Save and Exit</t>"",""Scripts\MissionSave.sqf""];" \n "}";
+					init="call{this addAction [""<t color='#86FF33'>H.A.L.O Jump 30k</t>"",""Scripts\HALO.sqf""];" \n "this addAction [""<t color='#FF0000'>Fast Travel to Another FOB 30k</t>"",{execVM ""Scripts\FOBFT.sqf"";}];" \n "this addAction [""<t color='#FFE496'>Save and Exit</t>"",""call FLO_fnc_MissionSave""];" \n "}";
 					disableSimulation=1;
 				};
 				id=101523;

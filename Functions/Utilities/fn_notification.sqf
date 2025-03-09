@@ -26,4 +26,4 @@ params [
 {playMusic "EventTrack01_F_Curator";} remoteExec ["call", 0];
 
 // Display notification to all players
-["showNotification", ["REWARD", format["%1 SECURED - %2 Points", _objectiveStr, _reward], "success"]] call FLO_fnc_intelSystem; 
+["showNotification", ["REWARD", format["%1 SECURED - %2$", _objectiveStr, _reward], "success"]] call FLO_fnc_intelSystem; 

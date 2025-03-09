@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("scr",["Section"],[["Script",,[[,"FPS Monitoring Script",,,0,"File:Scripts/PMON.sqf:FPS_Monitoring_Script"]]]]);

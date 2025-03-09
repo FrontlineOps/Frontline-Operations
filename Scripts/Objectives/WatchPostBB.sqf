@@ -65,14 +65,14 @@ _watchpostData set ["marker", _markerName];
 private _garrisonSize = 6;
 
 // Create the garrison using the garrison manager
-private _units = ["spawn", [_markerName, _garrisonSize, true]] call FLO_fnc_garrisonManager;
+private _units = FLO_Garrison_Manager call ["spawnGarrison", [_markerName, _garrisonSize, true]];
 _watchpostData set ["units", _units];
 
 diag_log format ["[FLO][Roadblock] Created roadblock garrison at %1 with size %2", _markerName, _garrisonSize];
 
 // Add patrol vehicle if needed
 if (random 1 < 0.5) then {
-    ["patrol", [_markerName, 400, selectRandom East_Ground_Vehicles_Light]] call FLO_fnc_vehicleGarrison;
+    ["patrol", [_markerName, 400, selectRandom East_Ground_Vehicles_Light]] call FLO_fnc_vehicleGarrison; 
     diag_log format ["[FLO][Roadblock] Added patrol vehicle to roadblock at %1", _markerName];
 };
 
