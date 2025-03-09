@@ -145,7 +145,7 @@ if (count _structureMarkerHash > 0 && count _structureTypes > 0) then {
                     ["Mission", 3, format["Restored FOB marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
                     
                     // Re-initialize the FOB but tell it to preserve the marker
-                    [_x, true] spawn FLO_fnc_initializeFOB;
+                    [_x, true] call FLO_fnc_initializeFOB;
                 };
             };
         };
@@ -171,7 +171,7 @@ if (count _structureMarkerHash > 0 && count _structureTypes > 0) then {
                     ["Mission", 3, format["Restored OP marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
                     
                     // Re-initialize the OP but tell it to preserve the marker
-                    [_x, true] spawn FLO_fnc_initializeOP;
+                    [_x, true] call FLO_fnc_initializeOP;
                 };
             };
         };
