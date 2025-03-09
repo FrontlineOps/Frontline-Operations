@@ -37,6 +37,7 @@ _FinalRoads = _InRoads - _nearDesRoads ;
 			_CNTR = (nearestObjects [(getMarkerPos _AssltDest), ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V1_F", "Land_Cargo_House_V3_F", "House"], 300]) select 0 ;
 
 ENMASSMAINmarkerName = "AssltDest" + (str ((getPos TheCommander) getPos [(10 + (random 150)), (0 + (random 360))]));   
+ publicVariable "ENMASSMAINmarkerName"; 
 
 createMarker [ENMASSMAINmarkerName, (getPos _CNTR)] ;
 ENMASSMAINmarkerName setMarkerType "mil_marker_noShadow" ; 

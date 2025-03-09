@@ -507,9 +507,7 @@ FLO_fnc_configureVehicle = {
     // Configure mobile workshop (F_Truck_04)
     private _MOBSERName = missionNamespace getVariable "F_Truck_04";
     if (_VehName == _MOBSERName) then {
-        if (!isNil "_vehicle" && {!isNull _vehicle}) then {
-            [[_vehicle, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
-        };
+        [_vehicle, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf";
         
         [_vehicle, "<img size=2 color='#f37c00' image='\a3\ui_f_oldman\data\IGUI\Cfg\holdactions\repair_ca.paa'/><t font='PuristaBold' color='#f37c00'>REPAIR Vehicles",
             "Screens\FOBA\mg_ca.paa",

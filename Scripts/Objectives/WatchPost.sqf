@@ -85,7 +85,7 @@ if (_aggrScore > 10) then {
 };
 
 // Create the garrison using the garrison manager
-private _units = FLO_Garrison_Manager call ["spawnGarrison", [_markerName, _garrisonSize, false]];
+private _units = ["spawn", [_markerName, _garrisonSize, false]] call FLO_fnc_garrisonManager;
 _watchpostData set ["units", _units];
 
 diag_log format ["[FLO][Watchpost] Created watchpost garrison at %1 with size %2", _markerName, _garrisonSize];

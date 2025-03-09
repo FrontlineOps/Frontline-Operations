@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:AIS/Core/fn_onNextFrame.sqf","fn_onNextFrame.sqf");NDSummary.OnSummaryLoaded("File:AIS/Core/fn_onNextFrame.sqf",[["SQF","SQF"]],[["Functions","Function"],["Groups","Group"]],[[1,0,1,"Functions","Functions"],[2,0,0,"AIS_Core_fnc_onNextFrame","AIS_Core_fnc_onNextFrame"]]);

@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("ais",["Function"],[["AIS_Core_fnc_onNextFrame",,[[,,,,0,"File:AIS/Core/fn_onNextFrame.sqf:AIS_Core_fnc_onNextFrame"]]],["AIS_Core_fnc_waitUntilAndExecute",,[[,,,,0,"File:AIS/Core/fn_waitUntilAndExecute.sqf:AIS_Core_fnc_waitUntilAndExecute"]]]]);

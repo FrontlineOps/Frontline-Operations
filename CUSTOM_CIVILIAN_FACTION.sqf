@@ -9,13 +9,13 @@
 // Where are Classnames ? Right click on any Unit or Vehicle in the Editor and Select find in CFG viewer, Last Name in the [path] tab is the Classname,
 
 
-//Civilian classnames
+// Default civilian classnames (Vanilla Arma 3)
 CivVehArray = ("(configname _x iskindOf 'car') && (gettext (_x >> 'faction') == 'CIV_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
 //publicVariable "CivVehArray";
 CivMenArray = ("(configname _x iskindOf 'CAManBase') && !(['CivilianPresence_',configName _x] call bis_fnc_inString) && (gettext (_x >> 'faction') == 'CIV_F') && (getNumber (_x >> 'scope') >= 2)" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
 //publicVariable "CivMenArray";
 
-//Guerilla classnames
+// Default guerilla classnames (Vanilla Arma 3)
 GuerMenArray = ("(configname _x iskindOf 'CAManBase') && (gettext (_x >> 'faction') == 'IND_G_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
 //publicVariable "GuerMenArray";
 GuerVehArray = ("(configname _x iskindOf 'car') && (gettext (_x >> 'faction') == 'IND_G_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};

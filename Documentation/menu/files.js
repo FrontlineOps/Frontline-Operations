@@ -1,0 +1,1 @@
+﻿NDMenu.OnSectionLoaded("files.js",[[2,["AIS","Core"],"File:AIS/Core/",[[1,"fn_onNextFrame.sqf"],[1,"fn_waitUntilAndExecute.sqf"]]],[1,"config.sqf"],[1,"init.sqf"],[2,"Scripts","File:Scripts/",[[1,"PMON.sqf"]]]]);

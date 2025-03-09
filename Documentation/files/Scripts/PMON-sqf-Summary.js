@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:Scripts/PMON.sqf","PMON.sqf");NDSummary.OnSummaryLoaded("File:Scripts/PMON.sqf",[["SQF","SQF"]],[["Sections","Section"]],[[5,0,0,"FPS Monitoring Script","FPS_Monitoring_Script"]]);

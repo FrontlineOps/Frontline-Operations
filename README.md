@@ -94,8 +94,10 @@ The mission includes an automatic marker system (`init_Markers.sqf`) that:
    - Installations (`o_installation`, `n_installation`) in cities and capitals
    - Barracks (`loc_Ruin`) near military buildings
    - Radar sites (`loc_Power`) near radar structures
+   - Armor positions (`o_armor`) near roads
    - AA positions (`o_antiair`) on high ground
    - Infantry positions (`o_inf`) in villages
+   - Aircraft positions (`o_plane`) in suitable areas
 
 Key features of the automatic system:
 - Centers around `LocationEvacPoint_F` objects
@@ -107,110 +109,15 @@ Key features of the automatic system:
 #### Map Conversion Tips
 When converting the mission to a new map:
 
-#### 1. Adjust Enemy Presence:
+1. Adjust Enemy Presence:
 - Default scale is based on map size: `worldSize / 2` (This determines how dense the map will be with objectives besides the Dialog Menu % of Map Playable.)
-- Edit `EnemyPrec` parameter to control overall enemy density (higher values = fewer markers)
 
-#### 2. Infrastructure and Marker System Setup
-The mission uses `init_Markers.sqf` to automatically place strategic objectives based on map features and editor-placed objects.
+2. Infrastructure Placement:
+- Place `LocationEvacPoint_F` objects for key strategic points
+- Add military structures (`Land_Cargo_Tower`, `Land_Radar_F`, etc.)
+- Place `Sign_Pointer_Blue_F` for factories/industrial areas
 
-##### Location Marker Objects
-Place the following objects in the editor to help the marker system create objectives:
-
-| Object Type | Purpose | Marker Type | Notes |
-|-------------|---------|-------------|-------|
-| `LocationEvacPoint_F` | Core distribution points | Various | Main reference points for all marker generation |
-| `LocationBase_F` | Military bases | `n_support` | Primary military installations |
-| `LocationFOB_F` | Forward Operating Bases | `o_support` | Converted to enemy outposts |
-| `LocationResupplyPoint_F` | Factory/Supply points | `o_support` | Industrial/factory areas |
-| `LocationCamp_F` | Barracks | `loc_Ruin` | Military barracks areas |
-| `LocationCityCapital_F` | Capital cities | `n_installation` | Major urban centers |
-| `LocationCity_F` | Cities | `o_installation` | Urban centers |
-| `LocationVillage_F` | Villages | `o_inf` | Insurgent infantry positions |
-
-##### Using Variable Names on Logic Objects
-You can also use Logic objects with specific variable names:
-
-| Variable Name | Creates | Example Use |
-|---------------|---------|-------------|
-| `"RadioTower"` | Radio towers | Place on high terrain |
-| `"ResupplyPoint"` | Supply points | Place in industrial areas |
-| `"FOB"` | Forward bases | Place in strategic locations |
-| `"BaseLocation"` | Military bases | Alternative to LocationBase_F |
-| `"Capital"` | Capital markers | Alternative to LocationCityCapital_F |
-| `"City"` | City markers | Alternative to LocationCity_F |
-| `"Village"` | Village markers | Alternative to LocationVillage_F |
-| `"Barracks"` | Barracks markers | Place near military areas |
-| `"RadarS"` | Radar stations | Place on high terrain |
-| `"AASite"` | Anti-Air positions | Place on mountaintops |
-
-##### Physical Objects Detection and Variable System
-The script primarily relies on Location objects and variables rather than detecting physical structures. Here's a more accurate explanation of how it works:
-
-1. **Location Objects**: The script first tries to find specific location type objects like `LocationBase_F`, `LocationCity_F`, etc.
-
-2. **Variable-Tagged Objects**: If location objects aren't found, it looks for objects (often Logic) with specific variable names (e.g., "RadioTower", "FOB")
-
-3. **Fallback Mechanism**: If neither of these are found, for most marker types it will:
-   - Find a nearby Mount location 
-   - Create a marker there
-   - For radio towers specifically, it will also create a physical tower object
-
-The script does **not** automatically detect physical structures like barracks buildings or radar installations by default. Instead, you need to:
-- Place the appropriate location objects (`LocationBase_F`, etc.)
-- OR add variables to objects (including Logic objects)
-- OR let the script use its fallback mechanisms (generally placing on mountains)
-
-For example, placing a `Land_Radar_F` by itself won't automatically create a radar marker unless you:
-- Add the "RadarS" variable to it, OR
-- Place a `LocationEvacPoint_F` nearby that will use it as a reference point
-
-##### Best Practices for Marker Setup
-
-1. **Start with LocationEvacPoint_F objects:**
-   - Place these at key strategic points around the map
-   - These act as reference points for placing other markers
-   - Should be distributed evenly, avoid clustering
-
-2. **Add specialized location objects:**
-   - Place `LocationBase_F` at main military installations
-   - Place `LocationCity_F` or `LocationCityCapital_F` at urban centers
-   - Place `LocationFOB_F` at strategic minor military points
-   - Place `LocationCamp_F` for smaller military installations
-
-3. **Add physical structures:**
-   - Place radio towers on high terrain
-   - Add military structures to give the map more detail
-   - Use terrain features to your advantage (mountains for AA, etc.)
-
-4. **Fine-tune with Logic markers:**
-   - Use Logic objects with variables to add specific markers
-   - Useful for adding exact positions that don't correspond to physical structures
-
-5. **Adjust safe positioning for water maps:**
-   - For maps with lots of water, the script uses `BIS_fnc_findSafePos` to ensure markers are on land
-   - The default safe radius is set, but can be adjusted for specific map topography
-
-##### Marker Density Control
-
-The script automatically scales marker density based on:
-- `EnemyPrec` global parameter (accessible in mission settings)
-- Map size (calculated from `worldSize`)
-- Division factors for each marker type
-
-For adding more markers of a specific type, you can:
-1. Place more objects of the corresponding type
-2. Adjust the division factor in the script (smaller = more markers)
-3. Reduce the `EnemyPrec` parameter
-
-##### Troubleshooting Common Issues
-
-- **No markers appearing**: Ensure you have placed `LocationEvacPoint_F` objects
-- **Markers in water**: Check the `_useSafePos` parameter and increase `_safeRadius`
-- **Too many/few markers**: Adjust `EnemyPrec` or place more/fewer location objects
-- **Missing specific marker types**: Ensure you've placed the corresponding location objects
-
-#### 3. Spawn Positions:
+### Spawn Positions:
 - Spawn Positions will be selected when you first join the mission as the Company Commander. You will be prompted with the Dialog Menu in which you can 
 select Faction, Starting Aggression levels, Starting Civilian Relations, and More.
 

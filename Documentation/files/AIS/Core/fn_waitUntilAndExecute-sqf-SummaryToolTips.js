@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("File:AIS/Core/fn_waitUntilAndExecute.sqf",{4:"<div class=\"NDToolTip TFunction LSQF\"><div class=\"TTSummary\">Executes a code once in unscheduled environment after a condition is true.</div></div>"});

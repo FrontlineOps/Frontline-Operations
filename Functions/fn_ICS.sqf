@@ -3,7 +3,7 @@
 // Function to create markers for enemy units
 private _createMarkers = {
     params ["_units", "_markerColor", "_markerPrefix"];
-    private _transmitterMarkers = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" && markerColor _x isEqualTo "colorBLUFOR" };
+    private _transmitterMarkers = allMapMarkers select { markerType _x == "loc_Transmitter" && markerColor _x == "colorBLUFOR" };
 
     {
         private _unit = _x;
@@ -24,7 +24,7 @@ private _createMarkers = {
 // Function to create markers for enemy ordnance markers
 private _createOrdnanceMarkers = {
     params ["_markers", "_markerColor", "_markerPrefix"];
-    private _transmitterMarkers = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" && markerColor _x isEqualTo "colorBLUFOR" };
+    private _transmitterMarkers = allMapMarkers select { markerType _x == "loc_Transmitter" && markerColor _x == "colorBLUFOR" };
 
     {
         private _marker = _x;
@@ -43,20 +43,20 @@ private _createOrdnanceMarkers = {
 };
 
 // Create markers for OPFOR units
-private _opforUnits = allUnits select { side _x isEqualTo east && alive _x && leader _x isEqualTo _x };
+private _opforUnits = allUnits select { side _x == east && alive _x && leader _x == _x };
 [_opforUnits, "colorOPFOR", "Enm_East"] call _createMarkers;
 sleep 1;
 
 // Create markers for Independent units
-private _independentUnits = allUnits select { side _x isEqualTo independent && alive _x && leader _x isEqualTo _x };
+private _independentUnits = allUnits select { side _x == independent && alive _x && leader _x == _x };
 [_independentUnits, "colorIndependent", "Enm_Guer"] call _createMarkers;
 sleep 1;
 
 // Create markers for OPFOR ordnance markers
-private _opforOrdnanceMarkers = allMapMarkers select { markerType _x isEqualTo "o_Ordnance" && markerColor _x isEqualTo "colorOPFOR" };
+private _opforOrdnanceMarkers = allMapMarkers select { markerType _x == "o_Ordnance" && markerColor _x == "colorOPFOR" };
 [_opforOrdnanceMarkers, "colorOPFOR", "Enm_East"] call _createOrdnanceMarkers;
 sleep 1;
 
 // Create markers for Independent ordnance markers
-private _independentOrdnanceMarkers = allMapMarkers select { markerType _x isEqualTo "o_Ordnance" && markerColor _x isEqualTo "colorIndependent" };
+private _independentOrdnanceMarkers = allMapMarkers select { markerType _x == "o_Ordnance" && markerColor _x == "colorIndependent" };
 [_independentOrdnanceMarkers, "colorIndependent", "Enm_Guer"] call _createOrdnanceMarkers;

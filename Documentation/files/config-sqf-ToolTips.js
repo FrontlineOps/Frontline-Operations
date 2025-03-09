@@ -1,0 +1,1 @@
+﻿NDContentPage.OnToolTipsLoaded({10:"<div class=\"NDToolTip TVariable LSQF\"><div id=\"NDPrototype10\" class=\"NDPrototype\"><div class=\"PSection PPlainSection\"><span class=\"SHKeyword\">private</span> _is_debug</div></div><div class=\"TTSummary\">Holds a boolean value indicating whether the mission is in debug mode or not.</div></div>"});

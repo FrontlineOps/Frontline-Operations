@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("is_",["Function"],[["is_debug",,[[,,,,0,"File:config.sqf:is_debug"]]]]);

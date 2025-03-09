@@ -5,7 +5,9 @@ East_Ground_Transport = ["rhs_tigr_msv",  "rhs_gaz66_msv", "rhs_gaz66o_msv"];
 
 East_Air_Transport = ["rhs_ka60_c","RHS_Mi8mt_vvsc", "RHS_Mi8MTV3_heavy_vvsc"];
 East_Air_Heli = ["RHS_Ka52_vvsc",  "RHS_Mi24P_vdv"]; 
-East_Air_Jet = ["rhs_mig29sm_vvsc", "RHS_Su25SM_vvsc"]; 
+East_Air_Jet = ["rhs_mig29sm_vvsc", "RHS_Su25SM_vvsc"];
+East_Ground_Artillery = ["O_MBT_02_arty_F"];
+East_Air_Drone = ["O_UAV_01_F"]; 
 
 East_Units = ["rhs_vdv_flora_efreitor","rhs_vdv_flora_rifleman","rhs_vdv_flora_LAT","rhs_vdv_flora_marksman","rhs_vdv_flora_medic","rhs_vdv_flora_machinegunner","rhs_vdv_flora_grenadier","rhs_vdv_flora_at","rhs_vdv_flora_engineer","rhs_vdv_flora_marksman"];
 East_FireObserver = ["rhs_vdv_des_officer"];
