@@ -1,5 +1,7 @@
 if (!isServer) exitWith {};
 
+Centerposition = [worldSize / 2, worldsize / 2, 0];
+
 MissionLoadedLitterally = 0 ; 
 publicVariable "MissionLoadedLitterally";
 
@@ -11,6 +13,13 @@ private _MarkerDataName = _missionTag + "_markers";
 private _VehicleDataName = _missionTag + "_Vehicles";
 private _ObjectDataName = _missionTag + "_Objects";
 private _MarkerTimeName = _missionTag + "_Time";
+private _missionStructureTypes = _missionTag + "_StructureTypes";
+
+// Load structure types from saved mission data
+private _structureTypes = profileNamespace getVariable [_missionStructureTypes, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V3_F", "Land_Cargo_House_V1_F"]];
+private _fobTypeClass = _structureTypes select 0;
+private _opTypeClass = _structureTypes select 1;
+["Mission", 3, format["Loaded structure types: FOB = %1, OP = %2", _fobTypeClass, _opTypeClass]] call FLO_fnc_log;
 
 		FreshStartVal = "FreshStart" call BIS_fnc_getParamValue;
 		 if (FreshStartVal == 1) then {
@@ -131,7 +140,7 @@ private _structureMarkerHash = profileNamespace getVariable [_structureMarkerNam
 
 if (count _structureMarkerHash > 0) then {
     // Process FOB buildings
-    private _fobBuildings = nearestObjects [Centerposition, [F_HQ_01, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+    private _fobBuildings = nearestObjects [Centerposition, [_fobTypeClass, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
     {
         if (!isNil "_x" && {alive _x}) then {
             private _objectPos = getPosASL _x;
@@ -152,7 +161,7 @@ if (count _structureMarkerHash > 0) then {
     } forEach _fobBuildings;
     
     // Process OP buildings
-    private _opBuildings = nearestObjects [Centerposition, [F_OP_01], 40000];
+    private _opBuildings = nearestObjects [Centerposition, [_opTypeClass], 40000];
     {
         if (!isNil "_x" && {alive _x}) then {
             private _objectPos = getPosASL _x;
