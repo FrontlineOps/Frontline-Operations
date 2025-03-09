@@ -24,7 +24,6 @@
             removeVehicleFromCount: [_marker, _vehicleType] - Remove a vehicle from the count
             getVehicleLimits: [_markerType] - Get limit configuration for a marker type
             getSizeLimits: [_markerType] - Get size limit configuration for a marker type
-            _hasAvailableUnits: [_marker] - Check if a marker has available units
         i.e: FLO_Garrison_Manager call ["spawnGarrison", [_marker, _size, _withVehicles]]
     
     Returns:
@@ -1373,41 +1372,22 @@ if (isNil "FLO_Garrison_Manager") then {
             
             [_isGarrisonGroup, _marker]
         }],
-        
-        // Check if a garrison at marker has available units
-        ["_hasAvailableUnits", {
+
+        ["_checkGarrisonStrength", {
             params ["_marker"];
             
+            // Get strength from garrisonSizes only
+            private _strength = 0;
             private _garrisonSizes = _self get "garrisonSizes";
-            private _garrisons = _self get "garrisons";
-            private _hasUnits = false;
             
-            // First check if there's a size defined in garrisonSizes
+            // Check if there's a size defined in garrisonSizes
             if (_marker in keys _garrisonSizes) then {
-                private _size = _garrisonSizes get _marker;
-                if (_size > 0) then {
-                    _hasUnits = true;
-                    ["Garrison", 4, format["Garrison at %1 has defined size of %2 in garrisonSizes", 
-                        _marker, _size]] call FLO_fnc_log;
-                };
+                _strength = _garrisonSizes get _marker;
+                ["Garrison", 3, format["Checking garrison strength at %1: %2 units from garrisonSizes", 
+                    _marker, _strength]] call FLO_fnc_log;
             };
             
-            // Also check for physical units if there are any
-            if (!_hasUnits && _marker in keys _garrisons) then {
-                private _garrisonData = _garrisons get _marker;
-                private _units = _garrisonData select 0;
-                
-                    // Check for alive units
-                if (count _units > 0) then {
-                    private _aliveUnits = _units select {!isNil "_x" && {alive _x}};
-                    _hasUnits = count _aliveUnits > 0;
-                    
-                    ["Garrison", 4, format["Garrison at %1 has %2 alive physical units", 
-                        _marker, count _aliveUnits]] call FLO_fnc_log;
-                };
-            };
-            
-            _hasUnits
+            _strength
         }],
         
         // Check if a marker can receive more vehicles of a specific type

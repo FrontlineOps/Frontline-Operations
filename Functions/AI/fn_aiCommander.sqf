@@ -40,7 +40,9 @@ private _aiCommander = createHashMapObject [[
     ["_activeTasks", createHashMap],
     ["_outpostStatus", createHashMap],
     ["_taskForcePool", []],
-    
+    ["_taskForceSourceMap", createHashMap], // Maps task force IDs to their source outposts
+    ["_garrisonContributions", createHashMap], // Tracks how many units each garrison has contributed
+
     // Methods
     ["_updateOperationMode", {
         params ["_newMode"];
@@ -130,8 +132,8 @@ private _aiCommander = createHashMapObject [[
         };
         
         // Initialize the garrison integration system if not done already
-        if (isNil "FLO_TaskForce_Garrison_Integration") then {
-            FLO_TaskForce_Garrison_Integration = call FLO_fnc_taskForceGarrisonIntegration;
+        if (isNil "FLO_AICommander_UnitCapabilityAnalyzer") then {
+            FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_AICommanderUnitCapabilityAnalyzer;
         };
         
         // Logic varies by operation mode
@@ -154,7 +156,7 @@ private _aiCommander = createHashMapObject [[
                     private _sourceOutpost = _self call ["_selectBestOutpostForTaskForce", [_availableOutposts, _taskForceSize]];
                     
                     // Get updated garrison strength now that we have a suitable outpost
-                    private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                    private _garrisonStrength = FLO_Garrison_Manager call ["_checkGarrisonStrength", [_sourceOutpost]];
                     // Adjust task force size based on actual garrison strength
                     _taskForceSize = round((_garrisonStrength * 0.4) * _taskForceStrengthFactor);
                     _taskForceSize = _taskForceSize max 8 min 40; // Ensure reasonable size limits
@@ -172,7 +174,7 @@ private _aiCommander = createHashMapObject [[
                     private _unitTypes = East_Units + East_Units_Officers;
                     
                     // Pull units from the garrison - now returns a count instead of array
-                    private _unitsCount = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                    private _unitsCount = _self call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                     
                     if (_unitsCount > 0) then {
                         // Create the task force in the system first
@@ -181,7 +183,7 @@ private _aiCommander = createHashMapObject [[
                             // Use the returned task force ID for deployment
                             private _systemTaskForceID = _createResult;
                             // Deploy offensive task force with the pulled units
-                            private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]] call FLO_fnc_TaskForceSystem;
+                            private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost]] call FLO_fnc_TaskForceSystem;
                             
                             // Check if deployment was successful
                             if (!isNull _taskForceGroup) then {
@@ -240,7 +242,7 @@ private _aiCommander = createHashMapObject [[
                                 };
                                 
                                 // Return units to the garrison
-                                FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                 
                                 // Clean up the undeployed task force
                                 ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
@@ -249,7 +251,7 @@ private _aiCommander = createHashMapObject [[
                             ["AI Commander", 3, format["Failed to create task force in system for offensive task force from %1", _sourceOutpost]] call FLO_fnc_log;
                             
                             // Return units to the garrison
-                            FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                            _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                         };
                     } else {
                         ["AI Commander", 3, format["Failed to pull units from garrison at %1 for offensive task force", _sourceOutpost]] call FLO_fnc_log;
@@ -280,7 +282,7 @@ private _aiCommander = createHashMapObject [[
                     
                     if (!isNil "_sourceOutpost") then {
                         // Calculate task force size based on outpost garrison strength and type
-                        private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                        private _garrisonStrength = FLO_Garrison_Manager call ["_checkGarrisonStrength", [_sourceOutpost]];
                         private _taskForceSize = round((_garrisonStrength * 0.3) * _taskForceStrengthFactor);
                         _taskForceSize = _taskForceSize max 6 min 30; // Ensure reasonable size limits
                         
@@ -309,7 +311,7 @@ private _aiCommander = createHashMapObject [[
                         };
                         
                         // Pull units from the garrison - now returns a count instead of array
-                        private _unitsCount = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                        private _unitsCount = _self call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                         
                         if (_unitsCount > 0) then {
                             // Create the task force in the system first
@@ -318,7 +320,7 @@ private _aiCommander = createHashMapObject [[
                                 // Use the returned task force ID for deployment
                                 private _systemTaskForceID = _createResult;
                                 // Deploy defensive task force with the pulled units
-                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost]] call FLO_fnc_TaskForceSystem;
                                 
                                 // Check if deployment was successful
                                 if (!isNull _taskForceGroup) then {
@@ -331,7 +333,7 @@ private _aiCommander = createHashMapObject [[
                                     ["AI Commander", 3, format["Defensive task force deployment failed - target %1 might be too close to players", _sourceOutpost]] call FLO_fnc_log;
                                     
                                     // Return units to the garrison
-                                    FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                    _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                     
                                     // Clean up the undeployed task force
                                     ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
@@ -340,7 +342,7 @@ private _aiCommander = createHashMapObject [[
                                 ["AI Commander", 3, format["Failed to create task force in system for defensive task force from %1", _sourceOutpost]] call FLO_fnc_log;
                                 
                                 // Return units to the garrison
-                                FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                             };
                         } else {
                             ["AI Commander", 3, format["Failed to pull units from garrison at %1 for defensive task force", _sourceOutpost]] call FLO_fnc_log;
@@ -365,7 +367,7 @@ private _aiCommander = createHashMapObject [[
                         private _targetRoad = selectRandom _roads;
                         
                         // Get updated garrison strength now that we have a suitable outpost
-                        private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                        private _garrisonStrength = FLO_Garrison_Manager call ["_checkGarrisonStrength", [_sourceOutpost]];
                         // Adjust task force size based on actual garrison strength
                         _taskForceSize = round((_garrisonStrength * 0.2) * _taskForceStrengthFactor * 0.7);
                         _taskForceSize = _taskForceSize max 4 min 16; // Smaller patrol groups
@@ -383,7 +385,7 @@ private _aiCommander = createHashMapObject [[
                         private _unitTypes = East_Units;
                         
                         // Pull units from the garrison - now returns a count instead of array
-                        private _unitsCount = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                        private _unitsCount = _self call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                         
                         if (_unitsCount > 0) then {
                             // Create the task force in the system first
@@ -392,20 +394,20 @@ private _aiCommander = createHashMapObject [[
                                 // Use the returned task force ID for deployment
                                 private _systemTaskForceID = _createResult;
                                 // Deploy patrol task force with the pulled units
-                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getPos _targetRoad, false]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getPos _targetRoad]] call FLO_fnc_TaskForceSystem;
                                 
                                 // Check if deployment was successful
                                 if (!isNull _taskForceGroup) then {
                                     ["AI Commander", 3, format["Deploying patrol from %1 with %2 units", _sourceOutpost, _unitsCount]] call FLO_fnc_log;
                                     
                                     // Assign patrol actions to the task force
-                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getPos _targetRoad, "SKIRMISH"]];
+                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getPos _targetRoad, "PATROL"]];
                                 } else {
                                     // Deployment failed
                                     ["AI Commander", 3, format["Patrol task force deployment failed - location might be too close to players"]] call FLO_fnc_log;
                                     
                                     // Return units to the garrison
-                                    FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                    _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                     
                                     // Clean up the undeployed task force
                                     ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
@@ -414,7 +416,7 @@ private _aiCommander = createHashMapObject [[
                                 ["AI Commander", 3, format["Failed to create task force in system for patrol task force from %1", _sourceOutpost]] call FLO_fnc_log;
                                 
                                 // Return units to the garrison
-                                FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                             };
                         } else {
                             ["AI Commander", 3, format["Failed to pull units from garrison at %1 for patrol task force", _sourceOutpost]] call FLO_fnc_log;
@@ -438,7 +440,7 @@ private _aiCommander = createHashMapObject [[
                         private _sourceOutpost = _self call ["_selectBestOutpostForTaskForce", [_availableOutposts, _taskForceSize]];
                         
                         // Get updated garrison strength now that we have a suitable outpost
-                        private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_sourceOutpost]];
+                        private _garrisonStrength = FLO_Garrison_Manager call ["_checkGarrisonStrength", [_sourceOutpost]];
                         // Adjust task force size based on actual garrison strength
                         _taskForceSize = round((_garrisonStrength * 0.25) * _taskForceStrengthFactor * 0.8);
                         _taskForceSize = _taskForceSize max 5 min 20; // Balanced skirmish size
@@ -456,7 +458,7 @@ private _aiCommander = createHashMapObject [[
                         private _unitTypes = East_Units + East_Units_Officers;
                         
                         // Pull units from the garrison - now returns a count instead of array
-                        private _unitsCount = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                        private _unitsCount = _self call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                         
                         if (_unitsCount > 0) then {
                             // Create the task force in the system first
@@ -465,7 +467,7 @@ private _aiCommander = createHashMapObject [[
                                 // Use the returned task force ID for deployment
                                 private _systemTaskForceID = _createResult;
                                 // Deploy skirmish task force with the pulled units
-                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost, false]] call FLO_fnc_TaskForceSystem;
+                                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost]] call FLO_fnc_TaskForceSystem;
                                 
                                 // Check if deployment was successful
                                 if (!isNull _taskForceGroup) then {
@@ -478,7 +480,7 @@ private _aiCommander = createHashMapObject [[
                                     ["AI Commander", 3, format["Skirmish task force deployment failed - target %1 might be too close to players", _sourceOutpost]] call FLO_fnc_log;
                                     
                                     // Return units to the garrison
-                                    FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                    _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                                     
                                     // Clean up the undeployed task force
                                     ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
@@ -487,7 +489,7 @@ private _aiCommander = createHashMapObject [[
                                 ["AI Commander", 3, format["Failed to create task force in system for skirmish task force from %1", _sourceOutpost]] call FLO_fnc_log;
                                 
                                 // Return units to the garrison
-                                FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                                _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                             };
                         } else {
                             ["AI Commander", 3, format["Failed to pull units from garrison at %1 for skirmish task force", _sourceOutpost]] call FLO_fnc_log;
@@ -661,7 +663,7 @@ private _aiCommander = createHashMapObject [[
         ["AI Commander", 3, format["Attempting to pull %1 units from garrison at %2 for task force %3", _taskForceSize, _sourceOutpost, _taskForceID]] call FLO_fnc_log;
         
         // Pull units from the garrison - now returns a count instead of array
-        private _unitsCount = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+        private _unitsCount = _self call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
         
         // diag_log format ["[FLO][AI Commander][DEBUG] Pulled %1 units from garrison %2 (requested %3)", 
         //    _unitsCount, _sourceOutpost, _taskForceSize];
@@ -754,7 +756,7 @@ private _aiCommander = createHashMapObject [[
                 ["AI Commander", 3, format["Task Force %1 created successfully, deploying to position %2", _systemTaskForceID, _position]] call FLO_fnc_log;
                 
                 // Deploy attack force with pulled units
-                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, _position, false]] call FLO_fnc_TaskForceSystem;
+                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, _position]] call FLO_fnc_TaskForceSystem;
                 
                 // Check if deployment was successful
                 if (!isNull _taskForceGroup) then {
@@ -794,7 +796,7 @@ private _aiCommander = createHashMapObject [[
                     ["AI Commander", 3, format["Task force deployment failed - position %1 might be too close to players or in an invalid location", _position]] call FLO_fnc_log;
                     
                     // Return units to the garrison since we couldn't deploy them
-                    FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                    _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                     
                     // Attempt to clean up the undeployed task force
                     ["removeTaskForce", [_systemTaskForceID]] call FLO_fnc_TaskForceSystem;
@@ -805,7 +807,7 @@ private _aiCommander = createHashMapObject [[
                 ["AI Commander", 3, format["Failed to create task force in system for field attack from %1", _sourceOutpost]] call FLO_fnc_log;
                 
                 // Return units to the garrison
-                FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
+                _self call ["_returnUnitsToGarrison", [_taskForceID, _sourceOutpost, _unitsCount]];
                 
                 false
             };
@@ -1266,11 +1268,11 @@ private _aiCommander = createHashMapObject [[
                 };
                 
                 // Pull units from the garrison
-                private _unitsCount = FLO_TaskForce_Garrison_Integration call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
+                private _unitsCount = _self call ["_pullUnitsFromGarrison", [_sourceOutpost, _unitTypes, _taskForceSize, _taskForceID]];
                 
                 if (_unitsCount > 0) then {
                     // Deploy task force with the pulled units
-                    private _taskForceGroup = ["deployTaskForce", [_taskForceID, _position, false]] call FLO_fnc_TaskForceSystem;
+                    private _taskForceGroup = ["deployTaskForce", [_taskForceID, _position]] call FLO_fnc_TaskForceSystem;
                     
                     // Assign appropriate actions based on response type
                     _self call ["_assignTaskForceActions", [_taskForceGroup, _position, _responseType]];
@@ -1285,85 +1287,102 @@ private _aiCommander = createHashMapObject [[
             ["AI Commander", 3, "Recon report noted but no response required"] call FLO_fnc_log;
         };
     }],
-    
-    ["_evaluateVehicleCapabilities", {
-        params ["_vehicle"];
+
+    ["_pullUnitsFromGarrison", {
+        params ["_marker", "_unitTypes", "_requestedCount", "_taskForceId"];
         
-        // Create empty hashmaps for storing vehicle data
-        private _magTypes = createHashMap;
-        private _weaponCapabilities = [0,1,2,3,4,5,6,7,8,9] createHashMapFromArray [[],[],[],[],[],[],[],[],[],[]];
+        // Track this marker as the source for this task force
+        private _taskForceSourceMap = _self get "_taskForceSourceMap";
+        _taskForceSourceMap set [_taskForceId, _marker];
         
-        // Analyze all magazines in all turrets
-        private _magazines = magazinesAllTurrets [_vehicle, true];
-        {
-            private _key = [_x select 1, _x select 0];
-            if (_key in _magTypes) then {
-                private _data = _magTypes get _key; 
-                _data set [1, (_data select 1) + (_x select 2)]
+        // Track contributions from this garrison
+        private _garrisonContributions = _self get "_garrisonContributions";
+        private _currentContribution = _garrisonContributions getOrDefault [_marker, 0];
+        
+        ["AI Commander", 3, format["Attempting to pull %1 units from garrison at %2 for task force %3", 
+            _requestedCount, _marker, _taskForceId]] call FLO_fnc_log;
+        
+        // Initialize result variable
+        private _extractedCount = 0;
+        
+        // Verify parameters before calling
+        if (_marker == "" || _requestedCount <= 0 || _taskForceId == "") then {
+            ["AI Commander", 1, format["Invalid parameters: marker=%1, count=%2, taskForceId=%3",
+                _marker, _requestedCount, _taskForceId]] call FLO_fnc_log;
+        } else {
+            // Only process if parameters are valid
+            if (!isNil "FLO_Garrison_Manager") then {
+                // Ensure the count parameter is passed as a number
+                _requestedCount = _requestedCount call BIS_fnc_parseNumber;
+                if (_requestedCount <= 0) then { _requestedCount = 1; }; // Fallback if parsing fails
+                
+                // Call extractUnits with clear parameter names for debugging
+                _extractedCount = FLO_Garrison_Manager call ["extractUnits", [_marker, _requestedCount, _taskForceId]];
+                
+                // Update contribution tracking - extractedCount is already a number, no need for count
+                _garrisonContributions set [_marker, _currentContribution + _extractedCount];
+                
+                ["AI Commander", 3, format["Successfully pulled %1 units from garrison at %2 for task force %3", 
+                    _extractedCount, _marker, _taskForceId]] call FLO_fnc_log;
             } else {
-                private _name = _x select 0;
-                private _turret = _x select 1;
-                private _ammoCount = _x select 2;
-                private _usageFlags = [0,0,0,0,0,0,0,0,0,0];
-                private _ammo = getText (configFile >> "CfgMagazines" >> _name >> "ammo");
-                private _ufValue = getNumber (configFile >> "CfgAmmo" >> _ammo >> "aiAmmoUsageFlags");
-                
-                if (_ufValue > 0) then {
-                    _usageFlags = [_ufValue, 10] call BIS_fnc_decodeFlags2;
-                } else {
-                    if (_ammo isKindOf "GrenadeBase") then {_usageFlags = [0,0,0,0,0,0,1,0,0,0]};
-                    if (_ammo isKindOf "RocketBase") then {_usageFlags = [0,0,0,0,0,0,0,1,0,1]};
-                };
-                
-                private _cost = getNumber (configFile >> "CfgAmmo" >> _ammo >> "cost");
-                private _hit = getNumber (configFile >> "CfgAmmo" >> _ammo >> "hit");
-                
-                _magTypes set [_key, [_name, _ammoCount, _usageFlags, _hit]];
+                ["AI Commander", 1, "Garrison Manager not available for unit extraction"] call FLO_fnc_log;
             };
-        } forEach _magazines;
+        };
         
-        // Analyze all turrets and weapons
-        private _turrets = [[-1]] + allTurrets _vehicle;
-        {
-            private _weapons = _vehicle weaponsTurret _x;
-            private _turret = _x;
-            
-            {
-                private _weaponName = _x;
-                private _minRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "minRange");
-                private _midRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "midRange");
-                private _maxRange = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "maxRange");
-                private _minRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "minRangeProbab");
-                private _midRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "midRangeProbab");
-                private _maxRangeProbab = getNumber (configFile >> "CfgWeapons" >> _weaponName >> "maxRangeProbab");
-                private _wMags = getArray (configFile >> "CfgWeapons" >> _x >> "magazines");
-                
-                {
-                    private _key = [_turret, _x];
-                    if (_key in _magTypes) then {
-                        private _mag = _magTypes get _key;
-                        for "_i" from 0 to 9 do {
-                            if ((_mag select 2) select _i == 1) then {
-                                private _prev = _weaponCapabilities get _i;
-                                private _new = [_weaponName, _turret, _minRange, _midRange, _maxRange, _minRangeProbab, _midRangeProbab, _maxRangeProbab];
-                                _new append _mag;
-                                _new set [12, (_mag#1) * (_mag#3)];
-                                _prev pushBack _new;
-                            };
-                        };
-                    };
-                } forEach _wMags;
-            } forEach _weapons;
-        } forEach _turrets;
-        
-        // Store capabilities in vehicle variables
-        _vehicle setVariable ["FLO_weaponCapabilities", _weaponCapabilities];
-        _vehicle setVariable ["FLO_magTypes", _magTypes];
-        
-        // Return the weapon capabilities
-        _weaponCapabilities
+        // Return the extracted count
+        _extractedCount
     }],
     
+    ["_returnUnitsToGarrison", {
+        params ["_taskForceId", "_targetMarker", "_count"];
+        
+        // Ensure count is a number
+        if (typeName _count != "SCALAR") then {
+            _count = count _count; // In case an array of units is passed
+        };
+        
+        // Get the original source marker for this task force
+        private _taskForceSourceMap = _self get "_taskForceSourceMap";
+        private _sourceMarker = _taskForceSourceMap getOrDefault [_taskForceId, _targetMarker];
+        
+        ["AI Commander", 3, format["Returning %1 units from task force %2 to garrison at %3", 
+            _count, _taskForceId, _sourceMarker]] call FLO_fnc_log;
+        
+        // IMPROVED: Use the new returnUnits method directly from the garrison manager
+        private _returnedCount = 0;
+        if (!isNil "FLO_Garrison_Manager") then {
+            _returnedCount = FLO_Garrison_Manager call ["returnUnits", [_count, _taskForceId, _sourceMarker]];
+            
+            // Update contribution tracking
+            private _garrisonContributions = _self get "_garrisonContributions";
+            private _currentContribution = _garrisonContributions getOrDefault [_sourceMarker, 0];
+            _garrisonContributions set [_sourceMarker, (_currentContribution - _returnedCount) max 0];
+            
+            ["AI Commander", 3, format["Successfully returned %1 units to garrison at %2 from task force %3", 
+                _returnedCount, _sourceMarker, _taskForceId]] call FLO_fnc_log;
+        } else {
+            ["AI Commander", 1, "Garrison Manager not available for unit return"] call FLO_fnc_log;
+            
+            // If we can't return units to garrison, delete them
+            {
+                if (!isNull _x && {alive _x}) then {
+                    deleteVehicle _x;
+                };
+            } forEach _units;
+            
+            ["AI Commander", 3, format["Deleted %1 units since Garrison Manager was unavailable", count _units]] call FLO_fnc_log;
+        };
+        
+        // Clean up task force mapping if all units returned
+        if (count _units == _returnedCount) then {
+            _taskForceSourceMap deleteAt _taskForceId;
+        };
+        
+        _returnedCount
+    }],
+
+    // Vehicles are a special assignment by the AI Commander. A Task Force can not request vehicles.
+    // They must be assigned by the AI Commander.
     ["_getVehicleForTaskForce", {
         params ["_taskForceID", "_requiredVehicles", "_nearestObjective"];
         
@@ -1449,7 +1468,7 @@ private _aiCommander = createHashMapObject [[
                 } forEach _crew;
                 
                 // Evaluate the vehicle's capabilities
-                _self call ["_evaluateVehicleCapabilities", [_vehicle]];
+                FLO_AICommander_UnitCapabilityAnalyzer call ["_evaluateVehicleCapabilities", [_vehicle]];
                 
                 // Set group ID for the vehicle group
                 _vehGroup setGroupIdGlobal [format ["%1_VEH_%2", _taskForceID, _vehiclesAcquired]];
@@ -1534,11 +1553,7 @@ private _aiCommander = createHashMapObject [[
                 
                 case "SKIRMISH": {
                     // For skirmish, vehicles provide fire support
-                    if (random 1 > 0.5) then {
-                        [_vehicleGroup, _targetPosition, "ATTACK", _infantryGroup] call FLO_fnc_attackArea;
-                    } else {
-                        [_vehicleGroup, _targetPosition, "PATROL", _infantryGroup] call FLO_fnc_patrolArea;
-                    };
+                    [_vehicleGroup, _targetPosition, "ATTACK", _infantryGroup] call FLO_fnc_attackArea;
                     
                     _vehicleGroup setFormation "WEDGE";
                     _vehicleGroup setSpeedMode "NORMAL";
@@ -1609,7 +1624,7 @@ private _aiCommander = createHashMapObject [[
         {
             private _outpost = _x;
             // Get garrison data
-            private _garrisonStrength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_outpost]];
+            private _garrisonStrength = FLO_Garrison_Manager call ["_checkGarrisonStrength", [_outpost]];
             
             // Get minimum required garrison size based on marker type
             private _markerType = markerType _outpost;
@@ -1728,7 +1743,7 @@ private _aiCommander = createHashMapObject [[
             
             {
                 private _outpost = _x;
-                private _strength = FLO_TaskForce_Garrison_Integration call ["_checkGarrisonStrength", [_outpost]];
+                private _strength = FLO_Garrison_Manager call ["_checkGarrisonStrength", [_outpost]];
                 private _outpostIsFrontline = _outpost in _frontlineOutposts;
                 
                 // Prioritize frontline outposts or ones with larger strength

@@ -196,9 +196,9 @@ diag_log "[FLO] Logistics network initialized";
 ["init", []] call FLO_fnc_TaskForceSystem;
 diag_log "[FLO] Task Force system initialized";
 
-// Initialize Task Force Garrison Integration System
-FLO_TaskForce_Garrison_Integration = call FLO_fnc_taskForceGarrisonIntegration;
-diag_log "[FLO] Task Force Garrison Integration System initialized";
+// Initialize AI Commander Unit Capability Analyzer
+FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
+diag_log "[FLO] AI Commander Unit Capability Analyzer initialized";
 
 // Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;

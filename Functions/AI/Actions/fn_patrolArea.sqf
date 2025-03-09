@@ -31,22 +31,14 @@ params [
 	["_linkedGroup", grpNull, [grpNull]]
 ];
 
-// Validate parameters
-if (isNull _group) exitWith {
-	["FLO_fnc_patrolArea", 1, "Invalid group parameter"] call FLO_fnc_log;
-	false
-};
+if (isNull _group) exitWith { false };
+if (_position isEqualTo [0,0,0]) exitWith { false };
 
-if (_position isEqualTo [0,0,0]) exitWith {
-	["FLO_fnc_patrolArea", 1, "Invalid position parameter"] call FLO_fnc_log;
-	false
-};
-
-// Check the type of group for vehicles vs infantry
 private _isVehicleGroup = false;
 private _hasArmor = false;
 private _hasAir = false;
 private _vehicleTypes = [];
+private _groupType = "MAN"; // Default type
 
 {
 	if (vehicle _x != _x) then {
@@ -56,20 +48,49 @@ private _vehicleTypes = [];
 		if (_veh isKindOf "Tank" || _veh isKindOf "Wheeled_APC") then {
 			_hasArmor = true;
 			_vehicleTypes pushBackUnique "ARMOR";
+			_groupType = "ARMOR";
 		};
 		
 		if (_veh isKindOf "Car") then {
 			_vehicleTypes pushBackUnique "CAR";
+			if (_groupType != "ARMOR") then { _groupType = "CAR"; };
 		};
 		
 		if (_veh isKindOf "Air") then {
 			_hasAir = true;
 			_vehicleTypes pushBackUnique "AIR";
+			if (_veh isKindOf "Helicopter") then {
+				_groupType = "HELI";
+			} else {
+				_groupType = "PLANE";
+			};
+			if (_veh isKindOf "UAV") then {
+				_groupType = "UAV";
+			};
+		};
+		
+		if (_veh isKindOf "Mortar") then {
+			_groupType = "MORTAR";
+		};
+		
+		if (_veh isKindOf "StaticWeapon" && {_veh isKindOf "AAA"}) then {
+			_groupType = "AAA";
+		};
+		
+		if (_veh isKindOf "Artillery") then {
+			_groupType = "ART";
+		};
+		
+		if (_veh isKindOf "WheeledAPC") then {
+			_groupType = "MECH";
+		};
+		
+		if (_veh isKindOf "Ship") then {
+			_groupType = "SHIP";
 		};
 	};
 } forEach units _group;
 
-// Determine if we have a linked group, and its type
 private _hasLinkedGroup = !isNull _linkedGroup;
 private _linkedIsVehicle = false;
 
@@ -81,15 +102,11 @@ if (_hasLinkedGroup) then {
 	} forEach units _linkedGroup;
 };
 
-// Set the group's behavior based on its type
-_group setBehaviour "SAFE";
-_group setCombatMode "YELLOW";
-
-// Get the target type for behavior selection
 private _targetType = _position call FLO_fnc_getTargetType;
+[_group] call CBA_fnc_clearWaypoints;
 
-// Determine patrol radius based on type and area
-private _patrolRadius = 200; // Default
+// Determine patrol parameters
+private _patrolRadius = 200;
 if (_patrolType == "WIDE") then {
 	_patrolRadius = 400;
 } else {
@@ -98,139 +115,54 @@ if (_patrolType == "WIDE") then {
 	};
 };
 
-// Adjust radius for vehicles
-if (_isVehicleGroup && !_hasAir) then {
-	_patrolRadius = _patrolRadius * 1.5;
-};
-
-// Different patrol behavior based on group type and coordination status
-switch (true) do {
-	// Vehicle group supporting infantry
-	case (_isVehicleGroup && _hasLinkedGroup && !_linkedIsVehicle): {
-		_group setSpeedMode "LIMITED";
+// Use type-based approach for waypoint creation
+switch (_groupType) do {
+	case "MAN": {
+		private _dist = (leader _group) distance2d _position;
+		private _dir = (leader _group) getDir _position;
 		
-		if (_hasArmor) then {
-			// Armored vehicles patrol outer perimeter
-			_group setFormation "COLUMN";
-			
-			// Create a wider patrol path around the infantry
-			private _widePatrolRadius = _patrolRadius * 1.5;
-			private _patrolPoints = [];
-			for "_i" from 0 to 5 do {
-				private _dir = _i * 60; // 6 points around the circle
-				private _patrolPos = _position getPos [_widePatrolRadius, _dir];
-				_patrolPoints pushBack _patrolPos;
-			};
-			
-			// Add patrol waypoints
-			{
-				private _wp = _group addWaypoint [_x, 0];
-				_wp setWaypointType "MOVE";
-				_wp setWaypointStatements ["true", ""];
-				_wp setWaypointTimeout [30, 45, 60]; // Random pause at each point
-			} forEach _patrolPoints;
-			
-			// Cycle the patrol
-			private _cycleWP = _group addWaypoint [_patrolPoints select 0, 0];
-			_cycleWP setWaypointType "CYCLE";
-			
-			["FLO_fnc_patrolArea", 3, format["Assigned armored perimeter patrol to %1 around %2, supporting %3", _group, _position, _linkedGroup]] call FLO_fnc_log;
-		} else {
-			// Light vehicles patrol ahead of infantry
-			_group setFormation "WEDGE";
-			
-			// Get infantry movement direction
-			private _infantryDir = getDir (leader _linkedGroup);
-			
-			// Create patrol points ahead of infantry movement
-			private _patrolPoints = [];
-			for "_i" from -2 to 2 do {
-				private _dir = _infantryDir + (_i * 30); // Arc in front of infantry
-				private _patrolPos = _position getPos [_patrolRadius, _dir];
-				_patrolPoints pushBack _patrolPos;
-			};
-			
-			// Add patrol waypoints
-			{
-				private _wp = _group addWaypoint [_x, 0];
-				_wp setWaypointType "MOVE";
-				_wp setWaypointStatements ["true", ""];
-				_wp setWaypointTimeout [15, 30, 45]; // Random pause at each point
-			} forEach _patrolPoints;
-			
-			// Cycle the patrol
-			private _cycleWP = _group addWaypoint [_patrolPoints select 0, 0];
-			_cycleWP setWaypointType "CYCLE";
-			
-			["FLO_fnc_patrolArea", 3, format["Assigned vehicle forward patrol to %1 ahead of %2", _group, _linkedGroup]] call FLO_fnc_log;
-		};
+		// Approach waypoint
+		[_group, (leader _group) getRelPos [_dist * 0.85, _dir], random [30, 50, 100], "MOVE", "AWARE", "WHITE", "NORMAL", "STAG COLUMN"] call FLO_fnc_addWaypoint;
+		
+		// Main patrol task with search nearby
+		[_group, _position, random [50, 250, 500], ceil(random [3, 5, 10]), "MOVE", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "[group this] call CBA_fnc_searchNearby", [3, 6, 9]] call FLO_fnc_taskPatrol;
+		
+		// Final return waypoint with order clearance
+		private _landWP = [_group, getPos leader _group, -1, "MOVE", "AWARE", "WHITE", "NORMAL", "STAG COLUMN", "[group this] call CBA_fnc_searchNearby; this setVariable ['Flo_Group_orders', nil];"] call FLO_fnc_addWaypoint;
 	};
 	
-	// Infantry group with vehicle support
-	case (!_isVehicleGroup && _hasLinkedGroup && _linkedIsVehicle): {
-		// Infantry patrols inside the perimeter
-		_group setSpeedMode "LIMITED";
-		_group setFormation "WEDGE";
+	case "UAV";
+	case "HELI";
+	case "PLANE": {
+		// Multiple SAD waypoints at increasing distances
+		[_group, _position, random [50, 150, 200], "SAD", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "", [0, 0, 0], 50] call FLO_fnc_addWaypoint;
+		[_group, _position, random [50, 1050, 3000], "SAD", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "", [0, 0, 0], 50] call FLO_fnc_addWaypoint;
+		[_group, _position, random [50, 1050, 3000], "SAD", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "", [0, 0, 0], 50] call FLO_fnc_addWaypoint;
 		
-		// Slightly tighter patrol radius for infantry when supported by vehicles
-		private _infantryPatrolRadius = _patrolRadius * 0.7;
-		
-		// Use task patrol function for infantry
-		[_group, _position, _infantryPatrolRadius, 5, "MOVE", "SAFE", "YELLOW", "LIMITED", "NO CHANGE", 3, 6] call FLO_fnc_taskPatrol;
-		
-		["FLO_fnc_patrolArea", 3, format["Assigned infantry patrol to %1 at %2, with vehicle support", _group, _position]] call FLO_fnc_log;
+		// Return to base and land
+		private _landWP = [_group, getPos leader _group, -1, "MOVE", "AWARE", "WHITE", "NORMAL", "STAG COLUMN", "this setVariable ['Flo_Group_orders', nil]"] call FLO_fnc_addWaypoint;
+		_landWP setWaypointScript "A3\functions_f\waypoints\fn_wpLand.sqf";
 	};
 	
-	// Standard infantry patrol without support
-	case (!_isVehicleGroup): {
-		// Use task patrol for regular infantry
-		[_group, _position, _patrolRadius, 7, "MOVE", "SAFE", "YELLOW", "LIMITED", "NO CHANGE", 2, 4] call FLO_fnc_taskPatrol;
+	case "MORTAR";
+	case "AAA";
+	case "ART";
+	case "MECH";
+	case "ARMOR";
+	case "CAR";
+	case "SHIP": {
+		// Multiple SAD waypoints with safe positions
+		[_group, [_position, 50, 200, 5, 0, 0, 0, [], [_position getPos [random 200, random 360], []]] call BIS_fnc_findSafePos, -1, "SAD", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "[this] call FLO_fnc_reconAreaAction", [120, 240, 360], 50] call FLO_fnc_addWaypoint;
 		
-		["FLO_fnc_patrolArea", 3, format["Assigned infantry patrol to %1 at %2", _group, _position]] call FLO_fnc_log;
+		[_group, [_position, 50, 3000, 5, 0, 0, 0, [], [_position getPos [random 2000, random 360], []]] call BIS_fnc_findSafePos, -1, "SAD", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "[this] call FLO_fnc_reconAreaAction", [120, 240, 360], 50] call FLO_fnc_addWaypoint;
+		
+		[_group, [_position, 50, 3000, 5, 0, 0, 0, [], [_position getPos [random 2000, random 360], []]] call BIS_fnc_findSafePos, -1, "SAD", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "[this] call FLO_fnc_reconAreaAction; this setVariable ['Flo_Group_orders', nil]", [120, 240, 360], 50] call FLO_fnc_addWaypoint;
 	};
 	
-	// Standard vehicle patrol without infantry support
-	case (_isVehicleGroup): {
-		if (_hasAir) then {
-			// Air vehicles get a much wider patrol area
-			private _airPatrolRadius = _patrolRadius * 3;
-			
-			// Create several waypoints in a circular pattern
-			private _patrolPoints = [];
-			for "_i" from 0 to 7 do {
-				private _dir = _i * 45; // 8 points around the circle
-				private _patrolPos = _position getPos [_airPatrolRadius, _dir];
-				_patrolPoints pushBack _patrolPos;
-			};
-			
-			// Add patrol waypoints
-			{
-				private _wp = _group addWaypoint [_x, 0];
-				_wp setWaypointType "MOVE";
-				_wp setWaypointStatements ["true", ""];
-			} forEach _patrolPoints;
-			
-			// Cycle the patrol
-			private _cycleWP = _group addWaypoint [_patrolPoints select 0, 0];
-			_cycleWP setWaypointType "CYCLE";
-			
-			["FLO_fnc_patrolArea", 3, format["Assigned air patrol to %1 around %2", _group, _position]] call FLO_fnc_log;
-		} else {
-			// Ground vehicles
-			if (_hasArmor) then {
-				// Armor gets fewer waypoints but longer pauses
-				[_group, _position, _patrolRadius, 5, "MOVE", "SAFE", "YELLOW", "LIMITED", "NO CHANGE", 3, 6] call FLO_fnc_taskPatrol;
-				
-				["FLO_fnc_patrolArea", 3, format["Assigned armored patrol to %1 at %2", _group, _position]] call FLO_fnc_log;
-			} else {
-				// Light vehicles get more waypoints
-				[_group, _position, _patrolRadius, 8, "MOVE", "SAFE", "YELLOW", "NORMAL", "NO CHANGE", 2, 4] call FLO_fnc_taskPatrol;
-				
-				["FLO_fnc_patrolArea", 3, format["Assigned vehicle patrol to %1 at %2", _group, _position]] call FLO_fnc_log;
-			};
-		};
+	default {
+		// Default fallback - simple patrol
+		[_group, _position, random [100, 200, 300], ceil(random [3, 5, 7]), "MOVE", "AWARE", "YELLOW", "LIMITED", "STAG COLUMN", "", [2, 4, 6]] call FLO_fnc_taskPatrol;
 	};
 };
 
-// Return success
 true 

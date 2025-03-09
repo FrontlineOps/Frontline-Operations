@@ -13,7 +13,7 @@
         createTaskForce: [_baseMarker, _taskForceType, _taskForceSize, _targetMarker] - Create a new Task Force
         updateTaskForces: [] - Update all Task Forces positions and statuses
         getTaskForce: [_taskForceId] - Get information about a specific Task Force
-        deployTaskForce: [_taskForceId, _position, _defensive] - Deploy a Task Force at a specific position
+        deployTaskForce: [_taskForceId, _position] - Deploy a Task Force at a specific position
         removeTaskForce: [_taskForceId] - Remove an existing Task Force and clean up all resources
     
     Returns:
@@ -157,10 +157,7 @@ if (isNil "FLO_TaskForce_System") then {
                 params ["_type", "_size"];
                 
                 private _typeCost = switch (toLower _type) do {
-                    case "infantry": {5};
-                    case "mechanized": {15};
-                    case "armored": {25};
-                    case "fortification": {10};
+                    case "infantry": {10};
                     default {5};
                 };
                 
@@ -184,6 +181,7 @@ if (isNil "FLO_TaskForce_System") then {
             };
             
             // Spend the resources
+            // Cost of Arming & Supplying
             ["spend", [_resourceCost]] call FLO_fnc_opforResources;
             
             // Define the Task Force composition based on type and size or use provided composition
@@ -212,43 +210,7 @@ if (isNil "FLO_TaskForce_System") then {
                     private _baseComposition = switch (toLower _type) do {
                         case "infantry": {
                             [
-                                ["infantry", East_Units, 5 * _sizeMultiplier]
-                            ]
-                        };
-                        case "mechanized": {
-                            // 15% chance to add a fire observer to mechanized units
-                            if (random 1 < 0.15) then {
-                                [
-                                    ["infantry", East_Units, 4 * _sizeMultiplier],
-                                    ["vehicle", East_Ground_Vehicles_Light, 1 * ceil(_sizeMultiplier/2)],
-                                    ["fireObserver", East_FireObserver, 1]
-                                ]
-                            } else {
-                                [
-                                    ["infantry", East_Units, 4 * _sizeMultiplier],
-                                    ["vehicle", East_Ground_Vehicles_Light, 1 * ceil(_sizeMultiplier/2)]
-                                ]
-                            }
-                        };
-                        case "armored": {
-                            // 10% chance to add a fire observer to armored units
-                            if (random 1 < 0.10) then {
-                                [
-                                    ["infantry", East_Units, 3 * _sizeMultiplier],
-                                    ["vehicle", East_Ground_Vehicles_Heavy, 1 * ceil(_sizeMultiplier/2)],
-                                    ["fireObserver", East_FireObserver, 1]
-                                ]
-                            } else {
-                                [
-                                    ["infantry", East_Units, 3 * _sizeMultiplier],
-                                    ["vehicle", East_Ground_Vehicles_Heavy, 1 * ceil(_sizeMultiplier/2)]
-                                ]
-                            }
-                        };
-                        case "fortification": {
-                            [
-                                ["infantry", East_Units, 3 * _sizeMultiplier],
-                                ["fortification", ["Land_BagBunker_Small_F", "Land_BagFence_Long_F", "Land_BagFence_Round_F"], 2 * _sizeMultiplier]
+                                ["infantry", East_Units, 4 * _sizeMultiplier]
                             ]
                         };
                         default {
@@ -511,12 +473,12 @@ if (isNil "FLO_TaskForce_System") then {
         
         // Deploy a Task Force at a specific position
         ["deployTaskForce", {
-            params ["_taskForceId", "_position", "_defensive"];
+            params ["_taskForceId", "_position"];
             
             // Start intensive debug logging
             ["TaskForce", 4, "====================================================================="] call FLO_fnc_log;
             ["TaskForce", 4, format["Starting deployment process for task force %1", _taskForceId]] call FLO_fnc_log;
-            ["TaskForce", 4, format["Deployment position: %1, Defensive mode: %2", _position, _defensive]] call FLO_fnc_log;
+            ["TaskForce", 4, format["Deployment position: %1", _position]] call FLO_fnc_log;
             
             // Sanitize the task force ID to handle coordinates in the name
             private _originalId = _taskForceId;
@@ -843,8 +805,9 @@ if (isNil "FLO_TaskForce_System") then {
                     private _spreadRadius = 5 + (_totalInfantryCount * 1.5);
                     _spreadRadius = _spreadRadius min 30; // Cap at 30m
                     
-                    // Check if we already have some deployed units for this task force
-                    // These would be units pulled from a garrison that are ready to join our group
+                    // Check if this is a virtualized task force
+                    // If so, we need to check if we have existing units to pull from
+                    // Otherwise, we will create new units
                     private _existingUnits = _deployedUnits select {_x isKindOf "Man" && alive _x};
                     private _existingUnitCount = count _existingUnits;
                     
@@ -871,6 +834,12 @@ if (isNil "FLO_TaskForce_System") then {
                                 
                                 _centerPos getPos [_distance, _angle]
                             };
+
+                            // Check if the unit is a fire observer
+                            if (_x in East_FireObserver) then {
+                                [_x, west] call FLO_fnc_fireObserver;
+                                ["TaskForce", 4, format["Unit %1 is a fire observer, initializing fire observer functionality", _x]] call FLO_fnc_log;
+                            };
                             
                             // Check for water and find land if needed
                             if (surfaceIsWater _formationPos) then {
@@ -889,10 +858,10 @@ if (isNil "FLO_TaskForce_System") then {
                         _deployedUnits = _deployedUnits - _existingUnits;
                     };
                     
-                    // Only create new units if we need additional ones beyond what we pulled from the garrison
+                    // Probably a new task force if we got here.
                     private _additionalUnitsNeeded = _unitCount - _existingUnitCount;
                     if (_additionalUnitsNeeded > 0) then {
-                        ["TaskForce", 4, format["Creating %1 additional infantry units for task force %2", 
+                        ["TaskForce", 4, format["Creating %1 additional(Or New) infantry units for task force %2", 
                             _additionalUnitsNeeded, _taskForceId]] call FLO_fnc_log;
                             
                         for "_i" from 1 to _additionalUnitsNeeded do {
@@ -935,6 +904,12 @@ if (isNil "FLO_TaskForce_System") then {
                             if (!isNull _unit) then {
                                 // Ensure unit is on EAST side
                                 [_unit] joinSilent _infantryGroup;
+                                // Check if unit is a fire observer type
+                                if (_unitClass in East_FireObserver) then {
+                                    // Initialize as fire observer
+                                    [_unit, EAST] call FLO_fnc_fireObserver;
+                                    ["TaskForce", 4, format["Initialized unit of type %1 as fire observer in task force %2", _unitClass, _taskForceId]] call FLO_fnc_log;
+                                };
                                 // Set unit direction toward BLUFOR
                                 _unit setDir _bluforDirection;
                                 _allCreatedUnits pushBack _unit;
@@ -946,397 +921,10 @@ if (isNil "FLO_TaskForce_System") then {
                 };
             } forEach _composition;
             
-            // Second pass: Process fire observers
-            {
-                _x params ["_unitType", "_unitClasses", "_unitCount"];
-                
-                if (_unitType == "fireObserver") then {
-                        for "_i" from 1 to _unitCount do {
-                        private _unitClass = selectRandom _unitClasses;
-                            
-                            // Place fire observer in a tactically advantageous position
-                        // Usually slightly separated from main infantry
-                        private _observerPos = _position getPos [25 + random 15, random 360];
-                            
-                            // Check for water and find land if needed
-                        if (surfaceIsWater _observerPos) then {
-                            _observerPos = [_observerPos, 0, 100, 5, 0, 0.1, 0] call BIS_fnc_findSafePos;
-                            };
-                            
-                        private _unit = _infantryGroup createUnit [_unitClass, _observerPos, [], 5, "NONE"];
-                            if (!isNull _unit) then {
-                                // Ensure unit is on EAST side
-                                [_unit] joinSilent _infantryGroup;
-                                // Set unit direction toward BLUFOR
-                                _unit setDir _bluforDirection;
-                                // Initialize as fire observer
-                                [_unit, EAST] call FLO_fnc_fireObserver;
-                                _allCreatedUnits pushBack _unit;
-                                
-                                ["TaskForce", 4, format["Created fire observer of type %1 in task force %2", _unitClass, _taskForceId]] call FLO_fnc_log;
-                            } else {
-                                ["TaskForce", 1, format["Failed to create fire observer of type %1", _unitClass]] call FLO_fnc_log;
-                            };
-                        };
-                    };
-            } forEach _composition;
-            
-            // Third pass: Process vehicles with better positioning
-            private _vehicleElements = _composition select {_x select 0 == "vehicle"};
-            private _vehicleCount = 0;
-            
-            ["TaskForce", 4, format["Found %1 vehicle elements in composition", count _vehicleElements]] call FLO_fnc_log;
-            
-            if (count _vehicleElements > 0) then {
-                // Calculate a good vehicle staging area close to but separate from infantry
-                // Use base outpost or current position depending on context
-                private _vehicleStagingArea = [_position, _basePos] select (_position distance _basePos < 100);
-                
-                // Find a safe vehicle assembly area
-                private _vehicleAssemblyPos = [_vehicleStagingArea, 100, 300, 20, 0, 0.25, 0] call BIS_fnc_findSafePos;
-                
-                ["TaskForce", 4, format["Using vehicle assembly area at %1 for task force %2 (base position: %3, deployment position: %4)", 
-                    _vehicleAssemblyPos, _taskForceId, _basePos, _position]] call FLO_fnc_log;
-                
-                // Create each vehicle
-                {
-                    _x params ["_unitType", "_unitClasses", "_unitCount"];
-                    
-                    if (_unitType == "vehicle") then {
-                        ["TaskForce", 4, format["Processing vehicle element with %1 vehicles of types: %2", 
-                            _unitCount, _unitClasses]] call FLO_fnc_log;
-                        
-                        for "_i" from 1 to _unitCount do {
-                            // Select a good vehicle class based on situation
-                            private _vehicleClass = "";
-                            
-                            if (count _unitClasses == 1) then {
-                                _vehicleClass = _unitClasses#0;
-                            } else {
-                                // Try to select an appropriate vehicle based on task force type
-                                // If task force ID contains hints, use those
-                                switch (true) do {
-                                    case (_taskForceId find "ARMOR" > -1): {
-                                        // Filter for actual tanks if available
-                                        private _tanks = _unitClasses select {_x find "MBT" > -1 || _x find "tank" > -1};
-                                        if (count _tanks > 0) then {
-                                            _vehicleClass = selectRandom _tanks;
-                            } else {
-                                _vehicleClass = selectRandom _unitClasses;
-                                        };
-                                    };
-                                    case (_taskForceId find "MECH" > -1): {
-                                        // Filter for APCs if available
-                                        private _apcs = _unitClasses select {_x find "APC" > -1};
-                                        if (count _apcs > 0) then {
-                                            _vehicleClass = selectRandom _apcs;
-                                        } else {
-                                            _vehicleClass = selectRandom _unitClasses;
-                                        };
-                                    };
-                                    case (_type == "mechanized"): {
-                                        // Prefer wheeled vehicles for mechanized
-                                        private _wheeled = _unitClasses select {_x find "MRAP" > -1 || _x find "Wheeled" > -1};
-                                        if (count _wheeled > 0) then {
-                                            _vehicleClass = selectRandom _wheeled;
-                                        } else {
-                                            _vehicleClass = selectRandom _unitClasses;
-                                        };
-                                    };
-                                    default {
-                                        _vehicleClass = selectRandom _unitClasses;
-                                    };
-                                };
-                            };
-                            
-                            ["TaskForce", 4, format["Selected vehicle class: %1 for vehicle %2 of %3", 
-                                _vehicleClass, _i, _unitCount]] call FLO_fnc_log;
-                            
-                            // Calculate position with good spacing between vehicles
-                            // Each subsequent vehicle is positioned in a tactical formation
-                            private _vehiclePos = [_vehicleAssemblyPos, _vehicleCount] call {
-                                params ["_basePos", "_index"];
-                                
-                                // First vehicle goes at assembly point
-                                if (_index == 0) exitWith {_basePos};
-                                
-                                // Additional vehicles form a line or wedge
-                                private _spacing = 20; // meters between vehicles
-                                private _formationDir = _bluforDirection;
-                                
-                                // Create a line formation facing the enemy
-                                private _posOffset = [
-                                    sin (_formationDir + 90) * _spacing * _index,
-                                    cos (_formationDir + 90) * _spacing * _index,
-                                    0
-                                ];
-                                
-                                (_basePos vectorAdd _posOffset)
-                            };
-                            
-                            // Find a safe position nearby if exact spot isn't good
-                            private _rawVehiclePos = +_vehiclePos; // Store original for debugging
-                            _vehiclePos = [_vehiclePos, 0, 50, 10, 0, 0.5, 0] call BIS_fnc_findSafePos;
-                            
-                            ["TaskForce", 4, format["Vehicle position: Original: %1, Safe: %2", 
-                                _rawVehiclePos, _vehiclePos]] call FLO_fnc_log;
-                            
-                            // Check for water
-                            if (surfaceIsWater _vehiclePos) then {
-                                private _oldPos = +_vehiclePos;
-                                _vehiclePos = [_vehicleAssemblyPos, 50, 200, 15, 0, 0.25, 0] call BIS_fnc_findSafePos;
-                                ["TaskForce", 4, format["Relocated vehicle from water position %1 to %2", 
-                                    _oldPos, _vehiclePos]] call FLO_fnc_log;
-                            };
-                            
-                            ["TaskForce", 4, format["Creating vehicle %1 at position %2 for task force %3", 
-                                _vehicleClass, _vehiclePos, _taskForceId]] call FLO_fnc_log;
-                            
-                            private _vehicle = createVehicle [_vehicleClass, _vehiclePos, [], 0, "NONE"];
-                            _vehicleCount = _vehicleCount + 1;
-                            
-                            if (!isNull _vehicle) then {
-                                _vehicle call {
-                                    private _vehicle = _this;
-                                    
-                                    // Verify the vehicle exists after creation
-                                    if (alive _vehicle) then {
-                                        ["TaskForce", 4, format["Vehicle %1 successfully created at %2", 
-                                            _vehicleClass, getPos _vehicle]] call FLO_fnc_log;
-                                    } else {
-                                        ["TaskForce", 1, format["ERROR: Vehicle %1 created but not alive", _vehicleClass]] call FLO_fnc_log;
-                                    };
-                                };
-                                
-                                // Set vehicle facing direction toward enemy
-                                _vehicle setDir _bluforDirection;
-                                
-                                // Create crew with appropriate skill
-                                private _vehicleGroup = createGroup [east, true];
-                                createVehicleCrew _vehicle;
-                                
-                                // Check if any crew members are NOT east side and fix them
-                                {
-                                    if (side _x != east) then {
-                                        ["TaskForce", 2, format["Crew member %1 has incorrect side %2, fixing to EAST", _x, side _x]] call FLO_fnc_log;
-                                        
-                                        // Get position and role
-                                        private _unitPos = getPosATL _x;
-                                        private _unitType = typeOf _x;
-                                        private _role = assignedVehicleRole _x;
-                                        
-                                        // Remove incorrect crew member
-                                        _x leaveVehicle _vehicle;
-                                        deleteVehicle _x;
-                                        
-                                        // Create new crew member with correct side
-                                        private _newUnit = _vehicleGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
-                                        
-                                        // Assign to correct vehicle role
-                                        if (count _role > 0) then {
-                                            switch (_role select 0) do {
-                                                case "driver": { _newUnit assignAsDriver _vehicle; _newUnit moveInDriver _vehicle; };
-                                                case "gunner": { _newUnit assignAsGunner _vehicle; _newUnit moveInGunner _vehicle; };
-                                                case "commander": { _newUnit assignAsCommander _vehicle; _newUnit moveInCommander _vehicle; };
-                                                case "turret": { _newUnit assignAsTurret [_vehicle, _role select 1]; _newUnit moveInTurret [_vehicle, _role select 1]; };
-                                                case "cargo": { _newUnit assignAsCargo _vehicle; _newUnit moveInCargo _vehicle; };
-                                                default { _newUnit moveInAny _vehicle; };
-                                            };
-                                        } else {
-                                            _newUnit moveInAny _vehicle;
-                                        };
-                                    } else {
-                                        // If side is correct, just move to our group
-                                        [_x] joinSilent _vehicleGroup;
-                                    };
-                                } forEach (crew _vehicle);
-                                
-                                // Set group ID for easier identification
-                                _vehicleGroup setGroupIdGlobal [format ["%1_Vehicle_%2", _taskForceId, _vehicleCount]];
-                                
-                                // Mark this group as belonging to this task force to ensure proper cleanup
-                                _vehicleGroup setVariable ["FLO_TaskForce_ID", _taskForceId, true];
-                                _vehicleGroup setVariable ["FLO_TaskForce_VehicleGroup", true, true];
-                                
-                                // Ensure all crew are in the right group
-                                {
-                                    [_x] joinSilent _vehicleGroup;
-                                } forEach (crew _vehicle);
-                                
-                                // Track created units and groups
-                                _allCreatedUnits pushBack _vehicle;
-                                _allCreatedUnits append (crew _vehicle);
-                                _allCreatedGroups pushBack _vehicleGroup;
-                                
-                                // Track the relationship between vehicle and its group for later cleanup
-                                _vehicle setVariable ["FLO_TaskForce_VehicleGroup", _vehicleGroup, true];
-                                
-                                ["TaskForce", 4, format["Successfully created vehicle %1 with crew for task force %2. Crew members: %3", 
-                                    _vehicleClass, _taskForceId, count (crew _vehicle)]] call FLO_fnc_log;
-                            } else {
-                                ["TaskForce", 1, format["ERROR: Failed to create vehicle of type %1", _vehicleClass]] call FLO_fnc_log;
-                            };
-                        };
-                    };
-                } forEach _composition;
-            };
-            
-            // Final pass: Process fortifications
-            {
-                _x params ["_unitType", "_unitClasses", "_unitCount"];
-                
-                if (_unitType == "fortification") then {
-                        // Improved defensive fortification layout
-                        if (_defensive) then {
-                            // Create a radial pattern of fortifications facing BLUFOR
-                            private _fortCount = _unitCount min 6;  // Cap at 6 fortifications for better layout
-                            private _angleStep = 180 / _fortCount; // Semi-circle (180 degrees) facing BLUFOR
-                            
-                            for "_i" from 0 to (_fortCount - 1) do {
-                                private _fortClass = selectRandom _unitClasses;
-                                
-                                // Place in a semi-circle facing BLUFOR direction with correct alignment
-                                // Calculate angle between -90 and +90 degrees relative to BLUFOR direction
-                                private _angle = ((_bluforDirection - 90) + (_i * _angleStep)) mod 360;
-                                private _distance = 25 + random 15; // Tighter defensive layout
-                                private _fortPos = _position getPos [_distance, _angle];
-                                
-                                // Check for water when placing fortifications
-                                if (surfaceIsWater _fortPos) then {
-                                    // Try to find land nearby for the fortification
-                                    _fortPos = [_fortPos, 0, 100, 5, 0, 0.1, 0] call BIS_fnc_findSafePos;
-                                ["TaskForce", 4, format["Relocated fortification from water to %1", _fortPos]] call FLO_fnc_log;
-                                };
-                                
-                                private _fortification = createVehicle [_fortClass, _fortPos, [], 0, "NONE"];
-                                if (!isNull _fortification) then {
-                                    // Face toward BLUFOR - this is critical
-                                    _fortification setDir _bluforDirection;
-                                    _allCreatedUnits pushBack _fortification;
-                                    
-                                    // Add sandbags in front of bunkers - correctly oriented
-                                    if (_fortClass in ["Land_BagBunker_Small_F", "Land_BagBunker_01_small_green_F"]) then {
-                                        private _bagPos = _fortPos getPos [5, _bluforDirection];
-                                        private _bag = createVehicle ["Land_BagFence_Long_F", _bagPos, [], 0, "NONE"];
-                                        // Sandbags need to be perpendicular to blufor direction to provide cover
-                                        _bag setDir (_bluforDirection + 90);
-                                        _allCreatedUnits pushBack _bag;
-                                    };
-                                } else {
-                                ["TaskForce", 1, format["Failed to create fortification of type %1", _fortClass]] call FLO_fnc_log;
-                                };
-                            };
-                        } else {
-                            // Regular fortification placement for non-defensive positions
-                            for "_i" from 1 to _unitCount do {
-                                private _fortClass = selectRandom _unitClasses;
-                                private _fortPos = [_position, 10, 30, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
-                                
-                                private _fortification = createVehicle [_fortClass, _fortPos, [], 0, "NONE"];
-                                if (!isNull _fortification) then {
-                                    // Face fortifications toward BLUFOR territory
-                                    _fortification setDir _bluforDirection;
-                                    _allCreatedUnits pushBack _fortification;
-                                } else {
-                                ["TaskForce", 1, format["Failed to create fortification of type %1", _fortClass]] call FLO_fnc_log;
-                            };
-                        };
-                    };
-                };
-            } forEach _composition;
-            
             // Verify units were created
             if (count _allCreatedUnits == 0) exitWith {
                 ["TaskForce", 1, format["Error: No units created for Task Force %1", _taskForceId]] call FLO_fnc_log;
                 grpNull // Return grpNull instead of false
-            };
-            
-            // Set up behavior based on deployment type
-            if (_defensive) then {
-                if (count units _infantryGroup > 0) then {
-                    // For defensive posture, use taskDefend with facing toward BLUFOR
-                    // Increase radius to account for wider spread
-                    [_infantryGroup, _position, 150] call BIS_fnc_taskDefend;
-                    
-                    // Set unit combat mode and behavior
-                    _infantryGroup setCombatMode "YELLOW";
-                    _infantryGroup setBehaviour "COMBAT";
-                    _infantryGroup setFormDir _bluforDirection;
-                    
-                    // Make units take better defensive positions - make sure they face BLUFOR
-                    {
-                        // Set unit stance
-                        _x setUnitPos selectRandom ["MIDDLE", "DOWN"]; // Either kneeling or prone
-                        
-                        // Make units face BLUFOR direction - with a slight random variation
-                        _x setDir (_bluforDirection + (random 20) - 10); // Add small random variation
-                        
-                        // Specifically tell them to watch in BLUFOR direction
-                        _x doWatch (_x getPos [500, _bluforDirection]);
-                        
-                        // Give units a doMove command to better spread around defensive positions
-                        // Make sure spread is biased toward BLUFOR side
-                        private _spreadAngle = (_bluforDirection - 60 + random 120) mod 360; // 120° arc facing BLUFOR
-                        private _spreadPos = _position getPos [15 + random 25, _spreadAngle];
-                        _x doMove _spreadPos;
-                    } forEach (units _infantryGroup);
-                };
-                
-                {
-                    private _grp = _x;
-                    if (_grp isEqualType grpNull && {count units _grp > 0}) then {
-                        // Wider defensive area for vehicle groups
-                        [_grp, _position, 200] call BIS_fnc_taskDefend;
-                        _grp setCombatMode "YELLOW";
-                        _grp setBehaviour "COMBAT";
-                        _grp setFormDir _bluforDirection;
-                        
-                        // If it's a vehicle crew, make them face BLUFOR
-                        {
-                            if (vehicle _x != _x) then {
-                                // Set exact direction toward BLUFOR territory
-                                (vehicle _x) setDir _bluforDirection;
-                                (vehicle _x) doWatch ((vehicle _x) getPos [1000, _bluforDirection]);
-                            };
-                        } forEach (units _grp);
-                    };
-                } forEach _allCreatedGroups;
-            } else {
-                if (!(_targetPos isEqualTo [0,0,0])) then {
-                    if (count units _infantryGroup > 0) then {
-                        [_infantryGroup, _targetPos, 200] call BIS_fnc_taskPatrol;
-                        _infantryGroup setCombatMode "YELLOW";
-                        _infantryGroup setBehaviour "AWARE";
-                        _infantryGroup setFormDir (_position getDir _targetPos);
-                    };
-                    
-                    {
-                        private _grp = _x;
-                        if (_grp isEqualType grpNull && {count units _grp > 0}) then {
-                            [_grp, _targetPos, 250] call BIS_fnc_taskPatrol;
-                            _grp setCombatMode "YELLOW";
-                            _grp setBehaviour "AWARE";
-                            _grp setFormDir (_position getDir _targetPos);
-                        };
-                    } forEach _allCreatedGroups;
-                } else {
-                    if (count units _infantryGroup > 0) then {
-                        [_infantryGroup, _position, 150] call BIS_fnc_taskPatrol;
-                        _infantryGroup setCombatMode "YELLOW";
-                        _infantryGroup setBehaviour "AWARE";
-                        _infantryGroup setFormDir _bluforDirection;
-                    };
-                    
-                    {
-                        private _grp = _x;
-                        if (_grp isEqualType grpNull && {count units _grp > 0}) then {
-                            [_grp, _position, 200] call BIS_fnc_taskPatrol;
-                            _grp setCombatMode "YELLOW";
-                            _grp setBehaviour "AWARE";
-                            _grp setFormDir _bluforDirection;
-                        };
-                    } forEach _allCreatedGroups;
-                };
             };
             
             // Update Task Force data with the deployed elements
@@ -1349,6 +937,7 @@ if (isNil "FLO_TaskForce_System") then {
             _taskForceData set [15, _infantryGroup];
             
             // Store all vehicle groups separately for easier access
+            // Vehicles not longer deployed via TaskForceSystem
             _taskForceData set [16, _allCreatedGroups];
             
             // Store a flag indicating this is a fully-deployed task force with all components
@@ -1357,7 +946,7 @@ if (isNil "FLO_TaskForce_System") then {
             // Final debug log with summary info
             ["TaskForce", 4, format["DEPLOYMENT SUMMARY - Task Force: %1", _taskForceId]] call FLO_fnc_log;
             ["TaskForce", 4, format["- Total units created: %1", count _allCreatedUnits]] call FLO_fnc_log;
-            ["TaskForce", 4, format["- Vehicle groups: %1", count _allCreatedGroups]] call FLO_fnc_log;
+            ["TaskForce", 4, format["- DEPRECATED - Vehicle groups: %1", count _allCreatedGroups]] call FLO_fnc_log;
             ["TaskForce", 4, format["- Infantry units: %1", count (units _infantryGroup)]] call FLO_fnc_log;
             
             // Update both the local and global task force registries
@@ -1537,9 +1126,9 @@ if (isNil "FLO_TaskForce_System") then {
             ];
             
             // Return any garrison-extracted units first
-            if (!isNil "FLO_TaskForce_Garrison_Integration") then {
+            if (!isNil "FLO_AI_Commander") then {
                 // Check if this task force has a source marker in the integration system
-                private _taskForceSourceMap = FLO_TaskForce_Garrison_Integration get "_taskForceSourceMap";
+                private _taskForceSourceMap = FLO_AI_Commander get "_taskForceSourceMap";
                 
                 if (_taskForceId in keys _taskForceSourceMap) then {
                     private _sourceMarker = _taskForceSourceMap get _taskForceId;
@@ -1547,7 +1136,7 @@ if (isNil "FLO_TaskForce_System") then {
                         _sourceMarker, _taskForceId]] call FLO_fnc_log;
                     
                     // Return units to their original garrison using the improved returnUnits method
-                    FLO_TaskForce_Garrison_Integration call ["_returnUnitsToGarrison", [_taskForceId, _sourceMarker, _deployedUnits]];
+                    FLO_AI_Commander call ["_returnUnitsToGarrison", [_taskForceId, _sourceMarker, _deployedUnits]];
                 };
             };
             
@@ -1778,11 +1367,11 @@ if (isNil "FLO_TaskForce_System") then {
             };
             
             // Clean up from integration system as well
-            if (!isNil "FLO_TaskForce_Garrison_Integration") then {
-                private _taskForceSourceMap = FLO_TaskForce_Garrison_Integration get "_taskForceSourceMap";
+            if (!isNil "FLO_AI_Commander") then {
+                private _taskForceSourceMap = FLO_AI_Commander get "_taskForceSourceMap";
                 if (_taskForceId in keys _taskForceSourceMap) then {
                     _taskForceSourceMap deleteAt _taskForceId;
-                    ["TaskForce", 4, format["Removed task force %1 from garrison integration system", _taskForceId]] call FLO_fnc_log;
+                    ["TaskForce", 4, format["Removed task force %1 from AI Commander", _taskForceId]] call FLO_fnc_log;
                 };
             };
             
@@ -1875,12 +1464,11 @@ switch (_mode) do {
     case "deployTaskForce": {
         _params params [
             ["_taskForceId", "", [""]],
-            ["_position", [0,0,0], [[]]],
-            ["_defensive", false, [false]]
+            ["_position", [0,0,0], [[]]]
         ];
         
         private _self = FLO_TaskForce_System;
-        _result = _self call ["deployTaskForce", [_taskForceId, _position, _defensive]];
+        _result = _self call ["deployTaskForce", [_taskForceId, _position]];
         
         // Log whether we got a group back (for debugging)
         if (_result isEqualType grpNull) then {

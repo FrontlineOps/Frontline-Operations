@@ -70,14 +70,14 @@ titleText ["", "BLACK IN", 1];
 hint "Select Mission Location"; 
 
 // Add the map click event handler
-FLO_mapClickEH = addMissionEventHandler ["MapSingleClick", {
+FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
     params ["_control", "_pos", "_alt", "_shift"];
     
     // Debug the position and mission type
     ["MissionSelect", 3, format["Map clicked at pos: %1, MissionType: %2", _pos, MissionType]] call FLO_fnc_Log;
     
     // Remove this event handler so it only triggers once
-    removeMissionEventHandler ["MapSingleClick", FLO_mapClickEH];
+    removeMissionEventHandler ["MapSingleClick", FLO_mapClickMS];
     
     private _allMarks = allMapMarkers select {
         markerType _x isEqualTo "Unknown" && 
