@@ -242,10 +242,26 @@ if (isServer && isNil "FLO_Intel_System") then {
             } else {
                 false
             }
+        }],
+        
+        //Serializes current state into plain hashmap
+        ["serialize",{
+            createhashmapfromarray [
+                ["intelLevel", _self get "intelLevel"]
+            ];
+        }],
+        //Deserializes from plain hashmap and sets last saved state
+        ["deserialize",{
+            params ["dto"];
+            _self set ["intelLevel", _dto get "intelLevel"];
         }]
     ];
     
     // Create the intel management object and make it public
     FLO_Intel_System = createHashMapObject [_intelClass, 0];
     FLO_Intel_System call ["initDecayLoop", []];
+    
+   //Load data from data map
+   private _dto = FLO_dataMap get ["FLO_Intel_System"];
+   if !(isNil "_dto") then {FLO_Intel_System call ["deserailize", [_dto]]};
 };

@@ -125,19 +125,18 @@ if (isNil "FLO_OPFOR_Resources") then {
             };
         }],
         ["serialize",{
-            createhashmapfromarray [["resources",_self get "resources"],["lastUpdate",_self get "lastUpdate"]];
+            createhashmapfromarray [["resources",_self get "resources"]];
         }],
         ["deserialize",{
             params ["dto"];
             _self set ["resources", _dto get "resources"];
-            _self set ["lastUpdate", _dto get "lastUpdate"];
         }]
     ];
     
     // Create the resource management object with initial resources of 0
     FLO_OPFOR_Resources = createHashMapObject [_resourceClass, 0];
     
-   //TODO Load data from data map
+   //Load data from data map
    private _dto = FLO_dataMap get ["FLO_OPFOR_Resources"];
    if !(isNil "_dto") then {FLOR_OPFOR_Resources call ["deserailize", [_dto]]};
 };

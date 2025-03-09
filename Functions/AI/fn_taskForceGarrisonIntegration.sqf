@@ -1244,6 +1244,3 @@ if (isNil "FLO_TaskForce_Garrison_Integration") then {
     
     ["AI Commander", 3, "Task Force Garrison Integration System Initialized"] call FLO_fnc_log;
 };
-
-// Return the integration system
-FLO_TaskForce_Garrison_Integration 

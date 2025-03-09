@@ -17,6 +17,9 @@ private _VehicleDataName = _missionTag + "_Vehicles";
 private _ObjectDataName = _missionTag + "_Objects";
 
 FLO_dataMap set ["FLO_OPFOR_Resources",FLO_OPFOR_Resources call ["serialize",[]]];
+FLO_dataMap set ["FLO_TaskForce_System",FLO_TaskForce_System call ["serialize",[]]];
+FLO_dataMap set ["FLO_Logistics_Network",FLO_Logistics_Network call ["serialize",[]]];
+FLO_dataMap set ["FLO_Intel_System",FLO_Intel_System call ["serialize",[]]];
 
 profileNamespace setVariable [_MarkerTimeName, nil];
 profileNamespace setVariable [_MarkerDataName, nil];

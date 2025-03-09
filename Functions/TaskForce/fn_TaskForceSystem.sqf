@@ -7,23 +7,10 @@
     Allows creation of defensive lines with fortifications, infantry, and vehicles.
     
     Parameters:
-    _mode - The function mode to execute ["init", "createTaskForce", "updateTaskForces", "getTaskForce", "deployTaskForce", "removeTaskForce"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - Initialize the Task Force system
-        createTaskForce: [_baseMarker, _taskForceType, _taskForceSize, _targetMarker] - Create a new Task Force
-        updateTaskForces: [] - Update all Task Forces positions and statuses
-        getTaskForce: [_taskForceId] - Get information about a specific Task Force
-        deployTaskForce: [_taskForceId, _position, _defensive] - Deploy a Task Force at a specific position
-        removeTaskForce: [_taskForceId] - Remove an existing Task Force and clean up all resources
+     None
     
     Returns:
-    Based on mode:
-        init: HashMapObject - The Task Force system object
-        createTaskForce: String - The ID of the created Task Force
-        updateTaskForces: Nothing
-        getTaskForce: Array - Information about the Task Force
-        deployTaskForce: Boolean - True if successfully deployed
-        removeTaskForce: Boolean - True if successfully removed
+     Nothing
     
     Log conversion status:
     Several log calls have been converted from diag_log to FLO_fnc_log, but many debug logs
@@ -53,13 +40,6 @@ if (isNil "FLO_Global_TaskForces") then {
 // if (isNil "FLO_TaskForce_VirtualStateChanges") then {
 //     FLO_TaskForce_VirtualStateChanges = createHashMap;
 // };
-
-params [
-    ["_mode", "", [""]],
-    ["_params", [], [[]]]
-];
-
-private _result = false;
 
 // Initialize the Task Force System object if it doesn't exist
 if (isNil "FLO_TaskForce_System") then {
@@ -1812,9 +1792,32 @@ if (isNil "FLO_TaskForce_System") then {
             
             ["TaskForce", 1, format["Successfully removed Task Force %1 from all registries", _taskForceId]] call FLO_fnc_log;
             true
+        }],
+        //Serializes current state into plain hashmap
+        ["serialize",{
+            createhashmapfromarray [
+                ["taskForces", _self get "taskForces"],
+                ["activatedTaskForces", _self get "activatedTaskForces"],
+                ["lastTaskForceId", _self get "lastTaskForceId"],
+                ["virtualizationBuffer", _self get "virtualizationBuffer"],
+                ["virtualizationCooldown", _self get "virtualizationCooldown"]
+            ];
+        }],
+        //Deserializes from plain hashmap and sets last saved state
+        ["deserialize",{
+            params ["dto"];
+            _self set ["taskForces", _dto get "taskForces"];
+            _self set ["activatedTaskForces", _dto get "activatedTaskForces"];
+            _self set ["lastTaskForceId", _dto get "lastTaskForceId"];
+            _self set ["virtualizationBuffer", _dto get "virtualizationBuffer"];
+            _self set ["virtualizationCooldown", _dto get "virtualizationCooldown"];
         }]
     ];
     
     // Create the TaskForceSystem with specified parameters
     FLO_TaskForce_System = createHashMapObject [_taskForceSystemClass];
+    
+   //Load data from data map
+   private _dto = FLO_dataMap get ["FLO_TaskForce_System"];
+   if !(isNil "_dto") then {FLO_TaskForce_System call ["deserailize", [_dto]]};
 };

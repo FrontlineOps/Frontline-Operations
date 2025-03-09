@@ -209,15 +209,15 @@ diag_log "[FLO] Resource system initialized";
 diag_log "[FLO] Garrison system initialized";
 
 // Initialize the logistics network
-["init", []] call FLO_fnc_logisticsNetwork;
+[] call FLO_fnc_logisticsNetwork;
 diag_log "[FLO] Logistics network initialized";
 
 // Initialize the Task Force system
-["init", []] call FLO_fnc_TaskForceSystem;
+[] call FLO_fnc_TaskForceSystem;
 diag_log "[FLO] Task Force system initialized";
 
 // Initialize Task Force Garrison Integration System
-FLO_TaskForce_Garrison_Integration = call FLO_fnc_taskForceGarrisonIntegration;
+[] call FLO_fnc_taskForceGarrisonIntegration;
 diag_log "[FLO] Task Force Garrison Integration System initialized";
 
 // Initialize AI Commander

@@ -424,9 +424,27 @@ if (isNil "FLO_Logistics_Network") then {
             
             private _supplyLevels = _self get "supplyLevels";
             _supplyLevels getOrDefault [_marker, 0]
+        }],
+        
+        //Serializes current state into plain hashmap
+        ["serialize",{
+            createhashmapfromarray [
+                ["supplyRoutes", _self get "supplyRoutes"],
+                ["supplyLevels", _self get "supplyLevels"]
+            ];
+        }],
+        //Deserializes from plain hashmap and sets last saved state
+        ["deserialize",{
+            params ["dto"];
+            _self set ["supplyRoutes", _dto get "supplyRoutes"];
+            _self set ["supplyLevels", _dto get "supplyLevels"];
         }]
     ];
     
     // Create the logistics network object
     FLO_Logistics_Network = createHashMapObject [_logisticsNetworkClass];
+    
+   //Load data from data map
+   private _dto = FLO_dataMap get ["FLO_Logistics_Network"];
+   if !(isNil "_dto") then {FLO_Logistics_Network call ["deserailize", [_dto]]};
 };
