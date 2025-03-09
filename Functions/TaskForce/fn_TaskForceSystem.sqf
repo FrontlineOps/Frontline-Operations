@@ -264,7 +264,7 @@ if (isNil "FLO_TaskForce_System") then {
             ];
             
             // Save to both object hashmap and global backup
-           _self get ["taskForces"] set [_taskForceId, _taskForceData];
+           _self get "taskForces" set [_taskForceId, _taskForceData];
             
             // Also save to global backup variable
             FLO_Global_TaskForces set [_taskForceId, _taskForceData];
@@ -1341,7 +1341,6 @@ if (isNil "FLO_TaskForce_System") then {
             
             // Update both the local and global task force registries
             _taskForces set [_taskForceId, _taskForceData];
-            _self set ["taskForces", _taskForces];
             
             // Also update the global backup
             FLO_Global_TaskForces set [_taskForceId, _taskForceData];
