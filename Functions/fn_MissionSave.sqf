@@ -16,8 +16,8 @@ private _missionStructureTypes = _missionTag + "_StructureTypes";
 
 // Save building types for FOB and OP
 // Had to add this because the mission load is pre-mission startup and the variables are not yet defined
-private _fobTypeClass = if (!isNil "F_HQ_01") then {F_HQ_01} else {"Land_Cargo_HQ_V1_F", "Land_Cargo_HQ_V3_F"};
-private _opTypeClass = if (!isNil "F_OP_01") then {F_OP_01} else {"Land_Cargo_House_V1_F", "Land_Cargo_House_V3_F"};
+private _fobTypeClass = if (!isNil "F_HQ_01") then {F_HQ_01};
+private _opTypeClass = if (!isNil "F_OP_01") then {F_OP_01};
 profileNamespace setVariable [_missionStructureTypes, [_fobTypeClass, _opTypeClass]];
 ["Mission", 3, format["Saved structure types: FOB = %1, OP = %2", _fobTypeClass, _opTypeClass]] call FLO_fnc_log;
 

@@ -7,6 +7,7 @@
     
     Parameters:
     _this select 0: OBJECT - The FOB building to initialize
+    _this select 1: BOOL - (Optional) Whether to preserve existing marker (default: false)
     
     Returns:
     Nothing
@@ -14,7 +15,10 @@
 
 if (!isServer) exitWith {};
 
-params [["_fobBuilding", objNull, [objNull]]];
+params [
+    ["_fobBuilding", objNull, [objNull]],
+    ["_preserveMarker", false, [false]]
+];
 
 if (isNull _fobBuilding) exitWith {
     ["FOB", 1, "Error: Null object passed to FOB initialization"] call FLO_fnc_log;
@@ -28,32 +32,44 @@ if (_fobBuilding getVariable ["FLO_FOB_Initialized", false]) exitWith {
 // Mark as initialized to prevent duplicate initialization
 _fobBuilding setVariable ["FLO_FOB_Initialized", true, true];
 
-// Create marker and set variable
-private _relpos = _fobBuilding getRelPos [12, 0];
-private _markerName = "respawn_west" + (str (getPos _fobBuilding));
-_fobBuilding setVariable ["fobMarkerName", _markerName, true];
+// Create marker and set variable if not preserving existing marker
+private _markerName = "";
+if (_preserveMarker && {_fobBuilding getVariable ["FLO_FOB_MarkersRestored", false]}) then {
+    // Use the existing marker name that was restored from save
+    _markerName = _fobBuilding getVariable ["fobMarkerName", ""];
+    ["FOB", 3, format["Using restored FOB marker %1", _markerName]] call FLO_fnc_log;
+} else {
+    // Create a new marker
+    private _relpos = _fobBuilding getRelPos [12, 0];
+    _markerName = "respawn_west" + (str (getPos _fobBuilding));
+    _fobBuilding setVariable ["fobMarkerName", _markerName, true];
 
-// Check if marker already exists (from mission load)
-private _markerExists = false;
-{
-    if (_x == _markerName) exitWith {
-        _markerExists = true;
-        ["FOB", 3, format["Using existing FOB marker %1", _markerName]] call FLO_fnc_log;
+    // Check if marker already exists (from mission load)
+    private _markerExists = false;
+    {
+        if (_x == _markerName) exitWith {
+            _markerExists = true;
+            ["FOB", 3, format["Using existing FOB marker %1", _markerName]] call FLO_fnc_log;
+        };
+    } forEach allMapMarkers;
+
+    // Only create marker if it doesn't exist
+    if (!_markerExists) then {
+        private _mrkr = createMarker [_markerName, _relpos];  
+        _mrkr setMarkerType "b_installation";
+        _mrkr setMarkerColor "ColorYellow";
+        _mrkr setMarkerText "FOB";
+        _mrkr setMarkerSize [2, 2];
+        ["FOB", 3, format["Created new FOB marker %1", _markerName]] call FLO_fnc_log;
     };
-} forEach allMapMarkers;
-
-// Only create marker if it doesn't exist
-if (!_markerExists) then {
-    private _mrkr = createMarker [_markerName, _relpos];  
-    _mrkr setMarkerType "b_installation";
-    _mrkr setMarkerColor "ColorYellow";
-    _mrkr setMarkerText "FOB";
-    _mrkr setMarkerSize [2, 2];
-    ["FOB", 3, format["Created new FOB marker %1", _markerName]] call FLO_fnc_log;
 };
 
 // Initialize creation factory
-{ nul = [_fobBuilding, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
+if (!isNil "_fobBuilding" && {!isNull _fobBuilding}) then {
+    [[_fobBuilding, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
+} else {
+    ["FOB", 2, "Failed to initialize FOB creation factory - _fobBuilding is nil or null"] call FLO_fnc_log;
+};
 
 // Add Arsenal action
 [ _fobBuilding,

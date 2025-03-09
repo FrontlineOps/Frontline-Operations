@@ -520,12 +520,12 @@ _objectLocT = allMapMarkers select { markerType _x == "b_installation" && marker
 };
 
 // Initialize mobile service stations
-{ 
-    _MOBSER = nearestobjects [Centerposition, [F_Truck_04], 40000];
-    {
-        [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf";
-    } forEach _MOBSER; 
-} remoteExec ["call", 0, true];
+_MOBSER = nearestobjects [Centerposition, [F_Truck_04], 40000];
+{
+    if (!isNil "_x" && {!isNull _x}) then {
+        [[_x, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
+    };
+} forEach _MOBSER;
 
 // Initialize mobile arsenal stations
 _MOBARS = nearestobjects [Centerposition, [F_Truck_03], 40000];

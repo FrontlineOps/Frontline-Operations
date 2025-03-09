@@ -7,6 +7,7 @@
     
     Parameters:
     _this select 0: OBJECT - The OP building to initialize
+    _this select 1: BOOL - (Optional) Whether to preserve existing marker (default: false)
     
     Returns:
     Nothing
@@ -14,7 +15,10 @@
 
 if (!isServer) exitWith {};
 
-params [["_opBuilding", objNull, [objNull]]];
+params [
+    ["_opBuilding", objNull, [objNull]],
+    ["_preserveMarker", false, [false]]
+];
 
 if (isNull _opBuilding) exitWith {
     ["OP", 1, "Error: Null object passed to OP initialization"] call FLO_fnc_log;
@@ -28,32 +32,44 @@ if (_opBuilding getVariable ["FLO_OP_Initialized", false]) exitWith {
 // Mark as initialized to prevent duplicate initialization
 _opBuilding setVariable ["FLO_OP_Initialized", true, true];
 
-// Create marker and set variable
-private _relpos = _opBuilding getRelPos [12, 0];
-private _markerName = "respawn_west" + (str (getPos _opBuilding));
-_opBuilding setVariable ["opMarkerName", _markerName, true];
+// Create marker and set variable if not preserving existing marker
+private _markerName = "";
+if (_preserveMarker && {_opBuilding getVariable ["FLO_OP_MarkersRestored", false]}) then {
+    // Use the existing marker name that was restored from save
+    _markerName = _opBuilding getVariable ["opMarkerName", ""];
+    ["OP", 3, format["Using restored OP marker %1", _markerName]] call FLO_fnc_log;
+} else {
+    // Create a new marker
+    private _relpos = _opBuilding getRelPos [12, 0];
+    _markerName = "respawn_west" + (str (getPos _opBuilding));
+    _opBuilding setVariable ["opMarkerName", _markerName, true];
 
-// Check if marker already exists (from mission load)
-private _markerExists = false;
-{
-    if (_x == _markerName) exitWith {
-        _markerExists = true;
-        ["OP", 3, format["Using existing OP marker %1", _markerName]] call FLO_fnc_log;
+    // Check if marker already exists (from mission load)
+    private _markerExists = false;
+    {
+        if (_x == _markerName) exitWith {
+            _markerExists = true;
+            ["OP", 3, format["Using existing OP marker %1", _markerName]] call FLO_fnc_log;
+        };
+    } forEach allMapMarkers;
+
+    // Only create marker if it doesn't exist
+    if (!_markerExists) then {
+        private _mrkr = createMarker [_markerName, _relpos];  
+        _mrkr setMarkerType "b_installation";
+        _mrkr setMarkerColor "ColorYellow";
+        _mrkr setMarkerText "OP";
+        _mrkr setMarkerSize [1.5, 1.5];
+        ["OP", 3, format["Created new OP marker %1", _markerName]] call FLO_fnc_log;
     };
-} forEach allMapMarkers;
-
-// Only create marker if it doesn't exist
-if (!_markerExists) then {
-    private _mrkr = createMarker [_markerName, _relpos];  
-    _mrkr setMarkerType "b_installation";
-    _mrkr setMarkerColor "ColorYellow";
-    _mrkr setMarkerText "OP";
-    _mrkr setMarkerSize [1.5, 1.5];
-    ["OP", 3, format["Created new OP marker %1", _markerName]] call FLO_fnc_log;
 };
 
 // Initialize creation factory
-{ nul = [_opBuilding, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
+if (!isNil "_opBuilding" && {!isNull _opBuilding}) then {
+    [[_opBuilding, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
+} else {
+    ["OP", 2, "Failed to initialize OP creation factory - _opBuilding is nil or null"] call FLO_fnc_log;
+};
 
 // Add Arsenal action
 [ _opBuilding,

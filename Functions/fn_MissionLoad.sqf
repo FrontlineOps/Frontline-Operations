@@ -16,7 +16,7 @@ private _MarkerTimeName = _missionTag + "_Time";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
 
 // Load structure types from saved mission data
-private _structureTypes = profileNamespace getVariable [_missionStructureTypes, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V3_F", "Land_Cargo_House_V1_F"]];
+private _structureTypes = profileNamespace getVariable _missionStructureTypes;
 private _fobTypeClass = _structureTypes select 0;
 private _opTypeClass = _structureTypes select 1;
 ["Mission", 3, format["Loaded structure types: FOB = %1, OP = %2", _fobTypeClass, _opTypeClass]] call FLO_fnc_log;
@@ -152,9 +152,14 @@ if (count _structureMarkerHash > 0) then {
                 private _type = _markerData#1;
                 
                 if (_type == "FOB") then {
+                    // Store marker name but DON'T mark as initialized
                     _x setVariable ["fobMarkerName", _markerName, true];
-                    _x setVariable ["FLO_FOB_Initialized", true, true];
+                    // Use a different variable to indicate markers were restored
+                    _x setVariable ["FLO_FOB_MarkersRestored", true, true];
                     ["Mission", 3, format["Restored FOB marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
+                    
+                    // Re-initialize the FOB but tell it to preserve the marker
+                    [_x, true] spawn FLO_fnc_initializeFOB;
                 };
             };
         };
@@ -173,9 +178,14 @@ if (count _structureMarkerHash > 0) then {
                 private _type = _markerData#1;
                 
                 if (_type == "OP") then {
+                    // Store marker name but DON'T mark as initialized
                     _x setVariable ["opMarkerName", _markerName, true];
-                    _x setVariable ["FLO_OP_Initialized", true, true];
+                    // Use a different variable to indicate markers were restored
+                    _x setVariable ["FLO_OP_MarkersRestored", true, true];
                     ["Mission", 3, format["Restored OP marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
+                    
+                    // Re-initialize the OP but tell it to preserve the marker
+                    [_x, true] spawn FLO_fnc_initializeOP;
                 };
             };
         };
