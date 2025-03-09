@@ -264,9 +264,7 @@ if (isNil "FLO_TaskForce_System") then {
             ];
             
             // Save to both object hashmap and global backup
-            private _taskForces = _self getOrDefault ["taskForces", createHashMap];
-            _taskForces set [_taskForceId, _taskForceData];
-            _self set ["taskForces", _taskForces];
+           _self get ["taskForces"] set [_taskForceId, _taskForceData];
             
             // Also save to global backup variable
             FLO_Global_TaskForces set [_taskForceId, _taskForceData];
@@ -506,7 +504,7 @@ if (isNil "FLO_TaskForce_System") then {
             ["TaskForce", 4, format["Original ID: %1, Sanitized ID: %2", _originalId, _sanitizedId]] call FLO_fnc_log;
             
             // Get the Task Force data using dual lookup
-            private _taskForces = _self getOrDefault ["taskForces", createHashMap];
+            private _taskForces = _self get ["taskForces"];
             private _taskForceData = nil;
             
             // Log available task forces for debugging
@@ -537,7 +535,6 @@ if (isNil "FLO_TaskForce_System") then {
                         if (!isNil "_taskForceData") then {
                             // Copy to object hashmap
                             _taskForces set [_taskForceId, _taskForceData];
-                            _self set ["taskForces", _taskForces];
                             ["TaskForce", 3, format["Restored Task Force %1 from global backup", _taskForceId]] call FLO_fnc_log;
                         };
                     };
@@ -1466,7 +1463,7 @@ if (isNil "FLO_TaskForce_System") then {
             ["TaskForce", 4, format["Original ID: %1, Sanitized ID: %2", _originalId, _sanitizedId]] call FLO_fnc_log;
             
             // Get the Task Force data using dual lookup
-            private _taskForces = _self getOrDefault ["taskForces", createHashMap];
+            private _taskForces = _self get ["taskForces"];
             private _taskForceData = nil;
             
             // Check both original and sanitized IDs in the local registry
