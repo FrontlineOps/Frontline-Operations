@@ -1,3 +1,5 @@
+private _Centerposition = [worldSize / 2, worldsize / 2, 0];
+
 // Array to store all placed marker positions for distance checking
 FLO_MarkerPositions = [];
 
@@ -221,7 +223,7 @@ FLO_fnc_createMarkersFromSearch = {
 // Start of main script execution
 
 // Get central evacuation points for distribution calculations
-private _evacuationPoints = nearestObjects [Centerposition, ["LocationEvacPoint_F"], 40000];
+private _evacuationPoints = nearestObjects [_Centerposition, ["LocationEvacPoint_F"], 40000];
 private _evacuationPointCount = [_evacuationPoints, 1.5] call FLO_fnc_calculateDistribution;
 private _distributedEvacPoints = [_evacuationPoints, _evacuationPointCount] call FLO_fnc_getRandomSubset;
 
@@ -258,7 +260,7 @@ profileNamespace setVariable [_vehicleDataName, nil];
 profileNamespace setVariable [_objectDataName, nil];
 
 // Get points for Factory/Resupply markers
-private _resupplyPoints = nearestObjects [Centerposition, ["LocationEvacPoint_F", "LocationResupplyPoint_F"], 40000];
+private _resupplyPoints = nearestObjects [_Centerposition, ["LocationEvacPoint_F", "LocationResupplyPoint_F"], 40000];
 private _resupplyPointCount = [_resupplyPoints, 1] call FLO_fnc_calculateDistribution;
 private _distributedResupplyPoints = [_resupplyPoints, _resupplyPointCount] call FLO_fnc_getRandomSubset;
 
@@ -279,7 +281,7 @@ private _distributedResupplyPoints = [_resupplyPoints, _resupplyPointCount] call
 ] call FLO_fnc_createMarkersFromSearch;
 
 // Get points for Outpost/FOB markers
-private _fobPoints = nearestObjects [Centerposition, ["LocationEvacPoint_F", "LocationFOB_F"], 40000];
+private _fobPoints = nearestObjects [_Centerposition, ["LocationEvacPoint_F", "LocationFOB_F"], 40000];
 private _fobPointCount = [_fobPoints, 1] call FLO_fnc_calculateDistribution;
 private _distributedFobPoints = [_fobPoints, _fobPointCount] call FLO_fnc_getRandomSubset;
 
@@ -314,7 +316,7 @@ _x setMarkerColor "colorOPFOR";
 } forEach _selectedOutposts;
 
 // Base markers - use only LocationBase_F objects
-private _baseLocations = nearestObjects [Centerposition, ["Logic", "LocationBase_F"], 40000] select {
+private _baseLocations = nearestObjects [_Centerposition, ["Logic", "LocationBase_F"], 40000] select {
     typeOf _x isEqualTo "LocationBase_F" || !isNil {_x getVariable "BaseLocation"}
 };
 
@@ -327,7 +329,7 @@ private _selectedBases = [_baseLocations, _baseCount] call FLO_fnc_getRandomSubs
 } forEach _selectedBases;
 
 // Capital cities - use logic markers with "Capital" variable or LocationCityCapital_F
-private _capitalLocations = nearestObjects [Centerposition, ["Logic", "LocationCityCapital_F"], 40000] select {
+private _capitalLocations = nearestObjects [_Centerposition, ["Logic", "LocationCityCapital_F"], 40000] select {
     typeOf _x isEqualTo "LocationCityCapital_F" || !isNil {_x getVariable "Capital"}
 };
 
@@ -339,7 +341,7 @@ private _selectedCapitals = [_capitalLocations, _capitalCount] call FLO_fnc_getR
 } forEach _selectedCapitals;
 
 // Cities - use logic markers with "City" variable or LocationCity_F
-private _cityLocations = nearestObjects [Centerposition, ["Logic", "LocationCity_F"], 40000] select {
+private _cityLocations = nearestObjects [_Centerposition, ["Logic", "LocationCity_F"], 40000] select {
     typeOf _x isEqualTo "LocationCity_F" || !isNil {_x getVariable "City"}
 };
 
@@ -351,7 +353,7 @@ private _selectedCities = [_cityLocations, _cityCount] call FLO_fnc_getRandomSub
 } forEach _selectedCities;
 
 // Get points for Barracks markers
-private _barracksPoints = nearestObjects [Centerposition, ["LocationEvacPoint_F", "LocationCamp_F"], 40000];
+private _barracksPoints = nearestObjects [_Centerposition, ["LocationEvacPoint_F", "LocationCamp_F"], 40000];
 private _barracksPointCount = [_barracksPoints, 2] call FLO_fnc_calculateDistribution;
 private _distributedBarracksPoints = [_barracksPoints, _barracksPointCount] call FLO_fnc_getRandomSubset;
 
@@ -372,7 +374,7 @@ private _distributedBarracksPoints = [_barracksPoints, _barracksPointCount] call
 ] call FLO_fnc_createMarkersFromSearch;
 
 // Get points for Radar markers
-private _radarPoints = nearestObjects [Centerposition, ["LocationEvacPoint_F"], 40000];
+private _radarPoints = nearestObjects [_Centerposition, ["LocationEvacPoint_F"], 40000];
 private _radarPointCount = [_radarPoints, 2] call FLO_fnc_calculateDistribution;
 private _distributedRadarPoints = [_radarPoints, _radarPointCount] call FLO_fnc_getRandomSubset;
 
@@ -438,7 +440,7 @@ private _distributedServicePoints = [_servicePoints, _servicePointCount] call FL
 } forEach _distributedServicePoints;
 
 // Infantry markers in villages
-private _villageLocations = nearestObjects [Centerposition, ["Logic", "LocationVillage_F"], 40000] select {
+private _villageLocations = nearestObjects [_Centerposition, ["Logic", "LocationVillage_F"], 40000] select {
     typeOf _x isEqualTo "LocationVillage_F" || !isNil {_x getVariable "Village"}
 };
 
