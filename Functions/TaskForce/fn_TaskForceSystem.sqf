@@ -210,12 +210,12 @@ if (isNil "FLO_TaskForce_System") then {
                     private _baseComposition = switch (toLower _type) do {
                         case "infantry": {
                             [
-                                ["infantry", East_Units, 4 * _sizeMultiplier]
+                                ["infantry", East_Units + East_FireObserver + East_Units_Officers, 4 * _sizeMultiplier]
                             ]
                         };
                         default {
                             [
-                                ["infantry", East_Units, 2 * _sizeMultiplier]
+                                ["infantry", East_Units + East_FireObserver + East_Units_Officers, 2 * _sizeMultiplier]
                             ]
                         };
                     };
