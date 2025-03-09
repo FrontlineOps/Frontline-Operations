@@ -183,18 +183,6 @@ remoteExec ["FLO_fnc_MissionStartup", 2];
     [] call FLO_fnc_MissionFrontline;
 };
 
-//Saving System
-AutoSaveSwitchVal = "AutoSaveSwitch" call BIS_fnc_getParamValue;
-AutoSaveIntervalVal = "AutoSaveInterval" call BIS_fnc_getParamValue;
-
-if (AutoSaveSwitchVal isEqualTo 1) then {
-    [] spawn {  
-        while { true } do {  
-            call FLO_fnc_MissionSave;
-            sleep AutoSaveIntervalVal;  
-        };
-    };
-};
 
 // Initialize Intel System
 [] call FLO_fnc_intelSystem;
@@ -224,6 +212,19 @@ diag_log "[FLO] Task Force Garrison Integration System initialized";
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
 publicVariable "FLO_AICommander";
 diag_log "[FLO] AI Commander initialized";
+
+//Saving System
+AutoSaveSwitchVal = "AutoSaveSwitch" call BIS_fnc_getParamValue;
+AutoSaveIntervalVal = "AutoSaveInterval" call BIS_fnc_getParamValue;
+
+if (AutoSaveSwitchVal isEqualTo 1) then {
+    [] spawn {  
+        while { true } do {  
+            call FLO_fnc_MissionSave;
+            sleep AutoSaveIntervalVal;  
+        };
+    };
+};
 
 /////////////////////////////////////////////////////////////////////////////////
 
