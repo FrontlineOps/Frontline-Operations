@@ -9,8 +9,6 @@ if (!isNil "FOBB") then {
 };
 
 
-
- 
 _FOBT = nearestObjects [position player, [F_HQ_C_01], 150] select 0;
 
 [ _FOBT,
@@ -135,3 +133,5 @@ false
 false,
 false
 ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+
+[playerSide, "HQ"] commandChat "FOB Deployed!";
