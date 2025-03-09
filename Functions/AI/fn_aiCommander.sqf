@@ -753,10 +753,10 @@ private _aiCommander = createHashMapObject [[
                 // Use the returned task force ID for deployment
                 private _systemTaskForceID = _createResult;
                 
-                ["AI Commander", 3, format["Task Force %1 created successfully, deploying to position %2", _systemTaskForceID, _position]] call FLO_fnc_log;
+                ["AI Commander", 3, format["Task Force %1 created successfully, deploying to position %2", _systemTaskForceID, getMarkerPos _sourceOutpost]] call FLO_fnc_log;
                 
                 // Deploy attack force with pulled units
-                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, _position]] call FLO_fnc_TaskForceSystem;
+                private _taskForceGroup = ["deployTaskForce", [_systemTaskForceID, getMarkerPos _sourceOutpost]] call FLO_fnc_TaskForceSystem;
                 
                 // Check if deployment was successful
                 if (!isNull _taskForceGroup) then {
