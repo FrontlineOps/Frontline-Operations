@@ -125,6 +125,58 @@ if (_garrisonLoadResult) then {
     [[west,"HQ"], "No saved garrison states found"] remoteExec ["sideChat", 0];
 };
 
+// Load FOB and OP marker references
+private _structureMarkerName = _missionTag + "_StructureMarkers";
+private _structureMarkerHash = profileNamespace getVariable [_structureMarkerName, createHashMap];
+
+if (count _structureMarkerHash > 0) then {
+    // Process FOB buildings
+    private _fobBuildings = nearestObjects [Centerposition, [F_HQ_01, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+    {
+        if (!isNil "_x" && {alive _x}) then {
+            private _objectPos = getPosASL _x;
+            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
+            private _markerData = _structureMarkerHash getOrDefault [_objectPosString, []];
+            
+            if (count _markerData > 0) then {
+                private _markerName = _markerData#0;
+                private _type = _markerData#1;
+                
+                if (_type == "FOB") then {
+                    _x setVariable ["fobMarkerName", _markerName, true];
+                    _x setVariable ["FLO_FOB_Initialized", true, true];
+                    ["Mission", 3, format["Restored FOB marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
+                };
+            };
+        };
+    } forEach _fobBuildings;
+    
+    // Process OP buildings
+    private _opBuildings = nearestObjects [Centerposition, [F_OP_01], 40000];
+    {
+        if (!isNil "_x" && {alive _x}) then {
+            private _objectPos = getPosASL _x;
+            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
+            private _markerData = _structureMarkerHash getOrDefault [_objectPosString, []];
+            
+            if (count _markerData > 0) then {
+                private _markerName = _markerData#0;
+                private _type = _markerData#1;
+                
+                if (_type == "OP") then {
+                    _x setVariable ["opMarkerName", _markerName, true];
+                    _x setVariable ["FLO_OP_Initialized", true, true];
+                    ["Mission", 3, format["Restored OP marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
+                };
+            };
+        };
+    } forEach _opBuildings;
+    
+    [[west,"HQ"], format["Restored %1 FOB/OP marker references", count _structureMarkerHash]] remoteExec ["sideChat", 0];
+} else {
+    ["Mission", 2, "No FOB/OP marker references found to restore"] call FLO_fnc_log;
+};
+
 MissionLoadedLitterally = true ;
 publicVariable "MissionLoadedLitterally";
 

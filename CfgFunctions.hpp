@@ -8,6 +8,8 @@ class FLO {
         class CDVS              {};
         class ICS               {};
         class MissionLoad       {preInit = 1;};
+        class initializeFOB     {};
+        class initializeOP      {};
     };
 
     class AI {
