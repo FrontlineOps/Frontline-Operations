@@ -1,6 +1,4 @@
 thisGenerator = _this select 0;
-publicVariable "thisGenerator";
-
 
 Lightsss = nearestObjects [thisGenerator, [
 "Lamps_Base_F", 
@@ -30,9 +28,6 @@ Lightsss = nearestObjects [thisGenerator, [
 "Land_fs_sign_F" 
 ], 2500];
 
-publicVariable "Lightsss";
-
-
 { {_x setdamage 0.9 ;} forEach Lightsss; } remoteExec ["call", 0];
 
 
@@ -51,7 +46,6 @@ sleep 18;
 ["showNotification", ["SUPPORT DISABLED", "Region Power Disabled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
 
 PowerOFF = 1 ;
-publicVariable "PowerOFF";
 
 [] spawn {  
   while { sleep 90 ; PowerOFF == 1} do{ 
@@ -75,12 +69,8 @@ _ENMs = {(side _x != west) && (alive _x == true)} count nearestObjects [thisGene
 sleep 3600;
 
 {
-_x setdamage 0 ;
+_x setdamage 0;
 } forEach _LightLoc;
 
 
-PowerOFF = 0 ;
-publicVariable "PowerOFF";
-
-
-
+PowerOFF = 0;

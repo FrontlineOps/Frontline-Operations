@@ -34,6 +34,7 @@ VS_FPS = [];
 VSTimeDelay = 20;
 VSCurrentTime = diag_tickTime;
 VS_IsWorking = false;
+Centerposition = [worldSize / 2, worldsize / 2, 0];
 
 if (isNil "F_Init") then {F_Init = false;};
 
@@ -82,27 +83,6 @@ execVM "R3F_LOG\init.sqf";
 // ETV Init - Everyone
 execVM "Scripts\EtV.sqf";
 waitUntil {!isNil "EtVInitialized"};
-
-// private _executeAndWait= {
-//     params ["_script"];
-//     {
-//         private _handle = execVM _x;
-//         waitUntil {sleep 1; scriptDone _handle };
-//     } forEach _script;
-// };
-
-// // Faster method - compile and execute immediately
-// private _fastExecute = {
-//     params ["_scripts"];
-//     {
-//         diag_log format ["[FLO] Compiling and executing trigger script: %1", _x];
-//         call compileFinal preprocessFileLineNumbers _x;
-//         diag_log format ["[FLO] Completed trigger script: %1", _x];
-//     } forEach _scripts;
-// };
-
-// // Execute triggers using the faster method
-// [["Scripts\Init\init_Triggers_1.sqf", "Scripts\Init\init_Triggers_2.sqf", "Scripts\Init\init_Triggers_3.sqf"]] call _fastExecute;
 
 // Parallel execution
 {
@@ -205,7 +185,7 @@ diag_log "[FLO] Intelligence System initialized";
 diag_log "[FLO] Resource system initialized";
 
 // Initialize the garrison management system
-["init", []] call FLO_fnc_garrisonManager;
+[] call FLO_fnc_garrisonManager;
 diag_log "[FLO] Garrison system initialized";
 
 // Initialize the logistics network
@@ -216,149 +196,160 @@ diag_log "[FLO] Logistics network initialized";
 ["init", []] call FLO_fnc_TaskForceSystem;
 diag_log "[FLO] Task Force system initialized";
 
+// Initialize AI Commander Unit Capability Analyzer
+FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
+diag_log "[FLO] AI Commander Unit Capability Analyzer initialized";
+
+// Initialize AI Commander
+FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
+publicVariable "FLO_AICommander";
+diag_log "[FLO] AI Commander initialized";
+
+/////////////////////////////////////////////////////////////////////////////////
+
 // Start a background process to automatically create defensive lines
-[] spawn {
-    ["System", 3, "Starting defensive line management system"] call FLO_fnc_log;
+// [] spawn {
+//     ["System", 3, "Starting defensive line management system"] call FLO_fnc_log;
     
-    // Wait a bit for other systems to initialize
-    sleep 120;
+//     // Wait a bit for other systems to initialize
+//     sleep 120;
     
-    while {true} do {
-        ["DefenseLine", 4, "Starting defense line update cycle"] call FLO_fnc_log;
+//     while {true} do {
+//         ["DefenseLine", 4, "Starting defense line update cycle"] call FLO_fnc_log;
         
-        // Get all potential frontline markers
-        private _frontlineMarkers = [];
+//         // Get all potential frontline markers
+//         private _frontlineMarkers = [];
         
-        // First try to find markers that are explicitly marked as frontline
-        private _explicitFrontlineMarkers = allMapMarkers select {
-            markerType _x isEqualTo "mil_flag" && 
-            markerColor _x isEqualTo "ColorEAST"
-        };
+//         // First try to find markers that are explicitly marked as frontline
+//         private _explicitFrontlineMarkers = allMapMarkers select {
+//             markerType _x isEqualTo "mil_flag" && 
+//             markerColor _x isEqualTo "ColorEAST"
+//         };
         
-        if (count _explicitFrontlineMarkers > 0) then {
-            _frontlineMarkers = _explicitFrontlineMarkers;
-            ["DefenseLine", 4, format ["Found %1 explicit frontline markers", count _frontlineMarkers]] call FLO_fnc_log;
-        } else {
-            // If no explicit markers, calculate frontline from OPFOR and BLUFOR positions
-            private _opforMarkers = allMapMarkers select {
-                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
-                markerType _x in ["o_support", "n_support", "o_installation", "n_installation"]
-            };
+//         if (count _explicitFrontlineMarkers > 0) then {
+//             _frontlineMarkers = _explicitFrontlineMarkers;
+//             ["DefenseLine", 4, format ["Found %1 explicit frontline markers", count _frontlineMarkers]] call FLO_fnc_log;
+//         } else {
+//             // If no explicit markers, calculate frontline from OPFOR and BLUFOR positions
+//             private _opforMarkers = allMapMarkers select {
+//                 markerColor _x in ["colorOPFOR", "ColorEAST"] && 
+//                 markerType _x in ["o_support", "n_support", "o_installation", "n_installation"]
+//             };
             
-            private _bluforMarkers = allMapMarkers select {
-                markerColor _x in ["colorBLUFOR", "ColorWEST", "ColorYellow"] && 
-                markerType _x in ["b_installation", "b_support"]
-            };
+//             private _bluforMarkers = allMapMarkers select {
+//                 markerColor _x in ["colorBLUFOR", "ColorWEST", "ColorYellow"] && 
+//                 markerType _x in ["b_installation", "b_support"]
+//             };
             
-            ["DefenseLine", 4, format ["Found %1 OPFOR markers and %2 BLUFOR markers", count _opforMarkers, count _bluforMarkers]] call FLO_fnc_log;
+//             ["DefenseLine", 4, format ["Found %1 OPFOR markers and %2 BLUFOR markers", count _opforMarkers, count _bluforMarkers]] call FLO_fnc_log;
             
-            // Find OPFOR markers closest to BLUFOR territory
-            {
-                private _opforPos = getMarkerPos _x;
-                private _distanceToBlufor = 999999;
-                private _closestBlufor = "";
+//             // Find OPFOR markers closest to BLUFOR territory
+//             {
+//                 private _opforPos = getMarkerPos _x;
+//                 private _distanceToBlufor = 999999;
+//                 private _closestBlufor = "";
                 
-                {
-                    private _bluforPos = getMarkerPos _x;
-                    private _distance = _opforPos distance _bluforPos;
+//                 {
+//                     private _bluforPos = getMarkerPos _x;
+//                     private _distance = _opforPos distance _bluforPos;
                     
-                    if (_distance < _distanceToBlufor) then {
-                        _distanceToBlufor = _distance;
-                        _closestBlufor = _x;
-                    };
-                } forEach _bluforMarkers;
+//                     if (_distance < _distanceToBlufor) then {
+//                         _distanceToBlufor = _distance;
+//                         _closestBlufor = _x;
+//                     };
+//                 } forEach _bluforMarkers;
                 
-                // If an OPFOR marker is within a reasonable range of BLUFOR, consider it frontline
-                if (_distanceToBlufor < 2500) then {
-                    _frontlineMarkers pushBack _x;
-                    ["DefenseLine", 4, format ["Added marker %1 to frontline (distance to BLUFOR: %2m)", _x, _distanceToBlufor]] call FLO_fnc_log;
-                };
-            } forEach _opforMarkers;
-        };
+//                 // If an OPFOR marker is within a reasonable range of BLUFOR, consider it frontline
+//                 if (_distanceToBlufor < 2500) then {
+//                     _frontlineMarkers pushBack _x;
+//                     ["DefenseLine", 4, format ["Added marker %1 to frontline (distance to BLUFOR: %2m)", _x, _distanceToBlufor]] call FLO_fnc_log;
+//                 };
+//             } forEach _opforMarkers;
+//         };
         
-        // If frontline markers found, create or reinforce defense lines
-        if (count _frontlineMarkers > 0) then {
-            ["DefenseLine", 3, format ["Processing %1 frontline markers", count _frontlineMarkers]] call FLO_fnc_log;
+//         // If frontline markers found, create or reinforce defense lines
+//         if (count _frontlineMarkers > 0) then {
+//             ["DefenseLine", 3, format ["Processing %1 frontline markers", count _frontlineMarkers]] call FLO_fnc_log;
             
-            // Get the aggression level to determine strength of defense
-            private _aggressionMarkers = allMapMarkers select {markerColor _x isEqualTo "Color6_FD_F"};
-            private _aggrScore = 5; // Default medium aggression
+//             // Get the aggression level to determine strength of defense
+//             private _aggressionMarkers = allMapMarkers select {markerColor _x isEqualTo "Color6_FD_F"};
+//             private _aggrScore = 5; // Default medium aggression
             
-            if (count _aggressionMarkers > 0) then {
-                _aggrScore = parseNumber (markerText (_aggressionMarkers select 0));
-                ["DefenseLine", 4, format ["Current aggression score: %1", _aggrScore]] call FLO_fnc_log;
-            };
+//             if (count _aggressionMarkers > 0) then {
+//                 _aggrScore = parseNumber (markerText (_aggressionMarkers select 0));
+//                 ["DefenseLine", 4, format ["Current aggression score: %1", _aggrScore]] call FLO_fnc_log;
+//             };
             
-            private _defenseStrength = switch (true) do {
-                case (_aggrScore < 4): {"light"};
-                case (_aggrScore < 9): {"medium"};
-                default {"heavy"};
-            };
+//             private _defenseStrength = switch (true) do {
+//                 case (_aggrScore < 4): {"light"};
+//                 case (_aggrScore < 9): {"medium"};
+//                 default {"heavy"};
+//             };
             
-            ["DefenseLine", 3, format ["Defense strength set to: %1", _defenseStrength]] call FLO_fnc_log;
+//             ["DefenseLine", 3, format ["Defense strength set to: %1", _defenseStrength]] call FLO_fnc_log;
             
-            // Get current resources
-            private _currentResources = ["get", []] call FLO_fnc_opforResources;
-            ["Resources", 3, format ["Current resources: %1", _currentResources]] call FLO_fnc_log;
+//             // Get current resources
+//             private _currentResources = ["get", []] call FLO_fnc_opforResources;
+//             ["Resources", 3, format ["Current resources: %1", _currentResources]] call FLO_fnc_log;
             
-            // Calculate the number of defense lines to create/reinforce based on resources
-            private _maxLinesToProcess = floor (_currentResources / 25);
-            _maxLinesToProcess = _maxLinesToProcess min 3; // Cap at 3 lines per cycle
+//             // Calculate the number of defense lines to create/reinforce based on resources
+//             private _maxLinesToProcess = floor (_currentResources / 25);
+//             _maxLinesToProcess = _maxLinesToProcess min 3; // Cap at 3 lines per cycle
             
-            if (_maxLinesToProcess > 0) then {
-                ["DefenseLine", 3, format ["Will process up to %1 defense lines this cycle", _maxLinesToProcess]] call FLO_fnc_log;
+//             if (_maxLinesToProcess > 0) then {
+//                 ["DefenseLine", 3, format ["Will process up to %1 defense lines this cycle", _maxLinesToProcess]] call FLO_fnc_log;
                 
-                // Process a random selection of frontline markers
-                private _markersToProcess = [];
+//                 // Process a random selection of frontline markers
+//                 private _markersToProcess = [];
                 
-                if (count _frontlineMarkers <= _maxLinesToProcess) then {
-                    _markersToProcess = _frontlineMarkers;
-                } else {
-                    // Select a random subset
-                    for "_i" from 1 to _maxLinesToProcess do {
-                        private _randomMarker = selectRandom _frontlineMarkers;
-                        _markersToProcess pushBack _randomMarker;
-                        _frontlineMarkers = _frontlineMarkers - [_randomMarker];
-                    };
-                };
+//                 if (count _frontlineMarkers <= _maxLinesToProcess) then {
+//                     _markersToProcess = _frontlineMarkers;
+//                 } else {
+//                     // Select a random subset
+//                     for "_i" from 1 to _maxLinesToProcess do {
+//                         private _randomMarker = selectRandom _frontlineMarkers;
+//                         _markersToProcess pushBack _randomMarker;
+//                         _frontlineMarkers = _frontlineMarkers - [_randomMarker];
+//                     };
+//                 };
                 
-                // Process each selected marker
-                {
-                    ["DefenseLine", 3, format ["Processing marker: %1", _x]] call FLO_fnc_log;
+//                 // Process each selected marker
+//                 {
+//                     ["DefenseLine", 3, format ["Processing marker: %1", _x]] call FLO_fnc_log;
                     
-                    // Determine if we should create a new line or reinforce an existing one
-                    private _taskForceMarkers = allMapMarkers select {
-                        markerType _x isEqualTo "mil_triangle" && 
-                        markerColor _x isEqualTo "ColorEAST" &&
-                        markerAlpha _x isEqualTo 0.6 &&
-                        getMarkerPos _x distance (getMarkerPos _x) < 1000
-                    };
+//                     // Determine if we should create a new line or reinforce an existing one
+//                     private _taskForceMarkers = allMapMarkers select {
+//                         markerType _x isEqualTo "mil_triangle" && 
+//                         markerColor _x isEqualTo "ColorEAST" &&
+//                         markerAlpha _x isEqualTo 0.6 &&
+//                         getMarkerPos _x distance (getMarkerPos _x) < 1000
+//                     };
                     
-                    if (count _taskForceMarkers > 0) then {
-                        ["DefenseLine", 3, format ["Reinforcing existing defense line at %1", _x]] call FLO_fnc_log;
-                        ["reinforceDefenseLine", [_x, _defenseStrength]] call FLO_fnc_TaskForceDefenseLine;
-                    } else {
-                        // Create new line
-                        private _depth = switch (_defenseStrength) do {
-                            case "light": {1};
-                            case "medium": {2};
-                            case "heavy": {3};
-                            default {1};
-                        };
+//                     if (count _taskForceMarkers > 0) then {
+//                         ["DefenseLine", 3, format ["Reinforcing existing defense line at %1", _x]] call FLO_fnc_log;
+//                         ["reinforceDefenseLine", [_x, _defenseStrength]] call FLO_fnc_TaskForceDefenseLine;
+//                     } else {
+//                         // Create new line
+//                         private _depth = switch (_defenseStrength) do {
+//                             case "light": {1};
+//                             case "medium": {2};
+//                             case "heavy": {3};
+//                             default {1};
+//                         };
                         
-                        ["DefenseLine", 3, format ["Creating new defense line at %1 with depth %2", _x, _depth]] call FLO_fnc_log;
-                        ["createDefenseLine", [_x, _depth, _defenseStrength]] call FLO_fnc_TaskForceDefenseLine;
-                    };
-                } forEach _markersToProcess;
-            } else {
-                ["Resources", 2, format ["Insufficient resources for defense lines (have: %1, needed: 25)", _currentResources]] call FLO_fnc_log;
-            };
-        } else {
-            ["DefenseLine", 2, "No frontline markers found to process"] call FLO_fnc_log;
-        };
+//                         ["DefenseLine", 3, format ["Creating new defense line at %1 with depth %2", _x, _depth]] call FLO_fnc_log;
+//                         ["createDefenseLine", [_x, _depth, _defenseStrength]] call FLO_fnc_TaskForceDefenseLine;
+//                     };
+//                 } forEach _markersToProcess;
+//             } else {
+//                 ["Resources", 2, format ["Insufficient resources for defense lines (have: %1, needed: 25)", _currentResources]] call FLO_fnc_log;
+//             };
+//         } else {
+//             ["DefenseLine", 2, "No frontline markers found to process"] call FLO_fnc_log;
+//         };
         
-        ["DefenseLine", 4, "Defense line update cycle complete"] call FLO_fnc_log;
-        // Wait before next cycle
-        sleep 600; // 10 minutes
-    };
-};
+//         ["DefenseLine", 4, "Defense line update cycle complete"] call FLO_fnc_log;
+//         // Wait before next cycle
+//         sleep 600; // 10 minutes
+//     };
+// };

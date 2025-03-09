@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("con",["File"],[["config",,[[,"config.sqf",,,0,"File:config.sqf:config.sqf"]]]]);

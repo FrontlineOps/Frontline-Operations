@@ -5,9 +5,7 @@ East_Ground_Transport = ["LOP_SYR_Ural_open","LOP_SYR_UAZ_Open"];
 
 East_Air_Transport = ["rhsgref_ins_Mi8amt"];
 East_Air_Heli = ["rhsgref_ins_Mi8amt"]; 
-East_Air_Jet = ["rhsgref_ins_Mi8amt"];
-East_Ground_Artillery = ["O_MBT_02_arty_F"];
-East_Air_Drone = ["O_UAV_01_F"]; 
+East_Air_Jet = ["rhsgref_ins_Mi8amt"]; 
 
 East_Units = ["LOP_SYR_Infantry_AT_Asst","LOP_SYR_Infantry_AT","LOP_SYR_Infantry_Corpsman","LOP_SYR_Infantry_Engineer","LOP_SYR_Infantry_Grenadier","LOP_SYR_Infantry_MG_Asst","LOP_SYR_Infantry_MG","LOP_SYR_Infantry_SL","LOP_SYR_Infantry_Marksman","LOP_SYR_Infantry_TL"];
 East_FireObserver = ["LOP_SYR_Infantry_TL"];

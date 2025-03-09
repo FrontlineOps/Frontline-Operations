@@ -57,7 +57,6 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_calculateOperationDelay", {
-        params ["_self"];
         private _aggressionScore = _self call ["_getAggressionScore", []];
         private _operationDelay = 900;
         
@@ -69,7 +68,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_calculateOffensiveProbability", {
-        params ["_self", "_aggressionScore"];
+        params ["_aggressionScore"];
         
         // Get current players excluding headless clients
         private _headlessClients = entities "HeadlessClient_F";
@@ -93,7 +92,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_launchOffensiveOperation", {
-        params ["_self", "_aggressionScore"];
+        params ["_aggressionScore"];
         
         // Notify players that OPFOR is preparing an offensive
         ["showNotification", ["! INTELLIGENCE !", "Enemy is preparing a major offensive operation!", "warning"]] call FLO_fnc_intelSystem;
@@ -115,7 +114,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_findSuitableLocations", {
-        params ["_self", "_locationType"];
+        params ["_locationType"];
         
         // Find suitable OPFOR and BLUFOR installations
         private _opforInstallations = allMapMarkers select {
@@ -179,14 +178,13 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_createOutpost", {
-        params ["_self", "_validPositions"];
+        params ["_validPositions"];
         
         // Select a random position for the outpost
         private _selectedPosition = selectRandom _validPositions;
         
         // Create marker for new outpost
         private _outpostMarkerName = "AssltOutpost" + (str ([0, 0, 0] getPos [(10 + (random 150)), (0 + (random 360))]));
-        publicVariable "_outpostMarkerName";
         
         createMarker [_outpostMarkerName, (locationPosition _selectedPosition)];
         _outpostMarkerName setMarkerType "o_support";
@@ -270,7 +268,7 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_createRoadblock", {
-        params ["_self", "_validPositions"];
+        params ["_validPositions"];
         
         // Select a random position for the roadblock
         private _selectedPosition = selectRandom _validPositions;
@@ -278,7 +276,6 @@ private _frontlineManagerDeclaration = [
         
         // Create marker for new roadblock
         private _roadblockMarkerName = "AssltOutpost" + (str ([0, 0, 0] getPos [(10 + (random 150)), (0 + (random 360))]));
-        publicVariable "_roadblockMarkerName";
         
         createMarker [_roadblockMarkerName, _positionCoords];
         _roadblockMarkerName setMarkerType "o_service";
@@ -411,9 +408,7 @@ private _frontlineManagerDeclaration = [
         {deleteMarker _x;} forEach _assaultMarkers;
     }],
     
-    ["_executeOperation", {
-        params ["_self"];
-        
+    ["_executeOperation", { 
         // Clean up any existing bunker markers
         _self call ["_cleanupBunkerMarkers", []];
         
@@ -474,8 +469,6 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["run", {
-        params ["_self"];
-        
         // Announce system activation
         [[west,"HQ"], "Mission FrontLines System Activated ..."] remoteExec ["sideChat", 0];
         

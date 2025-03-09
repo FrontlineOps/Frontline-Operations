@@ -332,19 +332,6 @@ _trgA setTriggerActivation ["WEST", "PRESENT", false];
 _trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\Objectives\Mission_Radar.sqf';", ""];
 				 		
 	};
-
-	if (MType == "o_armor") then {
-			hint "You Placed a Custom Mission Marker";
-mrkr setMarkerSize [1,2, 1,2];   
-
-_trgA = createTrigger ["EmptyDetector", _pos];
-_trgA setTriggerArea [2500, 2500, 0, false, 200];
-_trgA setTriggerTimeout [2, 2, 2, true];
-_trgA setTriggerActivation ["WEST", "PRESENT", false];
-_trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\Objectives\Mission_Armor.sqf';", ""];
-
-				 		
-	};	
 	
 	if (MType == "o_recon") then {
 			hint "You Placed a Custom Mission Marker";
@@ -357,18 +344,6 @@ _trgA setTriggerActivation ["WEST", "PRESENT", false];
 _trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\Mission_Intel.sqf';", ""];
 				 		
 	};		
-	
-	if (MType == "o_plane") then {
-			hint "You Placed a Custom Mission Marker";
-mrkr setMarkerSize [1, 1]; 
-
-_trgA = createTrigger ["EmptyDetector", _pos];
-_trgA setTriggerArea [2000, 2000, 0, false, 2000];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ["WEST", "PRESENT", false];
-_trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\Objectives\Mission_Air.sqf';", ""];
-				 		
-	};	
 
 	if (MType == "loc_Ruin") then {
 			hint "You Placed a Custom Mission Marker";
