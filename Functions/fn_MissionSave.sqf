@@ -11,13 +11,21 @@ private _MarkerTimeName = _missionTag + "_Time";
 private _MarkerDataName = _missionTag + "_markers";
 private _VehicleDataName = _missionTag + "_Vehicles";
 private _ObjectDataName = _missionTag + "_Objects";
+private _structureMarkerName = _missionTag + "_StructureMarkers";
+private _missionStructureTypes = _missionTag + "_StructureTypes";
 
-
+// Save building types for FOB and OP
+// Had to add this because the mission load is pre-mission startup and the variables are not yet defined
+private _fobTypeClass = if (!isNil "F_HQ_01") then {F_HQ_01};
+private _opTypeClass = if (!isNil "F_OP_01") then {F_OP_01};
+profileNamespace setVariable [_missionStructureTypes, [_fobTypeClass, _opTypeClass]];
+["Mission", 3, format["Saved structure types: FOB = %1, OP = %2", _fobTypeClass, _opTypeClass]] call FLO_fnc_log;
 
 profileNamespace setVariable [_MarkerTimeName, nil];
 profileNamespace setVariable [_MarkerDataName, nil];
 profileNamespace setVariable [_VehicleDataName, nil];
 profileNamespace setVariable [_ObjectDataName, nil];
+profileNamespace setVariable [_structureMarkerName, nil];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -231,6 +239,39 @@ private _garrisonSaveResult = FLO_Garrison_Manager call ["saveGarrisonSizes", []
 if !(_garrisonSaveResult) then {
     [[west,"HQ"], "Warning: Failed to save garrison states"] remoteExec ["sideChat", 0];
 };
+
+// Save FOB and OP marker references
+private _structureMarkerHash = createHashMap;
+
+// Find and save all FOB marker references
+private _fobBuildings = nearestObjects [Centerposition, [_fobTypeClass, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+{
+    if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_FOB_Initialized", false]}) then {
+        private _markerName = _x getVariable ["fobMarkerName", ""];
+        if (_markerName != "") then {
+            private _objectPos = getPosASL _x;
+            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
+            _structureMarkerHash set [_objectPosString, [_markerName, "FOB"]];
+        };
+    };
+} forEach _fobBuildings;
+
+// Find and save all OP marker references
+private _opBuildings = nearestObjects [Centerposition, [_opTypeClass], 40000];
+{
+    if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_OP_Initialized", false]}) then {
+        private _markerName = _x getVariable ["opMarkerName", ""];
+        if (_markerName != "") then {
+            private _objectPos = getPosASL _x;
+            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
+            _structureMarkerHash set [_objectPosString, [_markerName, "OP"]];
+        };
+    };
+} forEach _opBuildings;
+
+// Save the structure marker references
+profileNamespace setVariable [_structureMarkerName, _structureMarkerHash];
+["Mission", 3, format["Saved %1 FOB/OP marker references", count _structureMarkerHash]] call FLO_fnc_log;
 
 saveProfileNamespace;
 

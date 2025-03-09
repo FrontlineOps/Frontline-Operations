@@ -27,6 +27,28 @@ if (!isDedicated) then
 	
 	if (R3F_LOG_active) then
 	{
-		_this call R3F_LOG_FNCT_usine_init;
+		// Handle different parameter passing methods (direct call, remoteExec, etc.)
+		private ["_params", "_usine"];
+		_params = _this;
+		
+		// If _this is not an array (could happen in some remoteExec scenarios)
+		if (typeName _params != "ARRAY") then {
+			diag_log text "WARNING: init_creation_factory.sqf - _this is not an array, attempting to fix...";
+			// Try to extract parameters from parent scope if possible
+			_params = [];
+			if (!isNil {_this}) then { _params pushBack _this; };
+		};
+		
+		// Now safely try to get the factory object
+		_usine = if (count _params > 0) then { _params select 0 } else { objNull };
+		
+		// Check if we have a valid object
+		if (!isNull _usine) then {
+			_params call R3F_LOG_FNCT_usine_init;
+		} else {
+			diag_log text "ERROR: Creation factory initialization failed - no valid factory object found in parameters";
+			// For debugging, output what was received
+			diag_log text format["DEBUG: Parameters received: %1", _params];
+		};
 	};
 };

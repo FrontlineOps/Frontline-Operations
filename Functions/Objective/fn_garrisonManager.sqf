@@ -13,9 +13,9 @@
             reinforceGarrison: [_marker, _amount] - Add units to existing garrison
             maintainGarrisons: [] - Run maintenance on all garrisons
             checkNearbyGarrisons: [_activationDistance] - Check all markers and spawn garrisons near players
-            saveGarrisonSizes: [] - Save current garrison sizes to profileNamespace
-            loadGarrisonSizes: [] - Load garrison sizes from profileNamespace
-            isGarrisonGroup: [_group] - Check if a group is from a garrison
+        saveGarrisonSizes: [] - Save current garrison sizes to profileNamespace
+        loadGarrisonSizes: [] - Load garrison sizes from profileNamespace
+        isGarrisonGroup: [_group] - Check if a group is from a garrison
             getGarrison: [_marker] - Get garrison data for a marker
             extractUnits: [_marker] - Extract units from a garrison
             returnUnits: [_marker] - Return units to pool
@@ -552,12 +552,12 @@ if (isNil "FLO_Garrison_Manager") then {
                     count _vehicles, _marker, _currentLight, _currentHeavy, _currentTotal]] call FLO_fnc_log;
                 
                 // Spawn each vehicle
-                {
-                    _x params ["_type", "_count"];
-                    for "_i" from 1 to _count do {
-                        private _vehPos = [_pos, 10, 100, 5, 0, 0.5, 0, [], [_pos, _pos]] call BIS_fnc_findSafePos;
-                        private _veh = createVehicle [_type, _vehPos, [], 0, "NONE"];
-
+            {
+                _x params ["_type", "_count"];
+                for "_i" from 1 to _count do {
+                    private _vehPos = [_pos, 10, 100, 5, 0, 0.5, 0, [], [_pos, _pos]] call BIS_fnc_findSafePos;
+                    private _veh = createVehicle [_type, _vehPos, [], 0, "NONE"];
+                    
                         ["Garrison", 3, format["Created vehicle %1 of type %2", _veh, _type]] call FLO_fnc_log;
                         
                         // Create crew with explicit EAST side and get reference to the crew
@@ -566,60 +566,60 @@ if (isNil "FLO_Garrison_Manager") then {
                         private _vehGroup = if (count _crew > 0) then {group (_crew select 0)} else {createGroup [east, true]};
 
                         ["Garrison", 3, format["createVehicleCrew resulted in %1 crew members", count _crew]] call FLO_fnc_log;
-                        {
-                            // Check if crew member is not EAST
-                            if (side _x != east) then {
-                                // Replace with a new EAST unit
-                                private _role = assignedVehicleRole _x;
-                                private _type = typeOf _x;
-                                unassignVehicle _x;
-                                deleteVehicle _x;
-                                
-                                // Create new crew member of correct side
-                                private _newUnit = _vehGroup createUnit [_type, [0,0,0], [], 0, "NONE"];
-                                _newUnit assignAsDriver _veh;
-                                _newUnit moveInDriver _veh;
-                                _crew set [_forEachIndex, _newUnit];
-                            } else {
-                                // Just transfer the unit to our group
-                                [_x] joinSilent _vehGroup;
-                            }
-                        } forEach _crew;
-                        
-                        // Add QRF EventHandler to vehicle crew with higher chance
-                        {
-                            // Store the marker on the crew member for QRF reference
-                            _x setVariable ["FLO_Garrison_Marker", _marker, false];
+                    {
+                        // Check if crew member is not EAST
+                        if (side _x != east) then {
+                            // Replace with a new EAST unit
+                            private _role = assignedVehicleRole _x;
+                            private _type = typeOf _x;
+                            unassignVehicle _x;
+                            deleteVehicle _x;
                             
-                            // Vehicle crews have higher chance to call QRF (35%)
-                            if (random 1 < 0.35) then {
-                                // Store crew status for QRF chance calculation - vehicle crews are treated as semi-officers
-                                _x setVariable ["FLO_IsOfficer", true, false];
-                                
-                                _x addEventHandler ["Killed", {
-                                    params ["_unit", "_killer"];
-                                    
-                                    // Only trigger QRF if killed by BLUFOR
-                                    if (side _killer == west) then {
-                                        private _unitPos = getPos _unit;
-                                        private _markerData = _unit getVariable ["FLO_Garrison_Marker", ""];
-                                        
-                                        // 60% chance for vehicle crew to actually call QRF (higher than regular infantry)
-                                        if (_markerData != "" && random 1 < 0.6) then {
-                                            ["Garrison", 3, format["Vehicle crew killed at %1 triggered QRF request", _markerData]] call FLO_fnc_log;
-                                            [_unitPos, 500] call FLO_fnc_requestQRF;
-                                        };
-                                    };
-                                }];
-                            };
-                        } forEach (crew _veh);
+                            // Create new crew member of correct side
+                            private _newUnit = _vehGroup createUnit [_type, [0,0,0], [], 0, "NONE"];
+                            _newUnit assignAsDriver _veh;
+                            _newUnit moveInDriver _veh;
+                            _crew set [_forEachIndex, _newUnit];
+                        } else {
+                            // Just transfer the unit to our group
+                            [_x] joinSilent _vehGroup;
+                        }
+                    } forEach _crew;
+                    
+                    // Add QRF EventHandler to vehicle crew with higher chance
+                    {
+                        // Store the marker on the crew member for QRF reference
+                        _x setVariable ["FLO_Garrison_Marker", _marker, false];
                         
-                        // Verify crew is EAST
-                        {
-                            if (side _x != east) then {
-                                ["Garrison", 2, format["WARNING: Vehicle crew member %1 is not EAST after creation", _x]] call FLO_fnc_log;
-                            };
-                        } forEach (crew _veh);
+                        // Vehicle crews have higher chance to call QRF (35%)
+                        if (random 1 < 0.35) then {
+                            // Store crew status for QRF chance calculation - vehicle crews are treated as semi-officers
+                            _x setVariable ["FLO_IsOfficer", true, false];
+                            
+                            _x addEventHandler ["Killed", {
+                                params ["_unit", "_killer"];
+                                
+                                // Only trigger QRF if killed by BLUFOR
+                                if (side _killer == west) then {
+                                    private _unitPos = getPos _unit;
+                                    private _markerData = _unit getVariable ["FLO_Garrison_Marker", ""];
+                                    
+                                    // 60% chance for vehicle crew to actually call QRF (higher than regular infantry)
+                                    if (_markerData != "" && random 1 < 0.6) then {
+                                        ["Garrison", 3, format["Vehicle crew killed at %1 triggered QRF request", _markerData]] call FLO_fnc_log;
+                                        [_unitPos, 500] call FLO_fnc_requestQRF;
+                                    };
+                                };
+                            }];
+                        };
+                    } forEach (crew _veh);
+                    
+                    // Verify crew is EAST
+                    {
+                        if (side _x != east) then {
+                            ["Garrison", 2, format["WARNING: Vehicle crew member %1 is not EAST after creation", _x]] call FLO_fnc_log;
+                        };
+                    } forEach (crew _veh);
                         
                         // Determine if vehicle should patrol or defend (70% defend, 30% patrol)
                         if (random 1 < 0.7) then {
@@ -651,8 +651,8 @@ if (isNil "FLO_Garrison_Manager") then {
                         
                         // Add vehicle to our tracking
                         _spawnedVehicles pushBack _veh;
-                    };
-                } forEach _vehicles;
+                };
+            } forEach _vehicles;
             };
             
             // Spawn units
