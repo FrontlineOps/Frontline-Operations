@@ -13,8 +13,6 @@
     Nothing
 */
 
-if (!isServer) exitWith {};
-
 params [
     ["_opBuilding", objNull, [objNull]],
     ["_preserveMarker", false, [false]]
