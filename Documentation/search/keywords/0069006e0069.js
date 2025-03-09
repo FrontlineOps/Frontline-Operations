@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("ini",["File"],[["init",,[[,"init.sqf",,,0,"File:init.sqf:init.sqf"]]]]);

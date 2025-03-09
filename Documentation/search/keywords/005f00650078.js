@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("_ex",["Function"],[["_executeAndWait",,[[,,,,0,"File:init.sqf:_executeAndWait"]]]]);

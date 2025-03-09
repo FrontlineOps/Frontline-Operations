@@ -1,1 +1,0 @@
-﻿NDSummary.OnToolTipsLoaded("File:AIS/Core/fn_onNextFrame.sqf",{2:"<div class=\"NDToolTip TFunction LSQF\"><div class=\"TTSummary\">Executes a code once in non sched environment on the next frame.&nbsp; Parameters:</div></div>"});
