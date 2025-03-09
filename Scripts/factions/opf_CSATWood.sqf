@@ -5,7 +5,9 @@ East_Ground_Transport = ["O_T_MRAP_02_ghex_F",  "O_T_Truck_03_transport_ghex_F",
 
 East_Air_Transport = ["O_Heli_Light_02_unarmed_F","O_Heli_Transport_04_covered_F"];
 East_Air_Heli = ["O_Heli_Light_02_dynamicLoadout_F",  "O_Heli_Attack_02_dynamicLoadout_F"]; 
-East_Air_Jet = ["O_T_VTOL_02_infantry_dynamicLoadout_F", "O_Plane_CAS_02_dynamicLoadout_F"]; 
+East_Air_Jet = ["O_T_VTOL_02_infantry_dynamicLoadout_F", "O_Plane_CAS_02_dynamicLoadout_F"];
+East_Ground_Artillery = ["O_MBT_02_arty_F"];
+East_Air_Drone = ["O_UAV_01_F"];
 
 East_Units = ["O_T_Soldier_TL_F","O_T_Soldier_F","O_T_Soldier_LAT_F","O_T_Soldier_M_F","O_T_Medic_F","O_T_Soldier_AR_F","O_T_Soldier_GL_F", "O_T_Soldier_AT_F","O_T_Soldier_Exp_F"];
 East_FireObserver = ["O_T_Soldier_TL_F"];
