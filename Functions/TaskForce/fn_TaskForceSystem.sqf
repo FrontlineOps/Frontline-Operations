@@ -31,11 +31,6 @@
 
 if (!isServer) exitWith {};
 
-// Global backup variable for task forces to prevent synchronization issues
-if (isNil "FLO_Global_TaskForces") then {
-    FLO_Global_TaskForces = createHashMap;
-};
-
 // Add global virtualization state cooldown tracker
 // if (isNil "FLO_TaskForce_VirtualStateChanges") then {
 //     FLO_TaskForce_VirtualStateChanges = createHashMap;
@@ -265,9 +260,6 @@ if (isNil "FLO_TaskForce_System") then {
             
             // Save to both object hashmap and global backup
            _self get "taskForces" set [_taskForceId, _taskForceData];
-            
-            // Also save to global backup variable
-            FLO_Global_TaskForces set [_taskForceId, _taskForceData];
             
             ["TaskForce", 3, format["Created Task Force %1 of type %2 (size: %3) at %4 with composition of %5 elements",
                 _taskForceId, _taskForceType, _taskForceSize, _baseMarker, count _composition]] call FLO_fnc_log;
@@ -509,9 +501,6 @@ if (isNil "FLO_TaskForce_System") then {
             
             // Log available task forces for debugging
             ["TaskForce", 4, format["Available task forces in local registry: %1", keys _taskForces]] call FLO_fnc_log;
-            if (!isNil "FLO_Global_TaskForces") then {
-                ["TaskForce", 4, format["Available task forces in global registry: %1", keys FLO_Global_TaskForces]] call FLO_fnc_log;
-            };
             
             // First try object hashmap with original and sanitized IDs
             if (_originalId in keys _taskForces) then {
@@ -520,33 +509,12 @@ if (isNil "FLO_TaskForce_System") then {
                 if (_sanitizedId in keys _taskForces) then {
                     _taskForceData = _taskForces get _sanitizedId;
                     _taskForceId = _sanitizedId; // Use sanitized ID for subsequent operations
-                } else {
-                    // Then try global backup hashmap
-                    if (!isNil "FLO_Global_TaskForces") then {
-                        if (_originalId in keys FLO_Global_TaskForces) then {
-                            _taskForceData = FLO_Global_TaskForces get _originalId;
-                        } else {
-                            if (_sanitizedId in keys FLO_Global_TaskForces) then {
-                                _taskForceData = FLO_Global_TaskForces get _sanitizedId;
-                                _taskForceId = _sanitizedId; // Use sanitized ID for subsequent operations
-                            };
-                        };
-                        
-                        if (!isNil "_taskForceData") then {
-                            // Copy to object hashmap
-                            _taskForces set [_taskForceId, _taskForceData];
-                            ["TaskForce", 3, format["Restored Task Force %1 from global backup", _taskForceId]] call FLO_fnc_log;
-                        };
-                    };
                 };
             };
             
             // If task force not found in either hashmap
             if (isNil "_taskForceData") exitWith {
                 ["TaskForce", 1, format["Error: Task Force %1 not found in any hashmap", _taskForceId]] call FLO_fnc_log;
-                if (!isNil "FLO_Global_TaskForces") then {
-                    ["TaskForce", 3, format["Available global task forces: %1", keys FLO_Global_TaskForces]] call FLO_fnc_log;
-                };
                 grpNull // Return grpNull instead of false
             };
             
@@ -1342,19 +1310,19 @@ if (isNil "FLO_TaskForce_System") then {
             // Update both the local and global task force registries
             _taskForces set [_taskForceId, _taskForceData];
             
-            // Also update the global backup
-            FLO_Global_TaskForces set [_taskForceId, _taskForceData];
-            
             ["TaskForce", 3, format["Successfully deployed Task Force %1 at position %2 with %3 units facing %4°",
                 _taskForceId, _position, count _allCreatedUnits, _bluforDirection]] call FLO_fnc_log;
             ["TaskForce", 4, "====================================================================="] call FLO_fnc_log;
 
             // Log whether we got a group back (for debugging)
             if (_infantryGroup isEqualType grpNull) then {
-                ["TaskForce", 4, format["deployTaskForce returned group %1", _result]] call FLO_fnc_log;
+                ["TaskForce", 4, format["deployTaskForce returned group %1", _infantryGroup]] call FLO_fnc_log;
             } else {
-                ["TaskForce", 4, format["deployTaskForce returned unexpected result type (%1) for task force ID: %2", typeName _result, _taskForceId]] call FLO_fnc_log;
+                ["TaskForce", 4, format["deployTaskForce returned unexpected result type (%1) for task force ID: %2", typeName _infantryGroup, _taskForceId]] call FLO_fnc_log;
             };
+            
+            // Return the infantry group
+            _infantryGroup
         }],
         
         // Get information about a specific Task Force
@@ -1374,17 +1342,6 @@ if (isNil "FLO_TaskForce_System") then {
             } else {
                 if (_sanitizedId in keys _taskForces) then {
                     _taskForceData = _taskForces get _sanitizedId;
-                } else {
-                    // Check global backup if not found in local hashmap
-                    if (!isNil "FLO_Global_TaskForces") then {
-                        if (_originalId in keys FLO_Global_TaskForces) then {
-                            _taskForceData = FLO_Global_TaskForces get _originalId;
-                        } else {
-                            if (_sanitizedId in keys FLO_Global_TaskForces) then {
-                                _taskForceData = FLO_Global_TaskForces get _sanitizedId;
-                            };
-                        };
-                    };
                 };
             };
             
@@ -1475,21 +1432,6 @@ if (isNil "FLO_TaskForce_System") then {
                     _taskForceData = _taskForces get _sanitizedId;
                     _taskForceId = _sanitizedId;
                     ["TaskForce", 4, format["Found task force with sanitized ID in local registry"]] call FLO_fnc_log;
-                } else {
-                    // Check global backup hashmap
-                    if (!isNil "FLO_Global_TaskForces") then {
-                        if (_originalId in keys FLO_Global_TaskForces) then {
-                            _taskForceData = FLO_Global_TaskForces get _originalId;
-                            _taskForceId = _originalId;
-                            ["TaskForce", 4, format["Found task force with original ID in global registry"]] call FLO_fnc_log;
-                        } else {
-                            if (_sanitizedId in keys FLO_Global_TaskForces) then {
-                                _taskForceData = FLO_Global_TaskForces get _sanitizedId;
-                                _taskForceId = _sanitizedId;
-                                ["TaskForce", 4, format["Found task force with sanitized ID in global registry"]] call FLO_fnc_log;
-                            };
-                        };
-                    };
                 };
             };
             
@@ -1771,20 +1713,6 @@ if (isNil "FLO_TaskForce_System") then {
             // Finally, clean from all registries
             // Remove from local registry
             _taskForces deleteAt _taskForceId;
-            
-            // Remove from global registry
-            if (!isNil "FLO_Global_TaskForces") then {
-                // Check both original and sanitized IDs
-                if (_originalId in keys FLO_Global_TaskForces) then {
-                    FLO_Global_TaskForces deleteAt _originalId;
-                    ["TaskForce", 4, format["Removed task force %1 from global registry (original ID)", _originalId]] call FLO_fnc_log;
-                };
-                
-                if (_sanitizedId in keys FLO_Global_TaskForces) then {
-                    FLO_Global_TaskForces deleteAt _sanitizedId;
-                    ["TaskForce", 4, format["Removed task force %1 from global registry (sanitized ID)", _sanitizedId]] call FLO_fnc_log;
-                };
-            };
             
             ["TaskForce", 1, format["Successfully removed Task Force %1 from all registries", _taskForceId]] call FLO_fnc_log;
             true
