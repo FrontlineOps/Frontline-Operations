@@ -3,7 +3,11 @@
 FOBB = nearestObjects [position player, [F_HQ_01], 150] select 0;
 publicVariable "FOBB";
 
-{ null = [FOBB, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf" } remoteExec ["call", 0]; 
+if (!isNil "FOBB") then {
+    { nul = [FOBB, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
+} else {
+    ["FOB", 1, "Error: FOBB object not defined for creation factory setup"] call FLO_fnc_log;
+};
 
 
 [ FOBB,

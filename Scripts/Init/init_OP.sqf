@@ -3,7 +3,11 @@
 FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
 publicVariable "FOBB";
 
-{ null = [FOBB, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf" } remoteExec ["call", 0]; 
+if (!isNil "FOBB") then {
+    { nul = [FOBB, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
+} else {
+    ["OP", 1, "Error: OP object not defined for creation factory setup"] call FLO_fnc_log;
+};
 
 if (isClass(configFile >> "CfgPatches" >> "ace_main")) then {
     [FOBB, true] remoteExec ["ace_arsenal_fnc_initBox", 0];

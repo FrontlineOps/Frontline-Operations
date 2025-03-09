@@ -25,19 +25,24 @@ forceWeatherChange;
 
 ///////// Init FOBs //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-{  
-Centerposition = [worldSize / 2, worldsize / 2, 0];
- FOBB = nearestObjects [Centerposition, [F_HQ_01], 40000];
+// Initialize FOB objects
+private _centerPosition = [worldSize / 2, worldsize / 2, 0];
+
+// Find all FOB buildings of type F_HQ_01
+private _fobBuildings = nearestObjects [_centerPosition, [F_HQ_01], 40000];
+FOBB = _fobBuildings;
 publicVariable "FOBB";
 
-{ if (count (nearestObjects [ _x, [F_HQ_C_01], 20]) > 0) then {     
-[_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf";
- } ;
- } foreach FOBB;
+// Add creation factory to FOBs with container
+{
+    private _nearbyContainers = nearestObjects [_x, [F_HQ_C_01], 20];
+    if (count _nearbyContainers > 0) then {
+        { nul = [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
+    };
+} forEach _fobBuildings;
 
-} remoteExec ["call", 0]; 
-
-FOBB = nearestObjects [Centerposition, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+// Find additional FOB building types
+FOBB = nearestObjects [_centerPosition, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
 publicVariable "FOBB";
 
 { 
@@ -53,7 +58,7 @@ publicVariable "FOBB";
     	_mrkr setMarkerSize [2, 2];
     	_x setVariable ["fobMarkerName", _markerName, true];  // Set on FOB object
 
-		{ null = [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf" } remoteExec ["call", 0]; 
+		{ nul = [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
 
 
 		[ _x,
@@ -451,7 +456,7 @@ _mrkr setMarkerText "OP";
 _mrkr setMarkerSize [1.5, 1.5];
 _x setVariable ["opMarkerName", _markerName, true];  // Set on OP object   
 
-{ null = [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf" } remoteExec ["call", 0]; 
+{ nul = [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"; } remoteExec ["call", 0, true];
 
 [ _x,
 "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
@@ -819,12 +824,10 @@ F_Plane_05,
 F_Plane_06
 ],40000] ;
 
-_EXCVEH = vehicles - ALLFACVEHs ;
+_EXCVEH = vehicles;
 
 {
-
-deleteVehicleCrew _x ; 
-			
+	deleteVehicleCrew _x; 
 } foreach _EXCVEH;  
 	
 
@@ -1010,11 +1013,11 @@ _mrkr setMarkerAlpha 0.7;
 
 
 { 
-_MOBSER = nearestobjects [Centerposition,[F_Truck_04],40000] ;
-{
-	 [_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf" ; 
-
-} forEach _MOBSER ;  } remoteExec ["call", 0]; 
+	_MOBSER = nearestobjects [Centerposition,[F_Truck_04],40000] ;
+	{
+		[_x, -1, west, "LIGHT"] execVM "R3F_LOG\USER_FUNCT\init_creation_factory.sqf";
+	} forEach _MOBSER; 
+} remoteExec ["call", 0, true];
 
 _MOBARS = nearestobjects [Centerposition,[F_Truck_03],40000] ;
 {
