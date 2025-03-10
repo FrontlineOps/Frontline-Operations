@@ -206,9 +206,6 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
     // Small delay to ensure all other systems are loaded
     sleep 5;
     
-    // Read settings from CUSTOM_ENEMY_FACTION.sqf
-    [] call compile preprocessFileLineNumbers "CUSTOM_ENEMY_FACTION.sqf";
-    
     // Initialize the virtualization system with the configured activation distance
     if (!isNil "OPFOR_Virtualization_Distance") then {
         [OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization;

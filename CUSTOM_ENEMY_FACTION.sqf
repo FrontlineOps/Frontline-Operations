@@ -5,44 +5,44 @@
 /*
  * Unit and Vehicle Type Definitions
  * These arrays define what types of units and vehicles can spawn in the mission.
- */
+*/
 
+// Predefined Groups from the config
+// Used as the primary groups for the virtualization system
+East_Groups = [
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "SpecOps" >> "HAF_SniperTeam"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_EOD"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_GMG"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_MG"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_Mort"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_ENG"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_Raven_F" >> "Infantry" >> "I_Raven_InfSquad"),
+(configFile >> "CfgGroups" >> "Indep" >> "IND_Raven_F" >> "Infantry" >> "I_Raven_InfTeam")
+];
 // Ambient/Civilian-Like Ground Vehicles
 East_Ground_Vehicles_Ambient = ["I_MRAP_03_F"]; 
-//publicVariable "East_Ground_Vehicles_Ambient";
-
 // Light Military Ground Vehicles
-East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_A_Truck_02_aa_lxWS", "I_APC_Wheeled_03_cannon_F", "Aegis_I_Raven_APC_Wheeled_04_export_F", "I_Raven_MRAP_02_HMG_F", "I_Raven_MRAP_02_GMG_F"]; 
-//publicVariable "East_Ground_Vehicles_Light";
-
+East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_A_Truck_02_aa_lxWS", "I_APC_Wheeled_03_cannon_F", "Aegis_I_Raven_APC_Wheeled_04_export_F", "I_Raven_MRAP_02_HMG_F", "I_Raven_MRAP_02_GMG_F"];
 // Heavy Ground Vehicles and Tanks
 East_Ground_Vehicles_Heavy = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F", "I_LT_01_AA_F", "I_APC_tracked_03_cannon_v2_F"]; 
-//publicVariable "East_Ground_Vehicles_Heavy";
-
 // Transport Ground Vehicles
 East_Ground_Transport = ["I_MRAP_03_F", "I_Truck_02_transport_F", "I_Truck_02_covered_F", "Aegis_I_Raven_Truck_02_F"]; 
-//publicVariable "East_Ground_Transport";
-
 // Transport Air Vehicles
 East_Air_Transport = ["I_Heli_Transport_02_F", "Aegis_I_Heli_Transport_02_Heavy_F", "I_Heli_Light_01_F", "I_Heli_light_03_unarmed_F"];
-//publicVariable "East_Air_Transport";
-
 // Armed Helicopters
 East_Air_Heli = ["I_Heli_Attack_03_F", "I_Heli_Light_01_dynamicLoadout_F", "I_Heli_light_03_dynamicLoadout_F", "Aegis_I_Raven_Heli_Attack_04_F"]; 
-//publicVariable "East_Air_Heli";
-
 // Fixed-Wing Aircraft
 East_Air_Jet = ["I_Plane_Fighter_04_F", "I_Plane_Fighter_03_dynamicLoadout_F"]; 
-//publicVariable "East_Air_Jet";
-
 // Artillery Units
 East_Ground_Artillery = ["O_R_MBT_02_arty_F"]; 
-//publicVariable "East_Ground_Artillery";
-
 // Drone Units
 East_Air_Drone = ["I_UAV_02_lxWS", "I_UAV_01_F"]; 
-//publicVariable "East_Air_Drone";
-
 // Individual Infantry Units
 East_Units = [
     // Regular infantry (high frequency)
@@ -64,39 +64,16 @@ East_Units = [
     "I_Soldier_AA_F",                                            // AA Specialist
     "Aegis_I_HeavyGunner_F"                                     // Heavy gunner
 ];
-//publicVariable "East_Units";
-
 // Fire Observer Units for Artillery
 East_FireObserver = ["I_RadioOperator_F"];
-
 // Officer Units
 East_Units_Officers = ["I_officer_F"];
-//publicVariable "East_Units_Officers";
-
-// Predefined Groups from the config
-East_Groups = [
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "SpecOps" >> "HAF_SniperTeam"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_EOD"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_GMG"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_MG"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_Mort"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_ENG"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_Raven_F" >> "Infantry" >> "I_Raven_InfSquad"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_Raven_F" >> "Infantry" >> "I_Raven_InfTeam")
-];
-//publicVariable "East_Groups";
 
 /*
  * OPFOR Virtualization Objective Configuration
  * This section defines how many of each unit type should spawn at different objective types
  * These are the default settings that will be used by the virtualization system
- */
+*/
 
 // Structure: [objective type, [[group type, count], [group type, count], ...]]
 OPFOR_Objective_Groups = [
@@ -162,11 +139,9 @@ OPFOR_Objective_Groups = [
         ["motorized", 1]
     ]]
 ];
-//publicVariable "OPFOR_Objective_Groups";
 
 /*
  * Configure activation distance for the virtualization system
  * This is the distance in meters that a player needs to be from a virtual group for it to physically spawn in the game
  */ 
 OPFOR_Virtualization_Distance = 2000;
-//publicVariable "OPFOR_Virtualization_Distance";

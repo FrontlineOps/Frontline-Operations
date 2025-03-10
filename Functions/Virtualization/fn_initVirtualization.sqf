@@ -27,7 +27,6 @@ if (isNil "FLO_virtualGroups") then {
             ["_activationDistance", _activationDistance],
             ["_enabled", true],
             ["_debugMode", false],
-            ["_objectiveGroups", createHashMap], // Groups mapped to objectives
             
             // Method to enable/disable the system
             ["_setEnabled", {
@@ -71,15 +70,6 @@ if (isNil "FLO_virtualGroups") then {
                     [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
                 };
                 
-                // If the group is associated with an objective, add it to objectiveGroups
-                private _objective = _groupData getOrDefault ["objective", ""];
-                if (_objective != "") then {
-                    private _objectiveGroups = _self get "_objectiveGroups";
-                    private _groups = _objectiveGroups getOrDefault [_objective, []];
-                    _groups pushBack _groupId;
-                    _objectiveGroups set [_objective, _groups];
-                };
-                
                 ["VIRTUALIZATION", 3, format["Added virtual group %1", _groupId]] call FLO_fnc_log;
             }],
             
@@ -89,15 +79,6 @@ if (isNil "FLO_virtualGroups") then {
                 private _groupData = (_self get "_groups") getOrDefault [_groupId, objNull];
                 
                 if (!isNull _groupData) then {
-                    // Remove from objective groups if needed
-                    private _objective = _groupData getOrDefault ["objective", ""];
-                    if (_objective != "") then {
-                        private _objectiveGroups = _self get "_objectiveGroups";
-                        private _groups = _objectiveGroups getOrDefault [_objective, []];
-                        _groups = _groups - [_groupId];
-                        _objectiveGroups set [_objective, _groups];
-                    };
-                    
                     // Remove marker if debug mode is enabled
                     if (_self get "_debugMode") then {
                         deleteMarker format["vgroup_%1", _groupId];
@@ -125,12 +106,6 @@ if (isNil "FLO_virtualGroups") then {
                         };
                     };
                 };
-            }],
-            
-            // Method to get all groups for a specific objective
-            ["_getObjectiveGroups", {
-                params ["_self", "_objectiveType"];
-                (_self get "_objectiveGroups") getOrDefault [_objectiveType, []]
             }]
         ]
     ];

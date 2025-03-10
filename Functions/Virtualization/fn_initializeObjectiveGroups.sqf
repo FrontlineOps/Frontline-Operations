@@ -25,9 +25,6 @@ if (isNil "FLO_virtualGroups") then {
 
 ["VIRTUALIZATION", 3, "Initializing objective groups"] call FLO_fnc_log;
 
-// Read faction configuration
-[] call compile preprocessFileLineNumbers "CUSTOM_ENEMY_FACTION.sqf";
-
 // Define mapping of objective types to group configurations
 private _objectiveGroupConfig = createHashMapFromArray [
     // Support objectives - mix of infantry and light vehicles
