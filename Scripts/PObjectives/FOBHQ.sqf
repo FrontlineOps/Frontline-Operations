@@ -1,49 +1,52 @@
 if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
-    Cost = 100;
+    // Define cost and check resources
+    Cost = 1500;
     private _mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
     private _mrkr = _mrkrs select 0;
     private _money = parseNumber (markerText _mrkr);
     
     if (_money >= Cost) then {
-        private _newMoney = _money - Cost; 
+        // Deduct cost
+        private _newMoney = _money - Cost;
         _mrkr setMarkerText str _newMoney;
-
+        
+        // Create FOB container
         private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
-        private _createdVEH = createVehicle ["B_Slingload_01_Repair_F", _pos, [], 0, "NONE"];
-        _createdVEH allowDamage false;
+        CreatedVEH = createVehicle ["B_Slingload_01_Cargo_F", _pos, [], 0, "NONE"];
+        CreatedVEH allowDamage false;
         
-        // Make the variable global
-        CreatedVEH = _createdVEH;
+        // Setup placement mode
         CursorTracker = true;
-        
         CreatedVEH enableSimulation false;
-
-        [] spawn {  
-            while {CursorTracker} do {  
+        
+        // Position tracking script
+        [] spawn {
+            while {CursorTracker} do {
                 CreatedVEH setVehiclePosition [screenToWorld [0.5, 0.5], [], 0, "CAN_COLLIDE"];
                 CreatedVEH setDir ((getDirVisual player) + 230);
                 sleep 0.3;
-            }
+            };
         };
-
-        private _ind01 = [CreatedVEH,
+        
+        // Add cancel action
+        Ind01 = [CreatedVEH,
             "<t color='#FF0000'>CANCEL</t>",
             'Screens\FOBA\iconRepairAt_ca.paa',
             'Screens\FOBA\iconRepairAt_ca.paa',
-            'true',       
-            'true',  
+            'true',
+            'true',
             {},
             {},
             {
-                params ["_vehicle"];
-                detach _vehicle; 
-                _vehicle enableSimulation true;
-                deleteVehicle _vehicle;
+                detach (_this select 0);
+                (_this select 0) enableSimulation true;
+                deleteVehicle (_this select 0);
                 
+                // Refund cost
                 private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
                 private _mrkr = _mrkrs select 0;
-                private _money = parseNumber (markerText _mrkr);  
-                private _newMoney = _money + Cost; 
+                private _money = parseNumber (markerText _mrkr);
+                private _newMoney = _money + Cost;
                 _mrkr setMarkerText str _newMoney;
             },
             {},
@@ -52,28 +55,34 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             0,
             false,
             false
-        ] call BIS_fnc_holdActionAdd; 
-
-        private _ind02 = [CreatedVEH,
+        ] call BIS_fnc_holdActionAdd;
+        
+        // Add place action
+        Ind02 = [CreatedVEH,
             "<t color='#FF0000'>PLACE</t>",
             'Screens\FOBA\iconRepairAt_ca.paa',
             'Screens\FOBA\iconRepairAt_ca.paa',
-            'true',       
-            'true',  
+            'true',
+            'true',
             {},
             {},
             {
-                params ["_vehicle"];
-                detach _vehicle; 
-                _vehicle enableSimulation true;
-                CursorTracker = false;
-                _vehicle allowDamage true;
-                _vehicle removeAction Ind01;
-                _vehicle removeAction Ind02;
+                // Place the FOB container
+                detach (_this select 0);
+                (_this select 0) enableSimulation true;
                 
-                [_vehicle, [
-                    "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-                    "Scripts\OPUNPACK.sqf",
+                // End placement mode
+                CursorTracker = false;
+                (_this select 0) allowDamage true;
+                
+                // Remove placement actions
+                (_this select 0) removeAction Ind01;
+                (_this select 0) removeAction Ind02;
+                
+                // Add unpack action
+                [(_this select 0), [
+                    "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
+                    "Scripts\PObjectives\FOBUNPACK.sqf",
                     nil,
                     0,
                     true,
@@ -92,12 +101,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             0,
             false,
             false
-        ] call BIS_fnc_holdActionAdd; 
-
-        // Store action IDs globally for the completion function to access
-        Ind01 = _ind01;
-        Ind02 = _ind02;
-
+        ] call BIS_fnc_holdActionAdd;
     } else {
         hint "Not enough Resources";
     };

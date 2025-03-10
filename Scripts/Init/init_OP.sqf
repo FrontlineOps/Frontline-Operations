@@ -12,5 +12,3 @@ if (!isNil "FOBB") then {
 if (isClass(configFile >> "CfgPatches" >> "ace_main")) then {
     [FOBB, true] remoteExec ["ace_arsenal_fnc_initBox", 0];
 };
-
-[playerSide, "HQ"] commandChat "OP Deployed!";

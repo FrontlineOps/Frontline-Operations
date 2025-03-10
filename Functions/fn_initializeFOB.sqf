@@ -102,7 +102,7 @@ false
 "_caller distance _target < 40",  
 {},
 {},
-{execVM 'Scripts\FOBPACK.sqf';},
+{execVM 'Scripts\PObjectives\FOBPACK.sqf';},
 {},
 [],
 5,
