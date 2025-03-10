@@ -1,101 +1,108 @@
 if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
+    Cost = 100;
+    private _mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
+    private _mrkr = _mrkrs select 0;
+    private _money = parseNumber (markerText _mrkr);
+    
+    if (_money >= Cost) then {
+        private _newMoney = _money - Cost; 
+        _mrkr setMarkerText str _newMoney;
 
-Cost = 100 ;
-_mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-_mrkr = _mrkrs select 0;
-_Money = parseNumber (markerText _mrkr) ;  
-if (_Money >= Cost) then {
-_NewMoney = _Money - Cost; 
-_mrkr setMarkerText str _NewMoney;
+        private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
+        private _createdVEH = createVehicle ["B_Slingload_01_Repair_F", _pos, [], 0, "NONE"];
+        _createdVEH allowDamage false;
+        
+        // Make the variable global
+        CreatedVEH = _createdVEH;
+        CursorTracker = true;
+        
+        CreatedVEH enableSimulation false;
 
+        [] spawn {  
+            while {CursorTracker} do {  
+                CreatedVEH setVehiclePosition [screenToWorld [0.5, 0.5], [], 0, "CAN_COLLIDE"];
+                CreatedVEH setDir ((getDirVisual player) + 230);
+                sleep 0.3;
+            }
+        };
 
-_pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
-CreatedVEH = createVehicle ["B_Slingload_01_Repair_F",_pos,[],0,"NONE"];
-CreatedVEH allowDammage false;
+        private _ind01 = [CreatedVEH,
+            "<t color='#FF0000'>CANCEL</t>",
+            'Screens\FOBA\iconRepairAt_ca.paa',
+            'Screens\FOBA\iconRepairAt_ca.paa',
+            'true',       
+            'true',  
+            {},
+            {},
+            {
+                params ["_vehicle"];
+                detach _vehicle; 
+                _vehicle enableSimulation true;
+                deleteVehicle _vehicle;
+                
+                private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
+                private _mrkr = _mrkrs select 0;
+                private _money = parseNumber (markerText _mrkr);  
+                private _newMoney = _money + Cost; 
+                _mrkr setMarkerText str _newMoney;
+            },
+            {},
+            [],
+            3,
+            0,
+            false,
+            false
+        ] call BIS_fnc_holdActionAdd; 
 
-CursorTracker = true ;
-CreatedVEH enableSimulation false;
-CreatedVEH allowDammage false ;
+        private _ind02 = [CreatedVEH,
+            "<t color='#FF0000'>PLACE</t>",
+            'Screens\FOBA\iconRepairAt_ca.paa',
+            'Screens\FOBA\iconRepairAt_ca.paa',
+            'true',       
+            'true',  
+            {},
+            {},
+            {
+                params ["_vehicle"];
+                detach _vehicle; 
+                _vehicle enableSimulation true;
+                CursorTracker = false;
+                _vehicle allowDamage true;
+                _vehicle removeAction Ind01;
+                _vehicle removeAction Ind02;
+                
+                [_vehicle, [
+                    "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
+                    "Scripts\OPUNPACK.sqf",
+                    nil,
+                    0,
+                    true,
+                    true,
+                    "",
+                    "player == TheCommander",
+                    25,
+                    false,
+                    "",
+                    ""
+                ]] remoteExec ["addAction", 0, true];
+            },
+            {},
+            [],
+            3,
+            0,
+            false,
+            false
+        ] call BIS_fnc_holdActionAdd; 
 
-[] spawn {  
-  while {CursorTracker == true} do{  
-  CreatedVEH setVehiclePosition [ screenToWorld [ 0.5, 0.5 ], [], 0, "CAN_COLLIDE" ];
-  CreatedVEH setDir ((getDirVisual player) + 230);
-  sleep 0.3;
-  }
+        // Store action IDs globally for the completion function to access
+        Ind01 = _ind01;
+        Ind02 = _ind02;
+
+    } else {
+        hint "Not enough Resources";
+    };
+} else {
+    hint "You are not authorized for this Request Soldier!";
 };
 
-
-
-Ind01 = [ CreatedVEH,
-"<t color='#FF0000'>CANCEL</t>",
-'Screens\FOBA\iconRepairAt_ca.paa',
-'Screens\FOBA\iconRepairAt_ca.paa',
-'true',       
-'true',  
-{},
-{},
-{
-detach (_this select 0); 
-(_this select 0) enableSimulation true;
-deleteVehicle (_this select 0);
-_mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
-_mrkr = _mrkrs select 0;
-_Money = parseNumber (markerText _mrkr) ;  
-_NewMoney = _Money + Cost; 
-_mrkr setMarkerText str _NewMoney;
-
-},
-{},
-[],
-3,
-0,
-false,
-false
-] call BIS_fnc_holdActionAdd; 
-
-Ind02 = [ CreatedVEH,
-"<t color='#FF0000'>PLACE</t>",
-'Screens\FOBA\iconRepairAt_ca.paa',
-'Screens\FOBA\iconRepairAt_ca.paa',
-'true',       
-'true',  
-{},
-{},
-{
-detach (_this select 0); 
-(_this select 0) enableSimulation true;
-CursorTracker = false ;
-(_this select 0) enableSimulation true;
-(_this select 0) allowDammage true ;
-(_this select 0) removeAction Ind01;
-(_this select 0) removeAction Ind02;
-[(_this select 0),[
-	"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-	"Scripts\OPUNPACK.sqf",
-	nil,
-	0,
-	true,
-	true,
-	"",
-	"player == TheCommander", // _target, _this, _originalTarget
-	25,
-	false,
-	"",
-	""
-]] remoteExec ["addAction",0,true];
-},
-{},
-[],
-3,
-0,
-false,
-false
-] call BIS_fnc_holdActionAdd; 
-
-
-}else{hint "Not enough Resources";};
-
-}else{  hint "You are not authorized for this Request Soldier!"; };
-
-	closeDialog 0;
+closeDialog 0;
