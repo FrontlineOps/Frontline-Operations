@@ -176,34 +176,34 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
     };
 };
 
-// Initialize Intel System
-[] call FLO_fnc_intelSystem;
-diag_log "[FLO] Intelligence System initialized";
+// // Initialize Intel System
+// [] call FLO_fnc_intelSystem;
+// diag_log "[FLO] Intelligence System initialized";
 
-// Initialize the resource system
-["init", []] call FLO_fnc_opforResources;
-diag_log "[FLO] Resource system initialized";
+// // Initialize the resource system
+// ["init", []] call FLO_fnc_opforResources;
+// diag_log "[FLO] Resource system initialized";
 
-// Initialize the garrison management system
-[] call FLO_fnc_garrisonManager;
-diag_log "[FLO] Garrison system initialized";
+// // Initialize the garrison management system
+// [] call FLO_fnc_garrisonManager;
+// diag_log "[FLO] Garrison system initialized";
 
-// Initialize the logistics network
-["init", []] call FLO_fnc_logisticsNetwork;
-diag_log "[FLO] Logistics network initialized";
+// // Initialize the logistics network
+// ["init", []] call FLO_fnc_logisticsNetwork;
+// diag_log "[FLO] Logistics network initialized";
 
-// Initialize the Task Force system
-["init", []] call FLO_fnc_TaskForceSystem;
-diag_log "[FLO] Task Force system initialized";
+// // Initialize the Task Force system
+// ["init", []] call FLO_fnc_TaskForceSystem;
+// diag_log "[FLO] Task Force system initialized";
 
-// Initialize AI Commander Unit Capability Analyzer
-FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
-diag_log "[FLO] AI Commander Unit Capability Analyzer initialized";
+// // Initialize AI Commander Unit Capability Analyzer
+// FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
+// diag_log "[FLO] AI Commander Unit Capability Analyzer initialized";
 
-// Initialize AI Commander
-FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
-publicVariable "FLO_AICommander";
-diag_log "[FLO] AI Commander initialized";
+// // Initialize AI Commander
+// FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
+// publicVariable "FLO_AICommander";
+// diag_log "[FLO] AI Commander initialized";
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -353,3 +353,34 @@ diag_log "[FLO] AI Commander initialized";
 //         sleep 600; // 10 minutes
 //     };
 // };
+
+// Initialize OPFOR Virtualization System
+[] spawn {
+    // Wait for the mission to fully initialize
+    waitUntil {!isNil "MissionLoadedLitterally" && {MissionLoadedLitterally}};
+    waitUntil {!isNil "StartingLocationDone" && {StartingLocationDone}};
+    
+    // Small delay to ensure all other systems are loaded
+    sleep 5;
+    
+    // Read settings from CUSTOM_ENEMY_FACTION.sqf
+    [] call compile preprocessFileLineNumbers "CUSTOM_ENEMY_FACTION.sqf";
+    
+    // Initialize the virtualization system with the configured activation distance
+    if (!isNil "OPFOR_Virtualization_Distance") then {
+        [OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization;
+    } else {
+        // Default to 2000m if not defined
+        [2000] call FLO_fnc_initVirtualization;
+    };
+    
+    // Initialize virtual groups at all objectives
+    [] call FLO_fnc_initializeObjectiveGroups;
+    
+    // Enable debug mode in non-multiplayer
+    //if (!isMultiplayer) then {
+        [true] call FLO_fnc_toggleVirtualizationDebug;
+    //};
+    
+    ["INIT", 3, "OPFOR Virtualization System initialized"] call FLO_fnc_log;
+};

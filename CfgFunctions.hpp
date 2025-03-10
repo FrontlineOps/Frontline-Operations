@@ -74,6 +74,21 @@ class FLO {
         class setupCaptureSystem      {};
     };
 
+    class Virtualization {
+        file = "Functions\Virtualization";
+        
+        class initVirtualization             {};
+        class createVirtualGroupMarker       {};
+        class virtualGroupsUpdateLoop        {};
+        class activateVirtualGroup           {};
+        class deactivateVirtualGroup         {};
+        class createVirtualGroup             {};
+        class updateVirtualGroupWaypoints    {};
+        class initializeObjectiveGroups      {};
+        class toggleVirtualizationDebug      {};
+        class distributeVirtualGroups        {};
+    };
+
     class Utilities {
         file = "Functions\Utilities";
 

@@ -42,6 +42,7 @@ private _aiCommander = createHashMapObject [[
     ["_taskForcePool", []],
     ["_taskForceSourceMap", createHashMap], // Maps task force IDs to their source outposts
     ["_garrisonContributions", createHashMap], // Tracks how many units each garrison has contributed
+    ["_virtualGroups", createHashMap], // NEW: Tracks virtual groups under commander control
 
     // Methods
     ["_updateOperationMode", {
@@ -1774,6 +1775,81 @@ private _aiCommander = createHashMapObject [[
         };
         
         _bestOutpost
+    }],
+    
+    // NEW METHOD: Issue waypoints to virtual group
+    ["_issueVirtualGroupWaypoints", {
+        params ["_self", "_groupId", "_waypoints"];
+        
+        // Skip if virtualization system is not initialized
+        if (isNil "FLO_virtualGroups") exitWith {
+            ["AI Commander", 2, "Cannot issue virtual group waypoints - virtualization system not initialized"] call FLO_fnc_log;
+            false
+        };
+        
+        // Update the virtual group's waypoints
+        [_groupId, _waypoints] call FLO_fnc_updateVirtualGroupWaypoints;
+        
+        // Add to tracked virtual groups
+        (_self get "_virtualGroups") set [_groupId, diag_tickTime];
+        
+        ["AI Commander", 3, format["Issued waypoints to virtual group %1", _groupId]] call FLO_fnc_log;
+        true
+    }],
+    
+    // NEW METHOD: Assign task to virtual groups at objective
+    ["_assignVirtualGroupsTask", {
+        params ["_self", "_objectiveId", "_taskType", "_targetPos"];
+        
+        // Skip if virtualization system is not initialized
+        if (isNil "FLO_virtualGroups") exitWith {
+            ["AI Commander", 2, "Cannot assign task to virtual groups - virtualization system not initialized"] call FLO_fnc_log;
+            false
+        };
+        
+        // Get virtual groups associated with this objective
+        private _groups = [FLO_virtualGroups, _objectiveId] call (FLO_virtualGroups get "_getObjectiveGroups");
+        if (count _groups == 0) exitWith {
+            ["AI Commander", 3, format["No virtual groups found for objective %1", _objectiveId]] call FLO_fnc_log;
+            false
+        };
+        
+        // Define waypoint parameters based on task type
+        private _wpBehavior = "AWARE";
+        private _wpSpeed = "NORMAL";
+        private _wpFormation = "COLUMN";
+        private _wpCombatMode = "YELLOW";
+        
+        switch (_taskType) do {
+            case "ATTACK": {
+                _wpBehavior = "COMBAT";
+                _wpSpeed = "FULL";
+                _wpCombatMode = "RED";
+            };
+            case "DEFEND": {
+                _wpBehavior = "COMBAT";
+                _wpFormation = "LINE";
+            };
+            case "PATROL": {
+                _wpBehavior = "AWARE";
+                _wpFormation = "STAG COLUMN";
+            };
+            case "RECON": {
+                _wpBehavior = "STEALTH";
+                _wpSpeed = "LIMITED";
+            };
+        };
+        
+        // Create waypoint data
+        private _waypoints = [[_targetPos, _taskType, _wpBehavior, _wpSpeed, _wpFormation, _wpCombatMode]];
+        
+        // Issue waypoints to all groups
+        {
+            [_self, _x, _waypoints] call (_self get "_issueVirtualGroupWaypoints");
+        } forEach _groups;
+        
+        ["AI Commander", 3, format["Assigned %1 task to %2 virtual groups at objective %3", _taskType, count _groups, _objectiveId]] call FLO_fnc_log;
+        true
     }]
 ]];
 
