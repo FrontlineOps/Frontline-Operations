@@ -50,8 +50,6 @@ class FLO {
         class initializeObjectiveGroups      {};
         class toggleVirtualizationDebug      {};
         class distributeVirtualGroups        {};
-        class testVirtualMovement            {};
-        class testVirtualMovementAdvanced    {};
     };
 
     class Logistics {
