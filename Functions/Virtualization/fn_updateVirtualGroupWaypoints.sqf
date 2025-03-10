@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  * Description:
  * Updates the waypoints for a virtual group. If the group is active, updates its real waypoints.
- * If inactive, stores the waypoints for when it gets activated.
+ * If inactive, stores the waypoints for virtual movement processing.
  *
  * Arguments:
  * 0: Group ID <STRING> - Unique identifier for the virtual group
@@ -29,16 +29,58 @@ if (isNil "FLO_virtualGroups") exitWith {
 };
 
 // Get the group data
-private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, objNull];
-if (isNull _groupData) exitWith {
+private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, createHashMap];
+if (_groupData isEqualTo createHashMap) exitWith {
     ["VIRTUALIZATION", 2, format["Cannot update waypoints - virtual group %1 not found", _groupId]] call FLO_fnc_log;
     false
 };
 
-// Update the stored waypoints in the group data
+// Store the waypoints and initialize tracking for both virtual and physical movement
 _groupData set ["waypoints", _waypoints];
 
-// If the group is active, update its real waypoints
+// Add or update virtual waypoint data
+if (count _waypoints > 0) then {
+    // Set group state to moving
+    _groupData set ["state", "moving"];
+    
+    // Initialize virtual waypoint tracking
+    _groupData set ["currentWaypointIndex", 0];
+    _groupData set ["lastMoveTime", diag_tickTime];
+    
+    // Calculate speed in meters per second based on waypoint speed setting
+    private _wpSpeed = (_waypoints select 0) select 3;
+    private _speedMPS = switch (_wpSpeed) do {
+        case "LIMITED": { 2 }; // ~7 km/h
+        case "NORMAL": { 4 }; // ~14 km/h
+        case "FULL": { 8 }; // ~29 km/h
+        default { 4 };
+    };
+    
+    // Adjust speed based on group type
+    private _groupType = _groupData getOrDefault ["groupType", "infantry"];
+    private _speedMultiplier = switch (_groupType) do {
+        case "infantry": { 1.0 };
+        case "motorized": { 2.5 };
+        case "mechanized": { 2.0 };
+        case "armor": { 1.8 };
+        case "helicopter";
+        case "air": { 6.0 };
+        case "jet": { 10.0 };
+        default { 1.0 };
+    };
+    
+    _groupData set ["virtualSpeed", _speedMPS * _speedMultiplier];
+    
+    // Create or update waypoint visualization in debug mode
+    if (FLO_virtualGroups get "_debugMode") then {
+        [_groupId, _waypoints, 0] call FLO_fnc_createVirtualWaypointMarkers;
+    };
+    
+    ["VIRTUALIZATION", 3, format["Set up virtual movement for group %1 (Speed: %2 m/s)", 
+        _groupId, _speedMPS * _speedMultiplier]] call FLO_fnc_log;
+};
+
+// If the group is active, update its real waypoints too
 if (_groupData getOrDefault ["isActive", false]) then {
     private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
     if (!isNull _realGroup) then {
@@ -63,9 +105,6 @@ if (_groupData getOrDefault ["isActive", false]) then {
             _wp setWaypointFormation _wpFormation;
             _wp setWaypointCombatMode _wpMode;
         } forEach _waypoints;
-        
-        // Set new movement state
-        _groupData set ["state", "moving"];
         
         // Update marker if debug mode is on
         if (FLO_virtualGroups get "_debugMode") then {

@@ -2,7 +2,6 @@ class FLO {
     class Functions {
         file = "Functions";
 
-        class CDVS              {};
         class ICS               {};
         class MissionSave       {};
         class MissionStartup    {};
@@ -42,6 +41,7 @@ class FLO {
         
         class initVirtualization             {};
         class createVirtualGroupMarker       {};
+        class createVirtualWaypointMarkers   {};
         class virtualGroupsUpdateLoop        {};
         class activateVirtualGroup           {};
         class deactivateVirtualGroup         {};
@@ -50,6 +50,8 @@ class FLO {
         class initializeObjectiveGroups      {};
         class toggleVirtualizationDebug      {};
         class distributeVirtualGroups        {};
+        class testVirtualMovement            {};
+        class testVirtualMovementAdvanced    {};
     };
 
     class Logistics {

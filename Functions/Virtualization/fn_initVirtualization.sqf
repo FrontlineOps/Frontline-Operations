@@ -44,12 +44,30 @@ if (isNil "FLO_virtualGroups") then {
                 // If enabling debug mode, create map markers for all virtual groups
                 if (_debugState) then {
                     {
+                        // Create position marker
                         [_x, _y] call FLO_fnc_createVirtualGroupMarker;
+                        
+                        // Create waypoint markers if the group has waypoints
+                        private _waypoints = _y getOrDefault ["waypoints", []];
+                        private _currentWaypointIndex = _y getOrDefault ["currentWaypointIndex", 0];
+                        
+                        if (count _waypoints > 0) then {
+                            [_x, _waypoints, _currentWaypointIndex] call FLO_fnc_createVirtualWaypointMarkers;
+                        };
                     } forEach (_self get "_groups");
                 } else {
                     // Remove all debug markers
                     {
+                        // Remove group markers
                         deleteMarker format["vgroup_%1", _x];
+                        
+                        // Remove waypoint markers
+                        private _waypointMarkerPrefix = format["vwp_%1_", _x];
+                        {
+                            if ((_x find _waypointMarkerPrefix) == 0) then {
+                                deleteMarker _x;
+                            };
+                        } forEach allMapMarkers;
                     } forEach (_self get "_groups");
                 };
             }],
@@ -76,9 +94,9 @@ if (isNil "FLO_virtualGroups") then {
             // Method to remove a group from the system
             ["_removeGroup", {
                 params ["_self", "_groupId"];
-                private _groupData = (_self get "_groups") getOrDefault [_groupId, objNull];
+                private _groupData = (_self get "_groups") getOrDefault [_groupId, createHashMap];
                 
-                if (!isNull _groupData) then {
+                if (!(_groupData isEqualTo createHashMap)) then {
                     // Remove marker if debug mode is enabled
                     if (_self get "_debugMode") then {
                         deleteMarker format["vgroup_%1", _groupId];
@@ -93,9 +111,9 @@ if (isNil "FLO_virtualGroups") then {
             // Method to update position of a virtual group
             ["_updateGroupPosition", {
                 params ["_self", "_groupId", "_newPosition"];
-                private _groupData = (_self get "_groups") getOrDefault [_groupId, objNull];
+                private _groupData = (_self get "_groups") getOrDefault [_groupId, createHashMap];
                 
-                if (!isNull _groupData) then {
+                if (!(_groupData isEqualTo createHashMap)) then {
                     _groupData set ["position", _newPosition];
                     
                     // Update marker if debug mode is enabled
