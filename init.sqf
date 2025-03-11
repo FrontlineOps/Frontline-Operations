@@ -1,0 +1,1 @@
+[] call IDS_Logistics_fnc_initLogistics;
