@@ -86,16 +86,5 @@ _trg setTriggerStatements [
     ""
 ];
 
-// Setup CQB trigger
-private _trgCQB = createTrigger ["EmptyDetector", _triggerPos, false];
-_trgCQB setTriggerArea [200, 200, 0, false, 40];
-_trgCQB setTriggerActivation ["WEST", "PRESENT", false];
-_trgCQB setTriggerTimeout [10, 10, 10, true];
-_trgCQB setTriggerStatements [
-    "this",
-    "[thisTrigger] execVM 'Scripts\CQBURB.sqf';",
-    ""
-];
-
 // Setup item spawn trigger
 [_thisCityTrigger, 300] execVM "Scripts\INTLitems.sqf";

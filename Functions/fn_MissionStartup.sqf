@@ -194,7 +194,7 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Cargo_F"], 40000];
 {
     [_x,[
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
-        "Scripts\FOBUNPACK.sqf",
+        "Scripts\PObjectives\FOBUNPACK.sqf",
         nil,
         0,
         true,
@@ -212,7 +212,7 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Repair_F"], 40000];
 {
     [_x,[
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-        "Scripts\OPUNPACK.sqf",
+        "Scripts\PObjectives\OPUNPACK.sqf",
         nil,
         0,
         true,

@@ -456,7 +456,7 @@ else
 					removeAllActions _objet ;
 					[_objet,[
 							"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
-							"Scripts\FOBUNPACK.sqf",
+							"Scripts\PObjectives\FOBUNPACK.sqf",
 							nil,
 							0,
 							true,
@@ -474,7 +474,7 @@ else
 					removeAllActions _objet ;				
 						[_objet,[
 							"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-							"Scripts\OPUNPACK.sqf",
+							"Scripts\PObjectives\OPUNPACK.sqf",
 							nil,
 							0,
 							true,

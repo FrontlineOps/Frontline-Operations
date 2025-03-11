@@ -404,7 +404,7 @@ FLO_fnc_configureVehicle = {
     if (_VehName == "B_Slingload_01_Repair_F") then {
         [_vehicle, [
             "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-            "Scripts\OPUNPACK.sqf",
+            "Scripts\PObjectives\OPUNPACK.sqf",
             nil,
             0,
             true,
