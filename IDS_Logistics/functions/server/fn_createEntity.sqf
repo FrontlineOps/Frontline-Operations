@@ -40,6 +40,7 @@ _entity enableSimulationGlobal true;
 [_player, _entity] remoteExecCall ["enableCollisionWith", 0, true]; // JIP compatible
 
 // Add to tracking array with netID reference
+if (isNil "IDS_Logistics_PlacedEntities") then { IDS_Logistics_PlacedEntities = []; };
 IDS_Logistics_PlacedEntities pushBack _entity;
 publicVariable "IDS_Logistics_PlacedEntities";
 

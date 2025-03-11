@@ -18,28 +18,20 @@
  * [] call IDS_Logistics_fnc_saveEntites
  */
 
-// Create a HashMap for the entities data
-private _saveData = createHashMap;
+// Create an array for the entities data
+private _saveData = [];
 
-// Create array for entities
-_saveData set ["entities", []];
-
-{
-    // Extract entity data
-    private _className = typeOf _x;
-    private _position = getPosWorld _x;
-    private _direction = getDir _x;
-    private _vectorUp = vectorUp _x;
-    
+{    
     // Create a HashMap for each entity
-    private _entityData = createHashMap;
-    _entityData set ["class", _className];
-    _entityData set ["position", _position];
-    _entityData set ["direction", _direction];
-    _entityData set ["vectorUp", _vectorUp];
-    
+    private _entityData = createHashMapFromArray [
+        ["class", typeOf _x],
+        ["position", getPosWorld _x],
+        ["direction", getDir _x],
+        ["vectorUp", vectorUp _x]
+    ];
+
     // Add to entities array
-    (_saveData get "entities") pushBack _entityData;
+    _saveData pushBack _entityData;
 } forEach IDS_Logistics_PlacedEntities;
 
 // Save to profileNamespace

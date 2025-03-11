@@ -4,7 +4,7 @@ class IDS_Logistics {
         file = "IDS_Logistics\functions";
 
         class getEntityConfig {};
-        class initLogistics {};
+        class initLogistics { preInit = 1; };
         class pickupEntity {};
         class placeEntity {};
         class startPlacement {};
