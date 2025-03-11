@@ -2,11 +2,9 @@ class FLO {
     class Functions {
         file = "Functions";
 
-        class MissionSave       {};
-        class MissionFrontline  {};
-        class MissionStartup    {};
-        class CDVS              {};
         class ICS               {};
+        class MissionSave       {};
+        class MissionStartup    {};
         class MissionLoad       {preInit = 1;};
         class initializeFOB     {};
         class initializeOP      {};
@@ -18,12 +16,7 @@ class FLO {
         class artilleryPrep                     {};
         class airRecon                          {};
         class airSupport                        {};
-        class executeAttackPattern              {};
         class fireObserver                      {};
-        class calculateQRFResponse              {};
-        class requestQRF                        {};
-        class requestOffensiveOps               {};
-        class heliInsert                        {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
     };
@@ -43,19 +36,28 @@ class FLO {
         class getTargetType     {};
     };
 
+    class Virtualization {
+        file = "Functions\Virtualization";
+        
+        class initVirtualization             {};
+        class createVirtualGroupMarker       {};
+        class createVirtualWaypointMarkers   {};
+        class virtualGroupsUpdateLoop        {};
+        class activateVirtualGroup           {};
+        class deactivateVirtualGroup         {};
+        class createVirtualGroup             {};
+        class updateVirtualGroupWaypoints    {};
+        class initializeObjectiveGroups      {};
+        class toggleVirtualizationDebug      {};
+        class distributeVirtualGroups        {};
+    };
+
     class Logistics {
         file = "Functions\Logistics";
 
         class opforResources        {};
         class intelSystem           {};
         class logisticsNetwork      {};
-    };
-
-    class TaskForce {
-        file = "Functions\TaskForce";
-
-        class TaskForceSystem      {};
-        class TaskForceDefenseLine {};
     };
 
     class Arsenal {
@@ -66,9 +68,7 @@ class FLO {
     
     class Objective {
         file = "Functions\Objective";
-        
-        class garrisonManager         {};
-        class vehicleGarrison         {};
+
         class finalizeObjectiveFlip   {};
         class flipObjective           {};
         class setupCaptureSystem      {};
