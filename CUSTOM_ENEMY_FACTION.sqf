@@ -45,24 +45,17 @@ East_Ground_Artillery = ["O_R_MBT_02_arty_F"];
 East_Air_Drone = ["I_UAV_02_lxWS", "I_UAV_01_F"]; 
 // Individual Infantry Units
 East_Units = [
-    // Regular infantry (high frequency)
-    "I_soldier_F", "I_soldier_F", "I_soldier_F", "I_soldier_F",  // Regular rifleman
-    "I_Soldier_AR_F", "I_Soldier_AR_F",                          // Autorifleman
-    "I_Soldier_CQ_F", "I_Soldier_CQ_F",                          // CQB specialist
-    "I_Soldier_GL_F", "I_Soldier_GL_F",                          // Grenadier
-    
-    // Support roles (medium frequency)
-    "I_medic_F", "I_medic_F",                                    // Medic
-    "Aegis_I_Soldier_MG_F", "Aegis_I_Soldier_MG_F",              // Machine gunner
-    "I_Soldier_M_F",                                             // Marksman
-    "I_Soldier_A_F",                                             // Ammo bearer
-    
-    // Specialists (low frequency)
-    "I_Soldier_LAT_F",                                           // Light AT
-    "I_Soldier_LAT2_F",                                          // Light AT
-    "I_Soldier_AT_F",                                            // AT Specialist
-    "I_Soldier_AA_F",                                            // AA Specialist
-    "Aegis_I_HeavyGunner_F"                                     // Heavy gunner
+    // Regular infantry
+    "O_Soldier_F",
+    "O_Soldier_AR_F",
+    "O_Soldier_GL_F",
+    "O_Soldier_LAT_F",
+    "O_Soldier_AT_F",
+    "O_soldier_M_F",
+    "O_Soldier_AA_F",
+    "O_Soldier_TL_F",
+    "O_medic_F",
+    "O_engineer_F"
 ];
 // Fire Observer Units for Artillery
 East_FireObserver = ["I_RadioOperator_F"];

@@ -5,7 +5,9 @@ East_Ground_Transport = ["O_Tura_Offroad_armor_lxWS",  "O_SFIA_Truck_02_transpor
 
 East_Air_Transport = ["I_C_Heli_Light_01_civil_F", "O_Heli_Transport_04_covered_F"];
 East_Air_Heli = ["O_Heli_Light_02_dynamicLoadout_F"]; 
-East_Air_Jet = ["O_Heli_Light_02_dynamicLoadout_F"]; 
+East_Air_Jet = ["O_Heli_Light_02_dynamicLoadout_F"];
+East_Ground_Artillery = ["O_MBT_02_arty_F"];
+East_Air_Drone = ["O_UAV_01_F"]; 
 
 East_Units = ["O_Tura_watcher_lxWS","O_Tura_deserter_lxWS","O_Tura_enforcer_lxWS","O_Tura_hireling_lxWS","O_Tura_scout_lxWS","O_Tura_medic2_lxWS","O_Tura_thug_lxWS"];
 East_FireObserver = ["O_Tura_watcher_lxWS"];

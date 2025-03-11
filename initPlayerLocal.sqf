@@ -66,6 +66,18 @@ if (_RestrictedArsenalVal isEqualTo 0) then {
 	[] call FLO_fnc_restrictedArsenal;
 };
 
+// Add the open Logistics Menu UI action
+IDS_Logistics_openUIActionId = player addAction [
+    "<t color='#3498DB'>Open Logistics Menu</t>", 
+    { call IDS_Logistics_fnc_openBuildMenu; }, 
+    nil, 
+    1.4, 
+    false, 
+    true, 
+    "", 
+    "!IDS_Logistics_isHolding"
+];
+
 // SYSTEMs Init Clients
 Triggers0 = execVM "Scripts\Init\init_Triggers.sqf";
 waitUntil {sleep 1; scriptDone Triggers0 };
