@@ -23,7 +23,7 @@ params [["_operationMode", "DEFEND", [""]]];
 // Initialize variables
 private _hasSpecialOps = false;
 private _lastCommanderUpdate = diag_tickTime;
-private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
+private _commanderUpdateInterval = 3600; // 1 hour between strategy updates
 private _specialOpsUpdateInterval = 900; // 15 minutes between special ops deployments
 private _lastSpecialOpsTime = diag_tickTime - 600; // Start with a delay
 private _currentThreatLevel = 0;
@@ -1778,7 +1778,7 @@ private _aiCommander = createHashMapObject [[
 ]];
 
 // Initialize Commander
-_aiCommander set ["_commanderUpdateInterval", 300];
+_aiCommander set ["_commanderUpdateInterval", 3600];
 _aiCommander set ["_specialOpsUpdateInterval", 900];
 _aiCommander set ["_threatThreshold", 0.6];
 
