@@ -35,15 +35,6 @@ private _entity = createVehicle [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
 _entity setPosASL _position;
 _entity setDir _direction;
 
-// Get entity configuration and set variable
-private _entityConfig = [_className] call IDS_Logistics_fnc_getEntityConfig;
-_entityConfig params ["_entityClassName", "_entityDisplayName", "_entityCategory", "_entitySubCategory", "_entityCost"];
-_entity setVariable ["IDS_Logistics_EntityCost", _entityCost];
-_entity setVariable ["IDS_Logistics_isPlacedEntity", true];
-
-diag_log format ["Entity Config: %1", _entityConfig];
-diag_log format ["Entity Cost: %1", (_entity getVariable "IDS_Logistics_EntityCost")];
-
 // Enable physics
 _entity enableSimulationGlobal true;
 [_player, _entity] remoteExecCall ["enableCollisionWith", 0, true]; // JIP compatible

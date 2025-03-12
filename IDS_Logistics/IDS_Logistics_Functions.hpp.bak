@@ -3,9 +3,7 @@ class IDS_Logistics {
     class Functions {
         file = "IDS_Logistics\functions";
 
-        class cameraHint {};
         class getEntityConfig {};
-        class initBuildCamera {};
         class initLogistics { preInit = 1; };
         class pickupEntity {};
         class placeEntity {};

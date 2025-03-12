@@ -1,60 +1,75 @@
 /**
  * @name IDS_Logistics_fnc_finalizeEntity
- * @category Logistics_Server
+ * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.0
+ * @version 1.1
  * @date 2025-03-10
  * 
  * @description
- * Server-side function to update or create an entity after placement.
- * Uses netId to determine if this is a repositioning or new entity.
+ * Finalizes entity placement on the server. Handles both new entity creation
+ * and updating existing entities that have been repositioned.
  *
- * @param {String} _originalNetId - The original netId (empty for new entities)
- * @param {String} _className - Entity class name
- * @param {Array} _position - ASL position [x,y,z]
- * @param {Number} _direction - Direction in degrees
- * @param {Array} _vectorUp - Vector up [x,y,z]
+ * @param {String} _originalNetId - NetId of the original entity (empty if new)
+ * @param {String} _className - Class name of the entity
+ * @param {Array} _finalPos - Final position as ASL coordinates
+ * @param {Number} _finalDir - Final direction/rotation 
+ * @param {Array} _vectorUp - Vector up for non-standard orientation
  * @param {Object} _player - Player who placed the entity
  *
  * @return {Nothing}
+ *
+ * @example
+ * [_netId, _className, _finalPos, _finalDir, _vectorUp, player] remoteExec ["IDS_Logistics_fnc_finalizeEntity", 2]
  */
+
+// This function should run on the server only
+if (!isServer) exitWith {
+    diag_log "IDS_Logistics_fnc_finalizeEntity: Must be executed on server";
+};
 
 params [
     ["_originalNetId", "", [""]],
     ["_className", "", [""]],
-    ["_position", [0,0,0], [[]]],
-    ["_direction", 0, [0]],
+    ["_finalPos", [0,0,0], [[]]],
+    ["_finalDir", 0, [0]],
     ["_vectorUp", [0,0,1], [[]]],
     ["_player", objNull, [objNull]]
 ];
 
-if (_className == "") exitWith {
-    diag_log "IDS Logistics Error: Empty class name in finalizeEntity";
-};
+diag_log format ["IDS_Logistics_fnc_finalizeEntity called: NetID: %1, Class: %2, Pos: %3", _originalNetId, _className, _finalPos];
 
-// Check if this is an existing entity or new one
+// Check if this is a reposition of an existing entity
 if (_originalNetId != "") then {
-    // Find existing entity
-    private _entity = objectFromNetId _originalNetId;
+    private _existingEntity = objectFromNetId _originalNetId;
     
-    if (!isNull _entity) then {
-        // Update existing entity
-        _entity setPosASL _position;
-        _entity setDir _direction;
-        _entity setVectorUp _vectorUp;
-        _entity hideObject false;
-        _entity enableSimulationGlobal true;
+    if (!isNull _existingEntity) then {
+        // Set new position - note: using setPosWorld to ensure precise positioning
+        _existingEntity setPosWorld _finalPos;
+        _existingEntity setDir _finalDir;
+        _existingEntity setVectorUp _vectorUp;
         
-        // Success log
+        // Re-enable collisions and simulation
+        [_player, _existingEntity] remoteExecCall ["enableCollisionWith", 0];
+        _existingEntity enableSimulationGlobal true;
+        
+        // Make entity visible again
+        [_originalNetId, false] call IDS_Logistics_fnc_toggleEntityVisibility;
+        
         diag_log format ["IDS Logistics: Entity %1 repositioned by %2", _originalNetId, name _player];
     } else {
-        // Entity not found, create new
-        [_className, _position, _direction, _player] call IDS_Logistics_fnc_createEntity;
-        diag_log format ["IDS Logistics: Original entity %1 not found, created new", _originalNetId];
+        diag_log format ["IDS Logistics: Error - Could not find entity with NetID %1", _originalNetId];
     };
 } else {
-    // Create new entity
-    [_className, _position, _direction, _player] call IDS_Logistics_fnc_createEntity;
+    // Create a new entity
+    private _entity = createVehicle [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
+    _entity setPosWorld _finalPos;
+    _entity setDir _finalDir;
+    _entity setVectorUp _vectorUp;
+    
+    // Mark as a placed entity for future operations
+    _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+    _entity setVariable ["IDS_Logistics_PlacedBy", name _player, true];
+    
     diag_log format ["IDS Logistics: New entity %1 created by %2", _className, name _player];
 };
