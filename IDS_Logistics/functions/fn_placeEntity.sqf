@@ -7,9 +7,9 @@
  * @date 2025-03-10
  * 
  * @description
- * Confirms placement of the currently held entity and finalizes it on the server.
- * Works with both new placements and repositioning of existing entities.
- * Handles cleanup of temporary objects, event handlers, and action menu items.
+ * Finalizes the placement of the currently held entity.
+ * Works with both camera-based and player-based building systems.
+ * Handles cleanup of temporary objects and event handlers.
  *
  * @param {None} - Uses globally stored IDS_Logistics_currentEntity
  *
@@ -41,19 +41,42 @@ deleteVehicle _entity;
 [_originalNetId, _className, _finalPos, _finalDir, _vectorUp, player] remoteExecCall ["IDS_Logistics_fnc_finalizeEntity", 2];
 
 // Clean up event handlers
-(findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler];
-(findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler];
-(findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler];
-removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
+if (!isNil "IDS_Logistics_scrollHandler") then {
+    (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler];
+};
 
-// Remove action menu items
-player removeAction IDS_Logistics_placeActionId;
-player removeAction IDS_Logistics_cancelActionId;
+if (!isNil "IDS_Logistics_keyDownHandler") then {
+    (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler];
+};
+
+if (!isNil "IDS_Logistics_keyUpHandler") then {
+    (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler];
+};
+
+if (!isNil "IDS_Logistics_dirUpdateEH") then {
+    removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
+};
+
+// Remove action menu items if not in camera mode
+if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) then {
+    if (!isNil "IDS_Logistics_placeActionId") then {
+        player removeAction IDS_Logistics_placeActionId;
+    };
+    
+    if (!isNil "IDS_Logistics_cancelActionId") then {
+        player removeAction IDS_Logistics_cancelActionId;
+    };
+};
 
 // Reset global state variables
 IDS_Logistics_isHolding = false;
 IDS_Logistics_currentEntity = objNull;
+IDS_Logistics_lastViewDir = nil;
 
 // Provide user feedback
-hintSilent "";
-hint "Entity placed.";
+if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
+    ["Entity placed", 2] call IDS_Logistics_fnc_cameraHint;
+} else {
+    hintSilent "";
+    hint "Entity placed.";
+};
