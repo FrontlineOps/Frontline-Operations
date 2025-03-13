@@ -29,7 +29,7 @@ minPlayerDistance = 300; // meters. Default: 0
 
 
 
-
+#include "Scripts\defines.hpp"
 #include "R3F_LOG\desc_include.h"
 #include "KPGUI\KPGUI_defines.hpp"
 #include "KPPLM\ui\KPPLM_dialog.hpp"
@@ -66,7 +66,6 @@ class CfgRemoteExec
 };
 
 #include "compositions\compositions.cfg"
-#include "Scripts\defines.hpp"
 #include "Scripts\MissionSetupMenu\Dialog_Faction.hpp"
 #include "Scripts\MissionSetupMenu\Dialog_Parameters.hpp"
 #include "Scripts\RequestMenu\Dialog_Request.hpp"
