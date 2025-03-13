@@ -212,6 +212,10 @@ XPS_PF_typ_RoadGraph = [
 				_node = _self get "Roads" get (str (_roads#0));
 			};
 		} foreach [50, 100, 500, 1000];
+		if (isNil "_node") exitwith {
+			diag_log format["[FLO][Pathfinding] RoadGraphSearch: failed to find suitable road within 1km of position %1",_pos];
+			false;
+		};
 		_node;
 	}],
 	["SmoothPath", compileFinal {
