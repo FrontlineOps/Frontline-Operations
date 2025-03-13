@@ -16,7 +16,6 @@ class IDS_Logistics {
     class Server {
         file = "IDS_Logistics\functions\server";
 
-        class createEntity {};
         class finalizeEntity {};
         class onEntityKilled {};
         class saveEntities {};
