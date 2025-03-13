@@ -207,7 +207,7 @@ XPS_PF_typ_RoadGraph = [
 		private _node = nil;
 		// search for roads in increasingly large distances
 		{
-			private _roads = nearestTerrainObjects [_pos,["MAIN ROAD","ROAD","TRACK","TRAIL"],50,true];
+			private _roads = nearestTerrainObjects [_pos,["MAIN ROAD","ROAD","TRACK","TRAIL"],_x,true];
 			if (count _roads > 0) exitWith {
 				_node = _self get "Roads" get (str (_roads#0));
 			};
