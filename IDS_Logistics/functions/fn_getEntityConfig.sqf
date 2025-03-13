@@ -20,9 +20,7 @@
  * _config = ["Land_BagFence_Long_F"] call IDS_Logistics_fnc_getEntityConfig;
  */
 
-params [
-    ["_className", "", [""]]
-];
+params [["_className", "", [""]]];
 
 // Return empty array if no valid class name provided
 if (_className == "") exitWith {[]};

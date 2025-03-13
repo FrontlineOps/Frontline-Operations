@@ -34,8 +34,8 @@ if (isnil "IDS_LOGISTICS_BUILD_CAM_ISFLIR") then {
 
 IDS_LOGISTICS_CAM_VISION = 0;
 IDS_LOGISTICS_CAM_COLOR = ppEffectCreate ["colorCorrections", 1600];
-IDS_Logistics_CameraTerrainSnap = false; // Default: no terrain snapping
-IDS_Logistics_MouseClicks = []; // Will store our mouse event handlers
+IDS_Logistics_CameraTerrainSnap = false;
+IDS_Logistics_MouseClicks = [];
 
 if (isnil "IDS_LOGISTICS_CAM_PPEFFECTS") then {
 	IDS_LOGISTICS_CAM_PPEFFECTS = [
@@ -49,7 +49,7 @@ if (isnil "IDS_LOGISTICS_CAM_PPEFFECTS") then {
 // ---- CAMERA INITIALIZATION ----
 
 //--- Use provided object or default to player's vehicle
-if (typeName _this != typeName objNull) then {_this = cameraOn};
+if (typeName _this != typeName objNull) then { _this = cameraOn };
 
 //--- Ensure simulation runs at minimum speed (camera needs time to advance)
 setAccTime (accTime max (1 / 128));
@@ -67,10 +67,10 @@ if (_pHeight < 0) then {_pZ = _pZ + _pHeight};
 private _local = "camera" camCreate [_pX, _pY, _pZ + 2];
 
 IDS_LOGISTICS_CAM = _local;
-_local camCommand "MANUAL ON";      // Allow manual control
-_local camCommand "INERTIA OFF";    // Disable camera movement inertia 
+_local camCommand "MANUAL ON";
+_local camCommand "INERTIA OFF";
 _local cameraEffect ["INTERNAL", "BACK"];
-showCinemaBorder false;              // Hide cinema borders
+showCinemaBorder false;
 IDS_LOGISTICS_CAM setDir direction (vehicle player);
 
 // Store initial camera position for range limitation
@@ -83,36 +83,32 @@ IDS_Logistics_DistanceCheckEH = addMissionEventHandler ["EachFrame", {
     if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
         private _currentPos = getPosASL IDS_LOGISTICS_CAM;
         private _initialPos = IDS_LOGISTICS_CAM_INITIAL_POS;
-        
+
         // Calculate 2D distance manually using x and y coordinates only
         private _deltaX = (_currentPos select 0) - (_initialPos select 0);
         private _deltaY = (_currentPos select 1) - (_initialPos select 1);
         private _distance = sqrt(_deltaX^2 + _deltaY^2);
-        
+
         // If camera exceeds the limit, move it back to the boundary
         if (_distance > IDS_LOGISTICS_CAM_MAX_DISTANCE) then {
             // Calculate direction vector from initial position to current position (2D only)
             private _dir = [_deltaX, _deltaY, 0];
-            
+
             // Normalize the direction vector
             private _dirLength = sqrt((_dir select 0)^2 + (_dir select 1)^2);
             if (_dirLength > 0) then {
-                _dir = [
-                    (_dir select 0) / _dirLength,
-                    (_dir select 1) / _dirLength,
-                    0
-                ];
-                
+                _dir = [(_dir select 0) / _dirLength, (_dir select 1) / _dirLength, 0];
+
                 // Calculate new position at the boundary
                 private _newPos = [
                     (_initialPos select 0) + (_dir select 0) * IDS_LOGISTICS_CAM_MAX_DISTANCE,
                     (_initialPos select 1) + (_dir select 1) * IDS_LOGISTICS_CAM_MAX_DISTANCE,
                     _currentPos select 2
                 ];
-                
+
                 // Move camera to the boundary
                 IDS_LOGISTICS_CAM setPosASL _newPos;
-                
+
                 // Show notification if not already at limit
                 if (!IDS_LOGISTICS_CAM_AT_LIMIT) then {
                     ["<t color='#FF8844'>Maximum camera distance reached (50m)</t>", 2] call IDS_Logistics_fnc_cameraHint;
@@ -131,29 +127,24 @@ IDS_Logistics_DistanceCheckEH = addMissionEventHandler ["EachFrame", {
 // Add mouse click handlers for the camera
 IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["MouseButtonDown", {
     params ["_display", "_button", "_xPos", "_yPos", "_shift", "_ctrl", "_alt"];
-    
+
     // Left click - place entity or delete if shift is pressed
     if (_button == 0) then {
         // Use proper camera direction vector calculation
         private _camPos = getPosASL IDS_LOGISTICS_CAM;
-        
+
         // Get camera direction using vectorDir instead of getCameraViewDirection
         private _camDir = vectorDir IDS_LOGISTICS_CAM;
-        
+
         // If that's still zero, calculate from camera angles
         if (_camDir isEqualTo [0,0,0]) then {
             private _camDirection = getDir IDS_LOGISTICS_CAM;
             _camDir = [sin _camDirection, cos _camDirection, 0];
         };
-        
-        private _targetPos = _camPos vectorAdd (_camDir vectorMultiply 200);
-        
-        // Debug message for camera position and direction
-        // diag_log format ["Camera Pos: %1, Dir: %2, Target: %3", _camPos, _camDir, _targetPos];
-        
-        // Method 1: lineIntersectsSurfaces with the fixed direction
 
-         if (isNil "IDS_LOGISTICS_CAM") exitWith {};
+        private _targetPos = _camPos vectorAdd (_camDir vectorMultiply 200);
+
+        if (isNil "IDS_LOGISTICS_CAM") exitWith {};
         private _intersections = lineIntersectsSurfaces [
             _camPos, 
             _targetPos, 
@@ -164,22 +155,21 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
             "VIEW", 
             "FIRE"
         ];
-        
+
         private _centerObj = objNull;
         private _intersectPos = [];
-        
+
         if (count _intersections > 0) then {
             _centerObj = (_intersections select 0) select 2;
             _intersectPos = (_intersections select 0) select 0;
-            // diag_log format ["Found object: %1 at pos %2", _centerObj, _intersectPos];
         };
-        
+
         // SHIFT + Left click = Delete entity under center of screen
         if (_shift) then {
             if (!isNull _centerObj) then {
                 private _isPlaced = _centerObj getVariable ["IDS_Logistics_isPlacedEntity", false];
                 private _type = typeOf _centerObj;
-                
+
                 if (_isPlaced) then {
                     deleteVehicle _centerObj;
                     ["Entity removed: " + _type, 2] call IDS_Logistics_fnc_cameraHint;
@@ -205,14 +195,14 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
         };
         true; // Return true to indicate we handled this event
     };
-    
+
     false; // Return false for other buttons to let them pass through
 }]);
 
 // ---- KEY BINDINGS SETUP ----
 
 //--- Key Down handler
-_keyDown = (findDisplay 46) displayAddEventHandler ["keydown","
+_keyDown = (findDisplay 46) displayAddEventHandler ["keydown", "
 	params ['_displayOrControl', '_key', '_shift', '_ctrl', '_alt'];
 
 	if (_key in (actionkeys 'nightvision')) then {
@@ -264,17 +254,6 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["keydown","
         [] call IDS_Logistics_fnc_openBuildMenu;
     };
 
-    if (_key == 35) then {
-        if (IDS_LOGISTICS_HINT_VISIBLE) then {
-            IDS_LOGISTICS_CAM_HINT_LAYER cutFadeOut 0.5;
-            IDS_LOGISTICS_HINT_VISIBLE = false;
-            ['Help hidden. Press H to show again.', 2] call IDS_Logistics_fnc_cameraHint;
-        } else {
-            [IDS_LOGISTICS_TOGGLEABLE_HINT, 0] call IDS_Logistics_fnc_cameraHint;
-            IDS_LOGISTICS_HINT_VISIBLE = true;
-        };
-    };
-
 	if (_key == 20) then {
         IDS_Logistics_CameraTerrainSnap = !IDS_Logistics_CameraTerrainSnap;
         if (IDS_Logistics_CameraTerrainSnap) then {
@@ -300,22 +279,35 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["keydown","
 	};
 
 	player cameraEffect ["TERMINATE", "BACK"];
+    deleteVehicle IDS_Logistics_currentEntity;
 
 	IDS_LOGISTICS_CAM = nil;
 	IDS_LOGISTICS_CAM_VISION = nil;
 	IDS_LOGISTICS_HINT_VISIBLE = nil;
-    IDS_LOGISTICS_TOGGLEABLE_HINT = nil;
 
 	camDestroy _local;
 	IDS_LOGISTICS_CAM_LASTPOS = _lastpos;
 
 	ppEffectDestroy IDS_LOGISTICS_CAM_COLOR;
-	(findDisplay 46) displayRemoveEventHandler ["keydown", _keyDown];
+	(findDisplay 46) displayRemoveEventHandler ["KeyDown", _keyDown];
 
-    if (!isNil "IDS_Logistics_DistanceCheckEH") then {
-        removeMissionEventHandler ["EachFrame", IDS_Logistics_DistanceCheckEH];
-        IDS_Logistics_DistanceCheckEH = nil;
+    if (!isNil "IDS_Logistics_MouseClicks") then {
+        {
+            (findDisplay 46) displayRemoveEventHandler ["MouseButtonDown", _x];
+        } forEach IDS_Logistics_MouseClicks;
     };
+
+    if (!isNil "IDS_Logistics_scrollHandler") then { (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler]; };
+    if (!isNil "IDS_Logistics_keyDownHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler]; };
+    if (!isNil "IDS_Logistics_keyUpHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler]; };
+    if (!isNil "IDS_Logistics_dirUpdateEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH]; };
+    if (!isNil "IDS_Logistics_DistanceCheckEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_DistanceCheckEH]; };
+
+    // Reset global state variables
+    IDS_Logistics_isHolding = false;
+    IDS_Logistics_currentEntity = objNull;
+    IDS_Logistics_lastViewDir = nil;
+    IDS_Logistics_MouseClicks = [];
 };
 
 // Display camera controls info
@@ -332,5 +324,5 @@ private _controlsInfo = format [
     "<t>• <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>"
 ];
-                       
-[_controlsInfo, 0, false, true] call IDS_Logistics_fnc_cameraHint;
+
+[_controlsInfo, 0] call IDS_Logistics_fnc_cameraHint;

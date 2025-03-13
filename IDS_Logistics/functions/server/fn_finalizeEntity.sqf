@@ -77,7 +77,7 @@ if (_originalNetId != "") then {
     // Mark as a placed entity for future operations
     _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
     _entity setVariable ["IDS_Logistics_PlacedBy", name _player, true];
-    
+
     // Get entity configuration and set variable
     private _entityConfig = [_className] call IDS_Logistics_fnc_getEntityConfig;
     _entityConfig params ["_entityClassName", "_entityDisplayName", "_entityCategory", "_entitySubCategory", "_entityCost"];

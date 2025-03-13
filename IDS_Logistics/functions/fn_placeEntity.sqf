@@ -20,12 +20,14 @@
  */
 
 // Validate current holding state
-if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith { 
-    ["No entity to place.", 2] call IDS_Logistics_fnc_cameraHint; 
+if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {
+    ["No entity to place.", 2] call IDS_Logistics_fnc_cameraHint;
 };
 
 // Ensure camera mode is active
-if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {
+    ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint;
+};
 
 // Extract entity properties before deletion
 private _entity = IDS_Logistics_currentEntity;
@@ -48,26 +50,14 @@ deleteVehicle _entity;
 [_originalNetId, _className, _finalPos, _finalDir, _vectorUp, player, _centerHeight] remoteExecCall ["IDS_Logistics_fnc_finalizeEntity", 2];
 
 // Clean up event handlers
-if (!isNil "IDS_Logistics_scrollHandler") then {
-    (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler];
-};
-
-if (!isNil "IDS_Logistics_keyDownHandler") then {
-    (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler];
-};
-
-if (!isNil "IDS_Logistics_keyUpHandler") then {
-    (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler];
-};
-
-if (!isNil "IDS_Logistics_dirUpdateEH") then {
-    removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
-};
+if (!isNil "IDS_Logistics_scrollHandler") then { (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler]; };
+if (!isNil "IDS_Logistics_keyDownHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler]; };
+if (!isNil "IDS_Logistics_keyUpHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler]; };
+if (!isNil "IDS_Logistics_dirUpdateEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH]; };
 
 // Reset global state variables
 IDS_Logistics_isHolding = false;
 IDS_Logistics_currentEntity = objNull;
-IDS_Logistics_lastViewDir = nil;
 
 // Provide user feedback
-["Entity placed", 2] call IDS_Logistics_fnc_cameraHint;
+["Entity placed: " + _className, 2] call IDS_Logistics_fnc_cameraHint;
