@@ -118,7 +118,7 @@ _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "TREE", "S
 } forEach _objectLocT;
 
 {
-	if (markerColor _x != "colorBLUFOR" && markerColor _x != "colorWEST" ) then {
+	if (markerColor _x != "colorBLUFOR" && markerColor _x != "ColorWEST" ) then {
 		_trgA = createTrigger ["EmptyDetector", getMarkerpos _x];
 		_trgA setTriggerArea [2000, 2000, 0, false, 300];
 		_trgA setTriggerTimeout [1, 1, 1, true];

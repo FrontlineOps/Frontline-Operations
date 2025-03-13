@@ -23,8 +23,14 @@ profileNamespace setVariable [_missionStructureTypes, nil];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-private _spheres = nearestobjects [_Centerposition,["Sign_Sphere10cm_F"],40000] ; 
-if (count _spheres > 0) then {{deleteVehicle _x;} forEach _spheres ;} ;
+private _spheres = nearestObjects [_Centerposition, ["Sign_Sphere10cm_F"], 40000];
+if (!isNil "_spheres" && {count _spheres > 0}) then {
+    {
+        if (!isNull _x) then {
+            deleteVehicle _x;
+        };
+    } forEach _spheres;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -141,7 +147,7 @@ private _allFOBMarks = allMapMarkers select {markerType _x isEqualTo "b_installa
 
 private _allNonFOBMarks = allMapMarkers select {
 	markerType _x isEqualTo "b_installation" && 
-	(markerColor _x isEqualTo "ColorYellow" || markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "colorWEST") && 
+	(markerColor _x isEqualTo "ColorYellow" || markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST") && 
 	markerText _x != "FOB"
 };  
 {
@@ -208,7 +214,7 @@ private _otherMarkerTypes = [
 // Select markers to save
 private _SaveMarks = allMapMarkers select {
     // OPFOR markers
-    (markerColor _x isEqualTo "colorOPFOR" && markerType _x in _opforMarkerTypes) || 
+    (markerColor _x isEqualTo "ColorOPFOR" && markerType _x in _opforMarkerTypes) || 
     // HD markers
     markerType _x in _hdMarkerTypes ||
     // Other marker types
@@ -220,17 +226,24 @@ private _SaveMarks = allMapMarkers select {
 		
 {
 	private _MarkerDataHashEach = createHashMap;
+    private _markerColor = getMarkerColor _x;
+    private _markerType = markerType _x;
+    
+    // If marker is b_installation and color is grey, change it to colorBLUFOR when saving
+    if (_markerType isEqualTo "b_installation" && _markerColor isEqualTo "ColorGrey") then {
+        _markerColor = "ColorWEST";
+    };
 
 	_MarkerDataHashEach set ["name",_x];
 	_MarkerDataHashEach set ["alpha",markerAlpha _x];
 	_MarkerDataHashEach set ["brush",markerBrush _x];
-	_MarkerDataHashEach set ["color",getMarkerColor _x];
+	_MarkerDataHashEach set ["color",_markerColor];
 	_MarkerDataHashEach set ["dir",markerDir _x];
 	_MarkerDataHashEach set ["pos",getMarkerPos _x];
 	_MarkerDataHashEach set ["shape",markerShape _x];
 	_MarkerDataHashEach set ["size",getMarkerSize _x];
 	_MarkerDataHashEach set ["text",markerText _x];
-	_MarkerDataHashEach set ["type",getMarkerType _x];
+	_MarkerDataHashEach set ["type",_markerType];
 
 	_MarkerDataHash set [_x, _MarkerDataHashEach];
 

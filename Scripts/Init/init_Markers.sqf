@@ -236,7 +236,7 @@ private _distributedEvacPoints = [_evacuationPoints, _evacuationPointCount] call
     "Mount",
     "TowerMark",
     "loc_Transmitter",
-    "colorOPFOR",
+    "ColorOPFOR",
     [1, 1],
     1,
     true,
@@ -273,7 +273,7 @@ private _distributedResupplyPoints = [_resupplyPoints, _resupplyPointCount] call
     "Mount",
     "FactMark",
     "o_support",
-    "colorOPFOR",
+    "ColorOPFOR",
     [1.2, 1.2],
     0.001,
     true,
@@ -294,7 +294,7 @@ private _distributedFobPoints = [_fobPoints, _fobPointCount] call FLO_fnc_getRan
     "Mount",
     "OutpMark",
     "o_support",
-    "colorOPFOR",
+    "ColorOPFOR",
     [1.2, 1.2],
     0.001,
     true,
@@ -311,7 +311,7 @@ private _selectedOutposts = [_outpostMarkers, _selectedOutpostCount] call FLO_fn
 { 
 _x setMarkerType "n_support";  
 _x setMarkerSize [1.4, 1.4];   
-_x setMarkerColor "colorOPFOR"; 
+_x setMarkerColor "ColorOPFOR"; 
     _x setMarkerAlpha 1;
 } forEach _selectedOutposts;
 
@@ -325,7 +325,7 @@ private _baseCount = [_baseLocations] call FLO_fnc_calculateDistribution;
 private _selectedBases = [_baseLocations, _baseCount] call FLO_fnc_getRandomSubset;
 
 {
-    [getPos _x, str(_x), "n_support", "colorOPFOR", [1.4, 1.4], 1, true, 200] call FLO_fnc_createMarkerWithDefaults;
+    [getPos _x, str(_x), "n_support", "ColorOPFOR", [1.4, 1.4], 1, true, 200] call FLO_fnc_createMarkerWithDefaults;
 } forEach _selectedBases;
 
 // Capital cities - use logic markers with "Capital" variable or LocationCityCapital_F
@@ -337,7 +337,7 @@ private _capitalCount = [_capitalLocations] call FLO_fnc_calculateDistribution;
 private _selectedCapitals = [_capitalLocations, _capitalCount] call FLO_fnc_getRandomSubset;
 
 {
-    [getPos _x, str(_x), "n_installation", "colorOPFOR", [1.4, 1.4], 1, true, 200] call FLO_fnc_createMarkerWithDefaults;
+    [getPos _x, str(_x), "n_installation", "ColorOPFOR", [1.4, 1.4], 1, true, 200] call FLO_fnc_createMarkerWithDefaults;
 } forEach _selectedCapitals;
 
 // Cities - use logic markers with "City" variable or LocationCity_F
@@ -349,7 +349,7 @@ private _cityCount = [_cityLocations] call FLO_fnc_calculateDistribution;
 private _selectedCities = [_cityLocations, _cityCount] call FLO_fnc_getRandomSubset;
 
 {
-    [getPos _x, str(_x), "o_installation", "colorOPFOR", [1.2, 1.2], 0.001, true, 200] call FLO_fnc_createMarkerWithDefaults;
+    [getPos _x, str(_x), "o_installation", "ColorOPFOR", [1.2, 1.2], 0.001, true, 200] call FLO_fnc_createMarkerWithDefaults;
 } forEach _selectedCities;
 
 // Get points for Barracks markers
@@ -366,7 +366,7 @@ private _distributedBarracksPoints = [_barracksPoints, _barracksPointCount] call
     "Mount",
     "BarrackMark",
     "loc_Ruin",
-    "colorOPFOR",
+    "ColorOPFOR",
     [1.2, 1.2],
     0.001,
     true,
@@ -387,7 +387,7 @@ private _distributedRadarPoints = [_radarPoints, _radarPointCount] call FLO_fnc_
     "Mount",
     "RadarSMark",
     "loc_Power",
-    "colorOPFOR",
+    "ColorOPFOR",
     [1, 1],
     0.001,
     true,
@@ -402,7 +402,7 @@ private _distributedInvestigationPoints = [_investigationPoints, _investigationP
 // Create Investigation markers
 {
     private _mount = selectRandom nearestLocations [(getPos _x), ["Mount"], 2000];
-    [locationPosition _mount, "InvesMark", "o_recon", "colorOPFOR", [0.8, 0.8], 0.001, true, 150] call FLO_fnc_createMarkerWithDefaults;
+    [locationPosition _mount, "InvesMark", "o_recon", "ColorOPFOR", [0.8, 0.8], 0.001, true, 150] call FLO_fnc_createMarkerWithDefaults;
 } forEach _distributedInvestigationPoints;
 
 // Get points for Mine field markers
@@ -413,7 +413,7 @@ private _distributedMinePoints = [_minePoints, _minePointCount] call FLO_fnc_get
 // Create Mine field markers
 {
     private _pos = [getPos _x, 10, 2000, 3, 0, 1, 0] call BIS_fnc_findSafePos;
-    [_pos, "MineMark", "loc_mine", "colorOPFOR", [1, 1], 0.001, false] call FLO_fnc_createMarkerWithDefaults;
+    [_pos, "MineMark", "loc_mine", "ColorOPFOR", [1, 1], 0.001, false] call FLO_fnc_createMarkerWithDefaults;
 } forEach _distributedMinePoints;
 
 sleep 3;
@@ -435,7 +435,7 @@ private _distributedServicePoints = [_servicePoints, _servicePointCount] call FL
 {
     private _nearRoad = selectRandom ((getPos _x) nearRoads 2500);
     if (!isNull _nearRoad) then {
-        [getPos _nearRoad, str(_nearRoad), "o_service", "colorOPFOR", [0.8, 0.8], 0.001, false] call FLO_fnc_createMarkerWithDefaults;
+        [getPos _nearRoad, str(_nearRoad), "o_service", "ColorOPFOR", [0.8, 0.8], 0.001, false] call FLO_fnc_createMarkerWithDefaults;
     };
 } forEach _distributedServicePoints;
 
@@ -447,7 +447,7 @@ private _villageLocations = nearestObjects [_Centerposition, ["Logic", "Location
 {
     private _randomPos = _x getPos [(0 + (random 100)), (0 + (random 360))];
     private _markerName = "InsurVillMark" + (str _randomPos);
-    [getPos _x, _markerName, "o_inf", "colorOPFOR", [0.7, 0.7], 0.001, true, 100] call FLO_fnc_createMarkerWithDefaults;
+    [getPos _x, _markerName, "o_inf", "ColorOPFOR", [0.7, 0.7], 0.001, true, 100] call FLO_fnc_createMarkerWithDefaults;
 } forEach _villageLocations;
 
 // Get points for AA site markers
@@ -464,7 +464,7 @@ private _distributedAAPoints = [_aaPoints, _aaPointCount] call FLO_fnc_getRandom
     "Mount",
     "AAMark",
     "o_antiair",
-    "colorOPFOR",
+    "ColorOPFOR",
     [1.2, 1.2],
     0.001,
     true,

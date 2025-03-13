@@ -25,7 +25,7 @@ if (triggerActivated _thisCaptureEastTrigger) then {
 				_markerName = 'City' + (str (getPos _thisCaptureEastTrigger));  
 				_mrkr = createMarker [_markerName, (getPos _thisCaptureEastTrigger)] ;
 				_mrkr setMarkerType 'o_installation'; 
-				_mrkr setMarkerColor 'colorOPFOR';
+				_mrkr setMarkerColor 'ColorOPFOR';
 				_mrkr setMarkerSize [1.2, 1.2]; 
 
 				_alltriggers = allMissionObjects "EmptyDetector";

@@ -36,7 +36,7 @@ private _objectivesSetUp = 0;
 // Process outpost markers
 {
     private _markerType = _x;
-    private _outpostMarkers = allMapMarkers select {markerType _x == _markerType && markerColor _x in ["colorOPFOR", "ColorEAST"]};
+    private _outpostMarkers = allMapMarkers select {markerType _x == _markerType && markerColor _x in ["ColorOPFOR", "ColorEAST"]};
     
     diag_log format ["[FLO][Outpost] Found %1 outpost markers of type %2", count _outpostMarkers, _markerType];
     
@@ -59,7 +59,7 @@ private _objectivesSetUp = 0;
                 "
                 _allMarks = allMapMarkers select {markerType _x == '%1'};
                 _objMarker = [_allMarks, thisTrigger] call FLO_fnc_findNearestMarker;
-                _objMarker setMarkerColor 'colorOPFOR';
+                _objMarker setMarkerColor 'ColorOPFOR';
                 ",
                 _markerType
             ]
@@ -74,7 +74,7 @@ private _objectivesSetUp = 0;
 // Process city markers
 {
     private _markerType = _x;
-    private _cityMarkers = allMapMarkers select {markerType _x == _markerType && markerColor _x in ["colorOPFOR", "ColorEAST"]};
+    private _cityMarkers = allMapMarkers select {markerType _x == _markerType && markerColor _x in ["ColorOPFOR", "ColorEAST"]};
     
     diag_log format ["[FLO][Outpost] Found %1 city markers of type %2", count _cityMarkers, _markerType];
     
@@ -97,7 +97,7 @@ private _objectivesSetUp = 0;
                 "
                 _allMarks = allMapMarkers select {markerType _x == '%1'};
                 _objMarker = [_allMarks, thisTrigger] call FLO_fnc_findNearestMarker;
-                _objMarker setMarkerColor 'colorOPFOR';
+                _objMarker setMarkerColor 'ColorOPFOR';
                 ",
                 _markerType
             ]

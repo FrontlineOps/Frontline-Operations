@@ -56,7 +56,7 @@ private _fnc_setupGenerator = {
         private _markerName = format ["PowerHouseMark_%1", getPos _powerHouse];
         private _marker = createMarker [_markerName, getPos _powerHouse];
         _marker setMarkerType "loc_Lighthouse";
-        _marker setMarkerColor "colorOPFOR";
+        _marker setMarkerColor "ColorOPFOR";
         _marker setMarkerSize [0.6, 0.6];
         _marker setMarkerAlpha 0.001;
     };
@@ -288,7 +288,7 @@ private _allPositions = [];
 for "_i" from 1 to 10 do {
     private _group = [selectRandom _allPositions, civilian, [selectRandom CivMenArray], false] call _fnc_spawnUnit;
     
-    if (_i <= 5 && (_REPSCORE < 7 || markerColor ([allMapMarkers, _thisCapitalCivTrigger] call BIS_fnc_nearestPosition) == "colorOPFOR")) then {
+    if (_i <= 5 && (_REPSCORE < 7 || markerColor ([allMapMarkers, _thisCapitalCivTrigger] call BIS_fnc_nearestPosition) == "ColorOPFOR")) then {
         [leader _group] call _fnc_setupWeaponCache;
     };
 };

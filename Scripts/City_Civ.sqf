@@ -44,7 +44,7 @@ if (count _allPowerHouses > 0) then {
     private _markerName = format ["PowerHouseMark_%1", getPos _powerHouse];
     private _powerMarker = createMarker [_markerName, getPos _powerHouse];
     _powerMarker setMarkerType "loc_Lighthouse";
-    _powerMarker setMarkerColor "colorOPFOR";
+    _powerMarker setMarkerColor "ColorOPFOR";
     _powerMarker setMarkerSize [0.6, 0.6];
     _powerMarker setMarkerAlpha 0.001;
 };
@@ -155,7 +155,7 @@ private _fnc_spawnCivilians = {
         _unit disableAI "all";
         _unit enableAI "ANIM";
         
-        if (_i <= 4 && {_reputationScore < 7 || markerColor ([allMapMarkers, _cityCivTrigger] call BIS_fnc_nearestPosition) == "colorOPFOR"}) then {
+        if (_i <= 4 && {_reputationScore < 7 || markerColor ([allMapMarkers, _cityCivTrigger] call BIS_fnc_nearestPosition) == "ColorOPFOR"}) then {
             private _building = (nearestObjects [getPos _unit, ["HOUSE"], 30]) select 0;
             if (!isNull _building) then {
                 private _pos = selectRandom (_building buildingPos -1);

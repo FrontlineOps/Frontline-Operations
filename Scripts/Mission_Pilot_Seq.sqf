@@ -80,7 +80,7 @@ PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] ca
 								_markerName = "InvesMark" + (str (getPos _HQB));   
 								_mrkr = createMarker [_markerName, (getPos _HQB)];   
 								_mrkr setMarkerType "mil_unknown";  
-								_mrkr setMarkerColor "colorOPFOR";  
+								_mrkr setMarkerColor "ColorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
 								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
@@ -184,7 +184,7 @@ PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] ca
 								_markerName = "InvesMark" + (str (getPos _HQB));   
 								_mrkr = createMarker [_markerName, (getPos _HQB)];   
 								_mrkr setMarkerType "mil_unknown";  
-								_mrkr setMarkerColor "colorOPFOR";  
+								_mrkr setMarkerColor "ColorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
 								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
@@ -300,7 +300,7 @@ _HQB = _SH select 0 ;
 								_markerName = "InvesMark" + (str (getPos _HQB));   
 								_mrkr = createMarker [_markerName, (getPos _HQB)];   
 								_mrkr setMarkerType "mil_unknown";  
-								_mrkr setMarkerColor "colorOPFOR";  
+								_mrkr setMarkerColor "ColorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
 								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;

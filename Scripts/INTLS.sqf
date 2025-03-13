@@ -1,5 +1,5 @@
 sleep 2;
-_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x == "o_antiair" && getMarkerPos _x distance player < 7000};              
+_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "ColorOPFOR" && markerType _x == "o_antiair" && getMarkerPos _x distance player < 7000};              
 {
 _x setMarkerAlpha 1;
 } forEach _INTL;

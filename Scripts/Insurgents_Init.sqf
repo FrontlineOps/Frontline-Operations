@@ -16,7 +16,7 @@ if (_Chance == 1) then {
 				_markerName = "InsurMark" + (str getPos _Road) ;  
 				_mrkr = createMarker [_markerName, (getPos _Road)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6]; 
 				_mrkr setMarkerAlpha 0;				
 				
@@ -36,7 +36,7 @@ if (_Chance == 1) then {
 				_markerName = "InsurMark" + (str getPos _House) ;  
 				_mrkr = createMarker [_markerName, (getPos _House)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];   
 				_mrkr setMarkerAlpha 0;				
 				
@@ -68,7 +68,7 @@ _triggers = _alltriggers select {(getMarkerPos _InsVillMrk) distance (getPos _x)
 				_markerName = "InsurVillVillMark" + (str getMarkerPos _InsVillMrk) ;  
 				_mrkr = createMarker [_markerName, (getMarkerPos _InsVillMrk)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];  
 				_mrkr setMarkerAlpha 0;				
 
@@ -90,7 +90,7 @@ _triggers = _alltriggers select {(getMarkerPos _InsVillMrk) distance (getPos _x)
 				_markerName = "InsurMark" + (str locationPosition _Mount) ;  
 				_mrkr = createMarker [_markerName, (locationPosition _Mount)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];   
 				_mrkr setMarkerAlpha 0;				
 				
@@ -113,7 +113,7 @@ if (_Chance == 1) then {
 				_markerName = "InsurMark" + (str getPos _Road) ;  
 				_mrkr = createMarker [_markerName, (getPos _Road)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];   
 				_mrkr setMarkerAlpha 0;				
 				
@@ -133,7 +133,7 @@ if (_Chance == 1) then {
 				_markerName = "InsurMark" + (str getPos _House) ;  
 				_mrkr = createMarker [_markerName, (getPos _House)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];   
 				_mrkr setMarkerAlpha 0;				
 				
@@ -161,7 +161,7 @@ _InsVillMrk = selectRandom _InsVillMrks ;
 				_markerName = "InsurVillVillMark" + (str getMarkerPos _InsVillMrk) ;  
 				_mrkr = createMarker [_markerName, (getMarkerPos _InsVillMrk)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];  
 				_mrkr setMarkerAlpha 0;				
 
@@ -180,7 +180,7 @@ _InsVillMrk = selectRandom _InsVillMrks ;
 				_markerName = "InsurMark" + (str locationPosition _Mount) ;  
 				_mrkr = createMarker [_markerName, (locationPosition _Mount)] ;   
 				_mrkr setMarkerType "o_unknown";  
-				_mrkr setMarkerColor "colorOPFOR";  
+				_mrkr setMarkerColor "ColorOPFOR";  
 				_mrkr setMarkerSize [0.6, 0.6];   
 				_mrkr setMarkerAlpha 0;				
 				

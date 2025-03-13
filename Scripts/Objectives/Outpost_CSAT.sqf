@@ -53,14 +53,14 @@ if (count (nearestObjects [getPos thisOutpostTrigger, FLO_configCache get "tyres
 
 // If AGGRSCORE > 5, Create Enemy Assault Vehicles and assault nearest BLUFOR Outpost
 if (_AGGRSCORE > 5) then {
-    private _AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "colorWEST")};  
+    private _AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST")};  
     private _AssltDest = [_AssltDestMrks,  thisOutpostTrigger] call BIS_fnc_nearestPosition;
     [thisOutpostTrigger, _AssltDest] execVM "Scripts\VehiInsert_CSAT_2.sqf";            
 
 };
 
 if (_AGGRSCORE > 10) then {
-    private _AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "colorWEST")};  
+    private _AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST")};  
     private _StrtM = [_AssltDestMrks,  thisOutpostTrigger] call BIS_fnc_nearestPosition;
     [thisOutpostTrigger, _StrtM] execVM "Scripts\VehiInsert_CSAT_2.sqf";    
 };
@@ -134,7 +134,7 @@ _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 _allMarks = allMapMarkers select {markerType _x == 'o_support'};  
 _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-                    _FOBMrk setMarkerColor 'colorOPFOR' ;    
+                    _FOBMrk setMarkerColor 'ColorOPFOR' ;    
 
 "]; 
 

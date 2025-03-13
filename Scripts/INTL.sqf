@@ -13,7 +13,7 @@ if (count  (nearestobjects [position player, ["LocationArea_F"], 40000]) == 0) t
 
 if (_Chance < 5) then {
 							
-								_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
+								_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "ColorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
 								_x = [_INTL,  player] call BIS_fnc_nearestPosition;
 								_x setMarkerAlpha 1;
 
@@ -32,7 +32,7 @@ if (_Chance == 5) then {
 
 						if (_result) then {
 							
-								_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
+								_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "ColorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
 								_x = [_INTL,  player] call BIS_fnc_nearestPosition;
 								_x setMarkerAlpha 1;
 
@@ -50,7 +50,7 @@ if (_Chance == 5) then {
 								_markerName = "CShipMark" + (str _pos);
 								_mrkr = createMarkerLocal [_markerName,_pos];   
 								_mrkr setMarkerTypeLocal "o_naval";  
-								_mrkr setMarkerColorLocal "colorOPFOR";  
+								_mrkr setMarkerColorLocal "ColorOPFOR";  
 								_mrkr setMarkerSize [1.2, 1.2]; 
  
 								_trgA = createTrigger ["EmptyDetector", getPos _x];
@@ -84,7 +84,7 @@ if (_Chance == 6) then {
 
 						if (_result) then {
 							
-								_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
+								_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "ColorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
 								_x = [_INTL,  player] call BIS_fnc_nearestPosition;
 								_x setMarkerAlpha 1;
 
@@ -115,7 +115,7 @@ if (_Chance == 6) then {
 								_markerName = "InvesMark" + (str (getPos _HQB));   
 								_mrkr = createMarker [_markerName, (getPos _HQB)];   
 								_mrkr setMarkerType "mil_unknown";  
-								_mrkr setMarkerColor "colorOPFOR";  
+								_mrkr setMarkerColor "ColorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
 								_trgA = createTrigger ["EmptyDetector", (getPos _HQB)];
@@ -149,7 +149,7 @@ if (_Chance == 7) then {
 
 						if (_result) then {
 							
-									_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
+									_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "ColorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
 									_x = [_INTL,  player] call BIS_fnc_nearestPosition;
 									_x setMarkerAlpha 1;
 
@@ -181,7 +181,7 @@ if (_Chance == 7) then {
 								_markerName = "InvesMark" + (str (getPos _HQB));   
 								_mrkr = createMarker [_markerName, (getPos _HQB)];   
 								_mrkr setMarkerType "mil_warning";  
-								_mrkr setMarkerColor "colorOPFOR";  
+								_mrkr setMarkerColor "ColorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
 								_trgA = createTrigger ["EmptyDetector", (getPos _HQB)];
@@ -216,7 +216,7 @@ if (_Chance == 8) then {
 
 						if (_result) then {
 							
-							_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
+							_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "ColorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
 							_x = [_INTL,  player] call BIS_fnc_nearestPosition;
 							_x setMarkerAlpha 1;
 

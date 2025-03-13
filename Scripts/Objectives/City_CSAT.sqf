@@ -41,7 +41,7 @@ if (count (_triggerPos nearRoads 150) > 0) then {
 // Launch assault on nearest installation
 private _assaultTargets = allMapMarkers select {
     markerType _x == "b_installation" && 
-    (markerColor _x in ["ColorYellow", "colorBLUFOR", "colorWEST"])
+    (markerColor _x in ["ColorYellow", "colorBLUFOR", "ColorWEST"])
 };
 if (count _assaultTargets > 0) then {
     private _target = [_assaultTargets, _thisCityTrigger] call BIS_fnc_nearestPosition;

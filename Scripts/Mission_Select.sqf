@@ -98,7 +98,7 @@ FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
                 private _markerName = "MissionMark" + (str (getMarkerPos _nearestMarker));
                 private _marker = createMarkerLocal [_markerName, (getMarkerPos _nearestMarker)];   
                 _marker setMarkerTypeLocal "mil_unknown";  
-                _marker setMarkerColorLocal "colorOPFOR";  
+                _marker setMarkerColorLocal "ColorOPFOR";  
                 _marker setMarkerSize [0.8, 0.8]; 
                 
                 private _trigger = createTrigger ["EmptyDetector", (getMarkerPos _nearestMarker)];
@@ -116,7 +116,7 @@ FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
                 private _markerName = "MissionMark" + (str (getMarkerPos _nearestMarker));   
                 private _marker = createMarkerLocal [_markerName, (getMarkerPos _nearestMarker)];   
                 _marker setMarkerTypeLocal "mil_warning";  
-                _marker setMarkerColorLocal "colorOPFOR";  
+                _marker setMarkerColorLocal "ColorOPFOR";  
                 _marker setMarkerSize [0.8, 0.8]; 
                 
                 private _trigger = createTrigger ["EmptyDetector", (getMarkerPos _nearestMarker)];
@@ -135,7 +135,7 @@ FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
                 private _randomPos = (getMarkerPos _nearestMarker) getPos [(10 + (random 50)), (0 + (random 360))];
                 private _marker = createMarkerLocal [_markerName, _randomPos];
                 _marker setMarkerTypeLocal "mil_marker_noShadow"; 
-                _marker setMarkerColorLocal "colorOPFOR";  
+                _marker setMarkerColorLocal "ColorOPFOR";  
                 _marker setMarkerTextLocal "Convoy Start";  
                 _marker setMarkerSizeLocal [1.5, 1.5];
                 _marker setMarkerAlpha 0.7;
@@ -148,7 +148,7 @@ FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
                 private _markerName = "CShipMark" + (str _shipPos);
                 private _marker = createMarkerLocal [_markerName, _shipPos];   
                 _marker setMarkerTypeLocal "o_naval";  
-                _marker setMarkerColorLocal "colorOPFOR";  
+                _marker setMarkerColorLocal "ColorOPFOR";  
                 _marker setMarkerSize [1.2, 1.2]; 
                 
                 private _trigger = createTrigger ["EmptyDetector", _shipPos];
