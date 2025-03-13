@@ -288,9 +288,6 @@ XPS_PF_typ_RoadGraphSearch = [
 			private _pos = _x get "PosASL";
 			if ((_x get "Intersection" && {_posA distance2D _pos > 1000}) || {_posA distance2D _pos > 1000}) then {
 				_path pushBack _pos;
-				_m = createMarker [str (_x get "Index") , _pos];
-				_m setmarkertype "HD_DOT";
-				_m setmarkerColor "ColorYELLOW";
 				_posA = _pos;
 			};
 		} foreach (_self get "Path");
