@@ -258,7 +258,7 @@ class controls
 		w = 0.2 * safezoneW;
 		h = 0.04 * safezoneH;
 		colorBackground[] = {0.3,0.3,0.3,1};
-		action = "execVM 'Scripts\FOBHQ.sqf'";
+		action = "execVM 'Scripts\PObjectives\FOBHQ.sqf'";
 	};
 	
 	class supr_requestBRIBEbutton: RscButtonsupr_Request
@@ -270,7 +270,7 @@ class controls
 		w = 0.2 * safezoneW;
 		h = 0.04 * safezoneH;
 		colorBackground[] = {0.3,0.3,0.3,1};
-		action = "execVM 'Scripts\OPHQ.sqf'";
+		action = "execVM 'Scripts\PObjectives\OPHQ.sqf'";
 	};
 };
 };

@@ -126,7 +126,13 @@ switch (_groupType) do {
 		private _dir = (leader _group) getDir _position;
 		
 		// Approach waypoint
-		[_group, (leader _group) getRelPos [_dist * 0.85, _dir], random [30, 50, 100], "MOVE", "AWARE", "WHITE", "NORMAL", "STAG COLUMN"] call FLO_fnc_addWaypoint;
+		private _approachPos = (leader _group) getRelPos [_dist * 0.85, _dir];
+		// Ensure waypoint is not in water
+		if (surfaceIsWater _approachPos) then {
+			// Find nearest land position
+			_approachPos = [_approachPos, 0, 100, 5, 0, 0, 0, [], [_position]] call BIS_fnc_findSafePos;
+		};
+		[_group, _approachPos, random [30, 50, 100], "MOVE", "AWARE", "WHITE", "NORMAL", "STAG COLUMN"] call FLO_fnc_addWaypoint;
 		
 		// Attack waypoint - direct assault 
 		[_group, _position, 100, false] call FLO_fnc_taskAttack;
@@ -158,7 +164,13 @@ switch (_groupType) do {
 		private _dir = (leader _group) getDir _position;
 		
 		// Approach waypoint
-		[_group, (leader _group) getRelPos [_dist * 0.5, _dir], -1, "MOVE", "AWARE", "RED", "NORMAL", "WEDGE"] call FLO_fnc_addWaypoint;
+		private _approachPos = (leader _group) getRelPos [_dist * 0.5, _dir];
+		// Ensure waypoint is not in water
+		if (surfaceIsWater _approachPos) then {
+			// Find nearest land position
+			_approachPos = [_approachPos, 0, 100, 5, 0, 0, 0, [], [_position]] call BIS_fnc_findSafePos;
+		};
+		[_group, _approachPos, -1, "MOVE", "AWARE", "RED", "NORMAL", "WEDGE"] call FLO_fnc_addWaypoint;
 		
 		// Attack waypoint
 		[_group, _position, 150, false] call FLO_fnc_taskAttack;

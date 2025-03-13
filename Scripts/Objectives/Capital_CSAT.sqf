@@ -157,15 +157,6 @@ private _fnc_createTrigger = {
     ["this", "[thisTrigger, 2000] execVM 'Scripts\Objectives\ZONEs.sqf';", ""]
 ] call _fnc_createTrigger;
 
-// Create CQB trigger
-[
-    _triggerPos,
-    [300, 300, 0, false, 40],
-    2,
-    ["WEST", "PRESENT", false],
-    ["this", "[thisTrigger] execVM 'Scripts\CQBURB.sqf';", ""]
-] call _fnc_createTrigger;
-
 // Create capture trigger
 [
     _triggerPos,
