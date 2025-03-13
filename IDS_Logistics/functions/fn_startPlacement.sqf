@@ -19,12 +19,7 @@
  * ["Land_BagFence_Long_F"] call IDS_Logistics_fnc_startPlacement
  */
 
-params [
-    ["_className", "", [""]]
-];
-
-// Debug log
-diag_log format ["Starting placement for entity: %1", _className];
+params [["_className", "", [""]]];
 
 // Validate inputs and state
 if (_className == "") exitWith { 
@@ -37,8 +32,7 @@ if (IDS_Logistics_isHolding) exitWith {
 
 // Ensure camera mode is active
 if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {
-    diag_log "IDS_Logistics: Camera not active, placement canceled";
-    hint "Camera mode is required for building. Activate camera first.";
+    ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint;
 };
 
 // Get entity configuration
@@ -94,11 +88,12 @@ IDS_Logistics_scrollHandler = (findDisplay 46) displayAddEventHandler ["MouseZCh
         // Update UI
         private _camDir = getCameraViewDirection IDS_LOGISTICS_CAM;
         private _refDir = (_camDir select 0) atan2 (_camDir select 1);
+
         if (_refDir < 0) then { _refDir = _refDir + 360; };
         
         private _finalDir = (_refDir + IDS_Logistics_entityRotation) % 360;
         private _message = format ["<t color='#44AAFF' size='1.0'>ROTATION</t><br/><t align='left'>Camera Direction: <t color='#FFFFFF'>%1°</t><br/>Rotation Offset: <t color='#FFFFFF'>%2°</t><br/>Final Direction: <t color='#FFFFFF'>%3°</t></t>", 
-                          round _refDir, round IDS_Logistics_entityRotation, round _finalDir];
+                            round _refDir, round IDS_Logistics_entityRotation, round _finalDir];
         
         [_message, 1] call IDS_Logistics_fnc_cameraHint;
     } else {
@@ -108,7 +103,7 @@ IDS_Logistics_scrollHandler = (findDisplay 46) displayAddEventHandler ["MouseZCh
             
             // Update UI
             private _message = format ["<t color='#44FF44' size='1.0'>HEIGHT</t><br/><t align='left'>Current Value: <t color='#FFFFFF'>%1m</t></t>", 
-                                     (round(IDS_Logistics_entityHeight * 10))/10];
+                                (round(IDS_Logistics_entityHeight * 10))/10];
             [_message, 1] call IDS_Logistics_fnc_cameraHint;
         } else {
             if (_alt) then {
@@ -116,11 +111,11 @@ IDS_Logistics_scrollHandler = (findDisplay 46) displayAddEventHandler ["MouseZCh
                 IDS_Logistics_entityDistance = IDS_Logistics_entityDistance + (_scroll * 0.5); // 0.5 meter per scroll tick
                 
                 // Limit distance between 1 and 10 meters
-                IDS_Logistics_entityDistance = (IDS_Logistics_entityDistance max 1) min 10;
+                IDS_Logistics_entityDistance = (IDS_Logistics_entityDistance max 1) min 20;
                 
                 // Update UI
                 private _message = format ["<t color='#FFAA44' size='1.0'>DISTANCE</t><br/><t align='left'>Current Value: <t color='#FFFFFF'>%1m</t></t>", 
-                                         (round(IDS_Logistics_entityDistance * 10))/10];
+                                    (round(IDS_Logistics_entityDistance * 10))/10];
                 [_message, 1] call IDS_Logistics_fnc_cameraHint;
             };
         };
@@ -141,11 +136,11 @@ IDS_Logistics_keyDownHandler = (findDisplay 46) displayAddEventHandler ["KeyDown
             deleteVehicle IDS_Logistics_currentEntity;
         };
         
-        // Remove event handlers
-        (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler];
-        (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler];
-        (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler];
-        removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
+        // Clean up event handlers
+        if (!isNil "IDS_Logistics_scrollHandler") then { (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler]; };
+        if (!isNil "IDS_Logistics_keyDownHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler]; };
+        if (!isNil "IDS_Logistics_keyUpHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler]; };
+        if (!isNil "IDS_Logistics_dirUpdateEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH]; };
         
         IDS_Logistics_isHolding = false;
         IDS_Logistics_currentEntity = objNull;

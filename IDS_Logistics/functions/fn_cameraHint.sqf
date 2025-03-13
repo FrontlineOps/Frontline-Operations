@@ -16,20 +16,18 @@
  * @param {String|Array} _content - The content to display. Can be a simple string or structured text
  * @param {Number} _duration - How long to display the hint (0 = indefinite)
  * @param {Boolean} [_clearOnly] - If true, only clears the hint layer without showing anything
- * @param {Boolean} [_isToggleable] - If true, this hint can be toggled with the H key
  *
  * @return {Nothing}
  *
  * @example
  * ["Entity placed", 2] call IDS_Logistics_fnc_cameraHint
- * [_structuredText, 0, false, true] call IDS_Logistics_fnc_cameraHint
+ * [_structuredText, 0, false] call IDS_Logistics_fnc_cameraHint
  */
 
 params [
     ["_content", "", ["", []]],
     ["_duration", 0, [0]],
-    ["_clearOnly", false, [false]],
-    ["_isToggleable", false, [false]]
+    ["_clearOnly", false, [false]]
 ];
 
 // Check if camera exists, if not just exit after clearing
@@ -41,8 +39,6 @@ if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
     if (!isNil "IDS_LOGISTICS_CAM_FLASH_LAYER") then {
         IDS_LOGISTICS_CAM_FLASH_LAYER cutText ["", "PLAIN"];
     };
-    // Log this for debugging
-    diag_log "IDS_Logistics: Hints cleared - camera no longer exists";
 };
 
 // Create hint layers if they don't exist
@@ -54,11 +50,6 @@ if (isNil "IDS_LOGISTICS_CAM_FLASH_LAYER") then {
     IDS_LOGISTICS_CAM_FLASH_LAYER = ["IDS_Logistics_Camera_Flash"] call BIS_fnc_rscLayer;
 };
 
-// If toggle hint, store it for later use
-if (_isToggleable) then {
-    IDS_LOGISTICS_TOGGLEABLE_HINT = _content;
-};
-
 // Handle clearing only
 if (_clearOnly) exitWith {
     IDS_LOGISTICS_CAM_HINT_LAYER cutText ["", "PLAIN"];
@@ -67,9 +58,7 @@ if (_clearOnly) exitWith {
 
 // Determine header title based on the type of hint
 private _title = "Information";
-if (_duration > 0) then {
-    _title = "Notification";
-};
+if (_duration > 0) then { _title = "Notification"; };
 
 // Specific headers for certain content types if content is a string
 if (typeName _content == "STRING") then {
@@ -93,17 +82,17 @@ if (_duration > 0) then {
     
     private _display = uiNamespace getVariable "RscTitleDisplayEmpty";
     
-    // Create the container control - HALF WIDTH
+    // Create the container control
     private _container = _display ctrlCreate ["RscControlsGroupNoScrollbars", 9999];
     _container ctrlSetPosition [
-        0.8 * safezoneW + safezoneX,    // Adjusted X to keep it aligned right
+        0.8 * safezoneW + safezoneX,
         0.1 * safezoneH + safezoneY,
-        0.15 * safezoneW,                // Half of 0.3
-        0.15 * safezoneH                 // Original height
+        0.15 * safezoneW,
+        0.15 * safezoneH
     ];
     _container ctrlCommit 0;
     
-    // Create header background - HALF WIDTH
+    // Create header background
     private _headerBg = _display ctrlCreate ["RscText", 10001, _container];
     _headerBg ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.03 * safezoneH];
     _headerBg ctrlSetBackgroundColor [
@@ -114,7 +103,7 @@ if (_duration > 0) then {
     ];
     _headerBg ctrlCommit 0;
     
-    // Create header text - HALF WIDTH
+    // Create header text
     private _headerText = _display ctrlCreate ["RscText", 10002, _container];
     _headerText ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.03 * safezoneH];
     _headerText ctrlSetText _title;
@@ -124,7 +113,7 @@ if (_duration > 0) then {
     _headerText ctrlSetBackgroundColor [0, 0, 0, 0];
     _headerText ctrlCommit 0;
     
-    // Create content background - HALF WIDTH
+    // Create content background
     private _contentBg = _display ctrlCreate ["RscText", 10003, _container];
     _contentBg ctrlSetPosition [0, 0.03 * safezoneH, 0.15 * safezoneW, 0.12 * safezoneH];
     _contentBg ctrlSetBackgroundColor [0, 0, 0, 0.5];
@@ -132,17 +121,15 @@ if (_duration > 0) then {
     
     // Process content based on its type
     private _processedContent = _content;
-    if (typeName _content == "STRING" && _content != "") then {
-        _processedContent = _content;
-    };
+    if (typeName _content == "STRING" && _content != "") then { _processedContent = _content; };
     
-    // Create content text - HALF WIDTH
+    // Create content text
     private _contentText = _display ctrlCreate ["RscStructuredText", 10004, _container];
     _contentText ctrlSetPosition [0.005 * safezoneW, 0.035 * safezoneH, 0.14 * safezoneW, 0.11 * safezoneH];
     _contentText ctrlSetStructuredText parseText _processedContent;
     _contentText ctrlCommit 0;
     
-    // Add border to the whole thing - HALF WIDTH
+    // Add border to the whole thing
     private _border = _display ctrlCreate ["RscFrame", 10005, _container];
     _border ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.15 * safezoneH];
     _border ctrlSetTextColor [0.8, 0.8, 0.8, 0.5];
@@ -170,17 +157,17 @@ if (_duration > 0) then {
     
     private _display = uiNamespace getVariable "RscTitleDisplayEmpty";
     
-    // Create the container control - HALF WIDTH
+    // Create the container control
     private _container = _display ctrlCreate ["RscControlsGroupNoScrollbars", 9999];
     _container ctrlSetPosition [
-        0.8 * safezoneW + safezoneX,     // Adjusted X to keep it aligned right
+        0.8 * safezoneW + safezoneX,
         0.65 * safezoneH + safezoneY,
-        0.15 * safezoneW,                 // Half of 0.3
-        0.3 * safezoneH                   // Original height
+        0.15 * safezoneW,
+        0.3 * safezoneH
     ];
     _container ctrlCommit 0;
     
-    // Create header background - HALF WIDTH
+    // Create header background
     private _headerBg = _display ctrlCreate ["RscText", 10001, _container];
     _headerBg ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.03 * safezoneH];
     _headerBg ctrlSetBackgroundColor [
@@ -191,17 +178,17 @@ if (_duration > 0) then {
     ];
     _headerBg ctrlCommit 0;
     
-    // Create header text - HALF WIDTH
+    // Create header text
     private _headerText = _display ctrlCreate ["RscText", 10002, _container];
     _headerText ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.03 * safezoneH];
     _headerText ctrlSetText _title;
     _headerText ctrlSetFont "PuristaBold";
-    _headerText ctrlSetFontHeight 0.03;  // Original font height
+    _headerText ctrlSetFontHeight 0.03;
     _headerText ctrlSetTextColor [1, 1, 1, 1];
     _headerText ctrlSetBackgroundColor [0, 0, 0, 0];
     _headerText ctrlCommit 0;
     
-    // Create content background - HALF WIDTH
+    // Create content background
     private _contentBg = _display ctrlCreate ["RscText", 10003, _container];
     _contentBg ctrlSetPosition [0, 0.03 * safezoneH, 0.15 * safezoneW, 0.27 * safezoneH];
     _contentBg ctrlSetBackgroundColor [0, 0, 0, 0.5];
@@ -213,13 +200,13 @@ if (_duration > 0) then {
         _processedContent = _content;
     };
     
-    // Create content text - HALF WIDTH
+    // Create content text
     private _contentText = _display ctrlCreate ["RscStructuredText", 10004, _container];
     _contentText ctrlSetPosition [0.005 * safezoneW, 0.035 * safezoneH, 0.14 * safezoneW, 0.26 * safezoneH];
     _contentText ctrlSetStructuredText parseText _processedContent;
     _contentText ctrlCommit 0;
     
-    // Add border to the whole thing - HALF WIDTH
+    // Add border to the whole thing
     private _border = _display ctrlCreate ["RscFrame", 10005, _container];
     _border ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.3 * safezoneH];
     _border ctrlSetTextColor [0.8, 0.8, 0.8, 0.5];
@@ -228,10 +215,10 @@ if (_duration > 0) then {
     // Start monitoring for camera existence
     [_container] spawn {
         params ["_container"];
-        waitUntil {isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM} || {isNull _container}};
+        waitUntil {isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM } || {isNull _container}};
         
         // If container still exists but camera doesn't, remove it
-        if (!isNull _container && (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM})) then {
+        if (!isNull _container && (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM })) then {
             _container ctrlSetFade 1;
             _container ctrlCommit 0.5;
             sleep 0.5;

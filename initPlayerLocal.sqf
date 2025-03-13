@@ -67,10 +67,10 @@ if (_RestrictedArsenalVal isEqualTo 0) then {
 	[] call FLO_fnc_restrictedArsenal;
 };
 
-// Add the open Logistics Menu UI action
+// Add the build mode UI action
 IDS_Logistics_openUIActionId = player addAction [
-    "<t color='#3498DB'>Open Logistics Menu</t>", 
-    { call IDS_Logistics_fnc_openBuildMenu; }, 
+    "<t color='#3498DB'>Build Mode</t>", 
+    { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
     nil, 
     1.4, 
     false, 

@@ -118,7 +118,7 @@ IDS_Logistics_currentEntity setPosASL _finalPos;
 IDS_Logistics_currentEntity setDir _finalDir;
 
 // Apply terrain snapping if enabled
-if (!isNil "IDS_Logistics_CameraTerrainSnap" && {IDS_Logistics_CameraTerrainSnap}) then {
+if (!isNil "IDS_Logistics_CameraTerrainSnap" && { IDS_Logistics_CameraTerrainSnap }) then {
     // Align with terrain normal but maintain entity's forward direction
     private _entityDirVector = [sin _finalDir, cos _finalDir, 0];
     private _sideVector = _surfaceNormal vectorCrossProduct _entityDirVector;
