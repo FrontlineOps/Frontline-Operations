@@ -3,12 +3,12 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.1
+ * @version 1.2
  * @date 2025-03-10
  * 
  * @description
  * Handles entity pickup with improved network handling.
- * Works with both camera-based and player-based building systems.
+ * Camera-based building system only - player-based functionality removed.
  * Creates a local preview for manipulation before finalizing on the server.
  *
  * @param {Object} _entity - The server-side entity to pick up
@@ -24,7 +24,15 @@ params [
 ];
 
 if (isNull _entity) exitWith {};
-if (IDS_Logistics_isHolding) exitWith { hint "You are already holding an entity."; };
+if (IDS_Logistics_isHolding) exitWith { 
+    ["You are already holding an entity.", 2] call IDS_Logistics_fnc_cameraHint; 
+};
+
+// Ensure camera mode is active
+if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
+    diag_log "IDS_Logistics: Camera not active, pickup canceled";
+    hint "Camera mode is required for building operations.";
+};
 
 // Store entity information before deletion
 private _className = typeOf _entity;
@@ -44,6 +52,10 @@ _localEntity setVectorUp _originalVectorUp;
 
 // Store the original netId for later server updates
 _localEntity setVariable ["IDS_Logistics_OriginalNetId", _netId];
+
+// Disable simulation and collision
+_localEntity enableSimulationGlobal false;
+[player, _localEntity] remoteExecCall ["disableCollisionWith", 0, true]; // JIP compatible
 
 // Setup holding state
 IDS_Logistics_isHolding = true;
@@ -97,10 +109,6 @@ if (_useCameraMode) then {
         player setPosASL [_playerPos select 0, _playerPos select 1, _groundLevel + 0.1];
     };
 }; 
-
-// Disable physics
-_localEntity enableSimulationGlobal false;
-[player, _localEntity] remoteExecCall ["disableCollisionWith", 0, true];
 
 // Add EachFrame event handler for continuous update
 IDS_Logistics_dirUpdateEH = addMissionEventHandler ["EachFrame", {

@@ -3,12 +3,12 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.1
+ * @version 1.2
  * @date 2025-03-10
  * 
  * @description
  * Finalizes the placement of the currently held entity.
- * Works with both camera-based and player-based building systems.
+ * Camera-based building system only - player-based functionality removed.
  * Handles cleanup of temporary objects and event handlers.
  *
  * @param {None} - Uses globally stored IDS_Logistics_currentEntity
@@ -21,7 +21,12 @@
 
 // Validate current holding state
 if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith { 
-    hint "No entity to place."; 
+    ["No entity to place.", 2] call IDS_Logistics_fnc_cameraHint; 
+};
+
+// Ensure camera mode is active
+if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
+    diag_log "IDS_Logistics: Camera not active, placement canceled";
 };
 
 // Extract entity properties before deletion
@@ -61,26 +66,10 @@ if (!isNil "IDS_Logistics_dirUpdateEH") then {
     removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
 };
 
-// Remove action menu items if not in camera mode
-if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) then {
-    if (!isNil "IDS_Logistics_placeActionId") then {
-        player removeAction IDS_Logistics_placeActionId;
-    };
-    
-    if (!isNil "IDS_Logistics_cancelActionId") then {
-        player removeAction IDS_Logistics_cancelActionId;
-    };
-};
-
 // Reset global state variables
 IDS_Logistics_isHolding = false;
 IDS_Logistics_currentEntity = objNull;
 IDS_Logistics_lastViewDir = nil;
 
 // Provide user feedback
-if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
-    ["Entity placed", 2] call IDS_Logistics_fnc_cameraHint;
-} else {
-    hintSilent "";
-    hint "Entity placed.";
-};
+["Entity placed", 2] call IDS_Logistics_fnc_cameraHint;

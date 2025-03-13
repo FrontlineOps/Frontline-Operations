@@ -3,13 +3,14 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.1
+ * @version 1.2
  * @date 2025-03-10
  * 
  * @description
  * Updates the position and rotation of the currently held entity
  * based on camera position, direction, and placement settings.
  * Supports both level placement and terrain-aligned placement.
+ * Camera-only mode - player-based functionality removed.
  *
  * @param {None} - Uses global variables for entity state and positioning
  *
@@ -21,6 +22,11 @@
 
 if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {};
 
+// Exit if camera is not active - camera-only mode
+if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
+    diag_log "IDS_Logistics: Camera not active, entity update canceled";
+};
+
 // Calculate base height
 private _baseHeight = ((boundingBoxReal IDS_Logistics_currentEntity) select 1 select 2) - ((boundingBoxReal IDS_Logistics_currentEntity) select 0 select 2);
 private _centerHeight = _baseHeight / 2; // Calculate the center height of the object
@@ -28,54 +34,44 @@ private _centerHeight = _baseHeight / 2; // Calculate the center height of the o
 // Store the center height on the object for use during finalization
 IDS_Logistics_currentEntity setVariable ["IDS_Logistics_CenterHeight", _centerHeight];
 
-// Use camera or player as reference based on whether camera is active
-private _referencePos = [];
+// Use camera for positioning
+private _referencePos = getPosASL IDS_LOGISTICS_CAM;
 private _referenceDir = 0;
 private _forwardVector = [];
 
-// If camera is active, use it for positioning
-if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
-    _referencePos = getPosASL IDS_LOGISTICS_CAM;
-    
-    // Try multiple methods to get reliable camera view direction - better for freelook mode
-    _forwardVector = vectorDir IDS_LOGISTICS_CAM; // More reliable in all camera modes
-    
-    // If vectorDir fails (returns [0,0,0]), try getCameraViewDirection
-    if (_forwardVector isEqualTo [0,0,0]) then {
-        _forwardVector = getCameraViewDirection IDS_LOGISTICS_CAM;
-    };
-    
-    // If that still fails, calculate from camera angle
-    if (_forwardVector isEqualTo [0,0,0]) then {
-        private _camDirection = getDir IDS_LOGISTICS_CAM;
-        _forwardVector = [sin _camDirection, cos _camDirection, 0];
-    };
-    
-    // Get horizontal component
-    private _horizontalVector = [_forwardVector select 0, _forwardVector select 1, 0];
-    private _horizontalLength = vectorMagnitude _horizontalVector;
-    
-    if (_horizontalLength > 0) then {
-        // Normalize the horizontal vector
-        _horizontalVector = [
-            (_horizontalVector select 0) / _horizontalLength,
-            (_horizontalVector select 1) / _horizontalLength,
-            0
-        ];
-        _forwardVector = _horizontalVector;
-    } else {
-        // Fallback for looking straight up/down
-        _forwardVector = [0, 1, 0]; 
-    };
-    
-    _referenceDir = (_forwardVector select 0) atan2 (_forwardVector select 1);
-    if (_referenceDir < 0) then { _referenceDir = _referenceDir + 360; };
-} else {
-    // Fall back to player-based positioning
-    _referencePos = getPosASL player;
-    _referenceDir = getDir player;
-    _forwardVector = [sin _referenceDir, cos _referenceDir, 0];
+// Try multiple methods to get reliable camera view direction - better for freelook mode
+_forwardVector = vectorDir IDS_LOGISTICS_CAM; // More reliable in all camera modes
+
+// If vectorDir fails (returns [0,0,0]), try getCameraViewDirection
+if (_forwardVector isEqualTo [0,0,0]) then {
+    _forwardVector = getCameraViewDirection IDS_LOGISTICS_CAM;
 };
+
+// If that still fails, calculate from camera angle
+if (_forwardVector isEqualTo [0,0,0]) then {
+    private _camDirection = getDir IDS_LOGISTICS_CAM;
+    _forwardVector = [sin _camDirection, cos _camDirection, 0];
+};
+
+// Get horizontal component
+private _horizontalVector = [_forwardVector select 0, _forwardVector select 1, 0];
+private _horizontalLength = vectorMagnitude _horizontalVector;
+
+if (_horizontalLength > 0) then {
+    // Normalize the horizontal vector
+    _horizontalVector = [
+        (_horizontalVector select 0) / _horizontalLength,
+        (_horizontalVector select 1) / _horizontalLength,
+        0
+    ];
+    _forwardVector = _horizontalVector;
+} else {
+    // Fallback for looking straight up/down
+    _forwardVector = [0, 1, 0]; 
+};
+
+_referenceDir = (_forwardVector select 0) atan2 (_forwardVector select 1);
+if (_referenceDir < 0) then { _referenceDir = _referenceDir + 360; };
 
 // Calculate forward position based on the reference direction and distance
 private _forwardPos = [
