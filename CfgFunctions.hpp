@@ -100,4 +100,13 @@ class FLO {
         class ragequitBlocker     {};
         class disableSystemChat   {};
     };
+
+    class Pathfinding {
+        file = "Functions\Pathfinding";
+
+        class initPFScheduler   {preInit = 1;};
+        class initSearch        {preInit = 1;};
+        class initRoadGraph     {preInit = 1;};
+        class findRoadPath      {};
+    };
 };
