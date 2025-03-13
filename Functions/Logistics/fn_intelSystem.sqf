@@ -245,7 +245,7 @@ if (isServer && isNil "FLO_Intel_System") then {
                     default { "#FFFFFF" };          // White for default
                 };
                 
-                // Format and display notification
+                // Format message
                 private _formattedMsg = format [
                     "<t color='%1' font='PuristaBold' align='right' shadow='1' size='2'>%2</t><br/><t align='right' shadow='1' size='1'>%3</t>",
                     _color,
@@ -253,7 +253,8 @@ if (isServer && isNil "FLO_Intel_System") then {
                     _message
                 ];
                 
-                [parseText _formattedMsg, [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ["BIS_fnc_textTiles", 0];
+                // Queue notification for efficient broadcasting instead of direct remoteExec
+                missionNamespace setVariable ["FLO_Intel_Notification", [_formattedMsg, time], true];
                 true
             } else {
                 false
