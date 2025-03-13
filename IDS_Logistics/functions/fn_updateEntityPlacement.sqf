@@ -22,10 +22,7 @@
 
 if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {};
 
-// Exit if camera is not active - camera-only mode
-if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
-    diag_log "IDS_Logistics: Camera not active, entity update canceled";
-};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {};
 
 // Calculate base height
 private _baseHeight = ((boundingBoxReal IDS_Logistics_currentEntity) select 1 select 2) - ((boundingBoxReal IDS_Logistics_currentEntity) select 0 select 2);

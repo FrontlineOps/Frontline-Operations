@@ -25,9 +25,7 @@ if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {
 };
 
 // Ensure camera mode is active
-if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
-    diag_log "IDS_Logistics: Camera not active, placement canceled";
-};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {};
 
 // Extract entity properties before deletion
 private _entity = IDS_Logistics_currentEntity;
