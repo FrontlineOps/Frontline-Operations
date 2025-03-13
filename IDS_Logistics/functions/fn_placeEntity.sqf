@@ -31,6 +31,9 @@ private _finalPos = getPosASL _entity;
 private _finalDir = getDir _entity;
 private _vectorUp = vectorUp _entity;
 
+// Get the center height stored on the entity
+private _centerHeight = _entity getVariable ["IDS_Logistics_CenterHeight", 0];
+
 // Get original netId if this was a picked-up entity
 private _originalNetId = _entity getVariable ["IDS_Logistics_OriginalNetId", ""];
 
@@ -38,7 +41,8 @@ private _originalNetId = _entity getVariable ["IDS_Logistics_OriginalNetId", ""]
 deleteVehicle _entity;
 
 // Finalize entity on the server - works for both new and existing entities
-[_originalNetId, _className, _finalPos, _finalDir, _vectorUp, player] remoteExecCall ["IDS_Logistics_fnc_finalizeEntity", 2];
+// Include the center height information to prevent sinking
+[_originalNetId, _className, _finalPos, _finalDir, _vectorUp, player, _centerHeight] remoteExecCall ["IDS_Logistics_fnc_finalizeEntity", 2];
 
 // Clean up event handlers
 if (!isNil "IDS_Logistics_scrollHandler") then {

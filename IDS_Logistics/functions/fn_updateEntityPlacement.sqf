@@ -23,6 +23,10 @@ if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {};
 
 // Calculate base height
 private _baseHeight = ((boundingBoxReal IDS_Logistics_currentEntity) select 1 select 2) - ((boundingBoxReal IDS_Logistics_currentEntity) select 0 select 2);
+private _centerHeight = _baseHeight / 2; // Calculate the center height of the object
+
+// Store the center height on the object for use during finalization
+IDS_Logistics_currentEntity setVariable ["IDS_Logistics_CenterHeight", _centerHeight];
 
 // Use camera or player as reference based on whether camera is active
 private _referencePos = [];
@@ -33,8 +37,19 @@ private _forwardVector = [];
 if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
     _referencePos = getPosASL IDS_LOGISTICS_CAM;
     
-    // Get the current camera view direction vector - works in all camera modes including freelook
-    _forwardVector = getCameraViewDirection IDS_LOGISTICS_CAM;
+    // Try multiple methods to get reliable camera view direction - better for freelook mode
+    _forwardVector = vectorDir IDS_LOGISTICS_CAM; // More reliable in all camera modes
+    
+    // If vectorDir fails (returns [0,0,0]), try getCameraViewDirection
+    if (_forwardVector isEqualTo [0,0,0]) then {
+        _forwardVector = getCameraViewDirection IDS_LOGISTICS_CAM;
+    };
+    
+    // If that still fails, calculate from camera angle
+    if (_forwardVector isEqualTo [0,0,0]) then {
+        private _camDirection = getDir IDS_LOGISTICS_CAM;
+        _forwardVector = [sin _camDirection, cos _camDirection, 0];
+    };
     
     // Get horizontal component
     private _horizontalVector = [_forwardVector select 0, _forwardVector select 1, 0];
@@ -91,11 +106,11 @@ if (count _intersections > 0) then {
     private _intersectionPos = _intersection select 0;
     _surfaceNormal = _intersection select 1;
     
-    // Update the position to be at ground level plus the entity height offset
+    // Update the position to be at ground level plus the entity height offset and its center height
     _finalPos = [
         _intersectionPos select 0,
         _intersectionPos select 1,
-        (_intersectionPos select 2) + IDS_Logistics_entityHeight
+        (_intersectionPos select 2) + IDS_Logistics_entityHeight + _centerHeight
     ];
 } else {
     // No ground intersection, use the original calculation with height offset
