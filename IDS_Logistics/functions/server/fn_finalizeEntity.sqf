@@ -78,5 +78,15 @@ if (_originalNetId != "") then {
     _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
     _entity setVariable ["IDS_Logistics_PlacedBy", name _player, true];
     
+    // Get entity configuration and set variable
+    private _entityConfig = [_className] call IDS_Logistics_fnc_getEntityConfig;
+    _entityConfig params ["_entityClassName", "_entityDisplayName", "_entityCategory", "_entitySubCategory", "_entityCost"];
+    _entity setVariable ["IDS_Logistics_EntityCost", _entityCost, true];
+    _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+
+    diag_log format ["IDS Logistics: Entity Config - Class: %1, DisplayName: %2, Category: %3, Subcategory: %4, Cost: %5", 
+        _entityClassName, _entityDisplayName, _entityCategory, _entitySubCategory, _entityCost];
+    diag_log format ["IDS Logistics: Entity Cost: %1", 
+        _entity getVariable "IDS_Logistics_EntityCost"];
     diag_log format ["IDS Logistics: New entity %1 created by %2", _className, name _player];
 };
