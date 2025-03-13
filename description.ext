@@ -68,6 +68,7 @@ class CfgRemoteExec
 #include "compositions\compositions.cfg"
 #include "Scripts\defines.hpp"
 #include "Scripts\MissionSetupMenu\Dialog_Faction.hpp"
+#include "Scripts\MissionSetupMenu\Dialog_Parameters.hpp"
 #include "Scripts\RequestMenu\Dialog_Request.hpp"
 #include "Scripts\GUI_Satellite_Classes.hpp"
 #include "Scripts\GUI_Satellite_Macros.hpp" 
