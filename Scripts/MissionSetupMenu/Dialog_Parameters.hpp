@@ -1,11 +1,11 @@
-class factionselect_dialog2
+class parameters_dialog
 {
-	idd = 999;
+	idd = 998;
 	movingenable = true;
-	onLoad = "escKeyEH = (_this select 0) displayAddEventHandler [""KeyDown"", ""if (((_this select 1) == 1)) then {true} else {false};""];";
+	onLoad = "escKeyEH = (_this select 0) displayAddEventHandler [""KeyDown"", ""if (((_this select 1) == 1)) then {true} else {false};""];  [] execVM ""Scripts\MissionSetupMenu\Dialog_Parameters_Init.sqf"";";
 
 	// Modern UI base classes
-	class suprChooseFactionCombo: RscCombo
+	class suprParameterCombo: RscCombo
 	{
 		w = 20 * GUI_GRID_W;
 		h = 1.2 * GUI_GRID_H;
@@ -49,14 +49,14 @@ class controls
 		colorShadow[] = {0,0,0,0.5};
 		font = "PuristaBold";
 		align = "center";
-		text = "MISSION SETUP";
+		text = "MISSION PARAMETERS";
 	};
 
 	// Title text
 	class RscText_1000: RscText
 	{
 		idc = 1000;
-		text = "CHOOSE FACTIONS"; 
+		text = "MISSION SETTINGS"; 
 		x = safeZoneX + safeZoneW/2 - 24 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 7 * GUI_GRID_H;
 		w = 12 * GUI_GRID_W;
@@ -69,13 +69,13 @@ class controls
 		font = "PuristaBold";
 	};
 
-	/* FACTION SELECTION SECTION */
+	/* PARAMETERS SECTION */
 	
-	// Player Faction Frame
+	// AutoSave Switch Frame
 	class RscFrame_1800: RscText
 	{
 		idc = 1800;
-		text = "Player Faction"; 
+		text = "AutoSave Switch"; 
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -86,11 +86,11 @@ class controls
 		tooltip = "";
 	};
 
-	// Enemy Faction Frame
+	// AutoSave Interval Frame
 	class RscFrame_1801: RscText
 	{
 		idc = 1801;
-		text = "Enemy Faction"; 
+		text = "AutoSave Interval"; 
 		x = safeZoneX + safeZoneW/2 - 6 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -100,11 +100,11 @@ class controls
 		font = "PuristaMedium";
 	};
 
-	// Civilian Faction Frame
+	// Mission Save Management Frame
 	class RscFrame_1802: RscText
 	{
 		idc = 1802;
-		text = "Civilian Faction"; 
+		text = "Mission Save Management"; 
 		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -114,11 +114,11 @@ class controls
 		font = "PuristaMedium";
 	};
 	
-	// Starting Zones Frame
+	// Restricted Arsenal Frame
 	class RscFrame_1803: RscText
 	{
 		idc = 1803;
-		text = "Starting Zones"; 
+		text = "Restricted Arsenal"; 
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 2 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -129,119 +129,47 @@ class controls
 		tooltip = "";
 	};
 	
-	// Starting Resources Frame
-	class RscFrame_1804: RscText
+	// AutoSave Switch Dropdown
+	class AutoSave_Switch_Combo: suprParameterCombo
 	{
-		idc = 1804;
-		text = "Starting Resources"; 
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
-	
-	// Starting Difficulty Frame
-	class RscFrame_1805: RscText
-	{
-		idc = 1805;
-		text = "Starting Difficulty"; 
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
-
-	// Starting Reputation Frame
-	class RscFrame_1806: RscText
-	{
-		idc = 1806;
-		text = "Starting Reputation"; 
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
-	
-	// Player Faction Dropdown
-	class faction_selection_listbox: suprChooseFactionCombo
-	{
-		idc = 1955;
+		idc = 1970;
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
 	
-	// Enemy Faction Dropdown
-	class faction_selection_enemy_listbox: suprChooseFactionCombo
+	// AutoSave Interval Dropdown
+	class AutoSave_Interval_Combo: suprParameterCombo
 	{
-		idc = 1956;
+		idc = 1971;
 		x = safeZoneX + safeZoneW/2 - 6 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
 	
-	// Civilian Faction Dropdown
-	class faction_selection_civilian_listbox: suprChooseFactionCombo
+	// Mission Save Management Dropdown
+	class Mission_Save_Combo: suprParameterCombo
 	{
-		idc = 1957;
+		idc = 1972;
 		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
 	
-	// Enemy Presence Dropdown
-	class faction_selection_presence_listbox: suprChooseFactionCombo
+	// Restricted Arsenal Dropdown
+	class Restricted_Arsenal_Combo: suprParameterCombo
 	{
-		idc = 1958;
+		idc = 1973;
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 0 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
 	
-	// Starting Resources Dropdown
-	class faction_selection_Resources_listbox: suprChooseFactionCombo
-	{
-		idc = 1959;
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 0 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
-	
-	// Reputation Dropdown
-	class Reputation_selection_listbox: suprChooseFactionCombo
-	{
-		idc = 1960;
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
-	
-	// Difficulty Dropdown
-	class Difficulty_selection_listbox: suprChooseFactionCombo
-	{
-		idc = 1961;
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
-	
-	// START MISSION Button
+	// APPLY PARAMETERS Button
 	class RscButton_1600: RscButton
 	{
 		idc = 1600;
-		text = "START MISSION"; 
+		text = "APPLY PARAMETERS"; 
 		x = safeZoneX + safeZoneW/2 - 7 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 + 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -251,17 +179,17 @@ class controls
 		colorBackgroundActive[] = {0.5,0.1,0.1,1};
 		colorFocused[] = {0.5,0.1,0.1,0.8};
 		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-		action = "_nul = [true] execvm ""Scripts\MissionSetupMenu\Dialog_Faction_Done.sqf""";
+		action = "_nul = [] execvm ""Scripts\MissionSetupMenu\Dialog_Parameters_Done.sqf""";
 		tooltip = "";
 		font = "PuristaBold";
 	};
 	
-	// SWITCH TO PARAMETERS Button
+	// SWITCH TO FACTIONS Button
 	class RscButton_1601: RscButton
 	{
 		idc = 1601;
-		text = "MISSION PARAMETERS"; 
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
+		text = "SWITCH TO FACTIONS"; 
+		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 + 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 		h = 1.5 * GUI_GRID_H;
@@ -270,9 +198,9 @@ class controls
 		colorBackgroundActive[] = {0.5,0.1,0.1,1};
 		colorFocused[] = {0.5,0.1,0.1,0.8};
 		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-		action = "closeDialog 0; createDialog ""parameters_dialog"";";
+		action = "closeDialog 0; createDialog ""factionselect_dialog2"";";
 		tooltip = "";
 		font = "PuristaBold";
 	};
 };
-};
+}; 
