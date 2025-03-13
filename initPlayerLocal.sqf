@@ -24,8 +24,9 @@ if (!StartingLocationDone) then {
 	// Faction Selection & Starting Location
 	if (isNil "TheCommander") then {titleText ["Commander must be assigned to a player at fresh start.\nHave someone return to Lobby and pick Commander.", "BLACK IN",9999]; waitUntil {!isNil "TheCommander"};};
 
-	if (_player isEqualTo TheCommander) then { 
-		execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf"; 
+	if (_player isEqualTo TheCommander) then {
+        execVM "Scripts\MissionSetupMenu\Dialog_Parameters_Init.sqf";
+		// execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
 	};
 };
 

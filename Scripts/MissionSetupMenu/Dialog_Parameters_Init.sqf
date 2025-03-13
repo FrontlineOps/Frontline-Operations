@@ -6,6 +6,7 @@
 */
 
 // Wait for dialog to be created
+(findDisplay 46) createDisplay "parameters_dialog";
 waitUntil {!isNull findDisplay 998};
 
 // Get the controls

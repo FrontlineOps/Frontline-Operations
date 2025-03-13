@@ -198,7 +198,7 @@ class controls
 		colorBackgroundActive[] = {0.5,0.1,0.1,1};
 		colorFocused[] = {0.5,0.1,0.1,0.8};
 		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-		action = "closeDialog 0; createDialog ""factionselect_dialog2"";";
+		action = "closeDialog 0; createDialog ""faction_dialog"";";
 		tooltip = "";
 		font = "PuristaBold";
 	};
