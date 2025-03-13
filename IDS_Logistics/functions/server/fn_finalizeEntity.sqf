@@ -16,11 +16,12 @@
  * @param {Number} _finalDir - Final direction/rotation 
  * @param {Array} _vectorUp - Vector up for non-standard orientation
  * @param {Object} _player - Player who placed the entity
+ * @param {Number} _centerHeight - Center height of the object to prevent sinking
  *
  * @return {Nothing}
  *
  * @example
- * [_netId, _className, _finalPos, _finalDir, _vectorUp, player] remoteExec ["IDS_Logistics_fnc_finalizeEntity", 2]
+ * [_netId, _className, _finalPos, _finalDir, _vectorUp, player, _centerHeight] remoteExec ["IDS_Logistics_fnc_finalizeEntity", 2]
  */
 
 // This function should run on the server only
@@ -34,18 +35,19 @@ params [
     ["_finalPos", [0,0,0], [[]]],
     ["_finalDir", 0, [0]],
     ["_vectorUp", [0,0,1], [[]]],
-    ["_player", objNull, [objNull]]
+    ["_player", objNull, [objNull]],
+    ["_centerHeight", 0, [0]]
 ];
 
-diag_log format ["IDS_Logistics_fnc_finalizeEntity called: NetID: %1, Class: %2, Pos: %3", _originalNetId, _className, _finalPos];
+diag_log format ["IDS_Logistics_fnc_finalizeEntity called: NetID: %1, Class: %2, Pos: %3, CenterHeight: %4", _originalNetId, _className, _finalPos, _centerHeight];
 
 // Check if this is a reposition of an existing entity
 if (_originalNetId != "") then {
     private _existingEntity = objectFromNetId _originalNetId;
     
     if (!isNull _existingEntity) then {
-        // Set new position - note: using setPosWorld to ensure precise positioning
-        _existingEntity setPosWorld _finalPos;
+        // Set new position - use setPosASL for precise positioning
+        _existingEntity setPosASL _finalPos;
         _existingEntity setDir _finalDir;
         _existingEntity setVectorUp _vectorUp;
         
@@ -63,9 +65,14 @@ if (_originalNetId != "") then {
 } else {
     // Create a new entity
     private _entity = createVehicle [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
-    _entity setPosWorld _finalPos;
+    
+    // Use setPosASL to maintain exact coordinates
+    _entity setPosASL _finalPos;
     _entity setDir _finalDir;
     _entity setVectorUp _vectorUp;
+    
+    // Store the center height on the entity for future reference
+    _entity setVariable ["IDS_Logistics_CenterHeight", _centerHeight, true];
     
     // Mark as a placed entity for future operations
     _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
