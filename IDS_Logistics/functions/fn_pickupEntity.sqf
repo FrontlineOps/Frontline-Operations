@@ -29,10 +29,7 @@ if (IDS_Logistics_isHolding) exitWith {
 };
 
 // Ensure camera mode is active
-if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) exitWith {
-    diag_log "IDS_Logistics: Camera not active, pickup canceled";
-    hint "Camera mode is required for building operations.";
-};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {};
 
 // Store entity information before deletion
 private _className = typeOf _entity;
@@ -62,7 +59,7 @@ IDS_Logistics_isHolding = true;
 IDS_Logistics_currentEntity = _localEntity;
 
 // Check if using camera mode or player mode
-private _useCameraMode = !isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM};
+private _useCameraMode = !isNil "IDS_LOGISTICS_CAM" && { !isNull IDS_LOGISTICS_CAM };
 
 // Calculate initial placement variables
 if (_useCameraMode) then {
@@ -88,26 +85,6 @@ if (_useCameraMode) then {
     // Calculate height offset
     private _groundLevel = getTerrainHeightASL [_originalPos select 0, _originalPos select 1];
     IDS_Logistics_entityHeight = (_originalPos select 2) - _groundLevel;
-} else {
-    // Get current player direction
-    private _playerDir = getDir player;
-    
-    // Calculate rotation offset from player direction
-    IDS_Logistics_entityRotation = (_originalDir - _playerDir) % 360;
-    if (IDS_Logistics_entityRotation < 0) then { IDS_Logistics_entityRotation = IDS_Logistics_entityRotation + 360; };
-    
-    // Set initial distance and height
-    IDS_Logistics_entityHeight = 0; 
-    IDS_Logistics_entityDistance = 5;
-    
-    // Perform one-time height check to ensure player is grounded
-    private _playerPos = getPosASL player;
-    private _groundLevel = getTerrainHeightASL [_playerPos select 0, _playerPos select 1];
-    private _heightAboveGround = (_playerPos select 2) - _groundLevel;
-    
-    if (_heightAboveGround > 1.5) then {
-        player setPosASL [_playerPos select 0, _playerPos select 1, _groundLevel + 0.1];
-    };
 }; 
 
 // Add EachFrame event handler for continuous update
@@ -148,19 +125,19 @@ IDS_Logistics_scrollHandler = (findDisplay 46) displayAddEventHandler ["MouseZCh
         };
         
         private _finalDir = (_refDir + IDS_Logistics_entityRotation) % 360;
-        hintSilent format ["%1 Direction: %2°\nRotation Offset: %3°\nFinal Direction: %4°", 
-                          _refName, round _refDir, round IDS_Logistics_entityRotation, round _finalDir];
+        // hintSilent format ["%1 Direction: %2°\nRotation Offset: %3°\nFinal Direction: %4°", 
+        //                   _refName, round _refDir, round IDS_Logistics_entityRotation, round _finalDir];
     } else {
         if (_ctrl) then {
             // Ctrl + Scroll = Height
             IDS_Logistics_entityHeight = IDS_Logistics_entityHeight + (_scroll * 0.1);
-            hintSilent format ["Entity Height: %1m", (round(IDS_Logistics_entityHeight * 10))/10];
+            // hintSilent format ["Entity Height: %1m", (round(IDS_Logistics_entityHeight * 10))/10];
         } else {
             if (_alt) then {
                 // Alt + Scroll = Distance
                 IDS_Logistics_entityDistance = IDS_Logistics_entityDistance + (_scroll * 0.5);
                 IDS_Logistics_entityDistance = (IDS_Logistics_entityDistance max 1) min 10;
-                hintSilent format ["Distance: %1m", (round(IDS_Logistics_entityDistance * 10))/10];
+                // hintSilent format ["Distance: %1m", (round(IDS_Logistics_entityDistance * 10))/10];
             };
         };
     }
@@ -185,62 +162,3 @@ IDS_Logistics_keyUpHandler = (findDisplay 46) displayAddEventHandler ["KeyUp", {
     
     false
 }];
-
-// Add placement/cancel actions (only if not in camera mode)
-if (isNil "IDS_LOGISTICS_CAM" || {isNull IDS_LOGISTICS_CAM}) then {
-    IDS_Logistics_placeActionId = player addAction ["<t color='#4CAF50'>Place Entity</t>", {
-        private _entity = IDS_Logistics_currentEntity;
-        private _originalNetId = _entity getVariable ["IDS_Logistics_OriginalNetId", ""];
-        private _className = typeOf _entity;
-        private _finalPos = getPosASL _entity;
-        private _finalDir = getDir _entity;
-        private _vectorUp = vectorUp _entity;
-        
-        // Clean up local entity
-        deleteVehicle _entity;
-    
-        // Tell server to restore or update the entity
-        [_originalNetId, _className, _finalPos, _finalDir, _vectorUp, player] remoteExecCall ["IDS_Logistics_fnc_finalizeEntity", 2];
-        
-        // Clean up event handlers
-        (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler];
-        (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler];
-        (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler];
-        removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
-        
-        player removeAction IDS_Logistics_placeActionId;
-        player removeAction IDS_Logistics_cancelActionId;
-        
-        IDS_Logistics_isHolding = false;
-        IDS_Logistics_currentEntity = objNull;
-        
-        hintSilent "";
-        hint "Entity placed.";
-    }, nil, 10, false, true, "", "IDS_Logistics_isHolding"];
-    
-    IDS_Logistics_cancelActionId = player addAction ["<t color='#FF5252'>Cancel Placement</t>", {
-        private _entity = IDS_Logistics_currentEntity;
-        private _originalNetId = _entity getVariable ["IDS_Logistics_OriginalNetId", ""];
-        
-        // Clean up local entity
-        deleteVehicle _entity;
-        
-        // Tell server to restore original entity
-        [_originalNetId, false] remoteExecCall ["IDS_Logistics_fnc_toggleEntityVisibility", 2];
-        
-        // Clean up event handlers
-        (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler];
-        (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler];
-        (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler];
-        removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH];
-        
-        player removeAction IDS_Logistics_placeActionId;
-        player removeAction IDS_Logistics_cancelActionId;
-        
-        IDS_Logistics_isHolding = false;
-        IDS_Logistics_currentEntity = objNull;
-        
-        hintSilent "";
-        hint "Placement cancelled.";
-    }, nil, 8, false, true, "", "IDS_Logistics_isHolding"];
-};

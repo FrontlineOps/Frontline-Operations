@@ -15,16 +15,14 @@
  * Key Controls:
  * - N: Toggle vision modes (Normal, NVG, Thermal White Hot, Thermal Black Hot)
  * - Numpad Decimal: Reset to last position
- * - Grave (`): Disable post-processing
  * - B: Open build menu
- * - 1-0: Apply different visual filters
  *
  * @param {Object} [_this] - The object to center the camera on (defaults to player vehicle if undefined)
  *
  * @return {Nothing}
  *
  * @example
- * [] call IDS_Logistics_fnc_initBuildCamera
+ * [player] call IDS_Logistics_fnc_initBuildCamera
  */
 
 // ---- CAMERA CONFIGURATION SETUP ----
@@ -75,6 +73,61 @@ _local cameraEffect ["INTERNAL", "BACK"];
 showCinemaBorder false;              // Hide cinema borders
 IDS_LOGISTICS_CAM setDir direction (vehicle player);
 
+// Store initial camera position for range limitation
+IDS_LOGISTICS_CAM_INITIAL_POS = [_pX, _pY, _pZ + 2];
+IDS_LOGISTICS_CAM_MAX_DISTANCE = 50; // Maximum distance in meters
+IDS_LOGISTICS_CAM_AT_LIMIT = false;  // Flag to prevent spam notifications
+
+// Add range limitation check (50 meter radius from initial position)
+IDS_Logistics_DistanceCheckEH = addMissionEventHandler ["EachFrame", {
+    if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
+        private _currentPos = getPosASL IDS_LOGISTICS_CAM;
+        private _initialPos = IDS_LOGISTICS_CAM_INITIAL_POS;
+        
+        // Calculate 2D distance manually using x and y coordinates only
+        private _deltaX = (_currentPos select 0) - (_initialPos select 0);
+        private _deltaY = (_currentPos select 1) - (_initialPos select 1);
+        private _distance = sqrt(_deltaX^2 + _deltaY^2);
+        
+        // If camera exceeds the limit, move it back to the boundary
+        if (_distance > IDS_LOGISTICS_CAM_MAX_DISTANCE) then {
+            // Calculate direction vector from initial position to current position (2D only)
+            private _dir = [_deltaX, _deltaY, 0];
+            
+            // Normalize the direction vector
+            private _dirLength = sqrt((_dir select 0)^2 + (_dir select 1)^2);
+            if (_dirLength > 0) then {
+                _dir = [
+                    (_dir select 0) / _dirLength,
+                    (_dir select 1) / _dirLength,
+                    0
+                ];
+                
+                // Calculate new position at the boundary
+                private _newPos = [
+                    (_initialPos select 0) + (_dir select 0) * IDS_LOGISTICS_CAM_MAX_DISTANCE,
+                    (_initialPos select 1) + (_dir select 1) * IDS_LOGISTICS_CAM_MAX_DISTANCE,
+                    _currentPos select 2
+                ];
+                
+                // Move camera to the boundary
+                IDS_LOGISTICS_CAM setPosASL _newPos;
+                
+                // Show notification if not already at limit
+                if (!IDS_LOGISTICS_CAM_AT_LIMIT) then {
+                    ["<t color='#FF8844'>Maximum camera distance reached (50m)</t>", 2] call IDS_Logistics_fnc_cameraHint;
+                    IDS_LOGISTICS_CAM_AT_LIMIT = true;
+                };
+            };
+        } else {
+            // Reset the limit flag when back within bounds
+            if (IDS_LOGISTICS_CAM_AT_LIMIT && _distance < (IDS_LOGISTICS_CAM_MAX_DISTANCE - 1)) then {
+                IDS_LOGISTICS_CAM_AT_LIMIT = false;
+            };
+        };
+    };
+}];
+
 // Add mouse click handlers for the camera
 IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["MouseButtonDown", {
     params ["_display", "_button", "_xPos", "_yPos", "_shift", "_ctrl", "_alt"];
@@ -96,9 +149,11 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
         private _targetPos = _camPos vectorAdd (_camDir vectorMultiply 200);
         
         // Debug message for camera position and direction
-        diag_log format ["Camera Pos: %1, Dir: %2, Target: %3", _camPos, _camDir, _targetPos];
+        // diag_log format ["Camera Pos: %1, Dir: %2, Target: %3", _camPos, _camDir, _targetPos];
         
         // Method 1: lineIntersectsSurfaces with the fixed direction
+
+         if (isNil "IDS_LOGISTICS_CAM") exitWith {};
         private _intersections = lineIntersectsSurfaces [
             _camPos, 
             _targetPos, 
@@ -116,7 +171,7 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
         if (count _intersections > 0) then {
             _centerObj = (_intersections select 0) select 2;
             _intersectPos = (_intersections select 0) select 0;
-            diag_log format ["Found object: %1 at pos %2", _centerObj, _intersectPos];
+            // diag_log format ["Found object: %1 at pos %2", _centerObj, _intersectPos];
         };
         
         // SHIFT + Left click = Delete entity under center of screen
@@ -135,13 +190,16 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
                 ["No object found at center of screen", 2] call IDS_Logistics_fnc_cameraHint;
             };
         } else {
-            // Normal left click - place or pick up entity
-            if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
-                [] call IDS_Logistics_fnc_placeEntity;
-            } else {
+            // CTRL + Left click = Pick up entity
+            if (_ctrl) then {
                 // Check if looking at a placed entity to pick it up
-                if (!isNull _centerObj && {_centerObj getVariable ["IDS_Logistics_isPlacedEntity", false]}) then {
+                if (!isNull _centerObj && { _centerObj getVariable ["IDS_Logistics_isPlacedEntity", false] }) then {
                     [_centerObj] call IDS_Logistics_fnc_pickupEntity;
+                };
+            } else {
+                // Normal left click - place entity
+                if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
+                    [] call IDS_Logistics_fnc_placeEntity;
                 };
             };
         };
@@ -253,4 +311,26 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["keydown","
 
 	ppEffectDestroy IDS_LOGISTICS_CAM_COLOR;
 	(findDisplay 46) displayRemoveEventHandler ["keydown", _keyDown];
+
+    if (!isNil "IDS_Logistics_DistanceCheckEH") then {
+        removeMissionEventHandler ["EachFrame", IDS_Logistics_DistanceCheckEH];
+        IDS_Logistics_DistanceCheckEH = nil;
+    };
 };
+
+// Display camera controls info
+private _controlsInfo = format [
+    "<t color='#AAFFAA' size='1.0'>CONTROLS</t><br/><t align='left'>" +
+    "<t>• <t color='#DDDDDD'>N key</t> - Toggle vision modes</t><br/>" +
+    "<t>• <t color='#DDDDDD'>B key</t> - Open build menu</t><br/>" +
+    "<t>• <t color='#DDDDDD'>T key</t> - Toggle terrain snapping</t><br/>" +
+    "<t>• <t color='#DDDDDD'>Left click</t> - Place entity</t><br/>" +
+    "<t>• <t color='#DDDDDD'>CTRL + Left click</t> - Pick up entity</t><br/>" +
+    "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity under cursor</t><br/>" +
+    "<t>• <t color='#DDDDDD'>Right click</t> - Exit camera mode</t><br/>" +
+    "<t>• <t color='#DDDDDD'>CTRL + scroll</t> - Adjust height</t><br/>" +
+    "<t>• <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
+    "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>"
+];
+                       
+[_controlsInfo, 0, false, true] call IDS_Logistics_fnc_cameraHint;
