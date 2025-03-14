@@ -301,7 +301,7 @@ if (isNil "FLO_airSupport") then {
                 _weaponSystems pushBack [_weapon, _weaponType, _magazines];
             } forEach _allWeapons;
             
-            diag_log format ["[FLO][AirSupport] Aircraft weapon systems: %1", _weaponSystems];
+            //diag_log format ["[FLO][AirSupport] Aircraft weapon systems: %1", _weaponSystems];
             
             _aircraft setVariable ["FLO_weaponSystems", _weaponSystems];
             
@@ -428,7 +428,7 @@ private _airSupportTypeDef = [
                         // Place at standoff distance
                         _holdPos = _pos getPos [_minRange + (random (_maxRange - _minRange)), _holdDir];
                         
-                        diag_log format ["[FLO][AirSupport] Holding near friendly units at %1", _holdPos];
+                        //diag_log format ["[FLO][AirSupport] Holding near friendly units at %1", _holdPos];
                     } else {
                         // No nearby friendlies, use a position that gives good firing angle
                         // Full 360-degree choice but prioritize higher terrain if possible
@@ -454,7 +454,7 @@ private _airSupportTypeDef = [
                             _holdPos = _pos getPos [_minRange + (random (_maxRange - _minRange)), random 360];
                         };
                         
-                        diag_log format ["[FLO][AirSupport] No nearby friendlies, holding at optimal position %1", _holdPos];
+                        //diag_log format ["[FLO][AirSupport] No nearby friendlies, holding at optimal position %1", _holdPos];
                     };
                 };
                 _holdPos set [2, _alt];
@@ -532,7 +532,7 @@ private _airSupportTypeDef = [
                     
                     // Approach from the direction of friendly forces 
                     _dir = _nearestFriendly getDir _pos;
-                    diag_log format ["[FLO][AirSupport] Strike approaching from friendly direction: %1 degrees", _dir];
+                    //diag_log format ["[FLO][AirSupport] Strike approaching from friendly direction: %1 degrees", _dir];
                 };
                 
                 private _attackPos = _pos getPos [_radius, _dir];
@@ -606,7 +606,7 @@ private _airSupportTypeDef = [
                         if (_angleDiff < 30 || _angleDiff > 330) then {
                             _missileThreat = true;
                             _threatLevel = 2; // Highest threat level - active missile
-                            diag_log format ["[FLO][AirSupport] MISSILE INBOUND on aircraft %1", _aircraft];
+                            //diag_log format ["[FLO][AirSupport] MISSILE INBOUND on aircraft %1", _aircraft];
                         };
                     };
                 } forEach _nearbyProjectiles;
@@ -626,7 +626,7 @@ private _airSupportTypeDef = [
                             if (_vis > 0.2) then {
                                 _missileThreat = true;
                                 _threatLevel = 1; // Moderate threat - MANPADS lock likely
-                                diag_log format ["[FLO][AirSupport] MANPADS lock detected on aircraft %1 from unit %2", _aircraft, _gunner];
+                                //diag_log format ["[FLO][AirSupport] MANPADS lock detected on aircraft %1 from unit %2", _aircraft, _gunner];
                             };
                         };
                     } forEach _nearbyMANPADS;
@@ -915,7 +915,7 @@ private _airSupportTypeDef = [
                     
                     _obj call ["setupApproach", [_targetPos]];
                     
-                    diag_log format ["[FLO][AirSupport] Helicopter bombing run completed at %1", _targetPos];
+                    //diag_log format ["[FLO][AirSupport] Helicopter bombing run completed at %1", _targetPos];
                 } else {
                     // Fixed-wing bombing parameters - same as original code
                     private _approachAlt = 200 + (random 100); // Higher altitude for bombing
@@ -987,7 +987,7 @@ private _airSupportTypeDef = [
                     
                     _obj call ["setupApproach", [_targetPos]];
                     
-                    diag_log format ["[FLO][AirSupport] Fixed-wing bombing run completed at %1", _targetPos];
+                    //diag_log format ["[FLO][AirSupport] Fixed-wing bombing run completed at %1", _targetPos];
                 };
             };
         } else {
@@ -1123,7 +1123,7 @@ private _airSupportTypeDef = [
                     };
                     
                     // Log the engagement
-                    diag_log format ["[FLO][AirSupport] Aircraft %1 engaging with rotatable cannon at range %2m", _aircraft, round _distance];
+                    //diag_log format ["[FLO][AirSupport] Aircraft %1 engaging with rotatable cannon at range %2m", _aircraft, round _distance];
         } else {
             // Single shot for missiles
             if (!isNull _gunner) then {
@@ -1291,7 +1291,7 @@ private _airSupportTypeDef = [
                                 private _wp2 = _group addWaypoint [_targetPos, 0];
                                 _wp2 setWaypointType "MOVE";
                                 
-                                diag_log format ["[FLO][AirSupport] Helicopter bombing approach initiated at %1", _targetPos];
+                                //diag_log format ["[FLO][AirSupport] Helicopter bombing approach initiated at %1", _targetPos];
                             } else {
                                 // Fixed-wing bombing run - higher altitude
                                 _aircraft flyInHeight 150;
@@ -1304,7 +1304,7 @@ private _airSupportTypeDef = [
                                 private _wp2 = _group addWaypoint [_targetPos, 0];
                                 _wp2 setWaypointType "MOVE";
                                 
-                                diag_log format ["[FLO][AirSupport] Fixed-wing bombing run approach initiated at %1", _targetPos];
+                                //diag_log format ["[FLO][AirSupport] Fixed-wing bombing run approach initiated at %1", _targetPos];
                             }
                         } else {
                             // Close-in attack run for guns/rockets
@@ -1318,7 +1318,7 @@ private _airSupportTypeDef = [
                             // Reduce altitude for better weapon employment of unguided weapons
                             _aircraft flyInHeight 65;
                             
-                            diag_log format ["[FLO][AirSupport] Direct attack approach initiated at %1", _attackPos];
+                            //diag_log format ["[FLO][AirSupport] Direct attack approach initiated at %1", _attackPos];
                         };
                     };
                 };
