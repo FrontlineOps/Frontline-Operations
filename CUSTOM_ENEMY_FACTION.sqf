@@ -30,12 +30,12 @@ East_Ground_Vehicles_Ambient = ["RUS_GRU_asn233115"];
 //publicVariable "East_Ground_Vehicles_Ambient";
 
 East_Ground_Vehicles_Light = ["RUS_MSV_brdm2a", "RUS_MSV_btr82a", "RUS_MSV_btr80", "RUS_GRU_asn233115sts", "RUS_VDV_bmd2k", "RUS_VDV_bmd2",
-"RUS_VDV_9p148", "RUS_MSV_bmp1", "RUS_MSV_bmp1k", "RUS_MSV_bmp2", "RUS_MSV_bmp2k", "RUS_MSV_brm1k"]; 
+"RUS_VDV_9p148", "RUS_MSV_bmp1", "RUS_MSV_bmp1k", "RUS_MSV_bmp2", "RUS_MSV_bmp2k", "RUS_MSV_brm1k", "RUS_MSV_bmp2m"]; 
 //publicVariable "East_Ground_Vehicles_Light";
 
 East_Ground_Vehicles_Heavy = ["RUS_MSV_zsu234", "RUS_MSV_bmp3", "RUS_MSV_bmp3m", "RUS_VDV_bmd4m", "RUS_MSV_t72b", "RUS_MSV_t72b3",
 "RUS_MSV_t72b3m", "RUS_MSV_t72bm", "RUS_MSV_t80bv", "RUS_MSV_t80bvk", "RUS_MSV_t80u", "RUS_MSV_t80u45m", "RUS_MSV_t80ue1", "RUS_MSV_t80uk",
-"RUS_MSV_t90a", "RUS_MSV_t90m"]; 
+"RUS_MSV_t90a", "RUS_MSV_t90m", "RUS_MSV_bmptterminator2", "RUS_MSV_2s6m", "O_T80BVM", "O_T80BVM_M", "mkk_t80b_r"]; 
 //publicVariable "East_Ground_Vehicles_Heavy";
 
 East_Ground_Transport = ["RUS_MSV_ural43202", "RUS_MSV_ural432031", "RUS_MSV_kamaz5350", "RUS_MSV_kamaz4310", "RUS_MSV_asn233115", "RUS_VDV_btrd"]; 
