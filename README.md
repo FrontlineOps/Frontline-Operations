@@ -1,6 +1,6 @@
 # FLO: Frontline Operations - Altis
 
-**Current Version**: 1.5.1
+**Current Version**: 1.6.1
 
 A dynamic frontline operations mission for Arma 3 that creates an evolving battlefield with intelligent OPFOR forces, logistics systems, and garrison management.
 
@@ -54,27 +54,12 @@ East_Units = [
 
 // ... other arrays
 ```
-
-#### CAS Aircraft Pylon Setup
-To configure CAS aircraft pylons, find the Function called fn_AirSupport.sqf
-
-```sqf
-private _pylonMags = [
-    "PylonRack_4Rnd_LG_scalpel",  // SCALPEL missiles
-    "PylonRack_4Rnd_ACE_Hellfire_AGM114K",  // AGM-114K Hellfire
-    "PylonRack_4Rnd_ACE_Hellfire_AGM114N",  // AGM-114N Hellfire
-    "PylonRack_12Rnd_ACE_DAGR", // DAGR missiles 12x
-    "PylonRack_24Rnd_ACE_DAGR", // DAGR missiles 24x
-    "ace_hot_3_PylonRack_3Rnd", // HOT missiles 3x
-    "ace_hot_3_PylonRack_4Rnd" // HOT missiles 4x
-];
-```
-
 #### Artillery Configuration
-Configure artillery munitions in fn_ArtilleryPrep.sqf
+Configure artillery munitions in fn_ArtilleryPrep.sqf.
+**THIS IS ONLY FOR BACK UP, IN-CASE AUTOMATIC MAGAZINE SEARCH FAILS TO BRING RESULTS!**
 
 ```sqf
-private _artilleryMagazines = [
+private _fallbackartilleryMagazines = [
     "32Rnd_155mm_Mo_shells_O",
     "2Rnd_155mm_Mo_Cluster_O"
 ];
