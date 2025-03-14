@@ -93,7 +93,7 @@ private _observerData = createHashMapFromArray [
                 private _supportType = floor random 10; // 0 to 10
                 if (_supportType <= 3 && _airSupportAvailable) then {
                     // Call air support
-                    private _airSupport = [getPosASL _target, "CAS", "", 500] call FLO_fnc_airSupport;
+                    private _airSupport = [getPosASL _target, "CAS", "", 150] call FLO_fnc_airSupport;
                     if (!isNil "_airSupport") then {
                         FLO_fireObservers set ["lastAirSupport", _currentTime];
                         [side _unit, "HQ"] commandChat "CAS birds inbound to marked position";
