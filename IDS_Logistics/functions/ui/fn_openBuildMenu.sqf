@@ -57,6 +57,22 @@ private _categories = [];
 // Select first category if available
 if (lbSize _categoryList > 0) then {
     _categoryList lbSetCurSel 0;
+
+    // Give time for the entities list to populate
+    [_display] spawn {
+        params ["_display"];
+        sleep 0.1;
+        
+        private _entitiesList = _display displayCtrl 9503;
+        
+        // Select first entity if available
+        if (lbSize _entitiesList > 0) then {
+            _entitiesList lbSetCurSel 0;
+            
+            // Update the preview with the first entity's information
+            [_entitiesList, 0] call IDS_Logistics_fnc_updatePreview;
+        };
+    };
 };
 
 // Clear entity info panel
