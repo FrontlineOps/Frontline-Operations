@@ -81,5 +81,6 @@ class FLO {
         class log                 {};
         class addReward           {};
         class notification        {};
+        class getRandomMagazine   {};
     };
 };

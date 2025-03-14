@@ -41,22 +41,156 @@ if !(["spend", [_totalBatteryCost]] call FLO_fnc_opforResources) exitWith {
     false
 };
 
-// Define artillery magazines
-private _artilleryMagazines = [
-    "32Rnd_155mm_Mo_shells_O",
-    "2Rnd_155mm_Mo_Cluster_O"
+// Fallback artillery magazines in case no magazines are found on the vehicle
+private _fallbackArtilleryMagazines = [
+    "rhs_mag_3of56_35",
+    "rhs_mag_bk13_5"
 ];
 
 // Create new batteries if under cap and resources available
 if (_newBatteriesCount > 0) then {
     ["showNotification", ["! WARNING !", "Enemy artillery batteries detected deploying!", "warning"]] call FLO_fnc_intelSystem;
+    
+    // Find all OPFOR objective markers
+    private _opforMarkers = allMapMarkers select {
+        markerColor _x in ["colorOPFOR", "ColorEAST"] && 
+        markerAlpha _x > 0 &&
+        !((markerType _x) in ["Empty", ""])
+    };
+    
+    if (count _opforMarkers == 0) then {
+        // Fallback in case no OPFOR markers found
+        diag_log "[FLO][Artillery] No OPFOR objectives found for artillery placement, using fallback method";
+        _opforMarkers = [[_targetPos, 5000, 10000, 10, 0] call BIS_fnc_findSafePos];
+    };
+    
+    // Sort by distance from target (prioritize objectives farther from the action)
+    _opforMarkers = [_opforMarkers, [], {getMarkerPos _x distance _targetPos}, "DESCEND"] call BIS_fnc_sortBy;
+    
+    // Create a group for the artillery units
+    // private _artGroup = createGroup [east, true];
+    
     for "_i" from 1 to _newBatteriesCount do {
-        // Find position far from target but with good firing position
-        private _artPos = [_targetPos, 5000, 10000, 10, 0] call BIS_fnc_findSafePos;
+        // Select a random OPFOR objective from the nearest 60% of objectives
+        private _maxIndex = floor((count _opforMarkers) * 0.6) max 1;
+        private _selectedMarkerIndex = floor(random _maxIndex);
+        private _selectedMarker = _opforMarkers select (_selectedMarkerIndex min ((count _opforMarkers) - 1));
+        
+        // Get position from marker, then find nearby position that's suitable
+        private _objectivePos = getMarkerPos _selectedMarker;
+        
+        // Find position 300-800m from the objective
+        private _direction = random 360;
+        private _distance = 300 + random 500; // 300-800m from objective
+        private _rawPos = _objectivePos getPos [_distance, _direction];
+        
+        // Ensure it's a valid position
+        private _artPos = [_rawPos, 0, 200, 10, 0, 0.3, 0, [], [_rawPos, _rawPos]] call BIS_fnc_findSafePos;
+        
+        // If position finding failed, use marker position directly
+        if (_artPos isEqualTo [_rawPos, _rawPos]) then {
+            _artPos = [_objectivePos, 0, 400, 10, 0] call BIS_fnc_findSafePos;
+        };
+        
+        diag_log format ["[FLO][Artillery] Placed artillery battery near OPFOR objective at %1", _artPos];
+        
         private _arty = createVehicle [_artilleryTypes, _artPos, [], 0, "NONE"];
         
         // Set vehicle variables
         _arty setVariable ["acex_headless_blacklist", true, true];
+        
+        // Determine if this is rocket artillery based on weapon and ammo configuration data
+        private _isRocketArtillery = [_arty] call {
+            params ["_vehicle"];
+            private _vehicleType = typeOf _vehicle;
+            
+            // First check by common class name identifiers (fallback method)
+            if (_vehicleType find "MLRS" > -1 || 
+                _vehicleType find "Grad" > -1 || 
+                _vehicleType find "BM-21" > -1 || 
+                _vehicleType find "9K51" > -1 ||
+                _vehicleType find "Uragan" > -1 ||
+                _vehicleType find "2b17" > -1 ||
+                _vehicleType find "2b26" > -1 ||
+                _vehicleType find "Smerch" > -1) exitWith {true};
+            
+            // Get all weapons installed on the vehicle
+            private _weaponsList = weapons _vehicle;
+            private _isRocketSystem = false;
+            
+            {
+                private _weapon = _x;
+                private _weaponConfig = configFile >> "CfgWeapons" >> _weapon;
+                
+                if (isClass _weaponConfig) then {
+                    // Check if weapon has "rocket" in its name
+                    if (toLower _weapon find "rocket" > -1) exitWith {
+                        _isRocketSystem = true;
+                    };
+                    
+                    // Get all possible magazines for this weapon
+                    private _magazinesList = getArray (_weaponConfig >> "magazines");
+                    
+                    // Check each magazine's ammo type
+                    {
+                        private _magazine = _x;
+                        private _magazineConfig = configFile >> "CfgMagazines" >> _magazine;
+                        
+                        if (isClass _magazineConfig) then {
+                            // Get the ammo class used by this magazine
+                            private _ammoType = getText (_magazineConfig >> "ammo");
+                            private _ammoConfig = configFile >> "CfgAmmo" >> _ammoType;
+                            
+                            if (isClass _ammoConfig) then {
+                                // Check simulation type - rockets will use "shotRocket" or similar
+                                private _simulation = getText (_ammoConfig >> "simulation");
+                                
+                                if (_simulation find "rocket" > -1 || 
+                                    _simulation find "missile" > -1 ||
+                                    toLower _ammoType find "rocket" > -1) exitWith {
+                                    _isRocketSystem = true;
+                                };
+                                
+                                // For artillery shells with no explicit simulation, check other properties
+                                private _initSpeed = getNumber (_ammoConfig >> "initSpeed");
+                                private _explosive = getNumber (_ammoConfig >> "explosive");
+                                private _indirectHit = getNumber (_ammoConfig >> "indirectHit");
+                                private _indirectHitRange = getNumber (_ammoConfig >> "indirectHitRange");
+                                
+                                // Rocket artillery typically has higher init speed and distinctive explosive properties
+                                if (_explosive > 0 && _indirectHit > 50 && _indirectHitRange > 10 && _initSpeed > 200) then {
+                                    // Check sound characteristics - most rocket artillery has distinctive sounds
+                                    private _modeConfig = _weaponConfig >> "modes" >> "this";
+                                    if !(isClass _modeConfig) then {
+                                        private _modes = getArray (_weaponConfig >> "modes");
+                                        if (count _modes > 0) then {
+                                            _modeConfig = _weaponConfig >> "modes" >> _modes#0;
+                                        };
+                                    };
+                                    
+                                    if (isClass _modeConfig) then {
+                                        // Many rocket systems have burst characteristics
+                                        private _burst = getNumber (_modeConfig >> "burst");
+                                        if (_burst > 1) then {
+                                            _isRocketSystem = true;
+                                        };
+                                    };
+                                };
+                            };
+                        };
+                        
+                        if (_isRocketSystem) exitWith {};
+                    } forEach _magazinesList;
+                };
+                
+                if (_isRocketSystem) exitWith {};
+            } forEach _weaponsList;
+            
+            _isRocketSystem
+        };
+        
+        // Store the artillery type in the vehicle for later use
+        _arty setVariable ["FLO_isRocketArtillery", _isRocketArtillery, true];
         
         // Create and setup crew
         private _crew = units (east createVehicleCrew _arty);
@@ -98,14 +232,22 @@ if (_newBatteriesCount > 0) then {
 {
     private _batteryInfo = _y;
     private _arty = _batteryInfo get "vehicle";
-    private _selectedMagazine = selectRandom _artilleryMagazines;
+    
+    // Get a random magazine from the artillery vehicle using our new function
+    private _selectedMagazine = [_arty] call FLO_fnc_getRandomMagazine;
+    
+    // If no magazines found, use a fallback option
+    if (_selectedMagazine isEqualTo "") then {
+        _selectedMagazine = selectRandom _fallbackArtilleryMagazines;
+        diag_log format ["[FLO][Artillery] No magazines found on %1, using fallback magazine: %2", _arty, _selectedMagazine];
+    };
     
     if (alive _arty && _targetPos inRangeOfArtillery [[_arty], _selectedMagazine]) then {
         private _ammoLevel = _batteryInfo get "ammoLevel";
         private _state = _batteryInfo get "state";
         
         // Check if battery is reloading
-        if (_state == "RELOADING") then {
+        if (_state isEqualTo "RELOADING") then {
             private _reloadStartTime = _batteryInfo get "reloadStartTime";
             if ((time - _reloadStartTime) >= _RELOAD_TIME) then {
                 // Check resources for reload
@@ -120,76 +262,133 @@ if (_newBatteriesCount > 0) then {
         };
         
         // Only proceed if battery is ready and has enough ammo
-        if (_state == "READY" && _ammoLevel > _AMMO_THRESHOLD) then {
+        if (_state isEqualTo "READY" && _ammoLevel > _AMMO_THRESHOLD) then {
             [_arty, _targetPos, _selectedMagazine, _batteryInfo, _AMMO_THRESHOLD] spawn {
                 params ["_arty", "_targetPos", "_selectedMagazine", "_batteryInfo", "_AMMO_THRESHOLD"];
                 
                 // Set battery to watch target
                 _arty doWatch (_targetPos getPos [0,0]);
                 
-                private _shellCount = 3 + round(random 3);
-                private _minDispersion = 50;
-                private _maxDispersion = 150;
+                // Check if this is rocket artillery
+                private _isRocketArtillery = _arty getVariable ["FLO_isRocketArtillery", false];
                 
-                _batteryInfo set ["state", "IN MISSION"];
-                
-                for "_i" from 1 to _shellCount do {
-                    private _inRange = false;
-                    private _attempts = 0;
-                    private _finalPos = _targetPos;
+                // Different behavior based on artillery type
+                if (_isRocketArtillery) then {
+                    // ---- Rocket Artillery Barrage Logic ----
+                    private _rocketCount = 8 + round(random 4); // More rockets for MLRS systems
+                    private _minDispersion = 70;
+                    private _maxDispersion = 200; // Wider dispersion for rockets
                     
-                    // Find valid firing position with dispersion
-                    while {!_inRange && _attempts < 25} do {
-                        private _dispersedPos = _targetPos getPos [_minDispersion + (random (_maxDispersion - _minDispersion)), random 360];
-                        if (_dispersedPos inRangeOfArtillery [[_arty], _selectedMagazine]) then {
-                            _inRange = true;
-                            _finalPos = _dispersedPos;
-                        };
-                        _attempts = _attempts + 1;
-                    };
+                    _batteryInfo set ["state", "IN MISSION"];
                     
-                    if (_inRange) then {
-                        _arty commandArtilleryFire [_finalPos, _selectedMagazine, 1];
-                    };
-
-                    // Wait for crew to be ready before next shot
-                    waitUntil {
-                        sleep 1;
-                        private _readys = 0;
-
-                        {
-                            private _rdy = true;
-                            {
-                                _rdy = _rdy && (unitReady _x);
-                            } forEach [
-                                commander _x,
-                                gunner _x,
-                                driver _x
-                            ];
-
-                            if(_rdy) then {
-                                _readys = _readys + 1;
+                    // Pre-calculate all target positions for the barrage
+                    private _targetPositions = [];
+                    for "_i" from 1 to _rocketCount do {
+                        private _inRange = false;
+                        private _attempts = 0;
+                        private _finalPos = _targetPos;
+                        
+                        // Find valid firing position with dispersion
+                        while {!_inRange && _attempts < 25} do {
+                            private _dispersedPos = _targetPos getPos [_minDispersion + (random (_maxDispersion - _minDispersion)), random 360];
+                            if (_dispersedPos inRangeOfArtillery [[_arty], _selectedMagazine]) then {
+                                _inRange = true;
+                                _finalPos = _dispersedPos;
                             };
-                        } forEach [_arty];
-
-                        _readys == (count [_arty]);
+                            _attempts = _attempts + 1;
+                        };
+                        
+                        if (_inRange) then {
+                            _targetPositions pushBack _finalPos;
+                        };
                     };
-                };
-                
-                // Update ammo level after firing
-                private _currentAmmo = _batteryInfo get "ammoLevel";
-                private _newAmmo = _currentAmmo - ((1 / 20) * _shellCount); // Each volley uses 5% ammo
-                _batteryInfo set ["ammoLevel", _newAmmo];
-                
-                // Check if ammo is below threshold
-                if (_newAmmo <= _AMMO_THRESHOLD) then {
-                    _batteryInfo set ["state", "RELOADING"];
-                    _batteryInfo set ["reloadStartTime", time];
+                    
+                    // Fire the barrage with short delays between rockets
+                    {
+                        _arty commandArtilleryFire [_x, _selectedMagazine, 1];
+                        sleep (0.5 + random 0.5); // Quick firing pattern for rockets
+                    } forEach _targetPositions;
+                    
+                    // Update ammo level after firing barrage
+                    private _currentAmmo = _batteryInfo get "ammoLevel";
+                    private _newAmmo = _currentAmmo - ((1 / 10) * (count _targetPositions)); // Rocket barrages use more ammo
+                    _batteryInfo set ["ammoLevel", _newAmmo];
+                    
+                    // Check if ammo is below threshold
+                    if (_newAmmo <= _AMMO_THRESHOLD) then {
+                        _batteryInfo set ["state", "RELOADING"];
+                        _batteryInfo set ["reloadStartTime", time];
+                    } else {
+                        _batteryInfo set ["state", "READY"];
+                    };
+                    
+                    _batteryInfo set ["lastFired", time];
                 } else {
-                    _batteryInfo set ["state", "READY"];
+                    // ---- Standard Tube Artillery Logic ----
+                    private _shellCount = 3 + round(random 3);
+                    private _minDispersion = 50;
+                    private _maxDispersion = 150;
+                    
+                    _batteryInfo set ["state", "IN MISSION"];
+                    
+                    for "_i" from 1 to _shellCount do {
+                        private _inRange = false;
+                        private _attempts = 0;
+                        private _finalPos = _targetPos;
+                        
+                        // Find valid firing position with dispersion
+                        while {!_inRange && _attempts < 25} do {
+                            private _dispersedPos = _targetPos getPos [_minDispersion + (random (_maxDispersion - _minDispersion)), random 360];
+                            if (_dispersedPos inRangeOfArtillery [[_arty], _selectedMagazine]) then {
+                                _inRange = true;
+                                _finalPos = _dispersedPos;
+                            };
+                            _attempts = _attempts + 1;
+                        };
+                        
+                        if (_inRange) then {
+                            _arty commandArtilleryFire [_finalPos, _selectedMagazine, 1];
+                        };
+
+                        // Wait for crew to be ready before next shot
+                        waitUntil {
+                            sleep 1;
+                            private _readys = 0;
+
+                            {
+                                private _rdy = true;
+                                {
+                                    _rdy = _rdy && (unitReady _x);
+                                } forEach [
+                                    commander _x,
+                                    gunner _x,
+                                    driver _x
+                                ];
+
+                                if(_rdy) then {
+                                    _readys = _readys + 1;
+                                };
+                            } forEach [_arty];
+
+                            _readys isEqualTo (count [_arty]);
+                        };
+                    };
+                    
+                    // Update ammo level after firing
+                    private _currentAmmo = _batteryInfo get "ammoLevel";
+                    private _newAmmo = _currentAmmo - ((1 / 20) * _shellCount); // Each volley uses 5% ammo
+                    _batteryInfo set ["ammoLevel", _newAmmo];
+                    
+                    // Check if ammo is below threshold
+                    if (_newAmmo <= _AMMO_THRESHOLD) then {
+                        _batteryInfo set ["state", "RELOADING"];
+                        _batteryInfo set ["reloadStartTime", time];
+                    } else {
+                        _batteryInfo set ["state", "READY"];
+                    };
+                    
+                    _batteryInfo set ["lastFired", time];
                 };
-                
-                _batteryInfo set ["lastFired", time];
             };
         };
     };
