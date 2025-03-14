@@ -483,13 +483,12 @@ private _airSupportTypeDef = [
                         
                         // Start turning toward desired direction
                         private _currentDir = getDir _aircraft;
-                        // Create positions based on current dir and target dir to use getDir
-                        private _aircraftPos = getPosASL _aircraft;
-                        private _currentDirPos = _aircraftPos getPos [100, _currentDir];
-                        private _dirDiff = _currentDirPos getDir (_aircraftPos getPos [100, _dir]) - 180;
+                        
+                        // Calculate direction difference directly using simple math
+                        private _dirDiff = (_dir - _currentDir + 180) % 360 - 180;
                         
                         // Determine turn direction based on shortest path
-                        if (_dirDiff > 0 && _dirDiff <= 180) then {
+                        if (_dirDiff > 0) then {
                             _aircraft sendSimpleCommand "RIGHT";
                         } else {
                             _aircraft sendSimpleCommand "LEFT";
@@ -999,18 +998,100 @@ private _airSupportTypeDef = [
                 _gunner reveal [_target, 4];
                 _gunner doTarget _target;
                 
+                // Special handling for helicopter rockets to improve aim
+                if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                    // Get target position and aircraft position
+                    private _targetPos = getPosASL _target;
+                    private _aircraftPos = getPosASL _aircraft;
+                    
+                    // Position aircraft properly for rocket attack - lower altitude approach
+                    private _distToTarget = _aircraft distance _target;
+                    private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
+                    private _idealDistance = 600; // Better distance for rocket employment
+                    private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
+                    
+                    // If we're too high or too far, adjust approach
+                    if (_altitudeDiff > 60 || _distToTarget > 800) then {
+                        // Force a better attack position
+                        private _attackDir = _aircraft getDir _target;
+                        private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
+                        _attackPos set [2, _attackAlt];
+                        
+                        // Move to better firing position
+                        _aircraft doMove _attackPos;
+                        _aircraft flyInHeight _attackAlt;
+                        
+                        // Ensure nose is pointed down at target
+                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                        _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
+                        sleep 1; // Allow time for positioning
+                    };
+                    
+                    // Force aim downward for proper rocket trajectory
+                    _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                    _gunner doWatch (_targetPos vectorAdd [0, 0, -5]);
+                };
+                
                 // Fire multiple times for burst effect
                 for "_i" from 1 to 5 do {
                     _gunner fireAtTarget [_target, _selectedWeapon];
+                    
+                    // For rockets, ensure aim is maintained between shots
+                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                        _gunner doWatch (getPosASL _target vectorAdd [0, 0, -5]);
+                        _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                    };
+                    
                     sleep 0.2;
                 };
             } else {
                 _pilot reveal [_target, 4];
                 _pilot doTarget _target;
                 
+                // Special handling for helicopter rockets to improve aim
+                if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                    // Get target position and aircraft position
+                    private _targetPos = getPosASL _target;
+                    private _aircraftPos = getPosASL _aircraft;
+                    
+                    // Position aircraft properly for rocket attack - lower altitude approach
+                    private _distToTarget = _aircraft distance _target;
+                    private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
+                    private _idealDistance = 600; // Better distance for rocket employment
+                    private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
+                    
+                    // If we're too high or too far, adjust approach
+                    if (_altitudeDiff > 60 || _distToTarget > 800) then {
+                        // Force a better attack position
+                        private _attackDir = _aircraft getDir _target;
+                        private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
+                        _attackPos set [2, _attackAlt];
+                        
+                        // Move to better firing position
+                        _aircraft doMove _attackPos;
+                        _aircraft flyInHeight _attackAlt;
+                        
+                        // Ensure nose is pointed down at target
+                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                        _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
+                        sleep 1; // Allow time for positioning
+                    };
+                    
+                    // Force aim downward for proper rocket trajectory
+                    _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                    _pilot doWatch (_targetPos vectorAdd [0, 0, -5]);
+                };
+                
                 // Fire multiple times for burst effect
                 for "_i" from 1 to 5 do {
                     _pilot fireAtTarget [_target, _selectedWeapon];
+                    
+                    // For rockets, ensure aim is maintained between shots
+                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                        _pilot doWatch (getPosASL _target vectorAdd [0, 0, -5]);
+                        _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                    };
+                    
                     sleep 0.2;
                 };
             };
