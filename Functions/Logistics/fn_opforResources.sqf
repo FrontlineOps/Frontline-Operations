@@ -104,7 +104,7 @@ if (isNil "FLO_OPFOR_Resources") then {
                     
                     // Find all OPFOR installations on the map
                     private _opforInstallations = allMapMarkers select {
-                        markerColor _x in ["ColorOPFOR", "ColorEAST"] && 
+                        markerColor _x in ["colorOPFOR", "ColorEAST"] && 
                         markerType _x in ["n_support", "o_support", "o_installation", "n_installation"]
                     };
                     

@@ -37,9 +37,9 @@ private _frontlineManagerDeclaration = [
         private _minPlayers = 4; // Adjust this number as needed
         
         // Check various conditions that could activate the mission
-        private _bunkerMarkersExist = count (allMapMarkers select {markerType _x == "loc_Bunker" && markerAlpha _x == 0.003}) > 0; // loc_Bunker markers are created if Players capture an Objective (Outpost/HQ)
+        private _bunkerMarkersExist = count (allMapMarkers select {markerType _x isEqualTo "loc_Bunker" && markerAlpha _x isEqualTo 0.003}) > 0; // loc_Bunker markers are created if Players capture an Objective (Outpost/HQ)
         private _sufficientPlayers = count _humanPlayers >= _minPlayers;
-        private _aggrScore = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) select 0));
+        private _aggrScore = parseNumber (markerText ((allMapMarkers select {markerColor _x isEqualTo "Color6_FD_F"}) select 0));
         private _highAggression = _aggrScore >= 5;
         
         // Return true if any activation condition is met
@@ -48,12 +48,12 @@ private _frontlineManagerDeclaration = [
     }],
     
     ["_cleanupBunkerMarkers", {
-        private _bunkerMarkers = allMapMarkers select {markerType _x == "loc_Bunker" && markerAlpha _x == 0.003};
+        private _bunkerMarkers = allMapMarkers select {markerType _x isEqualTo "loc_Bunker" && markerAlpha _x isEqualTo 0.003};
         {deleteMarker _x;} forEach _bunkerMarkers;
     }],
     
     ["_getAggressionScore", {
-        parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) select 0))
+        parseNumber (markerText ((allMapMarkers select {markerColor _x isEqualTo "Color6_FD_F"}) select 0))
     }],
     
     ["_calculateOperationDelay", {
@@ -122,8 +122,8 @@ private _frontlineManagerDeclaration = [
         };
         
         private _bluforInstallations = allMapMarkers select {
-            markerType _x == "b_installation" &&
-            (markerColor _x == "ColorYellow" || markerColor _x == "colorBLUFOR" || markerColor _x == "colorWEST")
+            markerType _x isEqualTo "b_installation" &&
+            (markerColor _x isEqualTo "ColorYellow" || markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST")
         };
 
         // Calculate distances between installations

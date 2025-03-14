@@ -174,7 +174,7 @@ if (_capturingSide == "west") then {
         case "city": { "o_installation" };
         default { "o_support" };
     });
-    _newMarker setMarkerColor "ColorOPFOR";
+    _newMarker setMarkerColor "colorOPFOR";
     _newMarker setMarkerSize [1.2, 1.2];
     
     // Notify players

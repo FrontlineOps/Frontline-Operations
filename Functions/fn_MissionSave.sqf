@@ -214,7 +214,7 @@ private _otherMarkerTypes = [
 // Select markers to save
 private _SaveMarks = allMapMarkers select {
     // OPFOR markers
-    (markerColor _x isEqualTo "ColorOPFOR" && markerType _x in _opforMarkerTypes) || 
+    (markerColor _x isEqualTo "colorOPFOR" && markerType _x in _opforMarkerTypes) || 
     // HD markers
     markerType _x in _hdMarkerTypes ||
     // Other marker types

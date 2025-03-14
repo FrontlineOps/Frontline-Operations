@@ -128,7 +128,7 @@ if (isNil "FLO_Logistics_Network") then {
             
             // Find all OPFOR headquarters and outposts that can serve as supply depots
             private _opforInstallations = allMapMarkers select {
-                markerColor _x in ["ColorOPFOR", "ColorEAST"] && 
+                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
                 markerType _x in ["n_support", "o_installation", "n_installation"]
             };
             
@@ -164,7 +164,7 @@ if (isNil "FLO_Logistics_Network") then {
             
             // Find all OPFOR positions that can receive supplies
             private _opforPositions = allMapMarkers select {
-                markerColor _x in ["ColorOPFOR", "ColorEAST"] && 
+                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
                 markerType _x in ["o_support", "n_support", "o_installation", "n_installation", 
                                   "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"]
             };

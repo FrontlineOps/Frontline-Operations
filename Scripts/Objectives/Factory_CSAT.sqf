@@ -153,7 +153,7 @@ _allMarks = allMapMarkers select {markerPos _x inArea thisTrigger && markerType 
 _markerName = ""Outpost"" + (str (getPos thisTrigger));  
 _mrkr = createMarker [_markerName, getPos thisTrigger] ;
 _mrkr setMarkerType ""o_support""; 
-_mrkr setMarkerColor ""ColorOPFOR"";
+_mrkr setMarkerColor ""colorOPFOR"";
 _mrkr setMarkerSize [1.2, 1.2]; 
 
 _alltriggers = allMissionObjects ""EmptyDetector"";

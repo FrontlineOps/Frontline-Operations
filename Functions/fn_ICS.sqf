@@ -44,7 +44,7 @@ private _createOrdnanceMarkers = {
 
 // Create markers for OPFOR units
 private _opforUnits = allUnits select { side _x isEqualTo east && alive _x && leader _x isEqualTo _x };
-[_opforUnits, "ColorOPFOR", "Enm_East"] call _createMarkers;
+[_opforUnits, "colorOPFOR", "Enm_East"] call _createMarkers;
 sleep 1;
 
 // Create markers for Independent units
@@ -53,8 +53,8 @@ private _independentUnits = allUnits select { side _x isEqualTo independent && a
 sleep 1;
 
 // Create markers for OPFOR ordnance markers
-private _opforOrdnanceMarkers = allMapMarkers select { markerType _x isEqualTo "o_Ordnance" && markerColor _x isEqualTo "ColorOPFOR" };
-[_opforOrdnanceMarkers, "ColorOPFOR", "Enm_East"] call _createOrdnanceMarkers;
+private _opforOrdnanceMarkers = allMapMarkers select { markerType _x isEqualTo "o_Ordnance" && markerColor _x isEqualTo "colorOPFOR" };
+[_opforOrdnanceMarkers, "colorOPFOR", "Enm_East"] call _createOrdnanceMarkers;
 sleep 1;
 
 // Create markers for Independent ordnance markers

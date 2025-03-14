@@ -40,7 +40,7 @@ ENMASSMAINmarkerName = "AssltDest" + (str ((getPos TheCommander) getPos [(10 + (
 
 createMarker [ENMASSMAINmarkerName, (getPos _CNTR)] ;
 ENMASSMAINmarkerName setMarkerType "mil_marker_noShadow" ; 
-ENMASSMAINmarkerName setMarkerColor "ColorOPFOR" ;  
+ENMASSMAINmarkerName setMarkerColor "colorOPFOR" ;  
 ENMASSMAINmarkerName setMarkerSize [2, 2] ;
 ENMASSMAINmarkerName setMarkerAlpha 0.5 ;  
 

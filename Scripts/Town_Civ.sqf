@@ -135,7 +135,7 @@ private _fnc_spawnCivilian = {
 } forEach [1,2];
 
 // Additional civilians based on reputation
-if (markerColor ([allMapMarkers, _thisTownCivTrigger] call BIS_fnc_nearestPosition) == "ColorOPFOR" || _repScore < 7) then {
+if (markerColor ([allMapMarkers, _thisTownCivTrigger] call BIS_fnc_nearestPosition) == "colorOPFOR" || _repScore < 7) then {
     [true, true] call _fnc_spawnCivilian;
 };
 

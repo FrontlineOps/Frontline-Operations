@@ -47,7 +47,7 @@ if (ConVLocc == 0) then {
 _markerName = "ConvoyDest" ;  
 _mrkr = createMarker [_markerName,  (getMarkerPos _OBJ) getPos [(10 + (random 50)), (0 + (random 360))]] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerText "Convoy End" ;  
 _mrkr setMarkerSize [1.5, 1.5] ;
 _mrkr setMarkerAlpha 0.7 ;  
@@ -178,7 +178,7 @@ if (alive V0) then {
 _mrkr = createMarker [str getpos V0 ,  getpos V0] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V0 addEventHandler ["Killed", {
@@ -192,7 +192,7 @@ if (alive V1) then {
 _mrkr = createMarker [str getpos V1 ,  getpos V1] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V1 addEventHandler ["Killed", {
@@ -206,7 +206,7 @@ if (alive V2) then {
 _mrkr = createMarker [str getpos V2 ,  getpos V2] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V2 addEventHandler ["Killed", {
@@ -220,7 +220,7 @@ if (alive V3) then {
 _mrkr = createMarker [str getpos V3 ,  getpos V3] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V3 addEventHandler ["Killed", {
@@ -234,7 +234,7 @@ if (alive V4) then {
 _mrkr = createMarker [str getpos V4 ,  getpos V4] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V4 addEventHandler ["Killed", {
@@ -248,7 +248,7 @@ if (alive V5) then {
 _mrkr = createMarker [str getpos V5 ,  getpos V5] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V5 addEventHandler ["Killed", {
@@ -262,7 +262,7 @@ if (alive V6) then {
 _mrkr = createMarker [str getpos V6 ,  getpos V6] ;	
 _mrkr setMarkerType "mil_marker_noShadow" ; 
 _mrkr setMarkerText "DESTROY" ; 
-_mrkr setMarkerColor "ColorOPFOR" ;  
+_mrkr setMarkerColor "colorOPFOR" ;  
 _mrkr setMarkerSize [0.9, 0.9] ;
 _mrkr setMarkerAlpha 0.7 ;  
 V6 addEventHandler ["Killed", {

@@ -86,7 +86,7 @@ _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 _allMarks = allMapMarkers select {markerType _x == 'o_support'};  
 _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-						_FOBMrk setMarkerColor 'ColorOPFOR' ;	
+						_FOBMrk setMarkerColor 'colorOPFOR' ;	
 									_attackingAtGrid = mapGridPosition getMarkerPos _FOBMrk;
 								[[west,'HQ'], 'Friendly Forces Dominating the Battle at grid ' + _attackingAtGrid] remoteExec ['sideChat', 0];
 "]; 

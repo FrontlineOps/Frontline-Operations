@@ -179,7 +179,7 @@ private _fnc_createTrigger = {
         "
         private _allMarks = allMapMarkers select {markerType _x == 'n_installation'};
         private _FOBMrk = [_allMarks, thisTrigger] call BIS_fnc_nearestPosition;
-        _FOBMrk setMarkerColor 'ColorOPFOR';
+        _FOBMrk setMarkerColor 'colorOPFOR';
         "
     ]
 ] call _fnc_createTrigger;

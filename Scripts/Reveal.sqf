@@ -10,7 +10,7 @@ _NearTWRMark setMarkerColor "colorBLUFOR";
 _radius = 50 + (random 250) ;
 _mrkr = createMarker [str(_x),getpos _x]; 
 _mrkr setMarkerType "Unknown";
-_mrkr setMarkerColor "ColorOPFOR";
+_mrkr setMarkerColor "colorOPFOR";
 _mrkr setMarkerBrush "FDiagonal";  
 _mrkr setMarkerShape "RECTANGLE";	
 _mrkr setMarkerSize [_radius, _radius];

@@ -121,7 +121,7 @@ if (!isNil "FLO_AI_Commander") then {
 private _markerName = format ["recon_report_%1_%2", floor random 1000, floor diag_tickTime];
 private _marker = createMarker [_markerName, _position];
 _marker setMarkerType "o_recon";
-_marker setMarkerColor "ColorOPFOR";
+_marker setMarkerColor "colorOPFOR";
 _marker setMarkerAlpha 0.7;
 _marker setMarkerText format ["Recon Report (%1)", count _enemies];
 

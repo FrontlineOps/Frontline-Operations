@@ -74,7 +74,7 @@ _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 _allMarks = allMapMarkers select {markerType _x == 'o_installation'};  
 _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-						_FOBMrk setMarkerColor 'ColorOPFOR' ;	
+						_FOBMrk setMarkerColor 'colorOPFOR' ;	
 
 "]; 
 

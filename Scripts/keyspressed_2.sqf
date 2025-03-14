@@ -10,7 +10,7 @@ onMapSingleClick {};
 _markerName = "NewCustom" + (str (_pos));   
 mrkr = createMarker [_markerName, _pos];   
 mrkr setMarkerType MType;  
-mrkr setMarkerColor "ColorOPFOR";  
+mrkr setMarkerColor "colorOPFOR";  
 
 	
     if (MType == "o_unknown") then {
