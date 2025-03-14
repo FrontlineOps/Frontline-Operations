@@ -26,57 +26,70 @@ East_Groups = [
 // Where are Classnames ? Right click on any Unit or Vehicle in the Editor and Select find in CFG viewer, Last Name in the [path] tab is the Classname,
 
 // Default OPFOR vehicles (Vanilla Arma 3 CSAT)
-East_Ground_Vehicles_Ambient = ["O_MRAP_02_F", "O_Truck_02_covered_F", "O_Truck_02_transport_F"]; 
+East_Ground_Vehicles_Ambient = ["RUS_GRU_asn233115"]; 
 //publicVariable "East_Ground_Vehicles_Ambient";
 
-East_Ground_Vehicles_Light = ["O_MRAP_02_hmg_F", "O_MRAP_02_gmg_F", "O_LSV_02_armed_F", "O_LSV_02_AT_F"]; 
+East_Ground_Vehicles_Light = ["RUS_MSV_brdm2a", "RUS_MSV_btr82a", "RUS_MSV_btr80", "RUS_GRU_asn233115sts", "RUS_VDV_bmd2k", "RUS_VDV_bmd2",
+"RUS_VDV_9p148", "RUS_MSV_bmp1", "RUS_MSV_bmp1k", "RUS_MSV_bmp2", "RUS_MSV_bmp2k", "RUS_MSV_brm1k"]; 
 //publicVariable "East_Ground_Vehicles_Light";
 
-East_Ground_Vehicles_Heavy = ["O_APC_Tracked_02_cannon_F", "O_APC_Wheeled_02_rcws_v2_F", "O_MBT_02_cannon_F"]; 
+East_Ground_Vehicles_Heavy = ["RUS_MSV_zsu234", "RUS_MSV_bmp3", "RUS_MSV_bmp3m", "RUS_VDV_bmd4m", "RUS_MSV_t72b", "RUS_MSV_t72b3",
+"RUS_MSV_t72b3m", "RUS_MSV_t72bm", "RUS_MSV_t80bv", "RUS_MSV_t80bvk", "RUS_MSV_t80u", "RUS_MSV_t80u45m", "RUS_MSV_t80ue1", "RUS_MSV_t80uk",
+"RUS_MSV_t90a", "RUS_MSV_t90m"]; 
 //publicVariable "East_Ground_Vehicles_Heavy";
 
-East_Ground_Transport = ["O_Truck_02_transport_F", "O_Truck_02_covered_F", "O_MRAP_02_F"]; 
+East_Ground_Transport = ["RUS_MSV_ural43202", "RUS_MSV_ural432031", "RUS_MSV_kamaz5350", "RUS_MSV_kamaz4310", "RUS_MSV_asn233115", "RUS_VDV_btrd"]; 
 //publicVariable "East_Ground_Transport";
 
-East_Air_Transport = ["O_Heli_Light_02_unarmed_F", "O_Heli_Transport_04_covered_F"];
+East_Air_Transport = ["RUS_VKS_mi8amtsh", "RUS_VKS_mi8mtv2"];
 //publicVariable "East_Air_Transport";
 
-East_Air_Heli = ["O_Heli_Light_02_dynamicLoadout_F", "O_Heli_Attack_02_dynamicLoadout_F"]; 
+East_Air_Heli = ["RUS_VKS_ka52", "RUS_VKS_mi24p", "RUS_VKS_mi28n"]; 
 //publicVariable "East_Air_Heli";
 
-East_Air_Jet = ["O_Plane_CAS_02_dynamicLoadout_F", "O_Plane_Fighter_02_F"]; 
+East_Air_Jet = ["RUS_VKS_mig29smt", "RUS_VKS_mig29s", "RUS_VKS_su57"]; 
 //publicVariable "East_Air_Jet";
 
-East_Ground_Artillery = ["O_MBT_02_arty_F", "O_Mortar_01_F"]; 
+East_Ground_Artillery = ["RUS_MSV_2a18m", "RUS_MSV_2s3m1", "RUS_MSV_2s1", "RUS_MSV_2b26", "RUS_MSV_2b17"]; 
 //publicVariable "East_Ground_Artillery";
 
-East_Air_Drone = ["O_UAV_02_dynamicLoadout_F", "O_UAV_01_F"]; 
+East_Air_Drone = ["RUS_VKS_orion", "RUS_VKS_forpostru"]; 
 //publicVariable "East_Air_Drone";
 
-// Default OPFOR units (Vanilla Arma 3 CSAT)
+// Default OPFOR units
 East_Units = [
-    // Regular infantry
-    "O_Soldier_F",
-    "O_Soldier_AR_F",
-    "O_Soldier_GL_F",
-    "O_Soldier_LAT_F",
-    "O_Soldier_AT_F",
-    "O_soldier_M_F",
-    "O_Soldier_AA_F",
-    "O_Soldier_TL_F",
-    "O_medic_F",
-    "O_engineer_F"
+    // Most Common
+    "RUS_VDV_private", "RUS_VDV_private", "RUS_VDV_private", "RUS_VDV_private",
+    "RUS_VDV_praporschik", "RUS_VDV_praporschik", "RUS_VDV_praporschik",
+    "RUS_VDV_rangefinder", "RUS_VDV_rangefinder", "RUS_VDV_rangefinder",
+
+    // Less Common
+    "RUS_VDV_machinegunner", "RUS_VDV_machinegunner",
+    "RUS_VDV_grenadier", "RUS_VDV_grenadier",
+    "RUS_VDV_riflemancombatlifesaver", "RUS_VDV_riflemancombatlifesaver",
+    "RUS_VDV_riflemanmachinegunnerassistant", "RUS_VDV_riflemanmachinegunnerassistant",
+    "RUS_VDV_juniorsergeant", "RUS_VDV_juniorsergeant",
+
+    // Rare
+    "RUS_VDV_operatormanpad",
+    "RUS_VDV_flamethrower",
+    "RUS_VDV_efreitor",
+    "RUS_VDV_sniper",
+    "RUS_VDV_sapper",
+    "RUS_VDV_sergeant",
+    "RUS_VDV_seniorsergeant"
 ];
 //publicVariable "East_Units";
 
-East_FireObserver = ["O_RadioOperator_F"];
+East_FireObserver = ["RUS_VDV_radiotelephonist"];
 
-East_Units_Officers = ["O_officer_F"];
+East_Units_Officers = ["RUS_VDV_lieutenant"];
 //publicVariable "East_Units_Officers";
 
 East_Groups = [
-    (configFile >> "CfgGroups" >> "East" >> "OPF_F" >> "Infantry" >> "OIA_InfSquad"),
-    (configFile >> "CfgGroups" >> "East" >> "OPF_F" >> "Infantry" >> "OIA_InfTeam"),
-    (configFile >> "CfgGroups" >> "East" >> "OPF_F" >> "Infantry" >> "OIA_InfTeam_AT")
+    (configFile >> "CfgGroups" >> "East" >> "RUS_GRU_SpecialPurposeTroops" >> "SpecOps" >> "rus_gru_recondetachment"),
+    (configFile >> "CfgGroups" >> "East" >> "RUS_MP_NavalInfantry" >> "Dismounted" >> "rus_mp_dismounted_detachment"),
+    (configFile >> "CfgGroups" >> "East" >> "RUS_VDV_AirborneTroops" >> "SpecOps" >> "rus_vdv_recondetachment"),
+    (configFile >> "CfgGroups" >> "East" >> "RUS_VDV_AirborneTroops" >> "Dismounted" >> "rus_vdv_dismounted_detachment")
 ];
 //publicVariable "East_Groups";

@@ -71,117 +71,117 @@ F_Bike_01 = "B_Quadbike_01_F";      // Use "B_T_Quadbike_01_F" for Woodland Camo
 F_ABT_01 = "";
 //publicVariable "F_ABT_01";
 
-F_UAV_01 = "B_UAV_02_dynamicLoadout_F";     //  UCAV
+F_UAV_01 = "UA_VVS_bayraktartb2";     //  UCAV
 //publicVariable "F_UAV_01";
-F_UAV_02 = "B_UAV_05_F";     //  UAV
+F_UAV_02 = "";     //  UAV
 //publicVariable "F_UAV_02";
-F_UAV_03 = "B_T_UAV_03_dynamicLoadout_F";     //  Armed helicopter UAV
+F_UAV_03 = "";     //  Armed helicopter UAV
 //publicVariable "F_UAV_03";
-F_UGV_01 = "B_UGV_01_rcws_F";      // Use "B_T_UGV_01_rcws_olive_F" for Woodland Camo   // "B_UGV_01_rcws_F" for Desert Camo
+F_UGV_01 = "";      // Use "B_T_UGV_01_rcws_olive_F" for Woodland Camo   // "B_UGV_01_rcws_F" for Desert Camo
 //publicVariable "F_UGV_01";
 
-F_turret_01 = "B_HMG_01_high_F";       // HMG
+F_turret_01 = "UA_MV_dshkm";       // HMG
 //publicVariable "F_turret_01";
-F_turret_02 = "B_GMG_01_high_F";       // GMG
+F_turret_02 = "UA_MV_ags17";       // GMG
 //publicVariable "F_turret_02";
-F_turret_03 = "B_static_AT_F";       // AT
+F_turret_03 = "UA_MV_9p151";       // AT
 //publicVariable "F_turret_03";
 
-F_Car_01 = "B_MRAP_01_F";
+F_Car_01 = "UA_MP_sbanovator";
 //publicVariable "F_Car_01";
-F_Car_02 = "B_LSV_01_unarmed_F";
+F_Car_02 = "UA_SSO_mitsubishil200";
 //publicVariable "F_Car_02";
-F_Car_03 = "B_LSV_01_light_F";
+F_Car_03 = "UA_SSO_volkolak";
 //publicVariable "F_Car_03";
-F_Car_04 = "B_LSV_01_armed_F";
+F_Car_04 = "FA_UAF_Novator_ATGM";
 //publicVariable "F_Car_04";
-F_Car_05 = "";
+F_Car_05 = "UA_DShV_m998";
 //publicVariable "F_Car_05";
-F_Car_06 = "";
+F_Car_06 = "UA_DShV_m1151a1";
 //publicVariable "F_Car_06";
 
-F_MRAP_01 = "B_MRAP_01_gmg_F";
+F_MRAP_01 = "UA_Azov_9p148";
 //publicVariable "F_MRAP_01";
-F_MRAP_02 = "B_MRAP_01_hmg_F";
+F_MRAP_02 = "rhsusf_m1240a1_mk19_uik_usarmy_wd";
 //publicVariable "F_MRAP_02";
-F_MRAP_03 = "";
+F_MRAP_03 = "rhsusf_m1240a1_m2_uik_usarmy_wd";
 //publicVariable "F_MRAP_03";
-F_MRAP_04 = "";
+F_MRAP_04 = "UA_DShV_dozorb";
 //publicVariable "F_MRAP_04";
-F_MRAP_05 = "";
+F_MRAP_05 = "UA_DShV_krazspartan";
 //publicVariable "F_MRAP_05";
-F_MRAP_06 = "";
+F_MRAP_06 = "UA_DShV_krazspartanarmed";
 //publicVariable "F_MRAP_06";
 
-F_Truck_01 = "B_Truck_01_covered_F";
+F_Truck_01 = "UA_DShV_gaz66";
 //publicVariable "F_Truck_01";
-F_Truck_02 = "B_Truck_01_transport_F";
+F_Truck_02 = "UA_DShV_kraz6322";
 //publicVariable "F_Truck_02";
-F_Truck_03 = "B_Truck_01_ammo_F";        // Mobile Armory and Arsenal Vehicle
+F_Truck_03 = "rhsgref_cdf_b_gaz66_ammo";        // Mobile Armory and Arsenal Vehicle
 //publicVariable "F_Truck_03";
-F_Truck_04 = "B_Truck_01_box_F";        // Mobile Base Building Factory Vehicle
+F_Truck_04 = "FA_UAF_Zamak_Repair";        // Mobile Base Building Factory Vehicle
 //publicVariable "F_Truck_04";
-F_Truck_05 = "B_Truck_01_medical_F";       // Mobile GROUND Respawn Vehicle
+F_Truck_05 = "FA_UAF_Shrek_Ambulance";       // Mobile GROUND Respawn Vehicle
 //publicVariable "F_Truck_05";
-F_Truck_06 = "";        
+F_Truck_06 = "UA_DShV_ural4320zu232";        
 //publicVariable "F_Truck_06";
 
-F_APC_01 = "B_APC_Wheeled_01_cannon_F";
+F_APC_01 = "UA_DShV_btr4e1";
 //publicVariable "F_APC_01";
-F_APC_02 = "B_APC_Tracked_01_AA_F";
+F_APC_02 = "rhsusf_stryker_m1132_m2_np_wd";
 //publicVariable "F_APC_02";
-F_APC_03 = "B_APC_Tracked_01_CRV_F";
+F_APC_03 = "UA_DShV_btr80";
 //publicVariable "F_APC_03";
-F_APC_04 = "B_APC_Tracked_01_rcws_F";
+F_APC_04 = "rhsusf_m113_usarmy";
 //publicVariable "F_APC_04";
-F_APC_05 = "";
+F_APC_05 = "UA_NGU_prp3";
 //publicVariable "F_APC_05";
-F_APC_06 = "";
+F_APC_06 = "FA_UAF_BMP1U";
 //publicVariable "F_APC_06";
 
-F_TNK_01 = "B_MBT_01_cannon_F";
+F_TNK_01 = "UA_MV_t64bm";
 //publicVariable "F_TNK_01";
-F_TNK_02 = "B_MBT_01_TUSK_F";
+F_TNK_02 = "UA_MV_t64bm2";
 //publicVariable "F_TNK_02";
-F_TNK_03 = "";
+F_TNK_03 = "FA_UAF_T84M";
 //publicVariable "F_TNK_03";
-F_TNK_04 = "";
+F_TNK_04 = "FA_UAF_Leopard2A4_ERA";
 //publicVariable "F_TNK_04";
 
-F_Art_00 = "B_Mortar_01_F";      // Mortar   //For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_Mortar_01_F" for Woodland Camo   // "B_Mortar_01_F" for Desert Camo
+F_Art_00 = "UA_MV_2b14";      // Mortar   //For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_Mortar_01_F" for Woodland Camo   // "B_Mortar_01_F" for Desert Camo
 //publicVariable "F_Art_00";
-F_Art_01 = "B_MBT_01_arty_F";      // Heavy Artillery   //For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_MBT_01_arty_F" for Woodland Camo   // "B_MBT_01_arty_F" for Desert Camo
+F_Art_01 = "FA_UAF_2S17";      // Heavy Artillery   //For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_MBT_01_arty_F" for Woodland Camo   // "B_MBT_01_arty_F" for Desert Camo
 //publicVariable "F_Art_01";
-F_Art_02 = "B_MBT_01_mlrs_F";      // Heavy Artillery   // For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_MBT_01_mlrs_F" for Woodland Camo   // "B_MBT_01_mlrs_F" for Desert Camo
+F_Art_02 = "UA_MV_2s3m1";      // Heavy Artillery   // For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_MBT_01_mlrs_F" for Woodland Camo   // "B_MBT_01_mlrs_F" for Desert Camo
 //publicVariable "F_Art_02";
 
-F_Heli_01 = "B_Heli_Transport_01_F";
+F_Heli_01 = "UA_VVS_mi8mtv2";
 //publicVariable "F_Heli_01";
-F_Heli_02 = "B_Heli_Transport_03_F";
+F_Heli_02 = "UA_VVS_mi8mt";
 //publicVariable "F_Heli_02";
-F_Heli_03 = "B_Heli_Light_01_F";
+F_Heli_03 = "UA_VVS_mi8msb";
 //publicVariable "F_Heli_03";
-F_Heli_04 = "B_Heli_Transport_01_medevac_F";       // Mobile AIR Respawn Vehicle
+F_Heli_04 = "UA_VVS_mi8mt";       // Mobile AIR Respawn Vehicle
 //publicVariable "F_Heli_04";
 F_Heli_05 = "";
 //publicVariable "F_Heli_05";
 
-F_Heli_06_G = "B_Heli_Attack_01_dynamicLoadout_F";       // Gunship Chopper
+F_Heli_06_G = "UA_VVS_mi24p";       // Gunship Chopper
 //publicVariable "F_Heli_06_G";
 F_Heli_07_G = "";       // Gunship Chopper
 //publicVariable "F_Heli_07_G";
 
-F_Plane_01_CAS = "B_Plane_CAS_01_dynamicLoadout_F";
+F_Plane_01_CAS = "UA_VVS_su25s";
 //publicVariable "F_Plane_01_CAS";
 F_Plane_02_CAS = "";
 //publicVariable "F_Plane_02_CAS";
-F_Plane_03 = "B_T_VTOL_01_infantry_F";
+F_Plane_03 = "UA_VVS_mig29s";
 //publicVariable "F_Plane_03";
-F_Plane_04 = "B_T_VTOL_01_vehicle_F";
+F_Plane_04 = "FA_UAF_F16A";
 //publicVariable "F_Plane_04";
-F_Plane_05 = "B_Plane_Fighter_01_F";
+F_Plane_05 = "FA_UAF_Mig29";
 //publicVariable "F_Plane_05";
-F_Plane_06 = "";
+F_Plane_06 = "FA_UAF_L39_CAS";
 //publicVariable "F_Plane_06";
 
 // Default squad compositions
