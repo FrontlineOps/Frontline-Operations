@@ -41,10 +41,10 @@ if !(["spend", [_totalBatteryCost]] call FLO_fnc_opforResources) exitWith {
     false
 };
 
-// Define artillery magazines
-private _artilleryMagazines = [
-    "32Rnd_155mm_Mo_shells_O",
-    "2Rnd_155mm_Mo_Cluster_O"
+// Fallback artillery magazines in case no magazines are found on the vehicle
+private _fallbackArtilleryMagazines = [
+    "rhs_mag_3of56_35",
+    "rhs_mag_bk13_5"
 ];
 
 // Create new batteries if under cap and resources available
@@ -98,14 +98,22 @@ if (_newBatteriesCount > 0) then {
 {
     private _batteryInfo = _y;
     private _arty = _batteryInfo get "vehicle";
-    private _selectedMagazine = selectRandom _artilleryMagazines;
+    
+    // Get a random magazine from the artillery vehicle using our new function
+    private _selectedMagazine = [_arty] call FLO_fnc_getRandomMagazine;
+    
+    // If no magazines found, use a fallback option
+    if (_selectedMagazine isEqualTo "") then {
+        _selectedMagazine = selectRandom _fallbackArtilleryMagazines;
+        diag_log format ["[FLO][Artillery] No magazines found on %1, using fallback magazine: %2", _arty, _selectedMagazine];
+    };
     
     if (alive _arty && _targetPos inRangeOfArtillery [[_arty], _selectedMagazine]) then {
         private _ammoLevel = _batteryInfo get "ammoLevel";
         private _state = _batteryInfo get "state";
         
         // Check if battery is reloading
-        if (_state == "RELOADING") then {
+        if (_state isEqualTo "RELOADING") then {
             private _reloadStartTime = _batteryInfo get "reloadStartTime";
             if ((time - _reloadStartTime) >= _RELOAD_TIME) then {
                 // Check resources for reload
@@ -120,7 +128,7 @@ if (_newBatteriesCount > 0) then {
         };
         
         // Only proceed if battery is ready and has enough ammo
-        if (_state == "READY" && _ammoLevel > _AMMO_THRESHOLD) then {
+        if (_state isEqualTo "READY" && _ammoLevel > _AMMO_THRESHOLD) then {
             [_arty, _targetPos, _selectedMagazine, _batteryInfo, _AMMO_THRESHOLD] spawn {
                 params ["_arty", "_targetPos", "_selectedMagazine", "_batteryInfo", "_AMMO_THRESHOLD"];
                 
@@ -172,7 +180,7 @@ if (_newBatteriesCount > 0) then {
                             };
                         } forEach [_arty];
 
-                        _readys == (count [_arty]);
+                        _readys isEqualTo (count [_arty]);
                     };
                 };
                 
