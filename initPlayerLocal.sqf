@@ -66,10 +66,6 @@ if (_RestrictedArsenalVal isEqualTo 0) then {
 	[] call FLO_fnc_restrictedArsenal;
 };
 
-// Initialize Intel System
-[] call FLO_fnc_intelSystem;
-diag_log "[FLO] Intelligence System initialized on Client";
-
 // SYSTEMs Init Clients
 Triggers0 = execVM "Scripts\Init\init_Triggers.sqf";
 waitUntil {sleep 1; scriptDone Triggers0 };
