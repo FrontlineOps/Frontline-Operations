@@ -3,7 +3,7 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.2
+ * @version 1.0
  * @date 2025-03-10
  * 
  * @description
@@ -20,14 +20,10 @@
  */
 
 // Validate current holding state
-if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {
-    ["No entity to place.", 2] call IDS_Logistics_fnc_cameraHint;
-};
+if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith { ["No entity to place.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Ensure camera mode is active
-if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {
-    ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint;
-};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith { ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Extract entity properties before deletion
 private _entity = IDS_Logistics_currentEntity;

@@ -36,10 +36,8 @@ private _entityInfo = _display displayCtrl 9504;
 // Find the full entity data from global array
 private _entityData = [];
 {
-    if (_x select 0 == _className) exitWith {
-        _entityData = _x;
-    };
-} forEach IDS_Logistics_buildableEntities;
+    if (_x select 0 == _className) exitWith { _entityData = _x; };
+} forEach IDS_Logistics_Entities;
 
 // Handle case where entity data is not found
 if (count _entityData == 0) exitWith {

@@ -3,7 +3,7 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.1
+ * @version 1.0
  * @date 2025-03-10
  * 
  * @description
@@ -39,8 +39,6 @@ params [
     ["_centerHeight", 0, [0]]
 ];
 
-diag_log format ["IDS_Logistics_fnc_finalizeEntity called: NetID: %1, Class: %2, Pos: %3, CenterHeight: %4", _originalNetId, _className, _finalPos, _centerHeight];
-
 // Check if this is a reposition of an existing entity
 if (_originalNetId != "") then {
     private _existingEntity = objectFromNetId _originalNetId;
@@ -57,8 +55,6 @@ if (_originalNetId != "") then {
         
         // Make entity visible again
         [_originalNetId, false] call IDS_Logistics_fnc_toggleEntityVisibility;
-        
-        diag_log format ["IDS Logistics: Entity %1 repositioned by %2", _originalNetId, name _player];
     } else {
         diag_log format ["IDS Logistics: Error - Could not find entity with NetID %1", _originalNetId];
     };
@@ -83,10 +79,4 @@ if (_originalNetId != "") then {
     _entityConfig params ["_entityClassName", "_entityDisplayName", "_entityCategory", "_entitySubCategory", "_entityCost"];
     _entity setVariable ["IDS_Logistics_EntityCost", _entityCost, true];
     _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-
-    diag_log format ["IDS Logistics: Entity Config - Class: %1, DisplayName: %2, Category: %3, Subcategory: %4, Cost: %5", 
-        _entityClassName, _entityDisplayName, _entityCategory, _entitySubCategory, _entityCost];
-    diag_log format ["IDS Logistics: Entity Cost: %1", 
-        _entity getVariable "IDS_Logistics_EntityCost"];
-    diag_log format ["IDS Logistics: New entity %1 created by %2", _className, name _player];
 };

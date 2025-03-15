@@ -39,6 +39,6 @@ call compile preprocessFileLineNumbers "IDS_Logistics\config\entitiesConfig.sqf"
 
 // Debug logging
 diag_log "=== IDS Logistics Initialization ===";
-diag_log format ["Loaded %1 building categories", count IDS_Logistics_buildingCategories];
-diag_log format ["Loaded %1 buildable entities", count IDS_Logistics_buildableEntities];
+diag_log format ["Loaded %1 building categories", count IDS_Logistics_Categories];
+diag_log format ["Loaded %1 buildable entities", count IDS_Logistics_Entities];
 diag_log "IDS Logistics initialized.";

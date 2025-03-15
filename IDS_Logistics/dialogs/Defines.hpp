@@ -1,10 +1,16 @@
-class RscEntity
+class IGUIBack
 {
-	access = 0;
-	type = CT_OBJECT;
-	scale = 1;
-	direction[] = {0,0,1};
-	model = "\core\empty\empty.p3d";
-	up[] = {0,1,0};
+	type = 0;
+	idc = 124;
+	style = 128;
+	text = "";
+	colorText[] = {0,0,0,0};
+	font = "RobotoCondensed";
+	sizeEx = 0;
 	shadow = 0;
+	x = 0.1;
+	y = 0.1;
+	w = 0.1;
+	h = 0.1;
+	colorbackground[] = {0.1,0.1,0.1,0.6};
 };

@@ -13,33 +13,31 @@
  */
 
 // Main category definitions array
-// Format: [Category ID, Display Name, Icon Path]
-IDS_Logistics_buildingCategories = [
-    ["Fortification", "Fortifications", "\a3\ui_f\data\gui\Rsc\RscDisplayArsenal\itemacc_ca.paa"],
-    ["Shelter", "Shelters & Structures", "\a3\ui_f\data\gui\Rsc\RscDisplayArsenal\itemoptic_ca.paa"],
-    ["Furniture", "Furniture", "\a3\ui_f\data\gui\Rsc\RscDisplayArsenal\itembinocular_ca.paa"],
-    ["Storage", "Storage Solutions", "\a3\ui_f\data\gui\Rsc\RscDisplayArsenal\backpack_ca.paa"],
-    ["Utilities", "Utilities", "\a3\ui_f\data\gui\Rsc\RscDisplayArsenal\radio_ca.paa"],
-    ["Decoration", "Decorative Items", "\a3\ui_f\data\gui\Rsc\RscDisplayArsenal\uniform_ca.paa"]
+// Format: [Category ID, Display Name]
+IDS_Logistics_Categories = [
+    ["Fortification", "Fortifications"],
+    ["Shelter", "Shelters & Structures"],
+    ["Furniture", "Furniture"],
+    ["Storage", "Storage Solutions"],
+    ["Utilities", "Utilities"],
+    ["Decoration", "Decorative Items"]
 ];
 
 /**
  * @name IDS_Logistics_fnc_getCategoryProps
  * @description Retrieves the full properties array for a specific category
  * @param {String} _categoryId - The unique identifier for the category
- * @return {Array} - Full category properties [id, name, icon] or empty array if not found
+ * @return {Array} - Full category properties [id, name] or empty array if not found
  */
 IDS_Logistics_fnc_getCategoryProps = {
-    params [
-        ["_categoryId", "", [""]]
-    ];
+    params [["_categoryId", "", [""]]];
     
     if (_categoryId == "") exitWith {[]};
     
     private _props = [];
     {
         if (_x select 0 == _categoryId) exitWith { _props = _x; };
-    } forEach IDS_Logistics_buildingCategories;
+    } forEach IDS_Logistics_Categories;
     
     _props
 };
@@ -51,7 +49,7 @@ IDS_Logistics_fnc_getCategoryProps = {
  * @return {Array} - Array of all category ID strings
  */
 IDS_Logistics_fnc_getAllCategoryIds = {
-    IDS_Logistics_buildingCategories apply {_x select 0}
+    IDS_Logistics_Categories apply { _x select 0 }
 };
 
 /**
@@ -61,25 +59,8 @@ IDS_Logistics_fnc_getAllCategoryIds = {
  * @return {String} - Display name or original ID if category not found
  */
 IDS_Logistics_fnc_getCategoryDisplayName = {
-    params [
-        ["_categoryId", "", [""]]
-    ];
+    params [["_categoryId", "", [""]]];
     
     private _props = [_categoryId] call IDS_Logistics_fnc_getCategoryProps;
-    if (count _props > 0) then {_props select 1} else {_categoryId}
-};
-
-/**
- * @name IDS_Logistics_fnc_getCategoryIcon
- * @description Gets the UI icon path for a category
- * @param {String} _categoryId - The unique identifier for the category
- * @return {String} - Icon path or empty string if category not found
- */
-IDS_Logistics_fnc_getCategoryIcon = {
-    params [
-        ["_categoryId", "", [""]]
-    ];
-    
-    private _props = [_categoryId] call IDS_Logistics_fnc_getCategoryProps;
-    if (count _props > 0) then {_props select 2} else {""}
+    if (count _props > 0) then { _props select 1 } else { _categoryId }
 };

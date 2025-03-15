@@ -3,7 +3,7 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.2
+ * @version 1.0
  * @date 2025-03-10
  * 
  * @description
@@ -22,14 +22,10 @@
 params [["_entity", objNull, [objNull]]];
 
 if (isNull _entity) exitWith {};
-if (IDS_Logistics_isHolding) exitWith {
-    ["You are already holding an entity.", 2] call IDS_Logistics_fnc_cameraHint;
-};
+if (IDS_Logistics_isHolding) exitWith { ["You are already holding an entity.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Ensure camera mode is active
-if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {
-    ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint;
-};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith { ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Store entity information before deletion
 private _className = typeOf _entity;
@@ -47,8 +43,12 @@ _localEntity setPosASL _originalPos;
 _localEntity setDir _originalDir;
 _localEntity setVectorUp _originalVectorUp;
 
-// Store the original netId for later server updates
+// Store the original information for later restoration
 _localEntity setVariable ["IDS_Logistics_OriginalNetId", _netId];
+_localEntity setVariable ["IDS_Logistics_originalPos", _originalPos];
+_localEntity setVariable ["IDS_Logistics_originalDir", _originalDir];
+_localEntity setVariable ["IDS_Logistics_originalVectorUp", _originalVectorUp];
+_localEntity setVariable ["IDS_Logistics_isPickedUp", true];
 
 // Disable simulation and collision
 _localEntity enableSimulationGlobal false;
@@ -92,9 +92,7 @@ if (_useCameraMode) then {
 
 // Add EachFrame event handler for continuous update
 IDS_Logistics_dirUpdateEH = addMissionEventHandler ["EachFrame", {
-    if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
-        [] call IDS_Logistics_fnc_updateEntityPlacement;
-    };
+    if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then { [] call IDS_Logistics_fnc_updateEntityPlacement; };
 }];
 
 // Add scroll wheel handler for adjustments

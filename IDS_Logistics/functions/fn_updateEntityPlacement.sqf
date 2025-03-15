@@ -3,7 +3,7 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.2
+ * @version 1.0
  * @date 2025-03-10
  * 
  * @description
@@ -21,7 +21,6 @@
  */
 
 if (!IDS_Logistics_isHolding || isNull IDS_Logistics_currentEntity) exitWith {};
-
 if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {};
 
 // Calculate base height
@@ -40,9 +39,7 @@ private _forwardVector = [];
 _forwardVector = vectorDir IDS_LOGISTICS_CAM; // More reliable in all camera modes
 
 // If vectorDir fails (returns [0,0,0]), try getCameraViewDirection
-if (_forwardVector isEqualTo [0,0,0]) then {
-    _forwardVector = getCameraViewDirection IDS_LOGISTICS_CAM;
-};
+if (_forwardVector isEqualTo [0,0,0]) then { _forwardVector = getCameraViewDirection IDS_LOGISTICS_CAM; };
 
 // If that still fails, calculate from camera angle
 if (_forwardVector isEqualTo [0,0,0]) then {
@@ -119,14 +116,55 @@ IDS_Logistics_currentEntity setDir _finalDir;
 
 // Apply terrain snapping if enabled
 if (!isNil "IDS_Logistics_CameraTerrainSnap" && { IDS_Logistics_CameraTerrainSnap }) then {
-    // Align with terrain normal but maintain entity's forward direction
-    private _entityDirVector = [sin _finalDir, cos _finalDir, 0];
-    private _sideVector = _surfaceNormal vectorCrossProduct _entityDirVector;
-    private _adjustedDirVector = _sideVector vectorCrossProduct _surfaceNormal;
-    
-    IDS_Logistics_currentEntity setVectorUp _surfaceNormal;
-    IDS_Logistics_currentEntity setVectorDir _adjustedDirVector;
+    // Cast a ray down to find the ground
+    private _groundIntersections = lineIntersectsSurfaces [
+        [_finalPos select 0, _finalPos select 1, (_finalPos select 2) + 10],
+        [_finalPos select 0, _finalPos select 1, (_finalPos select 2) - 10],
+        IDS_Logistics_currentEntity,
+        objNull,
+        true,
+        1,
+        "GEOM",
+        "NONE"
+    ];
+
+    if (count _groundIntersections > 0) then {
+        private _intersection = _groundIntersections select 0;
+        private _groundPos = _intersection select 0;
+        private _groundNormal = _intersection select 1;
+
+        // Calculate the entity's forward direction vector
+        private _entityDirVector = [sin _finalDir, cos _finalDir, 0];
+        
+        // Calculate the right vector (cross product of up and forward)
+        private _rightVector = _groundNormal vectorCrossProduct _entityDirVector;
+        _rightVector = _rightVector vectorMultiply (1 / vectorMagnitude _rightVector);
+        
+        // Recalculate forward vector to be perpendicular to both up and right
+        _entityDirVector = _rightVector vectorCrossProduct _groundNormal;
+        _entityDirVector = _entityDirVector vectorMultiply (1 / vectorMagnitude _entityDirVector);
+
+        // Get the entity's bounding box
+        private _bbox = boundingBoxReal IDS_Logistics_currentEntity;
+        private _minZ = (_bbox select 0) select 2;
+        
+        // Convert ASL position to ATL for more accurate ground placement
+        private _groundPosATL = ASLToATL _groundPos;
+        
+        // Update position to be on the ground, accounting for the entity's bottom point
+        _finalPos = [
+            _groundPosATL select 0,
+            _groundPosATL select 1,
+            (_groundPosATL select 2) - _minZ
+        ];
+
+        // Apply the calculated orientation using ATL position
+        IDS_Logistics_currentEntity setPosATL _finalPos;
+        IDS_Logistics_currentEntity setVectorUp _groundNormal;
+        IDS_Logistics_currentEntity setVectorDir _entityDirVector;
+    };
 } else {
     // Keep entity level
     IDS_Logistics_currentEntity setVectorUp [0,0,1];
+    IDS_Logistics_currentEntity setVectorDir [sin _finalDir, cos _finalDir, 0];
 };

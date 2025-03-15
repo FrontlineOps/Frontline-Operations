@@ -47,13 +47,13 @@ private _searchText = toLower (uiNamespace getVariable ["IDS_Logistics_BuildMenu
     if (_entityCategory != _category) then { continue };
     
     // Skip if doesn't match search text filter
-    if (_searchText != "" && {!(toLower _displayName find _searchText > -1)}) then { continue };
+    if (_searchText != "" && { !(toLower _displayName find _searchText > -1) }) then { continue };
     
     // Add matching entity to the list with associated data
     _entitiesList lbAdd _displayName;
     _entitiesList lbSetData [(lbSize _entitiesList) - 1, _className];
     _entitiesList lbSetTooltip [(lbSize _entitiesList) - 1, format ["%1\nCost: %2", _displayName, _cost]];
-} forEach IDS_Logistics_buildableEntities;
+} forEach IDS_Logistics_Entities;
 
 // Auto-select first item if list is not empty
 if (lbSize _entitiesList > 0) then { _entitiesList lbSetCurSel 0; };

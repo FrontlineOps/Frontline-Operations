@@ -3,7 +3,7 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.3
+ * @version 1.0
  * @date 2025-03-10
  * 
  * @description
@@ -22,24 +22,16 @@
 params [["_className", "", [""]]];
 
 // Validate inputs and state
-if (_className == "") exitWith { 
-    ["<t color='#FF4444'>ERROR</t><br/>No entity class specified.", 2] call IDS_Logistics_fnc_cameraHint; 
-};
+if (_className == "") exitWith { ["<t color='#FF4444'>ERROR</t><br/>No entity class specified.", 2] call IDS_Logistics_fnc_cameraHint; };
 
-if (IDS_Logistics_isHolding) exitWith { 
-    ["<t color='#FFAA44'>NOTICE</t><br/>You are already placing an entity.", 2] call IDS_Logistics_fnc_cameraHint; 
-};
+if (IDS_Logistics_isHolding) exitWith { ["<t color='#FFAA44'>NOTICE</t><br/>You are already placing an entity.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Ensure camera mode is active
-if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith {
-    ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint;
-};
+if (isNil "IDS_LOGISTICS_CAM" || { isNull IDS_LOGISTICS_CAM }) exitWith { ["Camera mode is not active.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Get entity configuration
 private _entityConfig = [_className] call IDS_Logistics_fnc_getEntityConfig;
-if (count _entityConfig == 0) exitWith {
-    ["<t color='#FF4444'>ERROR</t><br/>Entity '" + _className + "' not found in configuration.", 2] call IDS_Logistics_fnc_cameraHint;
-};
+if (count _entityConfig == 0) exitWith { ["<t color='#FF4444'>ERROR</t><br/>Entity '" + _className + "' not found in configuration.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Create the entity locally (preview only)
 private _entity = createVehicleLocal [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
@@ -62,9 +54,7 @@ IDS_Logistics_entityDistance = 5; // Initial distance from reference (in meters)
 
 // Add EachFrame event handler for continuous update
 IDS_Logistics_dirUpdateEH = addMissionEventHandler ["EachFrame", {
-    if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
-        [] call IDS_Logistics_fnc_updateEntityPlacement;
-    };
+    if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then { [] call IDS_Logistics_fnc_updateEntityPlacement; };
 }];
 
 // Add scroll wheel handler for height/rotation/distance adjustment
@@ -130,28 +120,7 @@ IDS_Logistics_keyDownHandler = (findDisplay 46) displayAddEventHandler ["KeyDown
     if (_key == 29 || _key == 157) then { uiNamespace setVariable ["IDS_Logistics_ctrlPressed", true]; };
     if (_key == 56 || _key == 184) then { uiNamespace setVariable ["IDS_Logistics_altPressed", true]; };
     
-    // Add ESC key handler for cancellation
-    if (_key == 1 && IDS_Logistics_isHolding) then {
-        if (!isNull IDS_Logistics_currentEntity) then {
-            deleteVehicle IDS_Logistics_currentEntity;
-        };
-        
-        // Clean up event handlers
-        if (!isNil "IDS_Logistics_scrollHandler") then { (findDisplay 46) displayRemoveEventHandler ["MouseZChanged", IDS_Logistics_scrollHandler]; };
-        if (!isNil "IDS_Logistics_keyDownHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyDown", IDS_Logistics_keyDownHandler]; };
-        if (!isNil "IDS_Logistics_keyUpHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler]; };
-        if (!isNil "IDS_Logistics_dirUpdateEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH]; };
-        
-        IDS_Logistics_isHolding = false;
-        IDS_Logistics_currentEntity = objNull;
-        
-        // Provide feedback
-        ["<t color='#FF8844' size='1.0'>CANCELLED</t><br/>Placement aborted", 2] call IDS_Logistics_fnc_cameraHint;
-        
-        true // Handled
-    } else {
-        false // Not handled
-    };
+    false
 }];
 
 IDS_Logistics_keyUpHandler = (findDisplay 46) displayAddEventHandler ["KeyUp", {

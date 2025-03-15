@@ -37,6 +37,4 @@ private _categoryList = _display displayCtrl 9501;
 private _selectedIndex = lbCurSel _categoryList;
 
 // Update entity list if a category is selected
-if (_selectedIndex >= 0) then {
-    [_categoryList, _selectedIndex] call IDS_Logistics_fnc_updateEntityList;
-};
+if (_selectedIndex >= 0) then { [_categoryList, _selectedIndex] call IDS_Logistics_fnc_updateEntityList; };
