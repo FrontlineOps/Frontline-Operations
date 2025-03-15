@@ -769,8 +769,10 @@ private _airSupportTypeDef = [
         _self set ["state", "ENGAGING"];
         _self set ["currentTarget", _target];
         
-        // Store target position for reference
-        _self set ["lastTargetPos", getPosASL _target];
+        // Store target position for reference - absolutely critical for continued engagement
+        private _targetPos = getPosASL _target;
+        _self set ["lastTargetPos", _targetPos];
+        _self set ["attackInProgress", false]; // Track if an attack run is currently executing
         
         // Create laser designation
         private _laserTarget = createVehicle ["LaserTargetW", getPos _target, [], 0, "CAN_COLLIDE"];
@@ -1149,6 +1151,13 @@ private _airSupportTypeDef = [
             deleteVehicle _laser;
             _self set ["currentLaser", objNull];
         };
+        
+        // Also clean up dummy target if it exists
+        private _dummyTarget = _self getOrDefault ["dummyTarget", objNull];
+        if (!isNull _dummyTarget) then {
+            deleteVehicle _dummyTarget;
+            _self set ["dummyTarget", objNull];
+        };
     }],
     
     ["scanForTargets", {
@@ -1327,10 +1336,10 @@ private _airSupportTypeDef = [
         
         switch (_state) do {
             case "APPROACHING": {
-                    private _targets = _self call ["scanForTargets"];
-                    if (count _targets > 0) then {
-                        private _target = selectRandom _targets;
-                    
+                private _targets = _self call ["scanForTargets"];
+                if (count _targets > 0) then {
+                    private _target = selectRandom _targets;
+                
                     // If in direct attack mode, get much closer to target
                     if (_self getOrDefault ["FLO_directAttackMode", false]) then {
                         private _group = _self get "group";
@@ -1345,19 +1354,101 @@ private _airSupportTypeDef = [
                         };
                     };
                     
-                        if (_self call ["executeStrike", [_target]]) then {
-                            _self set ["state", "ENGAGING"];
+                    if (_self call ["executeStrike", [_target]]) then {
+                        _self set ["state", "ENGAGING"];
                     };
                 };
             };
             case "ENGAGING": {
                 private _currentTarget = _self get "currentTarget";
+                private _targetPos = _self get "lastTargetPos";
                 private _timeSinceLastEngagement = time - (_self get "lastEngaged");
+                private _attackInProgress = _self getOrDefault ["attackInProgress", false];
                 
-                if (!alive _currentTarget || _timeSinceLastEngagement > (_self get "cooldownTime")) then {
+                // Check if we need to create a new attack on the target position
+                if (!_attackInProgress) then {
+                    // Target destroyed or lost but we still have the position - continue the attack!
+                    if (!alive _currentTarget && {_targetPos isNotEqualTo [0,0,0]}) then {
+                        // Create a dummy target at the last known position if needed
+                        private _dummyTarget = createVehicle ["TargetP_Inf_F", ASLToAGL _targetPos, [], 0, "CAN_COLLIDE"];
+                        _dummyTarget hideObject true;  // Make it invisible
+                        _dummyTarget enableSimulation false; // No physics
+                        
+                        // Set the dummy as our new target
+                        _self set ["currentTarget", _dummyTarget];
+                        _self set ["dummyTarget", _dummyTarget]; // Store for cleanup
+                        
+                        // Depending on the weapon type, we might need to restart the attack sequence
+                        private _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []];
+                        
+                        // Check if aircraft has bombing capability
+                        private _hasBombs = false;
+                        {
+                            if (_x select 1 == "BOMB") exitWith {
+                                _hasBombs = true;
+                            };
+                        } forEach _weaponSystems;
+                        
+                        // If we have bombs, create a new bombing run
+                        if (_hasBombs) then {
+                            private _group = group _aircraft;
+                            
+                            // Clear existing waypoints
+                            while {count waypoints _group > 0} do {
+                                deleteWaypoint [_group, 0];
+                            };
+                            
+                            // Set up bombing approach based on aircraft type
+                            if (_aircraft isKindOf "Helicopter") then {
+                                _aircraft flyInHeight 100;
+                                private _wp = _group addWaypoint [_targetPos getPos [800, random 360], 0];
+                                _wp setWaypointType "MOVE";
+                                _wp setWaypointSpeed "LIMITED";
+                                
+                                private _wp2 = _group addWaypoint [_targetPos, 0];
+                                _wp2 setWaypointType "MOVE";
+                                
+                                diag_log format ["[FLO][AirSupport] Continuing helicopter attack on position %1", _targetPos];
+                            } else {
+                                _aircraft flyInHeight 200;
+                                private _wp = _group addWaypoint [_targetPos getPos [1500, random 360], 0];
+                                _wp setWaypointType "MOVE";
+                                _wp setWaypointSpeed "NORMAL";
+                                
+                                private _wp2 = _group addWaypoint [_targetPos, 0];
+                                _wp2 setWaypointType "MOVE";
+                                
+                                diag_log format ["[FLO][AirSupport] Continuing fixed-wing attack on position %1", _targetPos];
+                            };
+                        } else {
+                            // For direct fire weapons, simply approach the position
+                            private _group = group _aircraft;
+                            private _wp = _group addWaypoint [_targetPos, 0];
+                            _wp setWaypointType "SAD";
+                            
+                            diag_log format ["[FLO][AirSupport] Continuing direct fire attack on position %1", _targetPos];
+                        };
+                        
+                        _self set ["attackInProgress", true];
+                    };
+                };
+                
+                // Only end the engagement if we've completed our cooldown after the last firing
+                if (_timeSinceLastEngagement > (_self get "cooldownTime") + 15) then {
+                    // Clean up our laser and dummy target
                     _self call ["cleanupLaser"];
+                    
+                    // Delete any dummy target we created
+                    private _dummyTarget = _self getOrDefault ["dummyTarget", objNull];
+                    if (!isNull _dummyTarget) then {
+                        deleteVehicle _dummyTarget;
+                        _self set ["dummyTarget", objNull];
+                    };
+                    
+                    // Reset state 
                     _self set ["state", "APPROACHING"];
                     _self set ["currentTarget", objNull];
+                    _self set ["attackInProgress", false];
                 };
             };
         };
