@@ -66,7 +66,38 @@ if (isNil "FLO_airSupport") then {
                 objNull
             };
             
-            private _spawnPos = [_pos, 8000, 10000, 100, 0] call BIS_fnc_findSafePos;
+            // Find all OPFOR objective markers
+            private _opforMarkers = allMapMarkers select {
+                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
+                markerAlpha _x > 0 &&
+                !((markerType _x) in ["Empty", ""])
+            };
+            
+            private _spawnPos = [];
+            
+            if (count _opforMarkers > 0) then {
+                // Sort by distance from target (prioritize objectives farther from the action)
+                _opforMarkers = [_opforMarkers, [], {getMarkerPos _x distance _pos}, "DESCEND"] call BIS_fnc_sortBy;
+                
+                // Select a random marker from the farthest 40% of markers
+                private _markerCount = count _opforMarkers;
+                private _startIndex = 0;
+                private _endIndex = floor(_markerCount * 0.4) max 1;
+                private _selectedIndex = floor(random [_startIndex, _startIndex + (_endIndex - _startIndex) / 2, _endIndex]);
+                private _selectedMarker = _opforMarkers select (_selectedIndex min (_markerCount - 1));
+                
+                // Get marker position and add some randomization
+                private _markerPos = getMarkerPos _selectedMarker;
+                private _spawnOffset = [random [-500, 0, 500], random [-500, 0, 500], 0];
+                _spawnPos = _markerPos vectorAdd _spawnOffset;
+                
+                diag_log format ["[FLO][AirSupport] Spawning %1 at OPFOR objective %2", _type, _selectedMarker];
+            } else {
+                // Fallback to original method if no OPFOR markers found
+                _spawnPos = [_pos, 8000, 10000, 100, 0] call BIS_fnc_findSafePos;
+                diag_log "[FLO][AirSupport] No OPFOR objectives found, using fallback spawn position";
+            };
+            
             _spawnPos set [2, _alt];
             
             private _aircraft = createVehicle [_type, _spawnPos, [], 0, "FLY"];
@@ -417,9 +448,9 @@ private _airSupportTypeDef = [
                         // Get angle between friendly unit and target
                         private _dirFromFriendlyToTarget = _nearestFriendly getDir _pos;
                         
-                        // Position aircraft behind friendly unit relative to target (friendly's "6 o'clock")
-                        // This puts aircraft between friendly units and the base or retreat path
-                        private _holdDir = _dirFromFriendlyToTarget + 180;
+                        // Position aircraft in front of friendly unit relative to target (friendly's "12 o'clock")
+                        // This puts aircraft between friendly units and the target for better engagement angles
+                        private _holdDir = _dirFromFriendlyToTarget;
                         // Normalize direction to 0-360 range without using modulus
                         if (_holdDir >= 360) then {
                             _holdDir = _holdDir - 360;
