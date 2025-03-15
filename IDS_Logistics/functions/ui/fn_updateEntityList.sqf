@@ -9,7 +9,8 @@
  * @description
  * Updates the entity list control based on the selected category and search text.
  * Filters entities to show only those matching both the category and search criteria.
- * Sets tooltips with cost information and automatically selects the first item.
+ * Gets display names from object configs and sets tooltips with cost information.
+ * Automatically selects the first item.
  *
  * @param {Control} _control - The category list control
  * @param {Number} _selectedIndex - The index of the selected category
@@ -41,10 +42,18 @@ private _searchText = toLower (uiNamespace getVariable ["IDS_Logistics_BuildMenu
 
 // Process each buildable entity
 {
-    _x params ["_className", "_displayName", "_entityCategory", "_entitySubCategory", "_cost"];
+    _x params ["_className", "_entityCategory", "_cost"];
     
     // Skip if doesn't match selected category
     if (_entityCategory != _category) then { continue };
+    
+    // Get display name from config
+    private _cfg = configFile >> "CfgVehicles" >> _className;
+    private _displayName = if (isClass _cfg) then {
+        getText (_cfg >> "displayName")
+    } else {
+        _className // Fallback to className if config not found
+    };
     
     // Skip if doesn't match search text filter
     if (_searchText != "" && { !(toLower _displayName find _searchText > -1) }) then { continue };

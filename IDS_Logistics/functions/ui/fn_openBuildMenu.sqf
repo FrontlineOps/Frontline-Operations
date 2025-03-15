@@ -42,11 +42,14 @@ lbClear _entitiesList;
 // Generate categories from available buildable entities
 private _categories = [];
 {
-    private _category = _x select 2;
+    private _category = _x select 1;  // Category is now at index 1
     if !(_category in _categories) then {
         _categories pushBack _category;
     };
 } forEach IDS_Logistics_Entities;
+
+// Sort categories alphabetically
+_categories sort true;
 
 // Fill categories list
 {
