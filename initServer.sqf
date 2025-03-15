@@ -68,9 +68,6 @@ FLO_configCache = createHashMapFromArray [
 // SYSTEMs Init Server 
 // Run these only if dedicated (not hosted - hosted servers run initPlayerLocal)
 
-// R3F Init - Everyone
-execVM "R3F_LOG\init.sqf";
-
 // ETV Init - Everyone
 execVM "Scripts\EtV.sqf";
 waitUntil {!isNil "EtVInitialized"};

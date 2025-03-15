@@ -27,7 +27,7 @@ player addAction [
 // Clear player's inventory
 removeAllWeapons player;
 removeAllItems player;
-removeAllAssignedItems player;
+//removeAllAssignedItems player;
 removeUniform player;
 removeVest player;
 removeBackpack player;

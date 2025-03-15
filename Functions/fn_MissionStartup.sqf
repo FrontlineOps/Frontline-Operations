@@ -432,7 +432,16 @@ _objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" &&
 _MOBSER = nearestobjects [Centerposition, [F_Truck_04], 40000];
 {
     if (!isNil "_x" && {!isNull _x}) then {
-        [[_x, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
+        [_x, [
+            "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
+            { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
+            nil, 
+            1.4, 
+            false, 
+            true, 
+            "", 
+            "!IDS_Logistics_isHolding"
+        ]] remoteExec ["addAction", 0, true];
     };
 } forEach _MOBSER;
 
