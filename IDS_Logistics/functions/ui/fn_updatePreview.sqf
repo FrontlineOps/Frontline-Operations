@@ -9,7 +9,7 @@
  * @description
  * Updates the 3D preview model and information panel in the build menu.
  * Displays the selected entity's visual model and detailed information 
- * including category, subcategory, class name, and resource cost.
+ * including category and resource cost.
  *
  * @param {Control} _control - The entities list control
  * @param {Number} _selectedIndex - The index of the selected entity
@@ -45,7 +45,15 @@ if (count _entityData == 0) exitWith {
 };
 
 // Extract entity data components
-_entityData params ["_className", "_displayName", "_category", "_subCategory", "_cost"];
+_entityData params ["_className", "_category", "_cost"];
+
+// Get display name from config
+private _cfg = configFile >> "CfgVehicles" >> _className;
+private _displayName = if (isClass _cfg) then {
+    getText (_cfg >> "displayName")
+} else {
+    _className
+};
 
 // Load and set 3D preview model
 private _model = getText (configFile >> "CfgVehicles" >> _className >> "model");
@@ -56,10 +64,9 @@ _previewCtrl ctrlSetModel _model;
 private _infoText = format [
     "<t size='1.2' color='#FFFFFF'>%1</t><br/>" + 
     "<t>Category: </t><t color='#AAAAFF'>%2</t><br/>" + 
-    "<t>Subcategory: </t><t color='#AAAAFF'>%3</t><br/>" + 
-    "<t>Class: </t><t color='#AAAAFF'>%4</t><br/>" + 
-    "<t>Cost: </t><t color='#FFAA00'>%5</t>",
-    _displayName, _category, _subCategory, _className, _cost
+    "<t>Class: </t><t color='#AAAAFF'>%3</t><br/>" + 
+    "<t>Cost: </t><t color='#FFAA00'>%4</t>",
+    _displayName, _category, _className, _cost
 ];
 
 _entityInfo ctrlSetStructuredText parseText _infoText;

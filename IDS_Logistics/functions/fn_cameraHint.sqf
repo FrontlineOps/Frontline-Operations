@@ -160,7 +160,7 @@ if (_duration > 0) then {
         0.8 * safezoneW + safezoneX,
         0.55 * safezoneH + safezoneY,
         0.15 * safezoneW,
-        0.4 * safezoneH
+        0.35 * safezoneH
     ];
     _container ctrlCommit 0;
     
@@ -187,7 +187,7 @@ if (_duration > 0) then {
     
     // Create content background
     private _contentBg = _display ctrlCreate ["RscText", 10003, _container];
-    _contentBg ctrlSetPosition [0, 0.03 * safezoneH, 0.15 * safezoneW, 0.37 * safezoneH];
+    _contentBg ctrlSetPosition [0, 0.03 * safezoneH, 0.15 * safezoneW, 0.32 * safezoneH];
     _contentBg ctrlSetBackgroundColor [0, 0, 0, 0.5];
     _contentBg ctrlCommit 0;
     
@@ -199,13 +199,13 @@ if (_duration > 0) then {
     
     // Create content text
     private _contentText = _display ctrlCreate ["RscStructuredText", 10004, _container];
-    _contentText ctrlSetPosition [0.005 * safezoneW, 0.035 * safezoneH, 0.14 * safezoneW, 0.355 * safezoneH];
+    _contentText ctrlSetPosition [0.005 * safezoneW, 0.035 * safezoneH, 0.14 * safezoneW, 0.305 * safezoneH];
     _contentText ctrlSetStructuredText parseText _processedContent;
     _contentText ctrlCommit 0;
     
     // Add border to the whole thing
     private _border = _display ctrlCreate ["RscFrame", 10005, _container];
-    _border ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.4 * safezoneH];
+    _border ctrlSetPosition [0, 0, 0.15 * safezoneW, 0.35 * safezoneH];
     _border ctrlSetTextColor [0.8, 0.8, 0.8, 0.5];
     _border ctrlCommit 0;
     
