@@ -10,22 +10,14 @@ publicVariable "TRG3LOCC";
 MarLOCC = 0;
 publicVariable "MarLOCC";
 AVENGLOCC = 1 ;
-publicVariable "AVENGLOCC";
 
 COMMSDIS = 0;
-publicVariable "COMMSDIS";
 HELIDIS = 0;
-publicVariable "HELIDIS";
 AIRDIS = 0;
-publicVariable "AIRDIS";
 LOGDIS = 0;
-publicVariable "LOGDIS";
 INFDIS = 0;
-publicVariable "INFDIS";
 ARMDIS = 0;
-publicVariable "ARMDIS";
-ConVLocc = 0 ;
-publicVariable "ConVLocc";
+ConVLocc = 0;
 
 StartingLocationDone = false;
 
@@ -72,7 +64,6 @@ FLO_configCache = createHashMapFromArray [
     ["HQbuildings", ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V1_F", "Land_Cargo_House_V3_F", "Land_Cargo_HQ_V3_ruins_F", "Land_Cargo_HQ_V1_ruins_F", "Land_Cargo_House_V1_ruins_F", "Land_Cargo_House_V3_ruins_F", "House"]],
     ["bunkers", ["Land_BagBunker_Large_F", "Land_BagBunker_Small_F", "Land_Cargo_House_V3_F", "Land_Cargo_House_V1_F", "Land_Cargo_Patrol_V3_F", "Land_Cargo_Patrol_V2_F", "Land_Cargo_Patrol_V1_F"]]
 ];
-publicVariable "FLO_configCache";
 
 // SYSTEMs Init Server 
 // Run these only if dedicated (not hosted - hosted servers run initPlayerLocal)
@@ -196,4 +187,3 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 
 // Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
-publicVariable "FLO_AICommander";

@@ -344,7 +344,6 @@ INF_REQUEST = {
     if (_Cost == 3) then {
         // Single unit request
         NEWUNIT = group player createUnit [_SQDName, _pos, [], 0, "FORM"];
-        publicVariable "NEWUNIT";
         
         // Add comm menu items
         {
@@ -356,7 +355,6 @@ INF_REQUEST = {
     } else {
         // Squad request
         GRPReq = [_pos, west, _SQDName] call BIS_fnc_spawnGroup;
-        publicVariable "GRPReq";
         
         // Process all units in squad
         {

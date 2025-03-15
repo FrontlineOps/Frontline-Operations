@@ -27,34 +27,25 @@ East_Groups = [
 
 // Default OPFOR vehicles (Vanilla Arma 3 CSAT)
 East_Ground_Vehicles_Ambient = ["RUS_GRU_asn233115"]; 
-//publicVariable "East_Ground_Vehicles_Ambient";
 
 East_Ground_Vehicles_Light = ["RUS_MSV_brdm2a", "RUS_MSV_btr82a", "RUS_MSV_btr80", "RUS_GRU_asn233115sts", "RUS_VDV_bmd2k", "RUS_VDV_bmd2",
 "RUS_VDV_9p148", "RUS_MSV_bmp1", "RUS_MSV_bmp1k", "RUS_MSV_bmp2", "RUS_MSV_bmp2k", "RUS_MSV_brm1k", "RUS_MSV_bmp2m"]; 
-//publicVariable "East_Ground_Vehicles_Light";
 
 East_Ground_Vehicles_Heavy = ["RUS_MSV_zsu234", "RUS_MSV_bmp3", "RUS_MSV_bmp3m", "RUS_VDV_bmd4m", "RUS_MSV_t72b", "RUS_MSV_t72b3",
 "RUS_MSV_t72b3m", "RUS_MSV_t72bm", "RUS_MSV_t80bv", "RUS_MSV_t80bvk", "RUS_MSV_t80u", "RUS_MSV_t80u45m", "RUS_MSV_t80ue1", "RUS_MSV_t80uk",
 "RUS_MSV_t90a", "RUS_MSV_t90m", "RUS_MSV_bmptterminator2", "RUS_MSV_2s6m", "O_T80BVM", "O_T80BVM_M", "mkk_t80b_r"]; 
-//publicVariable "East_Ground_Vehicles_Heavy";
 
 East_Ground_Transport = ["RUS_MSV_ural43202", "RUS_MSV_ural432031", "RUS_MSV_kamaz5350", "RUS_MSV_kamaz4310", "RUS_MSV_asn233115", "RUS_VDV_btrd"]; 
-//publicVariable "East_Ground_Transport";
 
 East_Air_Transport = ["RUS_VKS_mi8amtsh", "RUS_VKS_mi8mtv2"];
-//publicVariable "East_Air_Transport";
 
 East_Air_Heli = ["RUS_VKS_ka52", "RUS_VKS_mi24p", "RUS_VKS_mi28n"]; 
-//publicVariable "East_Air_Heli";
 
 East_Air_Jet = ["RUS_VKS_mig29smt", "RUS_VKS_mig29s", "RUS_VKS_su57"]; 
-//publicVariable "East_Air_Jet";
 
 East_Ground_Artillery = ["RUS_MSV_2a18m", "RUS_MSV_2s3m1", "RUS_MSV_2s1", "RUS_MSV_2b26", "RUS_MSV_2b17"]; 
-//publicVariable "East_Ground_Artillery";
 
 East_Air_Drone = ["RUS_VKS_orion", "RUS_VKS_forpostru"]; 
-//publicVariable "East_Air_Drone";
 
 // Default OPFOR units
 East_Units = [
@@ -79,12 +70,10 @@ East_Units = [
     "RUS_VDV_sergeant",
     "RUS_VDV_seniorsergeant"
 ];
-//publicVariable "East_Units";
 
 East_FireObserver = ["RUS_VDV_radiotelephonist"];
 
 East_Units_Officers = ["RUS_VDV_lieutenant"];
-//publicVariable "East_Units_Officers";
 
 East_Groups = [
     (configFile >> "CfgGroups" >> "East" >> "RUS_GRU_SpecialPurposeTroops" >> "SpecOps" >> "rus_gru_recondetachment"),
@@ -92,4 +81,3 @@ East_Groups = [
     (configFile >> "CfgGroups" >> "East" >> "RUS_VDV_AirborneTroops" >> "SpecOps" >> "rus_vdv_recondetachment"),
     (configFile >> "CfgGroups" >> "East" >> "RUS_VDV_AirborneTroops" >> "Dismounted" >> "rus_vdv_dismounted_detachment")
 ];
-//publicVariable "East_Groups";

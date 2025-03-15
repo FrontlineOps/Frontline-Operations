@@ -29,7 +29,6 @@ forceWeatherChange;
 // Find all FOB buildings of type F_HQ_01
 private _fobBuildings = nearestObjects [Centerposition, [F_HQ_01], 40000];
 FOBB = _fobBuildings;
-publicVariable "FOBB";
 
 // Initialize FOBs with centralized function
 {
@@ -41,7 +40,6 @@ publicVariable "FOBB";
 
 // Find additional FOB building types
 FOBB = nearestObjects [Centerposition, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
-publicVariable "FOBB";
 
 { 
     if (count (nearestObjects [_x, [F_HQ_C_01], 20]) > 0) then { 

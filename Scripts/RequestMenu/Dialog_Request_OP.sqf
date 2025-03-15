@@ -141,7 +141,6 @@ FLO_fnc_spawnSingleUnit = {
     
     // Create the unit
     NEWUNIT = group player createUnit [_unitType, _spawnPos, [], 0, "FORM"];
-    publicVariable "NEWUNIT";
     
     // Add comm menu items
     {
@@ -159,7 +158,6 @@ FLO_fnc_spawnSquad = {
     
     // Create the squad
     GRPReq = [_spawnPos, west, _squadComp] call BIS_fnc_spawnGroup;
-    publicVariable "GRPReq";
     
     // Process all units in the group
     {
