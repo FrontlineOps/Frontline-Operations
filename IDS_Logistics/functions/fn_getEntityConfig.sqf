@@ -30,10 +30,8 @@ private _entityConfig = [];
 
 // Search for matching entity in buildable entities array
 {
-    if (_x select 0 == _className) exitWith {
-        _entityConfig = _x;
-    };
-} forEach IDS_Logistics_buildableEntities;
+    if (_x select 0 == _className) exitWith { _entityConfig = _x; };
+} forEach IDS_Logistics_Entities;
 
 // Return the configuration (will be empty array if not found)
 _entityConfig

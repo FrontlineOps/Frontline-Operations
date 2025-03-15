@@ -3,7 +3,7 @@
  * @category Logistics_Core
  * 
  * @author IDSolutions
- * @version 1.1
+ * @version 1.0
  * @date 2025-03-10
  * 
  * @description
@@ -28,23 +28,18 @@
 // ---- CAMERA CONFIGURATION SETUP ----
 
 //--- Is FLIR available
-if (isnil "IDS_LOGISTICS_BUILD_CAM_ISFLIR") then {
-	IDS_LOGISTICS_BUILD_CAM_ISFLIR = isClass (configFile >> "CfgPatches" >> "A3_Data_F");
-};
+if (isnil "IDS_LOGISTICS_BUILD_CAM_ISFLIR") then { IDS_LOGISTICS_BUILD_CAM_ISFLIR = isClass (configFile >> "CfgPatches" >> "A3_Data_F"); };
 
 IDS_LOGISTICS_CAM_VISION = 0;
 IDS_LOGISTICS_CAM_COLOR = ppEffectCreate ["colorCorrections", 1600];
-IDS_Logistics_CameraTerrainSnap = false;
-IDS_Logistics_MouseClicks = [];
 
-if (isnil "IDS_LOGISTICS_CAM_PPEFFECTS") then {
-	IDS_LOGISTICS_CAM_PPEFFECTS = [
-		[1, 1, -0.01, [1.0, 0.6, 0.0, 0.005], [1.0, 0.96, 0.66, 0.55], [0.95, 0.95, 0.95, 0.0]],
-		[1, 1.02, -0.005, [0.0, 0.0, 0.0, 0.0], [1, 0.8, 0.6, 0.65],  [0.199, 0.587, 0.114, 0.0]],
-		[1, 1.15, 0, [0.0, 0.0, 0.0, 0.0], [0.5, 0.8, 1, 0.5],  [0.199, 0.587, 0.114, 0.0]],
-		[1, 1.06, -0.01, [0.0, 0.0, 0.0, 0.0], [0.44, 0.26, 0.078, 0],  [0.199, 0.587, 0.114, 0.0]]
-	];
-};
+// Initialize terrain snap variable only if it doesn't exist
+if (isNil "IDS_Logistics_CameraTerrainSnap") then { IDS_Logistics_CameraTerrainSnap = false; };
+
+// Initialize center cursor variable
+if (isNil "IDS_Logistics_ShowCenterCursor") then { IDS_Logistics_ShowCenterCursor = true; };
+
+IDS_Logistics_MouseClicks = [];
 
 // ---- CAMERA INITIALIZATION ----
 
@@ -61,14 +56,13 @@ private _pZ = _ppos select 2;
 
 //--- Adjust height if below sea level
 private _pHeight = getTerrainHeightASL [_pX, _pY];
-if (_pHeight < 0) then {_pZ = _pZ + _pHeight};
+if (_pHeight < 0) then { _pZ = _pZ + _pHeight };
 
 //--- Create camera slightly above target
-private _local = "camera" camCreate [_pX, _pY, _pZ + 2];
+private _local = "camconstruct" camCreate [_pX, _pY, _pZ + 2];
 
 IDS_LOGISTICS_CAM = _local;
 _local camCommand "MANUAL ON";
-_local camCommand "INERTIA OFF";
 _local cameraEffect ["INTERNAL", "BACK"];
 showCinemaBorder false;
 IDS_LOGISTICS_CAM setDir direction (vehicle player);
@@ -77,6 +71,123 @@ IDS_LOGISTICS_CAM setDir direction (vehicle player);
 IDS_LOGISTICS_CAM_INITIAL_POS = [_pX, _pY, _pZ + 2];
 IDS_LOGISTICS_CAM_MAX_DISTANCE = 50; // Maximum distance in meters
 IDS_LOGISTICS_CAM_AT_LIMIT = false;  // Flag to prevent spam notifications
+
+// Add visual boundary system
+IDS_Logistics_BoundaryEH = addMissionEventHandler ["EachFrame", {
+    if (!isNil "IDS_LOGISTICS_CAM" && {!isNull IDS_LOGISTICS_CAM}) then {
+        private _center = IDS_LOGISTICS_CAM_INITIAL_POS;
+        private _radius = IDS_LOGISTICS_CAM_MAX_DISTANCE;
+        private _segments = 64; // Number of segments in the circle
+        private _height = 0.5; // Height of the boundary lines
+        
+        // Draw the boundary circle
+        for "_i" from 0 to (_segments - 1) do {
+            private _angle1 = (_i / _segments) * 360;
+            private _angle2 = ((_i + 1) / _segments) * 360;
+            
+            private _pos1 = [
+                (_center select 0) + (_radius * sin _angle1),
+                (_center select 1) + (_radius * cos _angle1),
+                _height
+            ];
+            
+            private _pos2 = [
+                (_center select 0) + (_radius * sin _angle2),
+                (_center select 1) + (_radius * cos _angle2),
+                _height
+            ];
+            
+            // Draw the line segment
+            drawLine3D [_pos1, _pos2, [0.5, 0.1, 0.1, 0.5]];
+        };
+        
+        // Draw vertical lines at cardinal points for better depth perception
+        private _cardinalPoints = [0, 90, 180, 270];
+        {
+            private _angle = _x;
+            private _pos = [
+                (_center select 0) + (_radius * sin _angle),
+                (_center select 1) + (_radius * cos _angle),
+                _height
+            ];
+            drawLine3D [_pos, [_pos select 0, _pos select 1, 0], [0.5, 0.1, 0.1, 0.3]];
+        } forEach _cardinalPoints;
+        
+        // Draw center cursor if enabled
+        if (!isNil "IDS_Logistics_ShowCenterCursor" && {IDS_Logistics_ShowCenterCursor}) then {
+            private _camPos = getPosASL IDS_LOGISTICS_CAM;
+            private _camDir = vectorDir IDS_LOGISTICS_CAM;
+            
+            // If vectorDir fails, try other methods
+            if (_camDir isEqualTo [0,0,0]) then {
+                _camDir = getCameraViewDirection IDS_LOGISTICS_CAM;
+            };
+            
+            if (_camDir isEqualTo [0,0,0]) then {
+                private _camDirection = getDir IDS_LOGISTICS_CAM;
+                _camDir = [sin _camDirection, cos _camDirection, 0];
+            };
+            
+            private _targetPos = _camPos vectorAdd (_camDir vectorMultiply 200);
+            
+            private _intersections = lineIntersectsSurfaces [
+                _camPos, 
+                _targetPos, 
+                IDS_LOGISTICS_CAM, 
+                objNull, 
+                true, 
+                1, 
+                "VIEW", 
+                "FIRE"
+            ];
+            
+            if (count _intersections > 0) then {
+                private _intersectPos = (_intersections select 0) select 0;
+                private _intersectObj = (_intersections select 0) select 2;
+                private _color = [1, 1, 1, 0.8]; // White cursor by default
+                
+                // Change color if looking at a placeable entity
+                if (!isNull _intersectObj && {_intersectObj getVariable ["IDS_Logistics_isPlacedEntity", false]}) then {
+                    _color = [0, 1, 0, 0.8]; // Green for placeable entities
+                };
+                
+                // Draw crosshair at intersection point
+                private _size = 0.1;
+                drawLine3D [
+                    [_intersectPos select 0 - _size, _intersectPos select 1, _intersectPos select 2],
+                    [_intersectPos select 0 + _size, _intersectPos select 1, _intersectPos select 2],
+                    _color
+                ];
+                drawLine3D [
+                    [_intersectPos select 0, _intersectPos select 1 - _size, _intersectPos select 2],
+                    [_intersectPos select 0, _intersectPos select 1 + _size, _intersectPos select 2],
+                    _color
+                ];
+                
+                // Draw small circle around intersection point
+                private _circleSegments = 8;
+                for "_i" from 0 to (_circleSegments - 1) do {
+                    private _angle1 = (_i / _circleSegments) * 360;
+                    private _angle2 = ((_i + 1) / _circleSegments) * 360;
+                    
+                    private _pos1 = [
+                        (_intersectPos select 0) + (_size * 0.7 * sin _angle1),
+                        (_intersectPos select 1) + (_size * 0.7 * cos _angle1),
+                        (_intersectPos select 2)
+                    ];
+                    
+                    private _pos2 = [
+                        (_intersectPos select 0) + (_size * 0.7 * sin _angle2),
+                        (_intersectPos select 1) + (_size * 0.7 * cos _angle2),
+                        (_intersectPos select 2)
+                    ];
+                    
+                    drawLine3D [_pos1, _pos2, _color];
+                };
+            };
+        };
+    };
+}];
 
 // Add range limitation check (50 meter radius from initial position)
 IDS_Logistics_DistanceCheckEH = addMissionEventHandler ["EachFrame", {
@@ -114,12 +225,10 @@ IDS_Logistics_DistanceCheckEH = addMissionEventHandler ["EachFrame", {
                     ["<t color='#FF8844'>Maximum camera distance reached (50m)</t>", 2] call IDS_Logistics_fnc_cameraHint;
                     IDS_LOGISTICS_CAM_AT_LIMIT = true;
                 };
-            };
+            }
         } else {
             // Reset the limit flag when back within bounds
-            if (IDS_LOGISTICS_CAM_AT_LIMIT && _distance < (IDS_LOGISTICS_CAM_MAX_DISTANCE - 1)) then {
-                IDS_LOGISTICS_CAM_AT_LIMIT = false;
-            };
+            if (IDS_LOGISTICS_CAM_AT_LIMIT && _distance < (IDS_LOGISTICS_CAM_MAX_DISTANCE - 1)) then { IDS_LOGISTICS_CAM_AT_LIMIT = false; };
         };
     };
 }];
@@ -183,78 +292,103 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
             // CTRL + Left click = Pick up entity
             if (_ctrl) then {
                 // Check if looking at a placed entity to pick it up
-                if (!isNull _centerObj && { _centerObj getVariable ["IDS_Logistics_isPlacedEntity", false] }) then {
-                    [_centerObj] call IDS_Logistics_fnc_pickupEntity;
-                };
+                if (!isNull _centerObj && { _centerObj getVariable ["IDS_Logistics_isPlacedEntity", false] }) then { [_centerObj] call IDS_Logistics_fnc_pickupEntity; };
             } else {
                 // Normal left click - place entity
-                if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
-                    [] call IDS_Logistics_fnc_placeEntity;
-                };
+                if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then { [] call IDS_Logistics_fnc_placeEntity; };
             };
         };
-        true; // Return true to indicate we handled this event
+        true;
     };
 
-    false; // Return false for other buttons to let them pass through
+    // Right click - Cancel placement or return picked up entity
+    if (_button == 1) then {
+        if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
+            // Check if this is a picked up entity
+            private _isPickedUp = false;
+            private _originalNetId = "";
+            
+            // Safely get variables with default values
+            {
+                private _var = IDS_Logistics_currentEntity getVariable [_x, nil];
+                if (!isNil "_var") then {
+                    switch (_x) do {
+                        case "IDS_Logistics_isPickedUp": { _isPickedUp = _var };
+                        case "IDS_Logistics_OriginalNetId": { _originalNetId = _var };
+                    };
+                };
+            } forEach ["IDS_Logistics_isPickedUp", "IDS_Logistics_OriginalNetId"];
+
+            if (_isPickedUp && {_originalNetId != ""}) then {
+                // Tell server to restore the original entity
+                [_originalNetId, false] remoteExecCall ["IDS_Logistics_fnc_toggleEntityVisibility", 2];
+
+                // Delete the local preview
+                deleteVehicle IDS_Logistics_currentEntity;
+                IDS_Logistics_currentEntity = objNull;
+                IDS_Logistics_isHolding = false;
+
+                ["Entity returned to original position", 2] call IDS_Logistics_fnc_cameraHint;
+            } else {
+                // This is a new entity being placed, delete it
+                deleteVehicle IDS_Logistics_currentEntity;
+                IDS_Logistics_currentEntity = objNull;
+                IDS_Logistics_isHolding = false;
+                ["Placement cancelled", 2] call IDS_Logistics_fnc_cameraHint;
+            };
+        };
+        true;
+    };
+    false;
 }]);
 
-// ---- KEY BINDINGS SETUP ----
+// Add escape key handler for exiting build mode
+_keyDown = (findDisplay 46) displayAddEventHandler ["KeyDown", {
+    params ["_displayOrControl", "_key", "_shift", "_ctrl", "_alt"];
 
-//--- Key Down handler
-_keyDown = (findDisplay 46) displayAddEventHandler ["keydown", "
-	params ['_displayOrControl', '_key', '_shift', '_ctrl', '_alt'];
-
-	if (_key in (actionkeys 'nightvision')) then {
-		IDS_LOGISTICS_CAM_VISION = IDS_LOGISTICS_CAM_VISION + 1;
-		if (IDS_LOGISTICS_BUILD_CAM_ISFLIR) then {
-			_vision = IDS_LOGISTICS_CAM_VISION % 4;
-			switch (_vision) do {
-				case 0: {
-					camUseNVG false;
-					call compile 'false SetCamUseTi 0';
-					['Normal Vision', 2] call IDS_Logistics_fnc_cameraHint;
-				};
-				case 1: {
-					camUseNVG true;
-					call compile 'false SetCamUseTi 0';
-					['Night Vision', 2] call IDS_Logistics_fnc_cameraHint;
-				};
-				case 2: {
-					camUseNVG false;
-					call compile 'true SetCamUseTi 0';
-					['Thermal - White Hot', 2] call IDS_Logistics_fnc_cameraHint;
-				};
-				case 3: {
-					camUseNVG false;
-					call compile 'true SetCamUseTi 1';
-					['Thermal - Black Hot', 2] call IDS_Logistics_fnc_cameraHint;
-				};
-			};
-		} else {
-			_vision = IDS_LOGISTICS_CAM_VISION % 2;
-			switch (_vision) do {
-				case 0: {
-					camUseNVG false;
-					['Normal Vision', 2] call IDS_Logistics_fnc_cameraHint;
-				};
-				case 1: {
-					camUseNVG true;
-					['Night Vision', 2] call IDS_Logistics_fnc_cameraHint;
-				};
-			};
-		};
-	};
-
-	if (_key == 83 && !isNil 'IDS_LOGISTICS_CAM_LASTPOS') then {
-		IDS_LOGISTICS_CAM setPos IDS_LOGISTICS_CAM_LASTPOS;
-	};
-
-    if (_key == 48) then {
-        [] call IDS_Logistics_fnc_openBuildMenu;
+    // Escape key - Exit build mode
+    if (_key == 1) then {
+        if (!isNull IDS_LOGISTICS_CAM) then {
+            // Temporarily disable user input to prevent escape menu
+            disableUserInput true;
+            
+            // Clean up any held entity
+            if (IDS_Logistics_isHolding && !isNull IDS_Logistics_currentEntity) then {
+                deleteVehicle IDS_Logistics_currentEntity;
+                IDS_Logistics_currentEntity = objNull;
+                IDS_Logistics_isHolding = false;
+            };
+            // Exit camera mode
+            IDS_LOGISTICS_CAM = nil;
+            player cameraEffect ["TERMINATE", "BACK"];
+            camDestroy IDS_LOGISTICS_CAM;
+            ["Build mode exited", 2] call IDS_Logistics_fnc_cameraHint;
+            
+            // Re-enable user input
+            disableUserInput !userInputDisabled;
+            true;
+        };
+        true;
     };
 
-	if (_key == 20) then {
+    if (_key in (actionkeys 'nightvision')) then {
+        IDS_LOGISTICS_CAM_VISION = IDS_LOGISTICS_CAM_VISION + 1;
+        _vision = IDS_LOGISTICS_CAM_VISION % 2;
+        switch (_vision) do {
+            case 0: {
+                camUseNVG false;
+                ['Normal Vision', 2] call IDS_Logistics_fnc_cameraHint;
+            };
+            case 1: {
+                camUseNVG true;
+                ['Night Vision', 2] call IDS_Logistics_fnc_cameraHint;
+            };
+        };
+    };
+
+    if (_key == 83 && !isNil 'IDS_LOGISTICS_CAM_LASTPOS') then { IDS_LOGISTICS_CAM setPos IDS_LOGISTICS_CAM_LASTPOS; };
+    if (_key == 48) then { [] call IDS_Logistics_fnc_openBuildMenu; };
+    if (_key == 20) then {
         IDS_Logistics_CameraTerrainSnap = !IDS_Logistics_CameraTerrainSnap;
         if (IDS_Logistics_CameraTerrainSnap) then {
             ['Terrain snapping: ENABLED', 2] call IDS_Logistics_fnc_cameraHint;
@@ -262,35 +396,56 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["keydown", "
             ['Terrain snapping: DISABLED', 2] call IDS_Logistics_fnc_cameraHint;
         };
     };
-"];
+    
+    // Add cursor toggle (C key)
+    if (_key == 46) then {
+        IDS_Logistics_ShowCenterCursor = !IDS_Logistics_ShowCenterCursor;
+        if (IDS_Logistics_ShowCenterCursor) then {
+            ['Center cursor: ENABLED', 2] call IDS_Logistics_fnc_cameraHint;
+        } else {
+            ['Center cursor: DISABLED', 2] call IDS_Logistics_fnc_cameraHint;
+        };
+    };
+    
+    false;
+}];
 
 // ---- CAMERA CLEANUP HANDLER ----
 
 //--- Wait until destroy is forced or camera auto-destroyed
 [_local, _keyDown] spawn {
-	private ["_local", "_keyDown", "_lastpos"];
+    params ["_local", "_keyDown"];
+    private _lastpos = [];
 
-	_local = _this select 0;
-	_keyDown = _this select 1;
+    waitUntil { if (!isNull _local) then { _lastpos = position _local; }; isNull _local };
 
-	waitUntil {
-		if (!isNull IDS_LOGISTICS_CAM) then { _lastpos = position IDS_LOGISTICS_CAM };
-		isNull IDS_LOGISTICS_CAM
-	};
+    // Clean up camera effects
+    player cameraEffect ["TERMINATE", "BACK"];
+    
+    // Clean up any held entity
+    if (!isNull IDS_Logistics_currentEntity) then { deleteVehicle IDS_Logistics_currentEntity; };
 
-	player cameraEffect ["TERMINATE", "BACK"];
-    deleteVehicle IDS_Logistics_currentEntity;
+    // Reset global variables
+    IDS_LOGISTICS_CAM = nil;
+    IDS_LOGISTICS_CAM_VISION = nil;
+    IDS_LOGISTICS_HINT_VISIBLE = nil;
+    IDS_Logistics_isHolding = false;
+    IDS_Logistics_currentEntity = objNull;
+    IDS_Logistics_lastViewDir = nil;
+    IDS_Logistics_MouseClicks = [];
 
-	IDS_LOGISTICS_CAM = nil;
-	IDS_LOGISTICS_CAM_VISION = nil;
-	IDS_LOGISTICS_HINT_VISIBLE = nil;
+    // Store last position for next time
+    if (count _lastpos > 0) then { IDS_LOGISTICS_CAM_LASTPOS = _lastpos; };
 
-	camDestroy _local;
-	IDS_LOGISTICS_CAM_LASTPOS = _lastpos;
+    // Clean up camera
+    camDestroy _local;
 
-	ppEffectDestroy IDS_LOGISTICS_CAM_COLOR;
-	(findDisplay 46) displayRemoveEventHandler ["KeyDown", _keyDown];
+    // Clean up post-processing effects
+    if (!isNil "IDS_LOGISTICS_CAM_COLOR") then { ppEffectDestroy IDS_LOGISTICS_CAM_COLOR; };
 
+    // Remove all event handlers
+    (findDisplay 46) displayRemoveEventHandler ["KeyDown", _keyDown];
+    
     if (!isNil "IDS_Logistics_MouseClicks") then {
         {
             (findDisplay 46) displayRemoveEventHandler ["MouseButtonDown", _x];
@@ -302,27 +457,26 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["keydown", "
     if (!isNil "IDS_Logistics_keyUpHandler") then { (findDisplay 46) displayRemoveEventHandler ["KeyUp", IDS_Logistics_keyUpHandler]; };
     if (!isNil "IDS_Logistics_dirUpdateEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_dirUpdateEH]; };
     if (!isNil "IDS_Logistics_DistanceCheckEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_DistanceCheckEH]; };
-
-    // Reset global state variables
-    IDS_Logistics_isHolding = false;
-    IDS_Logistics_currentEntity = objNull;
-    IDS_Logistics_lastViewDir = nil;
-    IDS_Logistics_MouseClicks = [];
+    if (!isNil "IDS_Logistics_BoundaryEH") then { removeMissionEventHandler ["EachFrame", IDS_Logistics_BoundaryEH]; };
 };
 
 // Display camera controls info
 private _controlsInfo = format [
     "<t color='#AAFFAA' size='1.0'>CONTROLS</t><br/><t align='left'>" +
-    "<t>• <t color='#DDDDDD'>N key</t> - Toggle vision modes</t><br/>" +
+    "<t>• <t color='#DDDDDD'>N key</t> - Toggle normal/night vision</t><br/>" +
     "<t>• <t color='#DDDDDD'>B key</t> - Open build menu</t><br/>" +
     "<t>• <t color='#DDDDDD'>T key</t> - Toggle terrain snapping</t><br/>" +
+    "<t>• <t color='#DDDDDD'>C key</t> - Toggle center cursor</t><br/>" +
     "<t>• <t color='#DDDDDD'>Left click</t> - Place entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + Left click</t> - Pick up entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity under cursor</t><br/>" +
-    "<t>• <t color='#DDDDDD'>Right click</t> - Exit camera mode</t><br/>" +
+    "<t>• <t color='#DDDDDD'>Right click</t> - Cancel placement</t><br/>" +
+    "<t>• <t color='#DDDDDD'>ESC key</t> - Exit build mode</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + scroll</t> - Adjust height</t><br/>" +
     "<t>• <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>"
 ];
 
 [_controlsInfo, 0] call IDS_Logistics_fnc_cameraHint;
+
+if (!isNull (findDisplay 9500)) exitWith { false };

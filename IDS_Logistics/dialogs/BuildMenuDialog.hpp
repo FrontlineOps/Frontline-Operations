@@ -7,23 +7,19 @@ class IDS_Logistics_BuildMenuDialog {
     onLoad = "[_this select 0] call IDS_Logistics_fnc_handlePreview;";
 
     class Objects {
-        class Entity: RscEntity {
+        class Entity: RscObject {
             idc = 9506;
             type = 82;
-            model = "\A3\Structures_F\Mil\Cargo\Cargo_HQ_V1_F.p3d"; // Default model
+            model = "\A3\Structures_F\Mil\Cargo\Cargo_HQ_V1_F.p3d";
             scale = 0.01;
             direction[] = {0, -0.35, -0.65};
             up[] = {0, 0.65, -0.35};
-            
-            // Using exact coordinates from working version
             x = 0.285 * safezoneW + safezoneX;
             y = 0.45 * safezoneH + safezoneY;
             z = 0.2;
-            
             xBack = 0.285 * safezoneW + safezoneX;
             yBack = 0.45 * safezoneH + safezoneY;
             zBack = 0.5;
-            
             inBack = 1;
             enableZoom = 0;
             zoomDuration = 0.001;
@@ -48,7 +44,10 @@ class IDS_Logistics_BuildMenuDialog {
             y = 0.15 * safezoneH + safezoneY;
             w = 0.8 * safezoneW;
             h = 0.05 * safezoneH;
-            colorBackground[] = {0.4, 0.4, 0.4, 1};
+            colorText[] = {1,1,1,1};
+            colorBackground[] = {0.5,0.1,0.1,1};
+            shadow = 1;
+            colorShadow[] = {0,0,0,0.5};
         };
         
         // Left side preview section background with distinct color
@@ -80,6 +79,18 @@ class IDS_Logistics_BuildMenuDialog {
             h = 0.62 * safezoneH;
             colorBackground[] = {0.2, 0.2, 0.18, 0.9};
         };
+        
+        // Key info text
+        class KeyInfoText: RscStructuredText {
+            idc = -1;
+            x = 0.4 * safezoneW + safezoneX;
+            y = 0.225 * safezoneH + safezoneY;
+            w = 0.08 * safezoneW;
+            h = 0.07 * safezoneH;
+            text = "W/S: Rotate Up/Down<br/>A/D: Rotate Left/Right<br/>+/-: Zoom In/Out";
+            colorText[] = {0.9, 0.9, 1, 1};
+            size = 0.03;
+        };
     };
     
     class Controls {
@@ -109,7 +120,7 @@ class IDS_Logistics_BuildMenuDialog {
             idc = -1;
             text = "Preview";
             x = 0.12 * safezoneW + safezoneX;
-            y = 0.21 * safezoneH + safezoneY;
+            y = 0.22 * safezoneH + safezoneY;
             w = 0.33 * safezoneW;
             h = 0.03 * safezoneH;
             colorText[] = {0.9, 0.9, 1, 1};

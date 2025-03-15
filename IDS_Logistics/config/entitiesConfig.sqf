@@ -21,7 +21,7 @@
  * Subcategories provide additional filtering options within categories
  * Cost represents the resource points required to build the entity
  */
-IDS_Logistics_buildableEntities = [
+IDS_Logistics_Entities = [
     //------------------------------------------
     // Fortification
     //------------------------------------------

@@ -18,12 +18,12 @@
  * [] call IDS_Logistics_fnc_openBuildMenu
  */
 
+// Check if dialog is already open
+if (!isNull (findDisplay 9500)) exitWith { false };
+
 // Create dialog
 private _success = createDialog "IDS_Logistics_BuildMenuDialog";
 if (!_success) exitWith { false };
-
-// Wait for dialog to be created
-waitUntil { !isNull (findDisplay 9500) };
 
 // Get the dialog
 private _display = findDisplay 9500;
@@ -46,7 +46,7 @@ private _categories = [];
     if !(_category in _categories) then {
         _categories pushBack _category;
     };
-} forEach IDS_Logistics_buildableEntities;
+} forEach IDS_Logistics_Entities;
 
 // Fill categories list
 {
@@ -57,19 +57,17 @@ private _categories = [];
 // Select first category if available
 if (lbSize _categoryList > 0) then {
     _categoryList lbSetCurSel 0;
-
-    // Give time for the entities list to populate
-    [_display] spawn {
-        params ["_display"];
+    
+    // Update entity list immediately
+    [_categoryList, 0] call IDS_Logistics_fnc_updateEntityList;
+    
+    // Update preview with first entity if available
+    [_display, _entitiesList] spawn {
+        params ["_display", "_entitiesList"];
         sleep 0.1;
-        
-        private _entitiesList = _display displayCtrl 9503;
-        
-        // Select first entity if available
+
         if (lbSize _entitiesList > 0) then {
             _entitiesList lbSetCurSel 0;
-            
-            // Update the preview with the first entity's information
             [_entitiesList, 0] call IDS_Logistics_fnc_updatePreview;
         };
     };

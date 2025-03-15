@@ -33,7 +33,3 @@ IDS_Logistics_PlacedEntities = IDS_Logistics_PlacedEntities - [_entity];
 
 // Delete entity
 deleteVehicle _entity;
-
-// Log destruction with netID
-diag_log format ["IDS Logistics: Entity destroyed - NetID: %1, By: %2", 
-    netId _entity, if (isNull _killer) then {"Unknown"} else {name _killer}];
