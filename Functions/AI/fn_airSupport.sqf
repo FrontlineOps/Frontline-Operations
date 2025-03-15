@@ -740,7 +740,7 @@ private _airSupportTypeDef = [
         _escapePos set [2, 100];
         
         private _wp = _group addWaypoint [_escapePos, 0];
-        _wp setWaypointType "MOVE";
+        _wp setWaypointType "SAD";
         _wp setWaypointSpeed "FULL";
         
         // Notify about evasive action
@@ -810,14 +810,12 @@ private _airSupportTypeDef = [
         _laserTarget attachTo [_target, [0,0,1]];
         _self set ["currentLaser", _laserTarget];
         
-        // Get all weapon systems
-        private _allWeaponSystems = _aircraft getVariable ["FLO_weaponSystems", []];
-        private _distance = _aircraft distance _target;
+        // Get weapon systems
+        private _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []];
+        private _selectedWeapon = "";
+        private _weaponType = "";
         
-        // Filter weapon systems by range and target type
-        private _usableWeaponSystems = [];
-        
-        // Analyze target type
+        // Prioritize weapon based on target type and range
         private _targetType = typeOf _target;
         private _isArmored = _targetType isKindOf "Tank" || _targetType isKindOf "Wheeled_APC";
         private _isStructure = _targetType isKindOf "Building" || _targetType isKindOf "House";
@@ -826,447 +824,351 @@ private _airSupportTypeDef = [
         if (count (_nearbyEnemies select {side _x != east && alive _x}) > 3) then {
             _isGroupTarget = true;
         };
+        private _distance = _aircraft distance _target;
         
-        // Group weapons by type
-        private _missileWeapons = [];
-        private _bombWeapons = [];
-        private _rocketWeapons = [];
-        private _cannonWeapons = [];
-        
-        {
-            _x params ["_weapon", "_weaponType", "_magazines"];
-            // Check if weapon has ammo
-            private _hasAmmo = false;
-            {
-                if (_aircraft ammo _weapon > 0 || {_aircraft magazineTurretAmmo [_x, [-1]] > 0}) exitWith {
-                    _hasAmmo = true;
-                };
-            } forEach _magazines;
-            
-            if (_hasAmmo) then {
-                switch (_weaponType) do {
-                    case "MISSILE";
-                    case "ROTATABLE_CANNON": {
-                        if (_distance < 4000) then {
-                            _missileWeapons pushBack _x;
-                        };
-                    };
-                    case "BOMB": {
-                        if (_distance < 3000) then {
-                            _bombWeapons pushBack _x;
-                        };
-                    };
-                    case "ROCKET": {
-                        if (_distance < 2000) then {
-                            _rocketWeapons pushBack _x;
-                        };
-                    };
-                    case "CANNON": {
-                        if (_distance < 1500) then {
-                            _cannonWeapons pushBack _x;
-                        };
-                    };
-                };
+        // Choose appropriate weapon based on target type, distance, and available weapons
+        if (_isArmored && _distance < 3000) then {
+            // Use guided missiles against armor if available, or rotatable cannons as second choice
+            _weaponSystems = _weaponSystems select {_x select 1 == "MISSILE" || _x select 1 == "ROTATABLE_CANNON"};
+            if (count _weaponSystems == 0) then {
+                // Allow both fixed-wing and helicopters to use bombs against armor
+                _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []] select {_x select 1 == "BOMB"};
             };
-        } forEach _allWeaponSystems;
-        
-        // Build attack sequence based on target type
-        private _attackSequence = [];
-        
-        if (_isArmored) then {
-            // Against armor: Missiles > Bombs > Rockets > Cannon
-            _attackSequence = _missileWeapons + _bombWeapons + _rocketWeapons + _cannonWeapons;
         } else {
-            if (_isStructure) then {
-                // Against structures: Bombs > Missiles > Rockets > Cannon
-                _attackSequence = _bombWeapons + _missileWeapons + _rocketWeapons + _cannonWeapons;
+            if (_isStructure || _isGroupTarget) then {
+                // Use bombs against structures or groups of enemies if available
+                _weaponSystems = _weaponSystems select {_x select 1 == "BOMB"};
+                if (count _weaponSystems == 0) then {
+                    // If no bombs, use rockets for groups or missiles/rotatable cannons for structures
+                    if (_isGroupTarget) then {
+                        _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []] select {_x select 1 == "ROCKET"};
+                    } else {
+                        _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []] select {_x select 1 == "MISSILE" || _x select 1 == "ROTATABLE_CANNON"};
+                    };
+                };
+        } else {
+            if (_distance < 1500) then {
+                // Use cannons/rockets at close range
+                    _weaponSystems = _weaponSystems select {_x select 1 == "CANNON" || _x select 1 == "ROCKET" || _x select 1 == "ROTATABLE_CANNON"};
             } else {
-                if (_isGroupTarget) then {
-                    // Against groups: Bombs > Rockets > Cannon > Missiles
-                    _attackSequence = _bombWeapons + _rocketWeapons + _cannonWeapons + _missileWeapons;
-                } else {
-                    // Against single infantry: Cannon > Rockets > Missiles > Bombs
-                    _attackSequence = _cannonWeapons + _rocketWeapons + _missileWeapons + _bombWeapons;
+                    // Use missiles or rotatable cannons at long range
+                    _weaponSystems = _weaponSystems select {_x select 1 == "MISSILE" || _x select 1 == "ROTATABLE_CANNON"};
+                    if (count _weaponSystems == 0) then {
+                        // Allow both fixed-wing and helicopters to use bombs if no missiles available
+                        _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []] select {_x select 1 == "BOMB"};
+                    };
                 };
             };
         };
         
-        // If no suitable weapons found, exit
-        if (count _attackSequence == 0) exitWith {
-            diag_log format ["[FLO][AirSupport] No suitable weapons found for aircraft %1 against target %2", _aircraft, _target];
-            false
+        // Fallback to any weapon if no appropriate ones found
+        if (count _weaponSystems == 0) then {
+            _selectedWeapon = selectRandom (weapons _aircraft);
+            _weaponType = "UNKNOWN";
+        } else {
+            private _selectedSystem = selectRandom _weaponSystems;
+            _selectedWeapon = _selectedSystem select 0;
+            _weaponType = _selectedSystem select 1;
         };
         
-        // Store the attack sequence for use during multi-weapon attack
-        _self set ["attackSequence", _attackSequence];
-        _self set ["currentWeaponIndex", 0];
+        // Always face the aircraft toward the target before firing
+        _aircraft doWatch _target;
         
-        // Start the multi-weapon attack sequence
-        [_self, _target] spawn {
-            params ["_obj", "_target"];
-            private _aircraft = _obj get "vehicle";
-            private _attackSequence = _obj get "attackSequence";
-            
-            if (count _attackSequence > 0) then {
-                // Always face the aircraft toward the target before firing
-                _aircraft doWatch _target;
-                
-                // Get target position (will be used if target is destroyed mid-attack)
+        // Special bombing run for aircraft with bombs
+        if (_weaponType == "BOMB") then {
+            // Create a bombing run approach
+            private _bombingRun = [_self, _target, _selectedWeapon] spawn {
+                params ["_obj", "_target", "_weapon"];
+                private _aircraft = _obj get "vehicle";
+                private _pilot = driver _aircraft;
                 private _targetPos = getPosASL _target;
+                private _group = group _aircraft;
                 
-                // Execute attack with each weapon in sequence
-                {
-                    private _weaponSystem = _x;
-                    _weaponSystem params ["_weapon", "_weaponType", "_magazines"];
+                // Different bombing approaches for helicopters vs. fixed-wing
+                if (_aircraft isKindOf "Helicopter") then {
+                    // Helicopter bombing parameters - lower altitude, shorter approach
+                    private _approachAlt = 100 + (random 50); // Lower altitude for helicopter bombing
+                    private _releaseDistance = 400; // Shorter release distance for helicopters
+                    private _approachDir = random 360;
                     
-                    // Check if target is still alive, otherwise use position
-                    private _currentTarget = if (alive _target) then {_target} else {
-                        // Create a new dummy target at the position if needed
-                        if (isNull (_obj getOrDefault ["dummyTarget", objNull])) then {
-                            private _dummy = createVehicle ["TargetP_Inf_F", ASLToAGL _targetPos, [], 0, "CAN_COLLIDE"];
-                            _dummy hideObject true;
-                            _dummy enableSimulation false;
-                            _obj set ["dummyTarget", _dummy];
-                            _dummy
-                        } else {
-                            _obj get "dummyTarget"
+                    // Clear waypoints for bombing run
+                    while {count waypoints _group > 0} do {
+                        deleteWaypoint [_group, 0];
+                    };
+                    
+                    // Try to find approach with clear LOS
+                    for "_i" from 0 to 7 do {
+                        private _testDir = _i * 45;
+                        private _testPos = _targetPos getPos [1000, _testDir];
+                        private _vis = terrainIntersectASL [_testPos vectorAdd [0,0,_approachAlt], _targetPos];
+                        if (!_vis) exitWith {
+                            _approachDir = _testDir;
                         };
                     };
                     
-                    // Execute attack based on weapon type
-                    if (_weaponType == "BOMB") then {
-                        [_obj, _currentTarget, _weapon] call {
-                            params ["_obj", "_target", "_weapon"];
-                            private _aircraft = _obj get "vehicle";
-                            private _pilot = driver _aircraft;
-                            private _targetPos = getPosASL _target;
-                            private _group = group _aircraft;
-                            
-                            // Different bombing approaches for helicopters vs. fixed-wing
-                            if (_aircraft isKindOf "Helicopter") then {
-                                // Helicopter bombing parameters
-                                private _approachAlt = 100 + (random 50);
-                                private _releaseDistance = 400;
-                                private _approachDir = random 360;
-                                
-                                // Try to find approach with clear LOS
-                                for "_i" from 0 to 7 do {
-                                    private _testDir = _i * 45;
-                                    private _testPos = _targetPos getPos [1000, _testDir];
-                                    private _vis = terrainIntersectASL [_testPos vectorAdd [0,0,_approachAlt], _targetPos];
-                                    if (!_vis) exitWith {
-                                        _approachDir = _testDir;
-                                    };
-                                };
-                                
-                                // Set up approach position
-                                private _approachPos = _targetPos getPos [1000, _approachDir + 180];
-                                _approachPos set [2, _approachAlt];
-                                
-                                // Clear waypoints for bombing run
-                                while {count waypoints _group > 0} do {
-                                    deleteWaypoint [_group, 0];
-                                };
-                                
-                                // Make approach waypoint
-                                private _wp1 = _group addWaypoint [_approachPos, 0];
-                                _wp1 setWaypointType "MOVE";
-                                _wp1 setWaypointSpeed "LIMITED";
-                                
-                                // Make target waypoint
-                                private _flyoverPos = _targetPos getPos [1000, _approachDir];
-                                _flyoverPos set [2, _approachAlt];
-                                private _wp2 = _group addWaypoint [_flyoverPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                // Wait until helicopter is on approach
-                                [_aircraft, _targetPos, _approachPos, _releaseDistance, _weapon, _pilot, _target, _approachAlt] spawn {
-                                    params ["_aircraft", "_targetPos", "_approachPos", "_releaseDistance", "_weapon", "_pilot", "_target", "_approachAlt"];
-                                    
-                                    waitUntil {sleep 0.5; _aircraft distance _approachPos < 100 || !alive _aircraft};
-                                    if (!alive _aircraft) exitWith {};
-                                    
-                                    // Stable approach for bombing
-                                    _aircraft flyInHeight _approachAlt;
-                                    _aircraft setSpeedMode "LIMITED";
-                                    _aircraft doWatch _targetPos;
-                                    
-                                    // Wait for release point
-                                    waitUntil {
-                                        sleep 0.2;
-                                        private _distToTarget = _aircraft distance _targetPos;
-                                        (_distToTarget < _releaseDistance) || !alive _aircraft
-                                    };
-                                    
-                                    if (!alive _aircraft) exitWith {};
-                                    
-                                    // Release bombs - helicopters typically release one at a time
-                                    _pilot fireAtTarget [_target, _weapon];
-                                };
-                            } else {
-                                // Fixed-wing bombing parameters
-                                private _approachAlt = 200 + (random 100);
-                                private _releaseDistance = 600;
-                                private _approachDir = random 360;
-                                
-                                // Try to approach from a direction with clear line to target
-                                for "_i" from 0 to 7 do {
-                                    private _testDir = _i * 45;
-                                    private _testPos = _targetPos getPos [2000, _testDir];
-                                    private _vis = terrainIntersectASL [_testPos vectorAdd [0,0,_approachAlt], _targetPos];
-                                    if (!_vis) exitWith {
-                                        _approachDir = _testDir;
-                                    };
-                                };
-                                
-                                // Set up approach position
-                                private _approachPos = _targetPos getPos [2000, _approachDir + 180];
-                                _approachPos set [2, _approachAlt];
-                                
-                                // Clear waypoints for bombing run
-                                while {count waypoints _group > 0} do {
-                                    deleteWaypoint [_group, 0];
-                                };
-                                
-                                // Make approach waypoint
-                                private _wp1 = _group addWaypoint [_approachPos, 0];
-                                _wp1 setWaypointType "MOVE";
-                                _wp1 setWaypointSpeed "NORMAL";
-                                
-                                // Make target waypoint
-                                private _flyoverPos = _targetPos getPos [2000, _approachDir];
-                                _flyoverPos set [2, _approachAlt];
-                                private _wp2 = _group addWaypoint [_flyoverPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                // Wait until aircraft is on approach run
-                                [_aircraft, _targetPos, _approachPos, _weapon, _pilot, _target, _approachAlt] spawn {
-                                    params ["_aircraft", "_targetPos", "_approachPos", "_weapon", "_pilot", "_target", "_approachAlt"];
-                                    
-                                    waitUntil {sleep 0.5; _aircraft distance _approachPos < 200 || !alive _aircraft};
-                                    if (!alive _aircraft) exitWith {};
-                                    
-                                    // Straight level approach for bombing
-                                    _aircraft flyInHeight _approachAlt;
-                                    _aircraft setSpeedMode "NORMAL";
-                                    _aircraft doWatch _targetPos;
-                                    
-                                    // Wait until aircraft is at release point
-                                    waitUntil {
-                                        sleep 0.2; 
-                                        private _distToTarget = _aircraft distance _targetPos;
-                                        private _velVec = velocity _aircraft;
-                                        private _speed = vectorMagnitude _velVec;
-                                        
-                                        // Calculate release point based on speed and altitude
-                                        private _releasePoint = 600 * (_speed / 100);
-                                        
-                                        (_distToTarget < _releasePoint || _distToTarget < 400) || !alive _aircraft
-                                    };
-                                    
-                                    if (!alive _aircraft) exitWith {};
-                                    
-                                    // Release bombs
-                                    _pilot fireAtTarget [_target, _weapon];
-                                    sleep 0.3;
-                                    _pilot fireAtTarget [_target, _weapon];
-                                };
-                            };
-                        };
-                    } else {
-                        if (_weaponType in ["CANNON", "ROCKET"]) then {
-                            [_obj, _currentTarget, _weapon, _weaponType] spawn {
-                                params ["_obj", "_target", "_weapon", "_weaponType"];
-                                private _aircraft = _obj get "vehicle";
-                                private _pilot = driver _aircraft;
-                                private _gunner = gunner _aircraft;
-                                private _targetPos = getPosASL _target;
-                                private _group = group _aircraft;
-                                
-                                // Set up the attack run
-                                private _shooter = if (!isNull _gunner) then {_gunner} else {_pilot};
-                                
-                                // Clear waypoints and set up gun run pattern
-                                while {count waypoints _group > 0} do {
-                                    deleteWaypoint [_group, 0];
-                                };
-                                
-                                // Determine appropriate attack altitude and distance
-                                private _attackAlt = if (_aircraft isKindOf "Helicopter") then {
-                                    (_targetPos select 2) + 50 // Helicopters at 50m above target
-                                } else {
-                                    (_targetPos select 2) + 100 // Fixed wing at 100m above target
-                                };
-                                
-                                // Calculate approach direction and position
-                                private _approachDir = random 360;
-                                private _bestApproachDir = _approachDir;
-                                private _bestApproachPos = [];
-                                
-                                // Try several approach vectors to find one with clear LOS
-                                for "_i" from 0 to 7 do {
-                                    private _testDir = _i * 45;
-                                    private _testPos = _targetPos getPos [1500, _testDir + 180]; // Approach from behind
-                                    private _testPosASL = AGLToASL (_testPos vectorAdd [0,0,_attackAlt]);
-                                    private _vis = terrainIntersectASL [_testPosASL, _targetPos];
-                                    
-                                    if (!_vis) then {
-                                        _bestApproachDir = _testDir;
-                                        _bestApproachPos = _testPos vectorAdd [0,0,_attackAlt];
-                                        break;
-                                    };
-                                };
-                                
-                                // If no good approach found, use original
-                                if (count _bestApproachPos == 0) then {
-                                    _bestApproachPos = (_targetPos getPos [1500, _approachDir + 180]) vectorAdd [0,0,_attackAlt];
-                                };
-                                
-                                // Set up waypoints for a proper gun run
-                                private _wp1 = _group addWaypoint [_bestApproachPos, 0];
-                                _wp1 setWaypointType "MOVE";
-                                _wp1 setWaypointSpeed "LIMITED"; // Slower for better accuracy
-                                
-                                // Calculate an overshoot position that's NOT directly through the target
-                                // This creates a strafing pattern that doesn't overshoot the target
-                                private _offsetAngle = 10 + random 20; // 10-30 degree offset
-                                private _offsetDir = if (random 1 > 0.5) then {_bestApproachDir + _offsetAngle} else {_bestApproachDir - _offsetAngle};
-                                private _overshootPos = _targetPos getPos [800, _offsetDir];
-                                _overshootPos set [2, _attackAlt];
-                                
-                                private _wp2 = _group addWaypoint [_overshootPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                // Set up a proper return pattern for multiple passes
-                                private _returnPos = _bestApproachPos getPos [500, random 360];
-                                _returnPos set [2, _attackAlt + 50]; // Slightly higher for return
-                                
-                                private _wp3 = _group addWaypoint [_returnPos, 0];
-                                _wp3 setWaypointType "CYCLE";
-                                
-                                // Execute the gun run when in position
-                                [_aircraft, _target, _targetPos, _weapon, _weaponType, _shooter, _bestApproachPos, _attackAlt] spawn {
-                                    params ["_aircraft", "_target", "_targetPos", "_weapon", "_weaponType", "_shooter", "_approachPos", "_attackAlt"];
-                                    
-                                    // Wait until on approach
-                                    waitUntil {sleep 0.25; _aircraft distance _approachPos < 300 || !alive _aircraft};
-                                    if (!alive _aircraft) exitWith {};
-                                    
-                                    // Set up for the attack
-                                    _aircraft flyInHeight _attackAlt;
-                                    
-                                    // For helicopters, reduce speed significantly for gun runs
-                                    if (_aircraft isKindOf "Helicopter") then {
-                                        _aircraft setVelocity ((velocity _aircraft) vectorMultiply 0.7);
-                                    } else {
-                                        // For jets, reduce speed but less drastically
-                                        _aircraft setVelocity ((velocity _aircraft) vectorMultiply 0.85);
-                                    };
-                                    
-                                    // Wait until close enough to start firing
-                                    waitUntil {
-                                        sleep 0.1;
-                                        private _dist = _aircraft distance _targetPos;
-                                        // Different firing distances based on weapon type
-                                        if (_weaponType == "CANNON") then {
-                                            _dist < 1000
-                                        } else { // ROCKET
-                                            _dist < 1200
-                                        }
-                                    };
-                                    
-                                    // Aim precisely
-                                    _shooter reveal [_target, 4];
-                                    _shooter doTarget _target;
-                                    _aircraft doWatch _targetPos;
-                                    
-                                    // Special handling for helicopter rockets
-                                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -15]);
-                                        _shooter doWatch (_targetPos vectorAdd [0, 0, -15]);
-                                    };
-                                    
-                                    // Apply aiming offset for all cannons and fixed-wing rockets
-                                    // This helps prevent overshooting by aiming slightly below the target
-                                    if (_weaponType == "CANNON" || (_weaponType == "ROCKET" && !(_aircraft isKindOf "Helicopter"))) then {
-                                        // Different offset based on aircraft type and distance
-                                        private _verticalOffset = if (_aircraft isKindOf "Helicopter") then {-15} else {-25};
-                                        
-                                        _aircraft lookAt (_targetPos vectorAdd [0, 0, _verticalOffset]);
-                                        _shooter doWatch (_targetPos vectorAdd [0, 0, _verticalOffset]);
-                                    };
-                                    
-                                    // Fire in controlled bursts during the approach
-                                    private _burstCount = if (_weaponType == "CANNON") then {8} else {4}; // More cannon rounds than rockets
-                                    
-                                    for "_i" from 1 to _burstCount do {
-                                        // Ensure aircraft is still on good attack vector
-                                        if (_i > 1) then {
-                                            _shooter doTarget _target;
-                                            _aircraft doWatch _targetPos;
-                                            
-                                            // Update aim for all weapons to maintain proper trajectory
-                                            if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                                                _aircraft lookAt (_targetPos vectorAdd [0, 0, -15]);
-                                                _shooter doWatch (_targetPos vectorAdd [0, 0, -15]);
-                                            } else {
-                                                if (_weaponType == "CANNON" || (_weaponType == "ROCKET" && !(_aircraft isKindOf "Helicopter"))) then {
-                                                    private _verticalOffset = if (_aircraft isKindOf "Helicopter") then {-15} else {-25};
-                                                    _aircraft lookAt (_targetPos vectorAdd [0, 0, _verticalOffset]);
-                                                    _shooter doWatch (_targetPos vectorAdd [0, 0, _verticalOffset]);
-                                                };
-                                            };
-                                        };
-                                        
-                                        // Fire the weapon
-                                        _shooter fireAtTarget [_target, _weapon];
-                                        
-                                        // Different timing based on weapon type
-                                        if (_weaponType == "CANNON") then {
-                                            sleep 0.15; // Faster burst for cannon
-                                        } else {
-                                            sleep 0.3; // Slower for rockets
-                                        };
-                                        
-                                        // Check if we're too close to continue - prevents overshooting
-                                        if (_aircraft distance _targetPos < 400) exitWith {
-                                            diag_log "[FLO][AirSupport] Breaking off gun run - too close to target";
-                                        };
-                                    };
-                                };
-                            };
-                        } else { // Missiles and other guided weapons
-                            [_obj, _currentTarget, _weapon, _weaponType] spawn {
-                                params ["_obj", "_target", "_weapon", "_weaponType"];
-                                private _aircraft = _obj get "vehicle";
-                                private _pilot = driver _aircraft;
-                                private _gunner = gunner _aircraft;
-                                private _shooter = if (!isNull _gunner) then {_gunner} else {_pilot};
-                                
-                                // Set up missile launch
-                                _shooter reveal [_target, 4];
-                                _shooter doTarget _target;
-                                _aircraft doWatch _target;
-                                sleep 1; // Allow time for targeting
-                                
-                                // Fire the missile
-                                _shooter fireAtTarget [_target, _weapon];
-                                
-                                // For rotatable cannons, fire a longer burst
-                                if (_weaponType == "ROTATABLE_CANNON") then {
-                                    for "_i" from 1 to 5 do {
-                                        sleep 0.2;
-                                        _shooter fireAtTarget [_target, _weapon];
-                                    };
-                                };
-                            };
+                    // Set up approach position (1km away - shorter for helicopters)
+                    private _approachPos = _targetPos getPos [1000, _approachDir + 180];
+                    _approachPos set [2, _approachAlt];
+                    
+                    // Make approach waypoint
+                    private _wp1 = _group addWaypoint [_approachPos, 0];
+                    _wp1 setWaypointType "MOVE";
+                    _wp1 setWaypointSpeed "LIMITED"; // Slower for helicopter precision
+                    
+                    // Make target waypoint
+                    private _flyoverPos = _targetPos getPos [1000, _approachDir];
+                    _flyoverPos set [2, _approachAlt];
+                    private _wp2 = _group addWaypoint [_flyoverPos, 0];
+                    _wp2 setWaypointType "MOVE";
+                    
+                    // Wait until helicopter is on approach
+                    waitUntil {sleep 0.5; _aircraft distance _approachPos < 100 || !alive _aircraft};
+                    if (!alive _aircraft) exitWith {};
+                    
+                    // Stable approach for bombing
+                    _aircraft flyInHeight _approachAlt;
+                    _aircraft setSpeedMode "LIMITED";
+                    _aircraft doWatch _targetPos;
+                    
+                    // Wait for release point
+                    waitUntil {
+                        sleep 0.2;
+                        private _distToTarget = _aircraft distance _targetPos;
+                        (_distToTarget < _releaseDistance) || !alive _aircraft
+                    };
+                    
+                    if (!alive _aircraft) exitWith {};
+                    
+                    // Release bombs - helicopters typically release one at a time
+                    _pilot fireAtTarget [_target, _weapon];
+                    
+                    // Allow time for bomb impact before continuing
+                    sleep 3;
+                    if (!alive _aircraft) exitWith {};
+                    
+                    _obj call ["setupApproach", [_targetPos]];
+                    
+                    diag_log format ["[FLO][AirSupport] Helicopter bombing run completed at %1", _targetPos];
+                } else {
+                    // Fixed-wing bombing parameters - same as original code
+                    private _approachAlt = 200 + (random 100); // Higher altitude for bombing
+                    private _releaseDistance = 600; // Distance before target to release bombs
+                    private _approachDir = random 360;
+                    
+                    // Try to approach from a direction with clear line to target
+                    for "_i" from 0 to 7 do {
+                        private _testDir = _i * 45;
+                        private _testPos = _targetPos getPos [2000, _testDir];
+                        private _vis = terrainIntersectASL [_testPos vectorAdd [0,0,_approachAlt], _targetPos];
+                        if (!_vis) exitWith {
+                            _approachDir = _testDir;
                         };
                     };
                     
-                    // Wait between weapon systems
-                    sleep 1;
+                    // Set up approach position (2km away)
+                    private _approachPos = _targetPos getPos [2000, _approachDir + 180];
+                    _approachPos set [2, _approachAlt];
                     
-                } forEach _attackSequence;
+                    // Clear waypoints for bombing run
+                    while {count waypoints _group > 0} do {
+                        deleteWaypoint [_group, 0];
+                    };
+                    
+                    // Make approach waypoint
+                    private _wp1 = _group addWaypoint [_approachPos, 0];
+                    _wp1 setWaypointType "MOVE";
+                    _wp1 setWaypointSpeed "NORMAL";
+                    
+                    // Make target waypoint
+                    private _flyoverPos = _targetPos getPos [2000, _approachDir];
+                    _flyoverPos set [2, _approachAlt];
+                    private _wp2 = _group addWaypoint [_flyoverPos, 0];
+                    _wp2 setWaypointType "MOVE";
+                    
+                    // Wait until aircraft is on approach run
+                    waitUntil {sleep 0.5; _aircraft distance _approachPos < 200 || !alive _aircraft};
+                    if (!alive _aircraft) exitWith {};
+                    
+                    // Straight level approach for bombing
+                    _aircraft flyInHeight _approachAlt;
+                    _aircraft setSpeedMode "NORMAL";
+                    _aircraft doWatch _targetPos;
+                    
+                    // Wait until aircraft is at release point
+                    waitUntil {
+                        sleep 0.2; 
+                        private _distToTarget = _aircraft distance _targetPos;
+                        private _velVec = velocity _aircraft;
+                        private _speed = vectorMagnitude _velVec;
+                        
+                        // Calculate release point based on speed and altitude
+                        private _releasePoint = _releaseDistance * (_speed / 100);
+                        
+                        (_distToTarget < _releasePoint || _distToTarget < 400) || !alive _aircraft
+                    };
+                    
+                    if (!alive _aircraft) exitWith {};
+                    
+                    // Release bombs
+                    _pilot fireAtTarget [_target, _weapon];
+                    sleep 0.3;
+                    _pilot fireAtTarget [_target, _weapon];
+                    
+                    // Return to normal behavior
+                    sleep 5;
+                    if (!alive _aircraft) exitWith {};
+                    
+                    _obj call ["setupApproach", [_targetPos]];
+                    
+                    diag_log format ["[FLO][AirSupport] Fixed-wing bombing run completed at %1", _targetPos];
+                };
+            };
+        } else {
+            // Execute attack based on weapon type for non-bomb weapons
+        if (_weaponType in ["CANNON", "ROCKET"]) then {
+            // Burst fire for rapid weapons
+            if (!isNull _gunner) then {
+                _gunner reveal [_target, 4];
+                _gunner doTarget _target;
+                
+                // Special handling for helicopter rockets to improve aim
+                if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                    // Get target position and aircraft position
+                    private _targetPos = getPosASL _target;
+                    private _aircraftPos = getPosASL _aircraft;
+                    
+                    // Position aircraft properly for rocket attack - lower altitude approach
+                    private _distToTarget = _aircraft distance _target;
+                    private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
+                    private _idealDistance = 600; // Better distance for rocket employment
+                    private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
+                    
+                    // If we're too high or too far, adjust approach
+                    if (_altitudeDiff > 60 || _distToTarget > 800) then {
+                        // Force a better attack position
+                        private _attackDir = _aircraft getDir _target;
+                        private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
+                        _attackPos set [2, _attackAlt];
+                        
+                        // Move to better firing position
+                        _aircraft doMove _attackPos;
+                        _aircraft flyInHeight _attackAlt;
+                        
+                        // Ensure nose is pointed down at target
+                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                        _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
+                        sleep 1; // Allow time for positioning
+                    };
+                    
+                    // Force aim downward for proper rocket trajectory
+                    _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                    _gunner doWatch (_targetPos vectorAdd [0, 0, -5]);
+                };
+                
+                // Fire multiple times for burst effect
+                for "_i" from 1 to 5 do {
+                    _gunner fireAtTarget [_target, _selectedWeapon];
+                    
+                    // For rockets, ensure aim is maintained between shots
+                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                        _gunner doWatch (getPosASL _target vectorAdd [0, 0, -5]);
+                        _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                    };
+                    
+                    sleep 0.2;
+                };
+            } else {
+                _pilot reveal [_target, 4];
+                _pilot doTarget _target;
+                
+                // Special handling for helicopter rockets to improve aim
+                if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                    // Get target position and aircraft position
+                    private _targetPos = getPosASL _target;
+                    private _aircraftPos = getPosASL _aircraft;
+                    
+                    // Position aircraft properly for rocket attack - lower altitude approach
+                    private _distToTarget = _aircraft distance _target;
+                    private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
+                    private _idealDistance = 600; // Better distance for rocket employment
+                    private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
+                    
+                    // If we're too high or too far, adjust approach
+                    if (_altitudeDiff > 60 || _distToTarget > 800) then {
+                        // Force a better attack position
+                        private _attackDir = _aircraft getDir _target;
+                        private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
+                        _attackPos set [2, _attackAlt];
+                        
+                        // Move to better firing position
+                        _aircraft doMove _attackPos;
+                        _aircraft flyInHeight _attackAlt;
+                        
+                        // Ensure nose is pointed down at target
+                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                        _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
+                        sleep 1; // Allow time for positioning
+                    };
+                    
+                    // Force aim downward for proper rocket trajectory
+                    _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                    _pilot doWatch (_targetPos vectorAdd [0, 0, -5]);
+                };
+                
+                // Fire multiple times for burst effect
+                for "_i" from 1 to 5 do {
+                    _pilot fireAtTarget [_target, _selectedWeapon];
+                    
+                    // For rockets, ensure aim is maintained between shots
+                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                        _pilot doWatch (getPosASL _target vectorAdd [0, 0, -5]);
+                        _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                    };
+                    
+                    sleep 0.2;
+                };
+            };
+            } else {
+                if (_weaponType == "ROTATABLE_CANNON") then {
+                    // Special handling for rotatable cannons - longer sustained fire at distance
+                    // Most rotatable cannons are used by the gunner position
+                    private _shooter = if (!isNull _gunner) then {_gunner} else {_pilot};
+                    
+                    // Set up targeting and approach
+                    _shooter reveal [_target, 4];
+                    _shooter doTarget _target;
+                    
+                    // Maintain distance for rotatable cannons (similar to missile engagement)
+                    if (_aircraft isKindOf "Helicopter" && _distance > 800) then {
+                        // Set appropriate altitude based on target
+                        private _targetPos = getPosASL _target;
+                        private _desiredAlt = (_targetPos select 2) + 45; // Position slightly above target
+                        _aircraft flyInHeight _desiredAlt;
+                        
+                        // Turn aircraft to face target but maintain distance
+                        _aircraft doWatch _target;
+                    };
+                    
+                    // Fire a longer burst (rotatable cannons typically have more ammunition)
+                    for "_i" from 1 to 10 do {
+                        _shooter fireAtTarget [_target, _selectedWeapon];
+                        sleep 0.15;
+                    };
+                    
+                    // Log the engagement
+                    diag_log format ["[FLO][AirSupport] Aircraft %1 engaging with rotatable cannon at range %2m", _aircraft, round _distance];
+        } else {
+            // Single shot for missiles
+            if (!isNull _gunner) then {
+                _gunner reveal [_target, 4];
+                _gunner doTarget _target;
+                _gunner fireAtTarget [_target, _selectedWeapon];
+            } else {
+                _pilot reveal [_target, 4];
+                _pilot doTarget _target;
+                _pilot fireAtTarget [_target, _selectedWeapon];
+                    };
+                };
             };
         };
         
@@ -1450,7 +1352,7 @@ private _airSupportTypeDef = [
                             private _wp = _group addWaypoint [_attackPos, 0];
                             _wp setWaypointType "SAD";
                             _wp setWaypointBehaviour "COMBAT";
-                            _wp setWaypointCombatMode "GREEN";
+                            _wp setWaypointCombatMode "RED";
                             _wp setWaypointSpeed "LIMITED"; // Reduced speed for better targeting
                             
                             // Reduce altitude for better weapon employment of unguided weapons
