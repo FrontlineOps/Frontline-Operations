@@ -40,15 +40,14 @@ private _BROADCAST_INTERVAL = 10;        // Seconds between client broadcasts
 if (!isServer) then {
     if (isNil "FLO_Intel_NotificationHandler") then {
         FLO_Intel_NotificationHandler = true;
-        ["FLO_Intel_Notification", "onEachFrame", {
-            private _notification = missionNamespace getVariable ["FLO_Intel_Notification", []];
-            if (count _notification > 0) then {
-                _notification params ["_msg", "_timestamp"];
-                if (time - _timestamp < 5) then {
-                    [parseText _msg, [0, 0.5, 1, 1], nil, 5, 1.7, 0] call BIS_fnc_textTiles;
-                };
+        
+        // Replace stackedEventHandler with CBA event handler
+        ["FLO_Intel_NotificationEvent", {
+            params ["_msg", "_timestamp"];
+            if (time - _timestamp < 5) then {
+                [parseText _msg, [0, 0.5, 1, 1], nil, 5, 1.7, 0] call BIS_fnc_textTiles;
             };
-        }] call BIS_fnc_addStackedEventHandler;
+        }] call CBA_fnc_addEventHandler;
     };
     // Exit here for clients after setting up notification handler
     if (_mode != "showNotification") exitWith {};
@@ -209,7 +208,7 @@ if (isServer && isNil "FLO_Intel_System") then {
                 ];
                 
                 // Queue notification for efficient broadcasting
-                missionNamespace setVariable ["FLO_Intel_Notification", [_formattedMsg, time], true];
+                ["FLO_Intel_NotificationEvent", [_formattedMsg, time]] call CBA_fnc_globalEvent;
                 true
             } else {
                 false
@@ -254,7 +253,7 @@ if (isServer && isNil "FLO_Intel_System") then {
                 ];
                 
                 // Queue notification for efficient broadcasting instead of direct remoteExec
-                missionNamespace setVariable ["FLO_Intel_Notification", [_formattedMsg, time], true];
+                ["FLO_Intel_NotificationEvent", [_formattedMsg, time]] call CBA_fnc_globalEvent;
                 true
             } else {
                 false
@@ -264,6 +263,8 @@ if (isServer && isNil "FLO_Intel_System") then {
     
     // Create the intel management object and make it public
     FLO_Intel_System = createHashMapObject [_intelClass, 0];
+    // Must still use publicVariable to make the object available on clients
+    publicVariable "FLO_Intel_System";
 };
 
 // Handle different operation modes
