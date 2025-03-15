@@ -178,7 +178,7 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 
 // Initialize Intel System
 [] call FLO_fnc_intelSystem;
-diag_log "[FLO] Intelligence System initialized";
+diag_log "[FLO] Intelligence System initialized on Server";
 
 // Initialize the resource system
 ["init", []] call FLO_fnc_opforResources;
