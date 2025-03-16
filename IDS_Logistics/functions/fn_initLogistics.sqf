@@ -33,8 +33,23 @@ uiNamespace setVariable ["IDS_Logistics_shiftPressed", false];
 uiNamespace setVariable ["IDS_Logistics_ctrlPressed", false];
 uiNamespace setVariable ["IDS_Logistics_altPressed", false];
 
-// Load configurations directly - not using execVM which is asynchronous
-call compile preprocessFileLineNumbers "IDS_Logistics\config\entitiesConfig.sqf";
+// Initialize entities array from config
+IDS_Logistics_Entities = [];
+private _entitiesConfig = missionConfigFile >> "CfgLogistics" >> "Entities";
+
+// Iterate through all entity classes in the config
+for "_i" from 0 to (count _entitiesConfig - 1) do {
+    private _entityClass = _entitiesConfig select _i;
+    
+    if (isClass _entityClass) then {
+        private _className = configName _entityClass;
+        private _category = getText (_entityClass >> "category");
+        private _cost = getNumber (_entityClass >> "cost");
+        
+        // Add to entities array in the same format as before: [className, category, cost]
+        IDS_Logistics_Entities pushBack [_className, _category, _cost];
+    };
+};
 
 // Debug logging
 diag_log "=== IDS Logistics Initialization ===";

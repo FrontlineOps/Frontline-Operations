@@ -33,6 +33,7 @@ minPlayerDistance = 300; // meters. Default: 0
 #include "R3F_LOG\desc_include.h"
 #include "KPGUI\KPGUI_defines.hpp"
 #include "KPPLM\ui\KPPLM_dialog.hpp"
+#include "IDS_Logistics\CfgLogistics.hpp"
 #include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
 
 class CfgFunctions {

@@ -8,7 +8,7 @@
  * 
  * @description
  * Saves all placed logistics entities to the profileNamespace for persistence.
- * Captures class name, position, direction, and orientation for each entity.
+ * Captures class name, position, direction, orientation, and damage for each entity.
  *
  * @param {None}
  *
@@ -27,7 +27,8 @@ private _saveData = [];
         ["class", typeOf _x],
         ["position", getPosWorld _x],
         ["direction", getDir _x],
-        ["vectorUp", vectorUp _x]
+        ["vectorUp", vectorUp _x],
+        ["damage", damage _x]
     ];
 
     // Add to entities array

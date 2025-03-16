@@ -7,45 +7,47 @@
  * @date 2025-03-10
  * 
  * @description
- * Updates the entity list control based on the selected category and search text.
- * Filters entities to show only those matching both the category and search criteria.
- * Gets display names from object configs and sets tooltips with cost information.
- * Automatically selects the first item.
+ * Updates the entities list in the build menu based on the selected category.
+ * Filters entities by category and search text, then populates the list control.
  *
- * @param {Control} _control - The category list control
- * @param {Number} _selectedIndex - The index of the selected category
+ * @param {Control} _categoryList - The category list control
+ * @param {Number} _selectedIndex - The selected category index
  *
  * @return {Nothing}
  *
  * @example
- * [_categoryListControl, 0] call IDS_Logistics_fnc_updateEntityList
+ * [_categoryList, 0] call IDS_Logistics_fnc_updateEntityList;
  */
 
 params [
-    ["_control", controlNull, [controlNull]],
+    ["_categoryList", controlNull, [controlNull]],
     ["_selectedIndex", -1, [0]]
 ];
 
-// Exit if no valid selection
-if (_selectedIndex < 0) exitWith {};
+// Get the dialog
+private _display = ctrlParent _categoryList;
 
-// Get the dialog and controls
-private _display = ctrlParent _control;
-private _category = _control lbData _selectedIndex;
+// Get the entities list
 private _entitiesList = _display displayCtrl 9503;
 
-// Clear the existing list content
+// Get the search box
+private _searchBox = _display displayCtrl 9502;
+
+// Get the search text
+private _searchText = toLower (ctrlText _searchBox);
+
+// Clear the entities list
 lbClear _entitiesList;
 
-// Get current search filter text (empty string if none)
-private _searchText = toLower (uiNamespace getVariable ["IDS_Logistics_BuildMenu_SearchText", ""]);
+// Get the selected category
+private _category = _categoryList lbData _selectedIndex;
 
-// Process each buildable entity
+// Get entities for the selected category
+private _categoryEntities = [_category] call IDS_Logistics_fnc_getEntitiesByCategory;
+
+// Populate the entities list
 {
     _x params ["_className", "_entityCategory", "_cost"];
-    
-    // Skip if doesn't match selected category
-    if (_entityCategory != _category) then { continue };
     
     // Get display name from config
     private _cfg = configFile >> "CfgVehicles" >> _className;
@@ -62,7 +64,7 @@ private _searchText = toLower (uiNamespace getVariable ["IDS_Logistics_BuildMenu
     _entitiesList lbAdd _displayName;
     _entitiesList lbSetData [(lbSize _entitiesList) - 1, _className];
     _entitiesList lbSetTooltip [(lbSize _entitiesList) - 1, format ["%1\nCost: %2", _displayName, _cost]];
-} forEach IDS_Logistics_Entities;
+} forEach _categoryEntities;
 
 // Auto-select first item if list is not empty
 if (lbSize _entitiesList > 0) then { _entitiesList lbSetCurSel 0; };

@@ -25,7 +25,7 @@ params [
     ["_entity", objNull, [objNull]],
     ["_killer", objNull, [objNull]],
     ["_instigator", objNull, [objNull]],
-    ["_useEffects", false, [false]]
+    ["_useEffects", true, [true]]
 ];
 
 // Remove from tracking array
