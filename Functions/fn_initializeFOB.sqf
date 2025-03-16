@@ -64,7 +64,16 @@ if (_preserveMarker && {_fobBuilding getVariable ["FLO_FOB_MarkersRestored", fal
 
 // Initialize creation factory
 if (!isNil "_fobBuilding" && {!isNull _fobBuilding}) then {
-    [[_fobBuilding, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
+    [_fobBuilding, [
+        "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
+        { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
+        nil, 
+        1.4, 
+        false, 
+        true, 
+        "", 
+        "!IDS_Logistics_isHolding"
+    ]] remoteExec ["addAction", 0, true];
 } else {
     ["FOB", 2, "Failed to initialize FOB creation factory - _fobBuilding is nil or null"] call FLO_fnc_log;
 };

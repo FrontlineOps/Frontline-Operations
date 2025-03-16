@@ -1,5 +1,3 @@
-
-
 /*
 	Title: FPS Monitoring Script
 	Author: Dylan Plecki (Naught)

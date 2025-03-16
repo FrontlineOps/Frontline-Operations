@@ -65,7 +65,6 @@ _mrkr setMarkerAlpha 0.7 ;
 
 
 	ConVLocc = 1 ;
-	publicVariable "ConVLocc";
 
 /////////////////////Enemy Convoy////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -165,7 +164,6 @@ V6 setUnloadInCombat [true, false];
 {_x addEventHandler ["Killed", {
 _Veh = nearestObjects [(_this select 0),["LandVehicle"],100] select 0; 
  	ConVLocc = 0.5 ;
-	publicVariable 'ConVLocc';
 {_x removeAllEventHandlers "Killed";
   [_x] ordergetin false; 
   [_x] allowGetIn false; 
@@ -293,7 +291,6 @@ _TRGT setTriggerStatements [
 				[100, 'SUPPORT CONVOY'] call FLO_fnc_notification;
  
  	ConVLocc = 0 ;
-	publicVariable 'ConVLocc';
 
  
  ", ""]; 

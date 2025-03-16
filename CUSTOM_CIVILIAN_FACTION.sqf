@@ -11,12 +11,8 @@
 
 // Default civilian classnames (Vanilla Arma 3)
 CivVehArray = ("(configname _x iskindOf 'car') && (gettext (_x >> 'faction') == 'CIV_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
-//publicVariable "CivVehArray";
 CivMenArray = ("(configname _x iskindOf 'CAManBase') && !(['CivilianPresence_',configName _x] call bis_fnc_inString) && (gettext (_x >> 'faction') == 'CIV_F') && (getNumber (_x >> 'scope') >= 2)" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
-//publicVariable "CivMenArray";
 
 // Default guerilla classnames (Vanilla Arma 3)
-GuerMenArray = ("(configname _x iskindOf 'CAManBase') && (gettext (_x >> 'faction') == 'IND_G_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
-//publicVariable "GuerMenArray";
-GuerVehArray = ("(configname _x iskindOf 'car') && (gettext (_x >> 'faction') == 'IND_G_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
-//publicVariable "GuerVehArray";
+GuerMenArray = ("(configname _x iskindOf 'CAManBase') && (gettext (_x >> 'faction') == 'rhsgref_faction_nationalist')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};
+GuerVehArray = ("(configname _x iskindOf 'car') && (gettext (_x >> 'faction') == 'rhsgref_faction_nationalist')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};

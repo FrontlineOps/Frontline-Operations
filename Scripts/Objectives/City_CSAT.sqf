@@ -61,7 +61,6 @@ _trgINT setTriggerStatements [
     "this && AVENGLOCC == 1 && ({((side _x) == east) && (getPos _x distance thisTrigger < 200)} count allUnits < 25)",
     "
     AVENGLOCC = 0;
-    publicVariable 'AVENGLOCC';
     [thisTrigger, 200] call FLO_fnc_requestQRF;
     ",
     ""

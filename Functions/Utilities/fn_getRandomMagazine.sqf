@@ -1,6 +1,6 @@
 /*
     File: fn_getRandomMagazine.sqf
-    Author: Frontline Operations Development Group
+    Author: Claude Assistant
     Description: Gets a random magazine from a specified unit or vehicle
     
     Parameters:

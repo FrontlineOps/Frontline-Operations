@@ -32,18 +32,16 @@ wreckRemovalMaxTime = 900; // seconds. Default: 36000 (10 hours)
 minPlayerDistance[] = {300, 1200, 300};
 //minPlayerDistance[] = {300, 1200, 300, 60, 120, 300}; // For 2.20 Arma 3
 
-
-
-#include "R3F_LOG\desc_include.h"
+#include "Scripts\defines.hpp"
 #include "KPGUI\KPGUI_defines.hpp"
 #include "KPPLM\ui\KPPLM_dialog.hpp"
-
+#include "IDS_Logistics\CfgLogistics.hpp"
+#include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
 class CfgFunctions {
-	
 	#include "CfgFunctions.hpp"
 	#include "LARs\spawnComp\functions\functions.cpp"
 	#include "KPPLM\KPPLM_functions.hpp"
-	
+	#include "IDS_Logistics\IDS_Logistics_Functions.hpp"
 };
 
 
@@ -68,7 +66,6 @@ class CfgRemoteExec
 };
 
 #include "compositions\compositions.cfg"
-#include "Scripts\defines.hpp"
 #include "Scripts\MissionSetupMenu\Dialog_Faction.hpp"
 #include "Scripts\RequestMenu\Dialog_Request.hpp"
 #include "Scripts\GUI_Satellite_Classes.hpp"
