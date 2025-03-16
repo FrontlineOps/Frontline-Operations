@@ -29,10 +29,8 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
 
             if (markerAlpha _M in [0.001, 0]) then {
                 _M setMarkerAlpha 1;
-                ["showNotification", ["+ NEW INTEL", "Scout Intel Received", "intel"]] call FLO_fnc_intelSystem;
-
                 private _attackingAtGrid = mapGridPosition getMarkerPos _M;
-                [[west, "HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+                ["showNotification", ["+ NEW INTEL", "Scout Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
             };
         };
     };

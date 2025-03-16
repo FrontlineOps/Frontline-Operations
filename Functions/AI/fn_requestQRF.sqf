@@ -505,7 +505,8 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         if ([_elementApproachPos] call _fnc_hasRadioCoverage) then {
             // Announce reinforcements periodically
             if (_spawnIndex == 1) then {
-                ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound!", "warning"]] call FLO_fnc_intelSystem;
+                private _attackingAtGrid = mapGridPosition _elementApproachPos;
+                ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound towards grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
             } else {
                 if (_spawnIndex mod 3 == 0) then {
                     private _msg = selectRandom [

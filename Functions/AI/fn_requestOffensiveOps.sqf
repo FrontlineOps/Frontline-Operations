@@ -99,9 +99,8 @@ _assaultMarkerName setMarkerSize [2.5, 2.5];
 _assaultMarkerName setMarkerAlpha 0.5;
 
 // Notify players
-["showNotification", ["! CRITICAL WARNING !", "Friendly Objective is Under Attack!", "warning"]] call FLO_fnc_intelSystem;
-private _attackingAtGrid = mapGridPosition getMarkerPos _assaultMarkerName;
-[[west,"HQ"], "ALERT: Friendly Location Under Enemy attack at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+private _attackingAtGrid = mapGridPosition getMarkerPos _targetBluforMarker;
+["showNotification", ["! CRITICAL WARNING !", "Friendly Objective is Under Attack at grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
 
 // Calculate attack direction
 private _assaultAzimuth = (getMarkerPos _targetBluforMarker) getDir (getMarkerPos _sourceOpforMarker);
@@ -151,15 +150,6 @@ if (_aggressionScore > 5) then {
     // Wait after initial barrage before continuing with ground forces
     sleep 180;
 };
-
-// Select attack pattern based on terrain and situation
-private _pattern = selectRandom ["PINCER", "FRONTAL", "INFILTRATION"];
-if (_aggressionScore > 10) then {
-    _pattern = "FRONTAL"; // More aggressive at high aggression
-};
-
-// Execute the attack with combined arms
-[_targetPos, getMarkerPos _sourceOpforMarker, _pattern, _aggressionScore] call FLO_fnc_executeAttackPattern;
 
 // Calculate force size based on aggression
 private _forceSize = switch (true) do {
