@@ -35,6 +35,7 @@ minPlayerDistance[] = {300, 1200, 300};
 #include "Scripts\defines.hpp"
 #include "KPGUI\KPGUI_defines.hpp"
 #include "KPPLM\ui\KPPLM_dialog.hpp"
+#include "IDS_Logistics\CfgLogistics.hpp"
 #include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
 class CfgFunctions {
 	#include "CfgFunctions.hpp"

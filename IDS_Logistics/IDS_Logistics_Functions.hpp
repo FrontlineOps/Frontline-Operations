@@ -5,6 +5,8 @@ class IDS_Logistics {
 
         class cameraHint {};
         class getEntityConfig {};
+        class getEntityCategories {};
+        class getEntitiesByCategory {};
         class initBuildCamera {};
         class initLogistics { preInit = 1; };
         class pickupEntity {};

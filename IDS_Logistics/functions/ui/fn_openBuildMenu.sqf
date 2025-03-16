@@ -39,17 +39,8 @@ private _selectButton = _display displayCtrl 9505;
 lbClear _categoryList;
 lbClear _entitiesList;
 
-// Generate categories from available buildable entities
-private _categories = [];
-{
-    private _category = _x select 1;  // Category is now at index 1
-    if !(_category in _categories) then {
-        _categories pushBack _category;
-    };
-} forEach IDS_Logistics_Entities;
-
-// Sort categories alphabetically
-_categories sort true;
+// Get all available categories
+private _categories = [] call IDS_Logistics_fnc_getEntityCategories;
 
 // Fill categories list
 {
@@ -65,12 +56,10 @@ if (lbSize _categoryList > 0) then {
     [_categoryList, 0] call IDS_Logistics_fnc_updateEntityList;
     
     // Update preview with first entity if available
-    [_display, _entitiesList] spawn {
-        params ["_display", "_entitiesList"];
+    [_entitiesList] spawn {
+        params ["_entitiesList"];
         sleep 0.1;
-
         if (lbSize _entitiesList > 0) then {
-            _entitiesList lbSetCurSel 0;
             [_entitiesList, 0] call IDS_Logistics_fnc_updatePreview;
         };
     };

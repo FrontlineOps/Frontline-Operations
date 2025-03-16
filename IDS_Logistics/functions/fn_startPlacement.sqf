@@ -23,7 +23,6 @@ params [["_className", "", [""]]];
 
 // Validate inputs and state
 if (_className == "") exitWith { ["<t color='#FF4444'>ERROR</t><br/>No entity class specified.", 2] call IDS_Logistics_fnc_cameraHint; };
-
 if (IDS_Logistics_isHolding) exitWith { ["<t color='#FFAA44'>NOTICE</t><br/>You are already placing an entity.", 2] call IDS_Logistics_fnc_cameraHint; };
 
 // Ensure camera mode is active
