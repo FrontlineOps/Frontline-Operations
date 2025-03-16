@@ -175,7 +175,7 @@ private _fnc_createVehicleWithCrew = {
         _maxCargo = (_totalSeats - _crewSeats) max 0;  // Ensure we don't get negative values
         
         // Apply a safety cap for modded vehicles to prevent overfilling
-        _maxCargo = _maxCargo min 8;  // Cap at reasonable number for most vehicles
+        _maxCargo = _maxCargo min 6;  // Cap at reasonable number for most vehicles
     };
     
     // Add intel to crew
