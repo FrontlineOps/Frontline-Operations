@@ -523,7 +523,6 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
             };
             
             ["showNotification", ["! WARNING !", format["Enemy %1 attack wave incoming!", _waveSize], "warning"]] call FLO_fnc_intelSystem;
-            [[west,"HQ"], format["ALERT: Enemy %1 attack wave detected!", _waveSize]] remoteExec ["sideChat", 0];
         };
         
         // Calculate wave composition - earlier waves get better units
@@ -550,8 +549,6 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
             if (_spawnIndex == _waveStartIndex) then {
                 if (_wave == 1) then {
                     ["showNotification", ["! WARNING !", "Enemy Assault Forces Inbound!", "warning"]] call FLO_fnc_intelSystem;
-                    private _attackingAtGrid = mapGridPosition _elementSpawnPos;
-                    [[west,"HQ"], "Enemy assault forces detected moving at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
                 };
             } else {
                 if (_spawnIndex mod 3 == 0) then {

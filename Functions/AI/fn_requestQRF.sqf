@@ -506,8 +506,6 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
             // Announce reinforcements periodically
             if (_spawnIndex == 1) then {
                 ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound!", "warning"]] call FLO_fnc_intelSystem;
-                private _attackingAtGrid = mapGridPosition _elementApproachPos;
-                [[west,"HQ"], "Enemy QRF forces detected moving at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
             } else {
                 if (_spawnIndex mod 3 == 0) then {
                     private _msg = selectRandom [

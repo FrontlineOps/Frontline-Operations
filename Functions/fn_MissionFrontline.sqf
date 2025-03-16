@@ -263,8 +263,6 @@ private _frontlineManagerDeclaration = [
         
         // Notify players
         ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]] call FLO_fnc_intelSystem;
-        private _outpostGrid = mapGridPosition getMarkerPos _outpostMarkerName;
-        [[west,"HQ"], "Enemy Deployed New Military Installation at grid " + _outpostGrid] remoteExec ["sideChat", 0];
     }],
     
     ["_createRoadblock", {
@@ -399,8 +397,6 @@ private _frontlineManagerDeclaration = [
 
         // Notify players
         ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]] call FLO_fnc_intelSystem;
-        private _roadblockGrid = mapGridPosition getMarkerPos _roadblockMarkerName;
-        [[west,"HQ"], "Enemy Deployed New Military Installation at grid " + _roadblockGrid] remoteExec ["sideChat", 0];
     }],
     
     ["_cleanupAssaultMarkers", {
