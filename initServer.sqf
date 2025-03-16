@@ -164,6 +164,8 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
     };
 };
 
+[21600, [30,15,10,5,2,1]] spawn FLO_fnc_serverRestartTimer;
+
 // Initialize Intel System
 [] call FLO_fnc_intelSystem;
 
