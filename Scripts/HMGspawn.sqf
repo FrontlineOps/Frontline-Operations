@@ -88,7 +88,7 @@ private _fnc_spawnHMGsOnBuildings = {
                 sleep 0.5;
                 
                 // Create the HMG
-                private _hmg = createVehicle ["RUS_MSV_nsvs", _actualBpodPosition, [], 0, "NONE"];
+                private _hmg = createVehicle ["O_G_HMG_02_high_F", _actualBpodPosition, [], 0, "NONE"];
                 _hmg setVectorUp [0,0,1];
                 
                 // Create crew
