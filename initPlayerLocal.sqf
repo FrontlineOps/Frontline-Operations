@@ -68,6 +68,11 @@ if (_RagequitBlockerVal isEqualTo 0) then {
 	[] call FLO_fnc_ragequitBlocker;
 };
 
+private _DisableSystemChatVal = "DisableSystemChat" call BIS_fnc_getParamValue;
+if (_DisableSystemChatVal isEqualTo 0) then {
+	[] call FLO_fnc_disableSystemChat;
+};
+
 // SYSTEMs Init Clients
 Triggers0 = execVM "Scripts\Init\init_Triggers.sqf";
 waitUntil {sleep 1; scriptDone Triggers0 };

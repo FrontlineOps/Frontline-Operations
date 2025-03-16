@@ -88,5 +88,6 @@ class FLO {
         file = "Functions\Misc";
         
         class ragequitBlocker     {};
+        class disableSystemChat   {};
     };
 };

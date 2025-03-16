@@ -120,6 +120,15 @@ class Params
 		default = 1;
 		isGlobal = 1;
 	};	
+
+	class DisableSystemChat
+	{
+		title = "Disable System Chat";
+		texts[] = { "Enable", "Disable"};		
+		values[] = { 0, 1 };
+		default = 1;
+		isGlobal = 1;
+	};	
 };
 
 class CfgHints
