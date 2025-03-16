@@ -29,7 +29,6 @@ forceWeatherChange;
 // Find all FOB buildings of type F_HQ_01
 private _fobBuildings = nearestObjects [Centerposition, [F_HQ_01], 40000];
 FOBB = _fobBuildings;
-publicVariable "FOBB";
 
 // Initialize FOBs with centralized function
 {
@@ -41,7 +40,6 @@ publicVariable "FOBB";
 
 // Find additional FOB building types
 FOBB = nearestObjects [Centerposition, ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
-publicVariable "FOBB";
 
 { 
     if (count (nearestObjects [_x, [F_HQ_C_01], 20]) > 0) then { 
@@ -434,7 +432,16 @@ _objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" &&
 _MOBSER = nearestobjects [Centerposition, [F_Truck_04], 40000];
 {
     if (!isNil "_x" && {!isNull _x}) then {
-        [[_x, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
+        [_x, [
+            "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
+            { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
+            nil, 
+            1.4, 
+            false, 
+            true, 
+            "", 
+            "!IDS_Logistics_isHolding"
+        ]] remoteExec ["addAction", 0, true];
     };
 } forEach _MOBSER;
 

@@ -134,11 +134,14 @@ private _fnc_createVehicleWithCrew = {
     // Find nearest road within a reasonable distance
     private _nearRoads = _spawnPos nearRoads 1500;
     private _spawnPosRoad = if (count _nearRoads > 0) then {
-        private _road = selectRandom (_nearRoads select [0, (count _nearRoads) min 10]);
+        // Sort roads by distance to spawn point and use one of the farthest ones
+        private _sortedRoads = [_nearRoads, [], {_spawnPos distance _x}, "DESCEND"] call BIS_fnc_sortBy;
+        private _road = selectRandom (_sortedRoads select [0, (count _sortedRoads) min 5]);
+        
         getPos _road
     } else {
         // If no road found, use original position but ensure it's safe
-        private _safePosParams = [_spawnPos, 0, 150, 10, 0, 0.25, 0, [], [_spawnPos, _spawnPos]];
+        private _safePosParams = [_spawnPos, 0, 150, 15, 0, 0.25, 0, [], [_spawnPos, _spawnPos]];
         _spawnPos = _safePosParams call BIS_fnc_findSafePos;
         _spawnPos
     };
@@ -149,6 +152,10 @@ private _fnc_createVehicleWithCrew = {
     private _veh = createVehicle [_vehType, _spawnPosRoad, [], 0, "NONE"];
     _veh setDir (_veh getDir _targetPos);
     
+    // Ensure vehicle isn't stuck right after spawning
+    _veh setVectorUp surfaceNormal position _veh;
+    _veh setPosATL [(getPosATL _veh) select 0, (getPosATL _veh) select 1, 0.1]; // Slight elevation to prevent terrain clipping
+    
     private _group = createGroup [EAST, true];
     createVehicleCrew _veh;
     
@@ -157,10 +164,19 @@ private _fnc_createVehicleWithCrew = {
         [_x] joinSilent _group;
     } forEach (crew _veh);
     
-    // Calculate cargo capacity (total seats minus crew seats)
-    private _totalSeats = [typeOf _veh, true] call BIS_fnc_crewCount;  // Get total seats including cargo
-    private _crewSeats = [typeOf _veh, false] call BIS_fnc_crewCount;  // Get crew seats only
-    private _maxCargo = _totalSeats - _crewSeats;  // Calculate actual cargo capacity
+    // Calculate cargo capacity using getNumber instead of BIS_fnc_crewCount to be more reliable with modded vehicles
+    private _transportSoldier = getNumber (configFile >> "CfgVehicles" >> typeOf _veh >> "transportSoldier");
+    private _maxCargo = _transportSoldier;
+
+    // Fallback to BIS_fnc_crewCount method only if transportSoldier is 0
+    if (_maxCargo == 0) then {
+        private _totalSeats = [typeOf _veh, true] call BIS_fnc_crewCount;
+        private _crewSeats = [typeOf _veh, false] call BIS_fnc_crewCount;
+        _maxCargo = (_totalSeats - _crewSeats) max 0;  // Ensure we don't get negative values
+        
+        // Apply a safety cap for modded vehicles to prevent overfilling
+        _maxCargo = _maxCargo min 6;  // Cap at reasonable number for most vehicles
+    };
     
     // Add intel to crew
     private _intelItems = ["FlashDisk", "FilesSecret", "SmartPhone", "MobilePhone", "DocumentsSecret"];
@@ -313,21 +329,94 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
     private _fnc_setupGroupBehavior = {
         params ["_group", "_targetPos", "_spawnPos", "_approachDistance", "_dir", "_spawnIndex", "_totalGroups"];
         
+        // Set group behavior attributes
         _group setBehaviour "AWARE";
         _group setCombatMode "RED";
+        _group setSpeedMode "NORMAL"; // Ensure speed is set to normal
         
         // Calculate unique approach position
         private _sectorSize = 360 / _totalGroups;
         private _groupAngle = _sectorSize * (_spawnIndex - 1);
-        private _groupDistance = _approachDistance + (random 300 - random 300);
+        private _groupDistance = _approachDistance + (random 300 - random 150);
         private _groupApproachPos = _targetPos getPos [_groupDistance, (_dir - 180) + _groupAngle];
         _groupApproachPos = [_groupApproachPos, 0, 200, 10, 0, 0.2, 0, [], [_groupApproachPos, _groupApproachPos]] call BIS_fnc_findSafePos;
         
-        // First move to approach position, then to target
+        // First clearing all existing waypoints
+        while {(count (waypoints _group)) > 0} do {
+            deleteWaypoint ((waypoints _group) select 0);
+        };
+        
+        // Initialize a movement check to detect stuck vehicles
+        [_group] spawn {
+            params ["_group"];
+            private _timeoutCounter = 0;
+            private _previousPos = getPosATL (vehicle leader _group);
+            
+            while {alive leader _group && count units _group > 0} do {
+                sleep 15;
+                private _currentPos = getPosATL (vehicle leader _group);
+                
+                // Check if vehicle hasn't moved in 15 seconds
+                if (_previousPos distance _currentPos < 3) then {
+                    _timeoutCounter = _timeoutCounter + 1;
+                    
+                    // If stuck for 60 seconds (4 checks), try to unstick
+                    if (_timeoutCounter >= 4) then {
+                        _timeoutCounter = 0;
+                        private _veh = vehicle leader _group;
+                        
+                        // Only apply to vehicles, not infantry
+                        if (_veh != leader _group) then {
+                            // Try to unstick by adjusting position and clearing obstacles
+                            _veh setVelocity [0, 0, 0.1]; // Small upward boost
+                            _veh setVectorUp surfaceNormal position _veh;
+                            
+                            // Clear small obstacles around vehicle
+                            private _nearObjects = nearestTerrainObjects [position _veh, ["TREE", "SMALL TREE", "BUSH", "FENCE", "WALL"], 5];
+                            {
+                                if (!isNull _x) then {
+                                    _x hideObjectGlobal true;
+                                };
+                            } forEach _nearObjects;
+                            
+                            // Try temporary AI driver skill boost to navigate obstacles
+                            private _driver = driver _veh;
+                            if (!isNull _driver) then {
+                                private _originalSkill = skill _driver;
+                                _driver setSkill 1;
+                                [_driver, _originalSkill] spawn {
+                                    params ["_unit", "_skill"];
+                                    sleep 30;
+                                    if (alive _unit) then {
+                                        _unit setSkill _skill;
+                                    };
+                                };
+                            };
+                            
+                            // Re-process movement orders
+                            _group setSpeedMode "FULL";
+                            {
+                                [_x] allowGetIn true;
+                                [_x] orderGetIn true;
+                            } forEach units _group;
+                        };
+                    };
+                } else {
+                    // Reset counter when moving
+                    _timeoutCounter = 0;
+                };
+                
+                _previousPos = _currentPos;
+            };
+        };
+        
+        // Add first waypoint with proper route planning
         private _wp = _group addWaypoint [_groupApproachPos, 50];
         _wp setWaypointType "MOVE";
         _wp setWaypointSpeed (if (_spawnIndex <= (_totalGroups * 0.3)) then {"NORMAL"} else {"LIMITED"});
         _wp setWaypointBehaviour "AWARE";
+        _wp setWaypointFormation "COLUMN";
+        _wp setWaypointCompletionRadius 30;
         
         // After reaching approach position, move to actual target with coordinated timing
         [_group, _targetPos, _groupApproachPos, _spawnIndex, _totalGroups] spawn {

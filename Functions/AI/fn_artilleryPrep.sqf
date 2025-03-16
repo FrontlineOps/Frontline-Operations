@@ -58,7 +58,7 @@ if (_newBatteriesCount > 0) then {
         !((markerType _x) in ["Empty", ""])
     };
     
-    if (count _opforMarkers isEqualTo 0) then {
+    if (count _opforMarkers == 0) then {
         // Fallback in case no OPFOR markers found
         diag_log "[FLO][Artillery] No OPFOR objectives found for artillery placement, using fallback method";
         _opforMarkers = [[_targetPos, 5000, 10000, 10, 0] call BIS_fnc_findSafePos];
