@@ -29,11 +29,11 @@ params [
 ];
 
 // System configuration constants
-private _INTEL_DECAY_RATE = 0.1;        // Intel points lost per minute
-private _RADIO_TOWER_BONUS = 0.2;       // Multiplier for intel gain per radio tower
+private _INTEL_DECAY_RATE = 0.01;        // Intel points lost per minute
+private _RADIO_TOWER_BONUS = 0.1;       // Multiplier for intel gain per radio tower
 private _MAX_INTEL_LEVEL = 100;         // Maximum intel level
 private _MIN_INTEL_LEVEL = 0;           // Minimum intel level
-private _DECAY_INTERVAL = 60;           // Seconds between decay checks
+private _DECAY_INTERVAL = 120;           // Seconds between decay checks
 private _BROADCAST_INTERVAL = 10;        // Seconds between client broadcasts
 
 // Initialize client-side notification handler
