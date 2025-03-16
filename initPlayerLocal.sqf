@@ -63,9 +63,10 @@ if (_RestrictedArsenalVal isEqualTo 0) then {
 	[] call FLO_fnc_restrictedArsenal;
 };
 
-// Initialize Intel System
-[] call FLO_fnc_intelSystem;
-diag_log "[FLO] Intelligence System initialized on Client";
+private _RagequitBlockerVal = "RagequitBlocker" call BIS_fnc_getParamValue;
+if (_RagequitBlockerVal isEqualTo 0) then {
+	[] call FLO_fnc_ragequitBlocker;
+};
 
 // SYSTEMs Init Clients
 Triggers0 = execVM "Scripts\Init\init_Triggers.sqf";

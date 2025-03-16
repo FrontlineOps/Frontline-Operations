@@ -111,7 +111,15 @@ class Params
 		default = 1;
 		isGlobal = 1;
 	};	
-	
+
+	class RagequitBlocker
+	{
+		title = "Disable Abort Button While Unconscious";
+		texts[] = { "Enable", "Disable"};		
+		values[] = { 0, 1 };
+		default = 1;
+		isGlobal = 1;
+	};	
 };
 
 class CfgHints

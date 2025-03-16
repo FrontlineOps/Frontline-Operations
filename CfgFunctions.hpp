@@ -83,4 +83,10 @@ class FLO {
         class notification        {};
         class getRandomMagazine   {};
     };
+    
+    class Misc {
+        file = "Functions\Misc";
+        
+        class ragequitBlocker     {};
+    };
 };
