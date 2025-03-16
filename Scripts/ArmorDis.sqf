@@ -7,6 +7,7 @@ sleep 18 ;
 
 
 ARMDIS = 1;
+publicVariable "ARMDIS";
 
 _ARMs = nearestObjects [ player, East_Ground_Vehicles_Heavy, 40000];
 {
@@ -19,3 +20,4 @@ _x setVehicleAmmo 0;
 sleep 3600 ;
 
 ARMDIS = 0;
+publicVariable "ARMDIS";

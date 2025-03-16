@@ -64,16 +64,7 @@ if (_preserveMarker && {_opBuilding getVariable ["FLO_OP_MarkersRestored", false
 
 // Initialize creation factory
 if (!isNil "_opBuilding" && {!isNull _opBuilding}) then {
-    [_opBuilding, [
-        "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
-        { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
-        nil, 
-        1.4, 
-        false, 
-        true, 
-        "", 
-        "!IDS_Logistics_isHolding"
-    ]] remoteExec ["addAction", 0, true];
+    [[_opBuilding, -1, west, "LIGHT"], "R3F_LOG\USER_FUNCT\init_creation_factory.sqf"] remoteExec ["execVM", 0, true];
 } else {
     ["OP", 2, "Failed to initialize OP creation factory - _opBuilding is nil or null"] call FLO_fnc_log;
 };

@@ -3,6 +3,7 @@ sleep 18 ;
 ["showNotification", ["SUPPORT DISABLED", "Enemy Aerial Support Dismantled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
 
 AIRDIS = 1;
+publicVariable "AIRDIS";
 
 _AIRs = nearestObjects [ player, East_Air_Jet, 40000];
 {
@@ -15,5 +16,6 @@ _x setVehicleAmmo 0;
 sleep 3600 ;
 
 AIRDIS = 0;
+publicVariable "AIRDIS";
 
 

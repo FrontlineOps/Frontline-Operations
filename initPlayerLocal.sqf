@@ -43,7 +43,10 @@ enableSaving [false, false];
 waitUntil {F_Init};
 
 (findDisplay 46) displayAddEventHandler ["MouseButtonDown", "params ['_displayOrControl', '_button', '_xPos', '_yPos', '_shift', '_ctrl', '_alt'];  if ((_ctrl) && (_button isEqualTo 1) && ((ctrlMapMouseOver (findDisplay 12 displayCtrl 51)) select 0 isEqualTo 'marker')) then {[(ctrlMapMouseOver (findDisplay 12 displayCtrl 51)) select 1] execVM 'Scripts\MarkerIntro.sqf';}"]; 
-//(findDisplay 46) displayAddEventHandler ["KeyDown", {params ["_displayorcontrol", "_key", "_shift", "_ctrl", "_alt"]; if ((_ctrl) && (_key isEqualTo 37) && (!dialog)) then {execVM "Scripts\TEAMS.sqf" ;};}];
+(findDisplay 46) displayAddEventHandler ["KeyDown", {params ["_displayorcontrol", "_key", "_shift", "_ctrl", "_alt"]; if ((_ctrl) && (_key isEqualTo 37) && (!dialog)) then {execVM "Scripts\TEAMS.sqf" ;};}];
+
+// R3F Init - Everyone 
+execVM "R3F_LOG\init.sqf";
 
 // ETV Init - Everyone
 execVM "Scripts\EtV.sqf";
