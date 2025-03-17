@@ -276,12 +276,7 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
     [2103, "B_Slingload_01_Ammo_F", "B_Slingload_01_Ammo_F", "CONTAINER", 35, "Screens\FOBA\container_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
     [2103, "B_Slingload_01_Repair_F", "B_Slingload_01_Repair_F", "CONTAINER", 100, "Screens\FOBA\container_ca.paa", [1,0.6,0,1]] call FLO_fnc_addListBoxItem;
     [2103, "B_Slingload_01_Fuel_F", "B_Slingload_01_Fuel_F", "CONTAINER", 35, "Screens\FOBA\container_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    
-    // STATIC WEAPONS
-    [2103, "B_W_Static_Designator_01_F", "B_W_Static_Designator_01_F", "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, "B_HMG_01_A_F", "B_HMG_01_A_F", "STATIC", 45, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, "B_GMG_01_A_F", "B_GMG_01_A_F", "STATIC", 45, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    
+
     // Turrets
     {
         [
@@ -303,10 +298,6 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
         [2103, "B_SAM_System_03_F", "B_SAM_System_03_F", "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [0.2,0.6,0.99,1]] call FLO_fnc_addListBoxItem;
         [2103, "B_AAA_System_01_F", "B_AAA_System_01_F", "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [0.2,0.6,0.99,1]] call FLO_fnc_addListBoxItem;
     };
-    
-    // SUPPLIES
-    [2103, "B_CargoNet_01_ammo_F", "B_CargoNet_01_ammo_F", "SUPPLIES", 35, "Screens\FOBA\box_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, "Box_NATO_AmmoVeh_F", "Box_NATO_AmmoVeh_F", "SUPPLIES", 35, "Screens\FOBA\box_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
     
     // RADAR system
     if (F_RADAR != "") then { 
