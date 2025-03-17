@@ -20,7 +20,7 @@ params [
     ["_targetPos", [0,0,0], [[]], [3]],
     ["_missionType", "CAS", [""]],
     ["_aircraftType", "", [""]],
-    ["_altitude", 150, [0]]
+    ["_altitude", 400, [0]]
 ];
 
 // Resource costs for initial deployment
@@ -374,7 +374,7 @@ private _airSupportTypeDef = [
     ["evasionDuration", 30], // Time in seconds that evasion mode lasts
     ["reconMode", false], // New parameter for reconnaissance mode
     ["reconModeStartTime", 0], // When recon mode started
-    ["reconAltitude", 1500], // High altitude for recon mode
+    ["reconAltitude", 800], // High altitude for recon mode
     ["reconDuration", 120], // How long recon mode lasts in seconds
     
     // Methods
@@ -811,6 +811,7 @@ private _airSupportTypeDef = [
         private _aircraft = _self get "vehicle";
         private _pilot = driver _aircraft;
         private _gunner = gunner _aircraft;
+        private _isTargetInfantry = _target isKindOf "CAManBase";
 
         if (!isNull _gunner) then {
             _pilot disableAI "TARGET";
@@ -823,6 +824,30 @@ private _airSupportTypeDef = [
         
         _self set ["state", "ENGAGING"];
         _self set ["currentTarget", _target];
+        
+        // Special handling for helicopters targeting infantry
+        if (_isTargetInfantry && _aircraft isKindOf "Helicopter") then {
+            // Enhance crew skills for infantry targeting
+            {
+                _x setSkill ["aimingAccuracy", 0.8];
+                _x setSkill ["aimingSpeed", 0.8];
+                _x setSkill ["spotTime", 1];
+                _x setSkill ["spotDistance", 1];
+            } forEach (crew _aircraft);
+            
+            // Set lower altitude for better aiming at individual infantry
+            private _infantryEngagementAlt = 500 + (random 20);
+            private _currentAlt = _self get "altitude";
+            _aircraft flyInHeight _infantryEngagementAlt;
+            
+            // Store these settings
+            _self set ["originalAltitude", _currentAlt];
+            _self set ["temporaryAltitude", _infantryEngagementAlt];
+            _self set ["usingInfantryEngagementProfile", true];
+            
+            diag_log format ["[FLO][AirSupport] Helicopter %1 using enhanced infantry targeting profile at altitude %2m", 
+                _aircraft, _infantryEngagementAlt];
+        };
         
         // Store target position for reference - absolutely critical for continued engagement
         private _targetPos = getPosASL _target;
@@ -1220,38 +1245,108 @@ private _airSupportTypeDef = [
         if (!alive _aircraft) exitWith {[]};
         
         private _range = _self get "engagementRange";
-        private _extendedRange = 8000; // Extended range for detection
+        private _missionType = _self get "missionType";
+        
+        // Enhanced target detection for infantry
         private _targets = [];
         
-        // Standard target detection (works better at closer ranges)
-        private _stdTargets = _aircraft targets [true, _range];
-        _targets = _stdTargets select {side _x != side _aircraft && alive _x};
+        // First, look for vehicles and larger targets (standard detection)
+        private _vehicleTargets = _aircraft targets [true, _range];
+        _vehicleTargets = _vehicleTargets select {side _x != side _aircraft && alive _x};
         
-        // If no targets found at standard range, try extended range
-        if (count _targets == 0) then {
-            // Use nearEntities for longer range detection
-            private _nearEntities = _aircraft nearEntities [["CAManBase", "LandVehicle", "Air", "Ship"], _extendedRange];
-            _targets = _nearEntities select {
-                side _x != side _aircraft && 
-                alive _x && 
-                // Check visibility using terrainIntersect for LOS
-                !(terrainIntersect [getPosASL _aircraft, getPosASL _x]) &&
-                // Double-check with lineIntersects for buildings/structures
-                !(lineIntersects [eyePos _aircraft, getPosASL _x, _aircraft])
-            };
+        // Then, specifically look for infantry in a more focused area
+        private _infantryRange = if (_aircraft isKindOf "Helicopter") then { 1500 } else { 800 };
+        private _infantryTargets = nearestObjects [_aircraft, ["CAManBase"], _infantryRange];
+        _infantryTargets = _infantryTargets select {side _x != side _aircraft && alive _x};
+        
+        // Extended range search for important targets
+        private _extendedRange = 8000;
+        private _extendedTargets = [];
+        
+        if (_missionType == "CAS" && (_aircraft isKindOf "Helicopter")) then {
+            // Use nearEntities for more comprehensive search
+            _extendedTargets = _aircraft nearEntities [["Car", "Tank", "Wheeled_APC", "TrackedAPC", "LandVehicle"], _extendedRange];
+            _extendedTargets = _extendedTargets select {side _x != side _aircraft && alive _x};
             
-            // For performance, limit number of far targets
-            if (count _targets > 10) then {
-                // Sort by distance and take closest 10
-                _targets = [_targets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
-                _targets resize 10;
-            };
-            
-            if (count _targets > 0) then {
-                diag_log format ["[FLO][AirSupport] Extended range detection found %1 targets at %2m", count _targets, round (_aircraft distance (_targets select 0))];
+            if (count _extendedTargets > 0) then {
+                diag_log format ["[FLO][AirSupport] Helicopter %1 detected %2 high-value targets at extended range", _aircraft, count _extendedTargets];
             };
         };
         
+        // For helicopters, ensure we can detect individual infantry even with terrain/vegetation
+        if (_aircraft isKindOf "Helicopter" && count _infantryTargets == 0) then {
+            // Use a broader search if initial search found nothing
+            private _extendedInfRange = _infantryRange * 3;
+            _infantryTargets = _aircraft nearEntities ["CAManBase", _extendedInfRange];
+            _infantryTargets = _infantryTargets select {
+                side _x != side _aircraft && 
+                alive _x && 
+                // Simple LOS check with some forgiveness (helicopters have better sensors)
+                (lineIntersects [eyePos _aircraft, eyePos _x, _aircraft, _x] || 
+                 terrainIntersect [getPosASL _aircraft, getPosASL _x])
+            };
+            
+            if (count _infantryTargets > 0) then {
+                diag_log format ["[FLO][AirSupport] Helicopter %1 detected %2 infantry through extended search", _aircraft, count _infantryTargets];
+            };
+        };
+        
+        // If we have high-value targets at extended range, prioritize them
+        if (count _extendedTargets > 0) then {
+            _targets = _extendedTargets;
+        } else {
+            // Otherwise if we have vehicles at normal range, prioritize them
+            if (count _vehicleTargets > 0) then {
+                _targets = _vehicleTargets;
+            } else {
+                // Otherwise focus on infantry if available
+                if (count _infantryTargets > 0) then {
+                    // Check if infantry targets are grouped
+                    private _groupedInfantry = [];
+                    {
+                        private _unit = _x;
+                        private _nearbyUnits = _infantryTargets select {_x distance _unit < 30 && _x != _unit};
+                        if (count _nearbyUnits > 1) then {
+                            _groupedInfantry pushBackUnique _unit;
+                            {
+                                _groupedInfantry pushBackUnique _x;
+                            } forEach _nearbyUnits;
+                        };
+                    } forEach _infantryTargets;
+                    
+                    // If we found grouped infantry, prioritize them but still include individual infantry
+                    if (count _groupedInfantry > 0) then {
+                        // Sort infantry by whether they're in a group, then by distance
+                        _infantryTargets = [_infantryTargets, [], {
+                            if (_x in _groupedInfantry) then {
+                                // Grouped infantry get priority (lower number = higher priority)
+                                _aircraft distance _x
+                            } else {
+                                // Individual infantry are second priority
+                                (_aircraft distance _x) + 1000
+                            }
+                        }, "ASCEND"] call BIS_fnc_sortBy;
+                    } else {
+                        // Just sort by distance if no groups
+                        _infantryTargets = [_infantryTargets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
+                    };
+                    
+                    _targets = _infantryTargets;
+                    
+                    // Helicopter-specific adjustments for infantry targeting
+                    if (_aircraft isKindOf "Helicopter" && count _targets > 0) then {
+                        // Mark that we're in infantry targeting mode to adjust attack parameters
+                        _self set ["targetingInfantry", true];
+                        
+                        // Log that we're targeting infantry
+                        diag_log format ["[FLO][AirSupport] Helicopter %1 focusing on infantry targets, found %2 (grouped: %3)", 
+                            _aircraft, count _infantryTargets, count _groupedInfantry];
+                    };
+                };
+            };
+        };
+        
+        // Always ensure we return targets if any are found
         _targets
     }],
     
@@ -1473,6 +1568,50 @@ private _airSupportTypeDef = [
             };
         };
         
+        // Additional check for individual infantry targeting for helicopters
+        if (_aircraft isKindOf "Helicopter" && _missionType == "CAS" && _state == "APPROACHING") then {
+            // Only run this periodically to save performance
+            private _lastInfantryCheck = _self getOrDefault ["lastInfantryCheck", 0];
+            if (time - _lastInfantryCheck > 10) then {
+                _self set ["lastInfantryCheck", time];
+                
+                // First check if there are high-priority targets
+                private _highPriorityTargets = _aircraft targets [true, 2000];
+                _highPriorityTargets = _highPriorityTargets select {
+                    side _x != east && 
+                    alive _x && 
+                    !(_x isKindOf "CAManBase")
+                };
+                
+                // If no high priority targets, specifically look for infantry
+                if (count _highPriorityTargets == 0) then {
+                    // Find infantry targets, even single units
+                    private _infantryTargets = nearestObjects [_aircraft, ["CAManBase"], 1500];
+                    _infantryTargets = _infantryTargets select {side _x != east && alive _x};
+                    
+                    // If infantry targets found, engage them
+                    if (count _infantryTargets > 0) then {
+                        // Sort by distance for better engagement
+                        _infantryTargets = [_infantryTargets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
+                        
+                        // Target the closest infantry
+                        private _target = _infantryTargets select 0;
+                        
+                        // Record this special mode
+                        _self set ["activelyTargetingInfantry", true];
+                        
+                        diag_log format ["[FLO][AirSupport] Helicopter %1 actively seeking infantry targets, found %2 at %3m", 
+                            _aircraft, count _infantryTargets, round (_aircraft distance _target)];
+                        
+                        // Execute strike on the infantry target
+                        if (_self call ["executeStrike", [_target]]) then {
+                            _self set ["state", "ENGAGING"];
+                        };
+                    };
+                };
+            };
+        };
+        
         switch (_state) do {
             case "APPROACHING": {
                 private _targets = [];
@@ -1611,6 +1750,14 @@ private _airSupportTypeDef = [
                     if (!isNull _dummyTarget) then {
                         deleteVehicle _dummyTarget;
                         _self set ["dummyTarget", objNull];
+                    };
+                    
+                    // If we were using infantry engagement profile, restore normal altitude
+                    if (_self getOrDefault ["usingInfantryEngagementProfile", false]) then {
+                        private _originalAlt = _self getOrDefault ["originalAltitude", _self get "altitude"];
+                        _aircraft flyInHeight _originalAlt;
+                        _self set ["usingInfantryEngagementProfile", false];
+                        diag_log format ["[FLO][AirSupport] Aircraft %1 restoring normal altitude %2m after infantry engagement", _aircraft, _originalAlt];
                     };
                     
                     // Reset state 
