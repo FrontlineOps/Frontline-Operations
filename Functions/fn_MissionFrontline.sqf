@@ -294,18 +294,6 @@ private _frontlineManagerDeclaration = [
 			_AGGRSCORE = markerText _mrkr call BIS_fnc_parseNumber;  
 
 			private _P1 = [ 
-			'Road_Post_CSAT_01',  
-			'Road_Post_CSAT_02',
-			'Road_Post_CSAT_01',  
-			'Road_Post_CSAT_02',
-			'Road_Post_CSAT_01',  
-			'Road_Post_CSAT_02',
-			'Road_Post_CSAT_01',  
-			'Road_Post_CSAT_02',
-			'Road_Post_CSAT_01',  
-			'Road_Post_CSAT_02',
-			'Road_Post_CSAT_01',  
-			'Road_Post_CSAT_02',
 			'Watchpost_1', 
 			'Watchpost_2', 
 			'Watchpost_3', 
@@ -316,59 +304,7 @@ private _frontlineManagerDeclaration = [
 			'Watchpost_8',
 			'Watchpost_9',
 			'Watchpost_10'
-				 ]; 
-
-			if (_AGGRSCORE > 5) then {
-			_P1 =  [ 
-			'Road_Post_CSAT_03',  
-			'Road_Post_CSAT_04',
-			'Road_Post_CSAT_03',  
-			'Road_Post_CSAT_04',
-			'Road_Post_CSAT_03',  
-			'Road_Post_CSAT_04',
-			'Road_Post_CSAT_03',  
-			'Road_Post_CSAT_04',
-			'Road_Post_CSAT_03',  
-			'Road_Post_CSAT_04',
-			'Road_Post_CSAT_03',  
-			'Road_Post_CSAT_04',
-			'Watchpost_1', 
-			'Watchpost_2', 
-			'Watchpost_3', 
-			'Watchpost_4', 
-			'Watchpost_5', 
-			'Watchpost_6',
-			'Watchpost_7',
-			'Watchpost_8',
-			'Watchpost_9',
-			'Watchpost_10'
-			]; };
-
-			if (_AGGRSCORE > 10) then {
-			_P1 =  [ 
-			'Road_Post_CSAT_05',  
-			'Road_Post_CSAT_06',
-			'Road_Post_CSAT_05',  
-			'Road_Post_CSAT_06',
-			'Road_Post_CSAT_05',  
-			'Road_Post_CSAT_06',
-			'Road_Post_CSAT_05',  
-			'Road_Post_CSAT_06',
-			'Road_Post_CSAT_05',  
-			'Road_Post_CSAT_06',
-			'Road_Post_CSAT_05',  
-			'Road_Post_CSAT_06',
-			'Watchpost_1', 
-			'Watchpost_2', 
-			'Watchpost_3', 
-			'Watchpost_4', 
-			'Watchpost_5', 
-			'Watchpost_6',
-			'Watchpost_7',
-			'Watchpost_8',
-			'Watchpost_9',
-			'Watchpost_10'
-			]; };
+			]; 
 
             _dir = 0 + (random 360);
 			if (count (nearestObjects [(getPos thisTrigger), ['House'], 200]) != 0) then {
