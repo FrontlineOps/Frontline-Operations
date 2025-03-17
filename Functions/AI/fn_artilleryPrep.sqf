@@ -102,91 +102,20 @@ if (_newBatteriesCount > 0) then {
         // Determine if this is rocket artillery based on weapon and ammo configuration data
         private _isRocketArtillery = [_arty] call {
             params ["_vehicle"];
-            private _vehicleType = typeOf _vehicle;
             
-            // First check by common class name identifiers (fallback method)
-            if (_vehicleType find "MLRS" > -1 || 
-                _vehicleType find "Grad" > -1 || 
-                _vehicleType find "BM-21" > -1 || 
-                _vehicleType find "9K51" > -1 ||
-                _vehicleType find "Uragan" > -1 ||
-                _vehicleType find "2b17" > -1 ||
-                _vehicleType find "2b26" > -1 ||
-                _vehicleType find "Smerch" > -1) exitWith {true};
+            // Check for MLRS by examining turret's nameSound property
+            private _gunner = gunner _vehicle;
+            if (isNull _gunner) exitWith {false}; // No gunner found
             
-            // Get all weapons installed on the vehicle
-            private _weaponsList = weapons _vehicle;
-            private _isRocketSystem = false;
+            private _assignedRoles = assignedVehicleRole _gunner;
+            if ((count _assignedRoles) < 2) exitWith {false}; // Gunner doesn't have proper turret
             
-            {
-                private _weapon = _x;
-                private _weaponConfig = configFile >> "CfgWeapons" >> _weapon;
-                
-                if (isClass _weaponConfig) then {
-                    // Check if weapon has "rocket" in its name
-                    if (toLower _weapon find "rocket" > -1) exitWith {
-                        _isRocketSystem = true;
-                    };
-                    
-                    // Get all possible magazines for this weapon
-                    private _magazinesList = getArray (_weaponConfig >> "magazines");
-                    
-                    // Check each magazine's ammo type
-                    {
-                        private _magazine = _x;
-                        private _magazineConfig = configFile >> "CfgMagazines" >> _magazine;
-                        
-                        if (isClass _magazineConfig) then {
-                            // Get the ammo class used by this magazine
-                            private _ammoType = getText (_magazineConfig >> "ammo");
-                            private _ammoConfig = configFile >> "CfgAmmo" >> _ammoType;
-                            
-                            if (isClass _ammoConfig) then {
-                                // Check simulation type - rockets will use "shotRocket" or similar
-                                private _simulation = getText (_ammoConfig >> "simulation");
-                                
-                                if (_simulation find "rocket" > -1 || 
-                                    _simulation find "missile" > -1 ||
-                                    toLower _ammoType find "rocket" > -1) exitWith {
-                                    _isRocketSystem = true;
-                                };
-                                
-                                // For artillery shells with no explicit simulation, check other properties
-                                private _initSpeed = getNumber (_ammoConfig >> "initSpeed");
-                                private _explosive = getNumber (_ammoConfig >> "explosive");
-                                private _indirectHit = getNumber (_ammoConfig >> "indirectHit");
-                                private _indirectHitRange = getNumber (_ammoConfig >> "indirectHitRange");
-                                
-                                // Rocket artillery typically has higher init speed and distinctive explosive properties
-                                if (_explosive > 0 && _indirectHit > 50 && _indirectHitRange > 10 && _initSpeed > 200) then {
-                                    // Check sound characteristics - most rocket artillery has distinctive sounds
-                                    private _modeConfig = _weaponConfig >> "modes" >> "this";
-                                    if !(isClass _modeConfig) then {
-                                        private _modes = getArray (_weaponConfig >> "modes");
-                                        if (count _modes > 0) then {
-                                            _modeConfig = _weaponConfig >> "modes" >> _modes#0;
-                                        };
-                                    };
-                                    
-                                    if (isClass _modeConfig) then {
-                                        // Many rocket systems have burst characteristics
-                                        private _burst = getNumber (_modeConfig >> "burst");
-                                        if (_burst > 1) then {
-                                            _isRocketSystem = true;
-                                        };
-                                    };
-                                };
-                            };
-                        };
-                        
-                        if (_isRocketSystem) exitWith {};
-                    } forEach _magazinesList;
-                };
-                
-                if (_isRocketSystem) exitWith {};
-            } forEach _weaponsList;
+            private _turretPath = _assignedRoles select 1;
+            private _weaponsInTurret = _vehicle weaponsTurret _turretPath;
+            private _turret = _weaponsInTurret select 0;
+            private _nameSound = getText (configFile >> "CfgWeapons" >> _turret >> "nameSound");
             
-            _isRocketSystem
+            (_nameSound isEqualTo "rockets")
         };
         
         // Store the artillery type in the vehicle for later use
