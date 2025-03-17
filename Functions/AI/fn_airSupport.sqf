@@ -718,7 +718,7 @@ private _airSupportTypeDef = [
         // Lower altitude to 100m
         _aircraft flyInHeight 100;
         
-        // Clear existing waypoints and set SAD mode
+        // Clear existing waypoints and set MOVE mode
         while {count waypoints _group > 0} do {
             deleteWaypoint [_group, 0];
         };
@@ -740,7 +740,7 @@ private _airSupportTypeDef = [
         _escapePos set [2, 100];
         
         private _wp = _group addWaypoint [_escapePos, 0];
-        _wp setWaypointType "SAD";
+        _wp setWaypointType "MOVE";
         _wp setWaypointSpeed "FULL";
         
         // Notify about evasive action
