@@ -88,6 +88,5 @@ class FLO {
         
         class ragequitBlocker     {};
         class disableSystemChat   {};
-        class serverRestartTimer  {};
     };
 };
