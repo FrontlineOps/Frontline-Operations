@@ -4,20 +4,6 @@ params [["_thisCapitalTrigger", objNull, [objNull]]];
 private _triggerPos = getPos _thisCapitalTrigger;
 private _AGGRSCORE = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) # 0));
 
-// Supply crate types
-private _CRT = [
-    "Box_IND_WpsSpecial_F", "Box_IND_WpsSpecial_F",
-    "Box_East_WpsSpecial_F", "Box_East_WpsSpecial_F",
-    "Box_IND_Support_F", "Box_IND_Support_F", "Box_IND_Support_F",
-    "Box_East_Support_F", "Box_East_Support_F", "Box_East_Support_F",
-    "Box_CSAT_Equip_F", "Box_AAF_Equip_F",
-    "Box_East_WpsLaunch_F", "Box_East_WpsLaunch_F",
-    "Box_IND_WpsLaunch_F", "Box_IND_WpsLaunch_F",
-    "Box_East_AmmoOrd_F", "Box_East_Ammo_F",
-    "Box_IND_Ammo_F", "Box_IND_AmmoOrd_F",
-    "Box_East_Wps_F", "Box_IND_Wps_F"
-];
-
 // Function to spawn watch posts
 private _fnc_spawnWatchPost = {
     params ["_road", "_dir"];
@@ -28,18 +14,13 @@ private _fnc_spawnWatchPost = {
 
 // Function to setup single HQ
 private _fnc_setupHQ = {
-    params ["_building", "_CRT"];
+    params ["_building"];
     
     private _dir = getDirVisual _building;
     private _buildingPos = selectRandom (_building buildingPos -1);
     
     // Setup intel composition
     ["Intel_01", _buildingPos, [0,0,0], _dir, false, false, true] call LARs_fnc_spawnComp;
-    
-    // Create supply boxes
-    for "_i" from 1 to 2 do {
-        createVehicle [selectRandom _CRT, selectRandom (_building buildingPos -1), [], 0, "NONE"];
-    };
 };
 
 // Main execution
@@ -88,16 +69,16 @@ private _hqBuildings = nearestObjects [_triggerPos, ["HOUSE"], 100] select {coun
 
 // Setup initial HQs
 for "_i" from 0 to 2 min ((count _hqBuildings) - 1) do {
-    [_hqBuildings # _i, _CRT] call _fnc_setupHQ;
+    [_hqBuildings # _i] call _fnc_setupHQ;
 };
 
 // Setup additional HQs based on aggression
 if (_AGGRSCORE > 5 && {count _hqBuildings > 3}) then {
-    [_hqBuildings # 3, _CRT] call _fnc_setupHQ;
+    [_hqBuildings # 3] call _fnc_setupHQ;
 };
 
 if (_AGGRSCORE > 10 && {count _hqBuildings > 4}) then {
-    [_hqBuildings # 4, _CRT] call _fnc_setupHQ;
+    [_hqBuildings # 4] call _fnc_setupHQ;
 };
 
 // Function to setup avenger system

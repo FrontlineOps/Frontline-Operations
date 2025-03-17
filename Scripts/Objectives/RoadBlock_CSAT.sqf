@@ -16,22 +16,6 @@ private _positions = [];
 } forEach _buildings;
 
 if (count _positions > 0) then {
-    // Spawn crates
-    private _crateTypes = [
-        "Box_IND_WpsSpecial_F", "Box_East_WpsSpecial_F", "Box_IND_Support_F",
-        "Box_East_Support_F", "Box_CSAT_Equip_F", "Box_AAF_Equip_F",
-        "Box_East_WpsLaunch_F", "Box_IND_WpsLaunch_F", "Box_East_AmmoOrd_F",
-        "Box_East_Ammo_F", "Box_IND_Ammo_F", "Box_IND_AmmoOrd_F",
-        "Box_East_Wps_F", "Box_IND_Wps_F"
-    ];
-
-    for "_i" from 1 to 4 do {
-        if (count _positions == 0) exitWith {};
-        private _cratePos = selectRandom _positions;
-        _positions deleteAt (_positions find _cratePos);
-        createVehicle [selectRandom _crateTypes, _cratePos, [], 0, "NONE"];
-    };
-
     // Spawn intel
     if (count _positions > 0) then {
         private _intelPos = selectRandom _positions;

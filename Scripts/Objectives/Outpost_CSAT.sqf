@@ -97,6 +97,7 @@ if (_AGGRSCORE > 10) then {
     [ "Intel_01", (selectRandom (HQBLDNG buildingPos -1)), [0,0,0], _dir, false, false, true ] call LARs_fnc_spawnComp; 
 };
 
+// Note: convert this to be compatible with Faction Definitions in /Factions Folder
 private _HeavGuns =  nearestObjects [(getpos thisOutpostTrigger), ["O_G_HMG_02_high_F", "O_G_Mortar_01_F"], 200];
 
 {
