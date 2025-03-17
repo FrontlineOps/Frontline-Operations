@@ -168,8 +168,8 @@ private _fnc_createVehicleWithCrew = {
     // Find nearest road
     private _nearRoads = _spawnPos nearRoads 1500;
     private _spawnPosRoad = if (count _nearRoads > 0) then {
-        // Sort roads by distance to spawn point and use one of the farthest ones
-        private _sortedRoads = [_nearRoads, [], {_spawnPos distance _x}, "DESCEND"] call BIS_fnc_sortBy;
+        // Sort roads by distance to spawn point and use one of the closest ones
+        private _sortedRoads = [_nearRoads, [], {_spawnPos distance _x}, "ASCEND"] call BIS_fnc_sortBy;
         private _road = selectRandom (_sortedRoads select [0, (count _sortedRoads) min 5]);
         
         getPos _road
