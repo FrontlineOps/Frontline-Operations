@@ -362,7 +362,7 @@ private _airSupportTypeDef = [
     ["weaponLoadout", []],
     ["altitude", _altitude],
     ["approachRadius", 4000],
-    ["engagementRange", 2000],
+    ["engagementRange", 6000],
     ["cooldownTime", 5],
     ["currentLaser", objNull],
     ["standoffRange", []],
@@ -372,6 +372,10 @@ private _airSupportTypeDef = [
     ["evasionMode", false],
     ["evasionStartTime", 0],
     ["evasionDuration", 30], // Time in seconds that evasion mode lasts
+    ["reconMode", false], // New parameter for reconnaissance mode
+    ["reconModeStartTime", 0], // When recon mode started
+    ["reconAltitude", 1500], // High altitude for recon mode
+    ["reconDuration", 120], // How long recon mode lasts in seconds
     
     // Methods
     ["#create", {
@@ -387,6 +391,26 @@ private _airSupportTypeDef = [
         _self set ["type", _type];
         _self set ["missionType", _missionType];
         _self set ["standoffRange", _standoffRange];
+        
+        // Check if this is a helicopter with long range weapons (missiles or rotatable cannons)
+        // and adjust the standoff range accordingly
+        if (_aircraft isKindOf "Helicopter") then {
+            private _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []];
+            private _hasLongRangeWeapons = false;
+            
+            {
+                _x params ["_weapon", "_weaponType"];
+                if (_weaponType == "MISSILE" || _weaponType == "ROTATABLE_CANNON") then {
+                    _hasLongRangeWeapons = true;
+                };
+            } forEach _weaponSystems;
+            
+            // If helicopter has long range weapons, use 5000-6000m standoff range
+            if (_hasLongRangeWeapons) then {
+                _self set ["standoffRange", [5000, 6000]];
+                diag_log format ["[FLO][AirSupport] Helicopter %1 standoff range increased to 6000-8000m due to long range weapons", _type];
+            };
+        };
         
         // Setup
         _aircraft flyInHeight _alt;
@@ -846,11 +870,11 @@ private _airSupportTypeDef = [
                         _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []] select {_x select 1 == "MISSILE" || _x select 1 == "ROTATABLE_CANNON"};
                     };
                 };
-        } else {
-            if (_distance < 1500) then {
-                // Use cannons/rockets at close range
-                    _weaponSystems = _weaponSystems select {_x select 1 == "CANNON" || _x select 1 == "ROCKET" || _x select 1 == "ROTATABLE_CANNON"};
             } else {
+                if (_distance < 1500) then {
+                    // Use cannons/rockets at close range
+                    _weaponSystems = _weaponSystems select {_x select 1 == "CANNON" || _x select 1 == "ROCKET" || _x select 1 == "ROTATABLE_CANNON"};
+                } else {
                     // Use missiles or rotatable cannons at long range
                     _weaponSystems = _weaponSystems select {_x select 1 == "MISSILE" || _x select 1 == "ROTATABLE_CANNON"};
                     if (count _weaponSystems == 0) then {
@@ -1025,109 +1049,109 @@ private _airSupportTypeDef = [
             };
         } else {
             // Execute attack based on weapon type for non-bomb weapons
-        if (_weaponType in ["CANNON", "ROCKET"]) then {
-            // Burst fire for rapid weapons
-            if (!isNull _gunner) then {
-                _gunner reveal [_target, 4];
-                _gunner doTarget _target;
-                
-                // Special handling for helicopter rockets to improve aim
-                if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                    // Get target position and aircraft position
-                    private _targetPos = getPosASL _target;
-                    private _aircraftPos = getPosASL _aircraft;
+            if (_weaponType in ["CANNON", "ROCKET"]) then {
+                // Burst fire for rapid weapons
+                if (!isNull _gunner) then {
+                    _gunner reveal [_target, 4];
+                    _gunner doTarget _target;
                     
-                    // Position aircraft properly for rocket attack - lower altitude approach
-                    private _distToTarget = _aircraft distance _target;
-                    private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
-                    private _idealDistance = 600; // Better distance for rocket employment
-                    private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
-                    
-                    // If we're too high or too far, adjust approach
-                    if (_altitudeDiff > 60 || _distToTarget > 800) then {
-                        // Force a better attack position
-                        private _attackDir = _aircraft getDir _target;
-                        private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
-                        _attackPos set [2, _attackAlt];
-                        
-                        // Move to better firing position
-                        _aircraft doMove _attackPos;
-                        _aircraft flyInHeight _attackAlt;
-                        
-                        // Ensure nose is pointed down at target
-                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                        _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
-                        sleep 1; // Allow time for positioning
-                    };
-                    
-                    // Force aim downward for proper rocket trajectory
-                    _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                    _gunner doWatch (_targetPos vectorAdd [0, 0, -5]);
-                };
-                
-                // Fire multiple times for burst effect
-                for "_i" from 1 to 5 do {
-                    _gunner fireAtTarget [_target, _selectedWeapon];
-                    
-                    // For rockets, ensure aim is maintained between shots
+                    // Special handling for helicopter rockets to improve aim
                     if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                        _gunner doWatch (getPosASL _target vectorAdd [0, 0, -5]);
-                        _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
-                    };
-                    
-                    sleep 0.2;
-                };
-            } else {
-                _pilot reveal [_target, 4];
-                _pilot doTarget _target;
-                
-                // Special handling for helicopter rockets to improve aim
-                if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                    // Get target position and aircraft position
-                    private _targetPos = getPosASL _target;
-                    private _aircraftPos = getPosASL _aircraft;
-                    
-                    // Position aircraft properly for rocket attack - lower altitude approach
-                    private _distToTarget = _aircraft distance _target;
-                    private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
-                    private _idealDistance = 600; // Better distance for rocket employment
-                    private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
-                    
-                    // If we're too high or too far, adjust approach
-                    if (_altitudeDiff > 60 || _distToTarget > 800) then {
-                        // Force a better attack position
-                        private _attackDir = _aircraft getDir _target;
-                        private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
-                        _attackPos set [2, _attackAlt];
+                        // Get target position and aircraft position
+                        private _targetPos = getPosASL _target;
+                        private _aircraftPos = getPosASL _aircraft;
                         
-                        // Move to better firing position
-                        _aircraft doMove _attackPos;
-                        _aircraft flyInHeight _attackAlt;
+                        // Position aircraft properly for rocket attack - lower altitude approach
+                        private _distToTarget = _aircraft distance _target;
+                        private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
+                        private _idealDistance = 600; // Better distance for rocket employment
+                        private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
                         
-                        // Ensure nose is pointed down at target
+                        // If we're too high or too far, adjust approach
+                        if (_altitudeDiff > 60 || _distToTarget > 800) then {
+                            // Force a better attack position
+                            private _attackDir = _aircraft getDir _target;
+                            private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
+                            _attackPos set [2, _attackAlt];
+                            
+                            // Move to better firing position
+                            _aircraft doMove _attackPos;
+                            _aircraft flyInHeight _attackAlt;
+                            
+                            // Ensure nose is pointed down at target
+                            _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                            _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
+                            sleep 1; // Allow time for positioning
+                        };
+                        
+                        // Force aim downward for proper rocket trajectory
                         _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                        _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
-                        sleep 1; // Allow time for positioning
+                        _gunner doWatch (_targetPos vectorAdd [0, 0, -5]);
                     };
                     
-                    // Force aim downward for proper rocket trajectory
-                    _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                    _pilot doWatch (_targetPos vectorAdd [0, 0, -5]);
-                };
-                
-                // Fire multiple times for burst effect
-                for "_i" from 1 to 5 do {
-                    _pilot fireAtTarget [_target, _selectedWeapon];
+                    // Fire multiple times for burst effect
+                    for "_i" from 1 to 5 do {
+                        _gunner fireAtTarget [_target, _selectedWeapon];
+                        
+                        // For rockets, ensure aim is maintained between shots
+                        if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                            _gunner doWatch (getPosASL _target vectorAdd [0, 0, -5]);
+                            _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                        };
+                        
+                        sleep 0.2;
+                    };
+                } else {
+                    _pilot reveal [_target, 4];
+                    _pilot doTarget _target;
                     
-                    // For rockets, ensure aim is maintained between shots
+                    // Special handling for helicopter rockets to improve aim
                     if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                        _pilot doWatch (getPosASL _target vectorAdd [0, 0, -5]);
-                        _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                        // Get target position and aircraft position
+                        private _targetPos = getPosASL _target;
+                        private _aircraftPos = getPosASL _aircraft;
+                        
+                        // Position aircraft properly for rocket attack - lower altitude approach
+                        private _distToTarget = _aircraft distance _target;
+                        private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
+                        private _idealDistance = 600; // Better distance for rocket employment
+                        private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
+                        
+                        // If we're too high or too far, adjust approach
+                        if (_altitudeDiff > 60 || _distToTarget > 800) then {
+                            // Force a better attack position
+                            private _attackDir = _aircraft getDir _target;
+                            private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
+                            _attackPos set [2, _attackAlt];
+                            
+                            // Move to better firing position
+                            _aircraft doMove _attackPos;
+                            _aircraft flyInHeight _attackAlt;
+                            
+                            // Ensure nose is pointed down at target
+                            _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                            _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
+                            sleep 1; // Allow time for positioning
+                        };
+                        
+                        // Force aim downward for proper rocket trajectory
+                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
+                        _pilot doWatch (_targetPos vectorAdd [0, 0, -5]);
                     };
                     
-                    sleep 0.2;
+                    // Fire multiple times for burst effect
+                    for "_i" from 1 to 5 do {
+                        _pilot fireAtTarget [_target, _selectedWeapon];
+                        
+                        // For rockets, ensure aim is maintained between shots
+                        if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
+                            _pilot doWatch (getPosASL _target vectorAdd [0, 0, -5]);
+                            _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
+                        };
+                        
+                        sleep 0.2;
+                    };
                 };
-            };
             } else {
                 if (_weaponType == "ROTATABLE_CANNON") then {
                     // Special handling for rotatable cannons - longer sustained fire at distance
@@ -1157,16 +1181,16 @@ private _airSupportTypeDef = [
                     
                     // Log the engagement
                     diag_log format ["[FLO][AirSupport] Aircraft %1 engaging with rotatable cannon at range %2m", _aircraft, round _distance];
-        } else {
-            // Single shot for missiles
-            if (!isNull _gunner) then {
-                _gunner reveal [_target, 4];
-                _gunner doTarget _target;
-                _gunner fireAtTarget [_target, _selectedWeapon];
-            } else {
-                _pilot reveal [_target, 4];
-                _pilot doTarget _target;
-                _pilot fireAtTarget [_target, _selectedWeapon];
+                } else {
+                    // Single shot for missiles
+                    if (!isNull _gunner) then {
+                        _gunner reveal [_target, 4];
+                        _gunner doTarget _target;
+                        _gunner fireAtTarget [_target, _selectedWeapon];
+                    } else {
+                        _pilot reveal [_target, 4];
+                        _pilot doTarget _target;
+                        _pilot fireAtTarget [_target, _selectedWeapon];
                     };
                 };
             };
@@ -1196,8 +1220,39 @@ private _airSupportTypeDef = [
         if (!alive _aircraft) exitWith {[]};
         
         private _range = _self get "engagementRange";
-        private _targets = _aircraft targets [true, _range];
-        _targets select {side _x != side _aircraft && alive _x}
+        private _extendedRange = 8000; // Extended range for detection
+        private _targets = [];
+        
+        // Standard target detection (works better at closer ranges)
+        private _stdTargets = _aircraft targets [true, _range];
+        _targets = _stdTargets select {side _x != side _aircraft && alive _x};
+        
+        // If no targets found at standard range, try extended range
+        if (count _targets == 0) then {
+            // Use nearEntities for longer range detection
+            private _nearEntities = _aircraft nearEntities [["CAManBase", "LandVehicle", "Air", "Ship"], _extendedRange];
+            _targets = _nearEntities select {
+                side _x != side _aircraft && 
+                alive _x && 
+                // Check visibility using terrainIntersect for LOS
+                !(terrainIntersect [getPosASL _aircraft, getPosASL _x]) &&
+                // Double-check with lineIntersects for buildings/structures
+                !(lineIntersects [eyePos _aircraft, getPosASL _x, _aircraft])
+            };
+            
+            // For performance, limit number of far targets
+            if (count _targets > 10) then {
+                // Sort by distance and take closest 10
+                _targets = [_targets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
+                _targets resize 10;
+            };
+            
+            if (count _targets > 0) then {
+                diag_log format ["[FLO][AirSupport] Extended range detection found %1 targets at %2m", count _targets, round (_aircraft distance (_targets select 0))];
+            };
+        };
+        
+        _targets
     }],
     
     ["startUpdateLoop", {
@@ -1268,6 +1323,37 @@ private _airSupportTypeDef = [
         
         private _state = _self get "state";
         private _missionType = _self get "missionType";
+        
+        // Check if we're in recon mode
+        private _inReconMode = _self get "reconMode";
+        if (_inReconMode) then {
+            // Check if recon mode duration has expired
+            private _currentTime = time;
+            private _reconStartTime = _self get "reconModeStartTime";
+            private _reconDuration = _self get "reconDuration";
+            
+            if (_currentTime - _reconStartTime > _reconDuration) then {
+                // Exit recon mode if time expired
+                _self call ["exitReconMode"];
+            } else {
+                // While in recon mode, scan for targets at long range
+                private _longRangeTargets = _self call ["longRangeTargetScan"];
+                
+                // If we found targets, exit recon mode and engage
+                if (count _longRangeTargets > 0) then {
+                    _self call ["exitReconMode"];
+                    
+                    // Set up approach to the first target
+                    private _target = _longRangeTargets select 0;
+                    private _targetPos = getPosASL _target;
+                    _self set ["lastTargetPos", _targetPos];
+                    _self call ["setupApproach", [_targetPos]];
+                    
+                    diag_log format ["[FLO][AirSupport] Recon mode found target at %1m, moving to engage", 
+                        round (_aircraft distance _target)];
+                };
+            };
+        };
         
         // Check remaining weapons periodically (every 10 seconds)
         private _lastWeaponCheck = _self getOrDefault ["FLO_lastWeaponCheckTime", 0];
@@ -1365,9 +1451,60 @@ private _airSupportTypeDef = [
             };
         };
         
+        // Check for targets that other units know about (every 15 seconds)
+        private _lastKnowledgeCheck = _self getOrDefault ["FLO_lastKnowledgeCheckTime", 0];
+        if (time - _lastKnowledgeCheck >= 15) then {
+            _self set ["FLO_lastKnowledgeCheckTime", time];
+            
+            private _knownTargets = _self call ["checkKnownEnemies"];
+            
+            // If we have no current target but other units know about enemies, use that intel
+            if (count _knownTargets > 0 && isNull (_self get "currentTarget") && _state == "APPROACHING") then {
+                // Get the closest known target
+                private _closestTarget = [_knownTargets, _aircraft] call BIS_fnc_nearestPosition;
+                
+                // Set up approach to the known target
+                private _targetPos = getPosASL _closestTarget;
+                _self set ["lastTargetPos", _targetPos];
+                _self call ["setupApproach", [_targetPos]];
+                
+                diag_log format ["[FLO][AirSupport] Knowledge sharing led aircraft %1 to target at %2m", 
+                    _aircraft, round (_aircraft distance _closestTarget)];
+            };
+        };
+        
         switch (_state) do {
             case "APPROACHING": {
-                private _targets = _self call ["scanForTargets"];
+                private _targets = [];
+                
+                // If in recon mode, use long range scan, otherwise use standard scan
+                if (_inReconMode) then {
+                    _targets = _self call ["longRangeTargetScan"];
+                } else {
+                    _targets = _self call ["scanForTargets"];
+                    
+                    // If no targets found through direct detection, check shared knowledge
+                    if (count _targets == 0) then {
+                        private _knownTargets = _self call ["checkKnownEnemies"];
+                        
+                        // Only use known targets that are within engagement range
+                        _knownTargets = _knownTargets select {
+                            _aircraft distance _x < (_self get "engagementRange")
+                        };
+                        
+                        if (count _knownTargets > 0) then {
+                            _targets = _knownTargets;
+                            diag_log format ["[FLO][AirSupport] Using shared knowledge for targeting by %1", _aircraft];
+                        };
+                    };
+                    
+                    // If still no targets found and not in recon mode, consider entering recon mode
+                    // But only do this occasionally (10% chance each update)
+                    if (count _targets == 0 && (random 100 < 10) && !_inReconMode) then {
+                        _self call ["enterReconMode"];
+                    };
+                };
+                
                 if (count _targets > 0) then {
                     private _target = selectRandom _targets;
                 
@@ -1484,6 +1621,217 @@ private _airSupportTypeDef = [
             };
         };
         true
+    }],
+    ["enterReconMode", {
+        private _aircraft = _self get "vehicle";
+        private _group = _self get "group";
+        
+        if (!alive _aircraft || (_self get "reconMode")) exitWith {false};
+        
+        // Set recon mode flag
+        _self set ["reconMode", true];
+        _self set ["reconModeStartTime", time];
+        
+        // Store original altitude for restoration later
+        private _originalAlt = _self get "altitude";
+        _aircraft setVariable ["FLO_originalAlt", _originalAlt];
+        
+        // Climb to high altitude
+        private _reconAlt = _self get "reconAltitude";
+        _aircraft flyInHeight _reconAlt;
+        
+        // Clear existing waypoints and set up a high-altitude holding pattern
+        while {count waypoints _group > 0} do {
+            deleteWaypoint [_group, 0];
+        };
+        
+        // Get last known target position or current position
+        private _lastTargetPos = _self getOrDefault ["lastTargetPos", getPosASL _aircraft];
+        
+        // Set up holding pattern around target area
+        private _holdPos = _lastTargetPos getPos [2000, random 360];
+        _holdPos set [2, _reconAlt];
+        
+        private _wp = _group addWaypoint [_holdPos, 0];
+        _wp setWaypointType "HOLD";
+        _wp setWaypointBehaviour "CARELESS";
+        
+        // Change combat mode to keep aircraft safe at high altitude
+        _group setCombatMode "GREEN";
+        
+        diag_log format ["[FLO][AirSupport] Aircraft %1 entering recon mode at altitude %2m", _aircraft, _reconAlt];
+        
+        true
+    }],
+    ["exitReconMode", {
+        private _aircraft = _self get "vehicle";
+        private _group = _self get "group";
+        
+        if (!alive _aircraft || !(_self get "reconMode")) exitWith {false};
+        
+        // Reset recon mode
+        _self set ["reconMode", false];
+        
+        // Restore original altitude
+        private _originalAlt = _aircraft getVariable ["FLO_originalAlt", _self get "altitude"];
+        _aircraft flyInHeight _originalAlt;
+        
+        // Reset combat status
+        _group setCombatMode "GREEN";
+        _group setBehaviour "COMBAT";
+        
+        {
+            _x setBehaviourStrong "COMBAT";
+            _x setUnitCombatMode "GREEN";
+        } forEach units _group;
+        
+        // Get last known target position or use a safe default
+        private _lastTargetPos = _self getOrDefault ["lastTargetPos", [0,0,0]];
+        if (_lastTargetPos isEqualTo [0,0,0]) then {
+            // If no last target position, use current position
+            _lastTargetPos = getPosASL _aircraft;
+        };
+        
+        // Return to original mission
+        _self call ["setupApproach", [_lastTargetPos]];
+        
+        diag_log format ["[FLO][AirSupport] Aircraft %1 ending recon mode", _aircraft];
+    }],
+    ["longRangeTargetScan", {
+        private _aircraft = _self get "vehicle";
+        if (!alive _aircraft) exitWith {[]};
+        
+        private _longRange = 10000; // Very long detection range (10km)
+        private _targets = [];
+        
+        // Only check ground vehicles and large groups - these are visible from high altitude
+        private _vehicles = vehicles select {
+            side _x != side _aircraft && 
+            alive _x && 
+            _x isKindOf "LandVehicle" &&
+            !(_x isKindOf "StaticWeapon") && // Exclude static weapons (too small)
+            _aircraft distance _x < _longRange
+        };
+        
+        // For very high-altitude recon, we can detect larger vehicles but not individuals
+        _targets = _vehicles;
+        
+        // Also detect large groups of infantry (simulating thermal imaging detection)
+        private _allGroups = allGroups select {side _x != side _aircraft};
+        
+        {
+            private _grp = _x;
+            private _units = units _grp select {alive _x};
+            
+            // Only detect groups of 3 or more (easier to spot from air)
+            if (count _units >= 3) then {
+                private _avgPos = [0,0,0];
+                
+                // Calculate average position of group
+                {
+                    _avgPos = _avgPos vectorAdd (getPosASL _x);
+                } forEach _units;
+                
+                _avgPos = _avgPos vectorMultiply (1 / (count _units));
+                
+                // Check if within range
+                if (_aircraft distance _avgPos < _longRange) then {
+                    // Check line of sight (allowing for some units to be hidden)
+                    private _visibleUnits = 0;
+                    {
+                        if (!(terrainIntersect [getPosASL _aircraft, getPosASL _x])) then {
+                            _visibleUnits = _visibleUnits + 1;
+                        };
+                    } forEach _units;
+                    
+                    // If at least one third of units are visible
+                    if (_visibleUnits >= ((count _units) / 3)) then {
+                        // Create a "dummy" target to represent the group
+                        private _nearestUnit = [_units, _aircraft] call BIS_fnc_nearestPosition;
+                        if (!isNull _nearestUnit) then {
+                            _targets pushBack _nearestUnit;
+                        };
+                    };
+                };
+            };
+        } forEach _allGroups;
+        
+        // Sort by distance
+        _targets = [_targets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
+        
+        // Cap number of targets for performance
+        if (count _targets > 15) then {
+            _targets resize 15;
+        };
+        
+        if (count _targets > 0) then {
+            diag_log format ["[FLO][AirSupport] Long-range recon scan found %1 targets at up to %2m", 
+                count _targets, round (_aircraft distance (_targets select ((count _targets) - 1)))];
+        };
+        
+        _targets
+    }],
+    ["checkKnownEnemies", {
+        private _aircraft = _self get "vehicle";
+        if (!alive _aircraft) exitWith {[]};
+        
+        private _knownTargets = [];
+        private _maxKnowledgeDistance = 12000; // How far away knowledge sharing works
+        
+        // Get all OPFOR units that might have target knowledge
+        private _friendlyUnits = allUnits select {
+            side _x == east && 
+            alive _x && 
+            _x != _aircraft && 
+            _x distance _aircraft < _maxKnowledgeDistance
+        };
+        
+        // Check what targets they know about
+        {
+            private _unit = _x;
+            private _unitKnowledge = [];
+            
+            // Get all known enemies for this unit
+            {
+                if (side _x != east && alive _x) then {
+                    private _knowledge = _unit knowsAbout _x;
+                    if (_knowledge > 1.5) then { // Unit has meaningful knowledge
+                        _unitKnowledge pushBack [_x, _knowledge];
+                    };
+                };
+            } forEach allUnits;
+            
+            // Sort by knowledge level
+            _unitKnowledge = [_unitKnowledge, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+            
+            // Take top 3 best-known targets
+            if (count _unitKnowledge > 3) then {
+                _unitKnowledge resize 3;
+            };
+            
+            // Add to our targets list
+            {
+                _x params ["_target", "_knowledge"];
+                // Transfer knowledge to aircraft crew
+                {
+                    _x reveal [_target, _knowledge min 4];
+                } forEach (crew _aircraft);
+                
+                // Add to known targets if not already there
+                if !(_target in _knownTargets) then {
+                    _knownTargets pushBack _target;
+                };
+            } forEach _unitKnowledge;
+        } forEach _friendlyUnits;
+        
+        // Log what we learned
+        if (count _knownTargets > 0) then {
+            diag_log format ["[FLO][AirSupport] Knowledge sharing revealed %1 enemies to aircraft %2", 
+                count _knownTargets, _aircraft];
+        };
+        
+        // Return all unique targets
+        _knownTargets
     }]
 ];
 
