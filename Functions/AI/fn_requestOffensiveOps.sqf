@@ -746,22 +746,23 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
                 };
             };
             
-            // Create additional patrol group for each spawn
+            // Create additional foot assault group for each spawn
             private _patrolGroup = [
-                (getMarkerPos _targetBluforMarker) getPos [(500 + (random 100)), (_assaultAzimuth + (random 20))], 
+                _elementSpawnPos, 
                 East, 
-                [
-                    selectRandom (FLO_configCache get "units"), 
-                    selectRandom (FLO_configCache get "units"), 
-                    selectRandom (FLO_configCache get "units"),
-                    selectRandom (FLO_configCache get "units"), 
-                    selectRandom (FLO_configCache get "units"), 
-                    selectRandom (FLO_configCache get "units")
-                ]
+                ([] call {
+                    private _unitTypes = [];
+                    // Create dynamic number of units based on adjusted tier (3-8 units)
+                    private _unitCount = 3 + floor(random (_adjustedTierValue + 2)); 
+                    for "_i" from 1 to _unitCount do {
+                        _unitTypes pushBack (selectRandom (FLO_configCache get "units"));
+                    };
+                    _unitTypes
+                })
             ] call BIS_fnc_spawnGroup;
             
             private _waypoint = _patrolGroup addWaypoint [_targetPos, 0];
-            _waypoint setWaypointType "MOVE";
+            _waypoint setWaypointType "SAD";
             _groups pushBack _patrolGroup;
             
             // Update the groups in missionNamespace immediately after creating each group

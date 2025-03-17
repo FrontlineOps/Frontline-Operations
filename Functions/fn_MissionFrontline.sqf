@@ -96,7 +96,6 @@ private _frontlineManagerDeclaration = [
         
         // Notify players that OPFOR is preparing an offensive
         ["showNotification", ["! INTELLIGENCE !", "Enemy is preparing a major offensive operation!", "warning"]] call FLO_fnc_intelSystem;
-        [[west,"HQ"], "INTELLIGENCE: We have reports of enemy forces mobilizing for a major operation."] remoteExec ["sideChat", 0];
         
         // Add a delay before the actual attack to build tension
         private _preparationTime = 300 + random 600;
@@ -287,109 +286,114 @@ private _frontlineManagerDeclaration = [
         _roadblockTrigger setTriggerStatements [
             "this","	
 
-				private _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
-				{_x hideObjectGlobal true;} forEach _TERR ;
+			private _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
+			{_x hideObjectGlobal true;} forEach _TERR ;
 
-				private _mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
-				private _mrkr = _mrkrs select 0;
-				_AGGRSCORE = markerText _mrkr call BIS_fnc_parseNumber;  
+			private _mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
+			private _mrkr = _mrkrs select 0;
+			_AGGRSCORE = markerText _mrkr call BIS_fnc_parseNumber;  
 
-				private _P1 = [ 
-				'Road_Post_CSAT_01',  
-				'Road_Post_CSAT_02',
-				'Road_Post_CSAT_01',  
-				'Road_Post_CSAT_02',
-				'Road_Post_CSAT_01',  
-				'Road_Post_CSAT_02',
-				'Road_Post_CSAT_01',  
-				'Road_Post_CSAT_02',
-				'Road_Post_CSAT_01',  
-				'Road_Post_CSAT_02',
-				'Road_Post_CSAT_01',  
-				'Road_Post_CSAT_02',
-				'Watchpost_1', 
-				'Watchpost_2', 
-				'Watchpost_3', 
-				'Watchpost_4', 
-				'Watchpost_5', 
-				'Watchpost_6',
-				'Watchpost_7',
-				'Watchpost_8',
-				'Watchpost_9',
-				'Watchpost_10'
+			private _P1 = [ 
+			'Road_Post_CSAT_01',  
+			'Road_Post_CSAT_02',
+			'Road_Post_CSAT_01',  
+			'Road_Post_CSAT_02',
+			'Road_Post_CSAT_01',  
+			'Road_Post_CSAT_02',
+			'Road_Post_CSAT_01',  
+			'Road_Post_CSAT_02',
+			'Road_Post_CSAT_01',  
+			'Road_Post_CSAT_02',
+			'Road_Post_CSAT_01',  
+			'Road_Post_CSAT_02',
+			'Watchpost_1', 
+			'Watchpost_2', 
+			'Watchpost_3', 
+			'Watchpost_4', 
+			'Watchpost_5', 
+			'Watchpost_6',
+			'Watchpost_7',
+			'Watchpost_8',
+			'Watchpost_9',
+			'Watchpost_10'
 				 ]; 
 
-				if (_AGGRSCORE > 5) then {
-				_P1 =  [ 
-				'Road_Post_CSAT_03',  
-				'Road_Post_CSAT_04',
-				'Road_Post_CSAT_03',  
-				'Road_Post_CSAT_04',
-				'Road_Post_CSAT_03',  
-				'Road_Post_CSAT_04',
-				'Road_Post_CSAT_03',  
-				'Road_Post_CSAT_04',
-				'Road_Post_CSAT_03',  
-				'Road_Post_CSAT_04',
-				'Road_Post_CSAT_03',  
-				'Road_Post_CSAT_04',
-				'Watchpost_1', 
-				'Watchpost_2', 
-				'Watchpost_3', 
-				'Watchpost_4', 
-				'Watchpost_5', 
-				'Watchpost_6',
-				'Watchpost_7',
-				'Watchpost_8',
-				'Watchpost_9',
-				'Watchpost_10'
-				]; };
+			if (_AGGRSCORE > 5) then {
+			_P1 =  [ 
+			'Road_Post_CSAT_03',  
+			'Road_Post_CSAT_04',
+			'Road_Post_CSAT_03',  
+			'Road_Post_CSAT_04',
+			'Road_Post_CSAT_03',  
+			'Road_Post_CSAT_04',
+			'Road_Post_CSAT_03',  
+			'Road_Post_CSAT_04',
+			'Road_Post_CSAT_03',  
+			'Road_Post_CSAT_04',
+			'Road_Post_CSAT_03',  
+			'Road_Post_CSAT_04',
+			'Watchpost_1', 
+			'Watchpost_2', 
+			'Watchpost_3', 
+			'Watchpost_4', 
+			'Watchpost_5', 
+			'Watchpost_6',
+			'Watchpost_7',
+			'Watchpost_8',
+			'Watchpost_9',
+			'Watchpost_10'
+			]; };
 
-				if (_AGGRSCORE > 10) then {
-				_P1 =  [ 
-				'Road_Post_CSAT_05',  
-				'Road_Post_CSAT_06',
-				'Road_Post_CSAT_05',  
-				'Road_Post_CSAT_06',
-				'Road_Post_CSAT_05',  
-				'Road_Post_CSAT_06',
-				'Road_Post_CSAT_05',  
-				'Road_Post_CSAT_06',
-				'Road_Post_CSAT_05',  
-				'Road_Post_CSAT_06',
-				'Road_Post_CSAT_05',  
-				'Road_Post_CSAT_06',
-				'Watchpost_1', 
-				'Watchpost_2', 
-				'Watchpost_3', 
-				'Watchpost_4', 
-				'Watchpost_5', 
-				'Watchpost_6',
-				'Watchpost_7',
-				'Watchpost_8',
-				'Watchpost_9',
-				'Watchpost_10'
-				]; };
+			if (_AGGRSCORE > 10) then {
+			_P1 =  [ 
+			'Road_Post_CSAT_05',  
+			'Road_Post_CSAT_06',
+			'Road_Post_CSAT_05',  
+			'Road_Post_CSAT_06',
+			'Road_Post_CSAT_05',  
+			'Road_Post_CSAT_06',
+			'Road_Post_CSAT_05',  
+			'Road_Post_CSAT_06',
+			'Road_Post_CSAT_05',  
+			'Road_Post_CSAT_06',
+			'Road_Post_CSAT_05',  
+			'Road_Post_CSAT_06',
+			'Watchpost_1', 
+			'Watchpost_2', 
+			'Watchpost_3', 
+			'Watchpost_4', 
+			'Watchpost_5', 
+			'Watchpost_6',
+			'Watchpost_7',
+			'Watchpost_8',
+			'Watchpost_9',
+			'Watchpost_10'
+			]; };
+
+            _dir = 0 + (random 360);
+			if (count (nearestObjects [(getPos thisTrigger), ['House'], 200]) != 0) then {
+			_dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 200]) select 0);
+			};
 
 						
-				private _COM = [ selectRandom _P1, _positionCoords, [0,0,0], _dir, true ] call LARs_fnc_spawnComp;	
-				private _ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
-				{_x setVectorUp [0,0,1]} forEach _ARRAY;
+			private _COM = [ selectRandom _P1, _positionCoords, [0,0,0], _dir, true ] call LARs_fnc_spawnComp;	
+			private _ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
+			{_x setVectorUp [0,0,1]} forEach _ARRAY;
 
 
-				_trgA = createTrigger ['EmptyDetector', _positionCoords, false];
-				_trgA setTriggerArea [1000, 1000, 0, false, 100];
-				_trgA setTriggerInterval 3;
-				_trgA setTriggerTimeout [3, 3, 3, true];
-				_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-				_trgA setTriggerStatements [
-				""this"",""
+			_trgA = createTrigger ['EmptyDetector', _positionCoords, false];
+			_trgA setTriggerArea [1000, 1000, 0, false, 100];
+			_trgA setTriggerInterval 3;
+			_trgA setTriggerTimeout [3, 3, 3, true];
+			_trgA setTriggerActivation ['WEST', 'PRESENT', false];
+			_trgA setTriggerStatements [
+			""this"",""
 
-				[thisTrigger] execVM 'Scripts\Objectives\RoadBlock_CSAT.sqf';
+			[thisTrigger] execVM 'Scripts\Objectives\RoadBlock_CSAT.sqf';
 
-				"",""""];
+			"",""""];
 
-				", ""
+			", ""
         ];
 
         // Notify players
