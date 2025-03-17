@@ -210,8 +210,7 @@ if (_newBatteriesCount > 0) then {
                     
                     _batteryInfo set ["state", "IN MISSION"];
                     
-                    // Pre-calculate all target positions for the barrage
-                    private _targetPositions = [];
+                    // Fire rockets directly in the loop
                     for "_i" from 1 to _rocketCount do {
                         private _inRange = false;
                         private _attempts = 0;
@@ -228,19 +227,36 @@ if (_newBatteriesCount > 0) then {
                         };
                         
                         if (_inRange) then {
-                            _targetPositions pushBack _finalPos;
+                            _arty commandArtilleryFire [_finalPos, _selectedMagazine, _rocketCount];
+                        };
+                        
+                        // Wait for crew to be ready before next shot
+                        waitUntil {
+                            sleep 1;
+                            private _readys = 0;
+
+                            {
+                                private _rdy = true;
+                                {
+                                    _rdy = _rdy && (unitReady _x);
+                                } forEach [
+                                    commander _x,
+                                    gunner _x,
+                                    driver _x
+                                ];
+
+                                if(_rdy) then {
+                                    _readys = _readys + 1;
+                                };
+                            } forEach [_arty];
+
+                            _readys isEqualTo (count [_arty]);
                         };
                     };
                     
-                    // Fire the barrage with short delays between rockets
-                    {
-                        _arty commandArtilleryFire [_x, _selectedMagazine, 1];
-                        sleep (0.5 + random 0.5); // Quick firing pattern for rockets
-                    } forEach _targetPositions;
-                    
                     // Update ammo level after firing barrage
                     private _currentAmmo = _batteryInfo get "ammoLevel";
-                    private _newAmmo = _currentAmmo - ((1 / 10) * (count _targetPositions)); // Rocket barrages use more ammo
+                    private _newAmmo = _currentAmmo - ((1 / 10) * _rocketCount); // Each rocket uses 10% ammo
                     _batteryInfo set ["ammoLevel", _newAmmo];
                     
                     // Check if ammo is below threshold
