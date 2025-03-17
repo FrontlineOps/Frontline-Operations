@@ -2,7 +2,7 @@
  * Function: FLO_fnc_serverRestartTimer
  * Author: Frontline Operations Development Group
  * Description:
- * Tracks and displays server restart time to players.
+ * Tracks server restart time and sends notifications to players.
  * Call this on the server during initialization.
  *
  * Arguments:
@@ -57,7 +57,11 @@ private _scheduledNotifications = [];
             
             // Broadcast warning message to all players
             private _message = format["SERVER RESTART in %1 minutes! (%2 remaining)", _warningTime, _timeRemainingFormatted];
-            [_message] remoteExec ["systemChat", 0];
+            [_message] remoteExec ["systemChat", 0, true];
+            
+            // Send to Intel System with appropriate urgency
+            private _urgency = if (_warningTime <= 5) then {"info"};
+            ["showNotification", ["Server Restart", _message, _urgency]] remoteExec ["FLO_fnc_intelSystem", 0, true];
             
             ["MISC", 3, format["Server restart warning: %1", _message]] call FLO_fnc_log;
         },
@@ -67,9 +71,6 @@ private _scheduledNotifications = [];
     
     _scheduledNotifications pushBack _handle;
 } forEach _warningTimes;
-
-// Set up HUD display for all players
-[_restartInterval] remoteExec ["FLO_fnc_initRestartTimerHUD", 0, true];
 
 // Store restart interval globally
 missionNamespace setVariable ["FLO_restartInterval", _restartInterval, true];
