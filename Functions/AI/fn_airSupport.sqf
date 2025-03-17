@@ -732,15 +732,27 @@ private _airSupportTypeDef = [
             params ["_aircraft"];
             if (!alive _aircraft) exitWith {};
             
-            // Fire flares multiple times
-            for "_i" from 1 to 3 do {
-                vehicle _aircraft action ["useWeapon", vehicle _aircraft, driver _aircraft, 0];
-                sleep 0.5;
+            // Find and use countermeasures (flares/chaff)
+            private _weapons = weapons _aircraft;
+            private _countermeasureWeapon = _weapons select {
+                (toLower _x) find "chaff" > -1 || (toLower _x) find "flare" > -1
+            };
+            
+            // If countermeasure weapon found, use it, otherwise use default weapon
+            if (count _countermeasureWeapon > 0) then {
+                private _cmWeapon = _countermeasureWeapon select 0;
+                private _weaponIndex = _weapons find _cmWeapon;
+                
+                // Fire countermeasures multiple times
+                for "_i" from 1 to 3 do {
+                    vehicle _aircraft action ["useWeapon", vehicle _aircraft, driver _aircraft, _weaponIndex];
+                    sleep 0.5;
+                };
             };
         };
         
-        // Lower altitude to 100m
-        _aircraft flyInHeight 100;
+        // Lower altitude to 10m
+        _aircraft flyInHeight 10;
         
         // Clear existing waypoints and set MOVE mode
         while {count waypoints _group > 0} do {
@@ -757,15 +769,32 @@ private _airSupportTypeDef = [
             _x allowFleeing 0;
         } forEach units _group;
         
-        // Add evasive waypoint
+        // Add evasive waypoint with more erratic movement pattern
         private _currentPos = getPosATL _aircraft;
-        private _escapeDir = random 360;
-        private _escapePos = _currentPos getPos [2000, _escapeDir];
-        _escapePos set [2, 100];
         
-        private _wp = _group addWaypoint [_escapePos, 0];
-        _wp setWaypointType "MOVE";
-        _wp setWaypointSpeed "FULL";
+        // Create multiple waypoints in zigzag pattern for more unpredictable evasion
+        for "_i" from 1 to 3 do {
+            private _escapeDir = (_i * 120) + (random 60); // Create roughly 120° separated directions with randomization
+            private _distance = 800 + (random 400); // Varying distances between 800-1200m
+            private _escapePos = _currentPos getPos [_distance, _escapeDir];
+            _escapePos set [2, 50 + (random 100)]; // Random altitude between 50-150m
+            
+            private _wp = _group addWaypoint [_escapePos, 0];
+            _wp setWaypointType "MOVE";
+            _wp setWaypointSpeed "FULL";
+            _wp setWaypointCompletionRadius 100; // Larger completion radius for smoother transitions
+            
+            if (_i == 1) then {
+                _wp setWaypointStatements ["true", "vehicle this setVelocity [(velocity vehicle this) vectorAdd [0,0,-5]]"]; // Push downward on first waypoint
+            };
+        }; 
+        
+        // Final waypoint with more distance to recover
+        private _finalEscapePos = _currentPos getPos [2500, random 360];
+        _finalEscapePos set [2, 100];
+        private _finalWp = _group addWaypoint [_finalEscapePos, 0];
+        _finalWp setWaypointType "MOVE";
+        _finalWp setWaypointSpeed "NORMAL";
         
         // Notify about evasive action
         diag_log format ["[FLO][AirSupport] Aircraft %1 initiating evasive action", _aircraft];
