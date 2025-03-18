@@ -49,7 +49,7 @@ if (typeName _this != typeName objNull) then { _this = cameraOn };
 //--- Ensure simulation runs at minimum speed (camera needs time to advance)
 setAccTime (accTime max (1 / 128));
 
-private _ppos = getPosATL _this;
+private _ppos = getPosASL _this;
 private _pX = _ppos select 0;
 private _pY = _ppos select 1;
 private _pZ = _ppos select 2;
@@ -289,7 +289,7 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
             params ["_object"];
             if (isNull _object) exitWith { false };
             
-            private _objectPos = getPosATL _object;
+            private _objectPos = getPosASL _object;
             private _objectSize = boundingBoxReal _object;
             private _minZ = (_objectSize select 0) select 2;
             private _maxZ = (_objectSize select 1) select 2;
@@ -301,7 +301,7 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
             private _playersOnObject = false;
             {
                 if (isPlayer _x) then {
-                    private _playerPos = getPosATL _x;
+                    private _playerPos = getPosASL _x;
                     private _relativeZ = (_playerPos select 2) - (_objectPos select 2);
                     
                     // Check if player is above the object and within its height bounds
@@ -626,6 +626,7 @@ private _controlsInfo = format [
     "<t>• <t color='#DDDDDD'>B key</t> - Open build menu</t><br/>" +
     "<t>• <t color='#DDDDDD'>T key</t> - Toggle terrain snapping</t><br/>" +
     "<t>• <t color='#DDDDDD'>C key</t> - Toggle 3d cursor</t><br/>" +
+    "<t>• <t color='#DDDDDD'>Q/Z key</t> - Raise/Lower camera</t><br/>" +
     "<t>• <t color='#DDDDDD'>Left click</t> - Place entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + Left click</t> - Pick up entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity under cursor</t><br/>" +

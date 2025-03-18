@@ -25,7 +25,7 @@ private _saveData = [];
     // Create a HashMap for each entity
     private _entityData = createHashMapFromArray [
         ["class", typeOf _x],
-        ["position", getPosWorld _x],
+        ["position", getPosASL _x],
         ["direction", getDir _x],
         ["vectorUp", vectorUp _x],
         ["damage", damage _x]
