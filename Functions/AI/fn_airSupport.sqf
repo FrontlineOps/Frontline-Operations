@@ -634,16 +634,17 @@ private _airSupportTypeDef = [
                 private _threatLevel = 0;
                 
                 // Get all missiles within detection range
-                private _nearbyProjectiles = (getPosATL _aircraft) nearObjects ["MissileBase", 1500];
+                private _nearbyProjectiles = (getPosATL _aircraft) nearObjects ["MissileBase", 2000];
                 private _nearbyMANPADS = allUnits select {
                     side _x isNotEqualTo east && 
                     alive _x && 
-                    (_x distance _aircraft < 1500) && 
+                    (_x distance _aircraft < 2000) && 
                     (secondaryWeapon _x isNotEqualTo "") &&
                     (getText (configFile >> "CfgWeapons" >> secondaryWeapon _x >> "displayName") find "AA" > -1 ||
                      getText (configFile >> "CfgWeapons" >> secondaryWeapon _x >> "displayName") find "Anti-Air" > -1 ||
                      getText (configFile >> "CfgWeapons" >> secondaryWeapon _x >> "displayName") find "Stinger" > -1 ||
-                     getText (configFile >> "CfgWeapons" >> secondaryWeapon _x >> "displayName") find "Igla" > -1)
+                     getText (configFile >> "CfgWeapons" >> secondaryWeapon _x >> "displayName") find "Igla" > -1 ||
+                     getText (configFile >> "CfgWeapons" >> secondaryWeapon _x >> "displayName") find "Javelin" > -1)
                 };
                 
                 // Check for inbound missiles
