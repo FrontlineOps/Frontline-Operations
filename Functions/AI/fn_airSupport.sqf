@@ -1615,20 +1615,27 @@ private _airSupportTypeDef = [
         if (time - _lastKnowledgeCheck >= 15) then {
             _self set ["FLO_lastKnowledgeCheckTime", time];
             
-            private _knownTargets = _self call ["checkKnownEnemies"];
-            
-            // If we have no current target but other units know about enemies, use that intel
-            if (count _knownTargets > 0 && isNull (_self get "currentTarget") && _state == "APPROACHING") then {
-                // Get the closest known target
-                private _closestTarget = [_knownTargets, _aircraft] call BIS_fnc_nearestPosition;
+            // Only check for knowledge sharing if we don't have targets or are not already engaging
+            if (isNull (_self get "currentTarget") && _state != "ENGAGING") then {
+                private _knownTargets = _self call ["checkKnownEnemies"];
                 
-                // Set up approach to the known target
-                private _targetPos = getPosASL _closestTarget;
-                _self set ["lastTargetPos", _targetPos];
-                _self call ["setupApproach", [_targetPos]];
-                
-                diag_log format ["[FLO][AirSupport] Knowledge sharing led aircraft %1 to target at %2m", 
-                    _aircraft, round (_aircraft distance _closestTarget)];
+                // If we have known targets and are not currently engaged, use that intel
+                if (count _knownTargets > 0) then {
+                    // Get the closest known target
+                    private _closestTarget = [_knownTargets, _aircraft] call BIS_fnc_nearestPosition;
+                    
+                    // Set up approach to the known target
+                    private _targetPos = getPosASL _closestTarget;
+                    _self set ["lastTargetPos", _targetPos];
+                    
+                    // Only update approach if we're in APPROACHING state and not moving to a target already
+                    if (_state == "APPROACHING") then {
+                        _self call ["setupApproach", [_targetPos]];
+                        
+                        diag_log format ["[FLO][AirSupport] Knowledge sharing led aircraft %1 to target at %2m", 
+                            _aircraft, round (_aircraft distance _closestTarget)];
+                    };
+                };
             };
         };
         
@@ -1684,7 +1691,22 @@ private _airSupportTypeDef = [
                 if (_inReconMode) then {
                     _targets = _self call ["longRangeTargetScan"];
                 } else {
-                    _targets = _self call ["scanForTargets"];
+                    // Store last scan time and result to avoid losing targets too quickly
+                    private _lastScanTime = _self getOrDefault ["lastScanTime", 0];
+                    private _lastTargets = _self getOrDefault ["lastScanTargets", []];
+                    private _currentTime = time;
+                    
+                    // Only do a full scan if enough time has passed or we have no valid targets
+                    if (_currentTime - _lastScanTime > 5 || {count (_lastTargets select {alive _x}) == 0}) then {
+                        _targets = _self call ["scanForTargets"];
+                        
+                        // Store this scan's results for future reference
+                        _self set ["lastScanTime", _currentTime];
+                        _self set ["lastScanTargets", _targets];
+                    } else {
+                        // Use previous scan results but filter out dead targets
+                        _targets = _lastTargets select {alive _x};
+                    }; 
                     
                     // If no targets found through direct detection, check shared knowledge
                     if (count _targets == 0) then {
@@ -1709,7 +1731,39 @@ private _airSupportTypeDef = [
                 };
                 
                 if (count _targets > 0) then {
-                    private _target = selectRandom _targets;
+                    // Sort targets by priority and distance
+                    _targets = [_targets, [], {
+                        private _target = _x;
+                        private _distance = _aircraft distance _target;
+                        private _priority = 0;
+                        
+                        // Priority based on target type
+                        if (_target isKindOf "Tank" || _target isKindOf "Wheeled_APC") then {
+                            _priority = 10; // Highest priority
+                        } else {
+                            if (_target isKindOf "Car" || _target isKindOf "Truck") then {
+                                _priority = 5; // Medium priority
+                            } else {
+                                if (_target isKindOf "CAManBase") then {
+                                    _priority = 1; // Lower priority, but still target
+                                };
+                            };
+                        };
+                        
+                        // Calculate final score (lower is better)
+                        (_distance / 100) - (_priority * 10)
+                    }, "ASCEND"] call BIS_fnc_sortBy;
+                    
+                    // Select best target from top 3
+                    private _targetIndex = 0;
+                    if (count _targets >= 3) then {
+                        _targetIndex = floor(random 3); // Random from top 3
+                    };
+                    private _target = _targets select _targetIndex;
+                    
+                    // Store as current target to maintain focus
+                    _self set ["currentTarget", _target];
+                    _self set ["lastTargetPos", getPosASL _target];
                 
                     // If in direct attack mode, get much closer to target
                     if (_self getOrDefault ["FLO_directAttackMode", false]) then {
@@ -1727,6 +1781,9 @@ private _airSupportTypeDef = [
                     
                     if (_self call ["executeStrike", [_target]]) then {
                         _self set ["state", "ENGAGING"];
+                        
+                        // Maintain focus on this target by storing it
+                        _self set ["engagementStartTime", time];
                     };
                 };
             };
@@ -1735,11 +1792,24 @@ private _airSupportTypeDef = [
                 private _targetPos = _self get "lastTargetPos";
                 private _timeSinceLastEngagement = time - (_self get "lastEngaged");
                 private _attackInProgress = _self getOrDefault ["attackInProgress", false];
+                private _engagementStartTime = _self getOrDefault ["engagementStartTime", time - 30];
                 
-                // Check if we need to create a new attack on the target position
-                if (!_attackInProgress) then {
-                    // Target destroyed or lost but we still have the position - continue the attack!
-                    if (!alive _currentTarget && {_targetPos isNotEqualTo [0,0,0]}) then {
+                // Maintain focus on target for at least 20 seconds to avoid switching too quickly
+                private _shouldMaintainFocus = (time - _engagementStartTime < 30);
+                
+                // If current target is still alive and we're maintaining focus, continue engaging
+                if (alive _currentTarget && _shouldMaintainFocus) then {
+                    // Execute strike again if cooldown time has passed
+                    if (_timeSinceLastEngagement > (_self get "cooldownTime")) then {
+                        if (_self call ["executeStrike", [_currentTarget]]) then {
+                            _self set ["lastEngaged", time];
+                            diag_log format ["[FLO][AirSupport] Continuing engagement with target at %1m", 
+                                round (_aircraft distance _currentTarget)];
+                        };
+                    };
+                } else {
+                    // Check if we need to create a new attack on the target position
+                    if (!_attackInProgress && !alive _currentTarget && {_targetPos isNotEqualTo [0,0,0]}) then {
                         // Create a dummy target at the last known position if needed
                         private _dummyTarget = createVehicle ["TargetP_Inf_F", ASLToAGL _targetPos, [], 0, "CAN_COLLIDE"];
                         _dummyTarget hideObject true;  // Make it invisible
@@ -1802,32 +1872,33 @@ private _airSupportTypeDef = [
                         
                         _self set ["attackInProgress", true];
                     };
-                };
-                
-                // Only end the engagement if we've completed our cooldown after the last firing
-                if (_timeSinceLastEngagement > (_self get "cooldownTime") + 15) then {
-                    // Clean up our laser and dummy target
-                    _self call ["cleanupLaser"];
                     
-                    // Delete any dummy target we created
-                    private _dummyTarget = _self getOrDefault ["dummyTarget", objNull];
-                    if (!isNull _dummyTarget) then {
-                        deleteVehicle _dummyTarget;
-                        _self set ["dummyTarget", objNull];
+                    // Only end the engagement if we've completed our cooldown after the last firing
+                    // and we're not maintaining focus on the target anymore
+                    if (_timeSinceLastEngagement > (_self get "cooldownTime") + 15 && !_shouldMaintainFocus) then {
+                        // Clean up our laser and dummy target
+                        _self call ["cleanupLaser"];
+                        
+                        // Delete any dummy target we created
+                        private _dummyTarget = _self getOrDefault ["dummyTarget", objNull];
+                        if (!isNull _dummyTarget) then {
+                            deleteVehicle _dummyTarget;
+                            _self set ["dummyTarget", objNull];
+                        };
+                        
+                        // If we were using infantry engagement profile, restore normal altitude
+                        if (_self getOrDefault ["usingInfantryEngagementProfile", false]) then {
+                            private _originalAlt = _self getOrDefault ["originalAltitude", _self get "altitude"];
+                            _aircraft flyInHeight _originalAlt;
+                            _self set ["usingInfantryEngagementProfile", false];
+                            diag_log format ["[FLO][AirSupport] Aircraft %1 restoring normal altitude %2m after infantry engagement", _aircraft, _originalAlt];
+                        };
+                        
+                        // Reset state 
+                        _self set ["state", "APPROACHING"];
+                        _self set ["currentTarget", objNull];
+                        _self set ["attackInProgress", false];
                     };
-                    
-                    // If we were using infantry engagement profile, restore normal altitude
-                    if (_self getOrDefault ["usingInfantryEngagementProfile", false]) then {
-                        private _originalAlt = _self getOrDefault ["originalAltitude", _self get "altitude"];
-                        _aircraft flyInHeight _originalAlt;
-                        _self set ["usingInfantryEngagementProfile", false];
-                        diag_log format ["[FLO][AirSupport] Aircraft %1 restoring normal altitude %2m after infantry engagement", _aircraft, _originalAlt];
-                    };
-                    
-                    // Reset state 
-                    _self set ["state", "APPROACHING"];
-                    _self set ["currentTarget", objNull];
-                    _self set ["attackInProgress", false];
                 };
             };
         };
@@ -2036,7 +2107,7 @@ private _airSupportTypeDef = [
         } forEach _friendlyUnits;
         
         // Log what we learned
-        if (count _knownTargets > 0) then {
+        if (count _knownTargets > 0 && count _knownTargets <= 3) then {
             diag_log format ["[FLO][AirSupport] Knowledge sharing revealed %1 enemies to aircraft %2", 
                 count _knownTargets, _aircraft];
         };
