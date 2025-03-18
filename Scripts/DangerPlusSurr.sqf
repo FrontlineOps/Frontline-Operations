@@ -6,7 +6,7 @@ _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
 _mrkr = _mrkrs select 0;
 _AGGRSCORE = parseNumber (markerText _mrkr);  
 
-if (_AGGRSCORE < 16) then {
+if (_AGGRSCORE < 34) then {
     _NewScore = _AGGRSCORE + 0.35; 
     _mrkr setMarkerText str _NewScore;
 } else { 
