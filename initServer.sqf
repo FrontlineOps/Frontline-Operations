@@ -191,3 +191,65 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 
 // Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
+
+setViewDistance 3000;
+
+// Dynamic View Distance System based on server FPS
+[] spawn {
+    // Configuration
+    private _minViewDistance = 1500;    // Minimum view distance
+    private _maxViewDistance = 5000;    // Maximum view distance
+    private _targetFPS = 50;            // Target server FPS
+    private _sampleInterval = 15;       // Seconds between checks
+    private _sampleSize = 5;            // Number of samples to average
+    private _changeStep = 500;          // How much to change view distance each time
+    private _currentViewDistance = 3000; // Starting view distance
+    
+    private _fpsSamples = [];
+    
+    while {true} do {
+        // Add current FPS to samples
+        _fpsSamples pushBack diag_fps;
+        
+        // Keep only the most recent samples
+        if (count _fpsSamples > _sampleSize) then {
+            _fpsSamples deleteAt 0;
+        };
+        
+        // Calculate average FPS over samples
+        private _avgFPS = 0;
+        if (count _fpsSamples > 0) then {
+            {
+                _avgFPS = _avgFPS + _x;
+            } forEach _fpsSamples;
+            _avgFPS = _avgFPS / (count _fpsSamples);
+        };
+        
+        // Only adjust if we have enough samples
+        if (count _fpsSamples >= _sampleSize) then {
+            // Determine if view distance should be changed
+            private _newViewDistance = _currentViewDistance;
+            
+            if (_avgFPS < _targetFPS - 5) then {
+                // FPS is too low, decrease view distance
+                _newViewDistance = (_currentViewDistance - _changeStep) max _minViewDistance;
+            } else {
+                if (_avgFPS > _targetFPS + 10) then {
+                    // FPS is comfortably high, increase view distance
+                    _newViewDistance = (_currentViewDistance + _changeStep) min _maxViewDistance;
+                };
+            };
+            
+            // Apply the change if needed
+            if (_newViewDistance != _currentViewDistance) then {
+                _currentViewDistance = _newViewDistance;
+                setViewDistance _currentViewDistance;
+                ["ViewDistance", 1, format ["Adjusted to %1m based on average FPS of %2", _currentViewDistance, _avgFPS]] call FLO_fnc_log;
+                diag_log format ["[FLO][ViewDistance] Adjusted to %1m based on average FPS of %2", _currentViewDistance, _avgFPS];
+            };
+        };
+        
+        // Wait for next check
+        sleep _sampleInterval;
+    };
+};
