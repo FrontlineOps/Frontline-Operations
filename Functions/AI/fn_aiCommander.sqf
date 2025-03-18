@@ -400,8 +400,8 @@ private _aiCommander = createHashMapObject [[
                                 if (!isNull _taskForceGroup) then {
                                     ["AI Commander", 3, format["Deploying patrol from %1 with %2 units", _sourceOutpost, _unitsCount]] call FLO_fnc_log;
                                     
-                                    // Assign patrol actions to the task force
-                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getPos _targetRoad, "PATROL"]];
+                                    // Assign skirmish actions to the task force
+                                    _self call ["_assignTaskForceActions", [_taskForceGroup, getPos _targetRoad, "SKIRMISH"]];
                                 } else {
                                     // Deployment failed
                                     ["AI Commander", 3, format["Patrol task force deployment failed - location might be too close to players"]] call FLO_fnc_log;
