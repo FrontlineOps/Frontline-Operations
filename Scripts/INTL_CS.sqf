@@ -10,9 +10,8 @@ _mrkr setMarkerType "hd_unknown";
 _mrkr setMarkerSize [0.7, 0.7];  
 _mrkr setMarkerColor "colorCivilian";  
 _mrkr setMarkerAlpha 0.7;
-								sleep 1;
-								["showNotification", ["+ NEW INTEL", "POW Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+sleep 1;
+private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
+["showNotification", ["+ NEW INTEL", "POW Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
 
  

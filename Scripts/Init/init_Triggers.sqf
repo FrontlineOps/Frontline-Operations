@@ -58,6 +58,7 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
             } forEach _intelItems;
 
             [] execVM "Scripts\INTL.sqf";
+            ["showNotification", ["+ NEW INTEL", "Military Intel Received", "info"]] call FLO_fnc_intelSystem;
             //diag_log "Executed INTL.sqf script.";
         };
     };

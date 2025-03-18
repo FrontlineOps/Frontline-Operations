@@ -1,28 +1,42 @@
+// Get parameters from function call
+private _center = _this select 0;
+private _radius = _this select 1;
 
-_CNTR = _this select 0;
-_RADS = _this select 1;
-
-_INTSTF = [
-"FlashDisk",
-"FilesSecret",
-"SmartPhone",
-"MobilePhone",
-"DocumentsSecret"
+// Define intelligence items that can be added to enemies
+private _intelItems = [
+    "FlashDisk",
+    "FilesSecret",
+    "SmartPhone",
+    "MobilePhone",
+    "DocumentsSecret"
 ];
 
-_INTENMALL = allUnits select {(side _x == east or side _x == independent) && getPos _x distance _CNTR < _RADS};
-_INTENMCNT = count _INTENMALL;
-_INTENMCNTNEW = round ( _INTENMCNT / 2 );
-_INTENMALLNEW = _INTENMALL call BIS_fnc_arrayShuffle;
-_INTENMSEL = _INTENMALLNEW select [0, _INTENMCNTNEW];
+// Find all enemy units within the specified radius
+private _enemyUnits = allUnits select {
+    (side _x == east || side _x == independent) && 
+    getPos _x distance _center < _radius
+};
 
-{_x addItem selectRandom _INTSTF ;} foreach _INTENMSEL;
+// Select approximately half of the enemy units randomly
+private _enemyCount = count _enemyUnits;
+private _targetCount = round (_enemyCount / 2);
+private _shuffledEnemies = _enemyUnits call BIS_fnc_arrayShuffle;
+private _selectedEnemies = _shuffledEnemies select [0, _targetCount];
 
-	{ removeFromRemainsCollector [_x]; } foreach (allUnits select { side _x != west }) ;
-	{ removeFromRemainsCollector [_x]; } foreach (vehicles select { side (driver  _x) != west }) ; 
+// Add random intel items to selected enemies
+{
+    _x addItem selectRandom _intelItems;
+} forEach _selectedEnemies;
 
+// Temporarily remove non-BLUFOR units and vehicles from remains collector
+private _nonBluforUnits = allUnits select { side _x != west };
+private _nonBluforVehicles = vehicles select { side (driver _x) != west };
 
-sleep 3 ; 
+{ removeFromRemainsCollector [_x]; } forEach _nonBluforUnits;
+{ removeFromRemainsCollector [_x]; } forEach _nonBluforVehicles;
 
-	{ addToRemainsCollector [_x]; } foreach (allUnits select { side _x != west }) ;
-	{ addToRemainsCollector [_x]; } foreach (vehicles select { side (driver  _x) != west }) ; 
+sleep 3;
+
+// Add non-BLUFOR units and vehicles back to remains collector
+{ addToRemainsCollector [_x]; } forEach _nonBluforUnits;
+{ addToRemainsCollector [_x]; } forEach _nonBluforVehicles;
