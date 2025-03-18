@@ -13,7 +13,7 @@ _mrkr setMarkerText str _NewScore;
 
 } else { 
 
-_NewScore = 15 ; 
+_NewScore = 34; 
 _mrkr setMarkerText str _NewScore;
 
 };
