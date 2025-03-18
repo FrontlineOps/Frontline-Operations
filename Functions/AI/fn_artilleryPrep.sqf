@@ -238,7 +238,10 @@ if (_newBatteriesCount > 0) then {
                             {
                                 private _rdy = true;
                                 {
-                                    _rdy = _rdy && (unitReady _x);
+                                    // Check if crew position exists before checking if ready
+                                    if (!isNull _x) then {
+                                        _rdy = _rdy && (unitReady _x);
+                                    };
                                 } forEach [
                                     commander _x,
                                     gunner _x,
@@ -303,7 +306,10 @@ if (_newBatteriesCount > 0) then {
                             {
                                 private _rdy = true;
                                 {
-                                    _rdy = _rdy && (unitReady _x);
+                                    // Check if crew position exists before checking if ready
+                                    if (!isNull _x) then {
+                                        _rdy = _rdy && (unitReady _x);
+                                    };
                                 } forEach [
                                     commander _x,
                                     gunner _x,
