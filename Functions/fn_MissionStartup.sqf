@@ -190,7 +190,7 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
 
 _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Cargo_F"], 40000];
 {
-    [_x,[
+    [_x, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
         "Scripts\PObjectives\FOBUNPACK.sqf",
         nil,
@@ -203,12 +203,25 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Cargo_F"], 40000];
         false,
         "",
         ""
-    ]] remoteExec ["addAction",0,true];	
+    ]] remoteExec ["addAction", 0, true];
+
+    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+
+    [_x, [
+        "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>", 
+        { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
+        nil, 
+        1.4, 
+        false, 
+        true, 
+        "", 
+        "!IDS_Logistics_isHolding"
+    ]] remoteExec ["addAction", 0, true];
 } foreach _FOBC;
  
 _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Repair_F"], 40000];
 {
-    [_x,[
+    [_x, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
         "Scripts\PObjectives\OPUNPACK.sqf",
         nil,
@@ -221,8 +234,22 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Repair_F"], 40000];
         false,
         "",
         ""
-    ]] remoteExec ["addAction",0,true];
+    ]] remoteExec ["addAction", 0, true];
+
+    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+
+    [_x, [
+        "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>", 
+        { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
+        nil, 
+        1.4, 
+        false, 
+        true, 
+        "", 
+        "!IDS_Logistics_isHolding"
+    ]] remoteExec ["addAction", 0, true];
 } foreach _FOBC;
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
