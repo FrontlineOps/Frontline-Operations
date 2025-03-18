@@ -912,6 +912,9 @@ private _airSupportTypeDef = [
         private _targetPos = getPosASL _target;
         _self set ["lastTargetPos", _targetPos];
         _self set ["attackInProgress", false]; // Track if an attack run is currently executing
+
+        // Clean up any previous laser target first
+        _self call ["cleanupLaser"];
         
         // Create laser designation
         private _laserTarget = createVehicle ["LaserTargetW", getPos _target, [], 0, "CAN_COLLIDE"];
