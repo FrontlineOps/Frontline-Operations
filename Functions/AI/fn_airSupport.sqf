@@ -917,7 +917,7 @@ private _airSupportTypeDef = [
         _self call ["cleanupLaser"];
         
         // Create laser designation
-        private _laserTarget = createVehicle ["LaserTargetW", getPos _target, [], 0, "CAN_COLLIDE"];
+        private _laserTarget = createVehicle ["LaserTargetE", getPos _target, [], 0, "CAN_COLLIDE"];
         _laserTarget attachTo [_target, [0,0,1]];
         _self set ["currentLaser", _laserTarget];
         
@@ -1290,6 +1290,7 @@ private _airSupportTypeDef = [
     ["cleanupLaser", {
         private _laser = _self get "currentLaser";
         if (!isNull _laser) then {
+            detach _laser; // Ensure it's detached before deletion
             deleteVehicle _laser;
             _self set ["currentLaser", objNull];
         };
