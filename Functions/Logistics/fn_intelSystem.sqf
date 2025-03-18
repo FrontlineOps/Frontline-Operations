@@ -30,11 +30,11 @@ params [
 
 // System configuration constants
 private _INTEL_DECAY_RATE = 0.01;        // Intel points lost per minute
-private _RADIO_TOWER_BONUS = 0.1;       // Multiplier for intel gain per radio tower
+private _RADIO_TOWER_BONUS = 0.3;       // Multiplier for intel gain per radio tower
 private _MAX_INTEL_LEVEL = 100;         // Maximum intel level
 private _MIN_INTEL_LEVEL = 0;           // Minimum intel level
-private _DECAY_INTERVAL = 120;           // Seconds between decay checks
-private _BROADCAST_INTERVAL = 10;        // Seconds between client broadcasts
+private _DECAY_INTERVAL = 300;           // Seconds between decay checks
+private _BROADCAST_INTERVAL = 5;        // Seconds between client broadcasts
 
 // Initialize client-side notification handler
 if (!isServer) then {
@@ -187,9 +187,9 @@ if (isServer && isNil "FLO_Intel_System") then {
             
             // Check if we have sufficient intel/radio coverage to broadcast
             private _canBroadcast = switch (_importance) do {
-                case 3: { _intelLevel >= 75 || _radioTowers >= 3 };  // Critical intel
-                case 2: { _intelLevel >= 50 || _radioTowers >= 2 };  // Important intel
-                default { _intelLevel >= 25 || _radioTowers >= 1 };  // Regular intel
+                case 3: { _intelLevel >= 75 || _radioTowers >= 7 };  // Critical intel
+                case 2: { _intelLevel >= 50 || _radioTowers >= 4 };  // Important intel
+                default { _intelLevel >= 25 || _radioTowers >= 2 };  // Regular intel
             };
             
             if (_canBroadcast) then {
@@ -224,8 +224,8 @@ if (isServer && isNil "FLO_Intel_System") then {
             
             // Define intel and radio tower requirements for different notification types
             private _requirements = switch (_type) do {
-                case "warning": { [50, 2] };  // High priority - needs good intel
-                case "intel": { [25, 1] };    // Medium priority
+                case "warning": { [50, 5] };  // High priority - needs good intel
+                case "intel": { [25, 3] };    // Medium priority
                 case "success": { [0, 0] };   // Always show
                 case "info": { [0, 0] };      // Always show
                 default { [25, 1] };          // Default to medium priority
