@@ -738,17 +738,47 @@ private _airSupportTypeDef = [
                 (toLower _x) find "chaff" > -1 || (toLower _x) find "flare" > -1
             };
             
-            // If countermeasure weapon found, use it, otherwise use default weapon
+            // Create game logic for firing without animation
+            private _logicGroup = createGroup sideLogic;
+            private _logic = _logicGroup createUnit ["Logic", [0,0,0], [], 0, "NONE"];
+            
+            // If countermeasure weapon found, use it
             if (count _countermeasureWeapon > 0) then {
                 private _cmWeapon = _countermeasureWeapon select 0;
                 private _weaponIndex = _weapons find _cmWeapon;
                 
-                // Fire countermeasures multiple times
-                for "_i" from 1 to 3 do {
-                    vehicle _aircraft action ["useWeapon", vehicle _aircraft, driver _aircraft, _weaponIndex];
-                    sleep 0.5;
+                // Get the unit that will fire (driver or gunner)
+                private _shooter = driver _aircraft;
+                if (isNull _shooter) then {
+                    _shooter = gunner _aircraft;
+                };
+                
+                // Only proceed if we have a shooter
+                if (!isNull _shooter) then {
+                    // Fire countermeasures multiple times
+                    for "_i" from 1 to 3 do {
+                        _logic action ["useWeapon", vehicle _aircraft, _shooter, _weaponIndex];
+                        sleep 0.5;
+                    };
+                };
+            } else {
+                // Fallback: Try to use default countermeasure index (usually 0)
+                private _shooter = driver _aircraft;
+                if (isNull _shooter) then {
+                    _shooter = gunner _aircraft;
+                };
+                
+                if (!isNull _shooter) then {
+                    for "_i" from 1 to 3 do {
+                        _logic action ["useWeapon", vehicle _aircraft, _shooter, 0];
+                        sleep 0.5;
+                    };
                 };
             };
+            
+            // Clean up the logic
+            deleteVehicle _logic;
+            deleteGroup _logicGroup;
         };
         
         // Lower altitude to 10m
