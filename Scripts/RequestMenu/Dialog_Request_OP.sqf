@@ -31,17 +31,6 @@ FLO_fnc_addListBoxItem = {
 };
 
 if ( ((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (leader group player == player)) or (isServer) or (player == TheCommander) or ((serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) ) then {
-	
-    // UAV
-    [2103, "B_UAV_01_F", "B_UAV_01_F", "UAV", 35, "Screens\FOBA\uav_05_icon_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-
-    // Western Sahara UAV (if DLC present)
-    if (isClass (configfile >> "CfgFactionClasses" >> "BLU_NATO_lxWS") == true ) then {
-        [2103, "B_UAV_02_lxWS", "B_UAV_02_lxWS", "UAV", 35, "Screens\FOBA\uav_05_icon_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    };
-
-    // UGV
-    [2103, "B_UGV_02_Demining_F", "B_UGV_02_Demining_F", "UGV", 35, "Screens\FOBA\portrait_UGV_01_CA.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
 
     // CONTAINERS
     [2103, "B_Slingload_01_Medevac_F", "B_Slingload_01_Medevac_F", "CONTAINER", 35, "Screens\FOBA\container_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;

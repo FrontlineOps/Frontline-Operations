@@ -180,80 +180,15 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
                 [2102, _x, _x, "PLANE", 95, "Screens\FOBA\plane_ca.paa", [0.2,0.6,0.99,1]]
             ] call FLO_fnc_addConditionalItem;
         } forEach [F_Plane_01_CAS, F_Plane_02_CAS, F_Plane_03, F_Plane_04, F_Plane_05, F_Plane_06];
-        
-        // USAF DLC Aircraft (if available)
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_A10")) then {
-            [2102, "USAF_A10", "USAF_A10", "PLANE", 95, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_F22")) then {
-            [2102, "USAF_F22", "USAF_F22", "PLANE", 100, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_F22_Heavy")) then {
-            [2102, "USAF_F22_Heavy", "USAF_F22_Heavy", "PLANE", 100, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_F35A_STEALTH")) then {
-            [2102, "USAF_F35A_STEALTH", "USAF_F35A_STEALTH", "PLANE", 100, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_F35A")) then {
-            [2102, "USAF_F35A", "USAF_F35A", "PLANE", 100, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_AC130U")) then {
-            [2102, "USAF_AC130U", "USAF_AC130U", "PLANE", 250, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_C130J")) then {
-            [2102, "USAF_C130J", "USAF_C130J", "PLANE", 100, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_C130J_Cargo")) then {
-            [2102, "USAF_C130J_Cargo", "USAF_C130J_Cargo", "PLANE", 100, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "usaf_kc135")) then {
-            [2102, "usaf_kc135", "usaf_kc135", "PLANE", 250, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_C17")) then {
-            [2102, "USAF_C17", "USAF_C17", "PLANE", 500, "Screens\FOBA\plane_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
     };
-    
-    // BOATS (always available)
-    [2102, "B_Boat_Transport_01_F", "B_Boat_Transport_01_F", "BOAT", 25, "Screens\FOBA\naval_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
     
     [
         F_ABT_01 != "",
         [2102, F_ABT_01, F_ABT_01, "BOAT", 55, "Screens\FOBA\naval_ca.paa", [1,1,1,1]]
     ] call FLO_fnc_addConditionalItem;
     
-    [2102, "B_SDV_01_F", "B_SDV_01_F", "BOAT", 55, "Screens\FOBA\naval_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    
-    // SUPPLIES SECTION
-    
-    // UAVs
-    [2103, "B_UAV_01_F", "B_UAV_01_F", "UAV", 35, "Screens\FOBA\uav_05_icon_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    
-    // Western Sahara UAV (if DLC present)
-    if (isClass (configfile >> "CfgFactionClasses" >> "BLU_NATO_lxWS")) then {
-        [2103, "B_UAV_02_lxWS", "B_UAV_02_lxWS", "UAV", 35, "Screens\FOBA\uav_05_icon_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    };
-    
     // Radar-dependent UAVs
     if (_hasRadar) then {
-        // USAF DLC UAVs
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_RQ4A")) then {
-            [2103, "USAF_RQ4A", "USAF_RQ4A", "UAV", 100, "Screens\FOBA\uav_05_icon_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
-        if (isClass (configfile >> "CfgVehicles" >> "USAF_MQ9")) then {
-            [2103, "USAF_MQ9", "USAF_MQ9", "UAV", 120, "Screens\FOBA\uav_05_icon_ca.paa", [0,1,0,1]] call FLO_fnc_addListBoxItem;
-        };
-        
         // Custom UAVs
         {
             [
@@ -262,9 +197,6 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
             ] call FLO_fnc_addConditionalItem;
         } forEach [F_UAV_01, F_UAV_02, F_UAV_03];
     };
-    
-    // UGVs
-    [2103, "B_UGV_02_Demining_F", "B_UGV_02_Demining_F", "UGV", 35, "Screens\FOBA\portrait_UGV_01_CA.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
     
     [
         F_UGV_01 != "",
