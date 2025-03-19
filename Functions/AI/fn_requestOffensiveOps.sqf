@@ -111,7 +111,7 @@ private _targetPos = getPos _targetBuilding;
 
 // Start with recon if aggression is high enough
 if (_aggressionScore > 3) then {
-    ["showNotification", ["! INTELLIGENCE !", "Enemy reconnaissance aircraft spotted!", "info"]] call FLO_fnc_intelSystem;
+    ["showNotification", ["! INTELLIGENCE !", "Enemy reconnaissance aircraft spotted!", "warning"]] call FLO_fnc_intelSystem;
     [_targetPos] call FLO_fnc_airRecon;
     sleep 300;
 };
