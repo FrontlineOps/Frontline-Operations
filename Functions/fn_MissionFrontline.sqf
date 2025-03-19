@@ -228,8 +228,6 @@ private _frontlineManagerDeclaration = [
 			'Outpost_13'
 			]; };
 
-
-
 			_dir = 0 + (random 360);
 			if (count (nearestObjects [(getPos thisTrigger), ['House'], 200]) != 0) then {
 			_dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 200]) select 0);
@@ -237,12 +235,11 @@ private _frontlineManagerDeclaration = [
 
 
 			private _compReference = [ selectRandom _P1, (getPos thisTrigger), [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
-
 			private _ARRAY = [ _compReference ] call LARs_fnc_getCompObjects;
 			{_x setVectorUp [0,0,1];} forEach _ARRAY; 
 			};
 
-			private _trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
+			_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
 			_trgA setTriggerArea [1000, 1000, 0, false, 100];
 			_trgA setTriggerInterval 3;
 			_trgA setTriggerTimeout [11,11, 11, true];
@@ -311,13 +308,11 @@ private _frontlineManagerDeclaration = [
 			_dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 200]) select 0);
 			};
 
-						
-			private _COM = [ selectRandom _P1, _positionCoords, [0,0,0], _dir, true ] call LARs_fnc_spawnComp;	
-			private _ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
-			{_x setVectorUp [0,0,1]} forEach _ARRAY;
+			private _compReference = [ selectRandom _P1, (getPos thisTrigger), [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
+			private _ARRAY = [ _compReference ] call LARs_fnc_getCompObjects;
+			{_x setVectorUp [0,0,1];} forEach _ARRAY; 
 
-
-			_trgA = createTrigger ['EmptyDetector', _positionCoords, false];
+			_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
 			_trgA setTriggerArea [1000, 1000, 0, false, 100];
 			_trgA setTriggerInterval 3;
 			_trgA setTriggerTimeout [3, 3, 3, true];
