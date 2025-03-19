@@ -102,6 +102,19 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             false,
             false
         ] call BIS_fnc_holdActionAdd;
+
+        CreatedVEH setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+
+        [CreatedVEH, [
+            "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>", 
+            { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
+            nil, 
+            1.4, 
+            false, 
+            true, 
+            "", 
+            "!IDS_Logistics_isHolding"
+        ]] remoteExec ["addAction", 0, true];
     } else {
         hint "Not enough Resources";
     };
