@@ -630,7 +630,12 @@ if (isNil "FLO_Garrison_Manager") then {
                             _vehGroup setBehaviour "AWARE";
                             
                             // Small area defense pattern
-                            [_vehGroup, _vehPos, 50, 2, 0.3, 0.5] call BIS_fnc_taskDefend;
+                            // Create a sentry waypoint
+                            private _wp = _vehGroup addWaypoint [_vehPos, 0];
+                            _wp setWaypointType "SENTRY";
+                            _wp setWaypointCombatMode "RED";
+                            _wp setWaypointBehaviour "AWARE";
+                            _wp setWaypointSpeed "LIMITED";
                             
                             ["Garrison", 3, format["Vehicle %1 assigned to DEFENSE at %2", _veh, markerText _marker]] call FLO_fnc_log;
                         } else {

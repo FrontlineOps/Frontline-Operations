@@ -111,7 +111,7 @@ private _targetPos = getPos _targetBuilding;
 
 // Start with recon if aggression is high enough
 if (_aggressionScore > 3) then {
-    ["showNotification", ["! INTELLIGENCE !", "Enemy reconnaissance aircraft spotted!", "info"]] call FLO_fnc_intelSystem;
+    ["showNotification", ["! INTELLIGENCE !", "Enemy reconnaissance aircraft spotted!", "warning"]] call FLO_fnc_intelSystem;
     [_targetPos] call FLO_fnc_airRecon;
     sleep 300;
 };
@@ -745,25 +745,6 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
                     [_lightGroup, _targetPos, _spawnPos, _spawnIndex, _forceSize] call _fnc_setupGroupBehavior;
                 };
             };
-            
-            // Create additional foot assault group for each spawn
-            private _patrolGroup = [
-                _elementSpawnPos, 
-                East, 
-                ([] call {
-                    private _unitTypes = [];
-                    // Create dynamic number of units based on adjusted tier (3-8 units)
-                    private _unitCount = 3 + floor(random (_adjustedTierValue + 2)); 
-                    for "_i" from 1 to _unitCount do {
-                        _unitTypes pushBack (selectRandom (FLO_configCache get "units"));
-                    };
-                    _unitTypes
-                })
-            ] call BIS_fnc_spawnGroup;
-            
-            private _waypoint = _patrolGroup addWaypoint [_targetPos, 0];
-            _waypoint setWaypointType "SAD";
-            _groups pushBack _patrolGroup;
             
             // Update the groups in missionNamespace immediately after creating each group
             missionNamespace setVariable [_offensiveOpsVarName, _groups];
