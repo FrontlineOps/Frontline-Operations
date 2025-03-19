@@ -918,7 +918,7 @@ private _airSupportTypeDef = [
         _self call ["cleanupLaser"];
         
         // Create laser designation
-        private _laserTarget = createVehicle ["LaserTargetE", getPos _target, [], 0, "CAN_COLLIDE"];
+        private _laserTarget = createVehicle ["LaserTargetW", getPos _target, [], 0, "CAN_COLLIDE"];
         _laserTarget attachTo [_target, [0,0,1]];
         _self set ["currentLaser", _laserTarget];
         
