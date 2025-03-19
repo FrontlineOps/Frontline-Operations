@@ -55,6 +55,9 @@ if (_originalNetId != "") then {
         
         // Make entity visible again
         [_originalNetId, false] call IDS_Logistics_fnc_toggleEntityVisibility;
+
+        // Add entity to placed entities array
+        IDS_Logistics_PlacedEntities pushBack _existingEntity;
     } else {
         diag_log format ["IDS Logistics: Error - Could not find entity with NetID %1", _originalNetId];
     };
@@ -72,7 +75,9 @@ if (_originalNetId != "") then {
     
     // Mark as a placed entity for future operations
     _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-    _entity setVariable ["IDS_Logistics_PlacedBy", name _player, true];
+
+    // Add entity to placed entities array
+    IDS_Logistics_PlacedEntities pushBack _entity;
 
     // Get entity configuration and set variable
     private _entityConfig = [_className] call IDS_Logistics_fnc_getEntityConfig;

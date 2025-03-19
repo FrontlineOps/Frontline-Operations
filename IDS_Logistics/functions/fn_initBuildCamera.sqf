@@ -15,17 +15,40 @@
  * Key Controls:
  * - N: Toggle vision modes (Normal, NVG, Thermal White Hot, Thermal Black Hot)
  * - Numpad Decimal: Reset to last position
- * - B: Open build menu
+ * - B: Open build menu (if not disabled)
  *
- * @param {Object} [_this] - The object to center the camera on (defaults to player vehicle if undefined)
+ * @param {Object|Array} _this - This can be:
+ *  - Object: The object to center the camera on (defaults to player vehicle if undefined)
+ *  - Array: [object, buildMenuDisabled] where:
+ *      - object: The object to center camera on
+ *      - buildMenuDisabled (boolean): Whether to disable the build menu (default: false)
  *
  * @return {Nothing}
  *
  * @example
- * [player] call IDS_Logistics_fnc_initBuildCamera
+ * [player] call IDS_Logistics_fnc_initBuildCamera                // Enable camera with build menu
+ * [player, true] call IDS_Logistics_fnc_initBuildCamera          // Enable camera without build menu
  */
 
 // ---- CAMERA CONFIGURATION SETUP ----
+
+// Parse parameters
+private _targetObject = objNull;
+private _buildMenuDisabled = false;
+
+if (typeName _this == typeName []) then {
+    if (count _this > 0) then {
+        _targetObject = _this select 0;
+        if (count _this > 1) then {
+            _buildMenuDisabled = _this select 1;
+        };
+    };
+} else {
+    _targetObject = _this;
+};
+
+// Set global variable for build menu status
+IDS_Logistics_BuildMenuDisabled = _buildMenuDisabled;
 
 //--- Is FLIR available
 if (isnil "IDS_LOGISTICS_BUILD_CAM_ISFLIR") then { IDS_LOGISTICS_BUILD_CAM_ISFLIR = isClass (configFile >> "CfgPatches" >> "A3_Data_F"); };
@@ -44,12 +67,12 @@ IDS_Logistics_MouseClicks = [];
 // ---- CAMERA INITIALIZATION ----
 
 //--- Use provided object or default to player's vehicle
-if (typeName _this != typeName objNull) then { _this = cameraOn };
+if (typeName _targetObject != typeName objNull) then { _targetObject = cameraOn };
 
 //--- Ensure simulation runs at minimum speed (camera needs time to advance)
 setAccTime (accTime max (1 / 128));
 
-private _ppos = getPosATL _this;
+private _ppos = getPosASL _targetObject;
 private _pX = _ppos select 0;
 private _pY = _ppos select 1;
 private _pZ = _ppos select 2;
@@ -289,7 +312,7 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
             params ["_object"];
             if (isNull _object) exitWith { false };
             
-            private _objectPos = getPosATL _object;
+            private _objectPos = getPosASL _object;
             private _objectSize = boundingBoxReal _object;
             private _minZ = (_objectSize select 0) select 2;
             private _maxZ = (_objectSize select 1) select 2;
@@ -301,7 +324,7 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
             private _playersOnObject = false;
             {
                 if (isPlayer _x) then {
-                    private _playerPos = getPosATL _x;
+                    private _playerPos = getPosASL _x;
                     private _relativeZ = (_playerPos select 2) - (_objectPos select 2);
                     
                     // Check if player is above the object and within its height bounds
@@ -475,6 +498,7 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["KeyDown", {
             IDS_Logistics_lastViewDir = nil;
             IDS_Logistics_ShowCenterCursor = nil;
             IDS_Logistics_CameraTerrainSnap = nil;
+            IDS_Logistics_BuildMenuDisabled = nil;
 
             ["Build mode exited", 2] call IDS_Logistics_fnc_cameraHint;
             
@@ -501,7 +525,13 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["KeyDown", {
     };
 
     if (_key == 83 && !isNil 'IDS_LOGISTICS_CAM_LASTPOS') then { IDS_LOGISTICS_CAM setPos IDS_LOGISTICS_CAM_LASTPOS; };
-    if (_key == 48) then { [] call IDS_Logistics_fnc_openBuildMenu; };
+    if (_key == 48) then { 
+        if (!IDS_Logistics_BuildMenuDisabled) then {
+            [] call IDS_Logistics_fnc_openBuildMenu;
+        } else {
+            ["Build menu is disabled in this mode", 2] call IDS_Logistics_fnc_cameraHint;
+        };
+    };
     if (_key == 20) then {
         IDS_Logistics_CameraTerrainSnap = !IDS_Logistics_CameraTerrainSnap;
         if (IDS_Logistics_CameraTerrainSnap) then {
@@ -617,15 +647,23 @@ _keyDown = (findDisplay 46) displayAddEventHandler ["KeyDown", {
     IDS_Logistics_lastViewDir = nil;
     IDS_Logistics_ShowCenterCursor = nil;
     IDS_Logistics_CameraTerrainSnap = nil;
+    IDS_Logistics_BuildMenuDisabled = nil;
 };
 
 // Display camera controls info
+private _bKeyText = if (!IDS_Logistics_BuildMenuDisabled) then {
+    "<t>• <t color='#DDDDDD'>B key</t> - Open build menu</t><br/>"
+} else {
+    "<t>• <t color='#DDDDDD'>B key</t> - <t color='#888888'>Build menu disabled</t></t><br/>"
+};
+
 private _controlsInfo = format [
     "<t color='#AAFFAA' size='1.0'>CONTROLS</t><br/><t align='left'>" +
     "<t>• <t color='#DDDDDD'>N key</t> - Toggle normal/night vision</t><br/>" +
-    "<t>• <t color='#DDDDDD'>B key</t> - Open build menu</t><br/>" +
+    "%1" +
     "<t>• <t color='#DDDDDD'>T key</t> - Toggle terrain snapping</t><br/>" +
     "<t>• <t color='#DDDDDD'>C key</t> - Toggle 3d cursor</t><br/>" +
+    "<t>• <t color='#DDDDDD'>Q/Z key</t> - Raise/Lower camera</t><br/>" +
     "<t>• <t color='#DDDDDD'>Left click</t> - Place entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + Left click</t> - Pick up entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity under cursor</t><br/>" +
@@ -633,7 +671,8 @@ private _controlsInfo = format [
     "<t>• <t color='#DDDDDD'>ESC key</t> - Exit build mode</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + scroll</t> - Adjust height</t><br/>" +
     "<t>• <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
-    "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>"
+    "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>",
+    _bKeyText
 ];
 
 [_controlsInfo, 0] call IDS_Logistics_fnc_cameraHint;
