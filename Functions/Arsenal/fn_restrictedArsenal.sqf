@@ -398,7 +398,7 @@ if (hasInterface) then {
     player addEventHandler ["Respawn", {
         // Apply restrictions to all arsenal boxes when a player respawns/joins
         {
-            if (_x isKindOf "ReammoBox_F" || {typeOf _x in [F_HQ_01, F_OP_01]}) then {
+            if (typeOf _x in [F_HQ_01, F_OP_01]) then {
                 [_x] call FLO_fnc_restrictArsenalBox;
             };
         } forEach (entities "All");
@@ -406,7 +406,7 @@ if (hasInterface) then {
     
     // Immediate initialization for the connecting player
     {
-        if (_x isKindOf "ReammoBox_F" || {typeOf _x in [F_HQ_01, F_OP_01]}) then {
+        if (typeOf _x in [F_HQ_01, F_OP_01]) then {
             [_x] call FLO_fnc_restrictArsenalBox;
         };
     } forEach (entities "All");
