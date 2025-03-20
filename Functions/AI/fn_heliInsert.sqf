@@ -71,10 +71,9 @@ if (HELIDIS == 0) then {
     _wpDrop setWaypointType "MOVE";
     _wpDrop setWaypointBehaviour "CARELESS";
     _wpDrop setWaypointForceBehaviour true;
-    GroupQRF = _qrfGroup;
     _wpDrop setWaypointStatements [
         "true",
-        "(vehicle this) land 'GET OUT'; GroupQRF leaveVehicle (vehicle this);"
+        "(vehicle this) land 'GET OUT'; _qrfGroup leaveVehicle (vehicle this);"
     ];
     _wpDrop setWaypointSpeed "FULL";
     
