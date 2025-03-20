@@ -396,20 +396,42 @@ addMissionEventHandler ["EntityCreated", {
 // Add player initialization event handler to catch when players join
 if (hasInterface) then {
     player addEventHandler ["Respawn", {
-        // Apply restrictions to all arsenal boxes when a player respawns/joins
+        // Add a slight delay to ensure everything is fully loaded
+        [{
+            // Apply restrictions to all arsenal boxes when a player respawns/joins
+            {
+                // Check for FOBs, OPs, and the mobile arsenal truck
+                if ((typeOf _entity) in [F_HQ_01, F_OP_01]) then {
+                    [_x] call FLO_fnc_restrictArsenalBox;
+                };
+            } forEach (entities "All");
+        }, [], 1] call CBA_fnc_waitAndExecute;
+    }];
+    
+    // Delayed initialization for the connecting player
+    [{
+        // Apply to all possible arsenal containers
         {
-            if (typeOf _x in [F_HQ_01, F_OP_01]) then {
+            if ((typeOf _entity) in [F_HQ_01, F_OP_01]) then {
                 [_x] call FLO_fnc_restrictArsenalBox;
             };
         } forEach (entities "All");
-    }];
-    
-    // Immediate initialization for the connecting player
-    {
-        if (typeOf _x in [F_HQ_01, F_OP_01]) then {
-            [_x] call FLO_fnc_restrictArsenalBox;
+        
+        // Also apply restrictions globally through a direct event handler
+        if (FLO_hasAceArsenal) then {
+            ["ace_arsenal_displayOpened", {
+                // This will catch any arsenal opening, regardless of source
+                params ["_display"];
+                private _box = ace_arsenal_currentBox;
+                [_box] call FLO_fnc_restrictArsenalBox;
+            }] call CBA_fnc_addEventHandler;
+        } else {
+            ["arsenalOpened", {
+                params ["_display", "_box"];
+                [_box] call FLO_fnc_restrictArsenalBox;
+            }] call CBA_fnc_addEventHandler;
         };
-    } forEach (entities "All");
+    }, [], 3] call CBA_fnc_waitAndExecute; // Longer delay for initial setup
 }; 
 
 // Mark as initialized to prevent multiple executions
