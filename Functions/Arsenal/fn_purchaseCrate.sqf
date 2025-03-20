@@ -183,15 +183,21 @@ FLO_fnc_initCratePlacement = {
     missionNamespace setVariable ["FLO_CratePlacementActive", true];
     _crate enableSimulation false;
     
-    // Position tracking script
-    [_crate] spawn {
-        params ["_crate"];
-        while {missionNamespace getVariable ["FLO_CratePlacementActive", false]} do {
-            _crate setVehiclePosition [screenToWorld [0.5, 0.5], [], 0, "CAN_COLLIDE"];
-            _crate setDir ((getDirVisual player) + 180);
-            sleep 0.1;
+    // Use CBA perFrameHandler for smoother updates
+    private _pfhID = [{
+        params ["_args", "_pfhID"];
+        _args params ["_crate"];
+        
+        // Check if placement mode is still active
+        if !(missionNamespace getVariable ["FLO_CratePlacementActive", false]) exitWith {
+            [_pfhID] call CBA_fnc_removePerFrameHandler;
         };
-    };
+        
+        // Update position every frame for smooth movement
+        _crate setVehiclePosition [screenToWorld [0.5, 0.5], [], 0, "CAN_COLLIDE"];
+        _crate setDir ((getDirVisual player) + 180);
+        
+    }, 0, [_crate]] call CBA_fnc_addPerFrameHandler;
     
     // Add cancel action
     private _cancelAction = [_crate,
@@ -204,13 +210,31 @@ FLO_fnc_initCratePlacement = {
         {},
         {
             params ["_target", "_caller", "_actionId", "_args"];
-            _args params ["_crate", "_player", "_id", "_name", "_cost", "_boxType", "_items", "_description", "_newFunds"];
+            _args params ["_crate", "_player", "_id", "_name", "_cost", "_boxType", "_items", "_description", "_newFunds", "_pfhID"];
             
             // End placement mode
             missionNamespace setVariable ["FLO_CratePlacementActive", false];
             
+            // Remove keyboard event handler if it exists
+            private _keyHandlerId = _crate getVariable ["FLO_keyHandler", -1];
+            if (_keyHandlerId != -1) then {
+                (findDisplay 46) displayRemoveEventHandler ["KeyDown", _keyHandlerId];
+            };
+            
             // Refund cost
             [_cost] remoteExec ["FLO_fnc_updateFunds", 2];
+            
+            // Remove the holdActions (to be safe, though the crate will be deleted)
+            private _cancelActionId = _crate getVariable ["FLO_cancelActionId", -1];
+            private _placeActionId = _crate getVariable ["FLO_placeActionId", -1];
+            
+            if (_cancelActionId != -1) then {
+                [_crate, _cancelActionId] call BIS_fnc_holdActionRemove;
+            };
+            
+            if (_placeActionId != -1) then {
+                [_crate, _placeActionId] call BIS_fnc_holdActionRemove;
+            };
             
             // Delete the crate
             deleteVehicle _crate;
@@ -219,12 +243,15 @@ FLO_fnc_initCratePlacement = {
             hint format ["Cancelled purchase of %1.\nRefunded %2$.", _name, _cost];
         },
         {},
-        [_crate, _player, _id, _name, _cost, _boxType, _items, _description, _newFunds],
+        [_crate, _player, _id, _name, _cost, _boxType, _items, _description, _newFunds, _pfhID],
         3,
         0,
         false,
         false
     ] call BIS_fnc_holdActionAdd;
+    
+    // Store the action ID for later removal
+    _crate setVariable ["FLO_cancelActionId", _cancelAction, false];
     
     // Add place action
     private _placeAction = [_crate,
@@ -237,10 +264,16 @@ FLO_fnc_initCratePlacement = {
         {},
         {
             params ["_target", "_caller", "_actionId", "_args"];
-            _args params ["_crate", "_player", "_id", "_name", "_cost", "_boxType", "_items", "_description", "_newFunds"];
+            _args params ["_crate", "_player", "_id", "_name", "_cost", "_boxType", "_items", "_description", "_newFunds", "_pfhID"];
             
             // End placement mode
             missionNamespace setVariable ["FLO_CratePlacementActive", false];
+            
+            // Remove keyboard event handler if it exists
+            private _keyHandlerId = _crate getVariable ["FLO_keyHandler", -1];
+            if (_keyHandlerId != -1) then {
+                (findDisplay 46) displayRemoveEventHandler ["KeyDown", _keyHandlerId];
+            };
             
             // Enable simulation and physics
             _crate enableSimulation true;
@@ -252,19 +285,84 @@ FLO_fnc_initCratePlacement = {
             // Make it draggable
             [_crate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
             
+            // Remove the holdActions
+            private _cancelActionId = _crate getVariable ["FLO_cancelActionId", -1];
+            private _placeActionId = _crate getVariable ["FLO_placeActionId", -1];
+            
+            if (_cancelActionId != -1) then {
+                [_crate, _cancelActionId] call BIS_fnc_holdActionRemove;
+            };
+            
+            if (_placeActionId != -1) then {
+                [_crate, _placeActionId] call BIS_fnc_holdActionRemove;
+            };
+            
             // Notify the player
             hint format ["Purchased %1 for %2$\nFunds remaining: %3$", _name, _cost, _newFunds];
         },
         {},
-        [_crate, _player, _id, _name, _cost, _boxType, _items, _description, _newFunds],
+        [_crate, _player, _id, _name, _cost, _boxType, _items, _description, _newFunds, _pfhID],
         3,
         0,
         false,
         false
     ] call BIS_fnc_holdActionAdd;
     
+    // Store the action ID for later removal
+    _crate setVariable ["FLO_placeActionId", _placeAction, false];
+    
+    // Add keyboard event handler for quick actions
+    private _keyHandler = (findDisplay 46) displayAddEventHandler ["KeyDown", {
+        params ["_display", "_key", "_shift", "_ctrl", "_alt"];
+        
+        // Check if placement mode is active
+        if !(missionNamespace getVariable ["FLO_CratePlacementActive", false]) exitWith {false};
+        
+        // Handle ESC key to cancel placement
+        if (_key == 1) then {
+            private _crate = missionNamespace getVariable ["FLO_ActivePlacementCrate", objNull];
+            if (!isNull _crate) then {
+                // End placement mode
+                missionNamespace setVariable ["FLO_CratePlacementActive", false];
+                
+                // Remove the holdActions
+                private _cancelActionId = _crate getVariable ["FLO_cancelActionId", -1];
+                private _placeActionId = _crate getVariable ["FLO_placeActionId", -1];
+                
+                if (_cancelActionId != -1) then {
+                    [_crate, _cancelActionId] call BIS_fnc_holdActionRemove;
+                };
+                
+                if (_placeActionId != -1) then {
+                    [_crate, _placeActionId] call BIS_fnc_holdActionRemove;
+                };
+                
+                // Remove keyboard event handler
+                private _keyHandlerId = _crate getVariable ["FLO_keyHandler", -1];
+                if (_keyHandlerId != -1) then {
+                    (findDisplay 46) displayRemoveEventHandler ["KeyDown", _keyHandlerId];
+                };
+                
+                // Refund the cost
+                [_crate getVariable ["FLO_cost", 0]] remoteExec ["FLO_fnc_updateFunds", 2];
+                
+                // Delete the crate
+                deleteVehicle _crate;
+                hint "Purchase cancelled. Funds refunded.";
+            };
+            true
+        } else {
+            false
+        };
+    }];
+    
+    // Store values for later cleanup
+    _crate setVariable ["FLO_keyHandler", _keyHandler, false];
+    _crate setVariable ["FLO_cost", _cost, false];
+    missionNamespace setVariable ["FLO_ActivePlacementCrate", _crate];
+    
     // Notify player about placement mode
-    hint format ["Positioning %1...\nUse the PLACE action when satisfied with the position.\nUse CANCEL to cancel and get a refund.", _name];
+    hint format ["Positioning %1...\nUse the PLACE action when satisfied with the position.\nUse CANCEL or ESC to cancel and get a refund.", _name];
 };
 
 // Function to fill a crate with items (server-side)
