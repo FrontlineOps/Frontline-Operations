@@ -684,7 +684,7 @@ private _controlsInfo = format [
     "<t>• <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>",
     _bKeyText,
-    _shiftKey
+    _shiftKeyText
 ];
 
 [_controlsInfo, 0] call IDS_Logistics_fnc_cameraHint;
