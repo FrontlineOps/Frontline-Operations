@@ -814,10 +814,6 @@ private _airSupportTypeDef = [
             _wp setWaypointType "MOVE";
             _wp setWaypointSpeed "FULL";
             _wp setWaypointCompletionRadius 100; // Larger completion radius for smoother transitions
-            
-            if (_i == 1) then {
-                _wp setWaypointStatements ["true", "vehicle this setVelocity [(velocity vehicle this) vectorAdd [0,0,-5]]"]; // Push downward on first waypoint
-            };
         }; 
         
         // Final waypoint with more distance to recover
