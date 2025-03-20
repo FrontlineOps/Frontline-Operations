@@ -14,11 +14,7 @@ _allWatchposts = [
 "Watchpost_7",
 "Watchpost_8",
 "Watchpost_9",
-"Watchpost_10",
-"Recon_OPF_2",
-"Recon_OPF_2",
-"Recon_OPF_2",
-"Recon_OPF_3"
+"Watchpost_10"
 ]; 
 
 _poss = [_thisReconTrigger, 10, 200, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
