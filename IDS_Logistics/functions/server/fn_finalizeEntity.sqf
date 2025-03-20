@@ -81,7 +81,7 @@ if (_originalNetId != "") then {
 
     // Get entity configuration and set variable
     private _entityConfig = [_className] call IDS_Logistics_fnc_getEntityConfig;
-    _entityConfig params ["_entityClassName", "_entityDisplayName", "_entityCategory", "_entitySubCategory", "_entityCost"];
+    _entityConfig params ["_entityClassName", "_entityCategory", "_entityCost"];
     _entity setVariable ["IDS_Logistics_EntityCost", _entityCost, true];
     _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
 };
