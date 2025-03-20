@@ -362,12 +362,17 @@ IDS_Logistics_MouseClicks pushBack ((findDisplay 46) displayAddEventHandler ["Mo
                 private _type = typeOf _centerObj;
 
                 if (_isPlaced) then {
-                    // Check for players on the object
-                    if ([_centerObj] call _hasPlayersOnObject) then {
-                        ["Cannot delete: Players are on the object", 2] call IDS_Logistics_fnc_cameraHint;
+                    // Check if delete entity is disabled
+                    if (IDS_Logistics_BuildMenuDisabled) then {
+                        ["Delete entity is disabled in this mode", 2] call IDS_Logistics_fnc_cameraHint;
                     } else {
-                        deleteVehicle _centerObj;
-                        ["Entity removed: " + _type, 2] call IDS_Logistics_fnc_cameraHint;
+                        // Check for players on the object
+                        if ([_centerObj] call _hasPlayersOnObject) then {
+                            ["Cannot delete: Players are on the object", 2] call IDS_Logistics_fnc_cameraHint;
+                        } else {
+                            deleteVehicle _centerObj;
+                            ["Entity removed: " + _type, 2] call IDS_Logistics_fnc_cameraHint;
+                        };
                     };
                 } else {
                     ["Found object but not placeable: " + _type, 2] call IDS_Logistics_fnc_cameraHint;
@@ -657,6 +662,12 @@ private _bKeyText = if (!IDS_Logistics_BuildMenuDisabled) then {
     "<t>• <t color='#DDDDDD'>B key</t> - <t color='#888888'>Build menu disabled</t></t><br/>"
 };
 
+private _shiftKeyText = if (!IDS_Logistics_BuildMenuDisabled) then {
+    "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity</t><br/>"
+} else {
+    "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - <t color='#888888'>Delete entity disabled</t></t><br/>"
+};
+
 private _controlsInfo = format [
     "<t color='#AAFFAA' size='1.0'>CONTROLS</t><br/><t align='left'>" +
     "<t>• <t color='#DDDDDD'>N key</t> - Toggle normal/night vision</t><br/>" +
@@ -666,13 +677,14 @@ private _controlsInfo = format [
     "<t>• <t color='#DDDDDD'>Q/Z key</t> - Raise/Lower camera</t><br/>" +
     "<t>• <t color='#DDDDDD'>Left click</t> - Place entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + Left click</t> - Pick up entity</t><br/>" +
-    "<t>• <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity under cursor</t><br/>" +
+    "%2" +
     "<t>• <t color='#DDDDDD'>Right click</t> - Cancel placement</t><br/>" +
     "<t>• <t color='#DDDDDD'>ESC key</t> - Exit build mode</t><br/>" +
     "<t>• <t color='#DDDDDD'>CTRL + scroll</t> - Adjust height</t><br/>" +
     "<t>• <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
     "<t>• <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>",
-    _bKeyText
+    _bKeyText,
+    _shiftKey
 ];
 
 [_controlsInfo, 0] call IDS_Logistics_fnc_cameraHint;
