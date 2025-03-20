@@ -61,6 +61,7 @@ class FLO {
         file = "Functions\Arsenal";
 
         class restrictedArsenal     {};
+        class purchaseCrate         {};
     };
     
     class Objective {

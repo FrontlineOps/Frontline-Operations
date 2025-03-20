@@ -192,6 +192,11 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 // Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
 
+private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+if (_RestrictedArsenalVal isEqualTo 0) then {
+    [] call FLO_fnc_purchaseCrate;
+};
+
 setViewDistance 3000;
 
 // Dynamic View Distance System based on server FPS
