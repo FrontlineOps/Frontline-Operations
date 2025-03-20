@@ -486,6 +486,7 @@ if (isNil "FLO_Garrison_Manager") then {
             private _spawnedUnits = [];
             private _spawnedVehicles = [];
             private _group = createGroup [east, true];
+            _group deleteGroupWhenEmpty true;
             
             // Add vehicles if requested
             if (_withVehicles) then {
@@ -563,6 +564,7 @@ if (isNil "FLO_Garrison_Manager") then {
                         private _crew = units (east createVehicleCrew _veh);
                         // Get the crew's group - when createVehicleCrew is called, it creates a new group automatically
                         private _vehGroup = if (count _crew > 0) then {group (_crew select 0)} else {createGroup [east, true]};
+                        _vehGroup deleteGroupWhenEmpty true;
 
                         ["Garrison", 3, format["createVehicleCrew resulted in %1 crew members", count _crew]] call FLO_fnc_log;
                     {
@@ -669,6 +671,7 @@ if (isNil "FLO_Garrison_Manager") then {
                     // Force side to EAST if needed
                     if (side _unit != east) then {
                         private _newUnit = createGroup [east, true] createUnit [_type, _pos, [], 50, "NONE"];
+                        (group _newUnit) deleteGroupWhenEmpty true;
                         deleteVehicle _unit;
                         _unit = _newUnit;
                         [_unit] joinSilent _group;
@@ -716,6 +719,7 @@ if (isNil "FLO_Garrison_Manager") then {
             if (side _group != east) then {
                 ["Garrison", 2, "WARNING: Group side is not EAST after creation. Creating new EAST group..."] call FLO_fnc_log;
                 private _eastGroup = createGroup [east, true];
+                _eastGroup deleteGroupWhenEmpty true;
                 {
                     [_x] joinSilent _eastGroup;
                     // Double-check individual unit sides
@@ -757,6 +761,7 @@ if (isNil "FLO_Garrison_Manager") then {
                 // Garrison units - 2/3 of units go to buildings
                 private _garrisonUnits = floor ((count _spawnedUnits) * 0.6);
                 private _garrisonGroup = createGroup [east, true];
+                _garrisonGroup deleteGroupWhenEmpty true;
                 
                 for "_i" from 1 to (_garrisonUnits min count _buildingPositions) do {
                     if (count _spawnedUnits > 0) then {
@@ -768,6 +773,7 @@ if (isNil "FLO_Garrison_Manager") then {
                             ["Garrison", 2, format["WARNING: Unit %1 lost EAST side after joining garrison group", _unit]] call FLO_fnc_log;
                             // Force the unit back to EAST if needed
                             [_unit] joinSilent createGroup [east, true];
+                            (group _unit) deleteGroupWhenEmpty true;
                         };
                         
                         // Move to building position
@@ -789,6 +795,7 @@ if (isNil "FLO_Garrison_Manager") then {
                 // Create patrol group with remaining units
                 if (count _spawnedUnits > 0) then {
                     private _patrolGroup = createGroup [east, true];
+                    _patrolGroup deleteGroupWhenEmpty true;
                     
                     {
                         [_x] joinSilent _patrolGroup;
@@ -798,6 +805,7 @@ if (isNil "FLO_Garrison_Manager") then {
                             ["Garrison", 2, format["WARNING: Unit %1 lost EAST side after joining patrol group", _x]] call FLO_fnc_log;
                             // Force the unit back to EAST if needed
                             [_x] joinSilent createGroup [east, true];
+                            (group _x) deleteGroupWhenEmpty true;
                             [_x] joinSilent _patrolGroup;
                         };
                     } forEach _spawnedUnits;
@@ -1107,6 +1115,7 @@ if (isNil "FLO_Garrison_Manager") then {
                         if (count _nonEastUnits > 0) then {
                             
                             private _eastGroup = createGroup [east, true];
+                            _eastGroup deleteGroupWhenEmpty true;
                             {
                                 [_x] joinSilent _eastGroup;
                                 if (side _x != east) then {

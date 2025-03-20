@@ -45,20 +45,6 @@ switch (MissionType) do {
             _marker setMarkerColor "colorCivilian";  
         } forEach _allZoneMarks;
     };
-    
-    // Infiltrate Battle Ship mission
-    case 3: {
-        private _objectLoc = nearestObjects [Centerposition, ["LocationArea_F"], 33000]; 
-        {
-            private _markerName = "InitMissionMark" + (str (getPos _x));   
-            private _marker = createMarkerLocal [_markerName, (getPos _x)];   
-            _marker setMarkerTypeLocal "Unknown";  
-            _marker setMarkerShapeLocal "ELLIPSE";  
-            _marker setMarkerBrushLocal "SolidBorder";
-            _marker setMarkerSizeLocal [-500, -500];  
-            _marker setMarkerColor "colorCivilian";  
-        } forEach _objectLoc;
-    };
 };
 
 ["MissionSelect", 3, format["Mission Type: %1", MissionType]] call FLO_fnc_Log;
@@ -141,25 +127,6 @@ FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
                 _marker setMarkerAlpha 0.7;
                 
                 private _convoy = [] execVM "Scripts\Mission_Convoy_Custom.sqf";
-            };
-            
-            case 3: {
-                private _shipPos = [_pos, 0, 2500, 3, 2, 1, 0] call BIS_fnc_findSafePos;
-                private _markerName = "CShipMark" + (str _shipPos);
-                private _marker = createMarkerLocal [_markerName, _shipPos];   
-                _marker setMarkerTypeLocal "o_naval";  
-                _marker setMarkerColorLocal "colorOPFOR";  
-                _marker setMarkerSize [1.2, 1.2]; 
-                
-                private _trigger = createTrigger ["EmptyDetector", _shipPos];
-                _trigger setTriggerArea [3000, 3000, 0, false, 100];
-                _trigger setTriggerTimeout [1, 1, 1, true];
-                _trigger setTriggerActivation ["WEST", "PRESENT", false];
-                _trigger setTriggerStatements [
-                    "this",
-                    "[thisTrigger] execVM 'Scripts\Mission_Ship.sqf';",
-                    ""
-                ];
             };
             
             default {

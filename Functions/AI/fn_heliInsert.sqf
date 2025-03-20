@@ -56,6 +56,9 @@ if (HELIDIS == 0) then {
         };
         [_unit] joinSilent _qrfGroup;
     };
+
+    _qrfGroup deleteGroupWhenEmpty true;
+    _pilotGroup deleteGroupWhenEmpty true;
     
     // Distribute intel items
     private _intelItems = ["FlashDisk", "FilesSecret", "SmartPhone", "MobilePhone", "DocumentsSecret"];
@@ -71,16 +74,16 @@ if (HELIDIS == 0) then {
     _wpDrop setWaypointType "MOVE";
     _wpDrop setWaypointBehaviour "CARELESS";
     _wpDrop setWaypointForceBehaviour true;
-    GroupQRF = _qrfGroup;
     _wpDrop setWaypointStatements [
         "true",
-        "(vehicle this) land 'GET OUT'; GroupQRF leaveVehicle (vehicle this);"
+        "(vehicle this) land 'GET OUT'; _qrfGroup leaveVehicle (vehicle this);"
     ];
     _wpDrop setWaypointSpeed "FULL";
     
     private _wpRTB = _pilotGroup addWaypoint [_spawnPos, 0];
     _wpRTB setWaypointType "MOVE";
     _wpRTB setWaypointSpeed "FULL";
+    _wpRTB setWaypointStatements ["true", "deleteVehicle (vehicle this); {deleteVehicle _x} forEach units group this; deleteGroup group this;"];
     
     // Setup QRF waypoints
     private _wpDisembark = _qrfGroup addWaypoint [_landingPos, 0];
@@ -106,16 +109,6 @@ if (HELIDIS == 0) then {
         [], 0, "CAN_COLLIDE"
     ];
     _flare setVelocity [0, 0, -0.1];
-    
-    // Cleanup helicopter after mission
-    [_heli, _pilotGroup, _qrfGroup] spawn {
-        params ["_heli", "_pilotGroup", "_qrfGroup"];
-        sleep 600;
-        if (alive _heli) then {deleteVehicle _heli};
-        {deleteVehicle _x} forEach (units _pilotGroup + units _qrfGroup);
-        deleteGroup _pilotGroup;
-        deleteGroup _qrfGroup;
-    };
     
     // Return the groups
     [_pilotGroup, _qrfGroup]

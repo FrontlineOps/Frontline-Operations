@@ -358,6 +358,12 @@ private _airSupportTypeDef = [
     ["missionType", ""],
     ["state", "READY"],
     ["lastEngaged", time],
+    ["lastScanTime", 0],
+    ["lastScanTargets", []],
+    ["lastInfantryCheck", 0],
+    ["FLO_lastKnowledgeCheckTime", 0],
+    ["FLO_lastWeaponCheckTime", 0],
+    ["FLO_directAttackMode", false],
     ["currentTarget", objNull],
     ["weaponLoadout", []],
     ["altitude", _altitude],
@@ -372,10 +378,11 @@ private _airSupportTypeDef = [
     ["evasionMode", false],
     ["evasionStartTime", 0],
     ["evasionDuration", 30], // Time in seconds that evasion mode lasts
-    ["reconMode", false], // New parameter for reconnaissance mode
+    ["reconMode", false], // reconnaissance mode
     ["reconModeStartTime", 0], // When recon mode started
     ["reconAltitude", 800], // High altitude for recon mode
     ["reconDuration", 120], // How long recon mode lasts in seconds
+    ["lastTargetDetectionTime", time], // Track when the last target was detected
     
     // Methods
     ["#create", {
@@ -814,10 +821,6 @@ private _airSupportTypeDef = [
             _wp setWaypointType "MOVE";
             _wp setWaypointSpeed "FULL";
             _wp setWaypointCompletionRadius 100; // Larger completion radius for smoother transitions
-            
-            if (_i == 1) then {
-                _wp setWaypointStatements ["true", "vehicle this setVelocity [(velocity vehicle this) vectorAdd [0,0,-5]]"]; // Push downward on first waypoint
-            };
         }; 
         
         // Final waypoint with more distance to recover
@@ -854,7 +857,7 @@ private _airSupportTypeDef = [
         } forEach units _group;
         
         // Get last known target position or use a safe default
-        private _lastTargetPos = _self getOrDefault ["lastTargetPos", [0,0,0]];
+        private _lastTargetPos = _self get "lastTargetPos";
         if (_lastTargetPos isEqualTo [0,0,0]) then {
             // If no last target position, use current position
             _lastTargetPos = getPosASL _aircraft;
@@ -895,18 +898,8 @@ private _airSupportTypeDef = [
                 _x setSkill ["spotDistance", 1];
             } forEach (crew _aircraft);
             
-            // Set lower altitude for better aiming at individual infantry
-            private _infantryEngagementAlt = 500 + (random 20);
-            private _currentAlt = _self get "altitude";
-            _aircraft flyInHeight _infantryEngagementAlt;
-            
-            // Store these settings
-            _self set ["originalAltitude", _currentAlt];
-            _self set ["temporaryAltitude", _infantryEngagementAlt];
-            _self set ["usingInfantryEngagementProfile", true];
-            
-            diag_log format ["[FLO][AirSupport] Helicopter %1 using enhanced infantry targeting profile at altitude %2m", 
-                _aircraft, _infantryEngagementAlt];
+            // Log that we're targeting infantry
+            diag_log format ["[FLO][AirSupport] Helicopter %1 using enhanced infantry targeting profile", _aircraft];
         };
         
         // Store target position for reference - absolutely critical for continued engagement
@@ -918,7 +911,7 @@ private _airSupportTypeDef = [
         _self call ["cleanupLaser"];
         
         // Create laser designation
-        private _laserTarget = createVehicle ["LaserTargetE", getPos _target, [], 0, "CAN_COLLIDE"];
+        private _laserTarget = createVehicle ["LaserTargetW", getPos _target, [], 0, "CAN_COLLIDE"];
         _laserTarget attachTo [_target, [0,0,1]];
         _self set ["currentLaser", _laserTarget];
         
@@ -1186,8 +1179,6 @@ private _airSupportTypeDef = [
                             _gunner doWatch (getPosASL _target vectorAdd [0, 0, -5]);
                             _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
                         };
-                        
-                        sleep 0.2;
                     };
                 } else {
                     _pilot reveal [_target, 4];
@@ -1236,8 +1227,6 @@ private _airSupportTypeDef = [
                             _pilot doWatch (getPosASL _target vectorAdd [0, 0, -5]);
                             _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
                         };
-                        
-                        sleep 0.2;
                     };
                 };
             } else {
@@ -1264,7 +1253,6 @@ private _airSupportTypeDef = [
                     // Fire a longer burst (rotatable cannons typically have more ammunition)
                     for "_i" from 1 to 10 do {
                         _shooter fireAtTarget [_target, _selectedWeapon];
-                        sleep 0.15;
                     };
                     
                     // Log the engagement
@@ -1316,12 +1304,12 @@ private _airSupportTypeDef = [
         
         // First, look for vehicles and larger targets (standard detection)
         private _vehicleTargets = _aircraft targets [true, _range];
-        _vehicleTargets = _vehicleTargets select {side _x != side _aircraft && alive _x};
+        _vehicleTargets = _vehicleTargets select {side _x == west && alive _x};
         
         // Then, specifically look for infantry in a more focused area
         private _infantryRange = if (_aircraft isKindOf "Helicopter") then { 1500 } else { 800 };
         private _infantryTargets = nearestObjects [_aircraft, ["CAManBase"], _infantryRange];
-        _infantryTargets = _infantryTargets select {side _x != side _aircraft && alive _x};
+        _infantryTargets = _infantryTargets select {side _x == west && alive _x};
         
         // Extended range search for important targets
         private _extendedRange = 8000;
@@ -1330,7 +1318,7 @@ private _airSupportTypeDef = [
         if (_missionType == "CAS" && (_aircraft isKindOf "Helicopter")) then {
             // Use nearEntities for more comprehensive search
             _extendedTargets = _aircraft nearEntities [["Car", "Tank", "Wheeled_APC", "TrackedAPC", "LandVehicle"], _extendedRange];
-            _extendedTargets = _extendedTargets select {side _x != side _aircraft && alive _x};
+            _extendedTargets = _extendedTargets select {side _x == west && alive _x};
             
             if (count _extendedTargets > 0) then {
                 diag_log format ["[FLO][AirSupport] Helicopter %1 detected %2 high-value targets at extended range", _aircraft, count _extendedTargets];
@@ -1343,7 +1331,7 @@ private _airSupportTypeDef = [
             private _extendedInfRange = _infantryRange * 3;
             _infantryTargets = _aircraft nearEntities ["CAManBase", _extendedInfRange];
             _infantryTargets = _infantryTargets select {
-                side _x != side _aircraft && 
+                side _x == west && 
                 alive _x && 
                 // Simple LOS check with some forgiveness (helicopters have better sensors)
                 (lineIntersects [eyePos _aircraft, eyePos _x, _aircraft, _x] || 
@@ -1515,7 +1503,7 @@ private _airSupportTypeDef = [
         };
         
         // Check remaining weapons periodically (every 10 seconds)
-        private _lastWeaponCheck = _self getOrDefault ["FLO_lastWeaponCheckTime", 0];
+        private _lastWeaponCheck = _self get "FLO_lastWeaponCheckTime";
         if (time - _lastWeaponCheck >= 10) then {
             _self set ["FLO_lastWeaponCheckTime", time];
             private _remainingWeapons = _self call ["checkRemainingWeapons"];
@@ -1540,7 +1528,7 @@ private _airSupportTypeDef = [
             // Different tactics based on remaining weapons
             // If no guided weapons but unguided weapons remain, switch to direct attack mode
             if (!_guidedWeaponsRemain && (_unGuidedWeaponsRemain || _bombsRemain) && 
-                !(_self getOrDefault ["FLO_directAttackMode", false])) then {
+                !(_self get "FLO_directAttackMode")) then {
                 _self set ["FLO_directAttackMode", true];
                 
                 // Log the tactical change
@@ -1611,7 +1599,7 @@ private _airSupportTypeDef = [
         };
         
         // Check for targets that other units know about (every 15 seconds)
-        private _lastKnowledgeCheck = _self getOrDefault ["FLO_lastKnowledgeCheckTime", 0];
+        private _lastKnowledgeCheck = _self get "FLO_lastKnowledgeCheckTime";
         if (time - _lastKnowledgeCheck >= 15) then {
             _self set ["FLO_lastKnowledgeCheckTime", time];
             
@@ -1642,14 +1630,14 @@ private _airSupportTypeDef = [
         // Additional check for individual infantry targeting for helicopters
         if (_aircraft isKindOf "Helicopter" && _missionType == "CAS" && _state == "APPROACHING") then {
             // Only run this periodically to save performance
-            private _lastInfantryCheck = _self getOrDefault ["lastInfantryCheck", 0];
+            private _lastInfantryCheck = _self get "lastInfantryCheck";
             if (time - _lastInfantryCheck > 10) then {
                 _self set ["lastInfantryCheck", time];
                 
                 // First check if there are high-priority targets
                 private _highPriorityTargets = _aircraft targets [true, 2000];
                 _highPriorityTargets = _highPriorityTargets select {
-                    side _x != east && 
+                    side _x == west &&
                     alive _x && 
                     !(_x isKindOf "CAManBase")
                 };
@@ -1658,7 +1646,7 @@ private _airSupportTypeDef = [
                 if (count _highPriorityTargets == 0) then {
                     // Find infantry targets, even single units
                     private _infantryTargets = nearestObjects [_aircraft, ["CAManBase"], 1500];
-                    _infantryTargets = _infantryTargets select {side _x != east && alive _x};
+                    _infantryTargets = _infantryTargets select {side _x == west && alive _x};
                     
                     // If infantry targets found, engage them
                     if (count _infantryTargets > 0) then {
@@ -1692,8 +1680,8 @@ private _airSupportTypeDef = [
                     _targets = _self call ["longRangeTargetScan"];
                 } else {
                     // Store last scan time and result to avoid losing targets too quickly
-                    private _lastScanTime = _self getOrDefault ["lastScanTime", 0];
-                    private _lastTargets = _self getOrDefault ["lastScanTargets", []];
+                    private _lastScanTime = _self get "lastScanTime";
+                    private _lastTargets = _self get "lastScanTargets";
                     private _currentTime = time;
                     
                     // Only do a full scan if enough time has passed or we have no valid targets
@@ -1724,13 +1712,18 @@ private _airSupportTypeDef = [
                     };
                     
                     // If still no targets found and not in recon mode, consider entering recon mode
-                    // But only do this occasionally (10% chance each update)
-                    if (count _targets == 0 && (random 100 < 10) && !_inReconMode) then {
+                    // Only enter if no targets have been detected for 30 minutes (1800 seconds)
+                    private _timeSinceLastDetection = time - (_self get "lastTargetDetectionTime");
+                    if (count _targets == 0 && _timeSinceLastDetection > 1800 && !_inReconMode) then {
+                        diag_log format ["[FLO][AirSupport] No targets detected for %1 minutes, entering recon mode", round(_timeSinceLastDetection/60)];
                         _self call ["enterReconMode"];
                     };
                 };
                 
                 if (count _targets > 0) then {
+                    // Update last target detection time when targets are found
+                    _self set ["lastTargetDetectionTime", time];
+                    
                     // Sort targets by priority and distance
                     _targets = [_targets, [], {
                         private _target = _x;
@@ -1766,7 +1759,7 @@ private _airSupportTypeDef = [
                     _self set ["lastTargetPos", getPosASL _target];
                 
                     // If in direct attack mode, get much closer to target
-                    if (_self getOrDefault ["FLO_directAttackMode", false]) then {
+                    if (_self get "FLO_directAttackMode") then {
                         private _group = _self get "group";
                         private _targetPos = getPosASL _target;
                         
@@ -1791,11 +1784,11 @@ private _airSupportTypeDef = [
                 private _currentTarget = _self get "currentTarget";
                 private _targetPos = _self get "lastTargetPos";
                 private _timeSinceLastEngagement = time - (_self get "lastEngaged");
-                private _attackInProgress = _self getOrDefault ["attackInProgress", false];
-                private _engagementStartTime = _self getOrDefault ["engagementStartTime", time - 30];
+                private _attackInProgress = _self get "attackInProgress";
+                private _engagementStartTime = _self get "engagementStartTime";
                 
-                // Maintain focus on target for at least 20 seconds to avoid switching too quickly
-                private _shouldMaintainFocus = (time - _engagementStartTime < 30);
+                // Increased the focus duration from 30 to 60 seconds to reduce "ADHD" switching
+                private _shouldMaintainFocus = (time - _engagementStartTime < 60);
                 
                 // If current target is still alive and we're maintaining focus, continue engaging
                 if (alive _currentTarget && _shouldMaintainFocus) then {
@@ -1875,7 +1868,7 @@ private _airSupportTypeDef = [
                     
                     // Only end the engagement if we've completed our cooldown after the last firing
                     // and we're not maintaining focus on the target anymore
-                    if (_timeSinceLastEngagement > (_self get "cooldownTime") + 15 && !_shouldMaintainFocus) then {
+                    if (_timeSinceLastEngagement > (_self get "cooldownTime") && !_shouldMaintainFocus) then {
                         // Clean up our laser and dummy target
                         _self call ["cleanupLaser"];
                         
@@ -1884,14 +1877,6 @@ private _airSupportTypeDef = [
                         if (!isNull _dummyTarget) then {
                             deleteVehicle _dummyTarget;
                             _self set ["dummyTarget", objNull];
-                        };
-                        
-                        // If we were using infantry engagement profile, restore normal altitude
-                        if (_self getOrDefault ["usingInfantryEngagementProfile", false]) then {
-                            private _originalAlt = _self getOrDefault ["originalAltitude", _self get "altitude"];
-                            _aircraft flyInHeight _originalAlt;
-                            _self set ["usingInfantryEngagementProfile", false];
-                            diag_log format ["[FLO][AirSupport] Aircraft %1 restoring normal altitude %2m after infantry engagement", _aircraft, _originalAlt];
                         };
                         
                         // Reset state 
@@ -1928,7 +1913,7 @@ private _airSupportTypeDef = [
         };
         
         // Get last known target position or current position
-        private _lastTargetPos = _self getOrDefault ["lastTargetPos", getPosASL _aircraft];
+        private _lastTargetPos = _self get "lastTargetPos";
         
         // Set up holding pattern around target area
         private _holdPos = _lastTargetPos getPos [2000, random 360];
@@ -1968,7 +1953,7 @@ private _airSupportTypeDef = [
         } forEach units _group;
         
         // Get last known target position or use a safe default
-        private _lastTargetPos = _self getOrDefault ["lastTargetPos", [0,0,0]];
+        private _lastTargetPos = _self get "lastTargetPos";
         if (_lastTargetPos isEqualTo [0,0,0]) then {
             // If no last target position, use current position
             _lastTargetPos = getPosASL _aircraft;
@@ -1983,24 +1968,14 @@ private _airSupportTypeDef = [
         private _aircraft = _self get "vehicle";
         if (!alive _aircraft) exitWith {[]};
         
-        private _longRange = 10000; // Very long detection range (10km)
+        // Longer range but less precise detection for recon mode
+        private _longRange = 15000; // Very long range for high altitude
         private _targets = [];
         
-        // Only check ground vehicles and large groups - these are visible from high altitude
-        private _vehicles = vehicles select {
-            side _x != side _aircraft && 
-            alive _x && 
-            _x isKindOf "LandVehicle" &&
-            !(_x isKindOf "StaticWeapon") && // Exclude static weapons (too small)
-            _aircraft distance _x < _longRange
-        };
+        // Get all non-friendly groups first
+        private _allGroups = allGroups select {side _x == west};
         
-        // For very high-altitude recon, we can detect larger vehicles but not individuals
-        _targets = _vehicles;
-        
-        // Also detect large groups of infantry (simulating thermal imaging detection)
-        private _allGroups = allGroups select {side _x != side _aircraft};
-        
+        // Check each group for detectability
         {
             private _grp = _x;
             private _units = units _grp select {alive _x};
@@ -2075,7 +2050,7 @@ private _airSupportTypeDef = [
             
             // Get all known enemies for this unit
             {
-                if (side _x != east && alive _x) then {
+                if (side _x == west && alive _x) then {
                     private _knowledge = _unit knowsAbout _x;
                     if (_knowledge > 1.5) then { // Unit has meaningful knowledge
                         _unitKnowledge pushBack [_x, _knowledge];
@@ -2110,6 +2085,9 @@ private _airSupportTypeDef = [
         if (count _knownTargets > 0 && count _knownTargets <= 3) then {
             diag_log format ["[FLO][AirSupport] Knowledge sharing revealed %1 enemies to aircraft %2", 
                 count _knownTargets, _aircraft];
+            
+            // Update last target detection time when known targets are found
+            _self set ["lastTargetDetectionTime", time];
         };
         
         // Return all unique targets

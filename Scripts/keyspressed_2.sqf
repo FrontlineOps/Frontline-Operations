@@ -438,18 +438,6 @@ _trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\Objectives\Rad
  		
 	};	
 
-	if (MType == "o_naval") then {
-			hint "You Placed a Custom Mission Marker";
-mrkr setMarkerSize [1.2, 1.2]; 
-
-_trgA = createTrigger ["EmptyDetector",_pos];
-_trgA setTriggerArea [3000, 3000, 0, false, 60];
-_trgA setTriggerTimeout [7, 7, 7, true];
-_trgA setTriggerActivation ["WEST", "PRESENT", false];
-_trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\Mission_Ship.sqf';", ""];
-				 		
-	};	
-
 	if (MType == "loc_mine") then {
 			hint "You Placed a Custom Mission Marker";
 mrkr setMarkerSize [1, 1];  

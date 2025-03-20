@@ -157,6 +157,7 @@ private _fnc_createVehicleWithCrew = {
     _veh setPosATL [(getPosATL _veh) select 0, (getPosATL _veh) select 1, 0.1]; // Slight elevation to prevent terrain clipping
     
     private _group = createGroup [EAST, true];
+    _group deleteGroupWhenEmpty true;
     createVehicleCrew _veh;
     
     // Move crew to EAST side
@@ -263,21 +264,6 @@ private _fnc_delayedSpawn = {
     sleep _delay;
 };
 
-// Function to check if position is within radio coverage
-private _fnc_hasRadioCoverage = {
-    params ["_pos"];
-    private _transmitterMarkers = allMapMarkers select { markerType _x == "loc_Transmitter" && markerColor _x == "colorBLUFOR" };
-    private _hasRadio = false;
-    
-    {
-        if ((getMarkerPos _x) distance _pos < 3500) exitWith {
-            _hasRadio = true;
-        };
-    } forEach _transmitterMarkers;
-    
-    _hasRadio
-};
-
 // Initialize groups array
 // Create a unique variable name for this QRF request
 private _qrfVarName = format ["FLO_QRF_Groups_%1", floor random 999999];
@@ -291,7 +277,6 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
     _spawnCount,
     _spawnPositions,
     _delayPerSpawn,
-    _fnc_hasRadioCoverage,
     _AGGRSCORE,
     _targetPos,
     _originalSpawnPos,  // Pass the original spawn position
@@ -307,7 +292,6 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         "_spawnCount",
         "_spawnPositions",
         "_delayPerSpawn",
-        "_fnc_hasRadioCoverage",
         "_AGGRSCORE",
         "_targetPos",
         "_spawnPos",  // Receive the spawn position
@@ -501,21 +485,19 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
             [_spawnIndex, _delay] call _fnc_delayedSpawn;
         };
         
-        // Only show announcements if within radio tower range
-        if ([_elementApproachPos] call _fnc_hasRadioCoverage) then {
-            // Announce reinforcements periodically
-            if (_spawnIndex == 1) then {
-                private _attackingAtGrid = mapGridPosition _elementApproachPos;
-                ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound towards grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
-            } else {
-                if (_spawnIndex mod 3 == 0) then {
-                    private _msg = selectRandom [
-                        "Additional enemy forces detected!",
-                        "More hostile units approaching!",
-                        "Enemy reinforcements moving in!"
-                    ];
-                    ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
-                };
+
+        // Announce reinforcements periodically
+        if (_spawnIndex == 1) then {
+            private _attackingAtGrid = mapGridPosition _elementApproachPos;
+            ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound towards grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
+        } else {
+            if (_spawnIndex mod 3 == 0) then {
+                private _msg = selectRandom [
+                    "Additional enemy forces detected!",
+                    "More hostile units approaching!",
+                    "Enemy reinforcements moving in!"
+                ];
+                ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
             };
         };
 
@@ -563,6 +545,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry to APC
                 private _mechInfGroup = createGroup EAST;
+                _mechInfGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _mechMaxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
@@ -609,6 +592,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry to APC
                 private _mechInfGroup = createGroup EAST;
+                _mechInfGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _mechMaxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
@@ -654,6 +638,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry
                 private _infGroup = createGroup EAST;
+                _infGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _maxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
@@ -703,6 +688,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry
                 private _infGroup = createGroup EAST;
+                _infGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _maxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {

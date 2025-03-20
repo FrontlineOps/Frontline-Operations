@@ -188,6 +188,7 @@ private _fnc_createVehicleWithCrew = {
     _veh setPosATL [(getPosATL _veh) select 0, (getPosATL _veh) select 1, 0.1]; // Slight elevation to prevent terrain clipping
 
     private _group = createGroup [EAST, true];
+    _group deleteGroupWhenEmpty true;
     createVehicleCrew _veh;
     
     // Move crew to EAST side
@@ -238,7 +239,6 @@ private _spawnPositions = [];
 private _baseAngle = 360 / _forceSize;
 private _minSafeDistance = 50; // Minimum distance between spawn points
 private _spiralGrowth = 20;    // How much the spiral grows per point
-private _approachDistance = 800; // Base approach distance
 
 {
     private _angle = _baseAngle * _forEachIndex;
@@ -493,6 +493,12 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
         default { [0] };                       // All at once
     };
     
+    // Function to handle delayed spawn
+    private _fnc_delayedSpawn = {
+        params ["_spawnIndex", "_delay"];
+        sleep _delay;
+    };
+    
     // Spawn forces in waves
     for "_wave" from 1 to _waveCount do {
         private _waveStartIndex = (_wave - 1) * _unitsPerWave + 1;
@@ -531,8 +537,8 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
             
             // Add small delay between individual unit spawns within the wave
             if (_spawnIndex > _waveStartIndex) then {
-                private _intraWaveDelay = 15 + (random 30); // 15-45 seconds between units in same wave
-                sleep _intraWaveDelay;
+                private _intraWaveDelay = 60 + (random 180); // 60-240 seconds between units in same wave
+                [_spawnIndex, _intraWaveDelay] call _fnc_delayedSpawn;
             };
             
             // Announce reinforcements periodically
@@ -601,6 +607,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
                     
                     // Create and add infantry to APC
                     private _mechInfGroup = createGroup EAST;
+                    _mechInfGroup deleteGroupWhenEmpty true;
                     for "_i" from 1 to _mechMaxCargo do {
                         // 5% chance to add a fire observer, otherwise use regular infantry
                         private _unitType = if (random 1 < 0.05) then {
@@ -642,6 +649,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
                     
                     // Create and add infantry to APC
                     private _mechInfGroup = createGroup EAST;
+                    _mechInfGroup deleteGroupWhenEmpty true;
                     for "_i" from 1 to _mechMaxCargo do {
                         // 5% chance to add a fire observer, otherwise use regular infantry
                         private _unitType = if (random 1 < 0.05) then {
@@ -683,6 +691,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
                     
                     // Create and add infantry
                     private _infGroup = createGroup EAST;
+                    _infGroup deleteGroupWhenEmpty true;
                     for "_i" from 1 to _maxCargo do {
                         // 5% chance to add a fire observer, otherwise use regular infantry
                         private _unitType = if (random 1 < 0.05) then {
@@ -719,6 +728,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
                     
                     // Create and add infantry
                     private _infGroup = createGroup EAST;
+                    _infGroup deleteGroupWhenEmpty true;
                     for "_i" from 1 to _maxCargo do {
                         // 5% chance to add a fire observer, otherwise use regular infantry
                         private _unitType = if (random 1 < 0.05) then {
