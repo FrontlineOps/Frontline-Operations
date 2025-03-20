@@ -65,7 +65,7 @@ if (_preserveMarker && {_fobBuilding getVariable ["FLO_FOB_MarkersRestored", fal
 // Initialize creation factory
 if (!isNil "_fobBuilding" && {!isNull _fobBuilding}) then {
     [_fobBuilding, [
-        "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
+        "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode", 
         { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
         nil, 
         1.4, 

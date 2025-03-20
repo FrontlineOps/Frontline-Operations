@@ -460,7 +460,7 @@ _MOBSER = nearestobjects [Centerposition, [F_Truck_04], 40000];
 {
     if (!isNil "_x" && {!isNull _x}) then {
         [_x, [
-            "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
+            "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode", 
             { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
             nil, 
             1.4, 

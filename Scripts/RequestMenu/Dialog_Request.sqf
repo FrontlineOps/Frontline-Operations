@@ -583,7 +583,7 @@ FLO_fnc_configureVehicle = {
     if (_VehName == _MOBSERName) then {
         if (!isNil "_vehicle" && {!isNull _vehicle}) then {
             [_vehicle, [
-                "<t font='PuristaBold' color='#FF0000' size='1.15'>Build Mode</t>", 
+                "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode", 
                 { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
                 nil, 
                 1.4, 
