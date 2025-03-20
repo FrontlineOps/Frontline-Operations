@@ -264,21 +264,6 @@ private _fnc_delayedSpawn = {
     sleep _delay;
 };
 
-// Function to check if position is within radio coverage
-private _fnc_hasRadioCoverage = {
-    params ["_pos"];
-    private _transmitterMarkers = allMapMarkers select { markerType _x == "loc_Transmitter" && markerColor _x == "colorBLUFOR" };
-    private _hasRadio = false;
-    
-    {
-        if ((getMarkerPos _x) distance _pos < 3500) exitWith {
-            _hasRadio = true;
-        };
-    } forEach _transmitterMarkers;
-    
-    _hasRadio
-};
-
 // Initialize groups array
 // Create a unique variable name for this QRF request
 private _qrfVarName = format ["FLO_QRF_Groups_%1", floor random 999999];
@@ -292,7 +277,6 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
     _spawnCount,
     _spawnPositions,
     _delayPerSpawn,
-    _fnc_hasRadioCoverage,
     _AGGRSCORE,
     _targetPos,
     _originalSpawnPos,  // Pass the original spawn position
@@ -308,7 +292,6 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         "_spawnCount",
         "_spawnPositions",
         "_delayPerSpawn",
-        "_fnc_hasRadioCoverage",
         "_AGGRSCORE",
         "_targetPos",
         "_spawnPos",  // Receive the spawn position
@@ -502,21 +485,19 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
             [_spawnIndex, _delay] call _fnc_delayedSpawn;
         };
         
-        // Only show announcements if within radio tower range
-        if ([_elementApproachPos] call _fnc_hasRadioCoverage) then {
-            // Announce reinforcements periodically
-            if (_spawnIndex == 1) then {
-                private _attackingAtGrid = mapGridPosition _elementApproachPos;
-                ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound towards grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
-            } else {
-                if (_spawnIndex mod 3 == 0) then {
-                    private _msg = selectRandom [
-                        "Additional enemy forces detected!",
-                        "More hostile units approaching!",
-                        "Enemy reinforcements moving in!"
-                    ];
-                    ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
-                };
+
+        // Announce reinforcements periodically
+        if (_spawnIndex == 1) then {
+            private _attackingAtGrid = mapGridPosition _elementApproachPos;
+            ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound towards grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
+        } else {
+            if (_spawnIndex mod 3 == 0) then {
+                private _msg = selectRandom [
+                    "Additional enemy forces detected!",
+                    "More hostile units approaching!",
+                    "Enemy reinforcements moving in!"
+                ];
+                ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
             };
         };
 
