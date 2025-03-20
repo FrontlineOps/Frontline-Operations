@@ -66,8 +66,9 @@ private _fnc_notifyPlayers = {
     private _size = 1.1 + (_importance * 0.1); // Size increases with importance
     private _duration = 5 + (_importance * 1); // Duration increases with importance
     
-    // Send notification to all players
-    [parseText format ["<t size='%1' color='%2'>%3</t>", _size, _color, _message], true, nil, _duration, 0.7, 0.3] remoteExec ["BIS_fnc_dynamicText", 0];
+    // Send notification to all players - fixed parameters
+    private _formattedText = format ["<t size='%1' color='%2'>%3</t>", _size, _color, _message];
+    [_formattedText, _duration] remoteExec ["FLO_fnc_showDynamicText", 0];
     
     // Play sound for medium and high importance
     if (_importance > 0) then {

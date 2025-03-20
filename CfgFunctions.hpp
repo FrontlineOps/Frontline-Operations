@@ -91,6 +91,7 @@ class FLO {
         class notification        {};
         class getRandomMagazine   {};
         class heartbeat           {};
+        class showDynamicText     {};
     };
     
     class Misc {
