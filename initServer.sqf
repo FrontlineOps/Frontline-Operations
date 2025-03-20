@@ -34,6 +34,8 @@ VSCurrentTime = diag_tickTime;
 VS_IsWorking = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
+[] call FLO_fnc_heartbeat;
+
 if (isNil "F_Init") then {F_Init = false;};
 
 // After Mission Loaded

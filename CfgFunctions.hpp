@@ -82,6 +82,7 @@ class FLO {
         class addReward           {};
         class notification        {};
         class getRandomMagazine   {};
+        class heartbeat           {};
     };
     
     class Misc {
