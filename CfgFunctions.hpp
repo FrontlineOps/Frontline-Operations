@@ -60,8 +60,16 @@ class FLO {
     class Arsenal {
         file = "Functions\Arsenal";
 
-        class restrictedArsenal     {};
-        class purchaseCrate         {};
+        class restrictedArsenal         {};
+        class addCratePurchaseActions   {};
+        class cancelCrate               {};
+        class checkCratePurchase        {};
+        class finalizeCrate             {};
+        class getFunds                  {};
+        class initCrateSystem           {};
+        class placeCrate                {};
+        class purchaseCrate             {};
+        class updateFunds               {};
     };
     
     class Objective {

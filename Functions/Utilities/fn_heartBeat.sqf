@@ -1,29 +1,47 @@
-private _getCurrentSystemTime = {
-    private _systemTime = systemTime; // [year, month, day, hour, minute, second, milliseconds]
-    private _hour = _systemTime select 3; // Extract the hour
-    private _minute = _systemTime select 4; // Extract the minute
-    private _currentTime = _hour + (_minute / 60); // Convert to decimal hours
-    _currentTime
+/*
+ * Author: FLOPS Team
+ * Server restart notification system that alerts players at configurable intervals
+ *
+ * Arguments:
+ * None
+ *
+ * Return Value:
+ * None
+ *
+ * Example:
+ * [] spawn FLO_fnc_heartBeat;
+ */
+
+if (!isServer) exitWith {};
+
+// Configuration
+private _restartIntervals = [0, 6, 12, 18]; // Restart times (24h format)
+private _notificationTimes = [30, 15, 5]; // Minutes before restart to notify
+private _checkFrequency = 60; // Default check frequency in seconds
+private _urgentCheckFrequency = 30; // Check frequency when close to restart
+
+// Time calculation functions
+private _fnc_getCurrentTime = {
+    private _systemTime = systemTime;
+    (_systemTime select 3) + ((_systemTime select 4) / 60)
 };
 
-// Time until restart calculation
-private _calculateTimeUntilRestart = {
-    private _currentTime = call _getCurrentSystemTime;
+private _fnc_getTimeUntilRestart = {
+    params ["_restartIntervals", "_fnc_getCurrentTime"];
     
-    // Define restart intervals (every 6 hours: 0, 6, 12, 18)
-    private _restartTimes = [0, 6, 12, 18];
+    private _currentTime = call _fnc_getCurrentTime;
     
-    // Find the next restart time
-    private _nextRestart = 24; // Default to next day
+    // Find next restart time
+    private _nextRestart = 24;
     {
         if (_x > _currentTime) exitWith {
             _nextRestart = _x;
         };
-    } forEach _restartTimes;
+    } forEach _restartIntervals;
     
-    // If we didn't find a restart time today, use the first one tomorrow
-    if (_nextRestart == 24) then {
-        _nextRestart = _restartTimes select 0;
+    // If no restart time found today, use first one tomorrow
+    if (_nextRestart isEqualTo 24) then {
+        _nextRestart = _restartIntervals select 0;
     };
     
     // Calculate hours until restart
@@ -32,78 +50,89 @@ private _calculateTimeUntilRestart = {
         _hoursUntilRestart = _hoursUntilRestart + 24;
     };
     
-    _hoursUntilRestart
+    _hoursUntilRestart * 60; // Return minutes until restart
 };
 
 // Notification function
-private _notifyPlayers = {
+private _fnc_notifyPlayers = {
     params ["_message", "_importance"];
     
-    // Different notification styles based on importance
-    switch (_importance) do {
-        // High importance - red text
-        case 2: {
-            [parseText format ["<t size='1.3' color='#FF0000'>%1</t>", _message], true, nil, 7, 0.7, 0.3] spawn BIS_fnc_dynamicText;
-            playSound "FD_CP_Not_Clear_F";
-        };
-        // Medium importance - yellow text
-        case 1: {
-            [parseText format ["<t size='1.2' color='#FFFF00'>%1</t>", _message], true, nil, 5, 0.7, 0.3] spawn BIS_fnc_dynamicText;
-            playSound "FD_CP_Not_Clear_F";
-        };
-        // Low importance - white text
-        default {
-            [parseText format ["<t size='1.1' color='#FFFFFF'>%1</t>", _message], true, nil, 5, 0.7, 0.3] spawn BIS_fnc_dynamicText;
-        };
+    private _color = switch (_importance) do {
+        case 2: { "#FF0000" }; // High - Red
+        case 1: { "#FFFF00" }; // Medium - Yellow
+        default { "#FFFFFF" }; // Low - White
+    };
+    
+    private _size = 1.1 + (_importance * 0.1); // Size increases with importance
+    private _duration = 5 + (_importance * 1); // Duration increases with importance
+    
+    // Send notification to all players
+    [parseText format ["<t size='%1' color='%2'>%3</t>", _size, _color, _message], true, nil, _duration, 0.7, 0.3] remoteExec ["BIS_fnc_dynamicText", 0];
+    
+    // Play sound for medium and high importance
+    if (_importance > 0) then {
+        "FD_CP_Not_Clear_F" remoteExec ["playSound", 0];
     };
 };
 
-// Initialize last check time
-private _lastCheckTime = -1;
-private _notified30min = false;
-private _notified15min = false;
-private _notified5min = false;
-
-// Main heartbeat loop
-[] spawn {
-    while { true } do {
-        // Calculate time until restart
-        private _hoursUntilRestart = call _calculateTimeUntilRestart;
-        private _minutesUntilRestart = _hoursUntilRestart * 60;
+// Main loop - pass all required variables to the spawn
+[_restartIntervals, _notificationTimes, _checkFrequency, _urgentCheckFrequency, _fnc_getCurrentTime, _fnc_getTimeUntilRestart, _fnc_notifyPlayers] spawn {
+    params [
+        "_restartIntervals",
+        "_notificationTimes", 
+        "_checkFrequency", 
+        "_urgentCheckFrequency",
+        "_fnc_getCurrentTime",
+        "_fnc_getTimeUntilRestart",
+        "_fnc_notifyPlayers"
+    ];
+    
+    // Initialize notification flags
+    private _notified = [];
+    {
+        _notified pushBack false;
+    } forEach _notificationTimes;
+    
+    while {true} do {
+        private _minutesUntilRestart = [_restartIntervals, _fnc_getCurrentTime] call _fnc_getTimeUntilRestart;
         
-        // Check for notification thresholds
-        if (_minutesUntilRestart <= 30 && _minutesUntilRestart > 15 && !_notified30min) then {
-            ["SERVER RESTART in 30 minutes", 0] call _notifyPlayers;
-            _notified30min = true;
+        // Check each notification threshold
+        {
+            private _threshold = _x;
+            private _index = _forEachIndex;
+            
+            // If we're within this threshold and haven't notified yet
+            if (_minutesUntilRestart <= _threshold && {!(_notified select _index)}) then {
+                // Determine importance (higher for closer to restart)
+                private _importance = floor((_forEachIndex) / (count _notificationTimes - 1) * 2);
+                
+                // Create message
+                private _message = format ["SERVER RESTART in %1 minutes", _threshold];
+                if (_threshold <= 5) then {
+                    _message = _message + " - Please finish your current activity";
+                };
+                
+                // Send notification
+                [_message, _importance] call _fnc_notifyPlayers;
+                
+                // Mark as notified
+                _notified set [_index, true];
+            };
+        } forEach _notificationTimes;
+        
+        // Reset notifications if we've passed a restart
+        if (_minutesUntilRestart > (_notificationTimes select 0)) then {
+            {
+                _notified set [_forEachIndex, false];
+            } forEach _notificationTimes;
         };
         
-        if (_minutesUntilRestart <= 15 && _minutesUntilRestart > 5 && !_notified15min) then {
-            ["SERVER RESTART in 15 minutes", 1] call _notifyPlayers;
-            _notified15min = true;
-        };
-        
-        if (_minutesUntilRestart <= 5 && !_notified5min) then {
-            ["SERVER RESTART in 5 minutes - Please finish your current activity", 2] call _notifyPlayers;
-            _notified5min = true;
-        };
-        
-        // Reset notifications if we've passed a restart time
-        if (_notified5min && _minutesUntilRestart > 5.1) then {
-            _notified30min = false;
-            _notified15min = false;
-            _notified5min = false;
-        };
-        
-        // Wait before next check
-        // Check more frequently as we get closer to restart time
-        private _sleepTime = 60; // Default to check every minute
+        // Determine sleep time based on proximity to restart
+        private _sleepTime = _checkFrequency;
         if (_minutesUntilRestart < 6) then {
-            _sleepTime = 30; // Check every 30 seconds when close to restart
+            _sleepTime = _urgentCheckFrequency;
         };
         
         sleep _sleepTime;
     };
 };
-
-// Return the current time function in case it's needed elsewhere
-_getCurrentSystemTime
