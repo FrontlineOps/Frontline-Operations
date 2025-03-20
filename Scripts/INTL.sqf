@@ -22,50 +22,6 @@ if (_Chance < 5) then {
     ["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
 };
 
-if (_Chance == 5) then {
-    GNRT = "YES";
-    DVRT = "NO";
-    0 = [] spawn {
-        _result = ["Intel Show the Location of an Enemy Stationary Warship in the Open Seas, It can be Infiltrated and Secured,  (Optional Mission : Secure Enemy Battle ship)", "", DVRT, GNRT,nil, false, false] call BIS_fnc_guiMessage;
-
-        if (_result) then {
-            _INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
-            _x = [_INTL, player] call BIS_fnc_nearestPosition;
-            _x setMarkerAlpha 1;
-
-            sleep 1;
-            private _attackingAtGrid = mapGridPosition getMarkerPos _x;
-            ["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
-        };
-
-        if (!_result) then {
-            _objectLoc = selectRandom nearestobjects [position player, ["LocationArea_F"], 40000]; 								
-            _pos = [ getPos _objectLoc, 0, 2500, 3, 2, 1, 0] call BIS_fnc_findSafePos;
-            _markerName = "CShipMark" + (str _pos);
-            _mrkr = createMarkerLocal [_markerName,_pos];   
-            _mrkr setMarkerTypeLocal "o_naval";  
-            _mrkr setMarkerColorLocal "colorOPFOR";  
-            _mrkr setMarkerSize [1.2, 1.2]; 
-
-            _trgA = createTrigger ["EmptyDetector", getPos _x];
-            _trgA setTriggerArea [3000, 3000, 0, false, 100];
-            _trgA setTriggerInterval 3;
-            _trgA setTriggerTimeout [7, 7, 7, true];
-            _trgA setTriggerActivation ["WEST", "PRESENT", false];
-            _trgA setTriggerStatements [
-            "this","
-
-            [thisTrigger] execVM 'Scripts\Mission_Ship.sqf';
-
-            ", ""];
-            
-            sleep 1;
-            private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-            ["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
-        };
-    };
-};
-
 if (_Chance == 6) then {
     GNRT = "YES";
     DVRT = "NO";

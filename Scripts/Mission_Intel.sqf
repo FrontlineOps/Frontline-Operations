@@ -64,7 +64,7 @@ PRL = [_poss getPos [(20 + (random 30)),(0 + (random 360))], East, [selectRandom
 if (_AGGRSCORE > 5) then {
 _Mount = selectRandom nearestLocations [getPos _thisIntelTrigger, ["Mount"], 500];
 _poss = locationPosition _Mount ; 
-[ "Recon_OPF_2", _poss, [0, 0, 0],0, true ] call LARs_fnc_spawnComp;
+[ "Watchpost_8", _poss, [0, 0, 0],0, true ] call LARs_fnc_spawnComp;
 {_x setUnitLoadout selectRandom East_Units;} forEach nearestObjects [_poss,["Man"],40];
 
 
