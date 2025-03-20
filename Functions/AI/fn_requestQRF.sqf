@@ -157,6 +157,7 @@ private _fnc_createVehicleWithCrew = {
     _veh setPosATL [(getPosATL _veh) select 0, (getPosATL _veh) select 1, 0.1]; // Slight elevation to prevent terrain clipping
     
     private _group = createGroup [EAST, true];
+    _group deleteGroupWhenEmpty true;
     createVehicleCrew _veh;
     
     // Move crew to EAST side
@@ -563,6 +564,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry to APC
                 private _mechInfGroup = createGroup EAST;
+                _mechInfGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _mechMaxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
@@ -609,6 +611,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry to APC
                 private _mechInfGroup = createGroup EAST;
+                _mechInfGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _mechMaxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
@@ -654,6 +657,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry
                 private _infGroup = createGroup EAST;
+                _infGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _maxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
@@ -703,6 +707,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 
                 // Create and add infantry
                 private _infGroup = createGroup EAST;
+                _infGroup deleteGroupWhenEmpty true;
                 for "_i" from 1 to _maxCargo do {
                     // 5% chance to add a fire observer, otherwise use regular infantry
                     private _unitType = if (random 1 < 0.05) then {
