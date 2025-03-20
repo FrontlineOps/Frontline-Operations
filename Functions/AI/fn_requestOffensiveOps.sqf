@@ -239,7 +239,6 @@ private _spawnPositions = [];
 private _baseAngle = 360 / _forceSize;
 private _minSafeDistance = 50; // Minimum distance between spawn points
 private _spiralGrowth = 20;    // How much the spiral grows per point
-private _approachDistance = 800; // Base approach distance
 
 {
     private _angle = _baseAngle * _forEachIndex;
@@ -494,6 +493,12 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
         default { [0] };                       // All at once
     };
     
+    // Function to handle delayed spawn
+    private _fnc_delayedSpawn = {
+        params ["_spawnIndex", "_delay"];
+        sleep _delay;
+    };
+    
     // Spawn forces in waves
     for "_wave" from 1 to _waveCount do {
         private _waveStartIndex = (_wave - 1) * _unitsPerWave + 1;
@@ -532,8 +537,8 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
             
             // Add small delay between individual unit spawns within the wave
             if (_spawnIndex > _waveStartIndex) then {
-                private _intraWaveDelay = 15 + (random 30); // 15-45 seconds between units in same wave
-                sleep _intraWaveDelay;
+                private _intraWaveDelay = 60 + (random 180); // 60-240 seconds between units in same wave
+                [_spawnIndex, _intraWaveDelay] call _fnc_delayedSpawn;
             };
             
             // Announce reinforcements periodically
