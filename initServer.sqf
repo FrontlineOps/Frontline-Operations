@@ -199,13 +199,11 @@ if (_RestrictedArsenalVal isEqualTo 0) then {
     [] call FLO_fnc_purchaseCrate;
 };
 
-setViewDistance 3000;
-
 // Dynamic View Distance System based on server FPS
 [] spawn {
     // Configuration
     private _minViewDistance = 1500;    // Minimum view distance
-    private _maxViewDistance = 5000;    // Maximum view distance
+    private _maxViewDistance = 7500;    // Maximum view distance
     private _targetFPS = 50;            // Target server FPS
     private _sampleInterval = 15;       // Seconds between checks
     private _sampleSize = 5;            // Number of samples to average
