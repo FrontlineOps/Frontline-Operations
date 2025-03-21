@@ -25,6 +25,9 @@ _crate enableSimulation true;
 _crate setPosASL _pos;
 _crate setDir _dir;
 
+// Store the items array as a variable on the crate for saving
+_crate setVariable ["FLO_crate_items", _items, true];
+
 // Add items
 clearWeaponCargoGlobal _crate;
 clearMagazineCargoGlobal _crate;

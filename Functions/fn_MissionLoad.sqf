@@ -14,6 +14,7 @@ private _ObjectDataName = _missionTag + "_Objects";
 private _MarkerTimeName = _missionTag + "_Time";
 private _structureMarkerName = _missionTag + "_StructureMarkers";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
+private _CrateDataName = _missionTag + "_Crates";
 
 FreshStartVal = "FreshStart" call BIS_fnc_getParamValue;
 if (FreshStartVal isEqualTo 1) then {
@@ -24,6 +25,7 @@ if (FreshStartVal isEqualTo 1) then {
 	profileNamespace setVariable [_ObjectDataName, nil];
     profileNamespace setVariable [_missionStructureTypes, nil];
     profileNamespace setVariable [_structureMarkerName, nil];
+    profileNamespace setVariable [_CrateDataName, nil];
 };	
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,6 +183,66 @@ if (count _structureMarkerHash > 0 && count _structureTypes > 0) then {
 } else {
     ["Mission", 2, "No FOB/OP marker references found to restore"] call FLO_fnc_log;
 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+private _GetVariableCrates = profileNamespace getVariable [_CrateDataName, createHashMap];
+
+if (count _GetVariableCrates > 0) then {
+    private _allCrateNames = keys _GetVariableCrates;
+    
+    {
+        private _crateAtts = _GetVariableCrates get _x;
+        private _posASL = _crateAtts get "posASL";
+        private _type = _crateAtts get "type";
+        private _dirUp = _crateAtts get "vectorDirAndUp";
+        private _items = _crateAtts get "items";
+        
+        private _newCrate = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
+        _newCrate setVectorDirAndUp _dirUp;
+        _newCrate setPosASL _posASL;
+        
+        // Add items to the crate
+        if (!isNil "_items" && {count _items > 0}) then {
+            // Store items array for future saves
+            _newCrate setVariable ["FLO_crate_items", _items, true];
+            
+            // Clear default items
+            clearWeaponCargoGlobal _newCrate;
+            clearMagazineCargoGlobal _newCrate;
+            clearItemCargoGlobal _newCrate;
+            clearBackpackCargoGlobal _newCrate;
+            
+            // Add saved items
+            {
+                _x params ["_item", "_count"];
+                
+                if (isClass (configFile >> "CfgWeapons" >> _item)) then {
+                    _newCrate addWeaponCargoGlobal [_item, _count];
+                } else {
+                    if (isClass (configFile >> "CfgMagazines" >> _item)) then {
+                        _newCrate addMagazineCargoGlobal [_item, _count];
+                    } else {
+                        if (isClass (configFile >> "CfgVehicles" >> _item)) then {
+                            _newCrate addBackpackCargoGlobal [_item, _count];
+                        } else {
+                            _newCrate addItemCargoGlobal [_item, _count];
+                        };
+                    };
+                };
+            } forEach _items;
+            
+            // Make draggable with ACE
+            [_newCrate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
+        };
+    } forEach _allCrateNames;
+    
+    ["Mission", 3, format["Loaded %1 supply crates", count _allCrateNames]] call FLO_fnc_log;
+} else {
+    ["Mission", 2, "No saved supply crates found"] call FLO_fnc_log;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MissionLoadedLitterally = true ;
 publicVariable "MissionLoadedLitterally";

@@ -13,6 +13,7 @@ private _VehicleDataName = _missionTag + "_Vehicles";
 private _ObjectDataName = _missionTag + "_Objects";
 private _structureMarkerName = _missionTag + "_StructureMarkers";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
+private _CrateDataName = _missionTag + "_Crates";
 
 profileNamespace setVariable [_MarkerTimeName, nil];
 profileNamespace setVariable [_MarkerDataName, nil];
@@ -20,6 +21,7 @@ profileNamespace setVariable [_VehicleDataName, nil];
 profileNamespace setVariable [_ObjectDataName, nil];
 profileNamespace setVariable [_structureMarkerName, nil];
 profileNamespace setVariable [_missionStructureTypes, nil];
+profileNamespace setVariable [_CrateDataName, nil];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -304,6 +306,37 @@ private _opBuildings = nearestObjects [_Centerposition, [_opTypeClass], 40000];
 // Save the structure marker references
 profileNamespace setVariable [_structureMarkerName, _structureMarkerHash];
 ["Mission", 3, format["Saved %1 FOB/OP marker references", count _structureMarkerHash]] call FLO_fnc_log;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Save supply crates
+private _CrateDataHash = createHashMap;
+
+// Find all supply crates in the world
+private _allCrates = entities "ReammoBox_F";
+{
+    if (!isNil "_x" && {alive _x}) then {
+        private _crateDataHashEach = createHashMap;
+        private _crateNameStr = str getPosASL _x + "_Crate";
+        _x setVehicleVarName _crateNameStr;
+        
+        private _crateName = vehicleVarName _x;
+        private _crateItems = _x getVariable ["FLO_crate_items", []];
+        
+        _crateDataHashEach set ["type", typeOf _x];
+        _crateDataHashEach set ["posASL", getPosASL _x];
+        _crateDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
+        _crateDataHashEach set ["items", _crateItems];
+        
+        _CrateDataHash set [_crateName, _crateDataHashEach];
+    };
+} forEach _allCrates;
+
+profileNamespace setVariable [_CrateDataName, _CrateDataHash];
+
+["Mission", 3, format["Saved %1 supply crates", count _CrateDataHash]] call FLO_fnc_log;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 saveProfileNamespace;
 
