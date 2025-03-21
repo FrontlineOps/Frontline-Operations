@@ -186,6 +186,7 @@ if (count _structureMarkerHash > 0 && count _structureTypes > 0) then {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Load supply crates
 private _GetVariableCrates = profileNamespace getVariable [_CrateDataName, createHashMap];
 
 if (count _GetVariableCrates > 0) then {
@@ -201,6 +202,9 @@ if (count _GetVariableCrates > 0) then {
         private _newCrate = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
         _newCrate setVectorDirAndUp _dirUp;
         _newCrate setPosASL _posASL;
+        
+        // Mark this crate to be saved by the mission save system
+        _newCrate setVariable ["FLO_save_crate", true, true];
         
         // Add items to the crate
         if (!isNil "_items" && {count _items > 0}) then {

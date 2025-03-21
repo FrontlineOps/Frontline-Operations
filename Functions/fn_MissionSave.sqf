@@ -314,23 +314,62 @@ private _CrateDataHash = createHashMap;
 
 // Find all supply crates in the world
 private _allCrates = entities "ReammoBox_F";
+// Filter to only include crates that have the save flag variable set
+private _cratesToSave = _allCrates select {alive _x && {_x getVariable ["FLO_save_crate", false]}};
 {
-    if (!isNil "_x" && {alive _x}) then {
+    if (!isNil "_x") then {
         private _crateDataHashEach = createHashMap;
         private _crateNameStr = str getPosASL _x + "_Crate";
         _x setVehicleVarName _crateNameStr;
         
         private _crateName = vehicleVarName _x;
-        private _crateItems = _x getVariable ["FLO_crate_items", []];
+        
+        // Get the actual current contents of the crate
+        private _currentItems = [];
+        
+        // Get weapons and counts
+        private _weaponCargo = getWeaponCargo _x;
+        private _weaponTypes = _weaponCargo select 0;
+        private _weaponCounts = _weaponCargo select 1;
+        {
+            _currentItems pushBack [_x, _weaponCounts select _forEachIndex];
+        } forEach _weaponTypes;
+        
+        // Get magazines and counts
+        private _magazineCargo = getMagazineCargo _x;
+        private _magazineTypes = _magazineCargo select 0;
+        private _magazineCounts = _magazineCargo select 1;
+        {
+            _currentItems pushBack [_x, _magazineCounts select _forEachIndex];
+        } forEach _magazineTypes;
+        
+        // Get items and counts
+        private _itemCargo = getItemCargo _x;
+        private _itemTypes = _itemCargo select 0;
+        private _itemCounts = _itemCargo select 1;
+        {
+            _currentItems pushBack [_x, _itemCounts select _forEachIndex];
+        } forEach _itemTypes;
+        
+        // Get backpacks and counts
+        private _backpackCargo = getBackpackCargo _x;
+        private _backpackTypes = _backpackCargo select 0;
+        private _backpackCounts = _backpackCargo select 1;
+        {
+            _currentItems pushBack [_x, _backpackCounts select _forEachIndex];
+        } forEach _backpackTypes;
+        
+        // Store for loading
+        _x setVariable ["FLO_crate_items", _currentItems, true];
         
         _crateDataHashEach set ["type", typeOf _x];
         _crateDataHashEach set ["posASL", getPosASL _x];
         _crateDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
-        _crateDataHashEach set ["items", _crateItems];
+        _crateDataHashEach set ["items", _currentItems];
         
         _CrateDataHash set [_crateName, _crateDataHashEach];
     };
-} forEach _allCrates;
+} forEach _cratesToSave;
 
 profileNamespace setVariable [_CrateDataName, _CrateDataHash];
 
