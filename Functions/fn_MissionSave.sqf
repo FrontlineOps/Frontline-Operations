@@ -140,7 +140,7 @@ private _SaveStatics = [];
 private _allFOBMarks = allMapMarkers select {markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "ColorYellow" && markerText _x isEqualTo "FOB"};  
 {
 	private _markerPos = getMarkerPos _x;
-	private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing"], 300];
+	private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 300];
 	private _staticsNewAlive = _staticsNew select {alive _x};
 	private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 300];
 	private _staticsSaving = _staticsNewAlive - _staticsTerrain;
@@ -154,7 +154,7 @@ private _allNonFOBMarks = allMapMarkers select {
 };  
 {
 	private _markerPos = getMarkerPos _x;
-	private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing"], 200];
+	private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 200];
 	private _staticsNewAlive = _staticsNew select {alive _x};
 	private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 200];
 	private _staticsSaving = _staticsNewAlive - _staticsTerrain;
