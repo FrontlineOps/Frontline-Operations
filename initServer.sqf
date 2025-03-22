@@ -89,7 +89,7 @@ waitUntil {!isNil "EtVInitialized"};
 
 //Resource Loops//Convoy Loops//Radio Tower Loops
 [] spawn {  
-    while { sleep 90 ; time > 0 } do {  
+    while { sleep 60 ; time > 0 } do {  
         private _allENMMarks = allMapMarkers select {markerShape _x isEqualTo "RECTANGLE" && markerBrush _x isEqualTo "FDiagonal"};
         {deleteMarker _x} forEach _allENMMarks;
 
@@ -143,7 +143,10 @@ waitUntil {!isNil "EtVInitialized"};
             };
         };
 
-        private _BluezoneMarks = allMapMarkers select { markerType _x isEqualTo "b_installation" && (markerColor _x isEqualTo "colorBLUFOR" or markerColor _x isEqualTo "ColorWEST") };
+        private _BluezoneMarks = allMapMarkers select { 
+            markerType _x isEqualTo "b_installation" && 
+            (markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST" || markerColor _x isEqualTo "ColorYellow") 
+        };
         { [1] call FLO_fnc_addReward; } foreach _BluezoneMarks;
     };
 };
