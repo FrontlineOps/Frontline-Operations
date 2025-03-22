@@ -199,46 +199,77 @@ if (count _GetVariableCrates > 0) then {
         private _dirUp = _crateAtts get "vectorDirAndUp";
         private _items = _crateAtts get "items";
         
-        private _newCrate = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
+        // Create the crate at final position directly
+        private _newCrate = createVehicle [_type, _posASL, [], 0, "CAN_COLLIDE"];
+        
+        // IMPORTANT: Clear cargo BEFORE setting position to prevent default items
+        clearWeaponCargoGlobal _newCrate;
+        clearMagazineCargoGlobal _newCrate;
+        clearItemCargoGlobal _newCrate;
+        clearBackpackCargoGlobal _newCrate;
+        
+        // Verify cargo is actually cleared
+        private _initialWeapons = weaponCargo _newCrate;
+        private _initialMags = magazineCargo _newCrate;
+        private _initialItems = itemCargo _newCrate;
+        private _initialBags = backpackCargo _newCrate;
+        
+        if ((count _initialWeapons + count _initialMags + count _initialItems + count _initialBags) > 0) then {
+            ["Mission", 2, format["Warning: Crate %1 not properly cleared, attempting force clear", _type]] call FLO_fnc_log;
+            [_newCrate, [[], [], [], []]] call bis_fnc_initAmmoBox;
+        };
+        
         _newCrate setVectorDirAndUp _dirUp;
         _newCrate setPosASL _posASL;
         
-        // Mark this crate to be saved by the mission save system
+        // Mark for saving system
         _newCrate setVariable ["FLO_save_crate", true, true];
+        _newCrate setVariable ["FLO_crate_items", _items, true];
         
         // Add items to the crate
         if (!isNil "_items" && {count _items > 0}) then {
-            // Store items array for future saves
-            _newCrate setVariable ["FLO_crate_items", _items, true];
-            
-            // Clear default items
-            clearWeaponCargoGlobal _newCrate;
-            clearMagazineCargoGlobal _newCrate;
-            clearItemCargoGlobal _newCrate;
-            clearBackpackCargoGlobal _newCrate;
-            
-            // Add saved items
             {
                 _x params ["_item", "_count"];
                 
-                if (isClass (configFile >> "CfgWeapons" >> _item)) then {
-                    _newCrate addWeaponCargoGlobal [_item, _count];
-                } else {
-                    if (isClass (configFile >> "CfgMagazines" >> _item)) then {
-                        _newCrate addMagazineCargoGlobal [_item, _count];
+                if (!isNil "_item" && {_count > 0}) then {
+                    if (isClass (configFile >> "CfgWeapons" >> _item)) then {
+                        _newCrate addWeaponCargoGlobal [_item, _count];
+                        ["Mission", 3, format["Added weapon %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
                     } else {
-                        if (isClass (configFile >> "CfgVehicles" >> _item)) then {
-                            _newCrate addBackpackCargoGlobal [_item, _count];
+                        if (isClass (configFile >> "CfgMagazines" >> _item)) then {
+                            _newCrate addMagazineCargoGlobal [_item, _count];
+                            ["Mission", 3, format["Added magazine %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
                         } else {
-                            _newCrate addItemCargoGlobal [_item, _count];
+                            if (isClass (configFile >> "CfgVehicles" >> _item)) then {
+                                _newCrate addBackpackCargoGlobal [_item, _count];
+                                ["Mission", 3, format["Added backpack %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
+                            } else {
+                                _newCrate addItemCargoGlobal [_item, _count];
+                                ["Mission", 3, format["Added item %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
+                            };
                         };
                     };
                 };
             } forEach _items;
             
-            // Make draggable with ACE
-            [_newCrate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
+            // Verify items were actually added
+            private _finalWeapons = weaponCargo _newCrate;
+            private _finalMags = magazineCargo _newCrate;
+            private _finalItems = itemCargo _newCrate;
+            private _finalBags = backpackCargo _newCrate;
+            
+            ["Mission", 3, format["Crate contents after loading - Weapons: %1, Magazines: %2, Items: %3, Backpacks: %4", 
+                count _finalWeapons, 
+                count _finalMags, 
+                count _finalItems, 
+                count _finalBags
+            ]] call FLO_fnc_log;
         };
+        
+        // Make draggable with ACE
+        [_newCrate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
+        
+        ["Mission", 3, format["Loaded crate %1 at position %2", _type, _posASL]] call FLO_fnc_log;
     } forEach _allCrateNames;
     
     ["Mission", 3, format["Loaded %1 supply crates", count _allCrateNames]] call FLO_fnc_log;
@@ -248,5 +279,5 @@ if (count _GetVariableCrates > 0) then {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MissionLoadedLitterally = true ;
+MissionLoadedLitterally = true;
 publicVariable "MissionLoadedLitterally";

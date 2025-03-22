@@ -132,33 +132,47 @@ profileNamespace setVariable [_VehicleDataName, _VehicleDataHash];
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 private _ObjectDataName = _missionTag + "_Objects";
-
 private _ObjectDataHash = createHashMap;
-
 private _SaveStatics = [];
+
+// Define crate types to exclude from general object saving
+private _excludedCrateTypes = [
+    "Box_NATO_WpsSpecial_F",
+    "Box_NATO_AmmoOrd_F",
+    "Box_NATO_Ammo_F",
+    "VirtualReammoBox_small_F"
+];
 
 private _allFOBMarks = allMapMarkers select {markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "ColorYellow" && markerText _x isEqualTo "FOB"};  
 {
-	private _markerPos = getMarkerPos _x;
-	private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 300];
-	private _staticsNewAlive = _staticsNew select {alive _x};
-	private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 300];
-	private _staticsSaving = _staticsNewAlive - _staticsTerrain;
-	_SaveStatics append _staticsSaving;	
+    private _markerPos = getMarkerPos _x;
+    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 300];
+    private _staticsNewAlive = _staticsNew select {
+        alive _x && 
+        !(typeOf _x in _excludedCrateTypes) &&  // Exclude specific crate types
+        !(_x getVariable ["FLO_save_crate", false]) // Also exclude anything marked as a save crate
+    };
+    private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 300];
+    private _staticsSaving = _staticsNewAlive - _staticsTerrain;
+    _SaveStatics append _staticsSaving;    
 } forEach _allFOBMarks;
 
 private _allNonFOBMarks = allMapMarkers select {
-	markerType _x isEqualTo "b_installation" && 
-	(markerColor _x isEqualTo "ColorYellow" || markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST") && 
-	markerText _x != "FOB"
+    markerType _x isEqualTo "b_installation" && 
+    (markerColor _x isEqualTo "ColorYellow" || markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST") && 
+    markerText _x != "FOB"
 };  
 {
-	private _markerPos = getMarkerPos _x;
-	private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 200];
-	private _staticsNewAlive = _staticsNew select {alive _x};
-	private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 200];
-	private _staticsSaving = _staticsNewAlive - _staticsTerrain;
-	_SaveStatics append _staticsSaving;	
+    private _markerPos = getMarkerPos _x;
+    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 200];
+    private _staticsNewAlive = _staticsNew select {
+        alive _x && 
+        !(typeOf _x in _excludedCrateTypes) &&  // Exclude specific crate types
+        !(_x getVariable ["FLO_save_crate", false]) // Also exclude anything marked as a save crate
+    };
+    private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 200];
+    private _staticsSaving = _staticsNewAlive - _staticsTerrain;
+    _SaveStatics append _staticsSaving;    
 } forEach _allNonFOBMarks;
 
 private _towerTypes = ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"];
@@ -167,25 +181,24 @@ private _staticsNewAlive = _staticsNew select {alive _x};
 private _staticsTerrain = nearestTerrainObjects [_Centerposition, _towerTypes, 40000];
 private _staticsSaving = _staticsNewAlive - _staticsTerrain;
 {
-	_SaveStatics pushBack _x;	
+    _SaveStatics pushBack _x;    
 } forEach _staticsSaving;
 
-private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics ;
+private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics;
 
 {
-private _ObjectDataHashEach = createHashMap;
-private _ObjectNameStr = str getPosASL _x + "_Obj";
-_x setVehicleVarName _ObjectNameStr;
-
-private _ObjectName = vehicleVarName _x ;
-
-   _ObjectDataHashEach set ["type", typeOf _x]  ;
-   _ObjectDataHashEach set ["posASL",getPosASL _x]  ;
-   _ObjectDataHashEach set ["vectorDirAndUp",[vectorDir _x,vectorUp _x]]  ;
-
-   _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
-
-} forEach _FinalSaving ;
+    private _ObjectDataHashEach = createHashMap;
+    private _ObjectNameStr = str getPosASL _x + "_Obj";
+    _x setVehicleVarName _ObjectNameStr;
+    
+    private _ObjectName = vehicleVarName _x;
+    
+    _ObjectDataHashEach set ["type", typeOf _x];
+    _ObjectDataHashEach set ["posASL", getPosASL _x];
+    _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
+    
+    _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
+} forEach _FinalSaving;
 
 profileNamespace setVariable [_ObjectDataName, _ObjectDataHash];
 
