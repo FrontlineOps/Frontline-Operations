@@ -146,7 +146,7 @@ private _excludedCrateTypes = [
 private _allFOBMarks = allMapMarkers select {markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "ColorYellow" && markerText _x isEqualTo "FOB"};  
 {
     private _markerPos = getMarkerPos _x;
-    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 300];
+    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "ReammoBox_F"], 300];
     private _staticsNewAlive = _staticsNew select {
         alive _x && 
         !(typeOf _x in _excludedCrateTypes) &&  // Exclude specific crate types
@@ -164,7 +164,7 @@ private _allNonFOBMarks = allMapMarkers select {
 };  
 {
     private _markerPos = getMarkerPos _x;
-    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "NATO_Box_Base"], 200];
+    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "ReammoBox_F"], 200];
     private _staticsNewAlive = _staticsNew select {
         alive _x && 
         !(typeOf _x in _excludedCrateTypes) &&  // Exclude specific crate types
