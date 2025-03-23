@@ -100,14 +100,14 @@ if (triggerActivated _thisCaptureWestTrigger) then {
 				_M = [_MMarks,  _thisCaptureWestTrigger] call BIS_fnc_nearestPosition;
 
 				if (markerType _M == 'o_installation') then {
-				[100, 'CITY'] call FLO_fnc_notification ;
+				[100, 'STR_FLO_CITY'] call FLO_fnc_sendRewardNotification ;
 				[100] call FLO_fnc_addReward;
 				[] execVM 'Scripts\DangerPlus.sqf';
 				[] execVM 'Scripts\ReputationPlus.sqf';
 				};
 				
 				if (markerType _M == 'n_installation') then {
-				[200, 'CAPITAL'] call FLO_fnc_notification ;
+				[200, 'STR_FLO_CAPITAL'] call FLO_fnc_sendRewardNotification ;
 				[200] call FLO_fnc_addReward;
 				[] execVM 'Scripts\DangerPlus.sqf';
 				[] execVM 'Scripts\DangerPlus.sqf';				

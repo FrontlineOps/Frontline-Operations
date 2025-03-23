@@ -63,20 +63,12 @@ if (_capturingSide == "west") then {
         false
     };
     
-    // Send notification
-    [parseText format [
-        '<t color="#1AA3FF" font="PuristaBold" align = "right" shadow = "1" size="2">SITREP</t><br />' +
-        '<t color="#959393" align = "right" shadow = "1" size="0.8">Friendly Forces Dominating the Battle,</t><br />' +
-        '<t color="#959393" align = "right" shadow = "1" size="0.8">Keep Up the Fight, We will Capture and Secure the %1,</t>', 
-        _objectiveType
-    ], [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ["BIS_fnc_textTiles", 0];
-    
     // Change marker color to neutral (in progress)
     _objectiveMarker setMarkerColor "ColorGrey";
     
     // Send radio message
     private _attackingAtGrid = mapGridPosition getMarkerPos _objectiveMarker;
-    [[west, "HQ"], format ["Friendly Forces Dominating the Battle at grid %1", _attackingAtGrid]] remoteExec ["sideChat", 0];
+    ["STR_FLO_UPDATE_TITLE", ["STR_FLO_UPDATE_F",_attackingAtGrid], "success"] call FLO_fnc_sendNotification;
     
     // Set timeout to finalize capture if still in control
     [_trigger, _objectiveType, _capturingSide] spawn {
@@ -100,20 +92,12 @@ if (_capturingSide == "west") then {
         false
     };
     
-    // Send notification
-    [parseText format [
-        '<t color="#FF3619" font="PuristaBold" align = "right" shadow = "1" size="2">SITREP</t><br />' +
-        '<t color="#7c7c7c" align = "right" shadow = "1" size="0.8">Enemy Forces Dominating the Battle,</t><br />' +
-        '<t color="#7c7c7c" align = "right" shadow = "1" size="0.8">Keep Up the Fight, We Must Defend and Take Back the %1,</t>',
-        _objectiveType
-    ], [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ["BIS_fnc_textTiles", 0];
-    
     // Change marker color to neutral (in progress)
     _objectiveMarker setMarkerColor "ColorGrey";
     
     // Send radio message
     private _attackingAtGrid = mapGridPosition getMarkerPos _objectiveMarker;
-    [[west, "HQ"], format ["Enemy Forces Dominating the Battle at grid %1", _attackingAtGrid]] remoteExec ["sideChat", 0];
+    ["STR_FLO_UPDATE_TITLE", ["STR_FLO_UPDATE_E",_attackingAtGrid], "warning"] call FLO_fnc_sendNotification;
     
     // Set timeout to finalize capture if still in control
     [_trigger, _objectiveType, _capturingSide] spawn {

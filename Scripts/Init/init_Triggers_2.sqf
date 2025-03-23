@@ -153,7 +153,7 @@ _MMarks = allMapMarkers select { markerType _x == 'loc_Ruin'};
 _M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
 deleteMarker _M ; 
 
-				[40, 'BARRACKS'] call FLO_fnc_notification ;
+				[40, 'STR_FLO_BARRACKS'] call FLO_fnc_sendRewardNotification ;
 
 [40] call FLO_fnc_addReward;
 
@@ -260,7 +260,7 @@ _MMarks = allMapMarkers select { markerType _x == 'loc_Power'};
 _M = [_MMarks,  (_this select 0)] call BIS_fnc_nearestPosition;
 
 deleteMarker _M ; 
-    				[40, 'RADAR SITE'] call FLO_fnc_notification ;
+    				[40, 'STR_FLO_RADARSITE'] call FLO_fnc_sendRewardNotification ;
 
 
 [40] call FLO_fnc_addReward;

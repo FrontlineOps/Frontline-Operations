@@ -7,7 +7,7 @@ _OAA = nearestObjects [position player, ["O_Radar_System_02_F", "O_SAM_System_04
 deleteVehicleCrew vehicle _x ;
  } foreach _OAA;
  
- ["showNotification", ["SUPPORT DISABLED", "Enemy Anti-Air Sites Disabled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+ ["STR_FLO_SUPPORTDISABLED_TITLE", "STR_FLO_SUPPORTD_AA", "success"] call FLO_fnc_sendNotification;
 
 
 sleep 3600 ;

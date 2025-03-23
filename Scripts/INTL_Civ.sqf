@@ -16,7 +16,7 @@ if (_chance23 > 1) then {
 			
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-			["showNotification", ["+ NEW INTEL", "Civilian Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_CIV", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		} else {
 			
 			_INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x == "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
@@ -31,7 +31,7 @@ if (_chance23 > 1) then {
 			
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-			["showNotification", ["+ NEW INTEL", "Civilian Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_CIV", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 		
 	} else {
@@ -50,7 +50,7 @@ if (_chance23 > 1) then {
 			
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-			["showNotification", ["+ NEW INTEL", "Civilian Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_CIV", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 	};
 	

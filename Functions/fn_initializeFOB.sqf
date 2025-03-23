@@ -147,13 +147,13 @@ _CIVTRG setTriggerStatements [
 _CIVIL = (nearestObjects [thisTrigger ,['Man'], 7] select {(alive _x) && ((side _x) isEqualTo civilian)}) select 0 ;
 
 if (_CIVIL getUnitTrait 'engineer' isEqualTo true) then {
-    [50, 'INSURGENT'] call FLO_fnc_notification ;
+    [50, 'STR_FLO_INSURGENT'] call FLO_fnc_sendRewardNotification ;
     [50] call FLO_fnc_addReward;
     deleteVehicle _CIVIL ; 
     [] execVM 'Scripts\INTL_Civ.sqf';    
     [] execVM 'Scripts\ReputationPlus.sqf';
 } else {
-    [0, 'CIVILIAN'] call FLO_fnc_notification ;
+    [0, 'STR_FLO_CIVILIAN'] call FLO_fnc_sendRewardNotification ;
     deleteVehicle _CIVIL ; 
     [] execVM 'Scripts\ReputationMinus.sqf';
 };
@@ -171,7 +171,7 @@ _TFOBA setTriggerStatements [
 "  
 _RES = nearestobjects [thisTrigger,['CargoNet_01_box_F'],10] select 0 ;    
 deleteVehicle _RES ; 
-    [100, 'RESOURCE'] call FLO_fnc_notification ;
+    [100, 'STR_FLO_RESOURCE'] call FLO_fnc_sendRewardNotification ;
 [100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
 ", ""]; 
 

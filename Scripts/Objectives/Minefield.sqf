@@ -58,7 +58,7 @@ for "_i" from 1 to _mineCount do {
                 deleteMarker _M;
             };
 
-            [100, "MINEFIELD"] call FLO_fnc_notification;
+            [100, "STR_FLO_MINEFIELD"] call FLO_fnc_sendRewardNotification;
             [100] call FLO_fnc_addReward;
             [] execVM "Scripts\ReputationPlus.sqf";
             execVM "Scripts\Civ_Relations.sqf";

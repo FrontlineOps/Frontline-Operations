@@ -88,10 +88,13 @@ class FLO {
         class findNearestMarker   {};
         class log                 {};
         class addReward           {};
-        class notification        {};
         class getRandomMagazine   {};
         class heartbeat           {};
         class showDynamicText     {};
+        class addIntelServer      {};
+        class sendRewardNotification    {};
+        class sendNotification          {};
+        class displayNotification       {};
     };
     
     class Misc {

@@ -4,7 +4,7 @@ _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
 _mrkr = _mrkrs select 0;
 _AGGRSCORE = parseNumber (markerText _mrkr) ;  
 
-				[50, 'INTEL'] call FLO_fnc_notification ;
+				[50, 'STR_FLO_INTEL'] call FLO_fnc_sendRewardNotification ;
 				[50] call FLO_fnc_addReward;
 
 _CRT = [
@@ -69,9 +69,9 @@ PRL = [_HQB getPos [(50 +(random 50)), (0 + (random 360))], East, [selectRandom 
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+								_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
+								
+								["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL",_attackingAtGrid], "intel"] call FLO_fnc_sendNotification;
 								
 //////////////////////////////////
 
@@ -161,9 +161,9 @@ PRL = [_HQB getPos [(50 +(random 50)), (0 + (random 360))], East, [selectRandom 
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+								_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
+								
+								["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL",_attackingAtGrid], "intel"] call FLO_fnc_sendNotification;
 								
 								
 //////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
@@ -241,9 +241,9 @@ _dir = getDirVisual _HQB;
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+								_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
+								
+								["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL",_attackingAtGrid], "intel"] call FLO_fnc_sendNotification;
 
 
 
@@ -326,7 +326,7 @@ if (count _humanPlayers == 1 ) then {
 
 			playSound3D [(getMissionPath 'Sounds\c_eb_35_natojoin_MEM_0.ogg'), ((units _Group) select 0)];
 			
-[50, 'MISSING SQUAD'] call FLO_fnc_notification ;
+[50, 'STR_FLO_MISSINGSQUAD'] call FLO_fnc_sendRewardNotification ;
 [thisTrigger, 1500] call FLO_fnc_requestQRF;
 [50] call FLO_fnc_addReward;
  ", ""]; 

@@ -24,7 +24,7 @@ openMap true;
 
 sleep 5;
 
-["showNotification", ["CIVILIAN MISSION", "Deliver Resources - Transport the Cargo to the Destination", "info"]] call FLO_fnc_intelSystem;
+["STR_FLO_MISSIONCIV_TITLE", "STR_FLO_MISSIONCIV_DELIVER", "info"] call FLO_fnc_sendNotification;
 
 //////GROUPS/////////////////////////////////////////////////////////////////////////////////////////
 

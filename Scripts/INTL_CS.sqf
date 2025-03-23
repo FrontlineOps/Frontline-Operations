@@ -12,6 +12,6 @@ _mrkr setMarkerColor "colorCivilian";
 _mrkr setMarkerAlpha 0.7;
 sleep 1;
 private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-["showNotification", ["+ NEW INTEL", "POW Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_POW", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 
  

@@ -100,7 +100,7 @@ _assaultMarkerName setMarkerAlpha 0.5;
 
 // Notify players
 private _attackingAtGrid = mapGridPosition getMarkerPos _targetBluforMarker;
-["showNotification", ["! CRITICAL WARNING !", "Friendly Objective is Under Attack at grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
+["STR_FLO_WARNING_TITLE", ["Friendly Objective is Under Attack at grid ", _attackingAtGrid], "warning"] call FLO_fnc_sendNotification;
 
 // Calculate attack direction
 private _assaultAzimuth = (getMarkerPos _targetBluforMarker) getDir (getMarkerPos _sourceOpforMarker);
@@ -111,7 +111,7 @@ private _targetPos = getPos _targetBuilding;
 
 // Start with recon if aggression is high enough
 if (_aggressionScore > 3) then {
-    ["showNotification", ["! INTELLIGENCE !", "Enemy reconnaissance aircraft spotted!", "warning"]] call FLO_fnc_intelSystem;
+    ["STR_FLO_WARNING_TITLE", "ESTR_FLO_WARNING_EAIR", "warning"] call FLO_fnc_sendNotification;
     [_targetPos] call FLO_fnc_airRecon;
     sleep 300;
 };
@@ -119,7 +119,7 @@ if (_aggressionScore > 3) then {
 // Artillery prep based on aggression - now with looping capability
 if (_aggressionScore > 5) then {
     // Initial artillery barrage
-    ["showNotification", ["! WARNING !", "Enemy artillery fire incoming!", "warning"]] call FLO_fnc_intelSystem;
+    ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EARTYINC", "warning"] call FLO_fnc_sendNotification;
     [_targetPos, _aggressionScore] call FLO_fnc_artilleryPrep;
     
     // Calculate number of artillery barrages based on aggression
@@ -138,7 +138,7 @@ if (_aggressionScore > 5) then {
                 sleep _delay;
                 
                 // Notify players of continued artillery
-                ["showNotification", ["! WARNING !", "Enemy artillery continuing bombardment!", "warning"]] call FLO_fnc_intelSystem;
+                ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EARTYCONT", "warning"] call FLO_fnc_sendNotification;
                 
                 // Adjust target position slightly for each barrage
                 private _adjustedPos = _targetPos getPos [random 100, random 360];
@@ -459,16 +459,16 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
             // Wait for the appropriate wave timing
             sleep _waveDelay;
             
-            // Announce new wave
-            private _waveSize = switch (_wave) do {
-                case 2: { "secondary" };
-                case 3: { "main" };
-                case 4: { "reserve" };
-                case 5: { "final" };
-                default { "additional" };
-            };
+            // // Announce new wave
+            // private _waveSize = switch (_wave) do {
+            //     case 2: { "secondary" };
+            //     case 3: { "main" };
+            //     case 4: { "reserve" };
+            //     case 5: { "final" };
+            //     default { "additional" };
+            // };
             
-            ["showNotification", ["! WARNING !", format["Enemy %1 attack wave incoming!", _waveSize], "warning"]] call FLO_fnc_intelSystem;
+            ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EATTACK", "warning"] call FLO_fnc_sendNotification;
         };
         
         // Calculate wave composition - earlier waves get better units
@@ -494,16 +494,11 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
             // Announce reinforcements periodically
             if (_spawnIndex == _waveStartIndex) then {
                 if (_wave == 1) then {
-                    ["showNotification", ["! WARNING !", "Enemy Assault Forces Inbound!", "warning"]] call FLO_fnc_intelSystem;
+                    ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EATTACK", "warning"] call FLO_fnc_sendNotification;
                 };
             } else {
                 if (_spawnIndex mod 3 == 0) then {
-                    private _msg = selectRandom [
-                        "Additional enemy forces detected!",
-                        "More hostile units approaching!",
-                        "Enemy reinforcements moving in!"
-                    ];
-                    ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
+                    ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EATTACK", "warning"] call FLO_fnc_sendNotification;
                 };
             };
 
@@ -712,7 +707,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
         
         // Add helicopter insertion for high aggression in later waves
         if (_wave > 1 && _aggressionScore > 8 && _wave mod 2 == 0) then {
-            ["showNotification", ["! WARNING !", "Enemy helicopter insertion detected!", "warning"]] call FLO_fnc_intelSystem;
+            ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EATTACK", "warning"] call FLO_fnc_sendNotification;
             [_thisHeliInsertTrigger, _targetPos, _spawnPos] call FLO_fnc_heliInsert;
         };
     };

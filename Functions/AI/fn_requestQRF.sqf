@@ -439,15 +439,10 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         // Announce reinforcements periodically
         if (_spawnIndex == 1) then {
             private _attackingAtGrid = mapGridPosition _elementApproachPos;
-            ["showNotification", ["! WARNING !", "Enemy QRF Forces Inbound towards grid " + _attackingAtGrid, "warning"]] call FLO_fnc_intelSystem;
+            ["STR_FLO_WARNING_TITLE", ["STR_FLO_WARNING_EQRF", _attackingAtGrid], "warning"] call FLO_fnc_sendNotification;
         } else {
             if (_spawnIndex mod 3 == 0) then {
-                private _msg = selectRandom [
-                    "Additional enemy forces detected!",
-                    "More hostile units approaching!",
-                    "Enemy reinforcements moving in!"
-                ];
-                ["showNotification", ["! WARNING !", _msg, "warning"]] call FLO_fnc_intelSystem;
+                ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EATTACK", "warning"] call FLO_fnc_sendNotification;
             };
         };
 

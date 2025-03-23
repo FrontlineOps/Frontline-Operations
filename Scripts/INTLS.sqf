@@ -17,6 +17,6 @@ private _revealedMarkers = allMapMarkers select {
 openMap true;
 [[7000, 7000], position player, 1.5] call BIS_fnc_zoomOnArea;
 sleep 1;
-["showNotification", ["+ NEW INTEL", "Satellite Intel Received", "info"]] call FLO_fnc_intelSystem;
+["STR_FLO_INTEL_TITLE", "STR_FLO_INTEL_SAT", "info"] call FLO_fnc_sendNotification;
 
  

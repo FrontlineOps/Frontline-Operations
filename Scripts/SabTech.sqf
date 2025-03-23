@@ -30,7 +30,7 @@ sleep 1 ;
 sleep 1.5 ;
 _CRVEH setdamage 1;
 
-				[30, "TECHNOLOGY"] call FLO_fnc_notification ;
+				[30, "STR_FLO_TECH"] call FLO_fnc_sendRewardNotification ;
 
 [30] call FLO_fnc_addReward;
 

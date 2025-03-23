@@ -50,8 +50,7 @@ class CfgRemoteExec
 	// List of script functions allowed to be sent from client via remoteExec
 	class Functions
 	{
-		mode = 2;
-		jip = 1;		
+		mode = 2;	
 		
 		class vcm_serverask { allowedTargets = 0;jip = 1; };
 		class VCM_PublicScript { allowedTargets = 0;jip = 1; };
@@ -59,6 +58,8 @@ class CfgRemoteExec
 		class SpawnScript { allowedTargets = 0;jip = 1; };
 		class enableSimulationGlobal { allowedTargets = 0;jip = 1; };
 		class VCM_fnc_KnowAbout { allowedTargets = 0;jip = 1; };
+		class FLO_fnc_displayNotification { allowedTargets = 0; jip = 0; }
+		class FLO_fnc_addIntelServer { allowedTargets = 2; jip = 0; }
 		
 	};
 	

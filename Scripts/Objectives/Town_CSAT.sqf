@@ -159,7 +159,7 @@ _trg setTriggerTimeout [10, 10, 10, true];
 _trg setTriggerActivation ["WEST SEIZED","PRESENT", false];
 _trg setTriggerStatements [
     "this && {(alive _x) && ((side _x) == EAST) && (position _x inArea thisTrigger)} count allUnits < 3",
-    "[] call FLO_fnc_notification; [] execVM 'Scripts\ReputationPlus.sqf'; [] execVM 'Scripts\ReputationPlus.sqf'; [] execVM 'Scripts\ReputationPlus.sqf'; [30] call FLO_fnc_addReward; [thisTrigger] execVM 'Scripts\VehiInsert_CSAT.sqf';",
+    "[] call FLO_fnc_sendRewardNotification; [] execVM 'Scripts\ReputationPlus.sqf'; [] execVM 'Scripts\ReputationPlus.sqf'; [] execVM 'Scripts\ReputationPlus.sqf'; [30] call FLO_fnc_addReward; [thisTrigger] execVM 'Scripts\VehiInsert_CSAT.sqf';",
     ""
 ];
 

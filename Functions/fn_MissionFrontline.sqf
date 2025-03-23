@@ -95,7 +95,7 @@ private _frontlineManagerDeclaration = [
         params ["_aggressionScore"];
         
         // Notify players that OPFOR is preparing an offensive
-        ["showNotification", ["! INTELLIGENCE !", "Enemy is preparing a major offensive operation!", "warning"]] call FLO_fnc_intelSystem;
+        ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EOFF", "warning"] call FLO_fnc_sendNotification;
         
         // Add a delay before the actual attack to build tension
         private _preparationTime = 300 + random 600;
@@ -257,7 +257,7 @@ private _frontlineManagerDeclaration = [
         ];
         
         // Notify players
-        ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]] call FLO_fnc_intelSystem;
+        ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EDPLY", "warning"] call FLO_fnc_sendNotification;
     }],
     
     ["_createRoadblock", {
@@ -330,7 +330,7 @@ private _frontlineManagerDeclaration = [
         ];
 
         // Notify players
-        ["showNotification", ["! WARNING !", "Enemy Deployed New Military Installation!", "warning"]] call FLO_fnc_intelSystem;
+        ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EDPLY", "warning"] call FLO_fnc_sendNotification;
     }],
     
     ["_cleanupAssaultMarkers", {

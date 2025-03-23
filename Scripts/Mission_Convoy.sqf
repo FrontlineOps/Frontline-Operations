@@ -58,10 +58,10 @@ _mrkr setMarkerText "Convoy End" ;
 _mrkr setMarkerSize [1.5, 1.5] ;
 _mrkr setMarkerAlpha 0.7 ;  
 
-	["showNotification", ["! WARNING !", "Intel Suggests Enemy Support Convoy Preparing to Move!", "warning"]] call FLO_fnc_intelSystem;
+	["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_ECONVOY3", "warning"] call FLO_fnc_sendNotification;
 
 	sleep 600 ;
-		["showNotification", ["! WARNING !", "Enemy Support Convoy Mobilizing To Reinforce Their Forces!", "warning"]] call FLO_fnc_intelSystem;
+		["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_ECONVOY4", "warning"] call FLO_fnc_sendNotification;
 
 
 	ConVLocc = 1 ;
@@ -175,7 +175,7 @@ _x allowDammage true;
 deleteMarker 'ConvoyStrt' ;
 deleteMarker 'ConvoyDest' ;
 
-				[50, "SUPPORT CONVOY"] call FLO_fnc_notification;
+				[50, "STR_FLO_SUPPORTCONVOY"] call FLO_fnc_sendRewardNotification;
 
 
 if (alive V0) then {
@@ -288,7 +288,7 @@ _TRGT setTriggerStatements [
 " 
  [100] call FLO_fnc_addReward;
 
-				[100, 'SUPPORT CONVOY'] call FLO_fnc_notification;
+				[100, 'STR_FLO_SUPPORTCONVOY'] call FLO_fnc_sendRewardNotification;
  
  	ConVLocc = 0 ;
 

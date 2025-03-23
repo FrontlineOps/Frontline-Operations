@@ -210,7 +210,7 @@ if ((_triggerPos distance2D getMarkerPos _nearestInstallation) < 1500) then {
             "
             private _markers = allMapMarkers select { markerType _x == 'hd_unknown' && markerPos _x inArea thisTrigger};
             { deleteMarker _x } forEach _markers;
-            [70, 'IED'] call FLO_fnc_notification;
+            [70, 'STR_FLO_IED'] call FLO_fnc_sendRewardNotification;
             [70] call FLO_fnc_addReward;
             [] execVM 'Scripts\ReputationPlus.sqf';
             execVM 'Scripts\Civ_Relations.sqf';

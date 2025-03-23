@@ -49,7 +49,7 @@ private _fallbackArtilleryMagazines = [
 
 // Create new batteries if under cap and resources available
 if (_newBatteriesCount > 0) then {
-    ["showNotification", ["! WARNING !", "Enemy artillery batteries detected deploying!", "warning"]] call FLO_fnc_intelSystem;
+    ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_EARTY", "warning"] call FLO_fnc_sendNotification;
     
     // Find all OPFOR objective markers
     private _opforMarkers = allMapMarkers select {

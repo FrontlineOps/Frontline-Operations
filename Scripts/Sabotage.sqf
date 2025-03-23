@@ -43,7 +43,7 @@ Lightsss = nearestObjects [thisGenerator, [
 
 sleep 18;
 
-["showNotification", ["SUPPORT DISABLED", "Region Power Disabled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+["STR_FLO_SUPPORTDISABLED_TITLE", "STR_FLO_SUPPORTD_POWER", "success"] call FLO_fnc_sendNotification;
 
 PowerOFF = 1 ;
 

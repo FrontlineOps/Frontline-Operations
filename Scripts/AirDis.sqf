@@ -1,6 +1,6 @@
 sleep 18 ;
 
-["showNotification", ["SUPPORT DISABLED", "Enemy Aerial Support Dismantled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+["STR_FLO_SUPPORTDISABLED_TITLE", "STR_FLO_SUPPORTD_AIR", "success"] call FLO_fnc_sendNotification;
 
 AIRDIS = 1;
 

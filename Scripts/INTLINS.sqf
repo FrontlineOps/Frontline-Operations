@@ -14,7 +14,7 @@ if (_Chance == 5) then {
 
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _x;
-			["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 
 		if (!_result) then {
@@ -36,7 +36,7 @@ if (_Chance == 3) then {
 
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _x;
-			["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 
 		if (!_result) then {
@@ -74,7 +74,7 @@ if (_Chance == 3) then {
 			
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-			["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 	};
 };
@@ -92,7 +92,7 @@ if (_Chance == 4) then {
 
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _x;
-			["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 
 		if (!_result) then {
@@ -130,7 +130,7 @@ if (_Chance == 4) then {
 			
 			sleep 1;
 			private _attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-			["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+			["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 		};
 	};
 };
@@ -142,5 +142,5 @@ if (_Chance < 3) then {
 
 	sleep 1;
 	private _attackingAtGrid = mapGridPosition getMarkerPos _x;
-	["showNotification", ["+ NEW INTEL", "Military Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+	["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
 };

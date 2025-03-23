@@ -13,7 +13,7 @@ _anim =  selectRandom [
 "Acts_AidlPsitMstpSsurWnonDnon05"
 ];
 
-				[50, 'INTEL'] call FLO_fnc_notification ;
+				[50, 'STR_FLO_INTEL'] call FLO_fnc_sendRewardNotification ;
 				[50] call FLO_fnc_addReward;
 
 _CRT = [
@@ -82,10 +82,11 @@ PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] ca
 								_mrkr setMarkerType "mil_unknown";  
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
+
+								_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+								["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL",_attackingAtGrid], "intel"] call FLO_fnc_sendNotification;
+
 //////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
 
 _poss = [(getpos _HQB), 30, 50, 5, 1 , 0] call BIS_fnc_findSafePos; 
@@ -187,9 +188,10 @@ PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] ca
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+								_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
+								
+								["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL",_attackingAtGrid], "intel"] call FLO_fnc_sendNotification;
+
 //////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
 
 _poss = [(getpos _HQB), 30, 50, 5, 1 , 0] call BIS_fnc_findSafePos; 
@@ -303,9 +305,9 @@ _HQB = _SH select 0 ;
 								_mrkr setMarkerColor "colorOPFOR";  
 								_mrkr setMarkerSize [0.8, 0.8]; 
 								
-								["showNotification", ["+ NEW INTEL", "Military Intel Received", "intel"]] call FLO_fnc_intelSystem;
-									_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
-								[[west,"HQ"], "Enemy Presence Confirmed at grid " + _attackingAtGrid] remoteExec ["sideChat", 0];
+								_attackingAtGrid = mapGridPosition getMarkerPos _mrkr;
+								
+								["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL",_attackingAtGrid], "intel"] call FLO_fnc_sendNotification;
 								
 								
 _G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
@@ -379,7 +381,7 @@ deleteMarker _M ;
 
 [50] call FLO_fnc_addReward;
 [(_this select 0), 1500] call FLO_fnc_requestQRF;
-				[50, "CAPTURED PILOT"] call FLO_fnc_notification ;
+				[50, "STR_FLO_CAPTUREDPILOT"] call FLO_fnc_sendRewardNotification ;
 
 
 [(_this select 0),(_this select 2)] remoteExec ["bis_fnc_holdActionRemove",[0,-2] select isDedicated,true];

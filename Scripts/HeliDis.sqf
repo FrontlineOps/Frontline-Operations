@@ -1,6 +1,6 @@
 sleep 18;
 
-["showNotification", ["SUPPORT DISABLED", "Enemy Helicopter Support Dismantled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+["STR_FLO_SUPPORTDISABLED_TITLE", "STR_FLO_SUPPORTD_HELI", "success"] call FLO_fnc_sendNotification;
 
 HELIDIS = 1;
 

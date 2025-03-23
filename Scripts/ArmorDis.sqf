@@ -1,7 +1,7 @@
 sleep 18 ;
 
 
-["showNotification", ["SUPPORT DISABLED", "Enemy Armored Support Dismantled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+["STR_FLO_SUPPORTDISABLED_TITLE", "STR_FLO_SUPPORTD_ARMOR", "success"] call FLO_fnc_sendNotification;
 
 
 

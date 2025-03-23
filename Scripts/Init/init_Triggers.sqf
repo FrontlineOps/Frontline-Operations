@@ -30,7 +30,7 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
             if (markerAlpha _M in [0.001, 0]) then {
                 _M setMarkerAlpha 1;
                 private _attackingAtGrid = mapGridPosition getMarkerPos _M;
-                ["showNotification", ["+ NEW INTEL", "Scout Intel Received at grid " + _attackingAtGrid, "info"]] call FLO_fnc_intelSystem;
+                ["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_SCOUT", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
             };
         };
     };
@@ -53,12 +53,11 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
                 if (_x in _items) then {
                     player removeItem _x;
                     //diag_log format ["Removed intel item: %1", _x];
-                    ["add", [0, "intel_item"]] call FLO_fnc_intelSystem;
+                    [mapGridPosition player] remoteExec ["FLO_fnc_addIntelServer",2];
                 };
             } forEach _intelItems;
 
             [] execVM "Scripts\INTL.sqf";
-            ["showNotification", ["+ NEW INTEL", "Military Intel Received", "info"]] call FLO_fnc_intelSystem;
             //diag_log "Executed INTL.sqf script.";
         };
     };

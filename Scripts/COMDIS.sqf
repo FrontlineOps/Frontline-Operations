@@ -3,7 +3,7 @@ sleep 16 ;
 
 COMMSDIS = 1;
 
-["showNotification", ["SUPPORT DISABLED", "Enemy Communications Disabled For the Next Hour", "success"]] call FLO_fnc_intelSystem;
+["STR_FLO_SUPPORTDISABLED_TITLE", "STR_FLO_SUPPORTD_COMM", "success"] call FLO_fnc_sendNotification;
 
 sleep 3600 ;
 

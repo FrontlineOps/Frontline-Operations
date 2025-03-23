@@ -2121,18 +2121,12 @@ if (!isNull (_airSupport get "vehicle")) then {
     
     // Notify about air support based on mission type
     private _notificationText = switch (_missionType) do {
-        case "CAS": {
-            if (_aircraftType isKindOf "Helicopter") then {
-                "Enemy attack helicopters providing close air support!"
-            } else {
-                "Enemy CAS aircraft providing air support!"
-            };
-        };
-        case "STRIKE": {"Enemy strike aircraft inbound!"};
-        default {"Enemy aircraft detected!"};
+        case "CAS": {"STR_FLO_WARNING_ECAS"};
+        case "STRIKE": {"STR_FLO_WARNING_ESTRIKE"};
+        default {"ESTR_FLO_WARNING_EAIR"};
     };
     
-    ["showNotification", ["! WARNING !", _notificationText, "warning"]] call FLO_fnc_intelSystem;
+    ["STR_FLO_WARNING_TITLE", _notificationText, "warning"] call FLO_fnc_sendNotification;
 };
 
 _airSupport

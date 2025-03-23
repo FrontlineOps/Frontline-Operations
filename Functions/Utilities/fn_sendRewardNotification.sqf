@@ -19,11 +19,8 @@
 // Check parameters
 params [
     ["_reward", 0, [0]],
-    ["_objectiveStr", "OBJECTIVE", [""]]
+    ["_objectiveStr", "STR_FLO_OBJECTIVE", [""]]
 ];
 
-// Play music for all players
-{playMusic "EventTrack01_F_Curator";} remoteExec ["call", 0];
-
 // Display notification to all players
-["showNotification", ["REWARD", format["%1 SECURED - %2$", _objectiveStr, _reward], "success"]] call FLO_fnc_intelSystem; 
+["STR_FLO_REWARD_TITLE", ["STR_FLO_REWARD_SECURED", _objectiveStr, _reward], "success", true] call FLO_fnc_sendNotification; 
