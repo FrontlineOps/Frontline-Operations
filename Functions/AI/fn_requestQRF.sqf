@@ -316,7 +316,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         // Set group behavior attributes
         _group setBehaviour "AWARE";
         _group setCombatMode "RED";
-        _group setSpeedMode "NORMAL"; // Ensure speed is set to normal
+        _group setSpeedMode "NORMAL";
         
         // Calculate unique approach position
         private _sectorSize = 360 / _totalGroups;
@@ -329,108 +329,58 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
         while {(count (waypoints _group)) > 0} do {
             deleteWaypoint ((waypoints _group) select 0);
         };
-        
-        // Initialize a movement check to detect stuck vehicles
-        [_group] spawn {
-            params ["_group"];
-            private _timeoutCounter = 0;
-            private _previousPos = getPosATL (vehicle leader _group);
+
+        // Setup pathfinding callback
+        private _pathCallback = compileFinal {
+            params ["_status", "_posArray", "_args"];
+            _args params ["_group", "_targetPos", "_spawnIndex", "_totalGroups"];
             
-            while {alive leader _group && count units _group > 0} do {
-                sleep 15;
-                private _currentPos = getPosATL (vehicle leader _group);
+            if (!(_status) || (count _posArray == 0)) exitWith {
+                // Fallback to direct approach if pathfinding fails
+                private _wp = _group addWaypoint [_targetPos, 50];
+                _wp setWaypointType "MOVE";
+                _wp setWaypointSpeed "NORMAL";
+                _wp setWaypointBehaviour "AWARE";
+            };
+            
+            // Create waypoints along the found path
+            {
+                private _wp = _group addWaypoint [_x, 20];
+                _wp setWaypointType "MOVE";
+                _wp setWaypointSpeed (if (_spawnIndex <= (_totalGroups * 0.3)) then {"NORMAL"} else {"LIMITED"});
+                _wp setWaypointBehaviour "AWARE";
+                _wp setWaypointFormation "COLUMN";
+                _wp setWaypointCompletionRadius 30;
+            } forEach _posArray;
+            
+            // Final approach waypoint
+            private _finalWp = _group addWaypoint [_targetPos, 50];
+            _finalWp setWaypointType "SAD";
+            _finalWp setWaypointSpeed "NORMAL";
+            _finalWp setWaypointBehaviour "COMBAT";
+            
+            // Monitor final approach
+            [_group, _targetPos, _spawnIndex, _totalGroups] spawn {
+                params ["_group", "_targetPos", "_index", "_total"];
                 
-                // Check if vehicle hasn't moved in 15 seconds
-                if (_previousPos distance _currentPos < 3) then {
-                    _timeoutCounter = _timeoutCounter + 1;
-                    
-                    // If stuck for 60 seconds (4 checks), try to unstick
-                    if (_timeoutCounter >= 4) then {
-                        _timeoutCounter = 0;
-                        private _veh = vehicle leader _group;
-                        
-                        // Only apply to vehicles, not infantry
-                        if (_veh != leader _group) then {
-                            // Try to unstick by adjusting position and clearing obstacles
-                            _veh setVelocity [0, 0, 0.1]; // Small upward boost
-                            _veh setVectorUp surfaceNormal position _veh;
-                            
-                            // Clear small obstacles around vehicle
-                            private _nearObjects = nearestTerrainObjects [position _veh, ["TREE", "SMALL TREE", "BUSH", "FENCE", "WALL"], 5];
-                            {
-                                if (!isNull _x) then {
-                                    _x hideObjectGlobal true;
-                                };
-                            } forEach _nearObjects;
-                            
-                            // Try temporary AI driver skill boost to navigate obstacles
-                            private _driver = driver _veh;
-                            if (!isNull _driver) then {
-                                private _originalSkill = skill _driver;
-                                _driver setSkill 1;
-                                [_driver, _originalSkill] spawn {
-                                    params ["_unit", "_skill"];
-                                    sleep 30;
-                                    if (alive _unit) then {
-                                        _unit setSkill _skill;
-                                    };
-                                };
-                            };
-                            
-                            // Re-process movement orders
-                            _group setSpeedMode "FULL";
-                            {
-                                [_x] allowGetIn true;
-                                [_x] orderGetIn true;
-                            } forEach units _group;
-                        };
-                    };
-                } else {
-                    // Reset counter when moving
-                    _timeoutCounter = 0;
+                private _lastWpPos = waypointPosition [_group, count waypoints _group - 1];
+                waitUntil {
+                    sleep 5;
+                    leader _group distance _lastWpPos < 100
                 };
                 
-                _previousPos = _currentPos;
+                // Group has reached final waypoint - execute attack behavior
+                {
+                    _x doMove _targetPos;
+                    _x setUnitPos "AUTO";
+                } forEach units _group;
             };
         };
         
-        // Add first waypoint with proper route planning
-        private _wp = _group addWaypoint [_groupApproachPos, 50];
-        _wp setWaypointType "MOVE";
-        _wp setWaypointSpeed (if (_spawnIndex <= (_totalGroups * 0.3)) then {"NORMAL"} else {"LIMITED"});
-        _wp setWaypointBehaviour "AWARE";
-        _wp setWaypointFormation "COLUMN";
-        _wp setWaypointCompletionRadius 30;
-        
-        // After reaching approach position, move to actual target with coordinated timing
-        [_group, _targetPos, _groupApproachPos, _spawnIndex, _totalGroups] spawn {
-            params ["_group", "_targetPos", "_approachPos", "_index", "_total"];
-            
-            waitUntil {
-                sleep 5;
-                leader _group distance _approachPos < 100
-            };
-            
-            // Coordinate attack timing based on group position
-            private _delay = if (_index < (_total * 0.3)) then {
-                5 // First wave
-            } else {
-                if (_index < (_total * 0.6)) then {
-                    15 // Second wave
-                } else {
-                    30 // Reserve/support elements
-                };
-            };
-            sleep _delay;
-            
-            // Delete the approach waypoint
-            deleteWaypoint [_group, currentWaypoint _group];
-            
-            // Add new attack waypoint to target
-            [_group, _targetPos, 50] call BIS_fnc_taskAttack;
-        };
-        
-        // Add killed event handler to each unit
+        // Start pathfinding from spawn to approach position, then to target
+        [_spawnPos, _groupApproachPos, _pathCallback, [_group, _targetPos, _spawnIndex, _totalGroups], false] call FLO_fnc_findRoadPath;
+
+        // Add killed event handler to dismount trigger
         {
             _x addEventHandler ["Killed", {
                 params ["_unit"];
@@ -445,7 +395,7 @@ private _originalSpawnPos = getMarkerPos _nearestOutpost;
                 } forEach crew _nearVeh;
             }];
         } forEach units _group;
-        
+
         // Get the vehicle the group is using
         private _groupVeh = vehicle leader _group;
         if (_groupVeh != leader _group) then {
