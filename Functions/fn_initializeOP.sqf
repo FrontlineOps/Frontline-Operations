@@ -136,6 +136,9 @@ false
     ""
 ]] remoteExec ["addAction",0,true];
 
+// Add crate purchase actions
+[_opBuilding] call FLO_fnc_addCratePurchaseActions;
+
 // Add Civilian Handling Trigger
 _CIVTRG = createTrigger ["EmptyDetector", getPos _opBuilding];  
 _CIVTRG setTriggerArea [5, 5, 0, false, 7];  
