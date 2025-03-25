@@ -26,7 +26,7 @@
 
 //IF SERVER NOTIFICATION - check intel levels
 if (isServer) then {
-    private _intelLevel = FLO_Intel_System get "intelLevels";
+    private _intelLevel = FLO_Intel_System get "intelLevel";
     private _radioTowers = FLO_Intel_System get "radioTowers";
 
     // Define intel and radio tower requirements for different notification types
