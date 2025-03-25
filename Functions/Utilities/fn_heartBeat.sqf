@@ -15,7 +15,7 @@
 if (!isServer) exitWith {};
 
 // Configuration
-private _restartIntervals = [0, 6, 12, 18]; // Restart times (24h format)
+private _restartIntervals = [23, 5, 11, 17]; // Restart times (24h format)
 private _notificationTimes = [30, 15, 5]; // Minutes before restart to notify
 private _checkFrequency = 60; // Default check frequency in seconds
 private _urgentCheckFrequency = 30; // Check frequency when close to restart
