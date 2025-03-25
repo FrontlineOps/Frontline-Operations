@@ -17,7 +17,7 @@ if (isServer) then {
         if ((typeOf _x) in [F_HQ_01, F_OP_01]) then {
             [_x] call FLO_fnc_addCratePurchaseActions;
         };
-    } forEach (entities "All");
+    } forEach (entities "");
     
     // Monitor for new FOBs/OPs with JIP compatibility
     addMissionEventHandler ["EntityCreated", {
