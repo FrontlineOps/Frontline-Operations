@@ -189,6 +189,7 @@ private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics;
 {
     private _ObjectDataHashEach = createHashMap;
     private _ObjectNameStr = str getPosASL _x + "_Obj";
+    private _isPlacedEntity = _x getVariable ["IDS_Logistics_isPlacedEntity", false];
     _x setVehicleVarName _ObjectNameStr;
     
     private _ObjectName = vehicleVarName _x;
@@ -196,6 +197,7 @@ private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics;
     _ObjectDataHashEach set ["type", typeOf _x];
     _ObjectDataHashEach set ["posASL", getPosASL _x];
     _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
+    _ObjectDataHashEach set ["isPlacedEntity", _isPlacedEntity];
     
     _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
 } forEach _FinalSaving;
