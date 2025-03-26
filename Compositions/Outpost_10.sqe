@@ -1391,69 +1391,6 @@ class items
 																						};
 																						id=561;
 																					};
-																					class Item2
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={13.723633,0.18670559,15.206787};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=563;
-																						type="Box_East_WpsSpecial_F";
-																					};
-																					class Item3
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={13.176758,0.14963245,13.948975};
-																							angles[]={-0,2.8496232,0};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=564;
-																						type="Box_East_WpsLaunch_F";
-																						atlOffset=1.4305115e-006;
-																					};
-																					class Item4
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={14.895508,0.18872547,16.577881};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=565;
-																						type="Box_East_Wps_F";
-																						atlOffset=9.5367432e-007;
-																					};
-																					class Item5
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={14.676758,0.28405476,14.218506};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=566;
-																						type="Box_East_AmmoOrd_F";
-																					};
 																					class Item6
 																					{
 																						dataType="Object";

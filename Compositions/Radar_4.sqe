@@ -524,52 +524,6 @@ class items
 																						};
 																						id=558;
 																					};
-																					class Item1
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={13.859375,0.18670559,31.876709};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=5670;
-																						type="Box_East_WpsSpecial_F";
-																					};
-																					class Item2
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={15.03125,0.18872547,33.247803};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=5671;
-																						type="Box_East_Wps_F";
-																						atlOffset=9.5367432e-007;
-																					};
-																					class Item3
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={14.8125,0.28405476,30.888428};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=5672;
-																						type="Box_East_AmmoOrd_F";
-																					};
 																				};
 																				id=557;
 																				atlOffset=0.016923904;

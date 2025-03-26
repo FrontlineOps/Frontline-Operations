@@ -54,21 +54,6 @@ class items
 												id=230;
 												type="Land_PortableLight_single_F";
 											};
-											class Item1
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={-2.3056641,0.28405476,-3.8103027};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-												};
-												id=231;
-												type="Box_IND_Ammo_F";
-											};
 											class Item2
 											{
 												dataType="Object";

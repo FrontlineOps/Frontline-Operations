@@ -173,38 +173,6 @@ class items
 								id=31;
 								type="Land_PortableLight_double_F";
 							};
-							class Item9
-							{
-								dataType="Object";
-								class PositionInfo
-								{
-									position[]={-1.6685791,0.28405476,-1.3022461};
-									angles[]={-0,0.3929711,0};
-								};
-								side="Empty";
-								flags=4;
-								class Attributes
-								{
-								};
-								id=32;
-								type="Box_IND_Ammo_F";
-							};
-							class Item10
-							{
-								dataType="Object";
-								class PositionInfo
-								{
-									position[]={-1.4542236,0.28405476,2.5021973};
-									angles[]={-0,1.410727,0};
-								};
-								side="Empty";
-								flags=4;
-								class Attributes
-								{
-								};
-								id=33;
-								type="Box_East_Grenades_F";
-							};
 							class Item11
 							{
 								dataType="Object";

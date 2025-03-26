@@ -16,7 +16,7 @@ class items
 		{
 		};
 		id=6936;
-		type="Box_NATO_Support_F";
+		type="Land_PaperBox_closed_F";
 		atlOffset=0.22659492;
 		class CustomAttributes
 		{
@@ -243,26 +243,6 @@ class items
 					};
 				};
 			};
-			class Attribute2
-			{
-				property="ammoBox";
-				expression="[_this,_value] call bis_fnc_initAmmoBox;";
-				class Value
-				{
-					class data
-					{
-						class type
-						{
-							type[]=
-							{
-								"STRING"
-							};
-						};
-						value="[[[[],[]],[[""Laserbatteries""],[5]],[[""Binocular"",""Rangefinder"",""Laserdesignator"",""FirstAidKit"",""Medikit"",""ToolKit"",""MineDetector"",""ItemGPS"",""acc_flashlight"",""acc_pointer_IR"",""muzzle_snds_acp"",""muzzle_snds_L"",""muzzle_snds_H"",""muzzle_snds_B"",""muzzle_snds_338_black"",""muzzle_snds_338_green"",""muzzle_snds_338_sand"",""bipod_01_F_blk"",""bipod_01_F_mtp"",""bipod_01_F_snd"",""ALIVE_Tablet"",""muzzle_snds_H_khk_F"",""bipod_01_F_khk"",""NVGoggles"",""NVGoggles_tna_F"",""NVGogglesB_blk_F"",""NVGogglesB_grn_F"",""NVGogglesB_gry_F""],[1,1,1,10,1,1,1,5,5,5,5,5,5,5,2,2,2,2,2,2,4,5,2,2,2,2,2,2]],[[],[]]],false]";
-					};
-				};
-			};
-			nAttributes=3;
 		};
 	};
 	class Item1

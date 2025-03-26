@@ -88,23 +88,6 @@ class items
 												id=113;
 												type="Land_Pipes_small_F";
 											};
-											class Item3
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={0.39501953,0.78980827,1.6494141};
-													angles[]={-0,2.8414671,0};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-													skill=0.2;
-												};
-												id=114;
-												type="Box_East_AmmoVeh_F";
-											};
 											class Item4
 											{
 												dataType="Object";

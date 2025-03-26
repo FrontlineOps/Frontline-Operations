@@ -559,39 +559,7 @@ class items
 								name="Watchpost_55";
 								class Entities
 								{
-									items=2;
-									class Item0
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={0.3503418,0.28405476,-2.3198242};
-											angles[]={-0,0.3929711,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=288;
-										type="Box_IND_Ammo_F";
-									};
-									class Item1
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={0.56469727,0.28405476,1.4846191};
-											angles[]={-0,1.410727,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=289;
-										type="Box_East_Grenades_F";
-									};
+									items=0;
 								};
 								id=287;
 							};

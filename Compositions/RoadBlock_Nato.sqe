@@ -7215,7 +7215,7 @@ class items
 		{
 		};
 		id=14154;
-		type="Box_NATO_Support_F";
+		type="Land_PaperBox_closed_F";
 		atlOffset=-0.0075244904;
 		class CustomAttributes
 		{
@@ -7442,26 +7442,6 @@ class items
 					};
 				};
 			};
-			class Attribute2
-			{
-				property="ammoBox";
-				expression="[_this,_value] call bis_fnc_initAmmoBox;";
-				class Value
-				{
-					class data
-					{
-						class type
-						{
-							type[]=
-							{
-								"STRING"
-							};
-						};
-						value="[[[[],[]],[[],[]],[[],[]],[[],[]]],false]";
-					};
-				};
-			};
-			nAttributes=3;
 		};
 	};
 	class Item11

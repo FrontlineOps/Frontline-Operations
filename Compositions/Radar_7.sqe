@@ -567,84 +567,6 @@ class items
 										id=5706;
 										type="Land_Camping_Light_F";
 									};
-									class Item4
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={-51.682129,0.28405476,15.169922};
-											angles[]={-0,4.7256765,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=5707;
-										type="Box_East_AmmoOrd_F";
-										class CustomAttributes
-										{
-											class Attribute0
-											{
-												property="allowDamage";
-												expression="_this allowdamage _value;";
-												class Value
-												{
-													class data
-													{
-														class type
-														{
-															type[]=
-															{
-																"BOOL"
-															};
-														};
-														value=0;
-													};
-												};
-											};
-											nAttributes=1;
-										};
-									};
-									class Item5
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={-50.687012,0.28405476,14.344238};
-											angles[]={-0,4.7256765,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=5708;
-										type="Box_East_Support_F";
-										class CustomAttributes
-										{
-											class Attribute0
-											{
-												property="allowDamage";
-												expression="_this allowdamage _value;";
-												class Value
-												{
-													class data
-													{
-														class type
-														{
-															type[]=
-															{
-																"BOOL"
-															};
-														};
-														value=0;
-													};
-												};
-											};
-											nAttributes=1;
-										};
-									};
 									class Item6
 									{
 										dataType="Object";
@@ -790,37 +712,7 @@ class items
 																				name="Firing_Post_CSAT_54";
 																				class Entities
 																				{
-																					items=2;
-																					class Item0
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={15.612793,0.18670559,29.823975};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=5851;
-																						type="Box_East_WpsSpecial_F";
-																					};
-																					class Item1
-																					{
-																						dataType="Object";
-																						class PositionInfo
-																						{
-																							position[]={16.565918,0.28405476,28.835693};
-																						};
-																						side="Empty";
-																						flags=4;
-																						class Attributes
-																						{
-																						};
-																						id=5852;
-																						type="Box_East_AmmoOrd_F";
-																					};
+																					items=0;
 																				};
 																				id=557;
 																				atlOffset=0.016923904;

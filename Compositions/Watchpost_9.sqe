@@ -24,38 +24,6 @@ class items
 						class Entities
 						{
 							items=4;
-							class Item0
-							{
-								dataType="Object";
-								class PositionInfo
-								{
-									position[]={-6.7612305,0.28405476,-3.2634277};
-									angles[]={-0,0.3929711,0};
-								};
-								side="Empty";
-								flags=4;
-								class Attributes
-								{
-								};
-								id=1806;
-								type="Box_IND_Ammo_F";
-							};
-							class Item1
-							{
-								dataType="Object";
-								class PositionInfo
-								{
-									position[]={7.7944336,0.28405476,1.8696289};
-									angles[]={-0,1.410727,0};
-								};
-								side="Empty";
-								flags=4;
-								class Attributes
-								{
-								};
-								id=1807;
-								type="Box_East_Grenades_F";
-							};
 							class Item2
 							{
 								dataType="Object";

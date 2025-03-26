@@ -914,23 +914,6 @@ class items
 						id=107257;
 						type="Land_BagFence_End_F";
 					};
-					class Item19
-					{
-						dataType="Object";
-						class PositionInfo
-						{
-							position[]={3.5058594,0.28405476,-5.40625};
-							angles[]={-0,3.9269907,0};
-						};
-						side="Empty";
-						flags=4;
-						class Attributes
-						{
-							skill=0.2;
-						};
-						id=107258;
-						type="Box_East_AmmoOrd_F";
-					};
 					class Item20
 					{
 						dataType="Object";

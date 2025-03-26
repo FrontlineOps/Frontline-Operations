@@ -15,23 +15,6 @@ _anim =  selectRandom [
 
 				[50, 'STR_FLO_INTEL'] call FLO_fnc_sendRewardNotification ;
 				[50] call FLO_fnc_addReward;
-
-_CRT = [
-"Box_IND_WpsSpecial_F",
-"Box_East_WpsSpecial_F",
-"Box_IND_Support_F",
-"Box_East_Support_F",
-"Box_CSAT_Equip_F",
-"Box_AAF_Equip_F",
-"Box_East_WpsLaunch_F",
-"Box_IND_WpsLaunch_F",
-"Box_East_AmmoOrd_F",
-"Box_East_Ammo_F",
-"Box_IND_Ammo_F",
-"Box_IND_AmmoOrd_F",
-"Box_East_Wps_F",
-"Box_IND_Wps_F"
-];
 				
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -59,8 +42,6 @@ _HQB = _SH select 0 ;
 _dir = getDirVisual _HQB;
 
 [ "Intel_CS_02", (selectRandom (_HQB buildingPos -1)), [0,0,0], _dir, false, false, true ] call LARs_fnc_spawnComp; 
-_V = createVehicle [(selectRandom _CRT), (selectRandom (_HQB buildingPos -1)), [], 15, "NONE"]; 
-_V = createVehicle [(selectRandom _CRT), (selectRandom (_HQB buildingPos -1)), [], 15, "NONE"]; 
 _G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
 ((units _G) select 0) disableAI "PATH"; 
 _G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
@@ -164,8 +145,6 @@ _HQB = _SH select 0 ;
 _dir = getDirVisual _HQB;
 
 [ "Intel_CS_03", (selectRandom (_HQB buildingPos -1)), [0,0,0], _dir, false, false, true ] call LARs_fnc_spawnComp; 
-_V = createVehicle [(selectRandom _CRT), (selectRandom (_HQB buildingPos -1)), [], 15, "NONE"]; 
-_V = createVehicle [(selectRandom _CRT), (selectRandom (_HQB buildingPos -1)), [], 15, "NONE"]; 
 _G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
 ((units _G) select 0) disableAI "PATH"; 
 _G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 

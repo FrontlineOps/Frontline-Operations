@@ -249,37 +249,6 @@ class items
 										id=1873;
 										type="Land_Camping_Light_F";
 									};
-									class Item13
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={1.5645752,0.28405476,1.0444336};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=1874;
-										type="Box_IND_Ammo_F";
-									};
-									class Item14
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={1.7120361,0.18872452,-0.625};
-											angles[]={-0,2.1722791,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=1875;
-										type="Box_IND_Wps_F";
-									};
 									class Item15
 									{
 										dataType="Object";

@@ -460,40 +460,6 @@ class items
 												id=21;
 												type="Land_BarrelTrash_grey_F";
 											};
-											class Item17
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={-1.1938477,0.10536242,-9.3012695};
-													angles[]={-0,5.5898008,0};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-													skill=0.2;
-												};
-												id=22;
-												type="Land_Ammobox_rounds_F";
-											};
-											class Item18
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={-0.8984375,0.10536242,-8.8261719};
-													angles[]={-0,4.5426035,0};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-													skill=0.2;
-												};
-												id=23;
-												type="Land_Ammobox_rounds_F";
-											};
 											class Item19
 											{
 												dataType="Object";
@@ -527,23 +493,6 @@ class items
 												};
 												id=25;
 												type="Land_CampingChair_V1_F";
-											};
-											class Item21
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={-7.1992188,0.78980827,5.7885742};
-													angles[]={-0,5.6421609,0};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-													skill=0.2;
-												};
-												id=26;
-												type="Box_East_AmmoVeh_F";
 											};
 											class Item22
 											{

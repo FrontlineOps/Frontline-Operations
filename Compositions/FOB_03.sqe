@@ -1505,85 +1505,6 @@ class items
 										type="Land_Camping_Light_F";
 										atlOffset=1.4305115e-006;
 									};
-									class Item4
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={-23.484863,0.28405476,2.1904297};
-											angles[]={-0,4.7232375,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=3774;
-										type="Box_East_AmmoOrd_F";
-										class CustomAttributes
-										{
-											class Attribute0
-											{
-												property="allowDamage";
-												expression="_this allowdamage _value;";
-												class Value
-												{
-													class data
-													{
-														class type
-														{
-															type[]=
-															{
-																"BOOL"
-															};
-														};
-														value=0;
-													};
-												};
-											};
-											nAttributes=1;
-										};
-									};
-									class Item5
-									{
-										dataType="Object";
-										class PositionInfo
-										{
-											position[]={-22.487793,0.28405666,1.3671875};
-											angles[]={-0,4.7232375,0};
-										};
-										side="Empty";
-										flags=4;
-										class Attributes
-										{
-										};
-										id=3775;
-										type="Box_East_Support_F";
-										atlOffset=1.9073486e-006;
-										class CustomAttributes
-										{
-											class Attribute0
-											{
-												property="allowDamage";
-												expression="_this allowdamage _value;";
-												class Value
-												{
-													class data
-													{
-														class type
-														{
-															type[]=
-															{
-																"BOOL"
-															};
-														};
-														value=0;
-													};
-												};
-											};
-											nAttributes=1;
-										};
-									};
 									class Item6
 									{
 										dataType="Object";
@@ -4439,23 +4360,6 @@ class items
 								};
 								id=3606;
 								type="Land_PowerGenerator_F";
-							};
-							class Item111
-							{
-								dataType="Object";
-								class PositionInfo
-								{
-									position[]={32.818359,0.78980827,7.6530762};
-									angles[]={-0,1.5716568,0};
-								};
-								side="Empty";
-								flags=4;
-								class Attributes
-								{
-									skill=0.2;
-								};
-								id=3607;
-								type="Box_East_AmmoVeh_F";
 							};
 							class Item112
 							{

@@ -232,23 +232,6 @@ class items
 						id=861;
 						type="Land_PowerGenerator_F";
 					};
-					class Item1
-					{
-						dataType="Object";
-						class PositionInfo
-						{
-							position[]={-11.514893,0.78980827,-5.5107422};
-							angles[]={-0,1.2966821,0};
-						};
-						side="Empty";
-						flags=4;
-						class Attributes
-						{
-							skill=0.2;
-						};
-						id=862;
-						type="Box_East_AmmoVeh_F";
-					};
 					class Item2
 					{
 						dataType="Object";
@@ -2898,73 +2881,6 @@ class items
 												id=725;
 												type="Land_Camping_Light_F";
 												atlOffset=1.4305115e-006;
-											};
-											class Item7
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={-46.210205,0.28405476,23.119141};
-													angles[]={-0,4.7256765,0};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-												};
-												id=726;
-												type="Box_East_AmmoOrd_F";
-												class CustomAttributes
-												{
-													class Attribute0
-													{
-														property="allowDamage";
-														expression="_this allowdamage _value;";
-														class Value
-														{
-															class data
-															{
-																singleType="BOOL";
-																value=0;
-															};
-														};
-													};
-													nAttributes=1;
-												};
-											};
-											class Item8
-											{
-												dataType="Object";
-												class PositionInfo
-												{
-													position[]={-45.215088,0.28405666,22.293945};
-													angles[]={-0,4.7256765,0};
-												};
-												side="Empty";
-												flags=4;
-												class Attributes
-												{
-												};
-												id=727;
-												type="Box_East_Support_F";
-												atlOffset=1.9073486e-006;
-												class CustomAttributes
-												{
-													class Attribute0
-													{
-														property="allowDamage";
-														expression="_this allowdamage _value;";
-														class Value
-														{
-															class data
-															{
-																singleType="BOOL";
-																value=0;
-															};
-														};
-													};
-													nAttributes=1;
-												};
 											};
 											class Item9
 											{
