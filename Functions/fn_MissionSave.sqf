@@ -120,6 +120,9 @@ private _finalVehiclesToSave = _vehiclesToSave arrayIntersect _vehiclesToSave;
     
     _vehicleDataHashEach set ["type", typeOf _vehicle];
     _vehicleDataHashEach set ["posATL", getPosATL _vehicle];
+    _vehicleDataHashEach set ["fuel", fuel _vehicle];
+    _vehicleDataHashEach set ["damage", damage _vehicle];
+    _vehicleDataHashEach set ["damages", getAllHitPointsDamage _vehicle];
     _vehicleDataHashEach set ["vectorDirAndUp", [vectorDir _vehicle, vectorUp _vehicle]];
     
     _VehicleDataHash set [_vehicleName, _vehicleDataHashEach];
@@ -187,19 +190,22 @@ private _staticsSaving = _staticsNewAlive - _staticsTerrain;
 private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics;
 
 {
-    private _ObjectDataHashEach = createHashMap;
-    private _ObjectNameStr = str getPosASL _x + "_Obj";
-    private _isPlacedEntity = _x getVariable ["IDS_Logistics_isPlacedEntity", false];
-    _x setVehicleVarName _ObjectNameStr;
+    if (alive _x) then {
+        private _ObjectDataHashEach = createHashMap;
+        private _ObjectNameStr = str getPosASL _x + "_Obj";
+        private _isPlacedEntity = _x getVariable ["IDS_Logistics_isPlacedEntity", false];
+        
+        _x setVehicleVarName _ObjectNameStr;
     
-    private _ObjectName = vehicleVarName _x;
+        private _ObjectName = vehicleVarName _x;
     
-    _ObjectDataHashEach set ["type", typeOf _x];
-    _ObjectDataHashEach set ["posASL", getPosASL _x];
-    _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
-    _ObjectDataHashEach set ["isPlacedEntity", _isPlacedEntity];
-    
-    _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
+        _ObjectDataHashEach set ["type", typeOf _x];
+        _ObjectDataHashEach set ["posASL", getPosASL _x];
+        _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
+        _ObjectDataHashEach set ["isPlacedEntity", _isPlacedEntity];
+
+        _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
+    };
 } forEach _FinalSaving;
 
 profileNamespace setVariable [_ObjectDataName, _ObjectDataHash];

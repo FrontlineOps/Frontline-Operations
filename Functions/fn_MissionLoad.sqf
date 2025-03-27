@@ -65,16 +65,18 @@ if (!isNil "_GetVariableStatic") then {
     private _allObjectNames = keys _GetVariableStatic;
     
     {
-        private _objectAttributes = _GetVariableStatic get _x;
-        private _posASL = _objectAttributes get "posASL";
-        private _type = _objectAttributes get "type";
-        private _dirAndUp = _objectAttributes get "vectorDirAndUp";
-        private _isPlacedEntity = _objectAttributes get "isPlacedEntity";
+        if (alive _x) then {
+            private _objectAttributes = _GetVariableStatic get _x;
+            private _posASL = _objectAttributes get "posASL";
+            private _type = _objectAttributes get "type";
+            private _dirAndUp = _objectAttributes get "vectorDirAndUp";
+            private _isPlacedEntity = _objectAttributes get "isPlacedEntity";
         
-        private _newObject = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
-        _newObject setVectorDirAndUp _dirAndUp;
-        _newObject setPosASL _posASL;
-        _newObject setVariable ["IDS_Logistics_isPlacedEntity", _isPlacedEntity, true];
+            private _newObject = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
+            _newObject setVectorDirAndUp _dirAndUp;
+            _newObject setPosASL _posASL;
+            _newObject setVariable ["IDS_Logistics_isPlacedEntity", _isPlacedEntity, true];
+        };
     } forEach _allObjectNames;
 };
 
@@ -88,10 +90,21 @@ private _allVehNames = keys _GetVariableVeh;
     private _posATL = _VehAtts get "posATL";
     private _Type = _VehAtts get "type";
     private _DirUp = _VehAtts get "vectorDirAndUp";
+    private _fuel = _VehAtts get "fuel";
+    private _damage = _VehAtts get "damage";
+    private _damages = _VehAtts get "damages";
 
     private _NewVeh = createVehicle [_Type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
     _NewVeh setVectorDirAndUp _DirUp;
     _NewVeh setPosATL _posATL;
+    _NewVeh setFuel _fuel;
+    _NewVeh setDamage _damage;
+    
+    {
+        private _key = _x;
+        private _value = (_damages # 2) # _forEachIndex;
+        _NewVeh setHitPointDamage [_key, _value];
+    } forEach (_damages # 0);
 
     // private _vehicleConfig = configFile >> "CfgVehicles" >> typeOf _NewVeh;
     // private _crewType = [west, _vehicleConfig] call BIS_fnc_selectCrew;
