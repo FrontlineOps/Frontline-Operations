@@ -413,10 +413,10 @@ private _airSupportTypeDef = [
                 };
             } forEach _weaponSystems;
             
-            // If helicopter has long range weapons, use 5000-6000m standoff range
+            // If helicopter has long range weapons, use 3000-4000m standoff range
             if (_hasLongRangeWeapons) then {
-                _self set ["standoffRange", [5000, 6000]];
-                diag_log format ["[FLO][AirSupport] Helicopter %1 standoff range increased to 6000-8000m due to long range weapons", _type];
+                _self set ["standoffRange", [3000, 4000]];
+                diag_log format ["[FLO][AirSupport] Helicopter %1 standoff range increased to 3000-4000m due to long range weapons", _type];
             };
         };
         
