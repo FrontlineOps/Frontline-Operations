@@ -167,8 +167,42 @@ private _frontlineManagerDeclaration = [
         };
 
         if (_validPositions isEqualTo []) then {
-            diag_log "[FLO] WARNING: No valid positions found without players nearby, using original list";
-            _validPositions = _mountsInBetween;
+            diag_log "[FLO] WARNING: No valid positions found without players nearby, attempting fallback position finding";
+            
+            // Get positions of both markers
+            private _opforPos = getMarkerPos _sourceOpforMarker;
+            private _bluforPos = getMarkerPos _targetBluforMarker;
+            
+            // Calculate direction vector between positions
+            private _dir = _opforPos vectorFromTo _bluforPos;
+            private _distance = _opforPos distance _bluforPos;
+            
+            // Try multiple positions along the line at 2/3 distance
+            private _candidatePositions = [];
+            private _basePos = _opforPos vectorAdd (_dir vectorMultiply (_distance * 0.66));
+            
+            // Generate positions in a grid pattern around the base position
+            for "_x" from -200 to 200 step 100 do {
+                for "_y" from -200 to 200 step 100 do {
+                    private _testPos = _basePos vectorAdd [_x, _y, 0];
+                    
+                    // Check if position is suitable (not in water, not too close to players)
+                    if !(surfaceIsWater _testPos) then {
+                        private _nearPlayers = allPlayers select {(_x distance _testPos) < 1000 && {side _x isEqualTo west}};
+                        if (count _nearPlayers isEqualTo 0) then {
+                            _candidatePositions pushBack _testPos;
+                        };
+                    };
+                };
+            };
+            
+            if (count _candidatePositions > 0) then {
+                // Convert positions to location objects for compatibility
+                _validPositions = _candidatePositions apply {
+                    private _loc = createLocation ["Invisible", _x, 1, 1];
+                    _loc
+                };
+            };
         };
         
         // Return the results
