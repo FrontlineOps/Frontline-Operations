@@ -62,6 +62,12 @@ if (_preserveMarker && {_fobBuilding getVariable ["FLO_FOB_MarkersRestored", fal
     };
 };
 
+private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+if (_RestrictedArsenalVal isEqualTo 0) then {
+    [_fobBuilding] call FLO_fnc_restrictArsenalBox;
+    [_fobBuilding] call FLO_fnc_addCratePurchaseActions;
+};
+
 // Initialize creation factory
 if (!isNil "_fobBuilding" && {!isNull _fobBuilding}) then {
     [_fobBuilding, [

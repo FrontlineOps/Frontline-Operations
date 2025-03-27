@@ -39,5 +39,4 @@ FLO_availableCrates = [
     ], "Contains special ammunition for machine guns and sniper rifles"]
 ];
 
-// Start the system
-[] call FLO_fnc_initCrateSystem;
+FLO_crates_initialized = true;

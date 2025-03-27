@@ -386,12 +386,5 @@ addMissionEventHandler ["EntityCreated", {
     };
 }];
 
-// Initialize restrictions on any existing FOBs/OPs
-{
-    if ((typeOf _x) in [F_HQ_01, F_OP_01]) then {
-        [_x] call FLO_fnc_restrictArsenalBox;
-    };
-} forEach (entities "");
-
 // Mark as initialized to prevent multiple executions
 FLO_arsenal_initialized = true;

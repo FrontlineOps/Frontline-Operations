@@ -398,92 +398,6 @@ FLO_fnc_configureVehicle = {
         ]] remoteExec ["addAction", 0, true];
     };
     
-    // Configure ammo cargo container
-    if (_VehName == "B_CargoNet_01_ammo_F") then {
-        // Add various ammo and equipment
-        _vehicle addMagazineCargoGlobal ["DemoCharge_Remote_Mag", 20];
-        _vehicle addMagazineCargoGlobal ["APERSBoundingMine_Range_Mag", 7];
-        _vehicle addMagazineCargoGlobal ["APERSMine_Range_Mag", 7];
-        _vehicle addMagazineCargoGlobal ["ClaymoreDirectionalMine_Remote_Mag", 7];
-        _vehicle addMagazineCargoGlobal ["SLAMDirectionalMine_Wire_Mag", 7];
-        _vehicle addMagazineCargoGlobal ["B_IR_Grenade", 7];
-        _vehicle addMagazineCargoGlobal ["SmokeShell", 7];
-        _vehicle addMagazineCargoGlobal ["HandGrenade", 7];
-        
-        // Add backpacks
-        {
-            _vehicle addBackpackCargoGlobal [_x, 2];
-        } forEach [
-            "B_UAV_01_backpack_F",
-            "B_Static_Designator_01_weapon_F",
-            "B_W_Static_Designator_01_weapon_F",
-            "B_UGV_02_Demining_backpack_F",
-            "B_Patrol_Respawn_bag_F"
-        ];
-        
-        // Add weapons and ammo
-        {
-            _vehicle addWeaponCargoGlobal [_x, 5];
-        } forEach [
-            "launch_B_Titan_tna_F",
-            "launch_B_Titan_F",
-            "launch_B_Titan_short_F",
-            "launch_I_Titan_short_F",
-            "launch_NLAW_F"
-        ];
-        
-        {
-            _vehicle addMagazineCargoGlobal [_x, 15];
-        } forEach [
-            "NLAW_F",
-            "MRAWS_HEAT_F",
-            "Titan_AT",
-            "Titan_AA",
-            "Titan_AP"
-        ];
-        
-        // Add Arsenal and Rearm actions
-        [_vehicle, "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            "Screens\FOBA\mg_ca.paa",
-            "Screens\FOBA\mg_ca.paa",
-            "_this distance _target < 10",
-            "_caller distance _target < 10",
-            {},
-            {},
-            {
-                if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            {},
-            [],
-            1,
-            1,
-            false,
-            false
-        ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];
-        
-        [_vehicle, "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>REARM Infantry",
-            "Screens\FOBA\mg_ca.paa",
-            "Screens\FOBA\mg_ca.paa",
-            "_this distance _target < 10",
-            "_caller distance _target < 10",
-            {},
-            {},
-            {
-                [(_this select 0)] execVM "Scripts\REARM.sqf";
-            },
-            {},
-            [],
-            1,
-            1,
-            false,
-            false
-        ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];
-    };
-    
     // Configure mobile workshop (F_Truck_04)
     private _MOBSERName = missionNamespace getVariable "F_Truck_04";
     if (_VehName == _MOBSERName) then {
@@ -499,24 +413,6 @@ FLO_fnc_configureVehicle = {
                 "!IDS_Logistics_isHolding"
             ]] remoteExec ["addAction", 0, true];
         };
-        
-        [_vehicle, "<img size=2 color='#f37c00' image='\a3\ui_f_oldman\data\IGUI\Cfg\holdactions\repair_ca.paa'/><t font='PuristaBold' color='#f37c00'>REPAIR Vehicles",
-            "Screens\FOBA\mg_ca.paa",
-            "Screens\FOBA\mg_ca.paa",
-            "_this distance _target < 10",
-            "_caller distance _target < 10",
-            {},
-            {},
-            {
-                [(_this select 0)] execVM "Scripts\REPAIRVEH.sqf";
-            },
-            {},
-            [],
-            10,
-            1,
-            false,
-            false
-        ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];
     };
     
     // Configure ammo truck (F_Truck_03)
@@ -539,42 +435,6 @@ FLO_fnc_configureVehicle = {
             {},
             [],
             1,
-            1,
-            false,
-            false
-        ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];
-        
-        [_vehicle, "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>REARM Infantry",
-            "Screens\FOBA\mg_ca.paa",
-            "Screens\FOBA\mg_ca.paa",
-            "_this distance _target < 10",
-            "_caller distance _target < 10",
-            {},
-            {},
-            {
-                [(_this select 0)] execVM "Scripts\REARM.sqf";
-            },
-            {},
-            [],
-            5,
-            1,
-            false,
-            false
-        ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];
-        
-        [_vehicle, "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>REARM Vehicles",
-            "Screens\FOBA\mg_ca.paa",
-            "Screens\FOBA\mg_ca.paa",
-            "_this distance _target < 10",
-            "_caller distance _target < 10",
-            {},
-            {},
-            {
-                [(_this select 0)] execVM "Scripts\REARMVEH.sqf";
-            },
-            {},
-            [],
-            10,
             1,
             false,
             false

@@ -62,6 +62,12 @@ if (_preserveMarker && {_opBuilding getVariable ["FLO_OP_MarkersRestored", false
     };
 };
 
+private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+if (_RestrictedArsenalVal isEqualTo 0) then {
+    [_opBuilding] call FLO_fnc_restrictArsenalBox;
+    [_opBuilding] call FLO_fnc_addCratePurchaseActions;
+};
+
 // Initialize creation factory
 if (!isNil "_opBuilding" && {!isNull _opBuilding}) then {
     [_opBuilding, [

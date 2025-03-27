@@ -66,7 +66,6 @@ class FLO {
         class checkCratePurchase        {};
         class finalizeCrate             {};
         class getFunds                  {};
-        class initCrateSystem           {};
         class placeCrate                {};
         class purchaseCrate             {};
         class updateFunds               {};
