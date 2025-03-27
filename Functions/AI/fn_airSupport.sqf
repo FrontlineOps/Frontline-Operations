@@ -383,6 +383,7 @@ private _airSupportTypeDef = [
     ["reconAltitude", 800], // High altitude for recon mode
     ["reconDuration", 120], // How long recon mode lasts in seconds
     ["lastTargetDetectionTime", time], // Track when the last target was detected
+    ["engagementStartTime", time], // Initialize engagement start time
     
     // Methods
     ["#create", {
