@@ -378,10 +378,6 @@ private _airSupportTypeDef = [
     ["evasionMode", false],
     ["evasionStartTime", 0],
     ["evasionDuration", 30], // Time in seconds that evasion mode lasts
-    ["reconMode", false], // reconnaissance mode
-    ["reconModeStartTime", 0], // When recon mode started
-    ["reconAltitude", 800], // High altitude for recon mode
-    ["reconDuration", 120], // How long recon mode lasts in seconds
     ["lastTargetDetectionTime", time], // Track when the last target was detected
     ["engagementStartTime", time], // Initialize engagement start time
     
@@ -911,15 +907,41 @@ private _airSupportTypeDef = [
         // Clean up any previous laser target first
         _self call ["cleanupLaser"];
         
-        // Create laser designation
-        private _laserTarget = createVehicle ["LaserTargetW", getPos _target, [], 0, "CAN_COLLIDE"];
-        _laserTarget attachTo [_target, [0,0,1]];
-        _self set ["currentLaser", _laserTarget];
-        
         // Get weapon systems
         private _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []];
         private _selectedWeapon = "";
         private _weaponType = "";
+        
+        // Get actual distance to target
+        private _distance = _aircraft distance _target;
+        
+        // Function to get weapon range from config
+        private _fnc_getWeaponRange = {
+            params ["_weapon"];
+            private _config = configFile >> "CfgWeapons" >> _weapon;
+            private _maxRange = 1000; // Default range
+            
+            // Try to get range from weapon config
+            if (isClass _config) then {
+                _maxRange = getNumber (_config >> "maxRange");
+                if (_maxRange == 0) then {
+                    // Check aiRateOfFire distance as fallback
+                    _maxRange = getNumber (_config >> "aiRateOfFireDistance");
+                };
+                if (_maxRange == 0) then {
+                    // Use default ranges based on weapon type
+                    private _weaponType = getText (_config >> "simulation");
+                    _maxRange = switch (toLower _weaponType) do {
+                        case "cannon": { 1500 };
+                        case "rockets": { 1200 };
+                        case "missilex": { 3000 };
+                        case "bomblauncher": { 2000 };
+                        default { 1000 };
+                    };
+                };
+            };
+            _maxRange
+        };
         
         // Prioritize weapon based on target type and range
         private _targetType = typeOf _target;
@@ -930,9 +952,15 @@ private _airSupportTypeDef = [
         if (count (_nearbyEnemies select {side _x != east && alive _x}) > 3) then {
             _isGroupTarget = true;
         };
-        private _distance = _aircraft distance _target;
         
-        // Choose appropriate weapon based on target type, distance, and available weapons
+        // Filter weapons based on range first
+        _weaponSystems = _weaponSystems select {
+            private _weapon = _x select 0;
+            private _maxRange = [_weapon] call _fnc_getWeaponRange;
+            _distance <= _maxRange
+        };
+        
+        // Choose appropriate weapon based on target type and available weapons
         if (_isArmored && _distance < 3000) then {
             // Use guided missiles against armor if available, or rotatable cannons as second choice
             _weaponSystems = _weaponSystems select {_x select 1 == "MISSILE" || _x select 1 == "ROTATABLE_CANNON"};
@@ -977,7 +1005,36 @@ private _airSupportTypeDef = [
             _weaponType = _selectedSystem select 1;
         };
         
-        // Always face the aircraft toward the target before firing
+        // Get weapon's actual range from config
+        private _weaponRange = [_selectedWeapon] call _fnc_getWeaponRange;
+        
+        // Create virtual target closer to aircraft if needed
+        private _virtualTargetPos = _targetPos;
+        private _useVirtualTarget = false;
+        
+        // For unguided weapons (cannons, rockets), use virtual target to encourage engagement
+        if (_weaponType in ["CANNON", "ROCKET", "ROTATABLE_CANNON"]) then {
+            if (_distance > _weaponRange) then {
+                // Create a virtual target position at 200m like LAMBS
+                private _dirToTarget = _aircraft getDir _target;
+                _virtualTargetPos = (getPosASL _aircraft) getPos [200, _dirToTarget];
+                _virtualTargetPos set [2, (getPosASL _target) select 2];
+                _useVirtualTarget = true;
+                
+                diag_log format ["[FLO][AirSupport] Using virtual target at 200m for weapon with %1m range", round _weaponRange];
+            };
+        };
+        
+        // Create or update laser target
+        private _laserTarget = createVehicle ["LaserTargetW", ASLToAGL _virtualTargetPos, [], 0, "CAN_COLLIDE"];
+        if (_useVirtualTarget) then {
+            _laserTarget setPosASL _virtualTargetPos;
+        } else {
+            _laserTarget attachTo [_target, [0,0,1]];
+        };
+        _self set ["currentLaser", _laserTarget];
+        
+        // Always face the aircraft toward the actual target before firing
         _aircraft doWatch _target;
         
         // Special bombing run for aircraft with bombs
