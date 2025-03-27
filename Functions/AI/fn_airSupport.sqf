@@ -1472,37 +1472,6 @@ private _airSupportTypeDef = [
         private _state = _self get "state";
         private _missionType = _self get "missionType";
         
-        // Check if we're in recon mode
-        private _inReconMode = _self get "reconMode";
-        if (_inReconMode) then {
-            // Check if recon mode duration has expired
-            private _currentTime = time;
-            private _reconStartTime = _self get "reconModeStartTime";
-            private _reconDuration = _self get "reconDuration";
-            
-            if (_currentTime - _reconStartTime > _reconDuration) then {
-                // Exit recon mode if time expired
-                _self call ["exitReconMode"];
-            } else {
-                // While in recon mode, scan for targets at long range
-                private _longRangeTargets = _self call ["longRangeTargetScan"];
-                
-                // If we found targets, exit recon mode and engage
-                if (count _longRangeTargets > 0) then {
-                    _self call ["exitReconMode"];
-                    
-                    // Set up approach to the first target
-                    private _target = _longRangeTargets select 0;
-                    private _targetPos = getPosASL _target;
-                    _self set ["lastTargetPos", _targetPos];
-                    _self call ["setupApproach", [_targetPos]];
-                    
-                    diag_log format ["[FLO][AirSupport] Recon mode found target at %1m, moving to engage", 
-                        round (_aircraft distance _target)];
-                };
-            };
-        };
-        
         // Check remaining weapons periodically (every 10 seconds)
         private _lastWeaponCheck = _self get "FLO_lastWeaponCheckTime";
         if (time - _lastWeaponCheck >= 10) then {
@@ -1674,57 +1643,9 @@ private _airSupportTypeDef = [
         
         switch (_state) do {
             case "APPROACHING": {
-                private _targets = [];
-                
-                // If in recon mode, use long range scan, otherwise use standard scan
-                if (_inReconMode) then {
-                    _targets = _self call ["longRangeTargetScan"];
-                } else {
-                    // Store last scan time and result to avoid losing targets too quickly
-                    private _lastScanTime = _self get "lastScanTime";
-                    private _lastTargets = _self get "lastScanTargets";
-                    private _currentTime = time;
-                    
-                    // Only do a full scan if enough time has passed or we have no valid targets
-                    if (_currentTime - _lastScanTime > 5 || {count (_lastTargets select {alive _x}) == 0}) then {
-                        _targets = _self call ["scanForTargets"];
-                        
-                        // Store this scan's results for future reference
-                        _self set ["lastScanTime", _currentTime];
-                        _self set ["lastScanTargets", _targets];
-                    } else {
-                        // Use previous scan results but filter out dead targets
-                        _targets = _lastTargets select {alive _x};
-                    }; 
-                    
-                    // If no targets found through direct detection, check shared knowledge
-                    if (count _targets == 0) then {
-                        private _knownTargets = _self call ["checkKnownEnemies"];
-                        
-                        // Only use known targets that are within engagement range
-                        _knownTargets = _knownTargets select {
-                            _aircraft distance _x < (_self get "engagementRange")
-                        };
-                        
-                        if (count _knownTargets > 0) then {
-                            _targets = _knownTargets;
-                            diag_log format ["[FLO][AirSupport] Using shared knowledge for targeting by %1", _aircraft];
-                        };
-                    };
-                    
-                    // If still no targets found and not in recon mode, consider entering recon mode
-                    // Only enter if no targets have been detected for 30 minutes (1800 seconds)
-                    private _timeSinceLastDetection = time - (_self get "lastTargetDetectionTime");
-                    if (count _targets == 0 && _timeSinceLastDetection > 1800 && !_inReconMode) then {
-                        diag_log format ["[FLO][AirSupport] No targets detected for %1 minutes, entering recon mode", round(_timeSinceLastDetection/60)];
-                        _self call ["enterReconMode"];
-                    };
-                };
+                private _targets = _self call ["scanForTargets"];
                 
                 if (count _targets > 0) then {
-                    // Update last target detection time when targets are found
-                    _self set ["lastTargetDetectionTime", time];
-                    
                     // Sort targets by priority and distance
                     _targets = [_targets, [], {
                         private _target = _x;
@@ -1890,145 +1811,6 @@ private _airSupportTypeDef = [
         };
         true
     }],
-    ["enterReconMode", {
-        private _aircraft = _self get "vehicle";
-        private _group = _self get "group";
-        
-        if (!alive _aircraft || (_self get "reconMode")) exitWith {false};
-        
-        // Set recon mode flag
-        _self set ["reconMode", true];
-        _self set ["reconModeStartTime", time];
-        
-        // Store original altitude for restoration later
-        private _originalAlt = _self get "altitude";
-        _aircraft setVariable ["FLO_originalAlt", _originalAlt];
-        
-        // Climb to high altitude
-        private _reconAlt = _self get "reconAltitude";
-        _aircraft flyInHeight _reconAlt;
-        
-        // Clear existing waypoints and set up a high-altitude holding pattern
-        while {count waypoints _group > 0} do {
-            deleteWaypoint [_group, 0];
-        };
-        
-        // Get last known target position or current position
-        private _lastTargetPos = _self get "lastTargetPos";
-        
-        // Set up holding pattern around target area
-        private _holdPos = _lastTargetPos getPos [2000, random 360];
-        _holdPos set [2, _reconAlt];
-        
-        private _wp = _group addWaypoint [_holdPos, 0];
-        _wp setWaypointType "HOLD";
-        _wp setWaypointBehaviour "CARELESS";
-        
-        // Change combat mode to keep aircraft safe at high altitude
-        _group setCombatMode "GREEN";
-        
-        diag_log format ["[FLO][AirSupport] Aircraft %1 entering recon mode at altitude %2m", _aircraft, _reconAlt];
-        
-        true
-    }],
-    ["exitReconMode", {
-        private _aircraft = _self get "vehicle";
-        private _group = _self get "group";
-        
-        if (!alive _aircraft || !(_self get "reconMode")) exitWith {false};
-        
-        // Reset recon mode
-        _self set ["reconMode", false];
-        
-        // Restore original altitude
-        private _originalAlt = _aircraft getVariable ["FLO_originalAlt", _self get "altitude"];
-        _aircraft flyInHeight _originalAlt;
-        
-        // Reset combat status
-        _group setCombatMode "GREEN";
-        _group setBehaviour "COMBAT";
-        
-        {
-            _x setBehaviourStrong "COMBAT";
-            _x setUnitCombatMode "GREEN";
-        } forEach units _group;
-        
-        // Get last known target position or use a safe default
-        private _lastTargetPos = _self get "lastTargetPos";
-        if (_lastTargetPos isEqualTo [0,0,0]) then {
-            // If no last target position, use current position
-            _lastTargetPos = getPosASL _aircraft;
-        };
-        
-        // Return to original mission
-        _self call ["setupApproach", [_lastTargetPos]];
-        
-        diag_log format ["[FLO][AirSupport] Aircraft %1 ending recon mode", _aircraft];
-    }],
-    ["longRangeTargetScan", {
-        private _aircraft = _self get "vehicle";
-        if (!alive _aircraft) exitWith {[]};
-        
-        // Longer range but less precise detection for recon mode
-        private _longRange = 15000; // Very long range for high altitude
-        private _targets = [];
-        
-        // Get all non-friendly groups first
-        private _allGroups = allGroups select {side _x == west};
-        
-        // Check each group for detectability
-        {
-            private _grp = _x;
-            private _units = units _grp select {alive _x};
-            
-            // Only detect groups of 3 or more (easier to spot from air)
-            if (count _units >= 3) then {
-                private _avgPos = [0,0,0];
-                
-                // Calculate average position of group
-                {
-                    _avgPos = _avgPos vectorAdd (getPosASL _x);
-                } forEach _units;
-                
-                _avgPos = _avgPos vectorMultiply (1 / (count _units));
-                
-                // Check if within range
-                if (_aircraft distance _avgPos < _longRange) then {
-                    // Check line of sight (allowing for some units to be hidden)
-                    private _visibleUnits = 0;
-                    {
-                        if (!(terrainIntersect [getPosASL _aircraft, getPosASL _x])) then {
-                            _visibleUnits = _visibleUnits + 1;
-                        };
-                    } forEach _units;
-                    
-                    // If at least one third of units are visible
-                    if (_visibleUnits >= ((count _units) / 3)) then {
-                        // Create a "dummy" target to represent the group
-                        private _nearestUnit = [_units, _aircraft] call BIS_fnc_nearestPosition;
-                        if (!isNull _nearestUnit) then {
-                            _targets pushBack _nearestUnit;
-                        };
-                    };
-                };
-            };
-        } forEach _allGroups;
-        
-        // Sort by distance
-        _targets = [_targets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
-        
-        // Cap number of targets for performance
-        if (count _targets > 15) then {
-            _targets resize 15;
-        };
-        
-        if (count _targets > 0) then {
-            diag_log format ["[FLO][AirSupport] Long-range recon scan found %1 targets at up to %2m", 
-                count _targets, round (_aircraft distance (_targets select ((count _targets) - 1)))];
-        };
-        
-        _targets
-    }],
     ["checkKnownEnemies", {
         private _aircraft = _self get "vehicle";
         if (!alive _aircraft) exitWith {[]};
@@ -2086,9 +1868,6 @@ private _airSupportTypeDef = [
         if (count _knownTargets > 0 && count _knownTargets <= 3) then {
             diag_log format ["[FLO][AirSupport] Knowledge sharing revealed %1 enemies to aircraft %2", 
                 count _knownTargets, _aircraft];
-            
-            // Update last target detection time when known targets are found
-            _self set ["lastTargetDetectionTime", time];
         };
         
         // Return all unique targets
