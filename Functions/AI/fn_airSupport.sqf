@@ -1356,107 +1356,66 @@ private _airSupportTypeDef = [
         
         private _range = _self get "engagementRange";
         private _missionType = _self get "missionType";
-        
-        // Enhanced target detection for infantry
         private _targets = [];
         
-        // First, look for vehicles and larger targets (standard detection)
-        private _vehicleTargets = _aircraft targets [true, _range];
-        _vehicleTargets = _vehicleTargets select {side _x == west && alive _x};
+        // First try direct target acquisition
+        _targets = _aircraft targets [true, _range, [], 0, [west]];
         
-        // Then, specifically look for infantry in a more focused area
-        private _infantryRange = if (_aircraft isKindOf "Helicopter") then { 1500 } else { 800 };
-        private _infantryTargets = nearestObjects [_aircraft, ["CAManBase"], _infantryRange];
-        _infantryTargets = _infantryTargets select {side _x == west && alive _x};
-        
-        // Extended range search for important targets
-        private _extendedRange = 8000;
-        private _extendedTargets = [];
-        
-        if (_missionType == "CAS" && (_aircraft isKindOf "Helicopter")) then {
-            // Use nearEntities for more comprehensive search
-            _extendedTargets = _aircraft nearEntities [["Car", "Tank", "Wheeled_APC", "TrackedAPC", "LandVehicle"], _extendedRange];
-            _extendedTargets = _extendedTargets select {side _x == west && alive _x};
+        // If no direct targets found, use targetsQuery for enhanced detection
+        if (count _targets == 0) then {
+            // Parameters for targetsQuery
+            private _pos = getPosATL _aircraft;
+            private _radius = _range;
+            private _angleRange = [0, 360];  // Full circle
+            private _typeFilter = ["Car", "Tank", "Man", "Air", "Ship", "StaticWeapon"];
+            private _sides = [west];
             
-            if (count _extendedTargets > 0) then {
-                diag_log format ["[FLO][AirSupport] Helicopter %1 detected %2 high-value targets at extended range", _aircraft, count _extendedTargets];
-            };
-        };
-        
-        // For helicopters, ensure we can detect individual infantry even with terrain/vegetation
-        if (_aircraft isKindOf "Helicopter" && count _infantryTargets == 0) then {
-            // Use a broader search if initial search found nothing
-            private _extendedInfRange = _infantryRange * 3;
-            _infantryTargets = _aircraft nearEntities ["CAManBase", _extendedInfRange];
-            _infantryTargets = _infantryTargets select {
-                side _x == west && 
-                alive _x && 
-                // Simple LOS check with some forgiveness (helicopters have better sensors)
-                (lineIntersects [eyePos _aircraft, eyePos _x, _aircraft, _x] || 
-                 terrainIntersect [getPosASL _aircraft, getPosASL _x])
-            };
+            // Use targetsQuery for enhanced detection
+            private _queryResults = _aircraft targetsQuery [
+                _pos,           // center position
+                _angleRange,    // angle range [min, max]
+                _typeFilter,    // target type filter
+                _sides,         // target sides
+                _radius,        // radius
+                0              // max targets (0 = unlimited)
+            ];
             
-            if (count _infantryTargets > 0) then {
-                diag_log format ["[FLO][AirSupport] Helicopter %1 detected %2 infantry through extended search", _aircraft, count _infantryTargets];
-            };
-        };
-        
-        // If we have high-value targets at extended range, prioritize them
-        if (count _extendedTargets > 0) then {
-            _targets = _extendedTargets;
-        } else {
-            // Otherwise if we have vehicles at normal range, prioritize them
-            if (count _vehicleTargets > 0) then {
-                _targets = _vehicleTargets;
-            } else {
-                // Otherwise focus on infantry if available
-                if (count _infantryTargets > 0) then {
-                    // Check if infantry targets are grouped
-                    private _groupedInfantry = [];
+            // Process query results
+            {
+                _x params ["_target", "_accuracy"];
+                if (alive _target && {side _target == west}) then {
+                    // Enhance knowledge about target for aircraft and crew
                     {
-                        private _unit = _x;
-                        private _nearbyUnits = _infantryTargets select {_x distance _unit < 30 && _x != _unit};
-                        if (count _nearbyUnits > 1) then {
-                            _groupedInfantry pushBackUnique _unit;
-                            {
-                                _groupedInfantry pushBackUnique _x;
-                            } forEach _nearbyUnits;
+                        _x reveal [_target, 4];
+                        private _currentKnowledge = _x knowsAbout _target;
+                        if (_currentKnowledge < 4) then {
+                            _x reveal [_target, 4];
                         };
-                    } forEach _infantryTargets;
+                    } forEach (crew _aircraft);
                     
-                    // If we found grouped infantry, prioritize them but still include individual infantry
-                    if (count _groupedInfantry > 0) then {
-                        // Sort infantry by whether they're in a group, then by distance
-                        _infantryTargets = [_infantryTargets, [], {
-                            if (_x in _groupedInfantry) then {
-                                // Grouped infantry get priority (lower number = higher priority)
-                                _aircraft distance _x
-                            } else {
-                                // Individual infantry are second priority
-                                (_aircraft distance _x) + 1000
-                            }
-                        }, "ASCEND"] call BIS_fnc_sortBy;
-                    } else {
-                        // Just sort by distance if no groups
-                        _infantryTargets = [_infantryTargets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
-                    };
-                    
-                    _targets = _infantryTargets;
-                    
-                    // Helicopter-specific adjustments for infantry targeting
-                    if (_aircraft isKindOf "Helicopter" && count _targets > 0) then {
-                        // Mark that we're in infantry targeting mode to adjust attack parameters
-                        _self set ["targetingInfantry", true];
-                        
-                        // Log that we're targeting infantry
-                        diag_log format ["[FLO][AirSupport] Helicopter %1 focusing on infantry targets, found %2 (grouped: %3)", 
-                            _aircraft, count _infantryTargets, count _groupedInfantry];
-                    };
+                    _targets pushBackUnique _target;
                 };
-            };
+            } forEach _queryResults;
         };
         
-        // Always ensure we return targets if any are found
+        // Sort targets by priority and distance
+        _targets = [_targets, [], {
+            private _target = _x;
+            private _distance = _aircraft distance _target;
+            private _priority = switch (true) do {
+                case (_target isKindOf "Tank" || _target isKindOf "Wheeled_APC"): { 10 };
+                case (_target isKindOf "Car" || _target isKindOf "Truck"): { 5 };
+                case (_target isKindOf "CAManBase"): { 1 };
+                default { 0 };
+            };
+            (_distance / 100) - (_priority * 10)
+        }, "ASCEND"] call BIS_fnc_sortBy;
+        
+        // Log target detection
+        if (count _targets > 0) then {
+            diag_log format ["[FLO][AirSupport] Aircraft %1 detected %2 targets using enhanced detection", _aircraft, count _targets];
+        };
+        
         _targets
     }],
     
@@ -1873,9 +1832,9 @@ private _airSupportTypeDef = [
         if (!alive _aircraft) exitWith {[]};
         
         private _knownTargets = [];
-        private _maxKnowledgeDistance = 12000; // How far away knowledge sharing works
+        private _maxKnowledgeDistance = 12000;
         
-        // Get all OPFOR units that might have target knowledge
+        // Get all nearby OPFOR units that might share knowledge
         private _friendlyUnits = allUnits select {
             side _x == east && 
             alive _x && 
@@ -1883,51 +1842,50 @@ private _airSupportTypeDef = [
             _x distance _aircraft < _maxKnowledgeDistance
         };
         
-        // Check what targets they know about
+        // Use targetsQuery for each friendly unit to get their known targets
         {
             private _unit = _x;
-            private _unitKnowledge = [];
+            private _pos = getPosATL _unit;
+            private _radius = 5000; // Reasonable detection range for ground units
             
-            // Get all known enemies for this unit
+            private _queryResults = _unit targetsQuery [
+                _pos,
+                [0, 360],
+                ["Car", "Tank", "Man", "Air", "Ship", "StaticWeapon"],
+                [west],
+                _radius,
+                0
+            ];
+            
+            // Process results and share knowledge
             {
-                if (side _x == west && alive _x) then {
-                    private _knowledge = _unit knowsAbout _x;
-                    if (_knowledge > 1.5) then { // Unit has meaningful knowledge
-                        _unitKnowledge pushBack [_x, _knowledge];
+                _x params ["_target", "_accuracy"];
+                if (alive _target && {side _target == west}) then {
+                    // Get unit's knowledge of target
+                    private _knowledge = _unit knowsAbout _target;
+                    
+                    if (_knowledge > 1.5) then {
+                        // Share knowledge with aircraft crew
+                        {
+                            _x reveal [_target, (_knowledge min 4)];
+                            // Double reveal to ensure knowledge transfer
+                            if ((_x knowsAbout _target) < (_knowledge min 4)) then {
+                                _x reveal [_target, (_knowledge min 4)];
+                            };
+                        } forEach (crew _aircraft);
+                        
+                        _knownTargets pushBackUnique _target;
                     };
                 };
-            } forEach allUnits;
-            
-            // Sort by knowledge level
-            _unitKnowledge = [_unitKnowledge, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
-            
-            // Take top 3 best-known targets
-            if (count _unitKnowledge > 3) then {
-                _unitKnowledge resize 3;
-            };
-            
-            // Add to our targets list
-            {
-                _x params ["_target", "_knowledge"];
-                // Transfer knowledge to aircraft crew
-                {
-                    _x reveal [_target, _knowledge min 4];
-                } forEach (crew _aircraft);
-                
-                // Add to known targets if not already there
-                if !(_target in _knownTargets) then {
-                    _knownTargets pushBack _target;
-                };
-            } forEach _unitKnowledge;
+            } forEach _queryResults;
         } forEach _friendlyUnits;
         
-        // Log what we learned
-        if (count _knownTargets > 0 && count _knownTargets <= 3) then {
-            diag_log format ["[FLO][AirSupport] Knowledge sharing revealed %1 enemies to aircraft %2", 
+        // Log knowledge sharing results
+        if (count _knownTargets > 0) then {
+            diag_log format ["[FLO][AirSupport] Knowledge sharing revealed %1 targets to aircraft %2", 
                 count _knownTargets, _aircraft];
         };
         
-        // Return all unique targets
         _knownTargets
     }]
 ];
