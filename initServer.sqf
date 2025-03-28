@@ -197,6 +197,11 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 // Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
 
+// Initialize Enemy Knowledge Sharing
+[{
+    [] call FLO_fnc_shareEnemyKnowledge;
+}, 10] call CBA_fnc_addPerFrameHandler;
+
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {
     [] call FLO_fnc_purchaseCrate;

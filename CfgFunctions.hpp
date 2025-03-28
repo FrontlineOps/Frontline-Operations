@@ -25,6 +25,7 @@ class FLO {
         class heliInsert                        {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
+        class shareEnemyKnowledge               {};
     };
 
     class Actions {
