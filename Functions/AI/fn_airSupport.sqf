@@ -1215,7 +1215,7 @@ private _airSupportTypeDef = [
                     private _aimError = if (true) then {
                         _gunner aimedAtTarget [_target]
                     };
-                    _aimError > 0.7
+                    _aimError > 0.95
                 };
                 if (!alive _aircraft) exitWith {};
                 _gunner fireAtTarget [_target, _selectedWeapon];
@@ -1230,7 +1230,7 @@ private _airSupportTypeDef = [
                     private _aimError = if (true) then {
                         _pilot aimedAtTarget [_target]
                     };
-                    _aimError > 0.7
+                    _aimError > 0.95
                 };
                 if (!alive _aircraft) exitWith {};
                 _pilot fireAtTarget [_target, _selectedWeapon];
