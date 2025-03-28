@@ -10,7 +10,7 @@
  * Handles cleanup when a logistics entity is destroyed.
  * Removes the entity from the global tracking array.
  *
- * @param {Object} _entity - The entity that was killed
+ * @param {Object} _unit - The entity that was killed
  * @param {Object} _killer - The entity that killed the unit (can be objNull)
  * @param {Object} _instigator - The person who caused the damage (can be objNull)
  * @param {Boolean} _useEffects - True if death effects should be shown
@@ -18,18 +18,18 @@
  * @return {Nothing}
  *
  * @example
- * [_damagedEntity, _killer, _instigator, true] call IDS_Logistics_fnc_onEntityKilled
+ * [_damagedEntity, _killer, _instigator, false] call IDS_Logistics_fnc_onEntityKilled
  */
 
 params [
-    ["_entity", objNull, [objNull]],
+    ["_unit", objNull, [objNull]],
     ["_killer", objNull, [objNull]],
     ["_instigator", objNull, [objNull]],
-    ["_useEffects", true, [true]]
+    ["_useEffects", false, [false]]
 ];
 
 // Remove from tracking array
-IDS_Logistics_PlacedEntities = IDS_Logistics_PlacedEntities - [_entity];
+IDS_Logistics_PlacedEntities = IDS_Logistics_PlacedEntities - [_unit];
 
 // Delete entity
-deleteVehicle _entity;
+deleteVehicle _unit;

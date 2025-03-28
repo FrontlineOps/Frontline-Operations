@@ -52,6 +52,11 @@ if (_originalNetId != "") then {
         // Re-enable collisions and simulation
         [_player, _existingEntity] remoteExecCall ["enableCollisionWith", 0];
         _existingEntity enableSimulationGlobal true;
+
+        _existingEntity addEventHandler ["Killed", {
+            params ["_unit", "_killer", "_instigator", "_useEffects"];
+            [_unit] call IDS_Logistics_fnc_onEntityKilled;
+        }];
         
         // Make entity visible again
         [_originalNetId, false] call IDS_Logistics_fnc_toggleEntityVisibility;
@@ -70,11 +75,10 @@ if (_originalNetId != "") then {
     _entity setDir _finalDir;
     _entity setVectorUp _vectorUp;
     
-    // Store the center height on the entity for future reference
-    _entity setVariable ["IDS_Logistics_CenterHeight", _centerHeight, true];
-    
-    // Mark as a placed entity for future operations
-    _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+    _entity addEventHandler ["Killed", {
+        params ["_unit", "_killer", "_instigator", "_useEffects"];
+        [_unit] call IDS_Logistics_fnc_onEntityKilled;
+    }];
 
     // Add entity to placed entities array
     IDS_Logistics_PlacedEntities pushBack _entity;
