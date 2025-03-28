@@ -77,9 +77,6 @@ class FLO {
         
         class garrisonManager         {};
         class vehicleGarrison         {};
-        class finalizeObjectiveFlip   {};
-        class flipObjective           {};
-        class setupCaptureSystem      {};
     };
 
     class Utilities {
