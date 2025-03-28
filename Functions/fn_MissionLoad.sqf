@@ -65,18 +65,16 @@ if (!isNil "_GetVariableStatic") then {
     private _allObjectNames = keys _GetVariableStatic;
     
     {
-        if (alive _x) then {
-            private _objectAttributes = _GetVariableStatic get _x;
-            private _posASL = _objectAttributes get "posASL";
-            private _type = _objectAttributes get "type";
-            private _dirAndUp = _objectAttributes get "vectorDirAndUp";
-            private _isPlacedEntity = _objectAttributes get "isPlacedEntity";
+        private _objectAttributes = _GetVariableStatic get _x;
+        private _posASL = _objectAttributes get "posASL";
+        private _type = _objectAttributes get "type";
+        private _dirAndUp = _objectAttributes get "vectorDirAndUp";
+        private _isPlacedEntity = _objectAttributes get "isPlacedEntity";
         
-            private _newObject = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
-            _newObject setVectorDirAndUp _dirAndUp;
-            _newObject setPosASL _posASL;
-            _newObject setVariable ["IDS_Logistics_isPlacedEntity", _isPlacedEntity, true];
-        };
+        private _newObject = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
+        _newObject setVectorDirAndUp _dirAndUp;
+        _newObject setPosASL _posASL;
+        _newObject setVariable ["IDS_Logistics_isPlacedEntity", _isPlacedEntity, true];
     } forEach _allObjectNames;
 };
 
