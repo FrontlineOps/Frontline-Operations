@@ -411,31 +411,31 @@
                 <English>Enemy is preparing a major offensive operation!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EDPLY">
-                <English>Enemy Deployed New Military Installation!</English>
+                <English>Enemy has deployed a new military installation!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_ECAS">
-                <English>Enemy CAS aircraft providing air support!</English>
+                <English>Enemy CAS Aircraft inbound!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_ESTRIKE">
-                <English>Enemy strike aircraft inbound!</English>
+                <English>Enemy Strike Aircraft inbound!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EAIR">
-                <English>Enemy aircraft detected!</English>
+                <English>Enemy Aircraft Detected!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EARTY">
-                <English>Enemy artillery batteries detected deploying!</English>
+                <English>Enemy Artillery Batteries Detected Deploying!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EATTACKOBJ">
                 <English>Friendly Objective is Under Attack at grid %1</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EARTYINC">
-                <English>Enemy artillery fire incoming!</English>
+                <English>Enemy Artillery Fire Incoming!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EARTYCONT">
-                <English>Enemy artillery continuing bombardment!</English>
+                <English>Enemy Artillery Continuing Bombardment!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EATTACK">
-                <English>Enemy attack imminent!</English>
+                <English>Enemy Attack Imminent!</English>
             </Key>
             <Key ID="STR_FLO_WARNING_EQRF">
                 <English>Enemy QRF Forces Inbound towards grid %1</English>

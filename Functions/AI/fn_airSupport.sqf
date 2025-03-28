@@ -1201,7 +1201,7 @@ private _airSupportTypeDef = [
             // Create DESTROY waypoint attached to target
             private _wp = _group addWaypoint [_target, 0];
             _wp setWaypointType "DESTROY";
-            _wp synchronizeObjectsAdd [_target];
+            _wp synchronizeObjectsAdd _target;
             
             // Fire weapon
             if (!isNull _gunner) then {
