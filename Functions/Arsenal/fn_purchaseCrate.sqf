@@ -39,4 +39,19 @@ FLO_availableCrates = [
     ], "Contains special ammunition for machine guns and sniper rifles"]
 ];
 
+if (isServer) then {
+    // Monitor for new FOBs/OPs with JIP compatibility
+    addMissionEventHandler ["EntityCreated", {
+        params ["_entity"];
+        
+        if ((typeOf _entity) in [F_HQ_01, F_OP_01]) then {
+            // Wait a frame to let the object initialize
+            [{
+                params ["_object"];
+                [_object] call FLO_fnc_addCratePurchaseActions;
+            }, [_entity], 0.1] call CBA_fnc_waitAndExecute;
+        };
+    }];
+};
+
 FLO_crates_initialized = true;
