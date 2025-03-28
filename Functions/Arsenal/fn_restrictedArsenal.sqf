@@ -325,14 +325,18 @@ FLO_fnc_restrictArsenalBox = {
         // Initialize ACE Arsenal first (this is key for FOBs/OPs)
         [_box, true] remoteExec ["ace_arsenal_fnc_initBox", 0];
         
-        // Wait a frame to ensure initialization is complete
+        // Use CBA's waitUntilAndExecute to ensure arsenal is properly initialized
         [{
+            params ["_box"];
+            // Check if the box has ace_arsenal component initialized
+            !isNil {_box getVariable "ace_arsenal_initialized"}
+        }, {
             params ["_box"];
             // Clear everything first
             [_box, true] call ace_arsenal_fnc_removeVirtualItems;
             // Add only our allowed items
             [_box, FLO_arsenal_allowedItems] call ace_arsenal_fnc_addVirtualItems;
-        }, [_box], 0.1] call CBA_fnc_waitAndExecute;
+        }, [_box]] call CBA_fnc_waitUntilAndExecute;
     } else {
         // Clear and set up vanilla arsenal
         ["AmmoboxInit", [_box, false]] call BIS_fnc_arsenal;
