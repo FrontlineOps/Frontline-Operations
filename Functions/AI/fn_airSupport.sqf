@@ -1190,86 +1190,50 @@ private _airSupportTypeDef = [
                 };
             };
         } else {
+            // Simplified engagement for cannons, rockets, and missiles
+            private _group = group _aircraft;
+            
             // Clear existing waypoints
             while {count waypoints _group > 0} do {
                 deleteWaypoint [_group, 0];
             };
             
-            // Special handling for missiles to ensure proper tracking
-            if (_weaponType == "MISSILE") then {
-                // Create HOLD waypoint at current position
-                private _wp = _group addWaypoint [getPosATL _aircraft, 0];
-                _wp setWaypointType "HOLD";
-                
-                // Ensure proper target acquisition
-                if (!isNull _gunner) then {
-                    _gunner reveal [_target, 4];
-                    _aircraft doWatch _target;
-                    _gunner doWatch _target;
-                    _gunner doTarget _target;
-                    
-                    // Fire missile
-                    _gunner fireAtTarget [_target, _selectedWeapon];
-                    
-                    // Maintain target lock during missile flight
-                    [_aircraft, _gunner, _target] spawn {
-                        params ["_aircraft", "_gunner", "_target"];
-                        private _startTime = time;
-                        
-                        // Maintain lock for up to 30 seconds or until target destroyed
-                        waitUntil {
-                            _gunner doWatch _target;
-                            _aircraft doWatch _target;
-                            _gunner reveal [_target, 4];
-                            sleep 0.1;
-                            
-                            !alive _target || !alive _gunner || (time - _startTime) > 30
-                        };
+            // Create DESTROY waypoint attached to target
+            private _wp = _group addWaypoint [_target, 0];
+            _wp setWaypointType "DESTROY";
+            _wp synchronizeObjectsAdd [_target];
+            
+            // Fire weapon
+            if (!isNull _gunner) then {
+                _gunner reveal [_target, 4];
+                _gunner doWatch _target;
+                _gunner doTarget _target;
+                // Wait until aimed at target
+                waitUntil {
+                    sleep 0.1;
+                    if (!alive _aircraft) exitWith {true};
+                    private _aimError = if (true) then {
+                        _gunner aimedAtTarget [_target]
                     };
-                } else {
-                    _pilot reveal [_target, 4];
-                    _aircraft doWatch _target;
-                    _pilot doWatch _target;
-                    _pilot doTarget _target;
-                    
-                    // Fire missile
-                    _pilot fireAtTarget [_target, _selectedWeapon];
-                    
-                    // Maintain target lock during missile flight
-                    [_aircraft, _pilot, _target] spawn {
-                        params ["_aircraft", "_pilot", "_target"];
-                        private _startTime = time;
-                        
-                        // Maintain lock for up to 30 seconds or until target destroyed
-                        waitUntil {
-                            _pilot doWatch _target;
-                            _aircraft doWatch _target;
-                            _pilot reveal [_target, 4];
-                            sleep 0.1;
-                            
-                            !alive _target || !alive _pilot || (time - _startTime) > 30
-                        };
-                    };
+                    _aimError > 0.7
                 };
+                if (!alive _aircraft) exitWith {};
+                _gunner fireAtTarget [_target, _selectedWeapon];
             } else {
-                // Create DESTROY waypoint and properly link it to the target
-                private _wp = _group addWaypoint [getPosATL _target, 0];
-                _wp setWaypointType "DESTROY";
-                [_wp, [_target]] synchronizeObjectsAdd;  // Link waypoint to target
-                
-                // Set waypoint properties for better engagement
-                _wp setWaypointSpeed "NORMAL";
-                
-                // Fire weapon
-                if (!isNull _gunner) then {
-                    _gunner reveal [_target, 4];
-                    _gunner doTarget _target;
-                    _gunner fireAtTarget [_target, _selectedWeapon];
-                } else {
-                    _pilot reveal [_target, 4];
-                    _pilot doTarget _target;
-                    _pilot fireAtTarget [_target, _selectedWeapon];
+                _pilot reveal [_target, 4];
+                _pilot doWatch _target;
+                _pilot doTarget _target;
+                // Wait until aimed at target
+                waitUntil {
+                    sleep 0.1;
+                    if (!alive _aircraft) exitWith {true};
+                    private _aimError = if (true) then {
+                        _pilot aimedAtTarget [_target]
+                    };
+                    _aimError > 0.7
                 };
+                if (!alive _aircraft) exitWith {};
+                _pilot fireAtTarget [_target, _selectedWeapon];
             };
             
             diag_log format ["[FLO][AirSupport] Direct engagement with %1 against target at %2m", _weaponType, round (_aircraft distance _target)];
