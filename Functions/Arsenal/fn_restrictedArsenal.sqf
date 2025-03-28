@@ -322,25 +322,22 @@ FLO_fnc_restrictArsenalBox = {
     params ["_box"];
     
     if (FLO_hasAceArsenal) then {
-        // Set a variable to track if we've already restricted this box
-        private _isRestricted = _box getVariable ["FLO_arsenal_restricted", false];
-        if (_isRestricted) exitWith {};
-        
         // Initialize ACE Arsenal first (this is key for FOBs/OPs)
         [_box, true] remoteExec ["ace_arsenal_fnc_initBox", 0];
         
-        // Clear everything first
-        [_box, true] call ace_arsenal_fnc_removeVirtualItems;
-        // Add only our allowed items
-        [_box, FLO_arsenal_allowedItems] call ace_arsenal_fnc_addVirtualItems;
-        
-        // Mark this box as restricted
-        _box setVariable ["FLO_arsenal_restricted", true, true];
+        // Use CBA's waitUntilAndExecute to ensure arsenal is properly initialized
+        [{
+            params ["_box"];
+            // Check if the box has ace_arsenal component initialized
+            !isNil {_box getVariable "ace_arsenal_initialized"}
+        }, {
+            params ["_box"];
+            // Clear everything first
+            [_box, true] call ace_arsenal_fnc_removeVirtualItems;
+            // Add only our allowed items
+            [_box, FLO_arsenal_allowedItems] call ace_arsenal_fnc_addVirtualItems;
+        }, [_box]] call CBA_fnc_waitUntilAndExecute;
     } else {
-        // Set a variable to track if we've already restricted this box
-        private _isRestricted = _box getVariable ["FLO_arsenal_restricted", false];
-        if (_isRestricted) exitWith {};
-        
         // Clear and set up vanilla arsenal
         ["AmmoboxInit", [_box, false]] call BIS_fnc_arsenal;
         
@@ -360,29 +357,22 @@ FLO_fnc_restrictArsenalBox = {
         [_box, _items] call BIS_fnc_addVirtualItemCargo;
         [_box, _magazines] call BIS_fnc_addVirtualMagazineCargo;
         [_box, _backpacks] call BIS_fnc_addVirtualBackpackCargo;
-        
-        // Mark this box as restricted
-        _box setVariable ["FLO_arsenal_restricted", true, true];
     };
 };
 
 // Add event handlers based on which arsenal system is available
 if (FLO_hasAceArsenal) then {
-    // ACE Arsenal pre-open event handler
+    // ACE Arsenal event handler
     ["ace_arsenal_displayOpened", {
         params ["_display"];
         private _box = ace_arsenal_currentBox;
-        if (!(_box getVariable ["FLO_arsenal_restricted", false])) then {
-            [_box] call FLO_fnc_restrictArsenalBox;
-        };
+        [_box] call FLO_fnc_restrictArsenalBox;
     }] call CBA_fnc_addEventHandler;
 } else {
     // Vanilla Arsenal event handler
     ["arsenalOpened", {
         params ["_display", "_box"];
-        if (!(_box getVariable ["FLO_arsenal_restricted", false])) then {
-            [_box] call FLO_fnc_restrictArsenalBox;
-        };
+        [_box] call FLO_fnc_restrictArsenalBox;
     }] call CBA_fnc_addEventHandler;
 };
 
@@ -392,8 +382,11 @@ addMissionEventHandler ["EntityCreated", {
     
     // Check if it's a FOB or OP
     if ((typeOf _entity) in [F_HQ_01, F_OP_01]) then {
-        // Apply restrictions immediately
-        [_entity] call FLO_fnc_restrictArsenalBox;
+        // Wait a frame to let the object initialize
+        [{
+            params ["_box"];
+            [_box] call FLO_fnc_restrictArsenalBox;
+        }, [_entity], 0.1] call CBA_fnc_waitAndExecute;
     };
 }];
 
