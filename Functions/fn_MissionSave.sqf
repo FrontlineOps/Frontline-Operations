@@ -190,22 +190,20 @@ private _staticsSaving = _staticsNewAlive - _staticsTerrain;
 private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics;
 
 {
-    if (alive _x) then {
-        private _ObjectDataHashEach = createHashMap;
-        private _ObjectNameStr = str getPosASL _x + "_Obj";
-        private _isPlacedEntity = _x getVariable ["IDS_Logistics_isPlacedEntity", false];
+    private _ObjectDataHashEach = createHashMap;
+    private _ObjectNameStr = str getPosASL _x + "_Obj";
+    private _isPlacedEntity = _x getVariable ["IDS_Logistics_isPlacedEntity", false];
         
-        _x setVehicleVarName _ObjectNameStr;
+    _x setVehicleVarName _ObjectNameStr;
     
-        private _ObjectName = vehicleVarName _x;
+    private _ObjectName = vehicleVarName _x;
     
-        _ObjectDataHashEach set ["type", typeOf _x];
-        _ObjectDataHashEach set ["posASL", getPosASL _x];
-        _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
-        _ObjectDataHashEach set ["isPlacedEntity", _isPlacedEntity];
+    _ObjectDataHashEach set ["type", typeOf _x];
+    _ObjectDataHashEach set ["posASL", getPosASL _x];
+    _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
+    _ObjectDataHashEach set ["isPlacedEntity", _isPlacedEntity];
 
-        _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
-    };
+    _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
 } forEach _FinalSaving;
 
 profileNamespace setVariable [_ObjectDataName, _ObjectDataHash];
