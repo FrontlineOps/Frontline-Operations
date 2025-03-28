@@ -20,7 +20,7 @@ params [
     ["_targetPos", [0,0,0], [[]], [3]],
     ["_missionType", "CAS", [""]],
     ["_aircraftType", "", [""]],
-    ["_altitude", 400, [0]]
+    ["_altitude", 150, [0]]
 ];
 
 // Resource costs for initial deployment
@@ -428,6 +428,8 @@ private _airSupportTypeDef = [
         {
             _x setBehaviourStrong "COMBAT";
             _x setUnitCombatMode "GREEN";
+            _x disableAI "AUTOTARGET";  
+            _x disableAI "AUTOCOMBAT";
         } forEach units _group;
         
         _self call ["setupApproach", [_pos]];
@@ -1039,6 +1041,7 @@ private _airSupportTypeDef = [
         
         // Special bombing run for aircraft with bombs
         if (_weaponType == "BOMB") then {
+            // Keep existing bombing run code
             // Create a bombing run approach
             private _bombingRun = [_self, _target, _selectedWeapon] spawn {
                 params ["_obj", "_target", "_weapon"];
@@ -1049,7 +1052,7 @@ private _airSupportTypeDef = [
                 
                 // Different bombing approaches for helicopters vs. fixed-wing
                 if (_aircraft isKindOf "Helicopter") then {
-                    // Helicopter bombing parameters - lower altitude, shorter approach
+                    // Helicopter bombing parameters - lower altitude
                     private _approachAlt = 100 + (random 50); // Lower altitude for helicopter bombing
                     private _releaseDistance = 400; // Shorter release distance for helicopters
                     private _approachDir = random 360;
@@ -1187,147 +1190,30 @@ private _airSupportTypeDef = [
                 };
             };
         } else {
-            // Execute attack based on weapon type for non-bomb weapons
-            if (_weaponType in ["CANNON", "ROCKET"]) then {
-                // Burst fire for rapid weapons
-                if (!isNull _gunner) then {
-                    _gunner reveal [_target, 4];
-                    _gunner doTarget _target;
-                    
-                    // Special handling for helicopter rockets to improve aim
-                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                        // Get target position and aircraft position
-                        private _targetPos = getPosASL _target;
-                        private _aircraftPos = getPosASL _aircraft;
-                        
-                        // Position aircraft properly for rocket attack - lower altitude approach
-                        private _distToTarget = _aircraft distance _target;
-                        private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
-                        private _idealDistance = 600; // Better distance for rocket employment
-                        private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
-                        
-                        // If we're too high or too far, adjust approach
-                        if (_altitudeDiff > 60 || _distToTarget > 800) then {
-                            // Force a better attack position
-                            private _attackDir = _aircraft getDir _target;
-                            private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
-                            _attackPos set [2, _attackAlt];
-                            
-                            // Move to better firing position
-                            _aircraft doMove _attackPos;
-                            _aircraft flyInHeight _attackAlt;
-                            
-                            // Ensure nose is pointed down at target
-                            _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                            _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
-                            sleep 1; // Allow time for positioning
-                        };
-                        
-                        // Force aim downward for proper rocket trajectory
-                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                        _gunner doWatch (_targetPos vectorAdd [0, 0, -5]);
-                    };
-                    
-                    // Fire multiple times for burst effect
-                    for "_i" from 1 to 5 do {
-                        _gunner fireAtTarget [_target, _selectedWeapon];
-                        
-                        // For rockets, ensure aim is maintained between shots
-                        if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                            _gunner doWatch (getPosASL _target vectorAdd [0, 0, -5]);
-                            _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
-                        };
-                    };
-                } else {
-                    _pilot reveal [_target, 4];
-                    _pilot doTarget _target;
-                    
-                    // Special handling for helicopter rockets to improve aim
-                    if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                        // Get target position and aircraft position
-                        private _targetPos = getPosASL _target;
-                        private _aircraftPos = getPosASL _aircraft;
-                        
-                        // Position aircraft properly for rocket attack - lower altitude approach
-                        private _distToTarget = _aircraft distance _target;
-                        private _altitudeDiff = (_aircraftPos select 2) - (_targetPos select 2);
-                        private _idealDistance = 600; // Better distance for rocket employment
-                        private _attackAlt = (_targetPos select 2) + 30; // Lower altitude for better rocket trajectory
-                        
-                        // If we're too high or too far, adjust approach
-                        if (_altitudeDiff > 60 || _distToTarget > 800) then {
-                            // Force a better attack position
-                            private _attackDir = _aircraft getDir _target;
-                            private _attackPos = _targetPos getPos [_idealDistance, _attackDir + 180];
-                            _attackPos set [2, _attackAlt];
-                            
-                            // Move to better firing position
-                            _aircraft doMove _attackPos;
-                            _aircraft flyInHeight _attackAlt;
-                            
-                            // Ensure nose is pointed down at target
-                            _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                            _aircraft doWatch (_targetPos vectorAdd [0, 0, -5]);
-                            sleep 1; // Allow time for positioning
-                        };
-                        
-                        // Force aim downward for proper rocket trajectory
-                        _aircraft lookAt (_targetPos vectorAdd [0, 0, -5]); // Aim slightly below target
-                        _pilot doWatch (_targetPos vectorAdd [0, 0, -5]);
-                    };
-                    
-                    // Fire multiple times for burst effect
-                    for "_i" from 1 to 5 do {
-                        _pilot fireAtTarget [_target, _selectedWeapon];
-                        
-                        // For rockets, ensure aim is maintained between shots
-                        if (_weaponType == "ROCKET" && _aircraft isKindOf "Helicopter") then {
-                            _pilot doWatch (getPosASL _target vectorAdd [0, 0, -5]);
-                            _aircraft lookAt (getPosASL _target vectorAdd [0, 0, -5]);
-                        };
-                    };
-                };
-            } else {
-                if (_weaponType == "ROTATABLE_CANNON") then {
-                    // Special handling for rotatable cannons - longer sustained fire at distance
-                    // Most rotatable cannons are used by the gunner position
-                    private _shooter = if (!isNull _gunner) then {_gunner} else {_pilot};
-                    
-                    // Set up targeting and approach
-                    _shooter reveal [_target, 4];
-                    _shooter doTarget _target;
-                    
-                    // Maintain distance for rotatable cannons (similar to missile engagement)
-                    if (_aircraft isKindOf "Helicopter" && _distance > 800) then {
-                        // Set appropriate altitude based on target
-                        private _targetPos = getPosASL _target;
-                        private _desiredAlt = (_targetPos select 2) + 45; // Position slightly above target
-                        _aircraft flyInHeight _desiredAlt;
-                        
-                        // Turn aircraft to face target but maintain distance
-                        _aircraft doWatch _target;
-                    };
-                    
-                    // Fire a longer burst (rotatable cannons typically have more ammunition)
-                    for "_i" from 1 to 10 do {
-                        _shooter fireAtTarget [_target, _selectedWeapon];
-                    };
-                    
-                    // Log the engagement
-                    diag_log format ["[FLO][AirSupport] Aircraft %1 engaging with rotatable cannon at range %2m", _aircraft, round _distance];
-                } else {
-                    // Single shot for missiles
-                    if (!isNull _gunner) then {
-                        _gunner reveal [_target, 4];
-                        _gunner doTarget _target;
-                        _gunner fireAtTarget [_target, _selectedWeapon];
-                    } else {
-                        _pilot reveal [_target, 4];
-                        _pilot doTarget _target;
-                        _pilot fireAtTarget [_target, _selectedWeapon];
-                    };
-                };
+            // Simplified engagement for cannons, rockets, and missiles
+            private _group = group _aircraft;
+            
+            // Clear existing waypoints
+            while {count waypoints _group > 0} do {
+                deleteWaypoint [_group, 0];
             };
+            
+            // Create DESTROY waypoint attached to target
+            private _wp = _group addWaypoint [_target, 0];
+            _wp setWaypointType "DESTROY";
+            
+            // Fire weapon
+            if (!isNull _gunner) then {
+                _gunner reveal [_target, 4];
+                _gunner doTarget _target;
+                _gunner fireAtTarget [_target, _selectedWeapon];
+            } else {
+                _pilot reveal [_target, 4];
+                _pilot doTarget _target;
+                _pilot fireAtTarget [_target, _selectedWeapon];
+            };
+            
+            diag_log format ["[FLO][AirSupport] Direct engagement with %1 against target at %2m", _weaponType, round (_aircraft distance _target)];
         };
         
         _self set ["lastEngaged", time];
@@ -1493,167 +1379,26 @@ private _airSupportTypeDef = [
         if (time - _lastWeaponCheck >= 10) then {
             _self set ["FLO_lastWeaponCheckTime", time];
             private _remainingWeapons = _self call ["checkRemainingWeapons"];
-            private _guidedWeaponsRemain = false;
-            private _unGuidedWeaponsRemain = false;
             private _bombsRemain = false;
             
-            // Categorize remaining weapons
+            // Check if we have any bombs left
             {
                 _x params ["_weapon", "_weaponType"];
-                if (_weaponType == "MISSILE" || _weaponType == "ROTATABLE_CANNON") then {
-                    _guidedWeaponsRemain = true;
-                };
-                if (_weaponType in ["CANNON", "ROCKET"]) then {
-                    _unGuidedWeaponsRemain = true;
-                };
-                if (_weaponType == "BOMB") then {
+                if (_weaponType == "BOMB") exitWith {
                     _bombsRemain = true;
                 };
             } forEach _remainingWeapons;
             
-            // Different tactics based on remaining weapons
-            // If no guided weapons but unguided weapons remain, switch to direct attack mode
-            if (!_guidedWeaponsRemain && (_unGuidedWeaponsRemain || _bombsRemain) && 
-                !(_self get "FLO_directAttackMode")) then {
-                _self set ["FLO_directAttackMode", true];
-                
-                // Log the tactical change
-                diag_log format ["[FLO][AirSupport] Aircraft %1 switching to direct attack mode - only unguided weapons remain", _aircraft];
-                
-                // Cancel current hold position and approach targets directly
-                if (_missionType == "CAS" && (_state == "APPROACHING" || _state == "ENGAGING")) then {
-                    private _group = _self get "group";
-                    private _targets = _self call ["scanForTargets"];
-                    
-                    if (count _targets > 0) then {
-                        // Clear existing waypoints
-                        while {count waypoints _group > 0} do {
-                            deleteWaypoint [_group, 0];
-                        };
-                        
-                        // Select a target and create attack run
-                        private _target = selectRandom _targets;
-                        private _targetPos = getPosASL _target;
-                        
-                        // Different approach for bombing vs. direct fire
-                        if (_bombsRemain) then {
-                            // Adjust bombing approach based on aircraft type
-                            if (_aircraft isKindOf "Helicopter") then {
-                                // Helicopter bombing run - lower altitude
-                                _aircraft flyInHeight 80;
-                                private _wp = _group addWaypoint [_targetPos getPos [1000, random 360], 0];
-                                _wp setWaypointType "MOVE";
-                                _wp setWaypointBehaviour "COMBAT";
-                                _wp setWaypointCombatMode "GREEN";
-                                _wp setWaypointSpeed "LIMITED"; // Slower for helicopter precision
-                                
-                                private _wp2 = _group addWaypoint [_targetPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                diag_log format ["[FLO][AirSupport] Helicopter bombing approach initiated at %1", _targetPos];
-                            } else {
-                                // Fixed-wing bombing run - higher altitude
-                                _aircraft flyInHeight 150;
-                                private _wp = _group addWaypoint [_targetPos getPos [1500, random 360], 0];
-                                _wp setWaypointType "MOVE";
-                                _wp setWaypointBehaviour "COMBAT";
-                                _wp setWaypointCombatMode "GREEN";
-                                _wp setWaypointSpeed "NORMAL"; // More stable speed for bombing
-                                
-                                private _wp2 = _group addWaypoint [_targetPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                diag_log format ["[FLO][AirSupport] Fixed-wing bombing run approach initiated at %1", _targetPos];
-                            }
-                        } else {
-                            // Close-in attack run for guns/rockets
-                            private _attackPos = _targetPos;
-                            private _wp = _group addWaypoint [_attackPos, 0];
-                            _wp setWaypointType "SAD";
-                            _wp setWaypointBehaviour "COMBAT";
-                            _wp setWaypointCombatMode "RED";
-                            _wp setWaypointSpeed "LIMITED"; // Reduced speed for better targeting
-                            
-                            // Reduce altitude for better weapon employment of unguided weapons
-                            _aircraft flyInHeight 65;
-                            
-                            diag_log format ["[FLO][AirSupport] Direct attack approach initiated at %1", _attackPos];
-                        };
-                    };
+            // If we have bombs, adjust altitude for bombing runs
+            if (_bombsRemain) then {
+                if (_aircraft isKindOf "Helicopter") then {
+                    _aircraft flyInHeight 100;
+                } else {
+                    _aircraft flyInHeight 200;
                 };
-            };
-        };
-        
-        // Check for targets that other units know about (every 15 seconds)
-        private _lastKnowledgeCheck = _self get "FLO_lastKnowledgeCheckTime";
-        if (time - _lastKnowledgeCheck >= 15) then {
-            _self set ["FLO_lastKnowledgeCheckTime", time];
-            
-            // Only check for knowledge sharing if we don't have targets or are not already engaging
-            if (isNull (_self get "currentTarget") && _state != "ENGAGING") then {
-                private _knownTargets = _self call ["checkKnownEnemies"];
-                
-                // If we have known targets and are not currently engaged, use that intel
-                if (count _knownTargets > 0) then {
-                    // Get the closest known target
-                    private _closestTarget = [_knownTargets, _aircraft] call BIS_fnc_nearestPosition;
-                    
-                    // Set up approach to the known target
-                    private _targetPos = getPosASL _closestTarget;
-                    _self set ["lastTargetPos", _targetPos];
-                    
-                    // Only update approach if we're in APPROACHING state and not moving to a target already
-                    if (_state == "APPROACHING") then {
-                        _self call ["setupApproach", [_targetPos]];
-                        
-                        diag_log format ["[FLO][AirSupport] Knowledge sharing led aircraft %1 to target at %2m", 
-                            _aircraft, round (_aircraft distance _closestTarget)];
-                    };
-                };
-            };
-        };
-        
-        // Additional check for individual infantry targeting for helicopters
-        if (_aircraft isKindOf "Helicopter" && _missionType == "CAS" && _state == "APPROACHING") then {
-            // Only run this periodically to save performance
-            private _lastInfantryCheck = _self get "lastInfantryCheck";
-            if (time - _lastInfantryCheck > 10) then {
-                _self set ["lastInfantryCheck", time];
-                
-                // First check if there are high-priority targets
-                private _highPriorityTargets = _aircraft targets [true, 2000];
-                _highPriorityTargets = _highPriorityTargets select {
-                    side _x == west &&
-                    alive _x && 
-                    !(_x isKindOf "CAManBase")
-                };
-                
-                // If no high priority targets, specifically look for infantry
-                if (count _highPriorityTargets == 0) then {
-                    // Find infantry targets, even single units
-                    private _infantryTargets = nearestObjects [_aircraft, ["CAManBase"], 1500];
-                    _infantryTargets = _infantryTargets select {side _x == west && alive _x};
-                    
-                    // If infantry targets found, engage them
-                    if (count _infantryTargets > 0) then {
-                        // Sort by distance for better engagement
-                        _infantryTargets = [_infantryTargets, [], {_aircraft distance _x}, "ASCEND"] call BIS_fnc_sortBy;
-                        
-                        // Target the closest infantry
-                        private _target = _infantryTargets select 0;
-                        
-                        // Record this special mode
-                        _self set ["activelyTargetingInfantry", true];
-                        
-                        diag_log format ["[FLO][AirSupport] Helicopter %1 actively seeking infantry targets, found %2 at %3m", 
-                            _aircraft, count _infantryTargets, round (_aircraft distance _target)];
-                        
-                        // Execute strike on the infantry target
-                        if (_self call ["executeStrike", [_target]]) then {
-                            _self set ["state", "ENGAGING"];
-                        };
-                    };
-                };
+            } else {
+                // If no bombs, use standard altitude
+                _aircraft flyInHeight (_self get "altitude");
             };
         };
         
@@ -1662,166 +1407,24 @@ private _airSupportTypeDef = [
                 private _targets = _self call ["scanForTargets"];
                 
                 if (count _targets > 0) then {
-                    // Sort targets by priority and distance
-                    _targets = [_targets, [], {
-                        private _target = _x;
-                        private _distance = _aircraft distance _target;
-                        private _priority = 0;
-                        
-                        // Priority based on target type
-                        if (_target isKindOf "Tank" || _target isKindOf "Wheeled_APC") then {
-                            _priority = 10; // Highest priority
-                        } else {
-                            if (_target isKindOf "Car" || _target isKindOf "Truck") then {
-                                _priority = 5; // Medium priority
-                            } else {
-                                if (_target isKindOf "CAManBase") then {
-                                    _priority = 1; // Lower priority, but still target
-                                };
-                            };
-                        };
-                        
-                        // Calculate final score (lower is better)
-                        (_distance / 100) - (_priority * 10)
-                    }, "ASCEND"] call BIS_fnc_sortBy;
-                    
-                    // Select best target from top 3
-                    private _targetIndex = 0;
-                    if (count _targets >= 3) then {
-                        _targetIndex = floor(random 3); // Random from top 3
-                    };
-                    private _target = _targets select _targetIndex;
-                    
-                    // Store as current target to maintain focus
+                    private _target = _targets select 0;
                     _self set ["currentTarget", _target];
                     _self set ["lastTargetPos", getPosASL _target];
-                
-                    // If in direct attack mode, get much closer to target
-                    if (_self get "FLO_directAttackMode") then {
-                        private _group = _self get "group";
-                        private _targetPos = getPosASL _target;
-                        
-                        // If we're not close enough for unguided weapons, move closer
-                        if (_aircraft distance _target > 800) then {
-                            // Update waypoint to follow target
-                            if (count waypoints _group > 0) then {
-                                [_group, 0] setWaypointPosition [_targetPos, 0];
-                            };
-                        };
-                    };
                     
                     if (_self call ["executeStrike", [_target]]) then {
                         _self set ["state", "ENGAGING"];
-                        
-                        // Maintain focus on this target by storing it
                         _self set ["engagementStartTime", time];
                     };
                 };
             };
             case "ENGAGING": {
                 private _currentTarget = _self get "currentTarget";
-                private _targetPos = _self get "lastTargetPos";
                 private _timeSinceLastEngagement = time - (_self get "lastEngaged");
-                private _attackInProgress = _self get "attackInProgress";
-                private _engagementStartTime = _self get "engagementStartTime";
                 
-                // Increased the focus duration from 30 to 60 seconds to reduce "ADHD" switching
-                private _shouldMaintainFocus = (time - _engagementStartTime < 60);
-                
-                // If current target is still alive and we're maintaining focus, continue engaging
-                if (alive _currentTarget && _shouldMaintainFocus) then {
-                    // Execute strike again if cooldown time has passed
-                    if (_timeSinceLastEngagement > (_self get "cooldownTime")) then {
-                        if (_self call ["executeStrike", [_currentTarget]]) then {
-                            _self set ["lastEngaged", time];
-                            diag_log format ["[FLO][AirSupport] Continuing engagement with target at %1m", 
-                                round (_aircraft distance _currentTarget)];
-                        };
-                    };
-                } else {
-                    // Check if we need to create a new attack on the target position
-                    if (!_attackInProgress && !alive _currentTarget && {_targetPos isNotEqualTo [0,0,0]}) then {
-                        // Create a dummy target at the last known position if needed
-                        private _dummyTarget = createVehicle ["TargetP_Inf_F", ASLToAGL _targetPos, [], 0, "CAN_COLLIDE"];
-                        _dummyTarget hideObject true;  // Make it invisible
-                        _dummyTarget enableSimulation false; // No physics
-                        
-                        // Set the dummy as our new target
-                        _self set ["currentTarget", _dummyTarget];
-                        _self set ["dummyTarget", _dummyTarget]; // Store for cleanup
-                        
-                        // Depending on the weapon type, we might need to restart the attack sequence
-                        private _weaponSystems = _aircraft getVariable ["FLO_weaponSystems", []];
-                        
-                        // Check if aircraft has bombing capability
-                        private _hasBombs = false;
-                        {
-                            if (_x select 1 == "BOMB") exitWith {
-                                _hasBombs = true;
-                            };
-                        } forEach _weaponSystems;
-                        
-                        // If we have bombs, create a new bombing run
-                        if (_hasBombs) then {
-                            private _group = group _aircraft;
-                            
-                            // Clear existing waypoints
-                            while {count waypoints _group > 0} do {
-                                deleteWaypoint [_group, 0];
-                            };
-                            
-                            // Set up bombing approach based on aircraft type
-                            if (_aircraft isKindOf "Helicopter") then {
-                                _aircraft flyInHeight 100;
-                                private _wp = _group addWaypoint [_targetPos getPos [800, random 360], 0];
-                                _wp setWaypointType "MOVE";
-                                _wp setWaypointSpeed "LIMITED";
-                                
-                                private _wp2 = _group addWaypoint [_targetPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                diag_log format ["[FLO][AirSupport] Continuing helicopter attack on position %1", _targetPos];
-                            } else {
-                                _aircraft flyInHeight 200;
-                                private _wp = _group addWaypoint [_targetPos getPos [1500, random 360], 0];
-                                _wp setWaypointType "MOVE";
-                                _wp setWaypointSpeed "NORMAL";
-                                
-                                private _wp2 = _group addWaypoint [_targetPos, 0];
-                                _wp2 setWaypointType "MOVE";
-                                
-                                diag_log format ["[FLO][AirSupport] Continuing fixed-wing attack on position %1", _targetPos];
-                            };
-                        } else {
-                            // For direct fire weapons, simply approach the position
-                            private _group = group _aircraft;
-                            private _wp = _group addWaypoint [_targetPos, 0];
-                            _wp setWaypointType "SAD";
-                            
-                            diag_log format ["[FLO][AirSupport] Continuing direct fire attack on position %1", _targetPos];
-                        };
-                        
-                        _self set ["attackInProgress", true];
-                    };
-                    
-                    // Only end the engagement if we've completed our cooldown after the last firing
-                    // and we're not maintaining focus on the target anymore
-                    if (_timeSinceLastEngagement > (_self get "cooldownTime") && !_shouldMaintainFocus) then {
-                        // Clean up our laser and dummy target
-                        _self call ["cleanupLaser"];
-                        
-                        // Delete any dummy target we created
-                        private _dummyTarget = _self getOrDefault ["dummyTarget", objNull];
-                        if (!isNull _dummyTarget) then {
-                            deleteVehicle _dummyTarget;
-                            _self set ["dummyTarget", objNull];
-                        };
-                        
-                        // Reset state 
-                        _self set ["state", "APPROACHING"];
-                        _self set ["currentTarget", objNull];
-                        _self set ["attackInProgress", false];
-                    };
+                if (!alive _currentTarget || _timeSinceLastEngagement > (_self get "cooldownTime")) then {
+                    _self call ["cleanupLaser"];
+                    _self set ["state", "APPROACHING"];
+                    _self set ["currentTarget", objNull];
                 };
             };
         };
