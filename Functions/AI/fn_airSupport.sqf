@@ -1212,11 +1212,11 @@ private _airSupportTypeDef = [
                 waitUntil {
                     sleep 0.1;
                     if (!alive _aircraft) exitWith {true};
-                    private _aimError = if (true) then {
-                        _gunner aimedAtTarget [_target]
-                    };
+                    
+                    private _aimError = _gunner aimedAtTarget [_target];
                     _aimError > 0.95
                 };
+                
                 if (!alive _aircraft) exitWith {};
                 _gunner fireAtTarget [_target, _selectedWeapon];
             } else {
@@ -1227,11 +1227,11 @@ private _airSupportTypeDef = [
                 waitUntil {
                     sleep 0.1;
                     if (!alive _aircraft) exitWith {true};
-                    private _aimError = if (true) then {
-                        _pilot aimedAtTarget [_target]
-                    };
+                    
+                    private _aimError = _pilot aimedAtTarget [_target];
                     _aimError > 0.95
                 };
+                
                 if (!alive _aircraft) exitWith {};
                 _pilot fireAtTarget [_target, _selectedWeapon];
             };
