@@ -358,7 +358,7 @@ _objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" &&
             _attackingAtGrid = mapGridPosition getMarkerPos _FOBMrk;
             [[west,'HQ'], 'Enemy Forces Dominating the Battle at grid ' + _attackingAtGrid] remoteExec ['sideChat', 0];					
             
-            [thisTrigger] execVM 'Scripts\City_CSAT_CAPTURE_East.sqf';
+            [thisTrigger] execVM 'Scripts\Objectives\City_CSAT_CAPTURE_East.sqf';
         ", 
         "
             _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
