@@ -55,7 +55,6 @@ class FLO {
         file = "Functions\TaskForce";
 
         class TaskForceSystem      {};
-        class TaskForceDefenseLine {};
     };
 
     class Arsenal {
