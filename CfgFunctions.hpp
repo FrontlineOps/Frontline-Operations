@@ -25,6 +25,7 @@ class FLO {
         class heliInsert                        {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
+        class TaskForceSystem                   {};
         class shareEnemyKnowledge               {};
     };
 
@@ -49,12 +50,6 @@ class FLO {
         class opforResources        {};
         class intelSystem           {};
         class logisticsNetwork      {};
-    };
-
-    class TaskForce {
-        file = "Functions\TaskForce";
-
-        class TaskForceSystem      {};
     };
 
     class Arsenal {
