@@ -239,6 +239,7 @@ private _spawnPositions = [];
 private _baseAngle = 360 / _forceSize;
 private _minSafeDistance = 50; // Minimum distance between spawn points
 private _spiralGrowth = 20;    // How much the spiral grows per point
+private _approachDistance = 800; // Base approach distance
 
 {
     private _angle = _baseAngle * _forEachIndex;
