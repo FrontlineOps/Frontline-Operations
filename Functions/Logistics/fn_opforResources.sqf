@@ -22,21 +22,59 @@
 if (!isServer) exitWith {};
 
 // Initialize OPFOR resources object if it doesn't exist
-// This uses HashMapObject for OOP-style resource management
 if (isNil "FLO_OPFOR_Resources") then {
     // Define the resource management class with its methods and properties
     private _resourceClass = [
         // Class identifier
         ["#type", "OPFORResources"],
-        // Initial resource state
-        ["resources", 0],
-        ["lastUpdate", time],
+        // Initial resource state - start with nil to indicate no initialization
+        ["resources", nil],
+        ["lastUpdate", nil],
+        
+        // Define spending modifiers at class level for consistency
+        ["spendingModifiers", createHashMapFromArray [
+            // [type, [base_multiplier, resource_threshold, efficiency_loss_per_use]]
+            ["garrison", [1.0, 10, 0.05]],
+            ["qrf", [1.5, 100, 0.08]],    
+            ["offensiveops", [4.0, 500, 0.15]],
+            ["air_support", [2.0, 250, 0.12]],
+            ["artillery", [3.0, 150, 0.07]]
+        ]],
         
         // Constructor - Called when object is created
         ["#create", {
-            params ["_initialResources"];
-            _self set ["resources", _initialResources];
-            _self set ["lastUpdate", time];
+            params [["_initialResources", -1]];
+            
+            // Only set initial values if resources is nil (not yet initialized)
+            if (isNil {_self get "resources"}) then {
+                // Try to load saved data first
+                private _missionTag = missionName;
+                _missionTag = [_missionTag] call BIS_fnc_filterString;
+                private _resourcesDataName = _missionTag + "_Resources";
+                private _savedData = profileNamespace getVariable [_resourcesDataName, createHashMap];
+                
+                if (count _savedData > 0) then {
+                    // Load saved values
+                    private _savedResources = _savedData getOrDefault ["resources", 0];
+                    _self set ["resources", _savedResources];
+                    _self set ["lastUpdate", _savedData getOrDefault ["lastUpdate", time]];
+                    
+                    // Load efficiency values using spendingModifiers keys
+                    private _spendingModifiers = _self get "spendingModifiers";
+                    {
+                        private _effKey = format ["efficiency_%1", _x];
+                        private _efficiency = _savedData getOrDefault [_effKey, 1.0];
+                        _self set [_effKey, _efficiency];
+                    } forEach (keys _spendingModifiers);
+                    
+                    ["OPFOR Resources", 3, format["Initialized with saved data: %1 resources", _savedResources]] call FLO_fnc_log;
+                } else {
+                    // No saved data, use initial values
+                    _self set ["resources", if (_initialResources == -1) then {0} else {_initialResources}];
+                    _self set ["lastUpdate", time];
+                    ["OPFOR Resources", 3, format["Initialized fresh with %1 resources", _self get "resources"]] call FLO_fnc_log;
+                };
+            };
         }],
         
         // Get current resource amount
@@ -61,16 +99,7 @@ if (isNil "FLO_OPFOR_Resources") then {
             private _current = _self get "resources";
             private _currentTime = time;
 
-            // Define spending categories with strategic modifiers
-            private _spendingModifiers = createHashMapFromArray [
-                // [type, [base_multiplier, resource_threshold, efficiency_loss_per_use]]
-                ["garrison", [1.0, 10, 0.05]],         // Garrison
-                ["qrf", [1.5, 100, 0.08]],               // QRF
-                ["offensiveops", [4.0, 500, 0.15]],     // Major operations 
-                ["air_support", [2.0, 250, 0.12]],       // Air support
-                ["artillery", [3.0, 150, 0.07]]          // Artillery
-            ];
-
+            private _spendingModifiers = _self get "spendingModifiers";
             private _typeData = _spendingModifiers getOrDefault [_type, [1.0, 30, 0.05]];
             _typeData params ["_multiplier", "_resourceThreshold", "_efficiencyLoss"];
 
@@ -96,7 +125,7 @@ if (isNil "FLO_OPFOR_Resources") then {
                 _self set ["lastUpdate", _currentTime];
                 
                 // Reduce efficiency for this type of operation
-                _efficiency = (_efficiency - _efficiencyLoss) max 0.4; // Won't go below 40% efficiency
+                _efficiency = (_efficiency - _efficiencyLoss) max 0.2; // Won't go below 20% efficiency
                 _self set [format ["efficiency_%1", _type], _efficiency];
 
                 // If resources are abundant, slowly recover efficiency
@@ -175,6 +204,63 @@ if (isNil "FLO_OPFOR_Resources") then {
                     sleep 600;
                 };
             };
+        }],
+
+        // Save resources state to profileNamespace
+        ["saveResources", {
+            private _missionTag = missionName;
+            _missionTag = [_missionTag] call BIS_fnc_filterString;
+            private _resourcesDataName = _missionTag + "_Resources";
+            
+            private _resourcesDataHash = createHashMap;
+            
+            // Save core resource data
+            _resourcesDataHash set ["resources", _self call ["getResources", []]];
+            _resourcesDataHash set ["lastUpdate", _self get "lastUpdate"];
+            
+            // Save efficiency data using spendingModifiers keys
+            private _spendingModifiers = _self get "spendingModifiers";
+            {
+                private _effKey = format ["efficiency_%1", _x];
+                private _efficiency = _self getOrDefault [_effKey, 1.0];
+                _resourcesDataHash set [_effKey, _efficiency];
+            } forEach (keys _spendingModifiers);
+            
+            // Save to profileNamespace
+            profileNamespace setVariable [_resourcesDataName, _resourcesDataHash];
+            
+            ["OPFOR Resources", 3, format["Saved resource state with %1 resources", _self call ["getResources", []]]] call FLO_fnc_log;
+            true
+        }],
+        
+        // Load resources state from profileNamespace
+        ["loadResources", {
+            private _missionTag = missionName;
+            _missionTag = [_missionTag] call BIS_fnc_filterString;
+            private _resourcesDataName = _missionTag + "_Resources";
+            
+            private _resourcesData = profileNamespace getVariable [_resourcesDataName, createHashMap];
+            
+            if (count _resourcesData > 0) then {
+                // Load saved values
+                private _savedResources = _resourcesData getOrDefault ["resources", 0];
+                _self set ["resources", _savedResources];
+                _self set ["lastUpdate", _resourcesData getOrDefault ["lastUpdate", time]];
+                
+                // Load efficiency values using spendingModifiers keys
+                private _spendingModifiers = _self get "spendingModifiers";
+                {
+                    private _effKey = format ["efficiency_%1", _x];
+                    private _efficiency = _resourcesData getOrDefault [_effKey, 1.0];
+                    _self set [_effKey, _efficiency];
+                } forEach (keys _spendingModifiers);
+                
+                ["OPFOR Resources", 3, format["Loaded resource state with %1 resources", _savedResources]] call FLO_fnc_log;
+                true
+            } else {
+                ["OPFOR Resources", 2, "No saved resource state found"] call FLO_fnc_log;
+                false
+            }
         }]
     ];
     

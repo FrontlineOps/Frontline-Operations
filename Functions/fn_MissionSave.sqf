@@ -14,6 +14,7 @@ private _ObjectDataName = _missionTag + "_Objects";
 private _structureMarkerName = _missionTag + "_StructureMarkers";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
 private _CrateDataName = _missionTag + "_Crates";
+private _ResourcesDataName = _missionTag + "_Resources";
 
 profileNamespace setVariable [_MarkerTimeName, nil];
 profileNamespace setVariable [_MarkerDataName, nil];
@@ -22,6 +23,7 @@ profileNamespace setVariable [_ObjectDataName, nil];
 profileNamespace setVariable [_structureMarkerName, nil];
 profileNamespace setVariable [_missionStructureTypes, nil];
 profileNamespace setVariable [_CrateDataName, nil];
+profileNamespace setVariable [_ResourcesDataName, nil];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -280,6 +282,14 @@ profileNamespace setVariable [_MarkerDataName, _MarkerDataHash];
 private _garrisonSaveResult = FLO_Garrison_Manager call ["saveGarrisonSizes", []];
 if !(_garrisonSaveResult) then {
     [[west,"HQ"], "Warning: Failed to save garrison states"] remoteExec ["sideChat", 0];
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Save OPFOR resources state
+private _resourceSaveResult = FLO_OPFOR_Resources call ["saveResources", []];
+if !(_resourceSaveResult) then {
+    [[west,"HQ"], "Warning: Failed to save OPFOR resources state"] remoteExec ["sideChat", 0];
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@ private _MarkerTimeName = _missionTag + "_Time";
 private _structureMarkerName = _missionTag + "_StructureMarkers";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
 private _CrateDataName = _missionTag + "_Crates";
+private _ResourcesDataName = _missionTag + "_Resources";
 
 FreshStartVal = "FreshStart" call BIS_fnc_getParamValue;
 if (FreshStartVal isEqualTo 1) then {
@@ -26,6 +27,7 @@ if (FreshStartVal isEqualTo 1) then {
     profileNamespace setVariable [_missionStructureTypes, nil];
     profileNamespace setVariable [_structureMarkerName, nil];
     profileNamespace setVariable [_CrateDataName, nil];
+    profileNamespace setVariable [_ResourcesDataName, nil];
 };	
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,6 +128,16 @@ if (_garrisonLoadResult) then {
     [[west,"HQ"], "Garrison states loaded successfully..."] remoteExec ["sideChat", 0];
 } else {
     [[west,"HQ"], "No saved garrison states found"] remoteExec ["sideChat", 0];
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Load OPFOR resources state
+private _resourceLoadResult = FLO_OPFOR_Resources call ["loadResources", []];
+if (_resourceLoadResult) then {
+    [[west,"HQ"], "OPFOR resources state loaded successfully..."] remoteExec ["sideChat", 0];
+} else {
+    [[west,"HQ"], "No saved OPFOR resources state found"] remoteExec ["sideChat", 0];
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
