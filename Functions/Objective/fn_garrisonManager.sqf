@@ -48,6 +48,7 @@ if (isNil "FLO_Garrison_Manager") then {
         ["vehicleLimits", createHashMap],    // Property to store vehicle limits by marker type
         ["garrisonSizes", createHashMap],    // Property to store saved garrison sizes
         ["vehicleCounts", createHashMap],    // Property to track current vehicles at locations
+        ["vehicleTypes", createHashMap],     // Property to track exact vehicle types at locations
         
         // Constructor - Called when object is created
         ["#create", {
@@ -57,6 +58,7 @@ if (isNil "FLO_Garrison_Manager") then {
             _self set ["processedMarkers", []];
             _self set ["garrisonSizes", createHashMap];
             _self set ["vehicleCounts", createHashMap];
+            _self set ["vehicleTypes", createHashMap];
             
             // Define size limits for each marker type [baseSize, maxSize]
             private _sizeLimits = createHashMap;
@@ -202,15 +204,17 @@ if (isNil "FLO_Garrison_Manager") then {
             private _missionTag = missionName;
             _missionTag = [_missionTag] call BIS_fnc_filterString;
             private _garrisonSizesDataName = _missionTag + "_garrisonSizes";
+            private _vehicleTypesDataName = _missionTag + "_vehicleTypes";
             
             private _garrisonSizes = createHashMap;
             private _garrisons = _self get "garrisons";
+            private _vehicleTypes = _self get "vehicleTypes";
             
             // For tracking statistics
             private _markerTypeCount = createHashMap;
             private _totalSize = 0;
             
-            // For each garrison, store its current size
+            // For each garrison, store its current size and vehicle types
             {
                 private _marker = _x;
                 private _garrisonData = _garrisons get _marker;
@@ -236,9 +240,11 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Save to profileNamespace
             profileNamespace setVariable [_garrisonSizesDataName, _garrisonSizes];
+            profileNamespace setVariable [_vehicleTypesDataName, _vehicleTypes];
             
             // Store in object for quick access
             _self set ["garrisonSizes", _garrisonSizes];
+            _self set ["vehicleTypes", _vehicleTypes];
             
             // Detailed logging
             private _markerTypes = keys _markerTypeCount;
@@ -258,6 +264,9 @@ if (isNil "FLO_Garrison_Manager") then {
                     count keys _garrisonSizes, _totalSize]] call FLO_fnc_log;
             };
             
+            // Log vehicle types saved
+            ["Garrison", 3, format["Saved vehicle types for %1 markers", count keys _vehicleTypes]] call FLO_fnc_log;
+            
             true
         }],
         
@@ -266,8 +275,10 @@ if (isNil "FLO_Garrison_Manager") then {
             private _missionTag = missionName;
             _missionTag = [_missionTag] call BIS_fnc_filterString;
             private _garrisonSizesDataName = _missionTag + "_garrisonSizes";
+            private _vehicleTypesDataName = _missionTag + "_vehicleTypes";
             
             private _savedGarrisonSizes = profileNamespace getVariable [_garrisonSizesDataName, createHashMap];
+            private _savedVehicleTypes = profileNamespace getVariable [_vehicleTypesDataName, createHashMap];
             
             if (count keys _savedGarrisonSizes > 0) then {
                 // Track statistics
@@ -291,6 +302,7 @@ if (isNil "FLO_Garrison_Manager") then {
                 } forEach keys _savedGarrisonSizes;
                 
                 _self set ["garrisonSizes", _savedGarrisonSizes];
+                _self set ["vehicleTypes", _savedVehicleTypes];
                 
                 // Detailed logging
                 private _markerTypes = keys _markerTypeCount;
@@ -309,6 +321,9 @@ if (isNil "FLO_Garrison_Manager") then {
                     ["Garrison", 3, format["Loaded sizes for %1 garrisons with %2 total units.", 
                         count keys _savedGarrisonSizes, _totalSize]] call FLO_fnc_log;
                 };
+                
+                // Log vehicle types loaded
+                ["Garrison", 3, format["Loaded vehicle types for %1 markers", count keys _savedVehicleTypes]] call FLO_fnc_log;
                 
                 true
             } else {
@@ -992,6 +1007,7 @@ if (isNil "FLO_Garrison_Manager") then {
             private _garrisons = _self get "garrisons";
             private _garrisonSizes = _self get "garrisonSizes";
             private _vehicleCounts = _self get "vehicleCounts";
+            private _vehicleTypes = _self get "vehicleTypes";
             private _totalCount = 0;
             
             // Process each garrison
@@ -1455,12 +1471,18 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Initialize if needed
             private _vehicleCounts = _self get "vehicleCounts";
+            private _vehicleTypes = _self get "vehicleTypes";
+            
             if (!(_marker in keys _vehicleCounts)) then {
                 _vehicleCounts set [_marker, [0, 0, 0]];
             };
+            if (!(_marker in keys _vehicleTypes)) then {
+                _vehicleTypes set [_marker, []];
+            };
             
-            // Get current counts
+            // Get current counts and types
             private _currentCounts = _vehicleCounts get _marker;
+            private _currentTypes = _vehicleTypes get _marker;
             _currentCounts params ["_lightCount", "_heavyCount", "_totalCount"];
             
             // Determine if this is a heavy vehicle
@@ -1474,10 +1496,15 @@ if (isNil "FLO_Garrison_Manager") then {
             };
             _currentCounts set [2, _totalCount + 1];
             
-            // Update the hashmap
-            _vehicleCounts set [_marker, _currentCounts];
+            // Add vehicle type to tracking
+            _currentTypes pushBack _vehicleType;
             
-            ["Garrison", 3, format["Added vehicle %1 to %2. New counts: %3", _vehicleType, _marker, _currentCounts]] call FLO_fnc_log;
+            // Update the hashmaps
+            _vehicleCounts set [_marker, _currentCounts];
+            _vehicleTypes set [_marker, _currentTypes];
+            
+            ["Garrison", 3, format["Added vehicle %1 to %2. New counts: %3, Total types: %4", 
+                _vehicleType, _marker, _currentCounts, count _currentTypes]] call FLO_fnc_log;
             
             true
         }],
@@ -1488,13 +1515,16 @@ if (isNil "FLO_Garrison_Manager") then {
             
             // Check if marker has any vehicles tracked
             private _vehicleCounts = _self get "vehicleCounts";
+            private _vehicleTypes = _self get "vehicleTypes";
+            
             if (!(_marker in keys _vehicleCounts)) exitWith {
                 ["Garrison", 3, format["No vehicles tracked for %1, nothing to remove", _marker]] call FLO_fnc_log;
                 false
             };
             
-            // Get current counts
+            // Get current counts and types
             private _currentCounts = _vehicleCounts get _marker;
+            private _currentTypes = _vehicleTypes getOrDefault [_marker, []];
             _currentCounts params ["_lightCount", "_heavyCount", "_totalCount"];
             
             // Determine if this is a heavy vehicle
@@ -1508,10 +1538,18 @@ if (isNil "FLO_Garrison_Manager") then {
             };
             _currentCounts set [2, (_totalCount - 1) max 0];
             
-            // Update the hashmap
-            _vehicleCounts set [_marker, _currentCounts];
+            // Remove vehicle type from tracking
+            private _typeIndex = _currentTypes find _vehicleType;
+            if (_typeIndex != -1) then {
+                _currentTypes deleteAt _typeIndex;
+            };
             
-            ["Garrison", 3, format["Removed vehicle %1 from %2. New counts: %3", _vehicleType, _marker, _currentCounts]] call FLO_fnc_log;
+            // Update the hashmaps
+            _vehicleCounts set [_marker, _currentCounts];
+            _vehicleTypes set [_marker, _currentTypes];
+            
+            ["Garrison", 3, format["Removed vehicle %1 from %2. New counts: %3, Remaining types: %4", 
+                _vehicleType, _marker, _currentCounts, count _currentTypes]] call FLO_fnc_log;
             
             true
         }]
