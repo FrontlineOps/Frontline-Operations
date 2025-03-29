@@ -83,16 +83,26 @@ _opforDistances sort true;
 private _sourceOpforMarker = (_opforDistances select 0) select 1;
 
 // Find the target building (HQ or similar structure)
+private _targetPos = getMarkerPos _targetBluforMarker;
 private _targetBuilding = (nearestObjects [
-    getMarkerPos _targetBluforMarker,
+    _targetPos,
     FLO_configCache get "HQbuildings",
     300
-]) select 0;
+]) param [0, objNull];
+
+// If no HQ building found, use marker position
+if (isNull _targetBuilding) then {
+    ["OPFOR", 3, format["No HQ building found at %1, using marker position", _targetBluforMarker]] call FLO_fnc_log;
+    _targetBuilding = _targetPos;
+};
 
 // Create assault marker
 private _assaultMarkerName = "AssltDest" + (str ([0, 0, 0] getPos [(10 + (random 150)), (0 + (random 360))]));
 
-createMarker [_assaultMarkerName, getPos _targetBuilding];
+// Get position for marker based on whether we have a building or just using marker position
+private _assaultPos = if (_targetBuilding isEqualType objNull) then {getPos _targetBuilding} else {_targetBuilding};
+
+createMarker [_assaultMarkerName, _assaultPos];
 _assaultMarkerName setMarkerType "mil_marker_noShadow";
 _assaultMarkerName setMarkerColor "colorOPFOR";
 _assaultMarkerName setMarkerSize [2.5, 2.5];
@@ -107,7 +117,6 @@ private _assaultAzimuth = (getMarkerPos _targetBluforMarker) getDir (getMarkerPo
 
 // Get spawn position
 private _spawnPos = getMarkerPos _sourceOpforMarker;
-private _targetPos = getPos _targetBuilding;
 
 // Start with recon if aggression is high enough
 if (_aggressionScore > 3) then {
