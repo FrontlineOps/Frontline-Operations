@@ -276,6 +276,12 @@ private _spiralGrowth = 20;    // How much the spiral grows per point
     _spawnPositions pushBack _pos;
 } forEach ([] call {private _arr = []; for "_i" from 1 to _forceSize do {_arr pushBack _i}; _arr});
 
+// Function to handle delayed spawn
+private _fnc_delayedSpawn = {
+    params ["_spawnIndex", "_delay"];
+    sleep _delay;
+};
+
 // Create a unique variable name for this offensive operation
 private _offensiveOpsVarName = format ["FLO_OffensiveOps_Groups_%1", floor random 999999];
 missionNamespace setVariable [_offensiveOpsVarName, []];
@@ -291,6 +297,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
     _fnc_addIntelToGroup,
     _assaultAzimuth,
     _offensiveOpsVarName,
+    _fnc_delayedSpawn,
     _targetBluforMarker
 ] spawn {
     params [
@@ -303,6 +310,7 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
         "_fnc_addIntelToGroup",
         "_assaultAzimuth",
         "_offensiveOpsVarName",
+        "_fnc_delayedSpawn",
         "_targetBluforMarker"
     ];
     
@@ -441,12 +449,6 @@ missionNamespace setVariable [_offensiveOpsVarName, []];
         case 3: { [0, 450, 1200] };            // 0min, 7.5min, 20min
         case 2: { [0, 600] };                  // 0min, 10min
         default { [0] };                       // All at once
-    };
-    
-    // Function to handle delayed spawn
-    private _fnc_delayedSpawn = {
-        params ["_spawnIndex", "_delay"];
-        sleep _delay;
     };
     
     // Spawn forces in waves
