@@ -145,6 +145,7 @@ private _excludedCrateTypes = [
     "Box_NATO_WpsSpecial_F",
     "Box_NATO_AmmoOrd_F",
     "Box_NATO_Ammo_F",
+    "Box_NATO_Wps_F",
     "VirtualReammoBox_small_F"
 ];
 
