@@ -334,7 +334,18 @@ if (isNil "FLO_Garrison_Manager") then {
             private _opforMarkers = allMapMarkers select {
                 markerColor _x in ["colorOPFOR", "ColorEAST"] && 
                 markerType _x in ["o_support", "n_support", "n_installation", "o_installation", "loc_Ruin", "loc_Power", "o_recon", "o_service", "o_antiair"] &&
-                !(_x in _processedMarkers)
+                !(_x in _processedMarkers) &&
+                // Check if any player is within 750m of the marker
+                {
+                    private _markerPos = getMarkerPos _x;
+                    private _tooClose = false;
+                    {
+                        if (_x distance _markerPos < 750) exitWith {
+                            _tooClose = true;
+                        };
+                    } forEach _allPlayers;
+                    !_tooClose
+                }
             };
             
             // Debug log
