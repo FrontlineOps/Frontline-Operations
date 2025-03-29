@@ -316,7 +316,7 @@ if (isNil "FLO_Logistics_Network") then {
                         };
                         
                         // Check available resources and only reinforce if we have enough
-                        private _availableResources = ["get", []] call FLO_fnc_opforResources;
+                        private _availableResources = FLO_OPFOR_Resources call ["getResources", []];
                         if (_availableResources >= _reinforceAmount) then {
                             // 20% chance to add a vehicle reinforcement if we have enough resources
                             private _addVehicle = false;
@@ -358,13 +358,13 @@ if (isNil "FLO_Logistics_Network") then {
                             // Create the actual vehicle if needed
                             if (_addVehicle) then {
                                 // Spend resources for both units and vehicle
-                                ["spend", [_reinforceAmount + _vehicleCost]] call FLO_fnc_opforResources;
+                                FLO_OPFOR_Resources call ["spendResources", [_reinforceAmount + _vehicleCost, "garrison"]];
                                 
                                 ["Logistics", 4, format["Reinforcing garrison at %1 with %2 units and 1 vehicle, spending %3 resources", 
                                     _outpost, _reinforceAmount, _reinforceAmount + _vehicleCost]] call FLO_fnc_log;
                             } else {
                                 // Just spend resources for units
-                                ["spend", [_reinforceAmount]] call FLO_fnc_opforResources;
+                                FLO_OPFOR_Resources call ["spendResources", [_reinforceAmount, "garrison"]];
                                 
                                 ["Logistics", 4, format["Reinforcing non-activated garrison at %1 with %2 units", 
                                     _outpost, _reinforceAmount]] call FLO_fnc_log;

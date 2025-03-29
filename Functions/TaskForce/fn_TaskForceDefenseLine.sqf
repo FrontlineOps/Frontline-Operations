@@ -63,7 +63,7 @@ switch (_mode) do {
         };
         
         // Check resource availability
-        private _currentResources = ["get", []] call FLO_fnc_opforResources;
+        private _currentResources = FLO_OPFOR_Resources call ["getResources", []];
         private _minimumRequired = 15; // Minimum resources needed
         
         if (_currentResources < _minimumRequired) exitWith {

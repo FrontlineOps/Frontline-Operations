@@ -12,25 +12,11 @@
     - Military Headquarters (n_installation): 15 resources
     
     Parameter(s):
-    _mode - The function mode to execute ["init", "get", "add", "spend"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - No parameters needed
-        get: [] - No parameters needed
-        add: [_amount] - Amount to add
-        spend: [_amount] - Amount to spend
+        Nothing
     
     Returns:
-    Based on mode:
-        init: Nothing
-        get: Number - Current resources
-        add: Number - New resource total
-        spend: Boolean - True if successfully spent, false if insufficient resources
+        Nothing
 */
-
-params [
-    ["_mode", "init", [""]],
-    ["_params", [], [[]]]
-];
 
 // Only execute on server to prevent multiple resource systems running
 if (!isServer) exitWith {};
@@ -71,15 +57,60 @@ if (isNil "FLO_OPFOR_Resources") then {
         // Attempt to spend resources
         // Returns true if successful, false if insufficient resources
         ["spendResources", {
-            params ["_amount"];
+            params ["_amount", "_type"];
             private _current = _self get "resources";
-            if (_current >= _amount) then {
-                private _new = _current - _amount;
+            private _currentTime = time;
+
+            // Define spending categories with strategic modifiers
+            private _spendingModifiers = createHashMapFromArray [
+                // [type, [base_multiplier, resource_threshold, efficiency_loss_per_use]]
+                ["garrison", [1.0, 10, 0.05]],         // Garrison
+                ["qrf", [1.5, 100, 0.08]],               // QRF
+                ["offensiveops", [4.0, 500, 0.15]],     // Major operations 
+                ["air_support", [2.0, 250, 0.12]],       // Air support
+                ["artillery", [3.0, 150, 0.07]]          // Artillery
+            ];
+
+            private _typeData = _spendingModifiers getOrDefault [_type, [1.0, 30, 0.05]];
+            _typeData params ["_multiplier", "_resourceThreshold", "_efficiencyLoss"];
+
+            // Check if we have enough resources to maintain operational effectiveness
+            if (_current < _resourceThreshold) exitWith {
+                ["OPFOR Resources", 3, format ["Insufficient strategic resources for %1 (need %2, have %3)", 
+                    _type, _resourceThreshold, _current]] call FLO_fnc_log;
+                false
+            };
+
+            // Calculate final cost with strategic considerations
+            private _finalCost = _amount * _multiplier;
+
+            // Get current efficiency for this type
+            private _efficiency = _self getOrDefault [format ["efficiency_%1", _type], 1.0];
+            
+            // Apply efficiency modifier
+            _finalCost = _finalCost * (1 / _efficiency);
+
+            if (_current >= _finalCost) then {
+                private _new = _current - _finalCost;
                 _self set ["resources", _new];
-                _self set ["lastUpdate", time];
+                _self set ["lastUpdate", _currentTime];
+                
+                // Reduce efficiency for this type of operation
+                _efficiency = (_efficiency - _efficiencyLoss) max 0.4; // Won't go below 40% efficiency
+                _self set [format ["efficiency_%1", _type], _efficiency];
+
+                // If resources are abundant, slowly recover efficiency
+                if (_new > (_resourceThreshold * 2)) then {
+                    {
+                        private _currentEff = _self getOrDefault [format ["efficiency_%1", _x], 1.0];
+                        _self set [format ["efficiency_%1", _x], (_currentEff + 0.02) min 1.0];
+                    } forEach (keys _spendingModifiers);
+                };
+
                 true
             } else {
-                diag_log format ["[FLO][Resources] Failed to spend %1 resources (current: %2)", _amount, _current];
+                ["OPFOR Resources", 3, format ["Cannot afford %1 operation (cost: %2, available: %3)", 
+                    _type, _finalCost, _current]] call FLO_fnc_log;
                 false
             }
         }],
@@ -87,7 +118,7 @@ if (isNil "FLO_OPFOR_Resources") then {
         // Initialize the resource generation loop
         // This runs continuously in the background
         ["initResourceLoop", {
-            // Define resource values for different installation types
+            // Define resource values with diminishing returns
             private _resourceValues = createHashMapFromArray [
                 ["o_installation", 7],    // Military Outpost
                 ["n_support", 5],         // Military Service Post
@@ -98,11 +129,13 @@ if (isNil "FLO_OPFOR_Resources") then {
             // Spawn continuous resource generation loop
             [_resourceValues] spawn {
                 params ["_resourceValues"];
+                private _lastGeneratedAmount = 0;
                 
                 while {true} do {
                     private _totalResources = 0;
+                    private _activeInstallations = 0;
                     
-                    // Find all OPFOR installations on the map
+                    // Find all OPFOR installations
                     private _opforInstallations = allMapMarkers select {
                         markerColor _x in ["colorOPFOR", "ColorEAST"] && 
                         markerType _x in ["n_support", "o_support", "o_installation", "n_installation"]
@@ -127,12 +160,16 @@ if (isNil "FLO_OPFOR_Resources") then {
                         
                         // Only generate resources if installation is not contested
                         if (!_isContested) then {
-                            _totalResources = _totalResources + _baseValue;
+                            _activeInstallations = _activeInstallations + 1;
+                            // Apply diminishing returns based on number of active installations
+                            _totalResources = _totalResources + (_baseValue * (1 - (_activeInstallations * 0.1)));
                         };
                     } forEach _opforInstallations;
                     
-                    // Add accumulated resources to the system
+                    // Add resources
+                    _totalResources = round _totalResources;
                     FLO_OPFOR_Resources call ["addResources", [_totalResources]];
+                    _lastGeneratedAmount = _totalResources;
                     
                     // Wait 10 minutes before next resource generation cycle
                     sleep 600;
@@ -144,35 +181,3 @@ if (isNil "FLO_OPFOR_Resources") then {
     // Create the resource management object with initial resources of 0
     FLO_OPFOR_Resources = createHashMapObject [_resourceClass, 0];
 };
-
-// Handle different operation modes
-private _result = switch (_mode) do {
-    // Initialize the resource system and start generation loop
-    case "init": {
-        _self = FLO_OPFOR_Resources;
-        _self call ["initResourceLoop", []];
-        0
-    };
-    
-    // Get current resource amount
-    case "get": {
-        _self = FLO_OPFOR_Resources;
-        _self call ["getResources", []]
-    };
-    
-    // Add resources to the system
-    case "add": {
-        _params params [["_amount", 0, [0]]];
-        _self = FLO_OPFOR_Resources;
-        _self call ["addResources", [_amount]]
-    };
-    
-    // Attempt to spend resources
-    case "spend": {
-        _params params [["_amount", 0, [0]]];
-        _self = FLO_OPFOR_Resources;
-        _self call ["spendResources", [_amount]]
-    };
-};
-
-_result 

@@ -173,7 +173,7 @@ if (isNil "FLO_TaskForce_System") then {
             };
             
             // Check if we have enough resources to create this Task Force
-            private _currentResources = ["get", []] call FLO_fnc_opforResources;
+            private _currentResources = FLO_OPFOR_Resources call ["getResources", []];
             if (_currentResources < _resourceCost) exitWith {
                 ["TaskForce", 1, format["Error: Insufficient resources to create Task Force (needed %1, have %2)",
                     _resourceCost, _currentResources]] call FLO_fnc_log;
@@ -182,7 +182,7 @@ if (isNil "FLO_TaskForce_System") then {
             
             // Spend the resources
             // Cost of Arming & Supplying
-            ["spend", [_resourceCost]] call FLO_fnc_opforResources;
+            FLO_OPFOR_Resources call ["spendResources", [_resourceCost, "offensiveops"]]; 
             
             // Define the Task Force composition based on type and size or use provided composition
             private _composition = [];

@@ -180,7 +180,7 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 [] call FLO_fnc_intelSystem;
 
 // Initialize the resource system
-["init", []] call FLO_fnc_opforResources;
+[] call FLO_fnc_opforResources;
 
 // Initialize the garrison management system
 [] call FLO_fnc_garrisonManager;
