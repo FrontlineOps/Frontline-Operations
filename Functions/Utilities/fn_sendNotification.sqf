@@ -41,7 +41,10 @@ if (isServer) then {
     _requirements params ["_requiredIntel", "_requiredTowers"];
 
     // Check if we meet the requirements to show this notification and exit if not
-    if (_intelLevel < _requiredIntel || _radioTowers < _requiredTowers) exitwith {};
+    if (_intelLevel < _requiredIntel || _radioTowers < _requiredTowers) exitWith {
+        ["Notification", 3, format ["Notification not shown due to insufficient intel level (%1) or radio towers (%2)", _intelLevel, _radioTowers]] call FLO_fnc_log;
+        nil
+    };
 };
 
 
