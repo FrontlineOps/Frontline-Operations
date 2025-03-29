@@ -33,14 +33,11 @@ minPlayerDistance[] = {300, 1200, 300};
 //minPlayerDistance[] = {300, 1200, 300, 60, 120, 300}; // For 2.20 Arma 3
 
 #include "Scripts\defines.hpp"
-#include "KPGUI\KPGUI_defines.hpp"
-#include "KPPLM\ui\KPPLM_dialog.hpp"
 #include "IDS_Logistics\CfgLogistics.hpp"
 #include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
 class CfgFunctions {
 	#include "CfgFunctions.hpp"
 	#include "LARs\spawnComp\functions\functions.cpp"
-	#include "KPPLM\KPPLM_functions.hpp"
 	#include "IDS_Logistics\IDS_Logistics_Functions.hpp"
 };
 
@@ -52,12 +49,9 @@ class CfgRemoteExec
 	{
 		mode = 2;	
 		
-		class vcm_serverask { allowedTargets = 0;jip = 1; };
-		class VCM_PublicScript { allowedTargets = 0;jip = 1; };
 		class BIS_fnc_debugConsoleExec { allowedTargets = 0;jip = 1; };
 		class SpawnScript { allowedTargets = 0;jip = 1; };
 		class enableSimulationGlobal { allowedTargets = 0;jip = 1; };
-		class VCM_fnc_KnowAbout { allowedTargets = 0;jip = 1; };
 		class FLO_fnc_displayNotification { allowedTargets = 0; jip = 0; }
 		class FLO_fnc_addIntelServer { allowedTargets = 2; jip = 0; }
 		

@@ -90,23 +90,6 @@ player setVariable ["ace_medical_medicclass",2, true];
 // ]] remoteExec ["addAction",0,true];
 } ;
 
-
-player addAction
-	[
-	"<t color='#7CC2FF'>" + localize "STR_KPPLM_ACTIONOPEN" + "</t>",
-    {[] call KPPLM_fnc_openDialog;},
-	nil,
-    -803,
-	true,		
-	true,		
-	"",			
-	"true", 	
-	5,			
-	false,		
-	"",			
-	""			
-];
-
 {_x enableAI "RADIOPROTOCOL"} foreach Units Group player;
 
 if ((isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") == true) && !("ItemAndroid" in ((vestItems player + uniformitems player + backpackItems player))) ) then { player addItem "ItemAndroid"; };  

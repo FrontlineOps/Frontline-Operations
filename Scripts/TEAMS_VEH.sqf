@@ -47,21 +47,6 @@ if (_result) then {
 			{TheCommander hcSetGroup [_x];} forEach _GRPs;
 			};
 			
-player addAction
-	[
-	"<t color='#7CC2FF'>" + localize "STR_KPPLM_ACTIONOPEN" + "</t>",
-    {[] call KPPLM_fnc_openDialog;},
-	nil,
-    -803,
-	true,		
-	true,		
-	"",			
-	"true", 	
-	5,			
-	false,		
-	"",			
-	""			
-];	
 			
 		if ((isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") == true) && !("ItemAndroid" in ((vestItems player + uniformitems player + backpackItems player))) ) then { player addItem "ItemAndroid"; };  
 		if ((isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") == true) && !("ItemcTab" in ((vestItems player + uniformitems player + backpackItems player))) ) then { player addItem "ItemcTab"; }; 		
@@ -110,22 +95,7 @@ if (!_result) then {
 			}else{
 			{TheCommander hcSetGroup [_x];} forEach _GRPs;
 			};
-			 
-player addAction
-	[
-	"<t color='#7CC2FF'>" + localize "STR_KPPLM_ACTIONOPEN" + "</t>",
-    {[] call KPPLM_fnc_openDialog;},
-	nil,
-    -803,
-	true,		
-	true,		
-	"",			
-	"true", 	
-	5,			
-	false,		
-	"",			
-	""			
-];
+			
 		if ((isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") == true) && !("ItemAndroid" in ((vestItems player + uniformitems player + backpackItems player))) ) then { player addItem "ItemAndroid"; };  
 		if ((isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") == true) && !("ItemcTab" in ((vestItems player + uniformitems player + backpackItems player))) ) then { player addItem "ItemcTab"; }; 		
 
