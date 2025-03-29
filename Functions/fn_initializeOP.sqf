@@ -65,7 +65,7 @@ if (_preserveMarker && {_opBuilding getVariable ["FLO_OP_MarkersRestored", false
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {
     [_opBuilding] call FLO_fnc_restrictArsenalBox;
-    [_opBuilding] call FLO_fnc_addCratePurchaseActions;
+    [_opBuilding] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, true];
 };
 
 // Initialize creation factory
@@ -85,46 +85,36 @@ if (!isNil "_opBuilding" && {!isNull _opBuilding}) then {
 };
 
 // Add Arsenal action
-[ _opBuilding,
-"<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-"Screens\FOBA\mg_ca.paa",
-"Screens\FOBA\mg_ca.paa",
-    "_this distance _target < 10",            
-    "_caller distance _target < 10",    
-{},
-{},
-{
-    if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
-        [player, player, true] call ace_arsenal_fnc_openBox;
-    } else {
-        ["Open", true] spawn BIS_fnc_arsenal;
-    };
-},
-{},
-[],
-1,
-1,
-false,
-false
-] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+[_opBuilding, [
+    "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+    {
+        if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
+            [player, player, true] call ace_arsenal_fnc_openBox;
+        } else {
+            ["Open", true] spawn BIS_fnc_arsenal;
+        };
+    },
+    nil,
+    1,
+    true,
+    true,
+    "",
+    "_this distance _target < 10"
+]] remoteExec ["addAction", 0, true];
 
 // Add Pack OP action
-[_opBuilding,
-"<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Pack OP",
-"Screens\FOBA\b_hq.paa",
-"Screens\FOBA\b_hq.paa",
-"true",       
-"_caller distance _target < 40",  
-{},
-{},
-{execVM 'Scripts\PObjectives\OPPACK.sqf';},
-{},
-[],
-5,
-2,
-false,
-false
-] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+[_opBuilding, [
+    "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Pack OP",
+    {
+        execVM 'Scripts\PObjectives\OPPACK.sqf';
+    },
+    nil,
+    2,
+    true,
+    true,
+    "",
+    "_this distance _target < 40"
+]] remoteExec ["addAction", 0, true];
 
 // Add Request Menu action
 [_opBuilding,[

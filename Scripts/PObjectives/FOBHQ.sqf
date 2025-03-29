@@ -29,18 +29,13 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
         };
         
         // Add cancel action
-        Ind01 = [CreatedVEH,
+        [CreatedVEH, [
             "<t color='#FF0000'>CANCEL</t>",
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'true',
-            'true',
-            {},
-            {},
             {
-                detach (_this select 0);
-                (_this select 0) enableSimulation true;
-                deleteVehicle (_this select 0);
+                params ["_target"];
+                detach _target;
+                _target enableSimulation true;
+                deleteVehicle _target;
                 
                 // Refund cost
                 private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
@@ -49,38 +44,29 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 private _newMoney = _money + Cost;
                 _mrkr setMarkerText str _newMoney;
             },
-            {},
-            [],
+            nil,
             3,
-            0,
-            false,
-            false
-        ] call BIS_fnc_holdActionAdd;
+            true,
+            true,
+            "",
+            "true"
+        ]] remoteExec ["addAction", 0, true];
         
         // Add place action
-        Ind02 = [CreatedVEH,
+        [CreatedVEH, [
             "<t color='#FF0000'>PLACE</t>",
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'true',
-            'true',
-            {},
-            {},
             {
+                params ["_target"];
                 // Place the FOB container
-                detach (_this select 0);
-                (_this select 0) enableSimulation true;
+                detach _target;
+                _target enableSimulation true;
                 
                 // End placement mode
                 CursorTracker = false;
-                (_this select 0) allowDamage true;
-                
-                // Remove placement actions
-                (_this select 0) removeAction Ind01;
-                (_this select 0) removeAction Ind02;
+                _target allowDamage true;
                 
                 // Add unpack action
-                [(_this select 0), [
+                [_target, [
                     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
                     "Scripts\PObjectives\FOBUNPACK.sqf",
                     nil,
@@ -95,13 +81,13 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                     ""
                 ]] remoteExec ["addAction", 0, true];
             },
-            {},
-            [],
+            nil,
             3,
-            0,
-            false,
-            false
-        ] call BIS_fnc_holdActionAdd;
+            true,
+            true,
+            "",
+            "true"
+        ]] remoteExec ["addAction", 0, true];
 
         CreatedVEH setVariable ["IDS_Logistics_isPlacedEntity", true, true];
 

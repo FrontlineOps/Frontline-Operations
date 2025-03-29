@@ -26,52 +26,38 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             }
         };
 
-        private _ind01 = [CreatedVEH,
+        private _ind01 = [CreatedVEH, [
             "<t color='#FF0000'>CANCEL</t>",
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'true',       
-            'true',  
-            {},
-            {},
             {
-                params ["_vehicle"];
-                detach _vehicle; 
-                _vehicle enableSimulation true;
-                deleteVehicle _vehicle;
+                params ["_target"];
+                detach _target;
+                _target enableSimulation true;
+                deleteVehicle _target;
                 
                 private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
                 private _mrkr = _mrkrs select 0;
-                private _money = parseNumber (markerText _mrkr);  
-                private _newMoney = _money + Cost; 
+                private _money = parseNumber (markerText _mrkr);
+                private _newMoney = _money + Cost;
                 _mrkr setMarkerText str _newMoney;
             },
-            {},
-            [],
+            nil,
             3,
-            0,
-            false,
-            false
-        ] call BIS_fnc_holdActionAdd; 
+            true,
+            true,
+            "",
+            "true"
+        ]] remoteExec ["addAction", 0, true];
 
-        private _ind02 = [CreatedVEH,
+        private _ind02 = [CreatedVEH, [
             "<t color='#FF0000'>PLACE</t>",
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'Screens\FOBA\iconRepairAt_ca.paa',
-            'true',       
-            'true',  
-            {},
-            {},
             {
-                params ["_vehicle"];
-                detach _vehicle; 
-                _vehicle enableSimulation true;
+                params ["_target"];
+                detach _target;
+                _target enableSimulation true;
                 CursorTracker = false;
-                _vehicle allowDamage true;
-                _vehicle removeAction Ind01;
-                _vehicle removeAction Ind02;
+                _target allowDamage true;
                 
-                [_vehicle, [
+                [_target, [
                     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
                     "Scripts\PObjectives\OPUNPACK.sqf",
                     nil,
@@ -86,13 +72,13 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                     ""
                 ]] remoteExec ["addAction", 0, true];
             },
-            {},
-            [],
+            nil,
             3,
-            0,
-            false,
-            false
-        ] call BIS_fnc_holdActionAdd; 
+            true,
+            true,
+            "",
+            "true"
+        ]] remoteExec ["addAction", 0, true];
 
         // Store action IDs globally for the completion function to access
         Ind01 = _ind01;

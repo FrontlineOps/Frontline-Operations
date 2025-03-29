@@ -63,126 +63,96 @@ _FOBB = nearestObjects [Centerposition, [F_OP_01], 40000];
 // Initialize FOB Screen Actions
 _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
 {
-    [ _x,
-    "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time",
-    "Screens\FOBA\b_hq.paa",
-    "Screens\FOBA\b_hq.paa",
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    "_caller distance _target < 40",  
-    {},
-    {},
-    {createDialog 'C_LOCK';},
-    {},
-    [],
-    5,
-    4,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time",
+        {
+            createDialog 'C_LOCK';
+        },
+        nil,
+        4,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 
-    [ _x,
-    "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather",
-    "Screens\FOBA\b_hq.paa",
-    "Screens\FOBA\b_hq.paa",
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    "_caller distance _target < 40",  
-    {},
-    {},
-    { { null = execVM "Scripts\Init\init_Weather.sqf" ;} remoteExec ["call", 2];},
-    {},
-    [],
-    5,
-    4,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather",
+        {
+            { null = execVM "Scripts\Init\init_Weather.sqf" ;} remoteExec ["call", 2];
+        },
+        nil,
+        4,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 
-    [ _x,
-    "<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress",
-    "Screens\FOBA\b_hq.paa",
-    "Screens\FOBA\b_hq.paa",
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    "_caller distance _target < 40",  
-    {},
-    {},
-    {
-        remoteExec ["FLO_fnc_MissionSave", 2] ;
-    },
-    {},
-    [],
-    7,
-    6,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress",
+        {
+            remoteExec ["FLO_fnc_MissionSave", 2];
+        },
+        nil,
+        6,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 
-    [ _x,
-    "<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress",
-    'Screens\FOBA\b_hq.paa',
-    'Screens\FOBA\b_hq.paa',
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    '_caller distance _target < 40',  
-    {},
-    {},
-    {{ null = execVM "Scripts\MissionReset.sqf" } remoteExec ["call", 2];},
-    {},
-    [],
-    7,
-    5,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress",
+        {
+            { null = execVM "Scripts\MissionReset.sqf" } remoteExec ["call", 2];
+        },
+        nil,
+        5,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 
-    [ _x,
-    "<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)",
-    'Screens\FOBA\b_hq.paa',
-    'Screens\FOBA\b_hq.paa',
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    '_caller distance _target < 40',  
-    {},
-    {},
-    {[] execVM "Scripts\BRIBE.sqf"; },
-    {},
-    [],
-    5,
-    3,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)",
+        {
+            [] execVM "Scripts\BRIBE.sqf";
+        },
+        nil,
+        3,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 
-    [ _x,
-    "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Mission",
-    'Screens\FOBA\b_hq.paa',
-    'Screens\FOBA\b_hq.paa',
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    '_caller distance _target < 40',  
-    {},
-    {},
-    { execVM "Scripts\Mission_Select_Action.sqf" ;},
-    {},
-    [],
-    2,
-    1.5,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Mission",
+        {
+            execVM "Scripts\Mission_Select_Action.sqf";
+        },
+        nil,
+        1.5,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 
-    [ _x,
-    "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Zone",
-    'Screens\FOBA\b_hq.paa',
-    'Screens\FOBA\b_hq.paa',
-    "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))",       
-    '_caller distance _target < 40',  
-    {},
-    {},
-    { execVM "Scripts\CCO.sqf" ;},
-    {},
-    [],
-    2,
-    1.5,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
+    [_x, [
+        "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Zone",
+        {
+            execVM "Scripts\CCO.sqf";
+        },
+        nil,
+        1.5,
+        true,
+        true,
+        "",
+        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
+    ]] remoteExec ["addAction", 0, true];
 } foreach _FOBT;
  
 
@@ -475,28 +445,22 @@ _MOBSER = nearestobjects [Centerposition, [F_Truck_04], 40000];
 // Initialize mobile arsenal stations
 _MOBARS = nearestobjects [Centerposition, [F_Truck_03], 40000];
 {
-    [ _x,
-    "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-    "Screens\FOBA\mg_ca.paa",
-    "Screens\FOBA\mg_ca.paa",
-    "_this distance _target < 10",			
-    "_caller distance _target < 10",	
-    {},
-    {},
-    {
-        if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
-            [player, player, true] call ace_arsenal_fnc_openBox;
-        } else {
-            ["Open", true] spawn BIS_fnc_arsenal;
-        };
-    },
-    {},
-    [],
-    1,
-    1,
-    false,
-    false
-    ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];   
+    [_x, [
+        "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+        {
+            if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") isEqualTo true) then {
+                [player, player, true] call ace_arsenal_fnc_openBox;
+            } else {
+                ["Open", true] spawn BIS_fnc_arsenal;
+            };
+        },
+        nil,
+        1,
+        true,
+        true,
+        "",
+        "_this distance _target < 10"
+    ]] remoteExec ["addAction", 0, true];
 } forEach _MOBARS;
 
 ["Support Stations", 3, "Support Stations Initialized Successfully ..."] call FLO_fnc_log;

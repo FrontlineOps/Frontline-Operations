@@ -236,109 +236,69 @@ VEH_REQUEST = {
     };
     
     // Add action menu items
-    // CANCEL placement action
-    Ind01 = [player,
+    private _actionIDs = [];
+    
+    _actionIDs pushBack (player addAction [
         "<t color='#FF0000'>CANCEL</t>",
-        'Screens\FOBA\iconRepairAt_ca.paa',
-        'Screens\FOBA\iconRepairAt_ca.paa',
-        'true',
-        'true',
-        {},
-        {},
         {
-            // Cancel placement and refund cost
-            detach CreatedVEH; 
+            params ["_target", "_caller", "_actionId", "_arguments"];
+            private _actionIDs = _arguments;
+            
+            detach CreatedVEH;
             CreatedVEH enableSimulation true;
             deleteVehicle CreatedVEH;
             
+            // Refund cost
             private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
             private _mrkr = _mrkrs select 0;
             private _Money = parseNumber (markerText _mrkr);
             _mrkr setMarkerText str (_Money + CostV);
             
             deleteVehicle CreatedVEHREF;
-            player removeAction Ind01;
-            player removeAction Ind02;
-            player removeAction Ind03;
-        },
-        {},
-        [],
-        3,
-        0,
-        false,
-        false
-    ] call BIS_fnc_holdActionAdd;
-    
-    // PLACE WITH CREW action
-    Ind02 = [player,
-        "<t color='#FF0000'>PLACE (crew)</t>",
-        'Screens\FOBA\iconRepairAt_ca.paa',
-        'Screens\FOBA\iconRepairAt_ca.paa',
-        'true',
-        'true',
-        {},
-        {},
-        {
-            // Place vehicle with crew
-            detach CreatedVEH;
-            CreatedVEH setVehiclePosition [getPos CreatedVEHREF, [], 0, "CAN_COLLIDE"];
-            CreatedVEH enableSimulation true;
-            CursorTracker = false;
-            deleteVehicle CreatedVEHREF;
-            CreatedVEH enableSimulation true;
-            CreatedVEH allowDamage true;
             
-            // Create crew for the vehicle
-            private _vehicleConfig = configFile >> "CfgVehicles" >> typeOf CreatedVEH;
-            private _crewType = [west, _vehicleConfig] call BIS_fnc_selectCrew;
-            private _crewFull = createVehicleCrew CreatedVEH;
-            private _crewSelCnt = count (units _crewFull) - 1;
-            deleteVehicleCrew CreatedVEH;
-            
-            private _group = createGroup West;
-            for "_x" from 0 to _crewSelCnt do {
-                private _unit = _group createUnit [_crewType, [0,0,0], [], 0, "CAN_COLLIDE"];
-            };
-            
-            {_x moveInAny CreatedVEH} forEach units _group;
-            
-            // Disable Vcom AI for helicopters
-            private _isHelicopter = false;
+            // Remove all actions
             {
-                private _heliName = missionNamespace getVariable _x;
-                if (typeOf CreatedVEH == _heliName) exitWith {_isHelicopter = true};
-            } forEach ["F_Heli_01", "F_Heli_02", "F_Heli_03", "F_Heli_04", "F_Heli_05"];
-            
-            if (_isHelicopter) then {
-                _group setVariable ["Vcm_Disable", true];
-            };
-            
-            // Add to high command
-            TheCommander hcSetGroup [_group];
-            
-            // Cleanup actions
-            player removeAction Ind01;
-            player removeAction Ind02;
-            player removeAction Ind03;
+                player removeAction _x;
+            } forEach _actionIDs;
         },
-        {},
-        [],
-        3,
-        0,
-        false,
-        false
-    ] call BIS_fnc_holdActionAdd;
+        _actionIDs,
+        1.5,
+        true,
+        true,
+        "",
+        "true",
+        50
+    ]);
     
-    // PLACE WITHOUT CREW action
-    Ind03 = [player,
-        "<t color='#FF0000'>PLACE</t>",
-        'Screens\FOBA\iconRepairAt_ca.paa',
-        'Screens\FOBA\iconRepairAt_ca.paa',
-        'true',
-        'true',
-        {},
-        {},
+    _actionIDs pushBack (player addAction [
+        "<t color='#FF0000'>PLACE (crew)</t>",
         {
+            params ["_target", "_caller", "_actionId", "_arguments"];
+            private _actionIDs = _arguments;
+            
+            // Place vehicle with crew
+            [CreatedVEH, CreatedVEHREF] call FLO_fnc_placeVehicleWithCrew;
+            
+            // Remove all actions
+            {
+                player removeAction _x;
+            } forEach _actionIDs;
+        },
+        _actionIDs,
+        1.5,
+        true,
+        true,
+        "",
+        "true",
+        50
+    ]);
+    
+    _actionIDs pushBack (player addAction [
+        "<t color='#FF0000'>PLACE</t>",
+        {
+            params ["_target", "_caller", "_actionId", "_arguments"];
+            private _actionIDs = _arguments;
+            
             // Place vehicle without crew
             detach CreatedVEH;
             CreatedVEH setVehiclePosition [getPos CreatedVEHREF, [], 0, "CAN_COLLIDE"];
@@ -348,18 +308,19 @@ VEH_REQUEST = {
             CreatedVEH enableSimulation true;
             CreatedVEH allowDamage true;
             
-            // Cleanup actions
-            player removeAction Ind01;
-            player removeAction Ind02;
-            player removeAction Ind03;
+            // Remove all actions
+            {
+                player removeAction _x;
+            } forEach _actionIDs;
         },
-        {},
-        [],
-        3,
-        0,
-        false,
-        false
-    ] call BIS_fnc_holdActionAdd;
+        _actionIDs,
+        1.5,
+        true,
+        true,
+        "",
+        "true",
+        50
+    ]);
     
     closeDialog 0;
 };
@@ -418,13 +379,8 @@ FLO_fnc_configureVehicle = {
     // Configure ammo truck (F_Truck_03)
     _MOBSERName = missionNamespace getVariable "F_Truck_03";
     if (_VehName == _MOBSERName) then {
-        [_vehicle, "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            "Screens\FOBA\mg_ca.paa",
-            "Screens\FOBA\mg_ca.paa",
-            "_this distance _target < 10",
-            "_caller distance _target < 10",
-            {},
-            {},
+        [_vehicle, [
+            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
             {
                 if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
                     [player, player, true] call ace_arsenal_fnc_openBox;
@@ -432,12 +388,12 @@ FLO_fnc_configureVehicle = {
                     ["Open", true] spawn BIS_fnc_arsenal;
                 };
             },
-            {},
-            [],
+            nil,
             1,
-            1,
-            false,
-            false
-        ] remoteExec ["BIS_fnc_holdActionAdd", 0, true];
+            true,
+            true,
+            "",
+            "_this distance _target < 10"
+        ]] remoteExec ["addAction", 0, true];
     };
 };
