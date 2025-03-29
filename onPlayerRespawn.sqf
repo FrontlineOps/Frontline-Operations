@@ -9,21 +9,6 @@ player enableAI "all";
 [player, false] remoteExec ["setCaptive", 0, false];
 ["GetOutMan"] remoteExec ["removeAllEventHandlers", player, false];
 
-player addAction [
-    "<t color='#7CC2FF'>" + localize "STR_KPPLM_ACTIONOPEN" + "</t>",
-    {[] call KPPLM_fnc_openDialog;},
-    nil,
-    -803,
-    true,
-    true,
-    "",
-    "true",
-    5,
-    false,
-    "",
-    ""
-];
-
 // Clear player's inventory
 removeAllWeapons player;
 removeAllItems player;
