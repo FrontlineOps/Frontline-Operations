@@ -104,8 +104,6 @@ private _frontlineManagerDeclaration = [
         // Check if players are still online before launching
         private _humanPlayers = allPlayers - (entities "HeadlessClient_F");
         if (count _humanPlayers > 0) then {
-            // set global flag to true
-            OffensiveOperationUnderway = true;
             // Launch offensive operation
             [_aggressionScore] call FLO_fnc_requestOffensiveOps;
         };
