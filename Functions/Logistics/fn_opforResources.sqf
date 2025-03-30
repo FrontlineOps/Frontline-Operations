@@ -74,6 +74,9 @@ if (isNil "FLO_OPFOR_Resources") then {
                     _self set ["lastUpdate", time];
                     ["OPFOR Resources", 3, format["Initialized fresh with %1 resources", _self get "resources"]] call FLO_fnc_log;
                 };
+                
+                // Initialize the resource generation loop
+                _self call ["initResourceLoop", []];
             };
         }],
         
