@@ -227,5 +227,13 @@
                 <English>ROADBLOCK</English>
             </Key>
         </Container>
+        <Container name="RESOURCES">
+            <Key ID="STR_FLO_RESOURCES_OPTIMIZATION">
+                <English>Large-scale enemy reinforcements entering the AO. Prepare for intensified operations.</English>
+            </Key>
+            <Key ID="STR_FLO_RESOURCES_DISRUPTION">
+                <English>Large-scale enemy resource shortages hitting the AO. Expect weakened opposition.</English>
+            </Key>
+        </Container>
     </Package>
 </Project>

@@ -162,10 +162,32 @@ if (isNil "FLO_OPFOR_Resources") then {
             [_resourceValues] spawn {
                 params ["_resourceValues"];
                 private _lastGeneratedAmount = 0;
+                private _eventCooldown = 0;
                 
                 while {true} do {
                     private _totalResources = 0;
                     private _activeInstallations = 0;
+                    private _globalModifier = 1;
+                    
+                    // Random event chance (every 30-60 minutes)
+                    if (time > _eventCooldown) then {
+                        private _eventRoll = random 100;
+                        private _eventID = "";
+                        switch (true) do {
+                            case (_eventRoll <= 7 && _eventRoll > 2): {
+                                _globalModifier = 1.5;
+                                _eventID = "STR_FLO_RESOURCES_OPTIMIZATION";
+                            };
+                            case (_eventRoll >= 0 && _eventRoll < 3): {
+                                _globalModifier = 0.7;
+                                _eventID = "STR_FLO_RESOURCES_DISRUPTION";
+                            };
+                        };
+                        if (_eventID != "") then {
+                            ["STR_FLO_WARNING_TITLE", _eventID, "warning", false] call FLO_fnc_sendNotification;
+                            _eventCooldown = time + (random 1800) + 1800; // 30-60 minutes
+                        };
+                    };
                     
                     // Find all OPFOR installations
                     private _opforInstallations = allMapMarkers select {
@@ -176,32 +198,41 @@ if (isNil "FLO_OPFOR_Resources") then {
                     // Process each installation
                     {
                         private _markerType = markerType _x;
-                        private _baseValue = _resourceValues getOrDefault [_markerType, 0];
+                        private _baseValue = _resourceValues get _markerType;
                         private _pos = getMarkerPos _x;
                         
-                        // Check for nearby units that might contest the installation
-                        private _nearbyUnits = _pos nearEntities [["Man", "Car", "Tank", "Ship", "LandVehicle"], 500];
-                        private _isContested = false;
-                        
-                        // Check if any BLUFOR units are nearby
-                        {
-                            if (side _x == west) exitWith {
-                                _isContested = true;
-                            };
-                        } forEach _nearbyUnits;
+                        // Check for nearby BLUFOR units that might contest the installation
+                        private _nearbyBlufor = _pos nearEntities [["Man", "Car", "Tank", "Ship", "LandVehicle"], 500] select {side _x == west};
                         
                         // Only generate resources if installation is not contested
-                        if (!_isContested) then {
+                        if (count _nearbyBlufor == 0) then {
                             _activeInstallations = _activeInstallations + 1;
+                            
                             // Apply diminishing returns based on number of active installations
-                            _totalResources = _totalResources + (_baseValue * (1 - (_activeInstallations * 0.1)));
+                            private _diminishingReturn = 1 - (_activeInstallations * 0.08);
+                            _diminishingReturn = _diminishingReturn max 0.2; // Won't go below 20% efficiency
+                            
+                            // Calculate final value with modifiers
+                            private _finalValue = _baseValue * _diminishingReturn * _globalModifier;
+                            _totalResources = _totalResources + _finalValue;
+                            
+                            // Log significant changes from events
+                            if (_globalModifier != 1) then {
+                                ["OPFOR Resources", 3, format["%1 at %2 generating %3 resources (Base: %4)", 
+                                    _markerType, mapGridPosition _pos, round _finalValue, _baseValue]] call FLO_fnc_log;
+                            };
                         };
                     } forEach _opforInstallations;
                     
                     // Add resources
                     _totalResources = round _totalResources;
-                    FLO_OPFOR_Resources call ["addResources", [_totalResources]];
-                    _lastGeneratedAmount = _totalResources;
+                    if (_totalResources > 0) then {
+                        FLO_OPFOR_Resources call ["addResources", [_totalResources]];
+                        _lastGeneratedAmount = _totalResources;
+                        
+                        ["OPFOR Resources", 3, format["Generated %1 resources from %2 installations", 
+                            _totalResources, _activeInstallations]] call FLO_fnc_log;
+                    };
                     
                     // Wait 10 minutes before next resource generation cycle
                     sleep 600;
