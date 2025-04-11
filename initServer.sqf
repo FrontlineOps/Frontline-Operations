@@ -182,14 +182,8 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 // Initialize the resource system
 [] call FLO_fnc_opforResources;
 
-// Initialize the garrison management system
-[] call FLO_fnc_garrisonManager;
-
 // Initialize the logistics network
-["init", []] call FLO_fnc_logisticsNetwork;
-
-// Initialize the Task Force system
-["init", []] call FLO_fnc_TaskForceSystem;
+//["init", []] call FLO_fnc_logisticsNetwork;
 
 // Initialize AI Commander Unit Capability Analyzer
 FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
@@ -197,10 +191,32 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 // Initialize AI Commander
 FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
 
-// Initialize Enemy Knowledge Sharing
-[{
-    [] call FLO_fnc_shareEnemyKnowledge;
-}, 10] call CBA_fnc_addPerFrameHandler;
+[] spawn {
+    // Wait for the mission to fully initialize
+    waitUntil {!isNil "MissionLoadedLitterally" && {MissionLoadedLitterally}};
+    waitUntil {!isNil "StartingLocationDone" && {StartingLocationDone}};
+    
+    // Small delay to ensure all other systems are loaded
+    sleep 5;
+    
+    // Initialize the virtualization system with the configured activation distance
+    if (!isNil "OPFOR_Virtualization_Distance") then {
+        [OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization;
+    } else {
+        // Default to 2000m if not defined
+        [2000] call FLO_fnc_initVirtualization;
+    };
+    
+    // Initialize virtual groups at all objectives
+    [] call FLO_fnc_initializeObjectiveGroups;
+    
+    // Enable debug mode in non-multiplayer
+    //if (!isMultiplayer) then {
+        [true] call FLO_fnc_toggleVirtualizationDebug;
+    //};
+    
+    ["INIT", 3, "OPFOR Virtualization System initialized"] call FLO_fnc_log;
+};
 
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {
