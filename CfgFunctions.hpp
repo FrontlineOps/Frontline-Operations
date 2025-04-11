@@ -3,6 +3,7 @@ class FLO {
         file = "Functions";
 
         class MissionSave       {};
+        class MissionFrontline  {};
         class MissionStartup    {};
         class CDVS              {};
         class ICS               {};
@@ -18,9 +19,29 @@ class FLO {
         class airRecon                          {};
         class airSupport                        {};
         class fireObserver                      {};
+        class calculateQRFResponse              {};
+        class requestQRF                        {};
+        class requestOffensiveOps               {};
         class heliInsert                        {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
+        class TaskForceSystem                   {};
+        class shareEnemyKnowledge               {};
+    };
+
+    class Actions {
+        file = "Functions\AI\Actions";
+
+        class attackArea        {};
+        class defendArea        {};
+        class patrolArea        {};
+        class reconArea         {};
+        class taskAttack        {};
+        class taskDefend        {};
+        class taskPatrol        {};
+        class addWaypoint       {};
+        class reconAreaAction   {};
+        class getTargetType     {};
     };
 
     class Logistics {
@@ -43,6 +64,13 @@ class FLO {
         class placeCrate                {};
         class purchaseCrate             {};
         class updateFunds               {};
+    };
+    
+    class Objective {
+        file = "Functions\Objective";
+        
+        class garrisonManager         {};
+        class vehicleGarrison         {};
     };
 
     class Utilities {
@@ -74,22 +102,5 @@ class FLO {
         class initSearch        {preInit = 1;};
         class initRoadGraph     {preInit = 1;};
         class findRoadPath      {};
-    };
-
-    class Virtualization {
-        file = "Functions\Virtualization";
-
-        class initVirtualization             {};
-        class createVirtualGroupMarker       {};
-        class createVirtualWaypointMarkers   {};
-        class virtualGroupsUpdateLoop        {};
-        class activateVirtualGroup           {};
-        class deactivateVirtualGroup         {};
-        class createVirtualGroup             {};
-        class updateVirtualGroupWaypoints    {};
-        class initializeObjectiveGroups      {};
-        class toggleVirtualizationDebug      {};
-        class distributeVirtualGroups        {};
-        class activateSavedVirtualGroup      {};
     };
 };
