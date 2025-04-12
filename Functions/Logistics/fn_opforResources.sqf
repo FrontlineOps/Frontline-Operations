@@ -206,14 +206,7 @@ if (isNil "FLO_OPFOR_Resources") then {
                         
                         // Only generate resources if installation is not contested
                         if (count _nearbyBlufor == 0) then {
-                            _activeInstallations = _activeInstallations + 1;
-                            
-                            // Apply diminishing returns based on number of active installations
-                            private _diminishingReturn = 1 - (_activeInstallations * 0.08);
-                            _diminishingReturn = _diminishingReturn max 0.2; // Won't go below 20% efficiency
-                            
-                            // Calculate final value with modifiers
-                            private _finalValue = _baseValue * _diminishingReturn * _globalModifier;
+                            private _finalValue = _baseValue * _globalModifier;
                             _totalResources = _totalResources + _finalValue;
                             
                             // Log significant changes from events
