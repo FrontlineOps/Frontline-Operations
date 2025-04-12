@@ -159,9 +159,6 @@ waitUntil {!isNil "EtVInitialized"};
 
 //Mission Commander System
 remoteExec ["FLO_fnc_MissionStartup", 2];
-[] spawn { 
-    [] call FLO_fnc_MissionFrontline;
-};
 
 //Saving System
 AutoSaveSwitchVal = "AutoSaveSwitch" call BIS_fnc_getParamValue;
@@ -182,25 +179,14 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 // Initialize the resource system
 [] call FLO_fnc_opforResources;
 
-// Initialize the garrison management system
-[] call FLO_fnc_garrisonManager;
-
 // Initialize the logistics network
-["init", []] call FLO_fnc_logisticsNetwork;
-
-// Initialize the Task Force system
-["init", []] call FLO_fnc_TaskForceSystem;
+// ["init", []] call FLO_fnc_logisticsNetwork;
 
 // Initialize AI Commander Unit Capability Analyzer
 FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
 
 // Initialize AI Commander
-FLO_AICommander = ["DEFEND"] call FLO_fnc_aiCommander;
-
-// Initialize Enemy Knowledge Sharing
-[{
-    [] call FLO_fnc_shareEnemyKnowledge;
-}, 10] call CBA_fnc_addPerFrameHandler;
+FLO_AICommander = [] call FLO_fnc_aiCommander;
 
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {

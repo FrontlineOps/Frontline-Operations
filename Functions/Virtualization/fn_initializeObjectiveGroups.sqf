@@ -23,6 +23,11 @@ if (isNil "FLO_virtualGroups") then {
     [2000] call FLO_fnc_initVirtualization;
 };
 
+// Ensure initializationOG is set to false
+// for Dialog_Faction_Done.sqf to use
+InitializationOG = false;
+publicVariable "InitializationOG";
+
 ["VIRTUALIZATION", 3, "Initializing objective groups"] call FLO_fnc_log;
 
 // Define mapping of objective types to group configurations
@@ -126,4 +131,5 @@ private _allMarkers = allMapMarkers;
 
 ["VIRTUALIZATION", 3, format["Finished initializing objective groups - %1 total groups created", count _allCreatedGroups]] call FLO_fnc_log;
 
-true 
+InitializationOG = true;
+publicVariable "InitializationOG";

@@ -134,6 +134,11 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 	ZonMarkers = execVM "Scripts\Init\init_Markers.sqf";
 	waitUntil { scriptDone ZonMarkers };
 
+	// Initialize Virtualization System
+	[VSDistance] call FLO_fnc_initVirtualization;
+	[] call FLO_fnc_initializeObjectiveGroups;
+	waitUntil {InitializationOG};
+
 	StartingLocationDone = true;
 	publicVariable "StartingLocationDone";
 };
