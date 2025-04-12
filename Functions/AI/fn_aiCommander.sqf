@@ -35,6 +35,9 @@ private _aiCommander = createHashMapObject [[
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
 
     ["_initializeGroups", {
+        // Wait until the objective groups have been initialized
+        waitUntil {InitializationOG};
+
         // Get all virtual groups from the virtualization system
         private _allGroups = FLO_virtualGroups get "_groups";
         private _garrisonedGroups = [];
