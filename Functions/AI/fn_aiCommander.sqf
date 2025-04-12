@@ -3,42 +3,36 @@
  * Author: Azraeelian Angel
  * Description:
  * Creates an AI Commander that controls overall OPFOR operations.
- * Sets operation modes (Attack, Defend, Skirmish) and coordinates task forces.
+ * Manages virtual groups for attacking BLUFOR and defending objectives.
  *
  * Arguments:
- * 0: Operation Mode <STRING> - "ATTACK", "DEFEND", "SKIRMISH" (Optional, default: "DEFEND")
+ * None
  *
  * Return Value:
  * AI Commander HashMap Object <HASHMAP>
  *
  * Example:
- * ["ATTACK"] call FLO_fnc_aiCommander;
+ * [] call FLO_fnc_aiCommander;
  */
 
-params [["_operationMode", "ATTACK", [""]]];
-
 // Log function start
-["AI Commander", 3, format["Starting AI Commander with operation mode: %1", _operationMode]] call FLO_fnc_log;
+["AI Commander", 3, "Starting AI Commander"] call FLO_fnc_log;
 
 // Initialize variables
 private _lastCommanderUpdate = diag_tickTime;
 private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
-private _threatThreshold = 0.6;
-
-// Operation limits
-private _maxAttackingGroups = 4;  // Maximum number of groups that can be attacking simultaneously
-private _maxDefendingGroups = 6;  // Maximum number of groups that can be defending/QRF simultaneously
-private _minGarrisonGroups = 2;   // Minimum number of groups that must remain in garrison
 
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
-    ["_operationMode", _operationMode],
     ["_threatLevel", _currentThreatLevel],
     ["_lastUpdate", _lastCommanderUpdate],
     ["_activeAttackGroups", []],
     ["_activeDefenseGroups", []],
     ["_garrisonedGroups", []],
+    ["_maxAttackingGroups", 4],  // Maximum number of groups that can be attacking simultaneously
+    ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
+    ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
 
     ["_initializeGroups", {
         // Get all virtual groups from the virtualization system
@@ -67,15 +61,15 @@ private _aiCommander = createHashMapObject [[
         params ["_targetPos", "_targetType"];
         
         // Check if we're at the attack group limit
-        if (count (_self get "_activeAttackGroups") >= _maxAttackingGroups) exitWith {
+        if (count (_self get "_activeAttackGroups") >= (_self get "_maxAttackingGroups")) exitWith {
             ["AI Commander", 3, "Maximum attacking groups reached"] call FLO_fnc_log;
             false
         };
         
-        // Find available garrison group closest to target
+        // Find available garrison groups
         private _availableGroups = _self get "_garrisonedGroups";
-        if (count _availableGroups == 0) exitWith {
-            ["AI Commander", 3, "No available groups for attack"] call FLO_fnc_log;
+        if (count _availableGroups <= (_self get "_minGarrisonGroups")) exitWith {
+            ["AI Commander", 3, "Cannot assign more attack groups - minimum garrison requirement"] call FLO_fnc_log;
             false
         };
         
@@ -89,38 +83,50 @@ private _aiCommander = createHashMapObject [[
             _groupPos distance2D _targetPos
         }, "ASCEND"] call BIS_fnc_sortBy;
         
-        // Get closest suitable group
-        private _selectedGroupId = _sortedGroups select 0;
+        // Calculate how many groups we can assign
+        private _availableCount = count _availableGroups - (_self get "_minGarrisonGroups");
+        private _remainingSlots = (_self get "_maxAttackingGroups") - count (_self get "_activeAttackGroups");
+        private _groupsToAssign = _availableCount min _remainingSlots min 2; // Assign up to 2 groups per target
         
-        // Update group assignments
-        private _garrisonedGroups = _self get "_garrisonedGroups";
-        private _activeAttackGroups = _self get "_activeAttackGroups";
-        _garrisonedGroups deleteAt (_garrisonedGroups find _selectedGroupId);
-        _activeAttackGroups pushBack _selectedGroupId;
+        // Assign groups
+        private _assignedGroups = [];
+        for "_i" from 0 to (_groupsToAssign - 1) do {
+            if (_i < count _sortedGroups) then {
+                private _selectedGroupId = _sortedGroups select _i;
+                
+                // Update group assignments
+                private _garrisonedGroups = _self get "_garrisonedGroups";
+                private _activeAttackGroups = _self get "_activeAttackGroups";
+                _garrisonedGroups deleteAt (_garrisonedGroups find _selectedGroupId);
+                _activeAttackGroups pushBack _selectedGroupId;
+                
+                // Set up attack waypoints
+                private _waypoints = [
+                    [_targetPos, "SAD", "AWARE", "NORMAL", "WEDGE", "RED"]
+                ];
+                [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                
+                _assignedGroups pushBack _selectedGroupId;
+                ["AI Commander", 3, format["Assigned group %1 to attack %2", _selectedGroupId, _targetType]] call FLO_fnc_log;
+            };
+        };
         
-        // Set up attack waypoints
-        private _waypoints = [
-            [_targetPos, "SAD", "AWARE", "NORMAL", "WEDGE", "RED"]
-        ];
-        [_selectedGroupId, _waypoints] call FLO_fnc_updateVirtualGroupWaypoints;
-        
-        ["AI Commander", 3, format["Assigned group %1 to attack %2", _selectedGroupId, _targetType]] call FLO_fnc_log;
-        true
+        count _assignedGroups > 0
     }],
 
     ["_assignGroupToDefend", {
         params ["_targetPos", "_reason"];
         
         // Check if we're at the defense group limit
-        if (count (_self get "_activeDefenseGroups") >= _maxDefendingGroups) exitWith {
+        if (count (_self get "_activeDefenseGroups") >= (_self get "_maxDefendingGroups")) exitWith {
             ["AI Commander", 3, "Maximum defending groups reached"] call FLO_fnc_log;
             false
         };
         
-        // Find available garrison group
+        // Find available garrison groups
         private _availableGroups = _self get "_garrisonedGroups";
-        if (count _availableGroups == 0) exitWith {
-            ["AI Commander", 3, "No available groups for defense"] call FLO_fnc_log;
+        if (count _availableGroups <= (_self get "_minGarrisonGroups")) exitWith {
+            ["AI Commander", 3, "Cannot assign more defense groups - minimum garrison requirement"] call FLO_fnc_log;
             false
         };
         
@@ -134,23 +140,35 @@ private _aiCommander = createHashMapObject [[
             _groupPos distance2D _targetPos
         }, "ASCEND"] call BIS_fnc_sortBy;
         
-        // Get closest suitable group
-        private _selectedGroupId = _sortedGroups select 0;
+        // Calculate how many groups we can assign
+        private _availableCount = count _availableGroups - (_self get "_minGarrisonGroups");
+        private _remainingSlots = (_self get "_maxDefendingGroups") - count (_self get "_activeDefenseGroups");
+        private _groupsToAssign = _availableCount min _remainingSlots min 3; // Assign up to 3 groups per defense point
         
-        // Update group assignments
-        private _garrisonedGroups = _self get "_garrisonedGroups";
-        private _activeDefenseGroups = _self get "_activeDefenseGroups";
-        _garrisonedGroups deleteAt (_garrisonedGroups find _selectedGroupId);
-        _activeDefenseGroups pushBack _selectedGroupId;
+        // Assign groups
+        private _assignedGroups = [];
+        for "_i" from 0 to (_groupsToAssign - 1) do {
+            if (_i < count _sortedGroups) then {
+                private _selectedGroupId = _sortedGroups select _i;
+                
+                // Update group assignments
+                private _garrisonedGroups = _self get "_garrisonedGroups";
+                private _activeDefenseGroups = _self get "_activeDefenseGroups";
+                _garrisonedGroups deleteAt (_garrisonedGroups find _selectedGroupId);
+                _activeDefenseGroups pushBack _selectedGroupId;
+                
+                // Set up defense waypoints
+                private _waypoints = [
+                    [_targetPos, "HOLD", "COMBAT", "NORMAL", "WEDGE", "YELLOW"]
+                ];
+                [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                
+                _assignedGroups pushBack _selectedGroupId;
+                ["AI Commander", 3, format["Assigned group %1 to defend - %2", _selectedGroupId, _reason]] call FLO_fnc_log;
+            };
+        };
         
-        // Set up defense waypoints
-        private _waypoints = [
-            [_targetPos, "HOLD", "COMBAT", "NORMAL", "WEDGE", "YELLOW"]
-        ];
-        [_selectedGroupId, _waypoints] call FLO_fnc_updateVirtualGroupWaypoints;
-        
-        ["AI Commander", 3, format["Assigned group %1 to defend - %2", _selectedGroupId, _reason]] call FLO_fnc_log;
-        true
+        count _assignedGroups > 0
     }],
 
     ["_returnGroupToGarrison", {
@@ -175,7 +193,7 @@ private _aiCommander = createHashMapObject [[
         private _waypoints = [
             [_garrisonPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN"]
         ];
-        [_groupId, _waypoints] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
         
         ["AI Commander", 3, format["Returned group %1 to garrison from %2 role", _groupId, _currentRole]] call FLO_fnc_log;
     }],
@@ -183,7 +201,7 @@ private _aiCommander = createHashMapObject [[
     ["_assessThreats", {
         private _threats = [];
         
-        // Check for BLUFOR units near objectives
+        // Check for BLUFOR units near OPFOR objectives
         private _opforObjectives = allMapMarkers select {
             markerColor _x in ["colorOPFOR", "ColorEAST"] && 
             markerType _x in ["o_support", "n_support", "o_installation", "n_installation", "loc_Power", "o_recon", "o_antiair", "loc_Ruin"]
@@ -196,7 +214,7 @@ private _aiCommander = createHashMapObject [[
             _nearBlufor = _nearBlufor select {side _x == west && !(captive _x)};
             
             if (count _nearBlufor > 0) then {
-                _threats pushBack ["OBJECTIVE", _objective, _objectivePos, count _nearBlufor];
+                _threats pushBack ["DEFEND", _objective, _objectivePos, count _nearBlufor];
             };
         } forEach _opforObjectives;
         
@@ -206,9 +224,26 @@ private _aiCommander = createHashMapObject [[
             private _group = _x;
             private _units = units _group select {alive _x && !(captive _x)};
             if (count _units > 2) then {
-                _threats pushBack ["GROUP", str _group, getPos (leader _group), count _units];
+                _threats pushBack ["ATTACK", str _group, getPos (leader _group), count _units];
             };
         } forEach _bluforGroups;
+        
+        // If no BLUFOR groups found, check BLUFOR objectives for attack
+        if (count (_threats select {_x select 0 == "ATTACK"}) == 0) then {
+            private _bluforObjectives = allMapMarkers select {
+                markerColor _x in ["ColorYellow", "ColorBLUFOR", "ColorWEST"] &&
+                markerType _x in ["b_installation", "b_support", "b_hq"]
+            };
+            
+            {
+                private _objective = _x;
+                private _objectivePos = getMarkerPos _objective;
+                _threats pushBack ["ATTACK", _objective, _objectivePos, 1];
+            } forEach _bluforObjectives;
+        };
+        
+        // Sort threats by priority (number of enemies)
+        _threats = [_threats, [], {_x select 3}, "DESCEND"] call BIS_fnc_sortBy;
         
         _threats
     }],
@@ -224,45 +259,21 @@ private _aiCommander = createHashMapObject [[
         // Get current threats
         private _threats = _self call ["_assessThreats", []];
         
-        // Handle threats based on operation mode
-        switch (_self get "_operationMode") do {
-            case "ATTACK": {
-                // In attack mode, prioritize attacking BLUFOR groups and objectives
-                {
-                    _x params ["_type", "_id", "_pos", "_strength"];
-                    
-                    if (_type == "GROUP" && {random 1 > 0.3}) then {
-                        _self call ["_assignGroupToAttack", [_pos, "BLUFOR Group"]];
-                    };
-                } forEach _threats;
-            };
-            
-            case "DEFEND": {
-                // In defend mode, prioritize defending objectives under attack
-                {
-                    _x params ["_type", "_id", "_pos", "_strength"];
-                    
-                    if (_type == "OBJECTIVE") then {
-                        _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack", _id]]];
-                    };
-                } forEach _threats;
-            };
-            
-            case "SKIRMISH": {
-                // Mix of attack and defense based on situation
-                {
-                    _x params ["_type", "_id", "_pos", "_strength"];
-                    
-                    if (_type == "OBJECTIVE") then {
-                        _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack", _id]]];
-                    } else {
-                        if (random 1 > 0.7) then {
-                            _self call ["_assignGroupToAttack", [_pos, "BLUFOR Group"]];
-                        };
-                    };
-                } forEach _threats;
-            };
-        };
+        // Process threats by type
+        private _attackThreats = _threats select {_x select 0 == "ATTACK"};
+        private _defenseThreats = _threats select {_x select 0 == "DEFEND"};
+        
+        // Handle defense threats first (protect our objectives)
+        {
+            _x params ["_type", "_id", "_pos", "_strength"];
+            _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack (%2 enemies)", _id, _strength]]];
+        } forEach _defenseThreats;
+        
+        // Then handle attack threats
+        {
+            _x params ["_type", "_id", "_pos", "_strength"];
+            _self call ["_assignGroupToAttack", [_pos, _id]];
+        } forEach _attackThreats;
         
         // Check if any active groups should return to garrison
         {
@@ -298,7 +309,6 @@ private _aiCommander = createHashMapObject [[
 
 // Initialize Commander
 _aiCommander set ["_commanderUpdateInterval", 300];
-_aiCommander set ["_threatThreshold", 0.6];
 
 // Initialize groups
 _aiCommander call ["_initializeGroups", []];
