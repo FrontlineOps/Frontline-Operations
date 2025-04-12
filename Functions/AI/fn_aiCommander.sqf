@@ -89,13 +89,18 @@ private _aiCommander = createHashMapObject [[
         // Calculate how many groups we can assign
         private _availableCount = count _availableGroups - (_self get "_minGarrisonGroups");
         private _remainingSlots = (_self get "_maxAttackingGroups") - count (_self get "_activeAttackGroups");
-        private _groupsToAssign = _availableCount min _remainingSlots min 2; // Assign up to 2 groups per target
+        private _groupsToAssign = _availableCount min _remainingSlots min 4; // Assign up to 4 groups per target
         
         // Assign groups
         private _assignedGroups = [];
         for "_i" from 0 to (_groupsToAssign - 1) do {
             if (_i < count _sortedGroups) then {
                 private _selectedGroupId = _sortedGroups select _i;
+                private _groupData = _virtualGroups get _selectedGroupId;
+                
+                // Clear existing waypoints first
+                _groupData set ["waypoints", []];
+                _groupData set ["currentWaypointIndex", 0];
                 
                 // Update group assignments
                 private _garrisonedGroups = _self get "_garrisonedGroups";
@@ -153,6 +158,11 @@ private _aiCommander = createHashMapObject [[
         for "_i" from 0 to (_groupsToAssign - 1) do {
             if (_i < count _sortedGroups) then {
                 private _selectedGroupId = _sortedGroups select _i;
+                private _groupData = _virtualGroups get _selectedGroupId;
+                
+                // Clear existing waypoints first
+                _groupData set ["waypoints", []];
+                _groupData set ["currentWaypointIndex", 0];
                 
                 // Update group assignments
                 private _garrisonedGroups = _self get "_garrisonedGroups";
@@ -181,6 +191,12 @@ private _aiCommander = createHashMapObject [[
         private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
         if (_groupData isEqualTo createHashMap) exitWith {
             ["AI Commander", 3, format["Failed to return group %1 to garrison - group not found", _groupId]] call FLO_fnc_log;
+        };
+        
+        // Check if group still has waypoints to complete
+        private _waypoints = _groupData getOrDefault ["waypoints", []];
+        if (count _waypoints > 0) exitWith {
+            ["AI Commander", 4, format["Group %1 still has waypoints to complete - keeping on task", _groupId]] call FLO_fnc_log;
         };
         
         // Get original garrison position
