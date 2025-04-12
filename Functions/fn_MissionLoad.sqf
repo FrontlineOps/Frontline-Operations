@@ -16,6 +16,7 @@ private _structureMarkerName = _missionTag + "_StructureMarkers";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
 private _CrateDataName = _missionTag + "_Crates";
 private _ResourcesDataName = _missionTag + "_Resources";
+private _VirtualGroupsDataName = _missionTag + "_VirtualGroups";
 
 FreshStartVal = "FreshStart" call BIS_fnc_getParamValue;
 if (FreshStartVal isEqualTo 1) then {
@@ -28,6 +29,7 @@ if (FreshStartVal isEqualTo 1) then {
     profileNamespace setVariable [_structureMarkerName, nil];
     profileNamespace setVariable [_CrateDataName, nil];
     profileNamespace setVariable [_ResourcesDataName, nil];
+    profileNamespace setVariable [_VirtualGroupsDataName, nil];
 };	
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,16 +121,6 @@ private _allVehNames = keys _GetVariableVeh;
     
     // {_x moveInAny _NewVeh} forEach units _Group;
 } forEach _allVehNames;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Load garrison sizes and initialize garrisons for saved objectives
-private _garrisonLoadResult = FLO_Garrison_Manager call ["loadGarrisonSizes", []]; 
-if (_garrisonLoadResult) then {
-    [[west,"HQ"], "Garrison states loaded successfully..."] remoteExec ["sideChat", 0];
-} else {
-    [[west,"HQ"], "No saved garrison states found"] remoteExec ["sideChat", 0];
-};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -300,6 +292,90 @@ if (count _GetVariableCrates > 0) then {
     ["Mission", 3, format["Loaded %1 supply crates", count _allCrateNames]] call FLO_fnc_log;
 } else {
     ["Mission", 2, "No saved supply crates found"] call FLO_fnc_log;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Load virtual groups
+[] spawn {
+    waitUntil {!isNil "FLO_OPFOR_Resources"};
+    waitUntil {!isNil "F_Init" && {F_Init}};
+    
+    private _missionTag = missionName;
+    ["Mission", 3, format["Original mission name: %1", _missionTag]] call FLO_fnc_log;
+    
+    _missionTag = [_missionTag] call BIS_fnc_filterString;
+    ["Mission", 3, format["Filtered mission name: %1", _missionTag]] call FLO_fnc_log;
+    
+    private _VirtualGroupsDataName = _missionTag + "_VirtualGroups";
+    ["Mission", 3, format["Virtual groups data name: %1", _VirtualGroupsDataName]] call FLO_fnc_log;
+    
+    // List all profile namespace variables for debugging
+    private _allVars = allVariables profileNamespace;
+    private _relevantVars = _allVars select {_x find "_VirtualGroups" > -1};
+    ["Mission", 3, format["Found profile variables containing '_VirtualGroups': %1", _relevantVars]] call FLO_fnc_log;
+    
+    private _savedVirtualGroups = profileNamespace getVariable [_VirtualGroupsDataName, createHashMap];
+    
+    ["Mission", 3, format["Found %1 saved virtual groups to load", count _savedVirtualGroups]] call FLO_fnc_log;
+    
+    if (count _savedVirtualGroups > 0) then {
+        // Initialize virtualization system
+        if (isNil "FLO_virtualGroups") then {
+            ["Mission", 3, "Initializing virtualization system"] call FLO_fnc_log;
+            [2000] call FLO_fnc_initVirtualization;
+        };
+        
+        // Set initialization flag
+        InitializationOG = true;
+        publicVariable "InitializationOG";
+        
+        private _loadedCount = 0;
+        
+        {
+            private _groupId = _x;
+            private _groupData = _y;
+            
+            ["Mission", 4, format["Loading virtual group: %1", _groupId]] call FLO_fnc_log;
+            
+            private _position = _groupData get "position";
+            private _groupType = _groupData get "groupType";
+            private _objective = _groupData get "objective";
+            private _unitCount = _groupData get "unitCount";
+            private _side = _groupData get "side";
+            
+            // Create new virtual group
+            private _newGroupId = [_position, _groupType, nil, _objective, _unitCount, _side] call FLO_fnc_createVirtualGroup;
+            
+            if (_newGroupId != "") then {
+                private _newGroupData = (FLO_virtualGroups get "_groups") get _newGroupId;
+                
+                // Restore additional data
+                _newGroupData set ["state", _groupData get "state"];
+                _newGroupData set ["waypoints", _groupData get "waypoints"];
+                _newGroupData set ["currentWaypointIndex", _groupData get "currentWaypointIndex"];
+                
+                private _garrisonPos = _groupData get "garrisonPosition";
+                if (count _garrisonPos > 0) then {
+                    _newGroupData set ["garrisonPosition", _garrisonPos];
+                };
+                
+                _loadedCount = _loadedCount + 1;
+                ["Mission", 4, format["Successfully loaded group %1 at position %2", _newGroupId, _position]] call FLO_fnc_log;
+            } else {
+                ["Mission", 2, format["Failed to create virtual group for saved group %1", _groupId]] call FLO_fnc_log;
+            };
+        } forEach _savedVirtualGroups;
+        
+        ["Mission", 3, format["Successfully loaded %1 out of %2 virtual groups", _loadedCount, count _savedVirtualGroups]] call FLO_fnc_log;
+        
+        // Initialize AI Commander
+        // I don't think this is needed, but just in case
+        if (isNil "FLO_AI_Commander") then {
+            ["Mission", 3, "Initializing AI Commander with loaded groups"] call FLO_fnc_log;
+            FLO_AI_Commander = [] call FLO_fnc_aiCommander;
+        };
+    };
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -15,15 +15,7 @@ private _structureMarkerName = _missionTag + "_StructureMarkers";
 private _missionStructureTypes = _missionTag + "_StructureTypes";
 private _CrateDataName = _missionTag + "_Crates";
 private _ResourcesDataName = _missionTag + "_Resources";
-
-profileNamespace setVariable [_MarkerTimeName, nil];
-profileNamespace setVariable [_MarkerDataName, nil];
-profileNamespace setVariable [_VehicleDataName, nil];
-profileNamespace setVariable [_ObjectDataName, nil];
-profileNamespace setVariable [_structureMarkerName, nil];
-profileNamespace setVariable [_missionStructureTypes, nil];
-profileNamespace setVariable [_CrateDataName, nil];
-profileNamespace setVariable [_ResourcesDataName, nil];
+private _VirtualGroupsDataName = _missionTag + "_VirtualGroups";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -279,18 +271,42 @@ profileNamespace setVariable [_MarkerDataName, _MarkerDataHash];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Save garrisons state before finalizing the mission save
-private _garrisonSaveResult = FLO_Garrison_Manager call ["saveGarrisonSizes", []];
-if !(_garrisonSaveResult) then {
-    [[west,"HQ"], "Warning: Failed to save garrison states"] remoteExec ["sideChat", 0];
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Save OPFOR resources state
 private _resourceSaveResult = FLO_OPFOR_Resources call ["saveResources", []];
 if !(_resourceSaveResult) then {
     [[west,"HQ"], "Warning: Failed to save OPFOR resources state"] remoteExec ["sideChat", 0];
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Save virtual groups
+if (!isNil "FLO_virtualGroups") then {
+    private _virtualGroupsHash = createHashMap;
+    private _groups = FLO_virtualGroups get "_groups";
+    
+    {
+        private _groupId = _x;
+        private _groupData = _y;
+        private _savedGroupData = createHashMap;
+        
+        // Save essential group data
+        _savedGroupData set ["position", _groupData get "position"];
+        _savedGroupData set ["groupType", _groupData get "groupType"];
+        _savedGroupData set ["objective", _groupData get "objective"];
+        _savedGroupData set ["unitCount", _groupData get "unitCount"];
+        _savedGroupData set ["side", _groupData get "side"];
+        _savedGroupData set ["state", _groupData get "state"];
+        _savedGroupData set ["waypoints", _groupData get "waypoints"];
+        _savedGroupData set ["currentWaypointIndex", _groupData get "currentWaypointIndex"];
+        _savedGroupData set ["garrisonPosition", _groupData getOrDefault ["garrisonPosition", []]];
+        
+        _virtualGroupsHash set [_groupId, _savedGroupData];
+    } forEach _groups;
+    
+    profileNamespace setVariable [_VirtualGroupsDataName, _virtualGroupsHash];
+    ["Mission", 3, format["Saved %1 virtual groups", count _virtualGroupsHash]] call FLO_fnc_log;
+} else {
+    ["Mission", 2, "No virtual groups to save"] call FLO_fnc_log;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

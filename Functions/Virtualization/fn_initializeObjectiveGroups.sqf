@@ -18,6 +18,12 @@
 // Ensure we're running on the server
 if (!isServer) exitWith {false};
 
+// Check if we're already initialized (loading from save)
+if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
+    ["VIRTUALIZATION", 3, "Skipping objective group initialization - loading from save"] call FLO_fnc_log;
+    true
+};
+
 // Ensure virtualization system is initialized
 if (isNil "FLO_virtualGroups") then {
     [2000] call FLO_fnc_initVirtualization;
