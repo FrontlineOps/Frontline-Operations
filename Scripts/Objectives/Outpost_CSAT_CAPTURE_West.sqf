@@ -171,8 +171,6 @@ _trg setTriggerStatements [
 "];				
 
 
-				[_trg, 2000] call FLO_fnc_requestQRF;
-
 
 
 		};		

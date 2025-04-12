@@ -494,12 +494,6 @@ _ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
 {_x setVectorUp [0,0,1];} forEach _ARRAY;
 };
 
-_trgA = createTrigger ["EmptyDetector", _pos];
-_trgA setTriggerArea [1500, 1500, 0, false, 60];
-_trgA setTriggerTimeout [2, 2, 2, true];
-_trgA setTriggerActivation ["WEST", "PRESENT", false];
-_trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\G_CSAT.sqf';", ""];
-
 mrkr setMarkerAlpha 0;  
 
 	}; 

@@ -51,20 +51,6 @@ _V addEventHandler ["Killed", {
 }];
 } ;
 
-if (_AGGRSCORE > 5) then {
-			_AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST")};  
-			_StrtM = [_AssltDestMrks,  thisBaseTrigger] call BIS_fnc_nearestPosition;
-[thisBaseTrigger, _StrtM] execVM "Scripts\VehiInsert_CSAT_2.sqf";			
-
-};
-
-if (_AGGRSCORE > 10) then {
-			_AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST")};  
-			_StrtM = [_AssltDestMrks,  thisBaseTrigger] call BIS_fnc_nearestPosition;
-[thisBaseTrigger, _StrtM] execVM "Scripts\VehiInsert_CSAT_2.sqf";	
-};
-
-
 _nearRoad = selectRandom ( (getpos thisBaseTrigger) nearRoads 300 ) ; 
 _V = createVehicle [ selectRandom East_Ground_Vehicles_Ambient, (_nearRoad getRelPos [0, 0]), [], 4, "NONE"]; 
 _nextRoad = ( roadsConnectedTo _nearRoad ) select 0;

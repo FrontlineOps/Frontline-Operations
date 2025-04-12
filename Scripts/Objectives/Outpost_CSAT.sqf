@@ -51,20 +51,6 @@ if (count (nearestObjects [getPos thisOutpostTrigger, FLO_configCache get "tyres
     } forEach _objectLoc;
 };
 
-// If AGGRSCORE > 5, Create Enemy Assault Vehicles and assault nearest BLUFOR Outpost
-if (_AGGRSCORE > 5) then {
-    private _AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST")};  
-    private _AssltDest = [_AssltDestMrks,  thisOutpostTrigger] call BIS_fnc_nearestPosition;
-    [thisOutpostTrigger, _AssltDest] execVM "Scripts\VehiInsert_CSAT_2.sqf";            
-
-};
-
-if (_AGGRSCORE > 10) then {
-    private _AssltDestMrks = allMapMarkers select {markerType _x == "b_installation"  && (markerColor _x == "ColorYellow" or  markerColor _x == "colorBLUFOR" or markerColor _x == "ColorWEST")};  
-    private _StrtM = [_AssltDestMrks,  thisOutpostTrigger] call BIS_fnc_nearestPosition;
-    [thisOutpostTrigger, _StrtM] execVM "Scripts\VehiInsert_CSAT_2.sqf";    
-};
-
 // Create Ambient Enemy Vehicle
 _poss = [(getpos thisOutpostTrigger), 10, 20, 4, 0.1 , 0] call BIS_fnc_findSafePos;
 _VLAMP = createVehicle [ "Land_LampAirport_F", _poss, [], 5, "NONE"];

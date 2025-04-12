@@ -359,7 +359,6 @@ _M = [_MMarks,  (_this select 0)] call BIS_fnc_nearestPosition;
 deleteMarker _M ; 
 
 [50] call FLO_fnc_addReward;
-[(_this select 0), 1500] call FLO_fnc_requestQRF;
 				[50, "STR_FLO_CAPTUREDPILOT"] call FLO_fnc_sendRewardNotification ;
 
 

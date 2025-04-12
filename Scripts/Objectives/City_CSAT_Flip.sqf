@@ -1,58 +1,10 @@
-
 _thisCityTrigger = _this select 0;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
 _mrkr = _mrkrs select 0;
 _AGGRSCORE = parseNumber (markerText _mrkr) ;  
-//////Resources////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-[_thisCityTrigger, 'Sh_82mm_AMOS', 250, 15, 7, {!alive MortarRoad}, 5] spawn BIS_fnc_fireSupportVirtual;
-
-			_allZoneMarks = allMapMarkers select {markerType _x == "loc_Power" || markerType _x == "o_support" || markerType _x == "n_support" || markerType _x == "loc_Ruin" || markerType _x == "n_installation" || markerType _x == "o_installation"} ;  
-			_AssStartMrk = [_allZoneMarks,  getPos _thisCityTrigger] call BIS_fnc_nearestPosition ;
-
-			_azimuth = (getMarkerPos _AssStartMrk) getDir (getPos _thisCityTrigger);
-			_CNTR = (nearestObjects [(getPos _thisCityTrigger), ["Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V1_F", "Land_Cargo_House_V3_F", "House"], 300]) select 0 ;
-
-			 _QRF = selectRandom [ "Scripts\HeliInsert_CSAT.sqf", "Scripts\VehiInsert_CSAT.sqf"]; 
-			[_CNTR] execVM _QRF ;
-			
-		_PRL = [_thisCityTrigger getPos [(200 + (random 200)), (_azimuth + (random 20))] , East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-		_WP_1 = _PRL addWaypoint [(getPos _thisCityTrigger), 0]; 
-		_WP_1 SetWaypointType "MOVE"; 
-		
-		_PRL = [_thisCityTrigger getPos [(200 + (random 200)), (_azimuth - (random 20))] , East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-		_WP_1 = _PRL addWaypoint [(getPos _thisCityTrigger), 0]; 
-		_WP_1 SetWaypointType "MOVE"; 
-		
-
-		
-		if (_AGGRSCORE > 10) then {		
-			 _QRF = selectRandom [ "Scripts\HeliInsert_CSAT.sqf", "Scripts\VehiInsert_CSAT.sqf"]; 
-			[_CNTR] execVM _QRF ;
-		_PRL = [_thisCityTrigger getPos [(200 + (random 200)), (_azimuth - (random 20))] , East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-		_WP_1 = _PRL addWaypoint [(getPos _thisCityTrigger), 0]; 
-		_WP_1 SetWaypointType "MOVE"; 	
-		};		
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// {
-
-// _nvg = hmd _x;
-//  _x unassignItem _nvg;
-//  _x removeItem _nvg;
-// 	  _x addPrimaryWeaponItem "acc_flashlight";
-// 	  _x assignItem "acc_flashlight";
-// 	  _x enableGunLights "ForceOn";
-//   } foreach (allUnits select {side _x == east}); 
-
 
 sleep 10;
-
-
-
 
 _trg = createTrigger ["EmptyDetector", getPos _thisCityTrigger, false];  
 _trg setTriggerArea [220, 220, 0, false, 200];  
@@ -78,19 +30,6 @@ _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 "]; 
 
-
-
-
-
-{ if !((side _x) == west) then {
-            ZEUS removeCuratorEditableObjects [[_x],true];
-}; } foreach allUnits;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 [_thisCityTrigger, 300] execVM "Scripts\INTLitems.sqf";
 
-
-
-sleep 2 ;
-
+sleep 2;

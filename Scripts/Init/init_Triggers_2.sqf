@@ -16,8 +16,6 @@ _trg setTriggerActivation ["WEST", "PRESENT", false];
 _trg setTriggerStatements [
 "this","
 
-[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf';
-
 if ( count (nearestObjects [(getPos thisTrigger), ['Land_Cargo_Tower_V3_F', 'Land_Cargo_Tower_V2_F', 'Land_Cargo_Tower_V1_F', 'Land_Cargo_HQ_V3_F', 'Land_Cargo_HQ_V2_F', 'Land_Cargo_HQ_V1_F'], 100] ) == 0) then {
 
 _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
@@ -108,8 +106,6 @@ _trg setTriggerActivation ["WEST", "PRESENT", false];
 _trg setTriggerStatements [
 "this","
 
-[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf';
-
 _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
 
@@ -163,7 +159,6 @@ _mrkr setMarkerType 'loc_Bunker';
 _mrkr setMarkerAlpha 0.003;
 
 [] execVM 'Scripts\DangerPlus.sqf';
-[(_this select 0), 1000] call FLO_fnc_requestQRF;
   
  execVM 'Scripts\InfDis.sqf';
 
@@ -211,8 +206,6 @@ _trg setTriggerTimeout [1, 1, 1, true];
 _trg setTriggerActivation ["WEST", "PRESENT", false];
 _trg setTriggerStatements [
 "this","	
-
-[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf';
 
 _TERR = nearestTerrainObjects [(getPos thisTrigger), [], 40]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
@@ -267,7 +260,6 @@ deleteMarker _M ;
 [] execVM 'Scripts\DangerMinus.sqf';
 [] execVM 'Scripts\DangerMinus.sqf';
 [] execVM 'Scripts\DangerMinus.sqf';
-[(_this select 0), 1000] call FLO_fnc_requestQRF;
 
  execVM 'Scripts\AADis.sqf';
 

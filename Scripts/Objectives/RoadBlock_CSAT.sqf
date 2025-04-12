@@ -107,7 +107,6 @@ _surrenderTrigger setTriggerStatements [
     deleteMarker _nearestMarker;
 
     [30] call FLO_fnc_addReward;
-    [thisTrigger, 1000] call FLO_fnc_requestQRF;
     [] execVM 'Scripts\DangerPlusSurr.sqf';
     [30, 'STR_FLO_ROADBLOCK'] call FLO_fnc_sendRewardNotification;
     ",

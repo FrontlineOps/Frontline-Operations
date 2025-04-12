@@ -90,7 +90,7 @@ private _objectLocTAAA = allMapMarkers select { markerType _x == "o_antiair"};
         _trg setTriggerActivation ["WEST", "PRESENT", false];
         _trg setTriggerStatements [
             "this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))",
-            "[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf'; [thisTrigger] execVM 'Scripts\Objectives\AAA_CSAT.sqf';",
+            "[thisTrigger] execVM 'Scripts\Objectives\AAA_CSAT.sqf';",
             ""
         ];
     };
@@ -111,8 +111,6 @@ _trg setTriggerTimeout [1, 1, 1, true];
 _trg setTriggerActivation ["WEST", "PRESENT", false];
 _trg setTriggerStatements [
 "this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))","
-
-[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf';
 
 _trgA = createTrigger ['EmptyDetector', getPos thisTrigger, false];
 _trgA setTriggerArea [1000, 1000, 0, false, 300];
@@ -218,8 +216,6 @@ _trg setTriggerTimeout [1, 1, 1, true];
 _trg setTriggerActivation ["WEST", "PRESENT", false];
 _trg setTriggerStatements [
 "this","	
-
-[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf';
 	
 if ( count (nearestObjects [thisTrigger, ['Land_Cargo_Tower_V3_F', 'Land_Cargo_Tower_V2_F', 'Land_Cargo_Tower_V1_F', 'Land_Cargo_HQ_V3_F', 'Land_Cargo_HQ_V2_F', 'Land_Cargo_HQ_V1_F'], 100] ) == 0) then {
 
@@ -527,7 +523,6 @@ _mrkr setMarkerType "loc_Bunker";
 _mrkr setMarkerAlpha 0.003;
 
 [] execVM "Scripts\DangerPlus.sqf";
-[(_this select 0), 1000] call FLO_fnc_requestQRF;
   
 }];
 

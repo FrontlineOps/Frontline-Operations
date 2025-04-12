@@ -163,7 +163,6 @@ _triggers = _alltriggers select {position _x inArea thisTrigger};
 ', ''];
 
 [50] call FLO_fnc_addReward;
-[thisTrigger, 1000] call FLO_fnc_requestQRF;
 
 _markerName = ""AssaultMark"" + (str (position player));  
 _mrkr = createMarker [_markerName, position player]; 
@@ -174,10 +173,6 @@ _mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
 _mrkr = _mrkrs select 0;
 _AGGRSCORE = parseNumber (markerText _mrkr) ;  
 _allCaptureMarks = allMapMarkers select {markerType _x == ""loc_Bunker""};  
-
-if ((_AGGRSCORE > 10) && (count (_allCaptureMarks) >=1)) then { execVM ""Scripts\Mission_Defend.sqf""; };
-if (count (_allCaptureMarks) ==2) then { _Chance = selectRandom [1, 2];  if (_Chance == 1) then { execVM ""Scripts\Mission_Defend.sqf""; }; };
-if (count (_allCaptureMarks) ==3) then { execVM ""Scripts\Mission_Defend.sqf""; };
 
 [] execVM 'Scripts\DangerPlus.sqf';
 

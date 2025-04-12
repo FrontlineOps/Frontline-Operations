@@ -307,7 +307,6 @@ if (count _humanPlayers == 1 ) then {
 			playSound3D [(getMissionPath 'Sounds\c_eb_35_natojoin_MEM_0.ogg'), ((units _Group) select 0)];
 			
 [50, 'STR_FLO_MISSINGSQUAD'] call FLO_fnc_sendRewardNotification ;
-[thisTrigger, 1500] call FLO_fnc_requestQRF;
 [50] call FLO_fnc_addReward;
  ", ""]; 
  

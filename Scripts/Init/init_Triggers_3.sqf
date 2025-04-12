@@ -15,8 +15,6 @@ _trg setTriggerActivation ["WEST", "PRESENT", false];
 _trg setTriggerStatements [
 "this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))","
 
-[thisTrigger] execVM 'Scripts\Insurgents_Init.sqf';
-
 _trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
 _trgA setTriggerArea [1000, 1000, 0, false, 300];
 _trgA setTriggerTimeout [1, 1, 1, true];

@@ -43,14 +43,6 @@ private _assaultTargets = allMapMarkers select {
     markerType _x == "b_installation" && 
     (markerColor _x in ["ColorYellow", "colorBLUFOR", "ColorWEST"])
 };
-if (count _assaultTargets > 0) then {
-    private _target = [_assaultTargets, _thisCityTrigger] call BIS_fnc_nearestPosition;
-    [_thisCityTrigger, _target] execVM "Scripts\VehiInsert_CSAT_2.sqf";
-    
-    if (_aggrScore > 10) then {
-        [_thisCityTrigger, _target] execVM "Scripts\VehiInsert_CSAT_2.sqf";
-    };
-};
 
 // Setup reinforcement trigger
 private _trgINT = createTrigger ["EmptyDetector", _triggerPos, false];
@@ -61,7 +53,6 @@ _trgINT setTriggerStatements [
     "this && AVENGLOCC == 1 && ({((side _x) == east) && (getPos _x distance thisTrigger < 200)} count allUnits < 25)",
     "
     AVENGLOCC = 0;
-    [thisTrigger, 200] call FLO_fnc_requestQRF;
     ",
     ""
 ];
