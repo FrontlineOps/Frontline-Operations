@@ -23,13 +23,6 @@
 
 if (!isServer) exitWith {};
 
-params [
-    ["_mode", "", [""]],
-    ["_params", [], [[]]]
-];
-
-private _result = false;
-
 // Initialize the Logistics Network object if it doesn't exist
 if (isNil "FLO_Logistics_Network") then {
     // Define the Logistics Network class with its methods and properties
@@ -56,7 +49,7 @@ if (isNil "FLO_Logistics_Network") then {
             [] spawn {
                 while {true} do {
                     // Update supply levels every 5 minutes
-                    ["update", []] call FLO_fnc_logisticsNetwork;
+                    FLO_Logistics_Network call ["updateSupplyNetwork", []];
                     sleep 300;
                 };
             };
@@ -270,105 +263,137 @@ if (isNil "FLO_Logistics_Network") then {
             {
                 private _outpost = _x;
                 
-                // Get the garrison data for this outpost
-                private _garrisonData = [];
-                if (!isNil "FLO_Garrison_Manager") then {
-                    private _garrisons = FLO_Garrison_Manager get "garrisons";
-                    if (_outpost in keys _garrisons) then {
-                        _garrisonData = _garrisons get _outpost;
-                    };
-                };
+                // Check if this outpost needs reinforcements
+                private _needsReinforcement = false;
+                private _existingGroups = [];
+                private _allGroups = FLO_virtualGroups get "_groups";
                 
-                // Only process if garrison data exists 
-                if (count _garrisonData > 0) then {
-                    private _units = _garrisonData select 0;
+                // Find all groups assigned to this outpost
+                {
+                    private _groupId = _x;
+                    private _groupData = _y;
                     
-                    // Check if this garrison is already activated (has units spawned)
-                    private _isActivated = count (_units select {alive _x}) > 0;
+                    if (_groupData get "objective" == _outpost) then {
+                        _existingGroups pushBack _groupId;
+                    };
+                } forEach _allGroups;
+                
+                // Check if any groups were destroyed
+                private _destroyedCount = 0;
+                {
+                    private _groupId = _x;
+                    private _groupData = _allGroups get _groupId;
+                    private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
                     
-                    // Only reinforce non-activated garrisons
-                    if (!_isActivated) then {
-                        // Determine reinforcement amount based on marker type
-                        private _markerType = markerType _outpost;
-                        private _reinforceAmount = 2; // Default amount
+                    // Group is considered destroyed if it was activated and all units are dead
+                    if (!isNull _realGroup) then {
+                        if (({alive _x} count units _realGroup) == 0) then {
+                            _destroyedCount = _destroyedCount + 1;
+                            ["Logistics", 3, format["Group %1 at objective %2 was destroyed, marking for replacement", _groupId, _outpost]] call FLO_fnc_log;
+                        };
+                    };
+                } forEach _existingGroups;
+                
+                // Only proceed if we have groups to replace
+                if (_destroyedCount > 0) then {
+                    private _availableResources = FLO_OPFOR_Resources call ["getResources", []];
+                    
+                    // Determine reinforcement amount based on marker type
+                    private _markerType = markerType _outpost;
+                    private _reinforceAmount = 2; // Default amount
+                    
+                    // Higher reinforcements for important outposts
+                    switch (_markerType) do {
+                        case "o_installation": { _reinforceAmount = 6; };
+                        case "n_installation": { _reinforceAmount = 8; };
+                        case "o_support": { _reinforceAmount = 5; };
+                        case "n_support": { _reinforceAmount = 6; };
+                        case "loc_Power": { _reinforceAmount = 4; };
+                        case "o_service": { _reinforceAmount = 3; };
+                        case "o_antiair": { _reinforceAmount = 4; };
+                        case "loc_Ruin": { _reinforceAmount = 5; };
+                    };
+                    
+                    // Consider distance from supply depot for reinforcement amount
+                    private _routeData = _supplyRoutes getOrDefault [_outpost, []];
+                    if (count _routeData > 0) then {
+                        private _distance = _routeData select 2;
                         
-                        // Higher reinforcements for important outposts
-                        switch (_markerType) do {
-                            case "o_installation": { _reinforceAmount = 6; };
-                            case "n_installation": { _reinforceAmount = 8; };
-                            case "o_support": { _reinforceAmount = 5; };
-                            case "n_support": { _reinforceAmount = 6; };
-                            case "loc_Power": { _reinforceAmount = 4; };
-                            case "o_service": { _reinforceAmount = 3; };
-                            case "o_antiair": { _reinforceAmount = 4; };
-                            case "loc_Ruin": { _reinforceAmount = 5; };
+                        // Reduce reinforcements for distant outposts
+                        if (_distance > 3000) then {
+                            _reinforceAmount = round (_reinforceAmount * 0.7);
+                        };
+                    };
+                    
+                    // Check if we have enough resources
+                    if (_availableResources >= _reinforceAmount) then {
+                        // Calculate off-map spawn position
+                        private _outpostPos = getMarkerPos _outpost;
+                        private _worldSize = worldSize;
+                        private _spawnPos = [];
+                        private _spawnDir = 0;
+                        
+                        // Find closest map edge
+                        if (_outpostPos select 0 < _worldSize / 2) then {
+                            // Spawn from west
+                            _spawnPos = [-500, _outpostPos select 1, 0];
+                            _spawnDir = 90;
+                        } else {
+                            // Spawn from east
+                            _spawnPos = [_worldSize + 500, _outpostPos select 1, 0];
+                            _spawnDir = 270;
                         };
                         
-                        // Consider distance from supply depot for reinforcement amount
-                        private _routeData = _supplyRoutes getOrDefault [_outpost, []];
-                        if (count _routeData > 0) then {
-                            private _distance = _routeData select 2;
-                            
-                            // Reduce reinforcements for distant outposts
-                            if (_distance > 3000) then {
-                                _reinforceAmount = round (_reinforceAmount * 0.7);
-                            };
-                        };
+                        // 20% chance to add a vehicle
+                        private _groupType = "infantry";
+                        private _vehicleCost = 0;
                         
-                        // Check available resources and only reinforce if we have enough
-                        private _availableResources = FLO_OPFOR_Resources call ["getResources", []];
-                        if (_availableResources >= _reinforceAmount) then {
-                            // 20% chance to add a vehicle reinforcement if we have enough resources
-                            private _addVehicle = false;
+                        if (random 1 < 0.2 && _availableResources >= (_reinforceAmount + 5)) then {
                             private _isHeavyVehicle = false;
-                            private _vehicleCost = 0;
                             
-                            if (random 1 < 0.2 && _availableResources >= (_reinforceAmount + 5)) then {
-                                // Determine vehicle type based on marker type
-                                private _markerType = markerType _outpost;
-                                
-                                // Higher chance of heavy vehicles at important installations
-                                if (_markerType in ["n_installation", "o_installation"] && random 1 < 0.3) then {
-                                    // 30% chance of heavy vehicle at major installations
-                                    _isHeavyVehicle = true;
-                                } else {
-                                    if (_markerType in ["n_support", "o_support"] && random 1 < 0.2) then {
-                                        // 20% chance of heavy vehicle at support locations
-                                        _isHeavyVehicle = true;
-                                    } else {
-                                        if (_markerType == "o_antiair" && random 1 < 0.4) then {
-                                            // 40% chance of heavy vehicle at AA sites
-                                            _isHeavyVehicle = true;
-                                        };
-                                    };
-                                };
-                                
-                                // Calculate vehicle cost
-                                _vehicleCost = if (_isHeavyVehicle) then {10} else {5};
-                                
-                                // Only add vehicle if we have enough resources
-                                if (_availableResources >= (_reinforceAmount + _vehicleCost)) then {
-                                    _addVehicle = true;
-                                };
-                            };
-                            
-                            // Call garrison reinforce function with vehicle flag
-                            FLO_Garrison_Manager call ["reinforceGarrison", [_outpost, _reinforceAmount, _addVehicle]];
-                            
-                            // Create the actual vehicle if needed
-                            if (_addVehicle) then {
-                                // Spend resources for both units and vehicle
-                                FLO_OPFOR_Resources call ["spendResources", [_reinforceAmount + _vehicleCost, "garrison"]];
-                                
-                                ["Logistics", 4, format["Reinforcing garrison at %1 with %2 units and 1 vehicle, spending %3 resources", 
-                                    _outpost, _reinforceAmount, _reinforceAmount + _vehicleCost]] call FLO_fnc_log;
+                            // Determine vehicle type based on marker type
+                            if (_markerType in ["n_installation", "o_installation"] && random 1 < 0.3) then {
+                                _groupType = "armor";
+                                _vehicleCost = 10;
                             } else {
-                                // Just spend resources for units
-                                FLO_OPFOR_Resources call ["spendResources", [_reinforceAmount, "garrison"]];
-                                
-                                ["Logistics", 4, format["Reinforcing non-activated garrison at %1 with %2 units", 
-                                    _outpost, _reinforceAmount]] call FLO_fnc_log;
+                                if (_markerType in ["n_support", "o_support"] && random 1 < 0.2) then {
+                                    _groupType = "mechanized";
+                                    _vehicleCost = 8;
+                                } else {
+                                    _groupType = "motorized";
+                                    _vehicleCost = 5;
+                                };
                             };
+                        };
+                        
+                        // Create virtual group
+                        private _groupId = [_spawnPos, _groupType, nil, _outpost, _reinforceAmount] call FLO_fnc_createVirtualGroup;
+                        
+                        if (_groupId != "") then {
+                            // Set up initial waypoints for the reinforcement route
+                            private _waypoints = [
+                                [_spawnPos getPos [500, _spawnDir], "MOVE", "AWARE", "NORMAL", "COLUMN", "GREEN"],  // Initial move from spawn
+                                [_outpostPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "GREEN"]  // Move to objective
+                            ];
+                            
+                            // Update the group's waypoints
+                            [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                            
+                            // Add group to AI Commander's garrison list
+                            if (!isNil "FLO_AI_Commander") then {
+                                private _garrisonedGroups = FLO_AI_Commander get "_garrisonedGroups";
+                                _garrisonedGroups pushBack _groupId;
+                                
+                                // Store the garrison position
+                                private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+                                _groupData set ["garrisonPosition", _outpostPos];
+                            };
+                            
+                            // Spend resources
+                            FLO_OPFOR_Resources call ["spendResources", [_reinforceAmount + _vehicleCost, "reinforcement"]];
+                            
+                            ["Logistics", 3, format["Created replacement virtual group %1 of type %2 for destroyed group at objective %3", 
+                                _groupId, _groupType, _outpost]] call FLO_fnc_log;
                         };
                     };
                 };
@@ -443,39 +468,5 @@ if (isNil "FLO_Logistics_Network") then {
     
     // Create the logistics network object
     FLO_Logistics_Network = createHashMapObject [_logisticsNetworkClass];
+    FLO_Logistics_Network call ["initialize", []];
 };
-
-// Execute the requested mode
-switch (_mode) do {
-    // Initialize the logistics network
-    case "init": {
-        FLO_Logistics_Network call ["initialize", []];
-        _result = FLO_Logistics_Network;
-    };
-    
-    // Force an update of all supply routes
-    case "update": {
-        FLO_Logistics_Network call ["updateSupplyNetwork", []]
-    };
-    
-    // Calculate and establish a supply route
-    case "calculateRoute": {
-        _params params [
-            ["_sourceMarker", "", [""]],
-            ["_targetMarker", "", [""]]
-        ];
-        
-        _result = FLO_Logistics_Network call ["calculateSupplyRoute", [_sourceMarker, _targetMarker]]
-    };
-    
-    // Get current supply level for a marker
-    case "getSupplyLevel": {
-        _params params [
-            ["_marker", "", [""]]
-        ];
-        
-        _result = FLO_Logistics_Network call ["getMarkerSupplyLevel", [_marker]]
-    };
-};
-
-_result 

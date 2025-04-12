@@ -180,7 +180,7 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 [] call FLO_fnc_opforResources;
 
 // Initialize the logistics network
-// ["init", []] call FLO_fnc_logisticsNetwork;
+[] call FLO_fnc_logisticsNetwork;
 
 // Initialize AI Commander Unit Capability Analyzer
 FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer;
