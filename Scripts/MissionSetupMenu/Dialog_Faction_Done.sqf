@@ -140,7 +140,14 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 	// Initialize Virtualization System
 	waitUntil {F_Init}; // Wait for faction initialization to complete
 	["VIRTUALIZATION", 3, "Faction initialization complete, starting virtualization"] call FLO_fnc_log;
-	[OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization;
-	[] call FLO_fnc_initializeObjectiveGroups;
+
+	// Initialize virtualization system on the server
+	[OPFOR_Virtualization_Distance] remoteExec ["FLO_fnc_initVirtualization", 2];
+
+	// Wait a moment for virtualization to initialize
+	sleep 1;
+
+	// Initialize objective groups on the server
+	[] remoteExec ["FLO_fnc_initializeObjectiveGroups", 2];
 };
 sleep 2; 

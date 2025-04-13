@@ -1,6 +1,7 @@
 private _bluFaction = markerText "Friendly_Handle";
 
 F_Init = false;
+publicVariable "F_Init";
 
 switch (_bluFaction) do {
 	case "CUSTOM_PLAYER_FACTION": {call compileScript ["CUSTOM_PLAYER_FACTION.sqf"];};
@@ -93,3 +94,4 @@ switch (_civFaction) do {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 F_Init = true;
+publicVariable "F_Init";
