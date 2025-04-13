@@ -61,13 +61,6 @@ class FLO {
         class purchaseCrate             {};
         class updateFunds               {};
     };
-    
-    class Objective {
-        file = "Functions\Objective";
-        
-        class garrisonManager         {};
-        class vehicleGarrison         {};
-    };
 
     class Utilities {
         file = "Functions\Utilities";
