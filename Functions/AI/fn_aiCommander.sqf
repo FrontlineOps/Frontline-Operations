@@ -284,6 +284,7 @@ private _aiCommander = createHashMapObject [[
             if (isNil "_groupData" || {isNull (_groupData getOrDefault ["realGroup", grpNull])}) then {
                 _deadGroups pushBack _groupId;
                 ["AI_COMMANDER", 2, format["Group %1 no longer exists, removing from tracking", _groupId]] call FLO_fnc_log;
+                diag_log format["Group %1 no longer exists, removing from tracking", _groupId];
             };
         } forEach _allGroups;
         
@@ -300,6 +301,7 @@ private _aiCommander = createHashMapObject [[
             _self set ["_activeAttackGroups", _activeAttackGroups];
             _self set ["_activeDefenseGroups", _activeDefenseGroups];
             _self set ["_garrisonedGroups", _garrisonedGroups];
+            diag_log format["Removed group %1 from tracking", _x];
         } forEach _deadGroups;
         
         // Get current threats

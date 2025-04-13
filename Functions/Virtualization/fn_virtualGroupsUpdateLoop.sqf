@@ -116,6 +116,38 @@ private _processVirtualMovement = {
     };
 };
 
+// Function to check if a player should be considered for distance calculation
+private _isValidPlayerForDistance = {
+    params ["_player"];
+    private _vehicle = vehicle _player;
+    
+    // Return false if player is in an aircraft
+    if (_vehicle != _player) then {
+        if (_vehicle isKindOf "Air") exitWith {
+            false
+        };
+    };
+    true
+};
+
+// Get nearest player distance, excluding those in aircraft
+private _getNearestPlayerDistance = {
+    params ["_position"];
+    private _nearestDistance = 999999;
+    private _allPlayers = allPlayers select {alive _x && side _x == west};
+    
+    {
+        if ([_x] call _isValidPlayerForDistance) then {
+            private _distance = _position distance2D _x;
+            if (_distance < _nearestDistance) then {
+                _nearestDistance = _distance;
+            };
+        };
+    } forEach _allPlayers;
+    
+    _nearestDistance
+};
+
 // Main update loop
 while {true} do {
     // Only process if the virtualization system is enabled
@@ -123,7 +155,6 @@ while {true} do {
         private _currentTime = diag_tickTime;
         private _groups = FLO_virtualGroups get "_groups";
         private _activationDistance = FLO_virtualGroups getOrDefault ["_activationDistance", 2000];
-        private _allPlayers = allPlayers select {alive _x && side _x == west};
         
         // Process each virtual group
         {
@@ -141,16 +172,9 @@ while {true} do {
                     _position = _groupData get "position"; // Update position after movement
                 };
                 
-                // Check activation distance
-                private _nearestPlayerDistance = 999999;
-                {
-                    private _distance = _position distance2D _x;
-                    if (_distance < _nearestPlayerDistance) then {
-                        _nearestPlayerDistance = _distance;
-                    };
-                } forEach _allPlayers;
-                
                 // Handle activation/deactivation
+                private _nearestPlayerDistance = [_position] call _getNearestPlayerDistance;
+                
                 if (_nearestPlayerDistance <= _activationDistance && !_isActive) then {
                     ["VIRTUALIZATION", 3, format["Activating virtual group %1 (Distance: %2m)", _groupId, _nearestPlayerDistance]] call FLO_fnc_log;
                     [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;
