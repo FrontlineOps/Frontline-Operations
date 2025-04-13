@@ -172,7 +172,7 @@ private _aiCommander = createHashMapObject [[
                 
                 // Set up defense waypoints
                 private _waypoints = [
-                    [_targetPos, "HOLD", "COMBAT", "NORMAL", "WEDGE", "YELLOW"]
+                    [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "YELLOW"]
                 ];
                 [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
                 
