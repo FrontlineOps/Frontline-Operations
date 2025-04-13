@@ -65,7 +65,7 @@ if (isNil "FLO_Logistics_Network") then {
                         _destroyedCount = _destroyedCount + 1;
                         _destroyedGroupTypes pushBack (_groupData get "groupType");
                         ["LOGISTICS", 3, format["Group %1 at objective %2 was destroyed", _groupId, _objective]] call FLO_fnc_log;
-                        dialog format["Group %1 at objective %2 was destroyed", _groupId, _objective];
+                        diag_log format["Group %1 at objective %2 was destroyed", _groupId, _objective];
                     };
                 } forEach _existingGroups;
                 
