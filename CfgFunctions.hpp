@@ -75,6 +75,7 @@ class FLO {
         class sendRewardNotification    {};
         class sendNotification          {};
         class displayNotification       {};
+        class findEdgeSpawnPos          {};
     };
     
     class Misc {
