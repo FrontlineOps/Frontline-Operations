@@ -275,6 +275,33 @@ private _aiCommander = createHashMapObject [[
         // Only update periodically
         if (_currentTime - _lastUpdate < _updateInterval) exitWith {};
         
+        // Clean up any dead groups first
+        private _allGroups = (_self get "_activeAttackGroups") + (_self get "_activeDefenseGroups") + (_self get "_garrisonedGroups");
+        private _deadGroups = [];
+        {
+            private _groupId = _x;
+            private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
+            if (isNil "_groupData" || {isNull (_groupData getOrDefault ["realGroup", grpNull])}) then {
+                _deadGroups pushBack _groupId;
+                ["AI_COMMANDER", 2, format["Group %1 no longer exists, removing from tracking", _groupId]] call FLO_fnc_log;
+            };
+        } forEach _allGroups;
+        
+        // Remove dead groups from all tracked arrays
+        {
+            private _activeAttackGroups = _self get "_activeAttackGroups";
+            private _activeDefenseGroups = _self get "_activeDefenseGroups";
+            private _garrisonedGroups = _self get "_garrisonedGroups";
+            
+            _activeAttackGroups = _activeAttackGroups - [_x];
+            _activeDefenseGroups = _activeDefenseGroups - [_x];
+            _garrisonedGroups = _garrisonedGroups - [_x];
+            
+            _self set ["_activeAttackGroups", _activeAttackGroups];
+            _self set ["_activeDefenseGroups", _activeDefenseGroups];
+            _self set ["_garrisonedGroups", _garrisonedGroups];
+        } forEach _deadGroups;
+        
         // Get current threats
         private _threats = _self call ["_assessThreats", []];
         
