@@ -36,7 +36,7 @@ private _aiCommander = createHashMapObject [[
 
     ["_initializeGroups", {
         // Wait until the objective groups have been initialized
-        waitUntil {InitializationOG};
+        waitUntil {!isNil "InitializationOG" && {InitializationOG}};
 
         // Get all virtual groups from the virtualization system
         private _allGroups = FLO_virtualGroups get "_groups";
