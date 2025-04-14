@@ -281,10 +281,15 @@ private _aiCommander = createHashMapObject [[
         {
             private _groupId = _x;
             private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
-            if (isNil "_groupData" || {isNull (_groupData getOrDefault ["realGroup", grpNull])}) then {
+            
+            // Only consider a group "dead" if:
+            // 1. It doesn't exist in the virtual system at all, OR
+            // 2. It's active (has a real group) but that real group is null/dead
+            if (isNil "_groupData" || 
+                {(_groupData getOrDefault ["isActive", false]) && 
+                 {isNull (_groupData getOrDefault ["realGroup", grpNull])}}) then {
                 _deadGroups pushBack _groupId;
-                ["AI_COMMANDER", 2, format["Group %1 no longer exists, removing from tracking", _groupId]] call FLO_fnc_log;
-                diag_log format["Group %1 no longer exists, removing from tracking", _groupId];
+                ["AI_COMMANDER", 2, format["Group %1 no longer exists or was eliminated, removing from tracking", _groupId]] call FLO_fnc_log;
             };
         } forEach _allGroups;
         
