@@ -12,39 +12,31 @@
 // Predefined Groups from the config
 // Used as the primary groups for the virtualization system
 East_Groups = [
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "SpecOps" >> "HAF_SniperTeam"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_EOD"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_GMG"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_MG"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_Mort"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Support" >> "HAF_Support_ENG"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_Raven_F" >> "Infantry" >> "I_Raven_InfSquad"),
-(configFile >> "CfgGroups" >> "Indep" >> "IND_Raven_F" >> "Infantry" >> "I_Raven_InfTeam")
+(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSentry"),
+(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
+(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
+(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
+(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
+(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons")
 ];
 // Ambient/Civilian-Like Ground Vehicles
 East_Ground_Vehicles_Ambient = ["I_MRAP_03_F"]; 
 // Light Military Ground Vehicles
-East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_A_Truck_02_aa_lxWS", "I_APC_Wheeled_03_cannon_F", "Aegis_I_Raven_APC_Wheeled_04_export_F", "I_Raven_MRAP_02_HMG_F", "I_Raven_MRAP_02_GMG_F"];
+East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_APC_Wheeled_03_cannon_F", "Aegis_I_Raven_APC_Wheeled_04_export_F", "I_Raven_MRAP_02_HMG_F", "I_Raven_MRAP_02_GMG_F"];
 // Heavy Ground Vehicles and Tanks
 East_Ground_Vehicles_Heavy = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F", "I_LT_01_AA_F", "I_APC_tracked_03_cannon_v2_F"]; 
 // Transport Ground Vehicles
-East_Ground_Transport = ["I_MRAP_03_F", "I_Truck_02_transport_F", "I_Truck_02_covered_F", "Aegis_I_Raven_Truck_02_F"]; 
+East_Ground_Transport = ["I_MRAP_03_F", "I_Truck_02_transport_F", "I_Truck_02_covered_F"]; 
 // Transport Air Vehicles
 East_Air_Transport = ["I_Heli_Transport_02_F", "Aegis_I_Heli_Transport_02_Heavy_F", "I_Heli_Light_01_F", "I_Heli_light_03_unarmed_F"];
 // Armed Helicopters
-East_Air_Heli = ["I_Heli_Attack_03_F", "I_Heli_Light_01_dynamicLoadout_F", "I_Heli_light_03_dynamicLoadout_F", "Aegis_I_Raven_Heli_Attack_04_F"]; 
+East_Air_Heli = ["I_Heli_Attack_03_F", "I_Heli_Light_01_dynamicLoadout_F", "I_Heli_light_03_dynamicLoadout_F"]; 
 // Fixed-Wing Aircraft
 East_Air_Jet = ["I_Plane_Fighter_04_F", "I_Plane_Fighter_03_dynamicLoadout_F"]; 
 // Artillery Units
-East_Ground_Artillery = ["O_R_MBT_02_arty_F"]; 
+East_Ground_Artillery = ["O_MBT_02_arty_F"]; 
 // Drone Units
-East_Air_Drone = ["I_UAV_02_lxWS", "I_UAV_01_F"]; 
+East_Air_Drone = ["I_UAV_01_F"]; 
 // Individual Infantry Units
 East_Units = [
     // Regular infantry (high frequency)
@@ -55,7 +47,7 @@ East_Units = [
     
     // Support roles (medium frequency)
     "I_medic_F", "I_medic_F",                                    // Medic
-    "Aegis_I_Soldier_MG_F", "Aegis_I_Soldier_MG_F",              // Machine gunner
+    "I_Soldier_MG_F", "I_Soldier_MG_F",              // Machine gunner
     "I_Soldier_M_F",                                             // Marksman
     "I_Soldier_A_F",                                             // Ammo bearer
     
@@ -63,8 +55,7 @@ East_Units = [
     "I_Soldier_LAT_F",                                           // Light AT
     "I_Soldier_LAT2_F",                                          // Light AT
     "I_Soldier_AT_F",                                            // AT Specialist
-    "I_Soldier_AA_F",                                            // AA Specialist
-    "Aegis_I_HeavyGunner_F"                                     // Heavy gunner
+    "I_Soldier_AA_F"                                             // AA Specialist
 ];
 // Fire Observer Units for Artillery
 East_FireObserver = ["I_RadioOperator_F"];
