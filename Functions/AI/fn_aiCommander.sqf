@@ -110,7 +110,7 @@ private _aiCommander = createHashMapObject [[
                 
                 // Set up attack waypoints
                 private _waypoints = [
-                    [_targetPos, "SAD", "AWARE", "NORMAL", "WEDGE", "RED"]
+                    [_targetPos, "SAD", "AWARE", "NORMAL", "WEDGE", "RED", 50]  // Larger radius for SAD waypoints
                 ];
                 [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
                 
@@ -172,7 +172,7 @@ private _aiCommander = createHashMapObject [[
                 
                 // Set up defense waypoints
                 private _waypoints = [
-                    [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "YELLOW"]
+                    [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "YELLOW", 30]  // Medium radius for defense positions
                 ];
                 [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
                 
@@ -210,7 +210,7 @@ private _aiCommander = createHashMapObject [[
         
         // Set up return waypoints
         private _waypoints = [
-            [_garrisonPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN"]
+            [_garrisonPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 10]  // Tighter radius for garrison positions
         ];
         [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
         

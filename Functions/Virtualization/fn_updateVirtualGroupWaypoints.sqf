@@ -9,7 +9,7 @@
  * Arguments:
  * 0: Group ID <STRING> - Unique identifier for the virtual group
  * 1: Waypoints <ARRAY> - Array of waypoint data in format:
- *   Each waypoint is an array: [position, type, behavior, speed, formation, combat mode]
+ *   Each waypoint is an array: [position, type, behavior, speed, formation, combat mode, completion radius]
  * 2: (Optional) Use Road Pathfinding <BOOLEAN> - Whether to use road pathfinding (Default: false)
  * 3: (Optional) Allow Trails <BOOLEAN> - Whether to allow trails for pathfinding (Default: false)
  *
@@ -17,8 +17,8 @@
  * Success <BOOLEAN>
  *
  * Example:
- * ["vgroup_1", [[getMarkerPos "marker_1", "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW"]]] call FLO_fnc_updateVirtualGroupWaypoints;
- * ["vgroup_1", [[getMarkerPos "marker_1", "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW"]], true] call FLO_fnc_updateVirtualGroupWaypoints;
+ * ["vgroup_1", [[getMarkerPos "marker_1", "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20]]] call FLO_fnc_updateVirtualGroupWaypoints;
+ * ["vgroup_1", [[getMarkerPos "marker_1", "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20]], true] call FLO_fnc_updateVirtualGroupWaypoints;
  */
 
 params [
@@ -108,6 +108,7 @@ if (count _waypoints == 0 || !_usePathfinding) then {
                 private _wpSpeed = _x select 3;
                 private _wpFormation = _x select 4;
                 private _wpMode = _x select 5;
+                private _wpCompletionRadius = _x select 6;
                 
                 private _wp = _realGroup addWaypoint [_wpPos, 0];
                 _wp setWaypointType _wpType;
@@ -115,6 +116,7 @@ if (count _waypoints == 0 || !_usePathfinding) then {
                 _wp setWaypointSpeed _wpSpeed;
                 _wp setWaypointFormation _wpFormation;
                 _wp setWaypointCombatMode _wpMode;
+                _wp setWaypointCompletionRadius _wpCompletionRadius;
             } forEach _waypoints;
             
             // Update marker if debug mode is on
@@ -151,11 +153,12 @@ if (count _waypoints == 0 || !_usePathfinding) then {
             private _wpSpeed = _waypointSettings select 3;
             private _wpFormation = _waypointSettings select 4;
             private _wpMode = _waypointSettings select 5;
+            private _wpCompletionRadius = _waypointSettings select 6;
             
             // Create new waypoints array
             private _newWaypoints = [];
             {
-                _newWaypoints pushBack [_x, _wpType, _wpBehavior, _wpSpeed, _wpFormation, _wpMode];
+                _newWaypoints pushBack [_x, _wpType, _wpBehavior, _wpSpeed, _wpFormation, _wpMode, _wpCompletionRadius];
             } forEach _posArray;
             
             // Update the virtual group with the new waypoints
@@ -224,6 +227,7 @@ if (count _waypoints == 0 || !_usePathfinding) then {
                         _wp setWaypointSpeed _wpSpeed;
                         _wp setWaypointFormation _wpFormation;
                         _wp setWaypointCombatMode _wpMode;
+                        _wp setWaypointCompletionRadius _wpCompletionRadius;
                     } forEach _newWaypoints;
                     
                     // Update marker if debug mode is on
@@ -270,6 +274,7 @@ if (count _waypoints == 0 || !_usePathfinding) then {
                     private _wpSpeed = _originalWaypoint select 3;
                     private _wpFormation = _originalWaypoint select 4;
                     private _wpMode = _originalWaypoint select 5;
+                    private _wpCompletionRadius = _originalWaypoint select 6;
                     
                     private _wp = _realGroup addWaypoint [_wpPos, 0];
                     _wp setWaypointType _wpType;
@@ -277,6 +282,7 @@ if (count _waypoints == 0 || !_usePathfinding) then {
                     _wp setWaypointSpeed _wpSpeed;
                     _wp setWaypointFormation _wpFormation;
                     _wp setWaypointCombatMode _wpMode;
+                    _wp setWaypointCompletionRadius _wpCompletionRadius;
                 };
             };
         };
