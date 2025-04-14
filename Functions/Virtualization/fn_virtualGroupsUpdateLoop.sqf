@@ -170,6 +170,22 @@ while {true} do {
                 if (!_isActive) then {
                     [_groupData, _groupId, _currentTime] call _processVirtualMovement;
                     _position = _groupData get "position"; // Update position after movement
+                } else {
+                    // Update position from real group if active
+                    if (!isNull _realGroup) then {
+                        private _realPos = getPos leader _realGroup;
+                        _groupData set ["position", _realPos];
+                        _position = _realPos;
+                        
+                        // Update debug marker if enabled
+                        if (FLO_virtualGroups get "_debugMode") then {
+                            private _marker = format["vgroup_%1", _groupId];
+                            if (getMarkerColor _marker != "") then {
+                                _marker setMarkerPos _realPos;
+                                _marker setMarkerDir getDir leader _realGroup;
+                            };
+                        };
+                    };
                 };
                 
                 // Handle activation/deactivation
