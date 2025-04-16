@@ -137,9 +137,7 @@ if (isNil "FLO_Logistics_Network") then {
                         if (_newGroupId != "") then {
                             // Set up waypoints to move to target objective
                             private _waypoints = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
-                            // Using Pathfinding Here makes a scope error @Crashdome
-                            // Error Local variable in global space on line 244 in fn_updateVirtualGroupWaypoints.sqf
-                            [_newGroupId, _waypoints, false] call FLO_fnc_updateVirtualGroupWaypoints;
+                            [_newGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
                             
                             // Add to AI Commander's garrison if it exists
                             if (!isNil "FLO_AI_Commander") then {

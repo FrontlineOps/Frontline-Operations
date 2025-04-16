@@ -241,7 +241,7 @@ if (count _waypoints == 0 || !_usePathfinding) then {
         // Define the fallback function
         FLO_fnc_pathfindingFallbackCode = compileFinal {
             params ["_status", "_posArray", "_args"];
-            _args params [_groupId,_originalWaypoint];
+            _args params ["_groupId","_originalWaypoint"];
             
             ["VIRTUALIZATION", 2, format["Pathfinding failed for group %1, falling back to direct waypoint", _groupId]] call FLO_fnc_log;
             
