@@ -120,6 +120,30 @@ if (isNil "FLO_Logistics_Network") then {
                     }
                 };
                 
+                // Initialize or get the reinforcement tracking
+                if (isNil "FLO_Logistics_ReinforcementCount") then {
+                    FLO_Logistics_ReinforcementCount = createHashMap;
+                };
+
+                // Update counts for objectives that no longer exist
+                private _toRemove = [];
+                {
+                    if (!(_x in _reinforcePositions)) then {
+                        _toRemove pushBack _x;
+                    };
+                } forEach (keys FLO_Logistics_ReinforcementCount);
+                
+                {
+                    FLO_Logistics_ReinforcementCount deleteAt _x;
+                } forEach _toRemove;
+
+                // Initialize counts for new objectives
+                {
+                    if !(_x in FLO_Logistics_ReinforcementCount) then {
+                        FLO_Logistics_ReinforcementCount set [_x, 0];
+                    };
+                } forEach _reinforcePositions;
+                
                 {
                     _x params ["", "_groupType"];
                     
@@ -135,14 +159,18 @@ if (isNil "FLO_Logistics_Network") then {
                         default { 4 };
                     };
                     
-                    if (_resources >= _groupCost && count _spawnObjectives > 0) then {
-                        // Select random spawn and reinforce positions
+                    if (_resources >= _groupCost && count _spawnObjectives > 0 && count _reinforcePositions > 0) then {
+                        // Select random spawn position from farthest positions
                         private _spawnObjective = selectRandom _spawnObjectives;
-                        private _reinforceObjective = if (count _reinforcePositions > 0) then {
-                            selectRandom _reinforcePositions
-                        } else {
-                            selectRandom _spawnObjectives
-                        };
+                        
+                        // Find the least reinforced position
+                        private _reinforceObjective = [_reinforcePositions, [], {
+                            FLO_Logistics_ReinforcementCount getOrDefault [_x, 0]
+                        }, "ASCEND"] call BIS_fnc_sortBy select 0;
+                        
+                        // Increment the reinforcement count for this objective
+                        FLO_Logistics_ReinforcementCount set [_reinforceObjective, 
+                            (FLO_Logistics_ReinforcementCount getOrDefault [_reinforceObjective, 0]) + 1];
                         
                         private _spawnPos = getMarkerPos _spawnObjective;
                         private _reinforcePos = getMarkerPos _reinforceObjective;
