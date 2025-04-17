@@ -74,7 +74,7 @@ if (isNil "FLO_Logistics_Network") then {
             if (count _destroyedGroups > 0) then {
                 private _resources = FLO_OPFOR_Resources call ["getResources", []];
                 
-                // Find valid spawn objectives (OPFOR objectives with no players within 2km)
+                // Find valid spawn objectives (OPFOR objectives at map edges, far from players)
                 private _spawnObjectives = allMapMarkers select {
                     private _marker = _x;
                     markerColor _marker in ["colorOPFOR", "ColorEAST"] && 
@@ -82,25 +82,28 @@ if (isNil "FLO_Logistics_Network") then {
                                         "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"] &&
                     {
                         private _pos = getMarkerPos _marker;
-                        private _nearPlayers = allPlayers select {_x distance2D _pos < 2000};
-                        count _nearPlayers == 0
+                        // Check if position is near map edge
+                        private _isMapEdge = _pos select 0 < 2000 || _pos select 0 > (worldSize - 2000) ||
+                                           _pos select 1 < 2000 || _pos select 1 > (worldSize - 2000);
+                        private _nearPlayers = allPlayers select {_x distance2D _pos < 1000};
+                        _isMapEdge && count _nearPlayers == 0
                     }
                 };
                 
-                // Find valid target objectives (closer to BLUFOR activity but not too close)
-                private _targetObjectives = allMapMarkers select {
+                // Find valid reinforcement positions (OPFOR objectives near BLUFOR activity)
+                private _reinforcePositions = allMapMarkers select {
                     private _marker = _x;
                     markerColor _marker in ["colorOPFOR", "ColorEAST"] && 
                     markerType _marker in ["o_support", "n_support", "o_installation", "n_installation", 
                                         "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"] &&
                     {
                         private _pos = getMarkerPos _marker;
-                        private _nearPlayers = allPlayers select {_x distance2D _pos < 2000};
                         private _nearBlufor = allMapMarkers select {
-                            markerColor _x in ["ColorBLUFOR", "ColorWEST"] && 
-                            (getMarkerPos _x) distance2D _pos < 3000
+                            markerColor _x in ["ColorBLUFOR", "ColorWEST", "ColorYellow"] && 
+                            markerType _x in ["b_installation", "b_support", "b_hq"] &&
+                            (getMarkerPos _x) distance2D _pos < 4000
                         };
-                        count _nearPlayers == 0 && count _nearBlufor > 0
+                        count _nearBlufor > 0
                     }
                 };
                 
@@ -120,23 +123,23 @@ if (isNil "FLO_Logistics_Network") then {
                     };
                     
                     if (_resources >= _groupCost && count _spawnObjectives > 0) then {
-                        // Select random spawn and target objectives
+                        // Select random spawn and reinforce positions
                         private _spawnObjective = selectRandom _spawnObjectives;
-                        private _targetObjective = if (count _targetObjectives > 0) then {
-                            selectRandom _targetObjectives
+                        private _reinforceObjective = if (count _reinforcePositions > 0) then {
+                            selectRandom _reinforcePositions
                         } else {
                             selectRandom _spawnObjectives
                         };
                         
                         private _spawnPos = getMarkerPos _spawnObjective;
-                        private _targetPos = getMarkerPos _targetObjective;
+                        private _reinforcePos = getMarkerPos _reinforceObjective;
                         
                         // Create the replacement group
-                        private _newGroupId = [_spawnPos, _groupType, nil, _targetObjective, _groupCost] call FLO_fnc_createVirtualGroup;
+                        private _newGroupId = [_spawnPos, _groupType, nil, _reinforcePos, _groupCost] call FLO_fnc_createVirtualGroup;
                         
                         if (_newGroupId != "") then {
-                            // Set up waypoints to move to target objective
-                            private _waypoints = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
+                            // Set up waypoints to move to reinforce position
+                            private _waypoints = [[_reinforcePos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
                             [_newGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
                             
                             // Add to AI Commander's garrison if it exists
@@ -145,13 +148,13 @@ if (isNil "FLO_Logistics_Network") then {
                                 _garrisonedGroups pushBack _newGroupId;
                                 
                                 private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
-                                _groupData set ["garrisonPosition", _targetPos];
+                                _groupData set ["garrisonPosition", _reinforcePos];
                             };
                             
                             // Spend resources
                             FLO_OPFOR_Resources call ["spendResources", [_groupCost, "reinforcement"]];
                             ["LOGISTICS", 3, format["Created replacement %1 group, spawning at %2, moving to %3", 
-                                _groupType, _spawnObjective, _targetObjective]] call FLO_fnc_log;
+                                _groupType, _spawnObjective, _reinforceObjective]] call FLO_fnc_log;
                             
                             // Deduct from available resources
                             _resources = _resources - _groupCost;
