@@ -74,20 +74,33 @@ if (isNil "FLO_Logistics_Network") then {
             if (count _destroyedGroups > 0) then {
                 private _resources = FLO_OPFOR_Resources call ["getResources", []];
                 
-                // Find valid spawn objectives (OPFOR objectives at map edges, far from players)
-                private _spawnObjectives = allMapMarkers select {
+                // Find valid spawn objectives (OPFOR objectives farthest from players)
+                private _allPotentialSpawns = allMapMarkers select {
                     private _marker = _x;
                     markerColor _marker in ["colorOPFOR", "ColorEAST"] && 
                     markerType _marker in ["o_support", "n_support", "o_installation", "n_installation", 
                                         "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"] &&
                     {
                         private _pos = getMarkerPos _marker;
-                        // Check if position is near map edge
-                        private _isMapEdge = _pos select 0 < 2000 || _pos select 0 > (worldSize - 2000) ||
-                                           _pos select 1 < 2000 || _pos select 1 > (worldSize - 2000);
                         private _nearPlayers = allPlayers select {_x distance2D _pos < 1000};
-                        _isMapEdge && count _nearPlayers == 0
+                        count _nearPlayers == 0
                     }
+                };
+
+                // Sort objectives by average distance to all players and take the farthest ones
+                private _spawnObjectives = [];
+                if (count _allPotentialSpawns > 0) then {
+                    _spawnObjectives = [_allPotentialSpawns, [], {
+                        private _pos = getMarkerPos _x;
+                        private _totalDist = 0;
+                        {
+                            _totalDist = _totalDist + (_x distance2D _pos);
+                        } forEach allPlayers;
+                        _totalDist / (count allPlayers max 1)
+                    }, "DESCEND"] call BIS_fnc_sortBy;
+                    
+                    // Take the top 5 farthest objectives
+                    _spawnObjectives = _spawnObjectives select [0, 5];
                 };
                 
                 // Find valid reinforcement positions (OPFOR objectives near BLUFOR activity)
@@ -135,7 +148,7 @@ if (isNil "FLO_Logistics_Network") then {
                         private _reinforcePos = getMarkerPos _reinforceObjective;
                         
                         // Create the replacement group
-                        private _newGroupId = [_spawnPos, _groupType, nil, _reinforcePos, _groupCost] call FLO_fnc_createVirtualGroup;
+                        private _newGroupId = [_spawnPos, _groupType, nil, _reinforceObjective, _groupCost] call FLO_fnc_createVirtualGroup;
                         
                         if (_newGroupId != "") then {
                             // Set up waypoints to move to reinforce position
