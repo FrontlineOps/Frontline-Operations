@@ -22,7 +22,7 @@ East_Groups = [
 // Ambient/Civilian-Like Ground Vehicles
 East_Ground_Vehicles_Ambient = ["I_MRAP_03_F"]; 
 // Light Military Ground Vehicles
-East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_APC_Wheeled_03_cannon_F", "Aegis_I_Raven_APC_Wheeled_04_export_F", "I_Raven_MRAP_02_HMG_F", "I_Raven_MRAP_02_GMG_F"];
+East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_APC_Wheeled_03_cannon_F"];
 // Heavy Ground Vehicles and Tanks
 East_Ground_Vehicles_Heavy = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F", "I_LT_01_AA_F", "I_APC_tracked_03_cannon_v2_F"]; 
 // Transport Ground Vehicles
