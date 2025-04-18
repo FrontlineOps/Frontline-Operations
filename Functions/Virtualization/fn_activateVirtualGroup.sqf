@@ -65,83 +65,94 @@ switch (true) do {
     // Vehicle groups
     case (_groupType in ["motorized", "mechanized", "armor"]): {
         _realGroup = createGroup [_side, true];
-        private _vehicleType = "";
         
-        // Select appropriate vehicle type
-        switch (_groupType) do {
-            case "motorized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
-            case "mechanized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
-            case "armor": { _vehicleType = selectRandom East_Ground_Vehicles_Heavy; };
-            default { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
+        for "_i" from 1 to _unitCount do {
+            private _vehicleType = "";
+            
+            // Select appropriate vehicle type
+            switch (_groupType) do {
+                case "motorized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
+                case "mechanized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
+                case "armor": { _vehicleType = selectRandom East_Ground_Vehicles_Heavy; };
+                default { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
+            };
+            
+            // Find safe position for vehicle
+            private _spawnPos = [_position, 5 + (10 * _i), 50, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
+            
+            // Create vehicle and crew
+            private _veh = [_spawnPos, random 360, _vehicleType, _side] call BIS_fnc_spawnVehicle;
+            private _vehicle = _veh select 0;
+            private _crew = _veh select 1;
+            private _vehGroup = _veh select 2;
+            
+            // Transfer crew to our group and delete empty group
+            {
+                [_x] joinSilent _realGroup;
+            } forEach units _vehGroup;
+            deleteGroup _vehGroup;
         };
-        
-        // Find safe position for vehicle
-        private _spawnPos = [_position, 5, 50, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
-        
-        // Create vehicle and crew
-        private _veh = [_spawnPos, random 360, _vehicleType, _side] call BIS_fnc_spawnVehicle;
-        private _vehicle = _veh select 0;
-        private _crew = _veh select 1;
-        private _vehGroup = _veh select 2;
-        
-        // Transfer crew to our group and delete empty group
-        {
-            [_x] joinSilent _realGroup;
-        } forEach units _vehGroup;
-        deleteGroup _vehGroup;
     };
     
     // Air groups (helicopters and jets)
     case (_groupType in ["helicopter", "jet", "air"]): {
         _realGroup = createGroup [_side, true];
-        private _aircraftType = "";
         
-        // Select appropriate aircraft type
-        switch (_groupType) do {
-            case "helicopter": { _aircraftType = selectRandom East_Air_Heli; };
-            case "jet": { _aircraftType = selectRandom East_Air_Jet; };
-            case "air": { _aircraftType = selectRandom (East_Air_Heli + East_Air_Jet); };
-            default { _aircraftType = selectRandom East_Air_Heli; };
+        for "_i" from 1 to _unitCount do {
+            private _aircraftType = "";
+            
+            // Select appropriate aircraft type
+            switch (_groupType) do {
+                case "helicopter": { _aircraftType = selectRandom East_Air_Heli; };
+                case "jet": { _aircraftType = selectRandom East_Air_Jet; };
+                case "air": { _aircraftType = selectRandom (East_Air_Heli + East_Air_Jet); };
+                default { _aircraftType = selectRandom East_Air_Heli; };
+            };
+            
+            // Find appropriate spawn height for air vehicles
+            private _spawnHeight = 0;
+            if (_groupType isEqualTo "jet") then { _spawnHeight = 500; } else { _spawnHeight = 100; };
+            
+            // Spread out aircraft spawns
+            private _spreadDistance = 50 * _i;
+            private _spawnPos = [(_position select 0) + _spreadDistance, (_position select 1), _spawnHeight];
+            
+            // Create vehicle and crew
+            private _veh = [_spawnPos, random 360, _aircraftType, _side] call BIS_fnc_spawnVehicle;
+            private _vehicle = _veh select 0;
+            private _crew = _veh select 1;
+            private _vehGroup = _veh select 2;
+            
+            // Transfer crew to our group and delete empty group
+            {
+                [_x] joinSilent _realGroup;
+            } forEach units _vehGroup;
+            deleteGroup _vehGroup;
         };
-        
-        // Find appropriate spawn height for air vehicles
-        private _spawnHeight = 0;
-        if (_groupType isEqualTo "jet") then { _spawnHeight = 500; } else { _spawnHeight = 100; };
-        
-        private _spawnPos = [_position select 0, _position select 1, _spawnHeight];
-        
-        // Create vehicle and crew
-        private _veh = [_spawnPos, random 360, _aircraftType, _side] call BIS_fnc_spawnVehicle;
-        private _vehicle = _veh select 0;
-        private _crew = _veh select 1;
-        private _vehGroup = _veh select 2;
-        
-        // Transfer crew to our group and delete empty group
-        {
-            [_x] joinSilent _realGroup;
-        } forEach units _vehGroup;
-        deleteGroup _vehGroup;
     };
     
     // Artillery groups
     case (_groupType isEqualTo "artillery"): {
         _realGroup = createGroup [_side, true];
-        private _artilleryType = selectRandom East_Ground_Artillery;
         
-        // Find safe position for artillery
-        private _spawnPos = [_position, 5, 50, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
-        
-        // Create vehicle and crew
-        private _veh = [_spawnPos, random 360, _artilleryType, _side] call BIS_fnc_spawnVehicle;
-        private _vehicle = _veh select 0;
-        private _crew = _veh select 1;
-        private _vehGroup = _veh select 2;
-        
-        // Transfer crew to our group and delete empty group
-        {
-            [_x] joinSilent _realGroup;
-        } forEach units _vehGroup;
-        deleteGroup _vehGroup;
+        for "_i" from 1 to _unitCount do {
+            private _artilleryType = selectRandom East_Ground_Artillery;
+            
+            // Find safe position for artillery, spread them out
+            private _spawnPos = [_position, 10 + (15 * _i), 50, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
+            
+            // Create vehicle and crew
+            private _veh = [_spawnPos, random 360, _artilleryType, _side] call BIS_fnc_spawnVehicle;
+            private _vehicle = _veh select 0;
+            private _crew = _veh select 1;
+            private _vehGroup = _veh select 2;
+            
+            // Transfer crew to our group and delete empty group
+            {
+                [_x] joinSilent _realGroup;
+            } forEach units _vehGroup;
+            deleteGroup _vehGroup;
+        };
     };
     
     // Default case if we don't recognize the group type

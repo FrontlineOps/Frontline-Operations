@@ -145,7 +145,7 @@ OPFOR_Group_Counts = [
     ["helicopter", 1],        // Number of helicopters
     ["jet", 1],               // Number of jets
     ["air", 1],               // Number of aircraft
-    ["artillery", 2]         // Number of artillery pieces
+    ["artillery", 1]         // Number of artillery pieces (Probably always keep this at 1)
 ];
 
 /*
