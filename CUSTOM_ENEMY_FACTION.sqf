@@ -134,6 +134,21 @@ OPFOR_Objective_Groups = [
 ];
 
 /*
+ * Group Type Unit/Vehicle Counts
+ * Defines how many physical units/vehicles should be in each type of group
+ */
+OPFOR_Group_Counts = [
+    ["infantry", 10],          // Number of individual soldiers
+    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
+    ["mechanized", 2],        // Number of APCs/IFVs
+    ["armor", 2],             // Number of tanks
+    ["helicopter", 1],        // Number of helicopters
+    ["jet", 1],               // Number of jets
+    ["air", 1],               // Number of aircraft
+    ["artillery", 2]         // Number of artillery pieces
+];
+
+/*
  * Configure activation distance for the virtualization system
  * This is the distance in meters that a player needs to be from a virtual group for it to physically spawn in the game
  */ 

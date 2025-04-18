@@ -41,18 +41,22 @@ while {(_groups get _groupId) isNotEqualTo objNull} do {
     _groupId = format["vgroup_%1", floor(random 999999)];
 };
 
-// Set default unit count based on group type if not specified
+// Get unit count from OPFOR_Group_Counts or use provided count
 if (_unitCount < 0) then {
-    switch (_groupType) do {
-        case "infantry": { _unitCount = 8; };
-        case "motorized": { _unitCount = 1; };
-        case "mechanized": { _unitCount = 1; };
-        case "armor": { _unitCount = 1; };
-        case "helicopter": { _unitCount = 1; };
-        case "jet": { _unitCount = 1; };
-        case "air": { _unitCount = 1; };
-        case "artillery": { _unitCount = 1; };
-        default { _unitCount = 4; };
+    private _groupCounts = OPFOR_Group_Counts;
+    private _foundCount = false;
+    {
+        _x params ["_type", "_count"];
+        if (_type == _groupType) then {
+            _unitCount = _count;
+            _foundCount = true;
+        };
+    } forEach _groupCounts;
+    
+    if (!_foundCount) then {
+        // Default fallback if group type not found
+        _unitCount = 4;
+        ["VIRTUALIZATION", 2, format["No unit count defined for group type %1, using default of 4", _groupType]] call FLO_fnc_log;
     };
 };
 

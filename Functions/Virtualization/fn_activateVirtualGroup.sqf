@@ -31,6 +31,9 @@ private _waypoints = _groupData getOrDefault ["waypoints", []];
 private _comp = _groupData getOrDefault ["comp", []];
 private _realGroup = grpNull;
 
+// Get group data
+private _unitCount = _groupData getOrDefault ["unitCount", 4]; // Default to 4 if not specified
+
 // Create the actual group based on group type
 switch (true) do {    
     // If we have a saved composition, use it to recreate the group exactly
@@ -50,7 +53,6 @@ switch (true) do {
     
     // Infantry based on East_Units array
     case (_groupType isEqualTo "infantry"): {
-        private _unitCount = _groupData getOrDefault ["unitCount", 8];
         _realGroup = createGroup [_side, true];
         
         for "_i" from 1 to _unitCount do {
