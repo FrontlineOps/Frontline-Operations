@@ -32,7 +32,11 @@ private _comp = _groupData getOrDefault ["comp", []];
 private _realGroup = grpNull;
 
 // Get group data
-private _unitCount = _groupData getOrDefault ["unitCount", 4]; // Default to 4 if not specified
+private _unitCount = _groupData get "unitCount";
+if (isNil "_unitCount") then {
+    diag_log format ["[VIRTUALIZATION] ERROR: Group %1 has UNDEFINED FUCKING UNIT COUNT. FIX IT! Setting to 1.", _groupId];
+    _unitCount = 1;
+};
 
 // Create the actual group based on group type
 switch (true) do {    
