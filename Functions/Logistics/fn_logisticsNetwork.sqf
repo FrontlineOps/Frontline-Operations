@@ -74,7 +74,7 @@ if (isNil "FLO_Logistics_Network") then {
             if (count _destroyedGroups > 0) then {
                 private _resources = FLO_OPFOR_Resources call ["getResources", []];
                 
-                // Find valid spawn objectives (OPFOR objectives farthest from players)
+                // Find valid spawn objectives (OPFOR objectives at least 3km from players)
                 private _allPotentialSpawns = allMapMarkers select {
                     private _marker = _x;
                     markerColor _marker in ["colorOPFOR", "ColorEAST"] && 
@@ -82,12 +82,12 @@ if (isNil "FLO_Logistics_Network") then {
                                         "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"] &&
                     {
                         private _pos = getMarkerPos _marker;
-                        private _nearPlayers = allPlayers select {_x distance2D _pos < 1000};
+                        private _nearPlayers = allPlayers select {_x distance2D _pos < 3000};
                         count _nearPlayers == 0
                     }
                 };
 
-                // Sort objectives by average distance to all players and take the farthest ones
+                // Sort objectives by average distance to all players and take the closest valid ones
                 private _spawnObjectives = [];
                 if (count _allPotentialSpawns > 0) then {
                     _spawnObjectives = [_allPotentialSpawns, [], {
@@ -97,9 +97,9 @@ if (isNil "FLO_Logistics_Network") then {
                             _totalDist = _totalDist + (_x distance2D _pos);
                         } forEach allPlayers;
                         _totalDist / (count allPlayers max 1)
-                    }, "DESCEND"] call BIS_fnc_sortBy;
+                    }, "ASCEND"] call BIS_fnc_sortBy;
                     
-                    // Take the top 5 farthest objectives
+                    // Take the top 5 closest objectives (that are still at least 3km away)
                     _spawnObjectives = _spawnObjectives select [0, 5];
                 };
                 
@@ -114,7 +114,7 @@ if (isNil "FLO_Logistics_Network") then {
                         private _nearBlufor = allMapMarkers select {
                             markerColor _x in ["ColorBLUFOR", "ColorWEST", "ColorYellow"] && 
                             markerType _x in ["b_installation", "b_support", "b_hq"] &&
-                            (getMarkerPos _x) distance2D _pos < 4000
+                            (getMarkerPos _x) distance2D _pos < 2000
                         };
                         count _nearBlufor > 0
                     }
@@ -175,11 +175,22 @@ if (isNil "FLO_Logistics_Network") then {
                         private _spawnPos = getMarkerPos _spawnObjective;
                         private _reinforcePos = getMarkerPos _reinforceObjective;
                         
+                        // Add random offset to reinforcement position (100-600m spread)
+                        private _spreadDistance = (random 500) + 100; // Random distance between 100-300m
+                        private _spreadDir = random 360; // Random direction
+                        private _offsetX = _spreadDistance * (cos _spreadDir);
+                        private _offsetY = _spreadDistance * (sin _spreadDir);
+                        private _reinforcePos = _reinforcePos vectorAdd [_offsetX, _offsetY, 0];
+                        
                         // Create the replacement group
                         private _newGroupId = [_spawnPos, _groupType, nil, _reinforceObjective, _groupCost] call FLO_fnc_createVirtualGroup;
                         
                         if (_newGroupId != "") then {
-                            // Set up waypoints to move to reinforce position
+                            // Mark the group as reinforcing
+                            private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
+                            _groupData set ["isReinforcing", true];
+                            
+                            // Set up waypoints to move to reinforce position with spread
                             private _waypoints = [[_reinforcePos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
                             [_newGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
                             

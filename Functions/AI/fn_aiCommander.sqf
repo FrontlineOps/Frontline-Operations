@@ -23,6 +23,27 @@ private _lastCommanderUpdate = diag_tickTime;
 private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
 
+// Function to calculate max attacking groups based on player count
+private _fnc_calculateMaxAttackingGroups = {
+    private _playerCount = count (allPlayers - entities "HeadlessClient_F");
+    
+    // No attacks with 1-2 players
+    if (_playerCount <= 2) exitWith { 0 };
+    
+    // Calculate groups: subtract 2 from player count and divide by 2 (rounded down)
+    // This gives us:
+    // 3-4 players = 1 group
+    // 5-6 players = 2 groups
+    // 7-8 players = 3 groups
+    // etc.
+    private _maxGroups = floor((_playerCount - 2) / 2);
+    
+    // Cap at maximum of 12 groups
+    _maxGroups = _maxGroups min 12;
+    
+    _maxGroups
+};
+
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
     ["_threatLevel", _currentThreatLevel],
@@ -30,7 +51,7 @@ private _aiCommander = createHashMapObject [[
     ["_activeAttackGroups", []],
     ["_activeDefenseGroups", []],
     ["_garrisonedGroups", []],
-    ["_maxAttackingGroups", 4],  // Maximum number of groups that can be attacking simultaneously
+    ["_maxAttackingGroups", call _fnc_calculateMaxAttackingGroups],  // Dynamic based on player count
     ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
 
@@ -63,9 +84,12 @@ private _aiCommander = createHashMapObject [[
     ["_assignGroupToAttack", {
         params ["_targetPos", "_targetType"];
         
+        // Recalculate max attacking groups based on current player count
+        _self set ["_maxAttackingGroups", call _fnc_calculateMaxAttackingGroups];
+        
         // Check if we're at the attack group limit
         if (count (_self get "_activeAttackGroups") >= (_self get "_maxAttackingGroups")) exitWith {
-            ["AI Commander", 3, "Maximum attacking groups reached"] call FLO_fnc_log;
+            ["AI Commander", 3, format["Maximum attacking groups reached (%1 groups)", _self get "_maxAttackingGroups"]] call FLO_fnc_log;
             false
         };
         
@@ -101,6 +125,12 @@ private _aiCommander = createHashMapObject [[
                 // Clear existing waypoints first
                 _groupData set ["waypoints", []];
                 _groupData set ["currentWaypointIndex", 0];
+                
+                // If group was reinforcing, clear that status
+                if (_groupData getOrDefault ["isReinforcing", false]) then {
+                    _groupData set ["isReinforcing", false];
+                    ["AI Commander", 3, format["Intercepted reinforcing group %1 for attack mission", _selectedGroupId]] call FLO_fnc_log;
+                };
                 
                 // Update group assignments
                 private _garrisonedGroups = _self get "_garrisonedGroups";
@@ -164,6 +194,12 @@ private _aiCommander = createHashMapObject [[
                 _groupData set ["waypoints", []];
                 _groupData set ["currentWaypointIndex", 0];
                 
+                // If group was reinforcing, clear that status
+                if (_groupData getOrDefault ["isReinforcing", false]) then {
+                    _groupData set ["isReinforcing", false];
+                    ["AI Commander", 3, format["Intercepted reinforcing group %1 for defense mission", _selectedGroupId]] call FLO_fnc_log;
+                };
+                
                 // Update group assignments
                 private _garrisonedGroups = _self get "_garrisonedGroups";
                 private _activeDefenseGroups = _self get "_activeDefenseGroups";
@@ -222,7 +258,7 @@ private _aiCommander = createHashMapObject [[
         
         // Check for BLUFOR units near OPFOR objectives
         private _opforObjectives = allMapMarkers select {
-            markerColor _x in ["colorOPFOR", "ColorEAST"] && 
+                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
             markerType _x in ["o_support", "n_support", "o_installation", "n_installation", "loc_Power", "o_recon", "o_antiair", "loc_Ruin"]
         };
         
@@ -266,7 +302,7 @@ private _aiCommander = createHashMapObject [[
         
         _threats
     }],
-
+    
     ["_update", {
         private _currentTime = diag_tickTime;
         private _lastUpdate = _self get "_lastUpdate";
