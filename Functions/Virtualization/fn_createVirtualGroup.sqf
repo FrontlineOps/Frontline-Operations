@@ -55,8 +55,8 @@ if (_unitCount < 0) then {
     
     if (!_foundCount) then {
         // Default fallback if group type not found
-        _unitCount = 4;
-        ["VIRTUALIZATION", 2, format["No unit count defined for group type %1, using default of 4", _groupType]] call FLO_fnc_log;
+        _unitCount = 1;
+        diag_log format ["[VIRTUALIZATION] ERROR: No unit count defined for group type %1, using default of 1", _groupType];
     };
 };
 
