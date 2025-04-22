@@ -243,7 +243,6 @@ if (_RestrictedArsenalVal isEqualTo 0) then {
             if (_newViewDistance != _currentViewDistance) then {
                 _currentViewDistance = _newViewDistance;
                 setViewDistance _currentViewDistance;
-                ["ViewDistance", 1, format ["Adjusted to %1m based on average FPS of %2", _currentViewDistance, _avgFPS]] call FLO_fnc_log;
                 diag_log format ["[FLO][ViewDistance] Adjusted to %1m based on average FPS of %2", _currentViewDistance, _avgFPS];
             };
         };
