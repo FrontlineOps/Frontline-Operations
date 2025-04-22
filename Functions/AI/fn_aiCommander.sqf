@@ -23,27 +23,6 @@ private _lastCommanderUpdate = diag_tickTime;
 private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
 
-// Function to calculate max attacking groups based on player count
-private _fnc_calculateMaxAttackingGroups = {
-    private _playerCount = count (allPlayers - entities "HeadlessClient_F");
-    
-    // No attacks with 1-2 players
-    if (_playerCount <= 2) exitWith { 0 };
-    
-    // Calculate groups: subtract 2 from player count and divide by 2 (rounded down)
-    // This gives us:
-    // 3-4 players = 1 group
-    // 5-6 players = 2 groups
-    // 7-8 players = 3 groups
-    // etc.
-    private _maxGroups = floor((_playerCount - 2) / 2);
-    
-    // Cap at maximum of 12 groups
-    _maxGroups = _maxGroups min 12;
-    
-    _maxGroups
-};
-
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
     ["_threatLevel", _currentThreatLevel],
@@ -51,13 +30,36 @@ private _aiCommander = createHashMapObject [[
     ["_activeAttackGroups", []],
     ["_activeDefenseGroups", []],
     ["_garrisonedGroups", []],
-    ["_maxAttackingGroups", call _fnc_calculateMaxAttackingGroups],  // Dynamic based on player count
+    ["_maxAttackingGroups", 0],  // Will be set in initialize
     ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
+
+    ["_calculateMaxAttackingGroups", {
+        private _playerCount = count (allPlayers - entities "HeadlessClient_F");
+        
+        // No attacks with 1-2 players
+        if (_playerCount <= 2) exitWith { 0 };
+        
+        // Calculate groups: subtract 2 from player count and divide by 2 (rounded down)
+        // This gives us:
+        // 3-4 players = 1 group
+        // 5-6 players = 2 groups
+        // 7-8 players = 3 groups
+        // etc.
+        private _maxGroups = floor((_playerCount - 2) / 2);
+        
+        // Cap at maximum of 12 groups
+        _maxGroups = _maxGroups min 12;
+        
+        _maxGroups
+    }],
 
     ["_initializeGroups", {
         // Wait until the objective groups have been initialized
         waitUntil {!isNil "InitializationOG" && {InitializationOG}};
+
+        // Calculate initial max attacking groups
+        _self set ["_maxAttackingGroups", _self call ["_calculateMaxAttackingGroups", []]];
 
         // Get all virtual groups from the virtualization system
         private _allGroups = FLO_virtualGroups get "_groups";
@@ -85,7 +87,7 @@ private _aiCommander = createHashMapObject [[
         params ["_targetPos", "_targetType"];
         
         // Recalculate max attacking groups based on current player count
-        _self set ["_maxAttackingGroups", call _fnc_calculateMaxAttackingGroups];
+        _self set ["_maxAttackingGroups", _self call ["_calculateMaxAttackingGroups", []]];
         
         // Check if we're at the attack group limit
         if (count (_self get "_activeAttackGroups") >= (_self get "_maxAttackingGroups")) exitWith {
