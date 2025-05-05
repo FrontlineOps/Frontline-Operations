@@ -42,22 +42,8 @@ while {(_groups get _groupId) isNotEqualTo objNull} do {
 };
 
 // Get unit count from OPFOR_Group_Counts or use provided count
-if (_unitCount < 0) then {
-    private _groupCounts = OPFOR_Group_Counts;
-    private _foundCount = false;
-    {
-        _x params ["_type", "_count"];
-        if (_type == _groupType) then {
-            _unitCount = _count;
-            _foundCount = true;
-        };
-    } forEach _groupCounts;
-    
-    if (!_foundCount) then {
-        // Default fallback if group type not found
-        _unitCount = 1;
-        diag_log format ["[VIRTUALIZATION] ERROR: No unit count defined for group type %1, using default of 1", _groupType];
-    };
+if (isNil "_unitCount" || { _unitCount <= 0 || typeName _unitCount != "SCALAR" }) then {
+    _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
 };
 
 // Create group data hashmap

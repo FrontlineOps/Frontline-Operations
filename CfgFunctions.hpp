@@ -76,6 +76,7 @@ class FLO {
         class sendNotification          {};
         class displayNotification       {};
         class findEdgeSpawnPos          {};
+        class getGroupTypeCount        {};
     };
     
     class Misc {
