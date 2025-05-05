@@ -4,14 +4,6 @@ params [["_thisCapitalTrigger", objNull, [objNull]]];
 private _triggerPos = getPos _thisCapitalTrigger;
 private _AGGRSCORE = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) # 0));
 
-// Function to spawn watch posts
-private _fnc_spawnWatchPost = {
-    params ["_road", "_dir"];
-    if (!isNull _road) then {
-        [_road, _dir] execVM "Scripts\Objectives\WatchPostBB.sqf";
-    };
-};
-
 // Function to setup single HQ
 private _fnc_setupHQ = {
     params ["_building"];

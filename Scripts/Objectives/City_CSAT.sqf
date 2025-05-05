@@ -21,23 +21,6 @@ for "_i" from 1 to 3 do {
     [_triggerPos] call _fnc_spawnSupplyBox;
 };
 
-// Spawn watch posts based on aggression
-if (count (_triggerPos nearRoads 150) > 0) then {
-    private _fnc_createWatchPost = {
-        params ["_pos"];
-        private _road = selectRandom (_pos nearRoads 150);
-        private _connectedRoad = (roadsConnectedTo _road) select 0;
-        if (!isNil "_connectedRoad") then {
-            private _dir = _road getDir _connectedRoad;
-            [_road, _dir] execVM "Scripts\Objectives\WatchPostBB.sqf";
-        };
-    };
-    
-    [_triggerPos] call _fnc_createWatchPost;
-    if (_aggrScore > 5) then { [_triggerPos] call _fnc_createWatchPost; };
-    if (_aggrScore > 10) then { [_triggerPos] call _fnc_createWatchPost; };
-};
-
 // Launch assault on nearest installation
 private _assaultTargets = allMapMarkers select {
     markerType _x == "b_installation" && 
