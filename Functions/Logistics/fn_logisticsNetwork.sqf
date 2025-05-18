@@ -182,34 +182,37 @@ if (isNil "FLO_Logistics_Network") then {
                         private _offsetY = _spreadDistance * (sin _spreadDir);
                         private _reinforcePos = _reinforcePos vectorAdd [_offsetX, _offsetY, 0];
                         
-                        // Create the replacement group
-                        private _newGroupId = [_spawnPos, _groupType, nil, _reinforceObjective, _groupCost] call FLO_fnc_createVirtualGroup;
-                        
-                        if (_newGroupId != "") then {
-                            // Mark the group as reinforcing
-                            private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
-                            _groupData set ["isReinforcing", true];
+                        // Get correct unit count for this group type
+                        private _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
+                        // Spend resources before creating the group
+                        if ((FLO_OPFOR_Resources call ["spendResources", [_groupCost, "reinforcement"]]) isEqualTo true) then {
+                            // Create the replacement group with correct unit count
+                            private _newGroupId = [_spawnPos, _groupType, nil, _reinforceObjective, _unitCount] call FLO_fnc_createVirtualGroup;
                             
-                            // Set up waypoints to move to reinforce position with spread
-                            private _waypoints = [[_reinforcePos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
-                            [_newGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
-                            
-                            // Add to AI Commander's garrison if it exists
-                            if (!isNil "FLO_AI_Commander") then {
-                                private _garrisonedGroups = FLO_AI_Commander get "_garrisonedGroups";
-                                _garrisonedGroups pushBack _newGroupId;
-                                
+                            if (_newGroupId != "") then {
+                                // Mark the group as reinforcing
                                 private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
-                                _groupData set ["garrisonPosition", _reinforcePos];
+                                _groupData set ["isReinforcing", true];
+                                
+                                // Set up waypoints to move to reinforce position with spread
+                                private _waypoints = [[_reinforcePos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
+                                [_newGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                                
+                                // Add to AI Commander's garrison if it exists
+                                if (!isNil "FLO_AI_Commander") then {
+                                    private _garrisonedGroups = FLO_AI_Commander get "_garrisonedGroups";
+                                    _garrisonedGroups pushBack _newGroupId;
+                                    
+                                    private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
+                                    _groupData set ["garrisonPosition", _reinforcePos];
+                                };
+                                
+                                ["LOGISTICS", 3, format["Created replacement %1 group, spawning at %2, moving to %3", 
+                                    _groupType, _spawnObjective, _reinforceObjective]] call FLO_fnc_log;
+                                
+                                // Deduct from available resources
+                                _resources = _resources - _groupCost;
                             };
-                            
-                            // Spend resources
-                            FLO_OPFOR_Resources call ["spendResources", [_groupCost, "reinforcement"]];
-                            ["LOGISTICS", 3, format["Created replacement %1 group, spawning at %2, moving to %3", 
-                                _groupType, _spawnObjective, _reinforceObjective]] call FLO_fnc_log;
-                            
-                            // Deduct from available resources
-                            _resources = _resources - _groupCost;
                         };
                     };
                 } forEach _destroyedGroups;
