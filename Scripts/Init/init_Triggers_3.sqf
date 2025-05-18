@@ -38,28 +38,6 @@ _trgA setTriggerStatements [
 
 "",""""];
 
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger) getPos [(500 + (random 2000)),(0 + (random 350))], false];
-_trgA setTriggerArea [500, 500, 0, false, 60];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\HeliInsert_CSAT.sqf';
-
-"",""""];
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger) getPos [(500 + (random 2000)),(0 + (random 350))], false];
-_trgA setTriggerArea [500, 500, 0, false, 60];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\VehiInsert_CSAT.sqf';
-
-"",""""];
-
 if ( count (nearestobjects [(getPos thisTrigger), ['LocationCity_F'], 100]) != 0) then {
 
 _trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
@@ -75,7 +53,6 @@ _trgA setTriggerStatements [
 };
 
 ", ""];
-
 
 } forEach _objectLocT;
 

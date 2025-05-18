@@ -151,12 +151,6 @@ waitUntil {!isNil "EtVInitialized"};
     };
 };
 
-//Dynamic Virtualization System
-[] spawn { 
-    sleep 20; 
-    addMissionEventHandler ["EachFrame", {[] call FLO_fnc_CDVS}];
-};
-
 //Mission Commander System
 remoteExec ["FLO_fnc_MissionStartup", 2];
 
