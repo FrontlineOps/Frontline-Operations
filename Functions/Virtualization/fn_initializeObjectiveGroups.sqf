@@ -135,6 +135,9 @@ private _allMarkers = allMapMarkers;
     };
 } forEach _allMarkers;
 
+// After processing objectives, add civilian population to locations
+[] call FLO_fnc_createVirtualCivilianPopulation;
+
 ["VIRTUALIZATION", 3, format["Finished initializing objective groups - %1 total groups created", count _allCreatedGroups]] call FLO_fnc_log;
 
 InitializationOG = true;

@@ -1,3 +1,13 @@
+// Civilian population configuration
+CiviliansPerLocationMin = 5;
+CiviliansPerLocationMax = 15;
+
+// List of building classes considered civilian (expand as needed)
+CivBuildingClasses = [
+    "House_F", "Building", "Land_i_House_Small_03_V1_F", "Land_i_House_Big_01_V1_F"
+    // Add more as needed
+];
+
 CivMenArray = [
 "C_Man_casual_9_F_euro",
 "C_Man_casual_8_F_euro",

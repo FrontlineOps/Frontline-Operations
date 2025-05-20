@@ -26,7 +26,7 @@ if (isNil "FLO_virtualGroups") then {
             ["_groups", createHashMap],          // All virtualized groups
             ["_activationDistance", _activationDistance],
             ["_enabled", true],
-            ["_debugMode", false],
+            ["_debugMode", true],
             
             // Method to enable/disable the system
             ["_setEnabled", {

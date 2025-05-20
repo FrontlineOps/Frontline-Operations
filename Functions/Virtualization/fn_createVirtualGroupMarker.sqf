@@ -47,6 +47,7 @@ switch (_groupType) do {
     case "jet": { _markerType = "o_plane"; };
     case "artillery": { _markerType = "o_art"; };
     case "support": { _markerType = "o_support"; };
+    case "civilian": { _markerType = "mil_dot"; };
     default { _markerType = "o_unknown"; };
 };
 
@@ -60,7 +61,9 @@ switch (_state) do {
     case "attacking": { _markerColor = "ColorRed"; };
     case "defending": { _markerColor = "ColorYellow"; };
     case "reinforcing": { _markerColor = "ColorGreen"; };
-    default { _markerColor = "ColorBlack"; };
+    default {
+        if (_groupType isEqualTo "civilian") then { _markerColor = "ColorWhite"; } else { _markerColor = "ColorBlack"; };
+    };
 };
 
 _marker setMarkerColor _markerColor;

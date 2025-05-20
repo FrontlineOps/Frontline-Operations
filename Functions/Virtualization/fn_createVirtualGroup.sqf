@@ -43,7 +43,11 @@ while {(_groups get _groupId) isNotEqualTo objNull} do {
 
 // Get unit count from OPFOR_Group_Counts or use provided count
 if (isNil "_unitCount" || { _unitCount <= 0 || typeName _unitCount != "SCALAR" }) then {
-    _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
+    if (_groupType isEqualTo "civilian") then {
+        _unitCount = 5 + floor random 6; // 5-10 civilians per group by default
+    } else {
+        _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
+    };
 };
 
 // Create group data hashmap

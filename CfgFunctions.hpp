@@ -25,18 +25,19 @@ class FLO {
     class Virtualization {
         file = "Functions\Virtualization";
         
-        class initVirtualization             {};
-        class createVirtualGroupMarker       {};
-        class createVirtualWaypointMarkers   {};
-        class virtualGroupsUpdateLoop        {};
-        class activateVirtualGroup           {};
-        class deactivateVirtualGroup         {};
-        class createVirtualGroup             {};
-        class updateVirtualGroupWaypoints    {};
-        class initializeObjectiveGroups      {};
-        class toggleVirtualizationDebug      {};
-        class distributeVirtualGroups        {};
-        class activateSavedVirtualGroup      {};
+        class initVirtualization              {};
+        class createVirtualGroupMarker        {};
+        class createVirtualWaypointMarkers    {};
+        class virtualGroupsUpdateLoop         {};
+        class activateVirtualGroup            {};
+        class deactivateVirtualGroup          {};
+        class createVirtualGroup              {};
+        class updateVirtualGroupWaypoints     {};
+        class initializeObjectiveGroups       {};
+        class toggleVirtualizationDebug       {};
+        class distributeVirtualGroups         {};
+        class activateSavedVirtualGroup       {};
+        class createVirtualCivilianPopulation {};
     };
 
     class Logistics {

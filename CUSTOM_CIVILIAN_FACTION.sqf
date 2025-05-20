@@ -8,6 +8,15 @@
 
 // Where are Classnames ? Right click on any Unit or Vehicle in the Editor and Select find in CFG viewer, Last Name in the [path] tab is the Classname,
 
+// Civilian population configuration
+CiviliansPerLocationMin = 10;
+CiviliansPerLocationMax = 25;
+
+// List of building classes considered civilian (expand as needed)
+CivBuildingClasses = [
+    "House_F", "Building", "Land_i_House_Small_03_V1_F", "Land_i_House_Big_01_V1_F"
+    // Add more as needed
+];
 
 // Default civilian classnames (Vanilla Arma 3)
 CivVehArray = ("(configname _x iskindOf 'car') && (gettext (_x >> 'faction') == 'CIV_F')" configClasses (configfile >> "CfgVehicles")) apply {configName _x};

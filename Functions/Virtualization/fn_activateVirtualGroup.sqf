@@ -66,6 +66,16 @@ switch (true) do {
         };
     };
     
+    // Civilian group
+    case (_groupType isEqualTo "civilian"): {
+        _realGroup = createGroup [civilian, true];
+        for "_i" from 1 to _unitCount do {
+            private _unitType = selectRandom CivMenArray;
+            private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
+            private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+        };
+    };
+    
     // Vehicle groups
     case (_groupType in ["motorized", "mechanized", "armor"]): {
         _realGroup = createGroup [_side, true];
