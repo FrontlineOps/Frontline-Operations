@@ -41,15 +41,14 @@ private _aiCommander = createHashMapObject [[
         if (_playerCount <= 2) exitWith { 0 };
         
         // Calculate groups: subtract 2 from player count and divide by 2 (rounded down)
-        // This gives us:
-        // 3-4 players = 1 group
-        // 5-6 players = 2 groups
-        // 7-8 players = 3 groups
-        // etc.
         private _maxGroups = floor((_playerCount - 2) / 2);
         
-        // Cap at maximum of 12 groups
-        _maxGroups = _maxGroups min 12;
+        // Add aggression score
+        private _AGGRSCORE = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) param [0, "", [""]])) ;
+        private _maxGroups = _maxGroups + floor (_AGGRSCORE / 4);
+        
+        // Cap at maximum of 16 groups
+        _maxGroups = _maxGroups min 16;
         
         _maxGroups
     }],
