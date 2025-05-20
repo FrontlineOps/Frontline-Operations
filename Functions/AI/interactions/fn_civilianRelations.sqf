@@ -1,8 +1,13 @@
-sleep 5;
+/*
+ * Function: FLO_fnc_civilianRelations
+ * Description: Handles all civilian interaction logic (actions, detain, reputation, etc) for the mission.
+ * Arguments: None
+ * Returns: Nothing
+ * Usage: [] call FLO_fnc_civilianRelations;
+ */
 
 // --- Utility Functions ---
 
-// Remove all event handlers and actions from units of a given array and side
 private _clearUnitHandlers = {
     params ["_side", "_unitArray"];
     {
@@ -13,7 +18,6 @@ private _clearUnitHandlers = {
     } remoteExec ["call", 0];
 };
 
-// Add ARREST, Move, Stop, Mount actions for detained civilians
 private _addDetainActions = {
     params ["_unit"];
     [_unit,[
@@ -51,14 +55,12 @@ private _addDetainActions = {
     ]] remoteExec ["addAction",0,true];
 };
 
-// Add actions and event handlers to civilians
 private _setupCivilianActions = {
     params ["_unit"];
-    // Investigate
     [_unit, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Investigate",
         {
-            [(_this select 0)] execVM "Scripts\\INVEST.sqf";
+            [(_this select 0)] execVM "Scripts\INVEST.sqf";
             (_this select 0) disableAI "PATH";
             (_this select 0) disableAI "MOVE";
             (_this select 0) setDir (position (_this select 0) getDir position player);
@@ -67,12 +69,10 @@ private _setupCivilianActions = {
         },
         nil, 1.5, true, true, "", "alive _target", 4, false, "", ""
     ]] remoteExec ["addAction", 0, true];
-
-    // Offer Help
     [_unit, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\defend_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Offer Help",
         {
-            [(_this select 0)] execVM "Scripts\\HELP.sqf";
+            [(_this select 0)] execVM "Scripts\HELP.sqf";
             (_this select 0) disableAI "PATH";
             (_this select 0) disableAI "MOVE";
             (_this select 0) setDir (position (_this select 0) getDir position player);
@@ -81,8 +81,6 @@ private _setupCivilianActions = {
         },
         nil, 1.5, true, true, "", "alive _target", 4, false, "", ""
     ]] remoteExec ["addAction", 0, true];
-
-    // Detain
     [_unit, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Detain",
         {
@@ -136,17 +134,13 @@ private _setupCivilianActions = {
 
 // --- Main Logic ---
 
-// Get reputation score from marker
 private _mrkrs = allMapMarkers select {markerColor _x == "Color4_FD_F"};
 private _mrkr = _mrkrs select 0;
 private _REPSCORE = parseNumber (markerText _mrkr);
 
-// Clear all civilian event handlers and actions
 [civilian, CivMenArray] call _clearUnitHandlers;
 
-// Add event handlers and actions to all civilians
 {
-    // Add killed event handler
     _x addEventHandler ["Killed", {
         if (side (_this select 1) == west) then {
             [playerSide, "HQ"] commandChat "WATCH for CIVILIAN CASUALITY Corporal !";
@@ -156,23 +150,5 @@ private _REPSCORE = parseNumber (markerText _mrkr);
             [] execVM "Scripts\\Civ_Relations.sqf";
         };
     }];
-    // Add actions
     [_x] call _setupCivilianActions;
-} forEach (allUnits select {captive _x == false && (typeOf _x) in CivMenArray});
-
-// --- Remains Collector Logic ---
-{
-    removeFromRemainsCollector [_x];
-} forEach (allUnits select {side _x != west});
-{
-    removeFromRemainsCollector [_x];
-} forEach (vehicles select {side (driver  _x) != west});
-
-sleep 3;
-
-{
-    addToRemainsCollector [_x];
-} forEach (allUnits select {side _x != west});
-{
-    addToRemainsCollector [_x];
-} forEach (vehicles select {side (driver  _x) != west});
+} forEach (allUnits select {captive _x == false && (typeOf _x) in CivMenArray}); 
