@@ -84,7 +84,7 @@ private _setupCivilianActions = {
     [_unit, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Detain",
         {
-            playSound3D [getMissionPath (selectRandom ["Sounds\\GoProne_1.ogg", "Sounds\\Halt.ogg", "Sounds\\Stop.ogg", "Sounds\\VehStop_2.ogg"]), player];
+            playSound3D [getMissionPath (selectRandom ["Sounds\GoProne_1.ogg", "Sounds\Halt.ogg", "Sounds\Stop.ogg", "Sounds\VehStop_2.ogg"]), player];
             (_this select 0) removeAction (_this select 2);
             (_this select 0) removeAllEventHandlers "FiredNear";
             _chance = selectRandom [0, 1, 2, 3];
@@ -146,8 +146,8 @@ private _REPSCORE = parseNumber (markerText _mrkr);
             [playerSide, "HQ"] commandChat "WATCH for CIVILIAN CASUALITY Corporal !";
             removeAllActions (_this select 0);
             {(_this select 0) playMove "";} remoteExec ["call", 0];
-            [] execVM "Scripts\\ReputationMinus.sqf";
-            [] execVM "Scripts\\Civ_Relations.sqf";
+            [] execVM "Scripts\ReputationMinus.sqf";
+            [] execVM "Scripts\Civ_Relations.sqf";
         };
     }];
     [_x] call _setupCivilianActions;
