@@ -1,21 +1,22 @@
 /*
  * Function: FLO_fnc_civilianRelations
  * Description: Handles all civilian interaction logic (actions, detain, reputation, etc) for the mission.
- * Arguments: None
+ * Arguments:
+ *   0: Array of units <ARRAY> - The civilians to apply interaction logic to
  * Returns: Nothing
- * Usage: [] call FLO_fnc_civilianRelations;
+ * Usage: [units _group] call FLO_fnc_civilianRelations;
  */
+
+params ["_civUnits"];
 
 // --- Utility Functions ---
 
 private _clearUnitHandlers = {
-    params ["_side", "_unitArray"];
+    params ["_units"];
     {
-        {
-            _x removeAllEventHandlers "Killed";
-            removeAllActions _x;
-        } forEach (allUnits select {captive _x == false && (typeOf _x) in _unitArray && side _x == _side});
-    } remoteExec ["call", 0];
+        _x removeAllEventHandlers "Killed";
+        removeAllActions _x;
+    } forEach _units;
 };
 
 private _addDetainActions = {
@@ -138,7 +139,7 @@ private _mrkrs = allMapMarkers select {markerColor _x == "Color4_FD_F"};
 private _mrkr = _mrkrs select 0;
 private _REPSCORE = parseNumber (markerText _mrkr);
 
-[civilian, CivMenArray] call _clearUnitHandlers;
+[_civUnits] call _clearUnitHandlers;
 
 {
     _x addEventHandler ["Killed", {
@@ -151,4 +152,4 @@ private _REPSCORE = parseNumber (markerText _mrkr);
         };
     }];
     [_x] call _setupCivilianActions;
-} forEach (allUnits select {captive _x == false && (typeOf _x) in CivMenArray}); 
+} forEach _civUnits; 

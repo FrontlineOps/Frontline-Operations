@@ -6,7 +6,7 @@
  *
  * Arguments:
  * 0: Position <ARRAY> - [x, y, z] where the group will be created
- * 1: Group Type <STRING> - "infantry", "motorized", "mechanized", "armor", "helicopter", "jet", "air", "artillery"
+ * 1: Group Type <STRING> - "infantry", "motorized", "mechanized", "armor", "helicopter", "jet", "air", "artillery", "civilian", "civilianVehicle"
  * 2: Group Config <CONFIG> - (Optional) Group config from CfgGroups if using a predefined group
  * 3: Objective <STRING> - (Optional) ID of the objective this group is tied to
  * 4: Unit Count <NUMBER> - (Optional, default based on group type) Number of units in infantry groups
@@ -17,6 +17,7 @@
  *
  * Example:
  * [getMarkerPos "marker_1", "infantry", nil, "obj_1", 8] call FLO_fnc_createVirtualGroup;
+ * [getMarkerPos "marker_2", "civilianVehicle", nil, "civ_car", 1, civilian] call FLO_fnc_createVirtualGroup;
  */
 
 // Get parameters with proper type checking
@@ -44,9 +45,13 @@ while {(_groups get _groupId) isNotEqualTo objNull} do {
 // Get unit count from OPFOR_Group_Counts or use provided count
 if (isNil "_unitCount" || { _unitCount <= 0 || typeName _unitCount != "SCALAR" }) then {
     if (_groupType isEqualTo "civilian") then {
-        _unitCount = 5 + floor random 6; // 5-10 civilians per group by default
+        _unitCount = 1 + floor random 3; // 1-3 civilians per group by default
     } else {
-        _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
+        if (_groupType isEqualTo "civilianVehicle") then {
+            _unitCount = 1;
+        } else {
+            _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
+        };
     };
 };
 

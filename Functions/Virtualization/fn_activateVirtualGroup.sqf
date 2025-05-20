@@ -69,11 +69,15 @@ switch (true) do {
     // Civilian group
     case (_groupType isEqualTo "civilian"): {
         _realGroup = createGroup [civilian, true];
+        private _civUnits = [];
         for "_i" from 1 to _unitCount do {
             private _unitType = selectRandom CivMenArray;
             private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
             private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+            _civUnits pushBack _unit;
         };
+        // Apply civilian interaction logic to these units
+        [_civUnits] call FLO_fnc_civilianRelations;
     };
     
     // Vehicle groups
@@ -166,6 +170,38 @@ switch (true) do {
                 [_x] joinSilent _realGroup;
             } forEach units _vehGroup;
             deleteGroup _vehGroup;
+        };
+    };
+    
+    // Civilian vehicle group
+    case (_groupType isEqualTo "civilianVehicle"): {
+        _realGroup = createGroup [civilian, true];
+        private _vehicleType = selectRandom CivVehArray;
+        private _spawnPos = _position;
+        private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "NONE"];
+        _vehicle setDir (random 360);
+        _vehicle lock 0; // Unlocked
+        _vehicle setFuel 1;
+        _vehicle setDamage 0;
+        _vehicle setVehicleLock "UNLOCKED";
+        // Fill only the driver and sometimes passengers
+        private _crewPositions = fullCrew [_vehicle, "", true];
+        private _driverPos = _crewPositions select {(_x select 1) == "driver"};
+        private _cargoPos = _crewPositions select {(_x select 1) == "cargo"};
+        // Always fill driver
+        if (count _driverPos > 0) then {
+            private _unitType = selectRandom CivMenArray;
+            private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+            (_unit) moveInDriver _vehicle;
+        };
+        // Randomly fill 0-2 passengers if available
+        private _numPassengers = (count _cargoPos) min (floor random 3);
+        for "_i" from 0 to (_numPassengers - 1) do {
+            if (_i < count _cargoPos) then {
+                private _unitType = selectRandom CivMenArray;
+                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                _unit moveInCargo _vehicle;
+            };
         };
     };
     

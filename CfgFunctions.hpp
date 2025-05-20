@@ -21,6 +21,12 @@ class FLO {
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
     };
+    
+    class Interactions {
+        file = "Functions\AI\Interactions";
+
+        class civilianRelations {};
+    };
 
     class Virtualization {
         file = "Functions\Virtualization";

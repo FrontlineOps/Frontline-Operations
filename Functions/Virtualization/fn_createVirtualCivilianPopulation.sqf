@@ -46,7 +46,7 @@ private _totalCivsPlaced = 0;
     for "_i" from 1 to _numCars do {
         private _carType = selectRandom CivVehArray;
         private _carPos = [(_pos select 0) + (random 40 - 20), (_pos select 1) + (random 40 - 20), 0];
-        private _carGroupId = [_carPos, "civilian", nil, "civ_car", 1, civilian] call FLO_fnc_createVirtualGroup;
+        private _carGroupId = [_carPos, "civilianVehicle", nil, "civ_car", 1, civilian] call FLO_fnc_createVirtualGroup;
         // 50% parked, 50% simple patrol
         if (random 1 < 0.5) then {
             // Parked
@@ -57,7 +57,7 @@ private _totalCivsPlaced = 0;
             private _carPatrol = [];
             for "_j" from 0 to 2 do {
                 private _angle = random 360;
-                private _dist = 20 + random 40;
+                private _dist = 1000 + random 200; // 1000-1200m from car position
                 private _wp = [(_carPos select 0) + (sin _angle * _dist), (_carPos select 1) + (cos _angle * _dist), 0];
                 _carPatrol pushBack [_wp, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 3];
             };
