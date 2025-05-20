@@ -37,47 +37,11 @@ _trgA setTriggerStatements [
 [thisTrigger] execVM 'Scripts\Objectives\Recon_CSAT.sqf';
 
 "",""""];
-
-if ( count (nearestobjects [(getPos thisTrigger), ['LocationCity_F'], 100]) != 0) then {
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
-_trgA setTriggerArea [1000, 1000, 0, false, 60];
-_trgA setTriggerTimeout [7, 7, 7, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\City_Civ.sqf';
-
-"",""""];
 };
 
 ", ""];
 
 } forEach _objectLocT;
-
-sleep 1;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-_allLGs = allMapMarkers select { markerType _x == "b_installation" && markerColor _x == "ColorWEST"};
-
-{ if ( count (nearestobjects [getMarkerpos _x, ["LocationCity_F", "LocationCityCapital_F"], 100]) != 0) then {
-
-_trgA = createTrigger ["EmptyDetector", getMarkerPos _x, false];
-_trgA setTriggerArea [1000, 1000, 0, false, 300];
-_trgA setTriggerTimeout [7, 7, 7, true];
-_trgA setTriggerActivation ["WEST", "PRESENT", false];
-_trgA setTriggerStatements [
-"this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))","
-
-[thisTrigger] execVM 'Scripts\City_Civ.sqf';
-
-", ""];
-
-
-};} forEach _allLGs; 
-
-
 
 ["LOADING . . . "] remoteExec ["hint", 0];
 sleep 1;

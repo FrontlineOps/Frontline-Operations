@@ -134,19 +134,6 @@ _trgA setTriggerStatements [
 
 "",""""];
 
-if ( count (nearestobjects [thisTrigger, ['LocationCityCapital_F'], 100]) != 0) then {
-
-_trgA = createTrigger ['EmptyDetector', getPos thisTrigger, false];
-_trgA setTriggerArea [1000, 1000, 0, false, 300];
-_trgA setTriggerTimeout [10, 10, 10, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Capital_Civ.sqf';
-
-"",""""];
-
 };
 
 ", ""];
@@ -156,31 +143,6 @@ _trgA setTriggerStatements [
 
 ["LOADING . . . "] remoteExec ["hint", 0];
 sleep 1;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLoc = nearestobjects [position player, ["LocationVillage_F"], 40000]; 
-_objectCountFull = count _objectLoc;
-_objectCountNew = round ( _objectCountFull / 1.5 );
-if (_objectCountNew == 0) then {_objectCountNew = 1;};
-_allobjectsShuffled = _objectLoc call BIS_fnc_arrayShuffle;
-_allobjectsNew = _allobjectsShuffled select [0, _objectCountNew];
-
-
-{
-
-_trgA = createTrigger ['EmptyDetector', (getPos _x), false];
-_trgA setTriggerArea [1000, 1000, 0, false, 300];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-"this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))","
-
-[thisTrigger] execVM 'Scripts\Town_Civ.sqf';
-
-", ""];
-
-} forEach _allobjectsNew;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
