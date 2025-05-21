@@ -37,7 +37,8 @@ if (_Chance < 5) then {
 if (_Chance == 6) then {
     private _GNRT = "YES";
     private _DVRT = "NO";
-    0 = [] spawn {
+    [_DVRT, _GNRT] spawn {
+        params ["_DVRT", "_GNRT"];
         private _result = ["Intel is about a Friendly Aircraft CrashSite, We can Track them Down and Rescue the Pilot and Destroy the Wreck,  (Optional Mission : Rescue Captured Pilot)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
 
         if (_result) then {
@@ -93,7 +94,8 @@ if (_Chance == 6) then {
 if (_Chance == 7) then {
     private _GNRT = "YES";
     private _DVRT = "NO";
-    0 = [] spawn {
+    [_DVRT, _GNRT] spawn {
+        params ["_DVRT", "_GNRT"];
         private _result = ["Intel Suggest the whereabouts of the Friendly Squad we Lost Contact with Earlier, We can Track them down and Rescue Them,  (Optional Mission : Rescue Missing Squad)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
 
         if (_result) then {
@@ -149,7 +151,8 @@ if (_Chance == 7) then {
 if (_Chance == 8) then {
     private _GNRT = "YES";
     private _DVRT = "NO";
-    0 = [] spawn {
+    [_DVRT, _GNRT] spawn {
+        params ["_DVRT", "_GNRT"];
         private _result = ["Intel Suggests Enemy Support Convoy will be Launched toward Frontlines, We can Intercept the Convoy and Dismantle their Reinforcements and Support operation,  (Optional Mission : Destroy Enemy Convoy)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
 
         if (_result) then {
