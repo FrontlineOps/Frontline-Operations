@@ -1,6 +1,6 @@
 /*
  * Function: FLO_fnc_civilianIntel
- * Author: Refactored from INTL_Civ.sqf by Frontline Operations Development Group
+ * Author: Frontline Operations Development Group
  * Description:
  * Handles civilian-provided intelligence logic (IEDs, OPFOR markers, notifications).
  * Arguments: None
@@ -58,6 +58,5 @@ if (_chance23 > 1) then {
         };
     };
 } else {
-    // TODO: Refactor Scripts/INTL.sqf into a function and call it here
-    // ["Scripts/INTL.sqf"] call BIS_fnc_execVM;
+    [] call FLO_fnc_militaryIntel;
 }; 
