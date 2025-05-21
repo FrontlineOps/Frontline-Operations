@@ -82,11 +82,11 @@ switch (true) do {
                 } forEach (_bldg buildingPos -1);
             } forEach _buildings;
             // Place civilians in available building positions
-            private _usedPositions = 0;
+            _buildingPositions = _buildingPositions call BIS_fnc_arrayShuffle;
             for "_i" from 1 to _unitCount do {
                 private _unitType = selectRandom CivMenArray;
-                private _spawnPos = if (_usedPositions < count _buildingPositions) then {
-                    _buildingPositions select _usedPositions
+                private _spawnPos = if (count _buildingPositions > 0) then {
+                    _buildingPositions deleteAt 0
                 } else {
                     [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
                 };

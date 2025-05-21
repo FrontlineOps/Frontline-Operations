@@ -122,6 +122,21 @@ switch (true) do {
         ["VIRTUALIZATION", 3, format["Created artillery %1 with side %2", _unitType, side _vehicle]] call FLO_fnc_log;
     };
     
+    // Civilian unit (restore to exact saved position if possible)
+    case (_groupType isEqualTo "civilian"): {
+        // _unitType and _position are passed in as arguments (from [unitType, position] pairs)
+        private _spawnPos = if (!(_position isEqualTo [0,0,0])) then {
+            _position
+        } else {
+            [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
+        };
+        private _tempGroup = createGroup [_side, true];
+        _createdUnit = _tempGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+        [_createdUnit] joinSilent _realGroup;
+        deleteGroup _tempGroup;
+        ["VIRTUALIZATION", 3, format["Created civilian unit %1 at %2", _unitType, _spawnPos]] call FLO_fnc_log;
+    };
+    
     // Default case - other vehicles
     default {
         // Find safe position for vehicle
