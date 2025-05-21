@@ -187,36 +187,4 @@ _dir = _nearRoad getDir _nextRoad;
 _V setDir _dir;
 	};
 
-
-
-_trg = createTrigger ["EmptyDetector", getPos thisPOWTrigger, false];  
-_trg setTriggerArea [1000, 1000, 0, false, 200];  
-_trgA setTriggerTimeout [2, 2, 2, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];  
-_trg setTriggerStatements [  
-"this",  "[thisTrigger, 750] execVM 'Scripts\Objectives\ZONEs.sqf';", ""]; 
-
-
-//   {
-//       _nvg = hmd _x;
-//       _x unassignItem _nvg;
-//       _x removeItem _nvg;
-// 	  _x addPrimaryWeaponItem "acc_flashlight";
-// 	  _x assignItem "acc_flashlight";
-// 	  _x enableGunLights "ForceOn";
-//   } foreach (allUnits select {side _x == east}); 
-
-
-{ if !((side _x) == west) then {
-            ZEUS removeCuratorEditableObjects [[_x],true];
-}; } foreach allUnits;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 [thisPOWTrigger, 200] execVM "Scripts\INTLitems.sqf";
-
-sleep 2 ;
-
-

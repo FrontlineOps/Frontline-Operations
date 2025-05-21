@@ -33,14 +33,7 @@ _objectLoc = nearestobjects [getPos _thisFactoryTrigger, ["O_MBT_02_cannon_F"], 
 	}];
 } forEach _objectLoc;
 
-sleep 10;
-
-_trg = createTrigger ["EmptyDetector", getPos _thisFactoryTrigger, false];  
-_trg setTriggerArea [1000, 1000, 0, false, 200];  
-_trgA setTriggerTimeout [2, 2, 2, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];  
-_trg setTriggerStatements [  
-"this",  "[thisTrigger, 750] execVM 'Scripts\Objectives\ZONEs.sqf';", ""]; 
+sleep 3;
 
 _trg = createTrigger ["EmptyDetector", getpos _thisFactoryTrigger, false];  
 _trg setTriggerArea [120, 120, 0, false, 200];  
@@ -215,13 +208,4 @@ _trgA setTriggerStatements [
 
 ", ""];
 
- 
-{ if !((side _x) == west) then {
-            ZEUS removeCuratorEditableObjects [[_x],true];
-}; } foreach allUnits;
- 
- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 [_thisFactoryTrigger, 200] execVM "Scripts\INTLitems.sqf";
-
-sleep 2 ;

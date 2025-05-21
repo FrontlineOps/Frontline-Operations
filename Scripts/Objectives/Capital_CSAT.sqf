@@ -121,15 +121,6 @@ private _fnc_createTrigger = {
     _trigger
 };
 
-// Create zone trigger
-[
-    _triggerPos,
-    [1000, 1000, 0, false, 200],
-    2,
-    ["WEST", "PRESENT", false],
-    ["this", "[thisTrigger, 2000] execVM 'Scripts\Objectives\ZONEs.sqf';", ""]
-] call _fnc_createTrigger;
-
 // Create capture trigger
 [
     _triggerPos,
@@ -157,15 +148,5 @@ private _fnc_createTrigger = {
     ]
 ] call _fnc_createTrigger;
 
-// Remove units from Zeus
-{
-    if !((side _x) == west) then {
-        ZEUS removeCuratorEditableObjects [[_x], true];
-    };
-} forEach allUnits;
-
 // Initialize intel items
 [_thisCapitalTrigger, 500] execVM "Scripts\INTLitems.sqf";
-
-sleep 2;
-

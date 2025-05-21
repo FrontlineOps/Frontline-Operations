@@ -138,15 +138,6 @@ _VC = createGroup East;
  sleep 10;
  
 _trg = createTrigger ["EmptyDetector", getPos thisBaseTrigger, false];  
-_trg setTriggerArea [1000, 1000, 0, false, 200];  
-_trgA setTriggerTimeout [2, 2, 2, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];  
-_trg setTriggerStatements [  
-"this",  "[thisTrigger, 1500] execVM 'Scripts\Objectives\ZONEs.sqf';", ""]; 
- 
- 
-   
-_trg = createTrigger ["EmptyDetector", getPos thisBaseTrigger, false];  
 _trg setTriggerArea [220, 220, 0, false, 200];  
 _trg setTriggerTimeout [10, 10, 10, true];
 _trg setTriggerActivation ["WEST SEIZED", "PRESENT", true];  
@@ -170,15 +161,4 @@ _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 "]; 
 
- 
- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-{ if !((side _x) == west) then {
-            ZEUS removeCuratorEditableObjects [[_x],true];
-}; } foreach allUnits;
- 
- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 [thisBaseTrigger, 300] execVM "Scripts\INTLitems.sqf";
-
-
-sleep 2;

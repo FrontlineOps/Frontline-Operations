@@ -38,27 +38,5 @@ if (count _allPositions > 0) then {
     ["Intel_01", selectRandom _allPositions, [0,0,0], 0, false, false, true] call LARs_fnc_spawnComp;
 };
 
-// Create detection trigger for enemy response
-private _responseTrigger = createTrigger ["EmptyDetector", _radarPos, false];
-_responseTrigger setTriggerArea [1000, 1000, 0, false, 200];
-_responseTrigger setTriggerTimeout [2, 2, 2, true];
-_responseTrigger setTriggerActivation ["WEST", "PRESENT", false];
-_responseTrigger setTriggerStatements [
-    "this",
-    "[thisTrigger, 750] execVM 'Scripts\Objectives\ZONEs.sqf';",
-    ""
-];
-
-// Remove non-BLUFOR units from Zeus
-{
-    if (side _x != west) then {
-        ZEUS removeCuratorEditableObjects [[_x], true];
-    };
-} forEach allUnits;
-
 // Spawn intel items around radar position
 [_radarTrigger, 200] execVM "Scripts\INTLitems.sqf";
-
-sleep 2 ;
-
-

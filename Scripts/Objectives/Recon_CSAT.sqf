@@ -32,12 +32,3 @@ if (_AGGRSCORE > 10) then {
 };
 		
 [_thisReconTrigger, 210] execVM "Scripts\INTLitems.sqf";
-
-{ if !((side _x) == west) then {
-            ZEUS removeCuratorEditableObjects [[_x],true];
-}; } foreach allUnits;
-
-
-
-
-

@@ -90,14 +90,6 @@ private _HeavGuns =  nearestObjects [(getpos thisOutpostTrigger), ["O_G_HMG_02_h
     private _CrewGroup = createVehicleCrew _x; 
     {_x setUnitLoadout (selectRandom (FLO_configCache get "units"))} forEach units _CrewGroup;
 } forEach _HeavGuns;
-
-// Create Triggers for Capture Zone
-_trg = createTrigger ["EmptyDetector", getPos thisOutpostTrigger, false];  
-_trg setTriggerArea [1000, 1000, 0, false, 200];  
-_trg setTriggerTimeout [2, 2, 2, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];  
-_trg setTriggerStatements [  
-"this",  "[thisTrigger, 600] execVM 'Scripts\Objectives\ZONEs.sqf';", ""]; 
   
   
 _trg = createTrigger ["EmptyDetector", getPos thisOutpostTrigger, false];  
@@ -127,5 +119,3 @@ _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 
 // Create Intel
 [thisOutpostTrigger, 200] execVM "Scripts\INTLitems.sqf";
-// Sleep
-sleep 2 ;
