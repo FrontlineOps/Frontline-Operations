@@ -124,7 +124,7 @@ class items
 						{
 							skill=0.44999999;
 							rank="CORPORAL";
-							init="call{[ " \n " this,            " \n " ""Search Officer"",           " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",  " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",  " \n " ""_this distance _target < 1"",       " \n " ""_caller distance _target < 1"",       " \n " { " \n " playSound3D [ ""a3\missions_f_oldman\data\sound\intel_body\1sec\intel_body_1sec_02.wss"", (_this select 0)];  " \n "  " \n " },             " \n " {},              " \n " {  " \n " " \n "[] call FLO_fnc_militaryIntel;"; " \n " " \n " },    " \n " {},              " \n " [],             " \n " 3,            " \n " 0,             " \n " true,             " \n " false             " \n "] remoteExec [""BIS_fnc_holdActionAdd"", 0, this]; }";
+							init="call{[ " \n " this,            " \n " ""Search Officer"",           " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",  " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",  " \n " ""_this distance _target < 1"",       " \n " ""_caller distance _target < 1"",       " \n " { " \n " playSound3D [ ""a3\missions_f_oldman\data\sound\intel_body\1sec\intel_body_1sec_02.wss"", (_this select 0)];  " \n "  " \n " },             " \n " {},              " \n " {  " \n " " \n "[] call FLO_fnc_militaryIntel; " \n " " \n " },    " \n " {},              " \n " [],             " \n " 3,            " \n " 0,             " \n " true,             " \n " false             " \n "] remoteExec [""BIS_fnc_holdActionAdd"", 0, this]; }";
 							class Inventory
 							{
 								class uniform

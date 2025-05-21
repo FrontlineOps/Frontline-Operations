@@ -78,8 +78,7 @@ if (_Chance == 6) then {
             _trgA setTriggerActivation ["WEST", "PRESENT", false];
             _trgA setTriggerStatements [
                 "this",
-                // TODO: Refactor Scripts/Mission_Pilot.sqf into a function and call it here
-                [thisTrigger] execVM 'Scripts/Mission_Pilot.sqf';
+                "[thisTrigger] execVM 'Scripts/Mission_Pilot.sqf';",
                 "",
                 ""
             ];
@@ -135,8 +134,7 @@ if (_Chance == 7) then {
             _trgA setTriggerActivation ["WEST", "PRESENT", false];
             _trgA setTriggerStatements [
                 "this",
-                // TODO: Refactor Scripts/Mission_Squad.sqf into a function and call it here
-                [thisTrigger] execVM 'Scripts/Mission_Squad.sqf';
+                "[thisTrigger] execVM 'Scripts/Mission_Squad.sqf';",
                 "",
                 ""
             ];
