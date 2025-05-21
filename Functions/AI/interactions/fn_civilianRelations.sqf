@@ -61,7 +61,7 @@ private _setupCivilianActions = {
     [_unit, [
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Investigate",
         {
-            [(_this select 0)] execVM "Scripts\INVEST.sqf";
+            [(_this select 0)] call FLO_fnc_civilianInvestigate;
             (_this select 0) disableAI "PATH";
             (_this select 0) disableAI "MOVE";
             (_this select 0) setDir (position (_this select 0) getDir position player);

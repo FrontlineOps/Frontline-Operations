@@ -26,6 +26,7 @@ class FLO {
         file = "Functions\AI\Interactions";
 
         class civilianRelations {};
+        class civilianInvestigate {};
     };
 
     class Virtualization {
