@@ -37,7 +37,7 @@ _OFC disableAI "PATH";
  {},              
  {  
  
-execVM "Scripts\INTL.sqf"; 
+[] call FLO_fnc_militaryIntel;
  
  },    
  {},              

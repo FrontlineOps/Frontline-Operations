@@ -55,6 +55,13 @@ class FLO {
         class logisticsNetwork      {};
     };
 
+    class Intelligence {
+        file = "Functions\Logistics\Intelligence";
+
+        class militaryIntel {};
+        class civilianIntel {};
+    };
+
     class Arsenal {
         file = "Functions\Arsenal";
 

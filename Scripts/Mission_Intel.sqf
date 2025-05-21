@@ -27,7 +27,7 @@ publicVariable "MapBooard";
 [MapBooard,[
 				"<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Investigate Enemy Plans",
 				{
-					[(_this select 0)] execVM "Scripts\INTL.sqf";
+					[(_this select 0)] call FLO_fnc_militaryIntel;
 					(_this select 0) removeAction (_this select 2) ;		
 
 				_MMarks = allMapMarkers select { markerType _x == "o_recon"};

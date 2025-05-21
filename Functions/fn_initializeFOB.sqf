@@ -146,7 +146,7 @@ if (_CIVIL getUnitTrait 'engineer' isEqualTo true) then {
     [50, 'STR_FLO_INSURGENT'] call FLO_fnc_sendRewardNotification ;
     [50] call FLO_fnc_addReward;
     deleteVehicle _CIVIL ; 
-    [] execVM 'Scripts\INTL_Civ.sqf';    
+    [] call FLO_fnc_civilianIntel;    
     [] execVM 'Scripts\ReputationPlus.sqf';
 } else {
     [0, 'STR_FLO_CIVILIAN'] call FLO_fnc_sendRewardNotification ;

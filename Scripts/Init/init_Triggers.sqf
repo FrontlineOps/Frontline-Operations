@@ -57,7 +57,7 @@ private _AGGRSCORE = parseNumber (markerText _mrkr) ;
                 };
             } forEach _intelItems;
 
-            [] execVM "Scripts\INTL.sqf";
+            [] call FLO_fnc_militaryIntel;
             //diag_log "Executed INTL.sqf script.";
         };
     };
