@@ -45,13 +45,35 @@ private _totalCivsPlaced = 0;
     private _numCars = 1 + floor random 3; // 1-3 cars per location
     for "_i" from 1 to _numCars do {
         private _carType = selectRandom CivVehArray;
+        // Try to place parked cars on roads
         private _carPos = [(_pos select 0) + (random 40 - 20), (_pos select 1) + (random 40 - 20), 0];
         private _carGroupId = [_carPos, "civilianVehicle", nil, "civ_car", 1, civilian] call FLO_fnc_createVirtualGroup;
         // 50% parked, 50% simple patrol
         if (random 1 < 0.5) then {
-            // Parked
-            private _carWaypoints = [[_carPos, "SENTRY", "SAFE", "LIMITED", "COLUMN", "YELLOW", 3]];
-            [_carGroupId, _carWaypoints] call FLO_fnc_updateVirtualGroupWaypoints;
+            // Parked: place on road if possible, no waypoints
+            private _roads = _carPos nearRoads 300;
+            if (count _roads > 0) then {
+                private _road = selectRandom _roads;
+                private _roadPos = getPos _road;
+                private _connected = roadsConnectedTo _road;
+                private _roadDir = if (count _connected > 0) then {
+                    _road getDir (_connected select 0)
+                } else {
+                    random 360
+                };
+                private _offset = 3 + random 1; // 3-4 meters
+                private _sideSign = if (random 1 < 0.5) then {1} else {-1};
+                private _sideDir = _roadDir + (90 * _sideSign);
+                private _sidePos = [
+                    (_roadPos select 0) + (sin _sideDir) * _offset,
+                    (_roadPos select 1) + (cos _sideDir) * _offset,
+                    _roadPos select 2
+                ];
+                private _groupData = (FLO_virtualGroups get "_groups") get _carGroupId;
+                if (!isNil "_groupData") then {
+                    _groupData set ["position", _sidePos];
+                };
+            };
         } else {
             // Simple patrol
             private _carPatrol = [];
