@@ -70,11 +70,37 @@ switch (true) do {
     case (_groupType isEqualTo "civilian"): {
         _realGroup = createGroup [civilian, true];
         private _civUnits = [];
-        for "_i" from 1 to _unitCount do {
-            private _unitType = selectRandom CivMenArray;
-            private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-            private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
-            _civUnits pushBack _unit;
+        private _objective = _groupData getOrDefault ["objective", ""];
+        if (_objective isEqualTo "civ_building") then {
+            // Find nearest building(s) to _position
+            private _buildings = nearestObjects [_position, ["House", "Building"], 50];
+            private _buildingPositions = [];
+            {
+                private _bldg = _x;
+                {
+                    _buildingPositions pushBack _x;
+                } forEach (_bldg buildingPos -1);
+            } forEach _buildings;
+            // Place civilians in available building positions
+            private _usedPositions = 0;
+            for "_i" from 1 to _unitCount do {
+                private _unitType = selectRandom CivMenArray;
+                private _spawnPos = if (_usedPositions < count _buildingPositions) then {
+                    _buildingPositions select _usedPositions
+                } else {
+                    [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
+                };
+                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                _civUnits pushBack _unit;
+                _usedPositions = _usedPositions + 1;
+            };
+        } else {
+            for "_i" from 1 to _unitCount do {
+                private _unitType = selectRandom CivMenArray;
+                private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
+                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                _civUnits pushBack _unit;
+            };
         };
         // Apply civilian interaction logic to these units
         [_civUnits] call FLO_fnc_civilianRelations;
