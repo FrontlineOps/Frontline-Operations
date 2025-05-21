@@ -219,6 +219,15 @@ _groupData set ["realGroup", _realGroup];
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 
+// Disable AI pathfinding if objective is civ_building
+private _objective = _groupData getOrDefault ["objective", ""];
+if (_objective isEqualTo "civ_building") then {
+    {
+        _x disableAI "PATH";
+        _x disableAI "MOVE";
+    } forEach units _realGroup;
+};
+
 // Apply waypoints if any
 if (count _waypoints > 0) then {
     {
