@@ -23,6 +23,18 @@ private _lastCommanderUpdate = diag_tickTime;
 private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
 
+// Utility: Filter out civilian and civilianVehicle groups from a hashmap
+private _filterNonCivGroups = {
+    params ["_groupsMap"];
+    private _result = createHashMap;
+    {
+        if (!((_y getOrDefault ["groupType", ""]) in ["civilian", "civilianVehicle"])) then {
+            _result set [_x, _y];
+        };
+    } forEach _groupsMap;
+    _result
+};
+
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
     ["_threatLevel", _currentThreatLevel],
@@ -61,19 +73,16 @@ private _aiCommander = createHashMapObject [[
         _self set ["_maxAttackingGroups", _self call ["_calculateMaxAttackingGroups", []]];
 
         // Get all virtual groups from the virtualization system
-        private _allGroups = FLO_virtualGroups get "_groups";
+        private _allGroups = [FLO_virtualGroups get "_groups"] call _filterNonCivGroups;
         private _garrisonedGroups = [];
 
         {
             private _groupId = _x;
             private _groupData = _y;
-            
-            // Initially, all groups are considered garrisoned
+            // Only non-civilian groups are considered garrisoned
             _garrisonedGroups pushBack _groupId;
-            
             // Store the original position as the garrison position
             _groupData set ["garrisonPosition", _groupData get "position"];
-            
         } forEach _allGroups;
 
         // Store the garrisoned groups
@@ -102,7 +111,7 @@ private _aiCommander = createHashMapObject [[
         };
         
         // Get all virtual groups
-        private _virtualGroups = FLO_virtualGroups get "_groups";
+        private _virtualGroups = [FLO_virtualGroups get "_groups"] call _filterNonCivGroups;
         
         // Sort groups by distance to target
         private _sortedGroups = [_availableGroups, [], {
@@ -170,7 +179,7 @@ private _aiCommander = createHashMapObject [[
         };
         
         // Get all virtual groups
-        private _virtualGroups = FLO_virtualGroups get "_groups";
+        private _virtualGroups = [FLO_virtualGroups get "_groups"] call _filterNonCivGroups;
         
         // Sort groups by distance to target
         private _sortedGroups = [_availableGroups, [], {
