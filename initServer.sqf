@@ -27,11 +27,6 @@ ConVLocc = 0;
 publicVariable "ConVLocc";
 
 StartingLocationDone = false;
-VSDistance = 2500; //750; 
-VS_FPS = [];
-VSTimeDelay = 20;
-VSCurrentTime = diag_tickTime;
-VS_IsWorking = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
 [] call FLO_fnc_heartbeat;
