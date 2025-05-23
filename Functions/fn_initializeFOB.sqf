@@ -165,10 +165,10 @@ _TFOBA setTriggerActivation ["NONE", "PRESENT", true];
 _TFOBA setTriggerStatements [  
 "count (nearestobjects [thisTrigger,['CargoNet_01_box_F'],4]) > 0 ",  
 "  
-_RES = nearestobjects [thisTrigger,['CargoNet_01_box_F'],10] select 0 ;    
-deleteVehicle _RES ; 
+    _RES = nearestobjects [thisTrigger,['CargoNet_01_box_F'],10] select 0 ;    
+    deleteVehicle _RES; 
     [100, 'STR_FLO_RESOURCE'] call FLO_fnc_sendRewardNotification ;
-[100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
+    [100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
 ", ""]; 
 
 _TFOBA attachTo [_fobBuilding, [0, 0, 0]]; 
