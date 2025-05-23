@@ -185,8 +185,6 @@ _fobBuilding addEventHandler ["Killed", {
     
     private _markerName = _this select 0 getVariable "fobMarkerName";
     deleteMarker _markerName;
-    
-    [] execVM 'Scripts\Failed.sqf';
 
     _alltriggers = allMissionObjects "EmptyDetector";
     _triggers = _alltriggers select {position _x distance (_this select 0) < 20};
@@ -244,9 +242,6 @@ _fobBuilding addEventHandler ["Killed", {
                 private _allTriggers = allMissionObjects "EmptyDetector";
                 private _triggers = _allTriggers select { position _x distance _fob < 500 };
                 { deleteVehicle _x } forEach _triggers;
-                
-                // Call failure script
-                [] execVM 'Scripts\Failed.sqf';
             };
         } else {
             if (!isNil "_statusMarker") then {

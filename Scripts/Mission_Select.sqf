@@ -138,14 +138,28 @@ FLO_mapClickMS = addMissionEventHandler ["MapSingleClick", {
         hint "New Mission Initialized";
         openMap [true, false]; 
         openMap [false, false]; 
+
+        private _MissionMarkers = allMapMarkers select {
+            private _shape = markerShape _x;
+            private _brush = markerBrush _x;
+            private _color = markerColor _x;
+            _shape == "ELLIPSE" && _brush == "SolidBorder" && _color == "colorCivilian"
+        };
         
-        [] execVM "Scripts\MrkRmv.sqf";
+        [_MissionMarkers] call FLO_fnc_removeMarkers;
     } else {
         hint "No Mission Found";
         openMap [true, false]; 
         openMap [false, false]; 
+
+        private _MissionMarkers = allMapMarkers select {
+            private _shape = markerShape _x;
+            private _brush = markerBrush _x;
+            private _color = markerColor _x;
+            _shape == "ELLIPSE" && _brush == "SolidBorder" && _color == "colorCivilian"
+        };
         
-        [] execVM "Scripts\MrkRmv.sqf";
+        [_MissionMarkers] call FLO_fnc_removeMarkers;
     };
 }];
 
