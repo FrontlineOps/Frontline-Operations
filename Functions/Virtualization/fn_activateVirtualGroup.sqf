@@ -240,6 +240,21 @@ switch (true) do {
     };
 };
 
+// Distribute intel items to non-civilian groups
+if !(_groupType in ["civilian", "civilianVehicle"]) then {
+    private _intelItems = ["FlashDisk", "FilesSecret", "SmartPhone", "MobilePhone", "DocumentsSecret"];
+    private _units = units _realGroup;
+    if (count _units > 0) then {
+        private _selectedUnits = _units call BIS_fnc_arrayShuffle;
+        _selectedUnits resize (floor (count _selectedUnits / 2) max 1);
+        {
+            if (random 1 < 0.2) then { // 20% chance per selected unit
+                _x addItem selectRandom _intelItems;
+            };
+        } forEach _selectedUnits;
+    };
+};
+
 // Set the real group in the group data
 _groupData set ["realGroup", _realGroup];
 _groupData set ["isActive", true];

@@ -159,5 +159,15 @@ switch (true) do {
     };
 };
 
+// Distribute intel items to non-civilian units (not civilians)
+if !(_groupType isEqualTo "civilian") then {
+    if (!isNull _createdUnit && {(_createdUnit isKindOf "Man")}) then {
+        if (random 1 < 0.2) then {
+            private _intelItems = ["FlashDisk", "FilesSecret", "SmartPhone", "MobilePhone", "DocumentsSecret"];
+            _createdUnit addItem selectRandom _intelItems;
+        };
+    };
+};
+
 // Return the created unit/vehicle
 _createdUnit 
