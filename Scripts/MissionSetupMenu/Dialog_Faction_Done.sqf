@@ -25,72 +25,56 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 
 	hint "Done";
 
-	private _mrkr = createMarkerLocal ["Reputation_Handle", [0, 0, 0]]; 
-	_mrkr setMarkerTypeLocal "loc_SafetyZone";
-	_mrkr setMarkerColorLocal "Color4_FD_F";
-	_mrkr setMarkerSizeLocal [0.6, 0.6]; 
-	switch (_ReputationName) do {
-		case "LOW_Enemy to Guerillas": {
-			_mrkr setMarkerTextLocal "2";
-		};
-		case "MEDIUM_Neutral to Guerillas": {
-			_mrkr setMarkerTextLocal "9";
-		};
-		case "HIGH_Friendly to Guerillas": {
-			_mrkr setMarkerTextLocal "16";
-		};
+	// Reputation Handle
+	private _reputationValue = switch (_ReputationName) do {
+		case "LOW_Enemy to Guerillas": {2};
+		case "MEDIUM_Neutral to Guerillas": {9};
+		case "HIGH_Friendly to Guerillas": {16};
+		default {0};
 	};
-	_mrkr setMarkerAlpha 0.005;
+	FLO_ReputationHandle = createHashMapFromArray [
+		["value", _reputationValue],
+		["name", _ReputationName]
+	];
+	publicVariable "FLO_ReputationHandle";
 
-
-	private _mrkr = createMarkerLocal ["Difficulty_Handle",  [0, 0, 0]]; 
-	_mrkr setMarkerTypeLocal "loc_SafetyZone";
-	_mrkr setMarkerColorLocal "Color6_FD_F";
-	_mrkr setMarkerSizeLocal [0.6, 0.6]; 
-	switch (_DifficultyName) do {
-		case "EASY _ Low Enemy Presence _ progressive": {
-			_mrkr setMarkerTextLocal "0";
-		};
-		case "NORMAL _ Half Enemy Presence _ progressive": {
-			_mrkr setMarkerTextLocal "6";
-		};
-		case "HARD _ Full Enemy Presence _ progressive": {
-			_mrkr setMarkerTextLocal "11";
-		};
+	// Difficulty Handle
+	private _difficultyValue = switch (_DifficultyName) do {
+		case "EASY _ Low Enemy Presence _ progressive": {0};
+		case "NORMAL _ Half Enemy Presence _ progressive": {6};
+		case "HARD _ Full Enemy Presence _ progressive": {11};
+		default {0};
 	};
-	_mrkr setMarkerAlpha 0.005;
+	FLO_DifficultyHandle = createHashMapFromArray [
+		["value", _difficultyValue],
+		["name", _DifficultyName]
+	];
+	publicVariable "FLO_DifficultyHandle";
 
+	// Money Handle
+	FLO_MoneyHandle = createHashMapFromArray [
+		["value", _ResourcesName],
+		["name", _ResourcesName]
+	];
+	publicVariable "FLO_MoneyHandle";
 
-	private _mrkr = createMarkerLocal ["Money_Handle", [0, 0, 0]]; 
-	_mrkr setMarkerTypeLocal "loc_SafetyZone";
-	_mrkr setMarkerColorLocal "Color2_FD_F";
-	_mrkr setMarkerSizeLocal [0.6, 0.6]; 
-	_mrkr setMarkerTextLocal _ResourcesName; 
-	_mrkr setMarkerAlpha 0.005;
+	// Friendly Handle
+	FLO_FriendlyHandle = createHashMapFromArray [
+		["name", _PlayerfactionName]
+	];
+	publicVariable "FLO_FriendlyHandle";
 
-	private _mrkr = createMarkerLocal ["Friendly_Handle", [0, 0, 0]]; 
-	_mrkr setMarkerTypeLocal "loc_SafetyZone";
-	_mrkr setMarkerColorLocal "ColorGrey";
-	_mrkr setMarkerSizeLocal [0.6, 0.6]; 
-	_mrkr setMarkerTextLocal _PlayerfactionName; 
-	_mrkr setMarkerAlpha 0.005;
+	// Enemy Handle
+	FLO_EnemyHandle = createHashMapFromArray [
+		["name", _EnemyfactionName]
+	];
+	publicVariable "FLO_EnemyHandle";
 
-
-	private _mrkr = createMarkerLocal ["Enemy_Handle", [0, 0, 0]]; 
-	_mrkr setMarkerTypeLocal "loc_SafetyZone";
-	_mrkr setMarkerColorLocal "ColorGrey";
-	_mrkr setMarkerSizeLocal [0.6, 0.6]; 
-	_mrkr setMarkerTextLocal _EnemyfactionName; 
-	_mrkr setMarkerAlpha 0.005;
-
-
-	private _mrkr = createMarkerLocal ["Civilian_Handle", [0, 0, 0]]; 
-	_mrkr setMarkerTypeLocal "loc_SafetyZone";
-	_mrkr setMarkerColorLocal "ColorGrey";
-	_mrkr setMarkerSizeLocal [0.6, 0.6]; 
-	_mrkr setMarkerTextLocal _CivilianfactionName; 
-	_mrkr setMarkerAlpha 0.005;
-
+	// Civilian Handle
+	FLO_CivilianHandle = createHashMapFromArray [
+		["name", _CivilianfactionName]
+	];
+	publicVariable "FLO_CivilianHandle";
 
 	titleText ["", "BLACK IN",7, true, true];
 			
