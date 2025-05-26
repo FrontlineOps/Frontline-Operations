@@ -1,20 +1,11 @@
-
-
-
 _thisCaptureWestTrigger = _this select 0;
 _posit = getPos _thisCaptureWestTrigger ;
-
-
-		
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 sleep 180 ;
 
 if !(isNull _thisCaptureWestTrigger) then {
 
-_mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
+_AGGRSCORE = FLO_DifficultyHandle get "value";
 
 if (triggerActivated _thisCaptureWestTrigger) then {
 	

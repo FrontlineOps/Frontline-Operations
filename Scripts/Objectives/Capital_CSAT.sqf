@@ -2,7 +2,7 @@ params [["_thisCapitalTrigger", objNull, [objNull]]];
 
 // Initialize variables
 private _triggerPos = getPos _thisCapitalTrigger;
-private _AGGRSCORE = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) # 0));
+private _AGGRSCORE = FLO_DifficultyHandle get "value";
 
 // Function to setup single HQ
 private _fnc_setupHQ = {

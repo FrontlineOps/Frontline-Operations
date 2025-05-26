@@ -286,28 +286,6 @@ _trgA setTriggerActivation ["WEST", "PRESENT", false];
 _trgA setTriggerStatements ["this","[thisTrigger] execVM 'Scripts\VehiInsert_CSAT.sqf';", ""];
 	
 	};	
-
-	if (MType == "o_antiair") then {  
-			hint "You Placed a Custom Mission Marker";
-mrkr setMarkerSize [1.2, 1.2]; 
-
-_P1 =  [ 
- "AAA_01",  
- "AAA_02",  
- "AAA_03"    
-]; 	
-
-_COM = [ selectRandom _P1, _pos, [0,0,0], (0 + (random 360)), true ] call LARs_fnc_spawnComp;
-_ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
-
-_trgA = createTrigger ["EmptyDetector", _pos];
-_trgA setTriggerArea [2000, 2000, 0, false, 60];
-_trgA setTriggerTimeout [7, 7, 7, true];
-_trgA setTriggerActivation ["WEST", "PRESENT", false];
-_trgA setTriggerStatements [
-"this","[thisTrigger] execVM 'Scripts\Objectives\AAA_CSAT.sqf';", ""];
-
-	};	
 	
 	if (MType == "loc_Power") then {
 			hint "You Placed a Custom Mission Marker";

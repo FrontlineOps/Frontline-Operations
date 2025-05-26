@@ -80,21 +80,6 @@ private _objectLocTAAA = allMapMarkers select { markerType _x == "o_antiair"};
     private _ARRAY = [ _compReference ] call LARs_fnc_getCompObjects;
     {_x setVectorUp [0,0,1];} forEach _ARRAY; 
 
-    [_x] spawn {
-        params ["_marker"];
-
-        private _trg = createTrigger ["EmptyDetector", getMarkerpos _marker, false];
-        _trg setTriggerArea [1000, 1000, 0, false, 300];
-        _trg setTriggerTimeout [1, 1, 1, true];
-
-        _trg setTriggerActivation ["WEST", "PRESENT", false];
-        _trg setTriggerStatements [
-            "this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))",
-            "[thisTrigger] execVM 'Scripts\Objectives\AAA_CSAT.sqf';",
-            ""
-        ];
-    };
-
 } forEach _objectLocTAAA;
 
 sleep 1;
