@@ -52,8 +52,15 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 	publicVariable "FLO_DifficultyHandle";
 
 	// Money Handle
+	private _resourcesValue = switch (_ResourcesName) do {
+		case "50": {50};
+		case "250": {250};
+		case "500": {500};
+		case "1000": {1000};
+		default {0};
+	};
 	FLO_MoneyHandle = createHashMapFromArray [
-		["value", _ResourcesName],
+		["value", _resourcesValue],
 		["name", _ResourcesName]
 	];
 	publicVariable "FLO_MoneyHandle";
