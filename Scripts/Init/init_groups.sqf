@@ -1,4 +1,4 @@
-private _bluFaction = markerText "Friendly_Handle";
+private _bluFaction = FLO_FriendlyHandle get "name";
 
 F_Init = false;
 publicVariable "F_Init";
@@ -27,7 +27,7 @@ switch (_bluFaction) do {
 };
  
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-private _opfFaction = markerText "Enemy_Handle";
+private _opfFaction = FLO_EnemyHandle get "name";
 
 switch (_opfFaction) do {
 	case "CUSTOM_ENEMY_FACTION": {call compileScript ["CUSTOM_ENEMY_FACTION.sqf"];};
@@ -54,7 +54,7 @@ switch (_opfFaction) do {
 };
  
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-private _civFaction = markerText "Civilian_Handle";
+private _civFaction = FLO_CivilianHandle get "name";
 
 CivVehArray = [
 "C_Truck_02_covered_F",

@@ -46,7 +46,7 @@ FLO_fnc_addConditionalItem = {
 
 // INFORMATION
 FLO_fnc_updateInformation = {
-    private _Money = markerText "Money_Handle";
+    private _Money = FLO_MoneyHandle get "value"; 
     private _REPSCORE = FLO_ReputationHandle get "value";  
     private _rep = "Friendly";
     
