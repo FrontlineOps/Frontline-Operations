@@ -31,18 +31,11 @@ if ((_civl getUnitTrait "engineer" == true) && (_ChanceN > 1)) then {
         private _Chance = selectRandom [3, 4, 5];
         if (_Chance > 3) then {
             private _Cost = 5;
-            private _mrkrs2 = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-            private _mrkr2 = _mrkrs2 select 0;
-            private _Money = parseNumber (markerText _mrkr2);
+            private _Money = FLO_MoneyHandle get "value";
             if (_Money >= _Cost) then {
                 private _NewMoney = _Money - _Cost;
-                _mrkr2 setMarkerText str _NewMoney;
-                // Call FLO_fnc_civilianIntel if exists, otherwise fallback to execVM
-                if (isNil 'FLO_fnc_civilianIntel') then {
-                    ["Scripts/INTL_Civ.sqf"] call BIS_fnc_execVM;
-                } else {
-                    [] call FLO_fnc_civilianIntel;
-                };
+                FLO_MoneyHandle set ["value", _NewMoney];
+                [] call FLO_fnc_civilianIntel;
                 private _complMessage = selectRandom [
                     "Sure, Let me Show you the way!",
                     "We appericiate your Efforts for our Homeland, let me Help you!",
@@ -65,17 +58,11 @@ if ((_civl getUnitTrait "engineer" == true) && (_ChanceN > 1)) then {
         private _Chance = selectRandom [1, 2, 3];
         if (_Chance > 2) then {
             private _Cost = 5;
-            private _mrkrs2 = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-            private _mrkr2 = _mrkrs2 select 0;
-            private _Money = parseNumber (markerText _mrkr2);
+            private _Money = FLO_MoneyHandle get "value";
             if (_Money >= _Cost) then {
                 private _NewMoney = _Money - _Cost;
-                _mrkr2 setMarkerText str _NewMoney;
-                if (isNil 'FLO_fnc_civilianIntel') then {
-                    ["Scripts/INTL_Civ.sqf"] call BIS_fnc_execVM;
-                } else {
-                    [] call FLO_fnc_civilianIntel;
-                };
+                FLO_MoneyHandle set ["value", _NewMoney];
+                [] call FLO_fnc_civilianIntel;
                 private _complMessage = selectRandom [
                     "Sure, Let me Show you the way!",
                     "We appericiate your Efforts for our Homeland, let me Help you!",

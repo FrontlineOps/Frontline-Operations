@@ -1,12 +1,10 @@
 if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
     Cost = 100;
-    private _mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-    private _mrkr = _mrkrs select 0;
-    private _money = parseNumber (markerText _mrkr);
+    private _money = FLO_MoneyHandle get "value";
     
     if (_money >= Cost) then {
         private _newMoney = _money - Cost; 
-        _mrkr setMarkerText str _newMoney;
+        FLO_MoneyHandle set ["value", _newMoney];
 
         private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
         private _createdVEH = createVehicle ["B_Slingload_01_Repair_F", _pos, [], 0, "NONE"];
@@ -34,11 +32,8 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 _target enableSimulation true;
                 deleteVehicle _target;
                 
-                private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
-                private _mrkr = _mrkrs select 0;
-                private _money = parseNumber (markerText _mrkr);
                 private _newMoney = _money + Cost;
-                _mrkr setMarkerText str _newMoney;
+                FLO_MoneyHandle set ["value", _newMoney];
             },
             nil,
             3,

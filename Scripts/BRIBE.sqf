@@ -1,12 +1,10 @@
 if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
 
-_Cost = 200;
-_mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-_mrkr = _mrkrs select 0;
-_Money = parseNumber (markerText _mrkr) ;  
+private _Cost = 200;
+private _Money = FLO_MoneyHandle get "value";
 if (_Money >= _Cost) then {
-_NewMoney = _Money - _Cost; 
-_mrkr setMarkerText str _NewMoney;
+private _NewMoney = _Money - _Cost; 
+FLO_MoneyHandle set ["value", _NewMoney];
 
 _mrkrs = allMapMarkers select {markerColor _x == "Color4_FD_F"};
 _mrkr = _mrkrs select 0;

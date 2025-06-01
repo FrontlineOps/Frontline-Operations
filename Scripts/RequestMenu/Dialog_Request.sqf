@@ -245,16 +245,14 @@ INF_REQUEST = {
     private _Cost = lbValue [_CTRL, _index];
     private _SQDName = missionNamespace getVariable _Name;
 
-    private _mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-    private _mrkr = _mrkrs select 0;
-    private _Money = parseNumber (markerText _mrkr);
+    private _Money = FLO_MoneyHandle get "value";
     
     if (_Money < _Cost) exitWith {
         hint "Not enough Resources";
         closeDialog 0;
     };
     
-    _mrkr setMarkerText str (_Money - _Cost);
+    FLO_MoneyHandle set ["value", _Money - _Cost];
     
     private _FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
     private _pos = _FOBB getRelPos [13, 270];
@@ -327,16 +325,14 @@ VEH_REQUEST = {
     private _VehName = lbData [_CTRL, _index];
     CostV = lbValue [_CTRL, _index];
     
-    private _mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-    private _mrkr = _mrkrs select 0;
-    private _Money = parseNumber (markerText _mrkr);
+    private _Money = FLO_MoneyHandle get "value";
     
     if (_Money < CostV) exitWith {
         hint "Not Enough Resources";
         closeDialog 0;
     };
     
-    _mrkr setMarkerText str (_Money - CostV);
+    FLO_MoneyHandle set ["value", _Money - CostV];
     
     private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 100];
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
@@ -375,10 +371,8 @@ VEH_REQUEST = {
             deleteVehicle CreatedVEH;
             
             // Refund cost
-            private _mrkrs = allMapMarkers select {markerColor _x == 'Color2_FD_F'};
-            private _mrkr = _mrkrs select 0;
-            private _Money = parseNumber (markerText _mrkr);
-            _mrkr setMarkerText str (_Money + CostV);
+            private _Money = FLO_MoneyHandle get "value";
+            FLO_MoneyHandle set ["value", _Money + CostV];
             
             deleteVehicle CreatedVEHREF;
             

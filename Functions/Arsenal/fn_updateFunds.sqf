@@ -14,26 +14,16 @@ if (!isServer) exitWith {0};
 
 params ["_amount"];
 
-// Find money marker
-private _mrkrs = allMapMarkers select {markerColor _x == "Color2_FD_F"};
-if (count _mrkrs == 0) exitWith {
-    diag_log "[FLO] ERROR: No money marker (Color2_FD_F) found on map";
-    0
-};
-
-private _mrkr = _mrkrs select 0;
 private _Money = 0;
-private _markerText = markerText _mrkr;
-
-if (_markerText != "") then {
-    _Money = parseNumber _markerText;
+if (!isNil "FLO_MoneyHandle") then {
+    _Money = FLO_MoneyHandle get "value";
+    if (isNil "_Money") then { _Money = 0; };
 };
 
 // Calculate new money value
 private _NewMoney = _Money + _amount;
-
-// Update marker text
-_mrkr setMarkerText str _NewMoney;
+FLO_MoneyHandle set ["value", _NewMoney];
+publicVariable "FLO_MoneyHandle";
 
 // Return new balance
 _NewMoney
