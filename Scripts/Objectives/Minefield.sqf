@@ -1,8 +1,6 @@
 params ["_pos"]; 
 
-private _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-private _mrkr = _mrkrs select 0;
-private _AGGRSCORE = parseNumber (markerText _mrkr) ;  
+private _AGGRSCORE = FLO_DifficultyHandle get "value";
 
 private _mines = [];
 private _mineCount = 10; // Default mine count

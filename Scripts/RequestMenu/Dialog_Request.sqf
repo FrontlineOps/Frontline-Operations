@@ -47,10 +47,7 @@ FLO_fnc_addConditionalItem = {
 // INFORMATION
 FLO_fnc_updateInformation = {
     private _Money = markerText "Money_Handle";
-
-    private _mrkrs = allMapMarkers select {markerColor _x == "Color4_FD_F"};
-    private _mrkr = _mrkrs select 0;
-    private _REPSCORE = parseNumber (markerText _mrkr);  
+    private _REPSCORE = FLO_ReputationHandle get "value";  
     private _rep = "Friendly";
     
     if (_REPSCORE < 7) then {
@@ -62,9 +59,7 @@ FLO_fnc_updateInformation = {
     };
 
     private _aggr = "100";
-    _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-    _mrkr = _mrkrs select 0;
-    private _AGGRSCORE = parseNumber (markerText _mrkr);  
+    private _AGGRSCORE = FLO_DifficultyHandle get "value";  
     _aggr = _AGGRSCORE * 6.25;
 
     ctrlSetText [1000, format["Resources : %1 ", _Money]];

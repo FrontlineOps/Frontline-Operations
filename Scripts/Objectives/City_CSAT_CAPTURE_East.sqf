@@ -1,31 +1,31 @@
-_thisCaptureEastTrigger = _this select 0;
-_posit = getPos _thisCaptureEastTrigger ;
+private _thisCaptureEastTrigger = _this select 0;
+private _posit = getPos _thisCaptureEastTrigger;
 
 sleep 180 ;
 
 if !(isNull _thisCaptureEastTrigger) then {
 
-_AGGRSCORE = FLO_DifficultyHandle get "value";
+private _AGGRSCORE = FLO_DifficultyHandle get "value";
 
 if (triggerActivated _thisCaptureEastTrigger) then {
 		[playerSide, 'HQ'] commandChat 'all Forces Fall Back. We Lost the OUTPOST,...';
 
-		_allMarks = allMapMarkers select {markerType _x == 'b_installation'};  
-		_FOBMrk = [_allMarks,  _thisCaptureEastTrigger] call BIS_fnc_nearestPosition;
+		private _allMarks = allMapMarkers select {markerType _x == 'b_installation'};  
+		private _FOBMrk = [_allMarks,  _thisCaptureEastTrigger] call BIS_fnc_nearestPosition;
 		deleteMarker _FOBMrk ; 
 
-		_markerName = 'City' + (str (getPos _thisCaptureEastTrigger));  
-		_mrkr = createMarker [_markerName, (getPos _thisCaptureEastTrigger)] ;
-		_mrkr setMarkerType 'o_installation'; 
-		_mrkr setMarkerColor 'colorOPFOR';
+		private _markerName = 'City' + (str (getPos _thisCaptureEastTrigger));  
+		private _mrkr = createMarkerLocal [_markerName, (getPos _thisCaptureEastTrigger)] ;
+		_mrkr setMarkerTypeLocal 'o_installation'; 
+		_mrkr setMarkerColorLocal 'colorOPFOR';
 		_mrkr setMarkerSize [1.2, 1.2]; 
 
-		_alltriggers = allMissionObjects "EmptyDetector";
-		_triggers = _alltriggers select {getPos _x distance _thisCaptureEastTrigger < 10};
+		private _alltriggers = allMissionObjects "EmptyDetector";
+		private _triggers = _alltriggers select {getPos _x distance _thisCaptureEastTrigger < 10};
 		{ deleteVehicle _x; } forEach _triggers ;
 				
 
-		_trgA = createTrigger ["EmptyDetector", _posit];
+		private _trgA = createTrigger ["EmptyDetector", _posit];
 		_trgA setTriggerArea [1000, 1000, 0, false, 200];
 		_trgA setTriggerTimeout [7,7, 7, true];
 		_trgA setTriggerActivation ["WEST", "PRESENT", false];

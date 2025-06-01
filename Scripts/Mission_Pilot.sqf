@@ -1,87 +1,106 @@
+params [["_thisPilotsTrigger", objNull]];
 
-_thisPilotsTrigger = _this select 0;
+// Get aggression score
+private _AGGRSCORE = FLO_DifficultyHandle get "value";
 
-_mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
-
-_anim =  selectRandom [
-"Acts_AidlPsitMstpSsurWnonDnon01",
-"Acts_AidlPsitMstpSsurWnonDnon02",
-"Acts_AidlPsitMstpSsurWnonDnon03",
-"Acts_AidlPsitMstpSsurWnonDnon04",
-"Acts_AidlPsitMstpSsurWnonDnon05"
+// Initialize configuration
+private _config = createHashMapFromArray [
+    ["patrolRadius", 300],
+    ["patrolRadiusLarge", 1000],
+    ["guardRadius", [30, 50]],
+    ["houseSearchRadius", 7000],
+    ["exclusionRadius", 400],
+    ["animations", [
+        "Acts_AidlPsitMstpSsurWnonDnon01",
+        "Acts_AidlPsitMstpSsurWnonDnon02", 
+        "Acts_AidlPsitMstpSsurWnonDnon03",
+        "Acts_AidlPsitMstpSsurWnonDnon04",
+        "Acts_AidlPsitMstpSsurWnonDnon05"
+    ]]
 ];
 
+// Helper function to spawn patrol group
+private _fnc_spawnPatrol = {
+    params ["_pos", "_radius", "_unitCount"];
+    private _units = [];
+    for "_i" from 1 to _unitCount do {
+        _units pushBack (selectRandom East_Units);
+    };
+    private _group = [_pos, East, _units] call BIS_fnc_spawnGroup;
+    [_group, _pos, _radius] call BIS_fnc_taskPatrol;
+    _group deleteGroupWhenEmpty true;
+    _group
+};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Helper function to spawn guard
+private _fnc_spawnGuard = {
+    params ["_pos", "_disablePath"];
+    private _safePos = [_pos, _config get "guardRadius" select 0, _config get "guardRadius" select 1, 5, 1, 0] call BIS_fnc_findSafePos;
+    private _group = [_safePos, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
+    if (_disablePath) then {
+        ((units _group) select 0) disableAI "PATH";
+    };
+    _group deleteGroupWhenEmpty true;
+    _group
+};
 
-_allMarks = allMapMarkers select {(markerType _x == "b_installation") or (markerType _x == "o_installation") or (markerType _x == "n_installation") or (markerType _x == "o_support") or (markerType _x == "n_support") or  (markerType _x == "loc_Power") or  (markerType _x == "loc_Ruin")};  
-_NOSHs = [] ;
+// Find suitable house
+private _excludedHouses = [];
 {
-_NOSH = nearestObjects [getMarkerPos _x , ["HOUSE"], 400] ; 
-_NOSHs append _NOSH ;	
-} forEach _allMarks ;
+    private _houses = nearestObjects [getMarkerPos _x, ["HOUSE"], _config get "exclusionRadius"];
+    _excludedHouses append _houses;
+} forEach (allMapMarkers select {
+    markerType _x in ["b_installation", "o_installation", "n_installation", "o_support", "n_support", "loc_Power", "loc_Ruin"]
+});
 
-_SHs = nearestObjects [_thisPilotsTrigger , ["HOUSE"], 7000] select {count (_x buildingPos -1) > 2};
-_SH = _SHs - _NOSHs ;
+private _suitableHouses = (nearestObjects [_thisPilotsTrigger, ["HOUSE"], _config get "houseSearchRadius"] select {
+    count (_x buildingPos -1) > 2
+}) - _excludedHouses;
 
+private _HQB = _suitableHouses select 0;
+private _dir = getDirVisual _HQB;
 
-_HQB = _SH select 0 ;
-_dir = getDirVisual _HQB;
+// Spawn initial setup
+["Intel_CS_01", selectRandom (_HQB buildingPos -1), [0,0,0], _dir, false, false, true] call LARs_fnc_spawnComp;
 
-[ "Intel_CS_01", (selectRandom (_HQB buildingPos -1)), [0,0,0], _dir, false, false, true ] call LARs_fnc_spawnComp; 
-_G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
-((units _G) select 0) disableAI "PATH"; 
-_G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
-((units _G) select 0) disableAI "PATH";   
-_G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
-_G = [ (selectRandom (_HQB buildingPos -1)), East,[selectRandom East_Units]] call BIS_fnc_spawnGroup; 
-
-
-PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-[PRL, getPos _HQB, 300] call BIS_fnc_taskPatrol;
-
-if (_AGGRSCORE > 10) then {
-PRL = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-[PRL, getPos _HQB, 300] call BIS_fnc_taskPatrol;
+// Spawn initial guards
+for "_i" from 1 to 4 do {
+    private _group = [selectRandom (_HQB buildingPos -1), East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
+    if (_i <= 2) then {
+        ((units _group) select 0) disableAI "PATH";
+    };
+    _group deleteGroupWhenEmpty true;
 };
 
-//////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
+// Spawn main patrol
+[getPos _HQB, _config get "patrolRadius", 4] call _fnc_spawnPatrol;
 
-_poss = [(getpos _HQB), 30, 50, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom East_Units]] call BIS_fnc_spawnGroup;  
-((units G) select 0) disableAI "PATH"; 
+// Spawn additional patrols based on aggression
+if (_AGGRSCORE > 10) then {
+    [getPos _HQB, _config get "patrolRadius", 2] call _fnc_spawnPatrol;
+};
 
-
-_poss = [(getpos _HQB), 30, 50, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom East_Units]] call BIS_fnc_spawnGroup;  
-
+// Spawn guards
+[getPos _HQB, true] call _fnc_spawnGuard;
+[getPos _HQB, false] call _fnc_spawnGuard;
 
 if (_AGGRSCORE > 5) then {
-_poss = [(getpos _HQB), 30, 50, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom East_Units]] call BIS_fnc_spawnGroup;  
-((units G) select 0) disableAI "PATH"; 
-}; 
+    [getPos _HQB, true] call _fnc_spawnGuard;
+};
 
 if (_AGGRSCORE > 10) then {
-_poss = [(getpos _HQB), 30, 50, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom East_Units]] call BIS_fnc_spawnGroup;  
+    [getPos _HQB, false] call _fnc_spawnGuard;
+};
 
-}; 
-
-//////GROUPS/////////////////////////////////////////////////////////////////////////////////////////
-
+// Spawn additional patrols
 if (_AGGRSCORE > 5) then {
-PRL = [_HQB getPos [(300 +(random 1000)), (0 + (random 360))], East, [selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-[PRL, getPos _HQB, 300] call BIS_fnc_taskPatrol;
+    private _patrolPos = _HQB getPos [300 + random 1000, random 360];
+    [_patrolPos, _config get "patrolRadius", 2] call _fnc_spawnPatrol;
 };
 
 if (_AGGRSCORE > 10) then {
-PRL = [_SHB getPos [(300 +(random 1000)), (0 + (random 360))], East, [selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-[PRL, getPos _SHB, 1000] call BIS_fnc_taskPatrol;
+    private _patrolPos = _HQB getPos [300 + random 1000, random 360];
+    [_patrolPos, _config get "patrolRadiusLarge", 2] call _fnc_spawnPatrol;
 };
 
-
-sleep 2 ;
-
+sleep 2;

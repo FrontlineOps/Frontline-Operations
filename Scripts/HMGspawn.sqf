@@ -12,12 +12,7 @@ private _thisCntrPos = getPos (_this select 0);
 if (isNil "_thisCntrPos") exitWith {diag_log "[FLO] ERROR: HMGspawn invalid position"};
 
 // Get aggression score from marker
-private _AGGRSCORE = 0;
-private _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-if (count _mrkrs > 0) then {
-    private _mrkr = _mrkrs select 0;
-    _AGGRSCORE = parseNumber (markerText _mrkr);
-};
+private _AGGRSCORE = FLO_DifficultyHandle get "value";
 
 // Configuration data using HashMaps
 private _buildingConfigs = createHashMapFromArray [

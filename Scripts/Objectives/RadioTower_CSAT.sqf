@@ -1,47 +1,13 @@
-_thisRadioTrigger = _this select 0;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+private _thisRadioTrigger = _this select 0;
+private _AGGRSCORE = FLO_DifficultyHandle get "value";
 
-_RadioTower = nearestObjects [(getPos _thisRadioTrigger), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F", "Land_Communication_F"], 150] select 0;   
-_mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
+private _mineTypes = ["APERSMine", "APERSBoundingMine"];
+private _minePos = getPos _thisRadioTrigger;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-_Mine = selectRandom [ 
-"APERSMine", 
-"APERSBoundingMine"
- ]; 
-_mine = createMine [_Mine,  (getpos _thisRadioTrigger), [], (0 + (random 40))];
+for "_i" from 1 to 6 do {
+    private _mineType = selectRandom _mineTypes;
+    createMine [_mineType, _minePos, [], random 40];
+};
 
-_Mine = selectRandom [ 
-"APERSMine", 
-"APERSBoundingMine"
- ]; 
-_mine = createMine [_Mine,  (getpos _thisRadioTrigger), [], (0 + (random 40))];
-
-_Mine = selectRandom [ 
-"APERSMine", 
-"APERSBoundingMine"
- ]; 
-_mine = createMine [_Mine,  (getpos _thisRadioTrigger), [], (0 + (random 40))];
-
-_Mine = selectRandom [ 
-"APERSMine", 
-"APERSBoundingMine"
- ]; 
-_mine = createMine [_Mine,  (getpos _thisRadioTrigger), [], (0 + (random 40))];
-
-_Mine = selectRandom [ 
-"APERSMine", 
-"APERSBoundingMine"
- ]; 
-_mine = createMine [_Mine,  (getpos _thisRadioTrigger), [], (0 + (random 40))];
-
-_Mine = selectRandom [ 
-"APERSMine", 
-"APERSBoundingMine"
- ]; 
-_mine = createMine [_Mine,  (getpos _thisRadioTrigger), [], (0 + (random 40))];
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-_Position = nearestObjects [(getpos _thisRadioTrigger), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F", "Land_Communication_F"], 50] select 0;  
-_poss = getPos _Position ;
+private _Position = nearestObjects [(getPos _thisRadioTrigger), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F", "Land_Communication_F"], 50] select 0;  
+private _poss = getPos _Position;

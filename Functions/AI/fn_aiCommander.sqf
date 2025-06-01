@@ -56,7 +56,7 @@ private _aiCommander = createHashMapObject [[
         private _maxGroups = floor((_playerCount - 2) / 2);
         
         // Add aggression score
-        private _AGGRSCORE = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) param [0, "", [""]])) ;
+        private _AGGRSCORE = FLO_DifficultyHandle get "value";
         private _maxGroups = _maxGroups + floor (_AGGRSCORE / 4);
         
         // Cap at maximum of 16 groups

@@ -1,11 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-_mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
-
-//////Resources/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLocT = allMapMarkers select { markerType _x == "o_installation"};
+private _objectLocT = allMapMarkers select { markerType _x == "o_installation"};
 
 {
 _trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
@@ -46,13 +39,10 @@ _trgA setTriggerStatements [
 ["LOADING . . . "] remoteExec ["hint", 0];
 sleep 1;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-sleep 1;
-
-_objectLocT = allMapMarkers select { markerType _x == 'loc_Transmitter' };
+private _objectLocT = allMapMarkers select { markerType _x == 'loc_Transmitter' };
 
 {
-_TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "TREE", "SMALL TREE", "BUSH", "ROCK", "ROCKS"], 15]; 
+private _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "TREE", "SMALL TREE", "BUSH", "ROCK", "ROCKS"], 15]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
 } forEach _objectLocT;
 
@@ -101,13 +91,10 @@ _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "TREE", "S
 				_M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
 				deleteMarker _M ; 
 				
-								[] execVM "Scripts\DangerMinus.sqf";					
-								[] execVM "Scripts\DangerMinus.sqf";					
-								[] execVM "Scripts\DangerMinus.sqf";					
-				[] execVM "Scripts\ReputationMinus.sqf";
-				[] execVM "Scripts\ReputationMinus.sqf";
-					
+				[-0.75, "decrease"] call FLO_fnc_adjustAggression;					
 
+				[] execVM "Scripts\ReputationMinus.sqf";
+				[] execVM "Scripts\ReputationMinus.sqf";
 				
 				[30, "STR_FLO_RADIOTOWER"] call FLO_fnc_sendRewardNotification ;
 
@@ -123,11 +110,6 @@ _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "TREE", "S
 
 ["LOADING . . . "] remoteExec ["hint", 0];
 sleep 1;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-sleep 4;
-
-
 
 TRG3LOCC = 1;
 publicVariable "TRG3LOCC";

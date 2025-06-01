@@ -1,15 +1,8 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-_mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
-
-//////Resources/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLocT = allMapMarkers select { markerType _x == "n_support"};
+private _objectLocT = allMapMarkers select { markerType _x == "n_support"};
 
 {
 	
-_trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
+private _trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
 _trg setTriggerArea [2000, 2000, 0, false, 300];
 _trg setTriggerTimeout [1, 1, 1, true];
 _trg setTriggerActivation ["WEST", "PRESENT", false];
@@ -72,11 +65,11 @@ sleep 1;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-_objectLocT = allMapMarkers select { markerType _x == "loc_Ruin" };
+private _objectLocT = allMapMarkers select { markerType _x == "loc_Ruin" };
 
 {
 
-_trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
+private _trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
 _trg setTriggerArea [2000, 2000, 0, false, 300];
 _trg setTriggerTimeout [1, 1, 1, true];
 _trg setTriggerActivation ["WEST", "PRESENT", false];
@@ -86,9 +79,7 @@ _trg setTriggerStatements [
 _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
 
-_mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
+_AGGRSCORE = FLO_DifficultyHandle get ""value"";  
 
 if (_AGGRSCORE < 6) then {
 BRKC = [ 
@@ -135,7 +126,7 @@ deleteMarker _M ;
 _mrkr setMarkerType 'loc_Bunker';
 _mrkr setMarkerAlpha 0.003;
 
-[] execVM 'Scripts\DangerPlus.sqf';
+[0.35, 'increase'] call FLO_fnc_adjustAggression;
   
  execVM 'Scripts\InfDis.sqf';
 
@@ -173,7 +164,7 @@ _trgA setTriggerStatements [
 sleep 1;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-_objectLocT = allMapMarkers select { markerType _x == "loc_Power" };
+private _objectLocT = allMapMarkers select { markerType _x == "loc_Power" };
 
 {
 	
@@ -187,9 +178,7 @@ _trg setTriggerStatements [
 _TERR = nearestTerrainObjects [(getPos thisTrigger), [], 40]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
 	
-_mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
+_AGGRSCORE = FLO_DifficultyHandle get ""value"";  
 
 if (_AGGRSCORE < 6) then {			 
 RDRC = [ 
@@ -234,9 +223,7 @@ deleteMarker _M ;
 
 
 [40] call FLO_fnc_addReward;
-[] execVM 'Scripts\DangerMinus.sqf';
-[] execVM 'Scripts\DangerMinus.sqf';
-[] execVM 'Scripts\DangerMinus.sqf';
+[-0.75, 'decrease'] call FLO_fnc_adjustAggression;
 
  execVM 'Scripts\AADis.sqf';
 
@@ -276,13 +263,5 @@ _trgA setTriggerStatements [
 ["LOADING . . . "] remoteExec ["hint", 0];
 sleep 1;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-sleep 4;
-
 TRG2LOCC = 1;
 publicVariable "TRG2LOCC";
-

@@ -3,8 +3,8 @@ params ["_thisTownTrigger"];
 
 // Initialize variables
 private _triggerPos = getPos _thisTownTrigger;
-private _aggrScore = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) select 0));
-private _repScore = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color4_FD_F"}) select 0));
+private _aggrScore = FLO_DifficultyHandle get "value";
+private _repScore = FLO_ReputationHandle get "value";
 private _chance = selectRandom [0,1,2,3];
 
 // Cache building positions

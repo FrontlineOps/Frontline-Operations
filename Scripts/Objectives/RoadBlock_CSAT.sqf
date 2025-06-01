@@ -1,7 +1,7 @@
 params ["_trigger"];
 
 // Get aggression score from marker
-private _aggrScore = parseNumber (markerText ((allMapMarkers select {markerColor _x == "Color6_FD_F"}) select 0));
+private _aggrScore = FLO_DifficultyHandle get "value";
 
 // Hide nearby terrain objects
 {
@@ -42,7 +42,7 @@ _surrenderTrigger setTriggerStatements [
             _x switchMove 'AmovPercMstpSsurWnonDnon';
 
             _x addEventHandler ['Killed', {
-                [] execVM 'Scripts\DangerPlusSurr.sqf';
+                [1.0, 'increase'] call FLO_fnc_adjustAggression;
                 removeAllActions (_this select 0);
             }];
 
@@ -89,7 +89,7 @@ _surrenderTrigger setTriggerStatements [
                     removeAllActions (_this select 0);
                     _x removeAllEventHandlers 'Killed';
                     (group (_this select 0)) addWaypoint [player getPos [3000 + random 1000, random 360], 0];
-                    [] execVM 'Scripts\DangerMinusSurr.sqf';
+                    [-0.10, 'decrease'] call FLO_fnc_adjustAggression;
                     [(_this select 0), (_this select 2)] remoteExec ['bis_fnc_holdActionRemove', [0,-2] select isDedicated, true];
                 },
                 {},
@@ -107,7 +107,7 @@ _surrenderTrigger setTriggerStatements [
     deleteMarker _nearestMarker;
 
     [30] call FLO_fnc_addReward;
-    [] execVM 'Scripts\DangerPlusSurr.sqf';
+    [1.0, 'increase'] call FLO_fnc_adjustAggression;
     [30, 'STR_FLO_ROADBLOCK'] call FLO_fnc_sendRewardNotification;
     ",
     ""

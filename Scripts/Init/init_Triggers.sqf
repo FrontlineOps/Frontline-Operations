@@ -1,7 +1,3 @@
-private _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-private _mrkr = _mrkrs select 0;
-private _AGGRSCORE = parseNumber (markerText _mrkr) ;  
-
 // Init Minefields
 [] execVM 'Scripts\Objectives\Minefield_B.sqf';
 

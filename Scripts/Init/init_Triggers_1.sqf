@@ -1,7 +1,3 @@
-private _mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-private _mrkr = _mrkrs select 0;
-private _AGGRSCORE = parseNumber (markerText _mrkr);  
-
 // Function to hide terrain objects near specified markers
 private _hideTerrainObjectsNearMarkers = {
     params ["_markers", "_types", "_radius"];
@@ -147,11 +143,7 @@ if ( count (nearestObjects [thisTrigger, ['Land_Cargo_Tower_V3_F', 'Land_Cargo_T
 _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
 
-_mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
-
-
+_AGGRSCORE = FLO_DifficultyHandle get ""value"";  
 
 if (_AGGRSCORE < 6) then {
 OUTC = [ 
@@ -249,9 +241,7 @@ _trg setTriggerStatements [
 _TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
 
-_mrkrs = allMapMarkers select {markerColor _x == 'Color6_FD_F'};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
+_AGGRSCORE = FLO_DifficultyHandle get ""value"";  
 
 if (_AGGRSCORE < 6) then {
 RDPC = [ 
@@ -370,11 +360,11 @@ sleep 1;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-_objectLocT = allMapMarkers select { markerType _x == "o_recon" };
+private _objectLocT = allMapMarkers select { markerType _x == "o_recon" };
 
 {
 
-_trgA = createTrigger ["EmptyDetector", getMarkerpos _x, false];
+private _trgA = createTrigger ["EmptyDetector", getMarkerpos _x, false];
 _trgA setTriggerArea [1000, 1000, 0, false, 300];
 _trgA setTriggerTimeout [1, 1, 1, true];
 _trgA setTriggerActivation ["WEST", "PRESENT", false];
@@ -393,37 +383,41 @@ sleep 0.2;
 sleep 4;
 
 
-_OAA = nearestObjects [position player, ["O_Radar_System_02_F", "O_SAM_System_04_F"], 40000];
+private _aaTypes = ["O_Radar_System_02_F", "O_SAM_System_04_F"];
+private _samType = ["O_SAM_System_04_F"];
+
+// Create crew for all AA systems
 {
-_gRPcREW = createVehicleCrew _x ;
-_Group = createGroup East; 
-{[_x] join _Group} forEach units _gRPcREW;
+    private _crew = createVehicleCrew _x;
+    private _group = createGroup [east, true];
+    {[_x] joinSilent _group} forEach units _crew;
+} forEach (nearestObjects [position player, _aaTypes, 40000]);
 
- } foreach _OAA;
- 
- _AA = nearestObjects [position player, ["O_SAM_System_04_F"], 40000];
+// Setup SAM kill handlers
 {
-_x removeAllEventHandlers "Killed";
-_x addEventHandler ["Killed", { 
-_MMarks = allMapMarkers select { markerType _x == "o_antiair"};
-_M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
-
-deleteMarker _M ; 
-
-				[40, "STR_FLO_AASITE"] call FLO_fnc_sendRewardNotification ;
-
-[40] call FLO_fnc_addReward;
-
-				_markerName = 'AssaultMark' + (str [(0 + (random 1000)), (0 + (random 1000)), 0]);  
-				_mrkr = createMarker [_markerName, [(0 + (random 1000)), (0 + (random 1000)), 0]]; 
-_mrkr setMarkerType "loc_Bunker";
-_mrkr setMarkerAlpha 0.003;
-
-[] execVM "Scripts\DangerPlus.sqf";
-  
-}];
-
- } foreach _AA;
+    _x removeAllEventHandlers "Killed";
+    _x addEventHandler ["Killed", {
+        params ["_killed"];
+        
+        // Find and delete associated marker
+        private _markers = allMapMarkers select {markerType _x == "o_antiair"};
+        private _nearestMarker = [_markers, _killed] call BIS_fnc_nearestPosition;
+        deleteMarker _nearestMarker;
+        
+        // Send reward notification and add reward
+        [40, "STR_FLO_AASITE"] call FLO_fnc_sendRewardNotification;
+        [40] call FLO_fnc_addReward;
+        
+        // Create new assault marker
+        private _markerName = format ["AssaultMark%1", random 1000];
+        private _marker = createMarker [_markerName, [random 1000, random 1000, 0]];
+        _marker setMarkerType "loc_Bunker";
+        _marker setMarkerAlpha 0.003;
+        
+        // Increase danger level
+        [0.35, 'increase'] call FLO_fnc_adjustAggression;
+    }];
+} forEach (nearestObjects [position player, _samType, 40000]);
 
 TRG1LOCC = 1;
 publicVariable "TRG1LOCC";

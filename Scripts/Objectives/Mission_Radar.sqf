@@ -10,11 +10,7 @@ private _radarTrigger = _this select 0;
 private _radarPos = getPos _radarTrigger;
 
 // Get current aggression score from marker
-private _aggrMarkers = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-private _aggrScore = 0;
-if (count _aggrMarkers > 0) then {
-    _aggrScore = parseNumber (markerText (_aggrMarkers select 0));
-};
+private _aggrScore = FLO_DifficultyHandle get "value";
 
 // Spawn HMG positions
 [_radarTrigger] execVM "Scripts\HMGspawn.sqf";

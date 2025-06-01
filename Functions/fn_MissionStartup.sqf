@@ -324,10 +324,9 @@ _objectLocT = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" }
             _MMarks = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter"};
             _M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
             deleteMarker _M ; 
-              
-            [] execVM "Scripts\DangerMinus.sqf";					
-            [] execVM "Scripts\DangerMinus.sqf";					
-            [] execVM "Scripts\DangerMinus.sqf";					
+
+            [-0.80, "decrease"] call FLO_fnc_adjustAggression;
+
             [] execVM "Scripts\ReputationMinus.sqf";
             [] execVM "Scripts\ReputationMinus.sqf";
               
