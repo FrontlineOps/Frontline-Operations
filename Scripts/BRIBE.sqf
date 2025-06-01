@@ -6,10 +6,8 @@ if (_Money >= _Cost) then {
 private _NewMoney = _Money - _Cost; 
 FLO_MoneyHandle set ["value", _NewMoney];
 
-_mrkrs = allMapMarkers select {markerColor _x == "Color4_FD_F"};
-_mrkr = _mrkrs select 0;
-_NewScore = 15; 
-_mrkr setMarkerText str _NewScore;
+private _NewScore = 15; 
+FLO_ReputationHandle set ["value", _NewScore];
 
 sleep 12;
 

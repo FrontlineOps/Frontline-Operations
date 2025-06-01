@@ -33,9 +33,7 @@ deleteMarker _M ;
 
 ['ScoreAdded', ['CheckPoint Established', 00]] call BIS_fnc_showNotification;  
 
-private _mrkrs = allMapMarkers select {markerColor _x == 'Color4_FD_F'};
-private _mrkr = _mrkrs select 0;
-private _REPSCORE = parseNumber (markerText _mrkr) ;  
+private _REPSCORE = FLO_ReputationHandle get ""value"";  
 
 if (_REPSCORE < 7) then {
 	

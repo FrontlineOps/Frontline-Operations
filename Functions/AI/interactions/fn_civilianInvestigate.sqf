@@ -11,9 +11,7 @@
 
 params ["_civl"];
 
-private _mrkrs = allMapMarkers select {markerColor _x == "Color4_FD_F"};
-private _mrkr = _mrkrs select 0;
-private _REPSCORE = parseNumber (markerText _mrkr);
+private _REPSCORE = FLO_ReputationHandle get "value";
 
 private _ChanceN = selectRandom [1, 2, 3];
 
