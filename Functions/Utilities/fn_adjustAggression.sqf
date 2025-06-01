@@ -20,5 +20,5 @@ publicVariable "FLO_DifficultyHandle";
 
 // Notification
 private _title = "STR_FLO_AGGRESSION_TITLE";
-private _msg = if (_type == "increase") then {"STR_FLO_REP_AGG_INC"} else {"STR_FLO_REP_AGG_DEC"};
+private _msg = if (_type isEqualTo "increase") then {"STR_FLO_REP_AGG_INC"} else {"STR_FLO_REP_AGG_DEC"};
 [ _title, _msg, "warning" ] call FLO_fnc_sendNotification; 

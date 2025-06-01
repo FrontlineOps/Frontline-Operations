@@ -147,7 +147,7 @@ private _REPSCORE = parseNumber (markerText _mrkr);
             [playerSide, "HQ"] commandChat "WATCH for CIVILIAN CASUALITY Corporal !";
             removeAllActions (_this select 0);
             {(_this select 0) playMove "";} remoteExec ["call", 0];
-            [] execVM "Scripts\ReputationMinus.sqf";
+            [-0.35, 'decrease'] call FLO_fnc_adjustReputation;
             [] execVM "Scripts\Civ_Relations.sqf";
         };
     }];

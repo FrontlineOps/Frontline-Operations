@@ -58,7 +58,7 @@ for "_i" from 1 to _mineCount do {
 
             [100, "STR_FLO_MINEFIELD"] call FLO_fnc_sendRewardNotification;
             [100] call FLO_fnc_addReward;
-            [] execVM "Scripts\ReputationPlus.sqf";
+            [0.35, 'increase'] call FLO_fnc_adjustReputation;
             execVM "Scripts\Civ_Relations.sqf";
 
             breakOut "MinefieldLoop"; // Kill the Do Loop

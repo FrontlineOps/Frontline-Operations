@@ -79,18 +79,20 @@ class FLO {
     class Utilities {
         file = "Functions\Utilities";
 
-        class findNearestMarker   {};
-        class log                 {};
-        class addReward           {};
-        class getRandomMagazine   {};
-        class heartbeat           {};
-        class showDynamicText     {};
-        class addIntelServer      {};
+        class findNearestMarker         {};
+        class log                       {};
+        class addReward                 {};
+        class getRandomMagazine         {};
+        class heartbeat                 {};
+        class showDynamicText           {};
+        class addIntelServer            {};
         class sendRewardNotification    {};
         class sendNotification          {};
         class displayNotification       {};
         class findEdgeSpawnPos          {};
-        class getGroupTypeCount        {};
+        class getGroupTypeCount         {};
+        class adjustAggression          {};
+        class adjustReputation          {};
     };
     
     class Misc {

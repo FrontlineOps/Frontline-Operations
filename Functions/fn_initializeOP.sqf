@@ -147,11 +147,11 @@ if (_CIVIL getUnitTrait 'engineer' isEqualTo true) then {
     [50] call FLO_fnc_addReward;
     deleteVehicle _CIVIL ; 
     [] call FLO_fnc_civilianIntel;   
-    [] execVM 'Scripts\ReputationPlus.sqf';
+    [0.35, 'increase'] call FLO_fnc_adjustReputation;
 } else {
     [0, 'STR_FLO_CIVILIAN'] call FLO_fnc_sendRewardNotification ;
     deleteVehicle _CIVIL ; 
-    [] execVM 'Scripts\ReputationMinus.sqf';
+    [-0.35, 'decrease'] call FLO_fnc_adjustReputation;
 };
 ", ""]; 
 

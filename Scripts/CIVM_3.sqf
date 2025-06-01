@@ -46,7 +46,7 @@ deleteMarker _M ;
 
 ['ScoreAdded', ['Minefield Cleared', 00]] call BIS_fnc_showNotification;  
 
-[] execVM 'Scripts\ReputationPlus.sqf';
+[0.35, 'increase'] call FLO_fnc_adjustReputation;
 
 execVM 'Scripts\Civ_Relations.sqf';
 

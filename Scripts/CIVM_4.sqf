@@ -51,7 +51,7 @@ private _wp = _PRL addWaypoint [thisTrigger, 0];
 
 };	
 
-[] execVM 'Scripts\ReputationPlus.sqf';
+[0.35, 'increase'] call FLO_fnc_adjustReputation;
 
 execVM 'Scripts\Civ_Relations.sqf';
 

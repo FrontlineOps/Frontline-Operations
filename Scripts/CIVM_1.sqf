@@ -53,7 +53,7 @@ removeAllActions (_this select 0);
 
   (_this select 0) setdamage 0;
 
-  [] execVM "Scripts\ReputationPlus.sqf";
+  [0.35, 'increase'] call FLO_fnc_adjustReputation;
 
   ["ScoreAdded", ["Vehicle Repaired", 00]] call BIS_fnc_showNotification;  
   playMusic "EventTrack01_F_Curator";   

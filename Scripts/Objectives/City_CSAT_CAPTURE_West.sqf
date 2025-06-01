@@ -88,14 +88,14 @@ if !(isNull _thisCaptureWestTrigger) then {
             [100, 'STR_FLO_CITY'] call FLO_fnc_sendRewardNotification;
             [100] call FLO_fnc_addReward;
             [0.70, "increase"] call FLO_fnc_adjustAggression;
-            [] execVM 'Scripts\ReputationPlus.sqf';
+            [0.35, 'increase'] call FLO_fnc_adjustReputation;
         };
 
         if (markerType _M == 'n_installation') then {
             [200, 'STR_FLO_CAPITAL'] call FLO_fnc_sendRewardNotification;
             [200] call FLO_fnc_addReward;
             [0.70, "increase"] call FLO_fnc_adjustAggression;
-            [] execVM 'Scripts\ReputationPlus.sqf';
+            [0.35, 'increase'] call FLO_fnc_adjustReputation;
         };
 
         deleteMarker _M;

@@ -50,7 +50,7 @@ private _MMarks = allMapMarkers select { markerText _x == 'Deliver Resources'};
 private _M = [_MMarks,  thisTrigger] call BIS_fnc_nearestPosition;
 deleteMarker _M ; 
 
-[] execVM 'Scripts\ReputationPlus.sqf';
+[0.35, 'increase'] call FLO_fnc_adjustReputation;
 
 execVM 'Scripts\Civ_Relations.sqf';
 

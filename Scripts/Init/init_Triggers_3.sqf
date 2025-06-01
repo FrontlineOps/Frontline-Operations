@@ -92,9 +92,7 @@ private _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "T
 				deleteMarker _M ; 
 				
 				[-0.75, "decrease"] call FLO_fnc_adjustAggression;					
-
-				[] execVM "Scripts\ReputationMinus.sqf";
-				[] execVM "Scripts\ReputationMinus.sqf";
+				[-0.50, 'decrease'] call FLO_fnc_adjustReputation; 
 				
 				[30, "STR_FLO_RADIOTOWER"] call FLO_fnc_sendRewardNotification ;
 
