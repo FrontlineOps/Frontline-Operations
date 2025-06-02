@@ -515,4 +515,11 @@ _respawnMarker setMarkerAlpha 1;
 MarLOCC = 1;
 publicVariable "MarLOCC";
 
+// --- FLO Virtualization Map Objective Indexing ---
+// Index all map objectives (military, civilian, industrial, etc.)
+[] call FLO_fnc_indexObjectives;
 
+// (Optional) Enable debug markers for objectives
+// FLO_Objectives_Debug = true;
+
+// --- End of new virtualization-based marker/objective system ---
