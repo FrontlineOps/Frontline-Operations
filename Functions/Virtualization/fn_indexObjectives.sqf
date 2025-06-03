@@ -83,8 +83,8 @@ for "_i" from 0 to (count _allLocations - 1) do {
     };
     // If nothing found, fallback to a minimum radius
     if (_radius < _minRadius) then { _radius = _minRadius; };
-    // Skip objectives with no buildings/structures
-    if (count _allFound == 0) exitWith {};
+    // Now check if we found any buildings/structures
+    if (count _allFound == 0) then { continue; };
     // Priority: scale structure count to 1-100, factor in radius
     private _structCount = count _allFound;
     private _priority = (_structCount * 2) min 100 max 1; // Simple scaling, tweak as needed
