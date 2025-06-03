@@ -28,7 +28,7 @@ private _locationTypes = [
 ];
 
 private _baseClasses = [
-    "NonStrategic", "HeliH", "AirportBase", "Strategic",
+    "HeliH", "AirportBase", "Strategic", "House_F",
     "House_Small", "House", "HouseBase", "Church"
 ];
 
@@ -67,6 +67,7 @@ for "_i" from 0 to (count _allLocations - 1) do {
     };
 
     // --- Dynamic radius/structure scan ---
+    private _minRadius = 90; // Always grow to at least this
     private _maxRadius = 300;
     private _step = 30;
     private _minGrowth = 2;
@@ -75,13 +76,13 @@ for "_i" from 0 to (count _allLocations - 1) do {
     private _lastCount = 0;
     while {_radius <= _maxRadius} do {
         private _found = nearestObjects [_pos, _baseClasses, _radius];
-        if ((count _found) - _lastCount < _minGrowth) exitWith {};
+        if ((_radius >= _minRadius) && ((count _found) - _lastCount < _minGrowth) && (count _found > 0)) exitWith {};
         _allFound = _found;
         _lastCount = count _found;
         _radius = _radius + _step;
     };
     // If nothing found, fallback to a minimum radius
-    if (_radius < _step * 2) then { _radius = _step * 2; };
+    if (_radius < _minRadius) then { _radius = _minRadius; };
     // Priority: scale structure count to 1-100, factor in radius
     private _structCount = count _allFound;
     private _priority = (_structCount * 2) min 100 max 1; // Simple scaling, tweak as needed
@@ -127,7 +128,7 @@ FLO_Objectives = _allObjectives;
 publicVariable "FLO_Objectives";
 
 // (Optional) Debug markers
-if (isNil "FLO_Objectives_Debug") then { FLO_Objectives_Debug = false; };
+if (isNil "FLO_Objectives_Debug") then { FLO_Objectives_Debug = true; };
 if (FLO_Objectives_Debug) then {
     for "_i" from 0 to (count _keys - 1) do {
         private _id = _keys select _i;
