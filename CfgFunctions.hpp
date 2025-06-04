@@ -46,6 +46,7 @@ class FLO {
         class activateSavedVirtualGroup       {};
         class createVirtualCivilianPopulation {};
         class indexObjectives                 {};
+        class indexVirtualObjectives          {};
     };
 
     class Logistics {

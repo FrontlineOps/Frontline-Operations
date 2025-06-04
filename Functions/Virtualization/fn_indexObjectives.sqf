@@ -131,28 +131,8 @@ publicVariable "FLO_Objectives";
 
 // (Optional) Debug markers
 if (isNil "FLO_Objectives_Debug") then { FLO_Objectives_Debug = true; };
-if (FLO_Objectives_Debug) then {
-    for "_i" from 0 to (count _keys - 1) do {
-        private _id = _keys select _i;
-        private _data = _allObjectives get _id;
-        private _pos = _data get "position";
-        private _radius = _data get "radius";
-        private _priority = _data get "priority";
-        private _structurePositions = _data get "structurePositions";
-        private _marker = createMarkerLocal [format["obj_%1", _id], _pos];
-        _marker setMarkerShapeLocal "ELLIPSE";
-        _marker setMarkerSizeLocal [_radius, _radius];
-        _marker setMarkerColorLocal "ColorRed";
-        _marker setMarkerAlphaLocal 0.3;
-        _marker setMarkerTextLocal format["P:%1", _priority];
-        // Mark each structure
-        {
-            private _sMarker = createMarkerLocal [format["obj_%1_struct_%2", _id, _forEachIndex], _x];
-            _sMarker setMarkerTypeLocal "mil_dot";
-            _sMarker setMarkerColorLocal "ColorBlack";
-            _sMarker setMarkerAlphaLocal 0.7;
-        } forEach _structurePositions;
-    };
-};
+
+// Add virtual objectives for uncovered clusters (docks, industrial, etc.)
+[FLO_Objectives, FLO_Objectives_Debug, 100] call FLO_fnc_indexVirtualObjectives;
 
 _allObjectives;
