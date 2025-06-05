@@ -31,11 +31,7 @@ private _uniqueStructures = [];
 {
     if (!(_x in _uniqueStructures)) then { _uniqueStructures pushBack _x; };
 } forEach _allStructures;
-
-// Remove PowerLines_base_F
-_uniqueStructures = _uniqueStructures select {typeOf _x != "PowerLines_base_F"};
-
-diag_log format ["[VirtualObjectives] Filtered PowerLines_base_F, %1 structures remain at %2", count _uniqueStructures, diag_tickTime];
+diag_log format ["[VirtualObjectives] Found %1 unique structures at %2", count _uniqueStructures, diag_tickTime];
 
 // 3. Build grid for covered objectives
 private _coveredGrid = createHashMap;
@@ -115,8 +111,6 @@ diag_log format ["[VirtualObjectives] Found %1 clusters at %2", count _clusters,
 private _newCount = 0;
 for "_i" from 0 to (count _clusters - 1) do {
     private _cluster = _clusters select _i;
-    // Exclude PowerLines_base_F from clusters (extra safety)
-    _cluster = _cluster select {typeOf _x != "PowerLines_base_F"};
     // Skip tiny clusters
     if (count _cluster < 4) then { continue; };
     // Calculate centroid
@@ -165,106 +159,23 @@ for "_i" from 0 to (count _clusters - 1) do {
     ];
     _objectives set [_id, _objData];
     _newCount = _newCount + 1;
-    // // Debug marker
-    // if (_debug) then {
-    //     private _marker = createMarkerLocal [format["obj_%1", _id], _centroid];
-    //     _marker setMarkerShapeLocal "ELLIPSE";
-    //     _marker setMarkerSizeLocal [_radius, _radius];
-    //     _marker setMarkerColorLocal "ColorBlue";
-    //     _marker setMarkerAlphaLocal 0.3;
-    //     _marker setMarkerTextLocal format["V:%1", _priority];
-    //     {
-    //         private _sMarker = createMarkerLocal [format["obj_%1_struct_%2", _id, _forEachIndex], _x];
-    //         _sMarker setMarkerTypeLocal "mil_dot";
-    //         _sMarker setMarkerColorLocal "ColorBlack";
-    //         _sMarker setMarkerAlphaLocal 0.7;
-    //     } forEach _structurePositions;
-    // };
-};
-
-diag_log format ["[VirtualObjectives] Added %1 virtual objectives at %2", _newCount, diag_tickTime];
-
-// --- Merge overlapping objectives (multi-pass, capped) ---
-private _maxMergePasses = 5;
-private _mergePass = 0;
-private _mergedCount = 1;
-while {_mergedCount > 0 && _mergePass < _maxMergePasses} do {
-    _mergedCount = 0;
-    private _keys = keys _objectives;
-    private _merged = [];
-    for "_i" from 0 to (count _keys - 1) do {
-        private _id1 = _keys select _i;
-        if (_id1 in _merged) then { continue; };
-        private _obj1 = _objectives get _id1;
-        private _pos1 = _obj1 get "position";
-        private _rad1 = _obj1 get "radius";
-        for "_j" from (_i + 1) to (count _keys - 1) do {
-            private _id2 = _keys select _j;
-            if (_id2 in _merged) then { continue; };
-            private _obj2 = _objectives get _id2;
-            private _pos2 = _obj2 get "position";
-            private _rad2 = _obj2 get "radius";
-            if (_pos1 distance2D _pos2 < ((_rad1 + _rad2) * 0.5)) then {
-                // Merge: combine structures, recalc centroid/radius, update _obj1, mark _id2 for removal
-                private _allStructs = (_obj1 get "structures") + (_obj2 get "structures");
-                // Remove duplicates
-                private _allStructsUnique = [];
-                { if (!(_x in _allStructsUnique)) then { _allStructsUnique pushBack _x; }; } forEach _allStructs;
-                // Recalculate centroid
-                private _sumX = 0; private _sumY = 0; private _sumZ = 0;
-                { private _p = getPosWorld _x; _sumX = _sumX + (_p select 0); _sumY = _sumY + (_p select 1); _sumZ = _sumZ + (_p select 2); } forEach _allStructsUnique;
-                private _centroid = [
-                    _sumX / (count _allStructsUnique),
-                    _sumY / (count _allStructsUnique),
-                    _sumZ / (count _allStructsUnique)
-                ];
-                // Recalculate radius
-                private _radius = _minRadius;
-                { private _p = getPosWorld _x; private _dist = _centroid distance2D _p; if (_dist > _radius) then { _radius = _dist; }; } forEach _allStructsUnique;
-                _radius = (_radius + 10) min _maxRadius;
-                // Update obj1
-                _obj1 set ["position", _centroid];
-                _obj1 set ["radius", _radius];
-                _obj1 set ["structures", _allStructsUnique];
-                private _structurePositions = [];
-                { _structurePositions pushBack (getPosWorld _x); } forEach _allStructsUnique;
-                _obj1 set ["structurePositions", _structurePositions];
-                _obj1 set ["priority", ((count _allStructsUnique) * 2) min 100 max 1];
-                // Mark obj2 for removal
-                _merged pushBack _id2;
-                _mergedCount = _mergedCount + 1;
-            };
-        };
-    };
-    { _objectives deleteAt _x; } forEach _merged;
-    _mergePass = _mergePass + 1;
-};
-
-diag_log format ["[VirtualObjectives] Merged objectives in %1 passes at %2", _mergePass, diag_tickTime];
-
-// --- Debug marker creation for final objectives ---
-if (_debug) then {
-    private _finalKeys = keys _objectives;
-    for "_i" from 0 to (count _finalKeys - 1) do {
-        private _id = _finalKeys select _i;
-        private _data = _objectives get _id;
-        private _centroid = _data get "position";
-        private _radius = _data get "radius";
-        private _priority = _data get "priority";
-        private _structurePositions = _data get "structurePositions";
-        private _marker = createMarkerLocal [format["vobj_%1", _id], _centroid];
+    // Debug marker
+    if (_debug) then {
+        private _marker = createMarkerLocal [format["obj_%1", _id], _centroid];
         _marker setMarkerShapeLocal "ELLIPSE";
         _marker setMarkerSizeLocal [_radius, _radius];
         _marker setMarkerColorLocal "ColorBlue";
         _marker setMarkerAlphaLocal 0.3;
         _marker setMarkerTextLocal format["V:%1", _priority];
         {
-            private _sMarker = createMarkerLocal [format["vobj_%1_struct_%2", _id, _forEachIndex], _x];
+            private _sMarker = createMarkerLocal [format["obj_%1_struct_%2", _id, _forEachIndex], _x];
             _sMarker setMarkerTypeLocal "mil_dot";
             _sMarker setMarkerColorLocal "ColorBlack";
             _sMarker setMarkerAlphaLocal 0.7;
         } forEach _structurePositions;
     };
 };
+
+diag_log format ["[VirtualObjectives] Added %1 virtual objectives at %2", _newCount, diag_tickTime];
 
 _newCount; 
