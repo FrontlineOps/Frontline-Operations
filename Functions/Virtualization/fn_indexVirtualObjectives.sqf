@@ -111,8 +111,16 @@ diag_log format ["[VirtualObjectives] Found %1 clusters at %2", count _clusters,
 private _newCount = 0;
 for "_i" from 0 to (count _clusters - 1) do {
     private _cluster = _clusters select _i;
-    // Skip tiny clusters
-    if (count _cluster < 4) then { continue; };
+    // Get minimum cluster size based on configuration
+    private _minClusterSize = switch (OPFOR_Objective_Size_Threshold) do {
+        case "Small": { 4 };
+        case "Medium": { 8 };
+        case "Large": { 12 };
+        case "Huge": { 24 };
+        default { 4 }; // Default to Small if invalid setting
+    };
+    // Skip clusters smaller than threshold
+    if (count _cluster < _minClusterSize) then { continue; };
     // Calculate centroid
     private _sumX = 0; private _sumY = 0; private _sumZ = 0;
     {

@@ -149,6 +149,14 @@ OPFOR_Group_Counts = [
 ];
 
 /*
+ * Cluster Size Threshold Configuration
+ * Defines the minimum number of structures required to form a objective
+ * Options: "Small" (4), "Medium" (8), "Large" (12), "Huge" (24)
+ * Default: "Small"
+ */
+OPFOR_Objective_Size_Threshold = "Small";
+
+/*
  * Configure activation distance for the virtualization system
  * This is the distance in meters that a player needs to be from a virtual group for it to physically spawn in the game
  */ 
