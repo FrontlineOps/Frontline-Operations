@@ -24,14 +24,12 @@ private _baseClasses = [
 
 // 1. Gather all structures in one call
 private _allStructures = nearestObjects [[worldSize/2, worldSize/2, 0], _baseClasses, worldSize];
-diag_log format ["[VirtualObjectives] Found %1 structures at %2", count _allStructures, diag_tickTime];
 
 // 2. Remove duplicates
 private _uniqueStructures = [];
 {
     if (!(_x in _uniqueStructures)) then { _uniqueStructures pushBack _x; };
 } forEach _allStructures;
-diag_log format ["[VirtualObjectives] Found %1 unique structures at %2", count _uniqueStructures, diag_tickTime];
 
 // 3. Build grid for covered objectives
 private _coveredGrid = createHashMap;
@@ -56,7 +54,6 @@ private _coveredList = [];
         };
     };
 } forEach (keys _objectives);
-diag_log format ["[VirtualObjectives] Built covered grid at %1", diag_tickTime];
 
 // 4. Find uncovered structures using grid
 private _uncovered = [];
@@ -72,7 +69,6 @@ private _uncovered = [];
     } forEach _cellList;
     if (!_covered) then { _uncovered pushBack _x; };
 } forEach _uniqueStructures;
-diag_log format ["[VirtualObjectives] Found %1 uncovered structures at %2", count _uncovered, diag_tickTime];
 
 // 5. Grid-based clustering
 private _structureGrid = createHashMap;
@@ -105,7 +101,6 @@ private _visited = createHashMap;
     };
     if (count _cluster > 0) then { _clusters pushBack _cluster; };
 } forEach _uncovered;
-diag_log format ["[VirtualObjectives] Found %1 clusters at %2", count _clusters, diag_tickTime];
 
 // 6. For each cluster, create a new objective
 private _newCount = 0;
@@ -183,7 +178,5 @@ for "_i" from 0 to (count _clusters - 1) do {
         } forEach _structurePositions;
     };
 };
-
-diag_log format ["[VirtualObjectives] Added %1 virtual objectives at %2", _newCount, diag_tickTime];
 
 _newCount; 

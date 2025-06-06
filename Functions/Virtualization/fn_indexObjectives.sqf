@@ -129,9 +129,6 @@ for "_i" from 0 to (count _keys - 1) do {
 FLO_Objectives = _allObjectives;
 publicVariable "FLO_Objectives";
 
-// (Optional) Debug markers
-if (isNil "FLO_Objectives_Debug") then { FLO_Objectives_Debug = true; };
-
 // Add virtual objectives for uncovered clusters (docks, industrial, etc.)
 [FLO_Objectives, FLO_Objectives_Debug, 100] call FLO_fnc_indexVirtualObjectives;
 

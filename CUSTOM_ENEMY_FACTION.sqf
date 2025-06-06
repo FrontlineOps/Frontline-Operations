@@ -152,9 +152,9 @@ OPFOR_Group_Counts = [
  * Cluster Size Threshold Configuration
  * Defines the minimum number of structures required to form a objective
  * Options: "Small" (4), "Medium" (8), "Large" (12), "Huge" (24)
- * Default: "Small"
+ * Default: "Medium"
  */
-OPFOR_Objective_Size_Threshold = "Small";
+OPFOR_Objective_Size_Threshold = "Medium";
 
 /*
  * Configure activation distance for the virtualization system
