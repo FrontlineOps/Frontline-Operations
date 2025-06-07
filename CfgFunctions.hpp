@@ -45,10 +45,15 @@ class FLO {
         class distributeVirtualGroups         {};
         class activateSavedVirtualGroup       {};
         class createVirtualCivilianPopulation {};
-        class indexObjectives                 {};
-        class indexVirtualObjectives          {};
-        class flipObjective                  {};
-        class monitorObjectiveDominance      {};
+    };
+
+    class Objective {
+        file = "Functions\Objective";
+        
+        class indexObjectives           {};
+        class indexVirtualObjectives    {};
+        class flipObjective             {};
+        class monitorObjectiveDominance {};
     };
 
     class Logistics {
