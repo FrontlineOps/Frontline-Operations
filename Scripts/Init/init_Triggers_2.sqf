@@ -1,262 +1,70 @@
-private _objectLocT = allMapMarkers select { markerType _x == "n_support"};
-
-{
-	
-private _trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
-_trg setTriggerArea [2000, 2000, 0, false, 300];
-_trg setTriggerTimeout [1, 1, 1, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];
-_trg setTriggerStatements [
-"this","
-
-if ( count (nearestObjects [(getPos thisTrigger), ['Land_Cargo_Tower_V3_F', 'Land_Cargo_Tower_V2_F', 'Land_Cargo_Tower_V1_F', 'Land_Cargo_HQ_V3_F', 'Land_Cargo_HQ_V2_F', 'Land_Cargo_HQ_V1_F'], 100] ) == 0) then {
-
-_TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
-{_x hideObjectGlobal true;} forEach _TERR ;
-
-_P1 = [ 
-'FOB_01',  
-'FOB_02',  
-'FOB_03'
-]; 	
-_dir = 0 + (random 360);
-if (count (nearestObjects [(getPos thisTrigger), ['House'], 300]) != 0) then {
-_dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 300]) select 0);
-};
-
-
-_COM = [ selectRandom _P1, (getPos thisTrigger), [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
-_ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
-{_x setVectorUp [0,0,1];} forEach _ARRAY;
-};
-
-
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
-_trgA setTriggerArea [1000, 1000, 0, false, 300];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Objectives\BOutpost_CSAT.sqf';
-
-"",""""];
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger) getPos [(300 + (random 300)),(0 + (random 350))], false];
-_trgA setTriggerArea [500, 500, 0, false, 60];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Objectives\Recon_CSAT.sqf';
-
-"",""""];
-
-", ""];
-
-} forEach _objectLocT;
-
 ["LOADING . . . "] remoteExec ["hint", 0];
 sleep 1;
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-private _objectLocT = allMapMarkers select { markerType _x == "loc_Ruin" };
+private _objectLocT = allMapMarkers select { markerType _x == 'loc_Transmitter' };
 
 {
-
-private _trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
-_trg setTriggerArea [2000, 2000, 0, false, 300];
-_trg setTriggerTimeout [1, 1, 1, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];
-_trg setTriggerStatements [
-"this","
-
-_TERR = nearestTerrainObjects [(getPos thisTrigger), ['FOREST', 'House', 'TREE', 'SMALL TREE', 'BUSH', 'ROCK', 'ROCKS'], 40]; 
+private _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "TREE", "SMALL TREE", "BUSH", "ROCK", "ROCKS"], 15]; 
 {_x hideObjectGlobal true;} forEach _TERR ;
-
-_AGGRSCORE = FLO_DifficultyHandle get ""value"";  
-
-if (_AGGRSCORE < 6) then {
-BRKC = [ 
-'B_1_CSAT',  
-'B_2_CSAT',  
-'B_3_CSAT'   
-]; };
-
-if (_AGGRSCORE > 5) then {
-BRKC =  [ 
-'B_4_CSAT',  
-'B_5_CSAT',  
-'B_6_CSAT'   
-]; };
-
-if (_AGGRSCORE > 10) then {
-BRKC =  [ 
-'B_7_CSAT',  
-'B_8_CSAT',  
-'B_9_CSAT'   
-]; };
-
-_dir = 0 + (random 360);
-if (count (nearestObjects [(getPos thisTrigger), ['House'], 300]) != 0) then {
-_dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 300]) select 0);
-};
-
-_COM = [ selectRandom BRKC, (getPos thisTrigger), [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
-_ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
-{_x setVectorUp [0,0,1];} forEach _ARRAY;
-
-_Position = nearestObjects [(getPos thisTrigger), ['Land_i_Barracks_V1_F', 'Land_u_Barracks_V2_F', 'Land_i_Barracks_V2_F', 'Land_Barracks_01_grey_F', 'Land_Barracks_01_dilapidated_F' , 'Land_vn_barracks_01_camo_f', 'Land_Barracks_01_camo_F'], 100] select 0;  
-_Position addEventHandler ['Killed', { 
-_MMarks = allMapMarkers select { markerType _x == 'loc_Ruin'};
-_M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
-deleteMarker _M ; 
-
-				[40, 'STR_FLO_BARRACKS'] call FLO_fnc_sendRewardNotification ;
-
-[40] call FLO_fnc_addReward;
-
-				_markerName = 'AssaultMark' + (str [(0 + (random 1000)), (0 + (random 1000)), 0]);  
-				_mrkr = createMarker [_markerName, [(0 + (random 1000)), (0 + (random 1000)), 0]]; 
-_mrkr setMarkerType 'loc_Bunker';
-_mrkr setMarkerAlpha 0.003;
-
-[0.35, 'increase'] call FLO_fnc_adjustAggression;
-  
- execVM 'Scripts\InfDis.sqf';
-
-}];
-
-
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
-_trgA setTriggerArea [1000, 1000, 0, false, 300];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Mission_POW.sqf';
-
-"",""""];
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger) getPos [(300 + (random 300)),(0 + (random 350))], false];
-_trgA setTriggerArea [500, 500, 0, false, 60];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Objectives\Recon_CSAT.sqf';
-
-"",""""];
-
-", ""];
-
 } forEach _objectLocT;
 
-
-sleep 1;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _objectLocT = allMapMarkers select { markerType _x == "loc_Power" };
-
 {
+	if (markerColor _x != "colorBLUFOR" && markerColor _x != "ColorWEST" ) then {
+		_trgA = createTrigger ["EmptyDetector", getMarkerpos _x];
+		_trgA setTriggerArea [2000, 2000, 0, false, 300];
+		_trgA setTriggerTimeout [1, 1, 1, true];
+		_trgA setTriggerActivation ["WEST", "PRESENT", false];
+		_trgA setTriggerStatements [
+		"this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))","
+
+		[thisTrigger] execVM 'Scripts\Objectives\RadioTower_CSAT.sqf';
+
+		", ""];
+			
+
+		_TWR = nearestobjects [(getMarkerPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"], 200] select 0;
+		if !(isNil "_TWR") then {
+			[
+				_TWR,											
+				"<img size=2 color='#f37c00' image='\a3\ui_f_oldman\data\IGUI\Cfg\holdactions\repair_ca.paa'/><t font='PuristaBold' color='#f37c00'>INTERCEPT COMMS",										
+				"\a3\ui_f_oldman\data\IGUI\Cfg\holdactions\repair_ca.paa",	
+				"\a3\ui_f_oldman\data\IGUI\Cfg\holdactions\repair_ca.paa",	
+				"_this distance _target < 10",						
+				"_caller distance _target < 10",						
+				{
+				playSound3D ["a3\missions_f_oldman\data\sound\intel_laptop\2sec\intel_laptop_2sec_03.wss", (_this select 0)]; 
+				},												
+				{},													
+				{ 
+
+			[(_this select 0)] execVM "Scripts\Reveal.sqf";
+
+				},				
+				{},													
+				[],												
+				3,													
+				0,												
+				true,												
+				false												
+			] remoteExec ["BIS_fnc_holdActionAdd", 0, _TWR];	
+
+			_TWR addEventHandler ["Killed", { 
+				_MMarks = allMapMarkers select { markerType _x == "loc_Transmitter"};
+				_M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
+				deleteMarker _M ; 
+				
+				[-0.75, "decrease"] call FLO_fnc_adjustAggression;					
+				[-0.50, 'decrease'] call FLO_fnc_adjustReputation; 
+				
+				[30, "STR_FLO_RADIOTOWER"] call FLO_fnc_sendRewardNotification ;
+
+				[30] call FLO_fnc_addReward;
+				execVM "Scripts\COMDIS.sqf";
+			}];
+			
+		};
+	};
 	
-_trg = createTrigger ["EmptyDetector", getMarkerpos _x, false];
-_trg setTriggerArea [2000, 2000, 0, false, 300];
-_trg setTriggerTimeout [1, 1, 1, true];
-_trg setTriggerActivation ["WEST", "PRESENT", false];
-_trg setTriggerStatements [
-"this","	
-
-_TERR = nearestTerrainObjects [(getPos thisTrigger), [], 40]; 
-{_x hideObjectGlobal true;} forEach _TERR ;
-	
-_AGGRSCORE = FLO_DifficultyHandle get ""value"";  
-
-if (_AGGRSCORE < 6) then {			 
-RDRC = [ 
-'Radar_1',  
-'Radar_2',  
-'Radar_3'   
-]; };	
-
-if (_AGGRSCORE > 5) then {
-RDRC =  [ 
-'Radar_4',  
-'Radar_5',  
-'Radar_6'   
-]; };					   					   
-					   
-if (_AGGRSCORE > 10) then {
-RDRC =  [ 
-'Radar_7',  
-'Radar_8',  
-'Radar_9'   
-]; };				
-					   
-_dir = 0 + (random 360);
-if (count (nearestObjects [(getPos thisTrigger), ['House'], 300]) != 0) then {
-_dir = getDirVisual ((nearestObjects [(getPos thisTrigger), ['House'], 300]) select 0);
-};
-
-_TERR = nearestTerrainObjects [(getPos thisTrigger), [], 40]; 
-{_x hideObjectGlobal true;} forEach _TERR ;
-
-_COM = [ selectRandom RDRC, (getPos thisTrigger), [0,0,0], _dir, true ] call LARs_fnc_spawnComp;
-_ARRAY = [ _COM ] call LARs_fnc_getCompObjects;
-{_x setVectorUp [0,0,1];} forEach _ARRAY;
-
-_RDR = nearestobjects [(getPos thisTrigger), ['Land_Radar_F'], 100] select 0;
-_RDR addEventHandler ['Killed', { 
-_MMarks = allMapMarkers select { markerType _x == 'loc_Power'};
-_M = [_MMarks,  (_this select 0)] call BIS_fnc_nearestPosition;
-
-deleteMarker _M ; 
-    				[40, 'STR_FLO_RADARSITE'] call FLO_fnc_sendRewardNotification ;
-
-
-[40] call FLO_fnc_addReward;
-[-0.75, 'decrease'] call FLO_fnc_adjustAggression;
-
- execVM 'Scripts\AADis.sqf';
-
-
- 
-}];
-
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger), false];
-_trgA setTriggerArea [1000, 1000, 0, false, 100];
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Objectives\Mission_Radar.sqf';
-
-"",""""];
-
-_trgA = createTrigger ['EmptyDetector', (getPos thisTrigger) getPos [(300 + (random 300)),(0 + (random 350))], false];
-_trgA setTriggerArea [500, 500, 0, false, 60];
-_trgA setTriggerInterval 3;
-_trgA setTriggerTimeout [1, 1, 1, true];
-_trgA setTriggerActivation ['WEST', 'PRESENT', false];
-_trgA setTriggerStatements [
-""this && (({_x isKindOf 'Man'} count thisList >0) or ({_x isKindOf 'LandVehicle'} count thisList >0) or ({_x isKindOf 'Tank'} count thisList >0) or ({_x isKindOf 'Car'} count thisList >0))"",""
-
-[thisTrigger] execVM 'Scripts\Objectives\Recon_CSAT.sqf';
-
-"",""""];
-
-", ""];
-
 } forEach _objectLocT;
 
 

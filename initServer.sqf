@@ -5,11 +5,9 @@ TRG1LOCC = 0;
 publicVariable "TRG1LOCC";
 TRG2LOCC = 0;
 publicVariable "TRG2LOCC";
-TRG3LOCC = 0;
-publicVariable "TRG3LOCC";
 MarLOCC = 0;
 publicVariable "MarLOCC";
-AVENGLOCC = 1 ;
+AVENGLOCC = 1;
 
 COMMSDIS = 0;
 publicVariable "COMMSDIS";
@@ -80,7 +78,7 @@ waitUntil {!isNil "EtVInitialized"};
 // Parallel execution
 {
     0 spawn compileFinal preprocessFileLineNumbers _x;
-} forEach ["Scripts\Init\init_Triggers_1.sqf", "Scripts\Init\init_Triggers_2.sqf", "Scripts\Init\init_Triggers_3.sqf"];
+} forEach ["Scripts\Init\init_Triggers_1.sqf", "Scripts\Init\init_Triggers_2.sqf"];
 
 
 //Resource Loops//Convoy Loops//Radio Tower Loops
