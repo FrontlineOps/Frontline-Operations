@@ -1,11 +1,10 @@
 HQLOCC = 0 ;
 publicVariable "HQLOCC";
 
-TRG1LOCC = 0;
-publicVariable "TRG1LOCC";
 MarLOCC = 0;
 publicVariable "MarLOCC";
 AVENGLOCC = 1;
+publicVariable "AVENGLOCC";
 
 ConVLocc = 0;
 publicVariable "ConVLocc";
