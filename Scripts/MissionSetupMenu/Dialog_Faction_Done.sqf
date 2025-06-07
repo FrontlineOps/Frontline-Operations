@@ -122,14 +122,14 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 		case "100% _ Dedi Servers with HCs": {EnemyPrec = 1};
 	};
 
-	ZonMarkers = execVM "Scripts\Init\init_Markers.sqf";
-	waitUntil { scriptDone ZonMarkers };
-
 	StartingLocationDone = true;
 	publicVariable "StartingLocationDone";
 
 	// Initialize Virtualization System
 	waitUntil {F_Init}; // Wait for faction initialization to complete
+
+	ZonMarkers = execVM "Scripts\Init\init_Markers.sqf";
+	waitUntil { scriptDone ZonMarkers };
 	["VIRTUALIZATION", 3, "Faction initialization complete, starting virtualization"] call FLO_fnc_log;
 
 	// Initialize virtualization system on the server

@@ -20,7 +20,7 @@ publicVariable "ARMDIS";
 ConVLocc = 0;
 publicVariable "ConVLocc";
 
-FLO_Objectives_Debug = false;
+FLO_Objectives_Debug = true;
 StartingLocationDone = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
