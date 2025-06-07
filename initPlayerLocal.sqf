@@ -52,9 +52,8 @@ waitUntil {!isNil "EtVInitialized"};
 if (isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") isEqualTo true ) then { player addItem "ItemAndroid"; player addItem "ItemcTab"; };
 
 waitUntil {(MarLOCC isEqualTo 1) || (count (allMapMarkers select {markerType _x isEqualTo "b_installation"}) > 0) || (count (allMapMarkers select {markerType _x isEqualTo "b_unknown"}) > 0)};
-// Wait until JIP or trigger 1 & 2 is activated
+// Wait until JIP or trigger 1 is activated
 waitUntil {(didJIP) || (TRG1LOCC isEqualTo 1)};
-waitUntil {(didJIP) || (TRG2LOCC isEqualTo 1)};
 
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {
