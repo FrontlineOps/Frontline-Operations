@@ -7,5 +7,7 @@ _respawnMarker setMarkerAlpha 1;
 
 [] call FLO_fnc_indexObjectives;
 
+[] spawn FLO_fnc_monitorObjectiveDominance;
+
 MarLOCC = 1;
 publicVariable "MarLOCC";

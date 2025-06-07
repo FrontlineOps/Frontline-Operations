@@ -47,6 +47,8 @@ class FLO {
         class createVirtualCivilianPopulation {};
         class indexObjectives                 {};
         class indexVirtualObjectives          {};
+        class flipObjective                  {};
+        class monitorObjectiveDominance      {};
     };
 
     class Logistics {
