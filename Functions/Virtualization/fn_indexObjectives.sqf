@@ -101,7 +101,8 @@ for "_i" from 0 to (count _allLocations - 1) do {
         ["structures", _allFound],
         ["structurePositions", _structurePositions],
         ["location", _loc],
-        ["locType", _locType]
+        ["locType", _locType],
+        ["owner", east]
     ];
     _allObjectives set [_locStr, _objData];
 };
@@ -131,6 +132,27 @@ publicVariable "FLO_Objectives";
 
 // Add virtual objectives for uncovered clusters (docks, industrial, etc.)
 [FLO_Objectives, FLO_Objectives_Debug, 100] call FLO_fnc_indexVirtualObjectives;
+
+// Create map markers for all objectives (including newly added virtual ones)
+_keys = keys FLO_Objectives;
+{
+    private _id = _x;
+    private _data = FLO_Objectives get _id;
+    private _pos = _data get "position";
+    private _radius = _data get "radius";
+    private _owner = _data getOrDefault ["owner", east];
+    private _marker = createMarker [format ["obj_%1", _id], _pos];
+    _marker setMarkerShape "ELLIPSE";
+    _marker setMarkerSize [_radius, _radius];
+    private _color = switch (_owner) do {
+        case west: {"colorBLUFOR"};
+        case east: {"colorOPFOR"};
+        case resistance: {"ColorGUER"};
+        default {"ColorBlack"};
+    };
+    _marker setMarkerColor _color;
+    _marker setMarkerAlpha 0.3;
+} forEach _keys;
 
 if (FLO_Objectives_Debug) then {
     for "_i" from 0 to (count _keys - 1) do {

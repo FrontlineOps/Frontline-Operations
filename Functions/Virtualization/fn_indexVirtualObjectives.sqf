@@ -158,7 +158,8 @@ for "_i" from 0 to (count _clusters - 1) do {
         ["structures", _cluster],
         ["structurePositions", _structurePositions],
         ["location", objNull],
-        ["locType", "virtual"]
+        ["locType", "virtual"],
+        ["owner", east]
     ];
     _objectives set [_id, _objData];
     _newCount = _newCount + 1;
