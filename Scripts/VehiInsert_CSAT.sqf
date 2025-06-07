@@ -1,4 +1,4 @@
-if (COMMSDIS == 0) then {
+if (true) then {
     params ["_thisVehiInsertTrigger"];
     
     private _allZoneMarks = allMapMarkers select {

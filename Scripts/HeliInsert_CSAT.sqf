@@ -1,4 +1,4 @@
-if (COMMSDIS == 0) then {
+if (true) then {
     params ["_thisHeliInsertTrigger"];
     
     // Find valid zone markers
@@ -18,7 +18,7 @@ if (COMMSDIS == 0) then {
     private _targetMark = [_allZoneMarks - [_nearestMark], _nearestMark] call BIS_fnc_nearestPosition;
     private _targetPos = getMarkerPos _targetMark;
     
-    if (HELIDIS == 0) then {
+    if (true) then {
         if (selectRandom [true, true, false]) then {
             // Transport helicopter setup
             private _qrfPos = getPos _thisHeliInsertTrigger;

@@ -9,18 +9,10 @@ MarLOCC = 0;
 publicVariable "MarLOCC";
 AVENGLOCC = 1;
 
-COMMSDIS = 0;
-publicVariable "COMMSDIS";
-HELIDIS = 0;
-publicVariable "HELIDIS";
-LOGDIS = 0;
-publicVariable "LOGDIS";
-ARMDIS = 0;
-publicVariable "ARMDIS";
 ConVLocc = 0;
 publicVariable "ConVLocc";
 
-FLO_Objectives_Debug = true;
+FLO_Objectives_Debug = false;
 StartingLocationDone = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 

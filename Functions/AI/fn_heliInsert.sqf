@@ -19,7 +19,7 @@ params [
     ["_qrfPos", _targetPos, [[]], [3]]
 ];
 
-if (HELIDIS == 0) then {
+if (true) then {
     // Transport helicopter setup
     private _randomDir = random 360;
     private _landingPos = _qrfPos getPos [1000 + (random 250), _randomDir];

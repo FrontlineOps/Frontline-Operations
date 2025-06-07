@@ -146,7 +146,7 @@ _CG = [getPosATL _nearRoad, east, _SCount] call BIS_fnc_spawnGroup;
 V5 setUnloadInCombat [true, false];	
 {[_x] join CGM} forEach units _CG; 
 
-if ( ARMDIS == 0 ) then {
+if (true) then {
 _nearRoad = selectRandom ( (getpos _CNV) nearRoads 200 ) ; 
 V6 = createVehicle [ selectRandom East_Ground_Vehicles_Light, (_nearRoad getRelPos [0, 0]), [], 10, "NONE"]; 
 _azimuth = (getMarkerPos "ConvoyStrt") getDir (getMarkerPos "ConvoyDest") ;

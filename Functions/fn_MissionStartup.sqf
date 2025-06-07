@@ -220,11 +220,7 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Repair_F"], 40000];
     ]] remoteExec ["addAction", 0, true];
 } foreach _FOBC;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 //////////// Vehicles Crew Management /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 ALLFACVEHs = nearestobjects [Centerposition,[
     "B_SAM_System_01_F",
@@ -308,89 +304,6 @@ _EXCVEH = vehicles - ALLFACVEHs;
 {
     deleteVehicleCrew _x; 
 } foreach _EXCVEH;  
-	
-
-////////////////Radio Towers EHs/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-_objectLocT = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" };
-{	
-    TWRs = nearestobjects [(getMarkerPos _x), ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"], 200];
-
-    if (count TWRs > 0 ) then {
-        TWR = TWRs select 0 ;
-
-        TWR removeAllEventHandlers "Killed";
-        TWR addEventHandler ["Killed", { 
-            _MMarks = allMapMarkers select { markerType _x isEqualTo "loc_Transmitter"};
-            _M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
-            deleteMarker _M ; 
-
-            [-0.80, "decrease"] call FLO_fnc_adjustAggression;
-            [-0.50, 'decrease'] call FLO_fnc_adjustReputation;
-              
-            [30, "STR_FLO_RADIOTOWER"] call FLO_fnc_sendRewardNotification ;
-            [30] call FLO_fnc_addReward;
-            execVM "Scripts\COMDIS.sqf";
-        }];
-    };	
-} forEach _objectLocT;	
-
-//////////////Zones Capture Triggers ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-_objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "ColorWEST"};
-
-{
-    _trg = createTrigger ["EmptyDetector", (getMarkerPos _x), false];  
-    _trg setTriggerArea [220, 220, 0, false, 200];  
-    _trg setTriggerTimeout [10, 10, 10, true];
-    _trg setTriggerActivation ["EAST SEIZED", "PRESENT", true];  
-    _trg setTriggerStatements [  
-        "this",  
-        "  
-            [parseText '<t color=""#FF3619"" font=""PuristaBold"" align = ""right"" shadow = ""1"" size=""2"">SITREP</t><br /><t color=""#7c7c7c""  align = ""right"" shadow = ""1"" size=""0.8"">Enemy Forces Dominating the Battle,</t><br /><t color=""#7c7c7c"" align = ""right"" shadow = ""1"" size=""0.8"">Keep Up the Fight, We Must Defend and Take Back the Outpost, </t>', [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ['BIS_fnc_textTiles', 0];
-            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
-            _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-            _FOBMrk setMarkerColor 'ColorGrey' ;	
-            _attackingAtGrid = mapGridPosition getMarkerPos _FOBMrk;
-            [[west,'HQ'], 'Enemy Forces Dominating the Battle at grid ' + _attackingAtGrid] remoteExec ['sideChat', 0];					
-            
-            [thisTrigger] execVM 'Scripts\Objectives\City_CSAT_CAPTURE_East.sqf';
-        ", 
-        "
-            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
-            _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-            _FOBMrk setMarkerColor 'ColorWEST' ;		
-        "
-    ];				
-} forEach _objectLocT;	
-
-_objectLocT = allMapMarkers select { markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "colorBLUFOR"};
-
-{
-    _trg = createTrigger ["EmptyDetector", (getMarkerPos _x), false];  
-    _trg setTriggerArea [120, 120, 0, false, 200];  
-    _trg setTriggerTimeout [10, 10, 10, true];
-    _trg setTriggerActivation ["EAST SEIZED", "PRESENT", true];  
-    _trg setTriggerStatements [  
-        "this",  
-        "  
-            [parseText '<t color=""#FF3619"" font=""PuristaBold"" align = ""right"" shadow = ""1"" size=""2"">SITREP</t><br /><t color=""#7c7c7c""  align = ""right"" shadow = ""1"" size=""0.8"">Enemy Forces Dominating the Battle,</t><br /><t color=""#7c7c7c"" align = ""right"" shadow = ""1"" size=""0.8"">Keep Up the Fight, We Must Defend and Take Back the Outpost, </t>', [0, 0.5, 1, 1], nil, 5, 1.7, 0] remoteExec ['BIS_fnc_textTiles', 0];
-            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
-            _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-            _FOBMrk setMarkerColor 'ColorGrey' ;	
-            _attackingAtGrid = mapGridPosition getMarkerPos _FOBMrk;
-            [[west,'HQ'], 'Enemy Forces Dominating the Battle at grid ' + _attackingAtGrid] remoteExec ['sideChat', 0];					
-            
-            [thisTrigger] execVM 'Scripts\Objectives\Outpost_CSAT_CAPTURE_East.sqf';
-        ", 
-        "
-            _allMarks = allMapMarkers select {markerType _x isEqualTo 'b_installation'};  
-            _FOBMrk = [_allMarks,  thisTrigger] call BIS_fnc_nearestPosition;
-            _FOBMrk setMarkerColor 'colorBLUFOR' ;		
-        "
-    ];				
-} forEach _objectLocT;	
 
 ////////////////Support Stations/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -500,18 +413,6 @@ _antiAirSystems = nearestObjects [Centerposition, [
 {
     createVehicleCrew _x;
 } forEach _antiAirSystems;
-
-// Add communication menu items to all friendly units
-// {
-//     {
-//         [_x, 'MENU_COMMS_UAV_RECON', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
-//         [_x, 'MENU_COMMS_SUPPLYDROP', nil, nil, ''] call BIS_fnc_addCommMenuItem;
-//         [_x, 'MENU_COMMS_INF', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
-//         [_x, 'MENU_COMMS_GRD', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
-//         [_x, 'MENU_COMMS_CAS_HELI', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
-//         [_x, 'MENU_COMMS_ARTI', nil, nil, ''] call BIS_fnc_addCommMenuItem;    
-//     } forEach (allUnits select {side _x isEqualTo west});
-// } remoteExec ["call", 0];
 
 // Notify mission startup completion
 ["Mission StartUp", 3, "Mission StartUp Initialized Successfully ..."] call FLO_fnc_log;

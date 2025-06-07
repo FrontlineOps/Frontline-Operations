@@ -56,10 +56,9 @@ private _TERR = nearestTerrainObjects [(getMarkerpos _x), ["FOREST", "House", "T
 				[-0.75, "decrease"] call FLO_fnc_adjustAggression;					
 				[-0.50, 'decrease'] call FLO_fnc_adjustReputation; 
 				
-				[30, "STR_FLO_RADIOTOWER"] call FLO_fnc_sendRewardNotification ;
+				[30, "STR_FLO_RADIOTOWER"] call FLO_fnc_sendRewardNotification;
 
 				[30] call FLO_fnc_addReward;
-				execVM "Scripts\COMDIS.sqf";
 			}];
 			
 		};
