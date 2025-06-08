@@ -140,19 +140,6 @@ _FOBT = nearestObjects [Centerposition, [F_HQ_C_01], 40000];
         "",
         "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
     ]] remoteExec ["addAction", 0, true];
-
-    [_x, [
-        "<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Zone",
-        {
-            execVM "Scripts\CCO.sqf";
-        },
-        nil,
-        1.5,
-        true,
-        true,
-        "",
-        "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer)) || ((player isEqualTo TheCommander) && (isServer))"
-    ]] remoteExec ["addAction", 0, true];
 } foreach _FOBT;
  
 
