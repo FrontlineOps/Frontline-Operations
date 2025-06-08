@@ -19,9 +19,6 @@ _Position = nearestObjects [_thisPOWTrigger, [
     "Land_vn_barracks_01_camo_f", "Land_Barracks_01_camo_F"
 ], 400] select 0;
 
-// Spawn HMG
-[_thisPOWTrigger] execVM "Scripts\HMGspawn.sqf";
-
 // Spawn officer with intel action
 _Pos = selectRandom (_Position buildingPos -1);
 G = [_Pos, East, [selectRandom East_Units_Officers]] call BIS_fnc_spawnGroup;

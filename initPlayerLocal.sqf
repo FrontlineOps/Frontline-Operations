@@ -44,10 +44,6 @@ waitUntil {F_Init};
 
 (findDisplay 46) displayAddEventHandler ["MouseButtonDown", "params ['_displayOrControl', '_button', '_xPos', '_yPos', '_shift', '_ctrl', '_alt'];  if ((_ctrl) && (_button isEqualTo 1) && ((ctrlMapMouseOver (findDisplay 12 displayCtrl 51)) select 0 isEqualTo 'marker')) then {[(ctrlMapMouseOver (findDisplay 12 displayCtrl 51)) select 1] execVM 'Scripts\MarkerIntro.sqf';}"]; 
 
-// ETV Init - Everyone
-execVM "Scripts\EtV.sqf";
-waitUntil {!isNil "EtVInitialized"};
-
 // Misc
 if (isClass (configfile >> "CfgVehicles" >> "Box_cTab_items") isEqualTo true ) then { player addItem "ItemAndroid"; player addItem "ItemcTab"; };
 

@@ -56,10 +56,6 @@ publicVariable "FLO_configCache";
 // SYSTEMs Init Server 
 // Run these only if dedicated (not hosted - hosted servers run initPlayerLocal)
 
-// ETV Init - Everyone
-execVM "Scripts\EtV.sqf";
-waitUntil {!isNil "EtVInitialized"};
-
 //Resource Loops//Convoy Loops//Radio Tower Loops
 [] spawn {  
     while { sleep 60 ; time > 0 } do {  
