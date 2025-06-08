@@ -9,7 +9,7 @@ publicVariable "AVENGLOCC";
 ConVLocc = 0;
 publicVariable "ConVLocc";
 
-FLO_Objectives_Debug = false;
+FLO_Objectives_Debug = true;
 StartingLocationDone = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
@@ -59,12 +59,6 @@ publicVariable "FLO_configCache";
 // ETV Init - Everyone
 execVM "Scripts\EtV.sqf";
 waitUntil {!isNil "EtVInitialized"};
-
-// Parallel execution
-{
-    0 spawn compileFinal preprocessFileLineNumbers _x;
-} forEach ["Scripts\Init\init_Triggers_1.sqf"];
-
 
 //Resource Loops//Convoy Loops//Radio Tower Loops
 [] spawn {  

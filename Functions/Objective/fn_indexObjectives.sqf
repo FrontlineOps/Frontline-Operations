@@ -4,6 +4,7 @@
  * Description:
  * Indexes all map objectives (military, civilian, industrial, etc.) into a global HashMap for virtualization and circular growth.
  * Uses dynamic radius and structure count to determine objective size and priority.
+ * Power line structures (PowerLines_base_F) are ignored when scanning.
  * Arguments: None
  * Returns: HashMap of all objectives (FLO_Objectives)
  * Example: [] call FLO_fnc_indexObjectives;
@@ -76,6 +77,7 @@ for "_i" from 0 to (count _allLocations - 1) do {
     private _lastCount = 0;
     while {_radius <= _maxRadius} do {
         private _found = nearestObjects [_pos, _baseClasses, _radius];
+        _found = _found select { !(_x isKindOf "PowerLines_base_F") };
         if ((_radius >= _minRadius) && ((count _found) - _lastCount < _minGrowth) && (count _found > 0)) exitWith {};
         _allFound = _found;
         _lastCount = count _found;

@@ -1,6 +1,7 @@
 /*
  * Function: FLO_fnc_indexVirtualObjectives
  * Description: Finds clusters of structures not covered by existing objectives and adds them as new objectives to the given HashMap.
+ * Power line structures (PowerLines_base_F) are ignored when gathering structures.
  * Arguments:
  *   0: Existing objectives HashMap (by reference)
  *   1: (Optional) Debug mode (default: false)
@@ -24,6 +25,7 @@ private _baseClasses = [
 
 // 1. Gather all structures in one call
 private _allStructures = nearestObjects [[worldSize/2, worldSize/2, 0], _baseClasses, worldSize];
+_allStructures = _allStructures select { !(_x isKindOf "PowerLines_base_F") };
 
 // 2. Remove duplicates
 private _uniqueStructures = [];
