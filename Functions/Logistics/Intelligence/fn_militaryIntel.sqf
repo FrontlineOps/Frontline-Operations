@@ -13,26 +13,7 @@ params [];
 sleep 2;
 private _ChanceS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-if (count (allMapMarkers select {(markerAlpha _x == 0.001 or markerAlpha _x == 0) && (markerType _x == 'o_armor' || markerType _x == 'o_plane' || markerType _x == 'o_antiair' || markerType _x == 'loc_Transmitter' || markerType _x == 'o_service' || markerType _x == 'loc_Power' || markerType _x == 'o_support' || markerType _x == 'n_support' || markerType _x == 'loc_Ruin' || markerType _x == 'n_installation' || markerType _x == 'o_installation')}) == 0) then {
-    _ChanceS = [5, 6, 7, 8];
-};
-
 private _Chance = selectRandom _ChanceS;
-
-if (count (nearestobjects [position player, ["LocationArea_F"], 40000]) == 0) then {
-    private _ChancesNew = _ChanceS - [5];
-    _Chance = selectRandom _ChancesNew;
-};
-
-if (_Chance < 5) then {
-    private _INTL = allMapMarkers select { (markerAlpha _x == 0.001 or markerAlpha _x == 0) && markerColor _x == "colorOPFOR" && markerType _x != "o_unknown" && markerType _x != "o_inf" && markerType _x != "o_Ordnance" && markerType _x != "o_maint" && markerShape _x != "RECTANGLE" && markerShape _x != "ELLIPSE"};
-    private _x = [_INTL, player] call BIS_fnc_nearestPosition;
-    _x setMarkerAlpha 1;
-
-    sleep 1;
-    private _attackingAtGrid = mapGridPosition getMarkerPos _x;
-    ["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
-};
 
 if (_Chance == 6) then {
     private _GNRT = "YES";

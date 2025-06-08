@@ -23,18 +23,6 @@ private _lastCommanderUpdate = diag_tickTime;
 private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
 
-// Utility: Filter out civilian and civilianVehicle groups from a hashmap
-private _filterNonCivGroups = {
-    params ["_groupsMap"];
-    private _result = createHashMap;
-    {
-        if (!((_y getOrDefault ["groupType", ""]) in ["civilian", "civilianVehicle"])) then {
-            _result set [_x, _y];
-        };
-    } forEach _groupsMap;
-    _result
-};
-
 // Utility: find nearest objective from FLO_Objectives
 private _getNearestObjective = {
     params ["_pos"];
@@ -77,6 +65,18 @@ private _aiCommander = createHashMapObject [[
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
     ["_attackStageTime", 120],
 
+    ["_filterNonCivGroups", {
+        params ["_groupsMap"];
+        private _result = createHashMap;
+        {
+            private _groupType = _y getOrDefault ["groupType", ""];
+            if (!(_groupType in ["civilian", "civilianVehicle"])) then {
+                _result set [_x, _y];
+            };
+        } forEach _groupsMap;
+        _result
+    }],
+
     ["_calculateMaxAttackingGroups", {
         private _playerCount = count (allPlayers - entities "HeadlessClient_F");
         
@@ -104,7 +104,8 @@ private _aiCommander = createHashMapObject [[
         _self set ["_maxAttackingGroups", _self call ["_calculateMaxAttackingGroups", []]];
 
         // Get all virtual groups from the virtualization system
-        private _allGroups = [FLO_virtualGroups get "_groups"] call _filterNonCivGroups;
+        private _groups = FLO_virtualGroups get "_groups";
+        private _allGroups = [_groups] call (_self get "_filterNonCivGroups");
         private _garrisonedGroups = [];
 
         {
@@ -158,7 +159,8 @@ private _aiCommander = createHashMapObject [[
         };
         
         // Get all virtual groups
-        private _virtualGroups = [FLO_virtualGroups get "_groups"] call _filterNonCivGroups;
+        private _groups = FLO_virtualGroups get "_groups";
+        private _virtualGroups = [_groups] call (_self get "_filterNonCivGroups");
         
         // Sort groups by distance to target
         private _sortedGroups = [_availableGroups, [], {
@@ -248,7 +250,8 @@ private _aiCommander = createHashMapObject [[
         };
         
         // Get all virtual groups
-        private _virtualGroups = [FLO_virtualGroups get "_groups"] call _filterNonCivGroups;
+        private _groups = FLO_virtualGroups get "_groups";
+        private _virtualGroups = [_groups] call (_self get "_filterNonCivGroups");
         
         // Sort groups by distance to target
         private _sortedGroups = [_availableGroups, [], {

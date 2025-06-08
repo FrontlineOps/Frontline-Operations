@@ -9,7 +9,7 @@ publicVariable "AVENGLOCC";
 ConVLocc = 0;
 publicVariable "ConVLocc";
 
-FLO_Objectives_Debug = true;
+FLO_Objectives_Debug = false;
 StartingLocationDone = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
