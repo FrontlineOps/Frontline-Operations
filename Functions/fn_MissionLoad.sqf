@@ -359,6 +359,10 @@ if (count _GetVariableCrates > 0) then {
                 if (count _garrisonPos > 0) then {
                     _newGroupData set ["garrisonPosition", _garrisonPos];
                 };
+                private _garrisonObj = _groupData get "garrisonObjective";
+                if (!isNil "_garrisonObj") then {
+                    _newGroupData set ["garrisonObjective", _garrisonObj];
+                };
                 
                 _loadedCount = _loadedCount + 1;
                 ["Mission", 4, format["Successfully loaded group %1 at position %2", _newGroupId, _position]] call FLO_fnc_log;
