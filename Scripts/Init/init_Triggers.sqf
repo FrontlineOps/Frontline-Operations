@@ -20,16 +20,16 @@
         } forEach (FLO_virtualGroups get "_groups");
 
         if (count _groups > 0) then {
-            _groups sortBy { (_x select 1 get "position") distance _cursorPos };
+            _groups = [_groups, [], {(_x select 1 get "position") distance _cursorPos}, "ASCEND"] call BIS_fnc_sortBy;
             private _sel = _groups select 0;
             _sel params ["_gid", "_gdata"];
             private _gpos = _gdata get "position";
 
             private _base = format ["scoutIntel_%1_%2", _gid, floor diag_tickTime];
             private _mrk = createMarkerLocal [_base, _gpos];
-            _mrk setMarkerType "o_unknown";
-            _mrk setMarkerColor "colorOPFOR";
-            _mrk setMarkerSize [0.8,0.8];
+            _mrk setMarkerTypeLocal "o_unknown";
+            _mrk setMarkerColorLocal "colorOPFOR";
+            _mrk setMarkerSizeLocal [0.8,0.8];
             _mrk setMarkerAlpha 1;
 
             private _marks = [_mrk];
@@ -38,9 +38,9 @@
                 private _wpName = format ["%1_wp_%2", _base, _forEachIndex];
                 private _wpPos = _x select 0;
                 private _wpMark = createMarkerLocal [_wpName, _wpPos];
-                _wpMark setMarkerType "hd_dot";
-                _wpMark setMarkerColor "colorOPFOR";
-                _wpMark setMarkerSize [0.5,0.5];
+                _wpMark setMarkerTypeLocal "hd_dot";
+                _wpMark setMarkerColorLocal "colorOPFOR";
+                _wpMark setMarkerSizeLocal [0.5,0.5];
                 _wpMark setMarkerAlpha 1;
                 _marks pushBack _wpMark;
             } forEach _wpts;
