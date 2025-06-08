@@ -60,6 +60,7 @@ class FLO {
         
         class indexObjectives           {};
         class indexVirtualObjectives    {};
+        class buildObjectiveGraph       {};
         class flipObjective             {};
         class monitorObjectiveDominance {};
     };
@@ -69,6 +70,7 @@ class FLO {
         
         class getRandomObjectivePos {};
         class getNearestObjective   {};
+        class getObjectivePath      {};
     };
 
     class Logistics {
@@ -130,5 +132,6 @@ class FLO {
         class initSearch        {preInit = 1;};
         class initRoadGraph     {preInit = 1;};
         class findRoadPath      {};
+        class findRoadPathSync  {};
     };
 };
