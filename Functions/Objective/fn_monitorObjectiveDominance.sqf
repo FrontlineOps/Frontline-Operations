@@ -47,11 +47,13 @@ while {true} do {
             [_id, west] call FLO_fnc_flipObjective;
             _owner = west;
             _progress = 0;
+            [0.20, "increase"] call FLO_fnc_adjustAggression;
         } else {
             if (_progress <= -_captureTime && {_owner != east}) then {
                 [_id, east] call FLO_fnc_flipObjective;
                 _owner = east;
                 _progress = 0;
+                [-0.10, "decrease"] call FLO_fnc_adjustAggression;
             };
         };
 
