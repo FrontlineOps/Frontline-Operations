@@ -73,25 +73,30 @@ East_Units_Officers = ["I_officer_F"];
 OPFOR_Objective_Groups = [
     // Capital objectives - highest concentration of defenders
     ["capital", [
-        ["infantry", 5],
+        ["infantry", 12],
         ["motorized", 2],
+        ["mechanized", 1],
+        ["air", 1],
         ["armor", 1]
     ]],
 
     // Major cities
     ["city", [
-        ["infantry", 4],
-        ["motorized", 1]
+        ["infantry", 7],
+        ["motorized", 2]
     ]],
 
     // Villages
     ["village", [
-        ["infantry", 2]
+        ["infantry", 3]
     ]],
 
     // Small local objectives
+    // These tend to be military bases, strategic infrastructure, or other military-like objectives
     ["local", [
-        ["infantry", 1]
+        ["infantry", 6],
+        ["motorized", 2],
+        ["mechanized", 1]
     ]],
 
     // Coastal or marine facilities

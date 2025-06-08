@@ -60,8 +60,9 @@ for "_i" from 0 to (count _allLocations - 1) do {
     private _cat = "unknown";
     private _subtype = "unknown";
     private _locType = "unknown";
-    if (_typeMap get _locStr isNotEqualTo nil) then {
-        private _arr = _typeMap get _locStr;
+    
+    private _arr = _typeMap get _locStr;
+    if (!isNil "_arr") then {
         _cat = _arr select 0;
         _subtype = _arr select 1;
         _locType = _arr select 2;
