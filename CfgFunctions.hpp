@@ -100,6 +100,7 @@ class FLO {
         class displayNotification       {};
         class findEdgeSpawnPos          {};
         class getGroupTypeCount         {};
+        class getRoadParkingPos         {};
         class adjustAggression          {};
         class adjustReputation          {};
     };
