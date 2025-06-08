@@ -23,35 +23,6 @@ private _lastCommanderUpdate = diag_tickTime;
 private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
 
-// Utility: find nearest objective from FLO_Objectives
-private _getNearestObjective = {
-    params ["_pos"];
-    if (isNil "FLO_Objectives") exitWith {""};
-    private _closest = "";
-    private _minDist = 1e9;
-    {
-        private _data = FLO_Objectives get _x;
-        if (!isNil "_data") then {
-            private _d = _pos distance2D (_data get "position");
-            if (_d < _minDist) then { _minDist = _d; _closest = _x; };
-        };
-    } forEach (keys FLO_Objectives);
-    _closest
-};
-
-// Utility: random position inside an objective radius
-private _getRandomObjectivePos = {
-    params ["_objId"];
-    if (isNil "FLO_Objectives") exitWith { [0,0,0] };
-    private _obj = FLO_Objectives get _objId;
-    if (isNil "_obj") exitWith { [0,0,0] };
-    private _pos = _obj get "position";
-    private _radius = _obj getOrDefault ["radius", 50];
-    private _dir = random 360;
-    private _dist = random _radius;
-    _pos getPos [_dist, _dir]
-};
-
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
     ["_threatLevel", _currentThreatLevel],
@@ -64,18 +35,6 @@ private _aiCommander = createHashMapObject [[
     ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
     ["_attackStageTime", 120],
-
-    ["_filterNonCivGroups", {
-        params ["_groupsMap"];
-        private _result = createHashMap;
-        {
-            private _groupType = _y getOrDefault ["groupType", ""];
-            if (!(_groupType in ["civilian", "civilianVehicle"])) then {
-                _result set [_x, _y];
-            };
-        } forEach _groupsMap;
-        _result
-    }],
 
     ["_calculateMaxAttackingGroups", {
         private _playerCount = count (allPlayers - entities "HeadlessClient_F");
@@ -105,7 +64,7 @@ private _aiCommander = createHashMapObject [[
 
         // Get all virtual groups from the virtualization system
         private _groups = FLO_virtualGroups get "_groups";
-        private _allGroups = [_groups] call (_self get "_filterNonCivGroups");
+        private _allGroups = [_groups] call FLO_fnc_filterNonCivGroups;
         private _garrisonedGroups = [];
 
         {
@@ -117,14 +76,14 @@ private _aiCommander = createHashMapObject [[
             // Determine garrison objective and position
             private _objId = _groupData get "objective";
             if (_objId isEqualTo "") then {
-                _objId = [(_groupData get "position")] call _getNearestObjective;
+                _objId = [(_groupData get "position")] call FLO_fnc_getNearestObjective;
             };
             _groupData set ["garrisonObjective", _objId];
 
             if (_objId != "" && {!isNil "FLO_Objectives"}) then {
                 private _objData = FLO_Objectives get _objId;
                 if (!isNil "_objData") then {
-                    _groupData set ["garrisonPosition", [_objId] call _getRandomObjectivePos];
+                    _groupData set ["garrisonPosition", [_objId] call FLO_fnc_getRandomObjectivePos];
                 } else {
                     _groupData set ["garrisonPosition", _groupData get "position"];
                 };
@@ -160,7 +119,7 @@ private _aiCommander = createHashMapObject [[
         
         // Get all virtual groups
         private _groups = FLO_virtualGroups get "_groups";
-        private _virtualGroups = [_groups] call (_self get "_filterNonCivGroups");
+        private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
         
         // Sort groups by distance to target
         private _sortedGroups = [_availableGroups, [], {
@@ -251,7 +210,7 @@ private _aiCommander = createHashMapObject [[
         
         // Get all virtual groups
         private _groups = FLO_virtualGroups get "_groups";
-        private _virtualGroups = [_groups] call (_self get "_filterNonCivGroups");
+        private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
         
         // Sort groups by distance to target
         private _sortedGroups = [_availableGroups, [], {
@@ -296,7 +255,7 @@ private _aiCommander = createHashMapObject [[
 
                 // Attach group to this objective for future garrisoning
                 _groupData set ["garrisonObjective", _objectiveId];
-                _groupData set ["garrisonPosition", [_objectiveId] call _getRandomObjectivePos];
+                _groupData set ["garrisonPosition", [_objectiveId] call FLO_fnc_getRandomObjectivePos];
                 
                 _assignedGroups pushBack _selectedGroupId;
                 ["AI Commander", 3, format["Assigned group %1 to defend - %2", _selectedGroupId, _reason]] call FLO_fnc_log;
@@ -326,7 +285,7 @@ private _aiCommander = createHashMapObject [[
         private _objId = _groupData getOrDefault ["garrisonObjective", ""];
         if (_objId != "" && {!isNil "FLO_Objectives"}) then {
             private _odata = FLO_Objectives get _objId;
-            if (!isNil "_odata") then { _garrisonPos = [_objId] call _getRandomObjectivePos; };
+            if (!isNil "_odata") then { _garrisonPos = [_objId] call FLO_fnc_getRandomObjectivePos; };
         };
         
         // Update group assignments

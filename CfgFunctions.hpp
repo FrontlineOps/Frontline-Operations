@@ -47,6 +47,14 @@ class FLO {
         class createVirtualCivilianPopulation {};
     };
 
+    class VirtualizationUtilities {
+        file = "Functions\Virtualization\Utilities";
+        
+        class filterNonCivGroups {};
+        class getGroupTypeCount  {};
+        class getRoadParkingPos  {};
+    };
+
     class Objective {
         file = "Functions\Objective";
         
@@ -54,6 +62,13 @@ class FLO {
         class indexVirtualObjectives    {};
         class flipObjective             {};
         class monitorObjectiveDominance {};
+    };
+
+    class ObjectiveUtilities {
+        file = "Functions\Objective\Utilities";
+        
+        class getRandomObjectivePos {};
+        class getNearestObjective   {};
     };
 
     class Logistics {
@@ -88,7 +103,6 @@ class FLO {
     class Utilities {
         file = "Functions\Utilities";
 
-        class findNearestMarker         {};
         class log                       {};
         class addReward                 {};
         class getRandomMagazine         {};
@@ -98,9 +112,6 @@ class FLO {
         class sendRewardNotification    {};
         class sendNotification          {};
         class displayNotification       {};
-        class findEdgeSpawnPos          {};
-        class getGroupTypeCount         {};
-        class getRoadParkingPos         {};
         class adjustAggression          {};
         class adjustReputation          {};
     };
