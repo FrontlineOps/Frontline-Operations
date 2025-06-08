@@ -7,6 +7,9 @@ _respawnMarker setMarkerAlpha 1;
 
 [] call FLO_fnc_indexObjectives;
 
+// Build road links between objectives
+[true] call FLO_fnc_buildObjectiveGraph;
+
 [] spawn FLO_fnc_monitorObjectiveDominance;
 
 MarLOCC = 1;

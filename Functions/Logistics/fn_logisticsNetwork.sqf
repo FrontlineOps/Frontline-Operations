@@ -73,81 +73,32 @@ if (isNil "FLO_Logistics_Network") then {
             // Replace destroyed groups if we have resources
             if (count _destroyedGroups > 0) then {
                 private _resources = FLO_OPFOR_Resources call ["getResources", []];
-                
-                // Find valid spawn objectives (OPFOR objectives at least 3km from players)
-                private _allPotentialSpawns = allMapMarkers select {
-                    private _marker = _x;
-                    markerColor _marker in ["colorOPFOR", "ColorEAST"] && 
-                    markerType _marker in ["o_support", "n_support", "o_installation", "n_installation", 
-                                        "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"] &&
-                    {
-                        private _pos = getMarkerPos _marker;
-                        private _nearPlayers = allPlayers select {_x distance2D _pos < 3000};
-                        count _nearPlayers == 0
-                    }
+
+                // All OPFOR objectives
+                private _opforObjs = keys FLO_Objectives select {
+                    (FLO_Objectives get _x getOrDefault ["owner", east]) isEqualTo east
                 };
 
-                // Sort objectives by average distance to all players and take the closest valid ones
-                private _spawnObjectives = [];
-                if (count _allPotentialSpawns > 0) then {
-                    _spawnObjectives = [_allPotentialSpawns, [], {
-                        private _pos = getMarkerPos _x;
-                        private _totalDist = 0;
-                        {
-                            _totalDist = _totalDist + (_x distance2D _pos);
-                        } forEach allPlayers;
-                        _totalDist / (count allPlayers max 1)
-                    }, "ASCEND"] call BIS_fnc_sortBy;
-                    
-                    // Take the top 5 closest objectives (that are still at least 3km away)
-                    _spawnObjectives = _spawnObjectives select [0, 5];
-                };
-                
-                // Find valid reinforcement positions (OPFOR objectives near BLUFOR activity)
-                private _reinforcePositions = allMapMarkers select {
-                    private _marker = _x;
-                    markerColor _marker in ["colorOPFOR", "ColorEAST"] && 
-                    markerType _marker in ["o_support", "n_support", "o_installation", "n_installation", 
-                                        "loc_Power", "o_recon", "o_service", "o_antiair", "loc_Ruin"] &&
-                    {
-                        private _pos = getMarkerPos _marker;
-                        private _nearBlufor = allMapMarkers select {
-                            markerColor _x in ["ColorBLUFOR", "ColorWEST", "ColorYellow"] && 
-                            markerType _x in ["b_installation", "b_support", "b_hq"] &&
-                            (getMarkerPos _x) distance2D _pos < 2000
-                        };
-                        count _nearBlufor > 0
-                    }
-                };
-                
-                // Initialize or get the reinforcement tracking
-                if (isNil "FLO_Logistics_ReinforcementCount") then {
-                    FLO_Logistics_ReinforcementCount = createHashMap;
+                if (count _opforObjs == 0) exitWith {};
+
+                // Determine spawn objective farthest from players
+                private _spawnObjective = [_opforObjs, [], {
+                    private _pos = (FLO_Objectives get _x get "position");
+                    private _dist = 0; { _dist = _dist + (_pos distance2D _x); } forEach allPlayers;
+                    -_dist
+                }, "ASCEND"] call BIS_fnc_sortBy select 0;
+
+                // Objectives with nearby BLUFOR presence
+                private _reinforceObjs = _opforObjs select {
+                    private _pos = (FLO_Objectives get _x get "position");
+                    private _near = allPlayers select { side _x == west && _x distance2D _pos < 2000 };
+                    count _near > 0
                 };
 
-                // Update counts for objectives that no longer exist
-                private _toRemove = [];
-                {
-                    if (!(_x in _reinforcePositions)) then {
-                        _toRemove pushBack _x;
-                    };
-                } forEach (keys FLO_Logistics_ReinforcementCount);
-                
-                {
-                    FLO_Logistics_ReinforcementCount deleteAt _x;
-                } forEach _toRemove;
+                if (count _reinforceObjs == 0) exitWith {};
 
-                // Initialize counts for new objectives
-                {
-                    if !(_x in FLO_Logistics_ReinforcementCount) then {
-                        FLO_Logistics_ReinforcementCount set [_x, 0];
-                    };
-                } forEach _reinforcePositions;
-                
                 {
                     _x params ["", "_groupType"];
-                    
-                    // Calculate group cost based on type
                     private _groupCost = switch (_groupType) do {
                         case "infantry": { 4 };
                         case "motorized": { 9 };
@@ -158,59 +109,28 @@ if (isNil "FLO_Logistics_Network") then {
                         case "artillery": { 14 };
                         default { 4 };
                     };
-                    
-                    if (_resources >= _groupCost && count _spawnObjectives > 0 && count _reinforcePositions > 0) then {
-                        // Select random spawn position from farthest positions
-                        private _spawnObjective = selectRandom _spawnObjectives;
-                        
-                        // Find the least reinforced position
-                        private _reinforceObjective = [_reinforcePositions, [], {
-                            FLO_Logistics_ReinforcementCount getOrDefault [_x, 0]
-                        }, "ASCEND"] call BIS_fnc_sortBy select 0;
-                        
-                        // Increment the reinforcement count for this objective
-                        FLO_Logistics_ReinforcementCount set [_reinforceObjective, 
-                            (FLO_Logistics_ReinforcementCount getOrDefault [_reinforceObjective, 0]) + 1];
-                        
-                        private _spawnPos = getMarkerPos _spawnObjective;
-                        private _reinforcePos = getMarkerPos _reinforceObjective;
-                        
-                        // Add random offset to reinforcement position (100-600m spread)
-                        private _spreadDistance = (random 500) + 100; // Random distance between 100-300m
-                        private _spreadDir = random 360; // Random direction
-                        private _offsetX = _spreadDistance * (cos _spreadDir);
-                        private _offsetY = _spreadDistance * (sin _spreadDir);
-                        private _reinforcePos = _reinforcePos vectorAdd [_offsetX, _offsetY, 0];
-                        
-                        // Get correct unit count for this group type
+
+                    if (_resources >= _groupCost) then {
+                        private _reinforceObjective = selectRandom _reinforceObjs;
+                        private _spawnPos = FLO_Objectives get _spawnObjective get "position";
+                        private _reinforcePos = FLO_Objectives get _reinforceObjective get "position";
+
+                        // Waypoints from cached objective link
+                        private _path = [_spawnObjective, _reinforceObjective] call FLO_fnc_getObjectivePath;
+                        if (count _path == 0) then { _path = [_reinforcePos]; };
+                        private _wps = [];
+                        { _wps pushBack [_x, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]; } forEach _path;
+
                         private _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
-                        // Spend resources before creating the group
                         if ((FLO_OPFOR_Resources call ["spendResources", [_groupCost, "reinforcement"]]) isEqualTo true) then {
-                            // Create the replacement group with correct unit count
                             private _newGroupId = [_spawnPos, _groupType, nil, _reinforceObjective, _unitCount] call FLO_fnc_createVirtualGroup;
-                            
                             if (_newGroupId != "") then {
-                                // Mark the group as reinforcing
                                 private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
                                 _groupData set ["isReinforcing", true];
-                                
-                                // Set up waypoints to move to reinforce position with spread
-                                private _waypoints = [[_reinforcePos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
-                                [_newGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
-                                
-                                // Add to AI Commander's garrison if it exists
-                                if (!isNil "FLO_AI_Commander") then {
-                                    private _garrisonedGroups = FLO_AI_Commander get "_garrisonedGroups";
-                                    _garrisonedGroups pushBack _newGroupId;
-                                    
-                                    private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
-                                    _groupData set ["garrisonPosition", _reinforcePos];
-                                };
-                                
-                                ["LOGISTICS", 3, format["Created replacement %1 group, spawning at %2, moving to %3", 
+                                [_newGroupId, _wps, false] call FLO_fnc_updateVirtualGroupWaypoints;
+
+                                ["LOGISTICS", 3, format["Created replacement %1 group from %2 to %3",
                                     _groupType, _spawnObjective, _reinforceObjective]] call FLO_fnc_log;
-                                
-                                // Deduct from available resources
                                 _resources = _resources - _groupCost;
                             };
                         };
