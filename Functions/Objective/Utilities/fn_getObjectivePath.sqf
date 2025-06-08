@@ -17,10 +17,13 @@
 params ["_from","_to"];
 
 if (isNil "FLO_ObjectiveLinks") exitWith { [] };
-private _key = format ["%1_%2", _from, _to];
+
+private _sorted = [_from, _to];
+_sorted sort true;
+private _key = format ["%1_%2", _sorted select 0, _sorted select 1];
 private _link = FLO_ObjectiveLinks get _key;
-if (!isNil "_link") exitWith { _link get "waypoints" };
-_key = format ["%1_%2", _to, _from];
-_link = FLO_ObjectiveLinks get _key;
 if (isNil "_link") exitWith { [] };
-reverse (_link get "waypoints")
+
+private _path = +(_link get "waypoints");
+if ((_link get "from") != _from) then { reverse _path; };
+_path
