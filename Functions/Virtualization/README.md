@@ -67,7 +67,10 @@ The virtualization system now integrates with the Pathfinding module, allowing v
 The system is configured through `CUSTOM_ENEMY_FACTION.sqf`, which defines:
 
 1. The unit types available for each group type
-2. How many of each group type should spawn at different objective types
+2. The `OPFOR_Objective_Groups` array specifying how many of each group type
+   should spawn for each objective **subtype** produced by `FLO_fnc_indexObjectives`
+   (e.g. `city`, `village`, `cluster`). This variable is required and no
+   fallback configuration is provided.
 3. The activation distance for virtualization
 
 ## Usage Example

@@ -64,72 +64,45 @@ East_Units_Officers = ["I_officer_F"];
 
 /*
  * OPFOR Virtualization Objective Configuration
- * This section defines how many of each unit type should spawn at different objective types
- * These are the default settings that will be used by the virtualization system
-*/
-
-// Structure: [objective type, [[group type, count], [group type, count], ...]]
+ * This section defines how many of each unit type should spawn at different
+ * objective subtypes produced by the objective indexing system. Subtypes
+ * include "capital", "city", "village", "local", "marine" and "cluster".
+ *
+ * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
+ */
 OPFOR_Objective_Groups = [
-    // Support objectives - mix of infantry and light vehicles
-    ["o_support", [
-        ["infantry", 3], 
-        ["motorized", 2]
-    ]],
-    
-    // Neutral support objectives - lighter security
-    ["n_support", [
-        ["infantry", 2], 
-        ["motorized", 1]
-    ]],
-    
-    // Installation objectives - mix of infantry and heavy vehicles
-    ["o_installation", [
-        ["infantry", 4], 
-        ["mechanized", 2],
+    // Capital objectives - highest concentration of defenders
+    ["capital", [
+        ["infantry", 5],
+        ["motorized", 2],
         ["armor", 1]
     ]],
-    
-    // Neutral installation objectives
-    ["n_installation", [
-        ["infantry", 3], 
-        ["mechanized", 1]
+
+    // Major cities
+    ["city", [
+        ["infantry", 4],
+        ["motorized", 1]
     ]],
-    
-    // Anti-air objectives - AA vehicles and infantry
-    ["o_antiair", [
-        ["infantry", 2],
-        ["motorized", 1],
-        ["air", 1]
+
+    // Villages
+    ["village", [
+        ["infantry", 2]
     ]],
-    
-    // Service objectives - light vehicles and infantry
-    ["o_service", [
-        ["infantry", 2],
-        ["motorized", 2]
+
+    // Small local objectives
+    ["local", [
+        ["infantry", 1]
     ]],
-    
-    // Power plant objectives - infantry defense
-    ["loc_Power", [
+
+    // Coastal or marine facilities
+    ["marine", [
         ["infantry", 3],
         ["motorized", 1]
     ]],
-    
-    // Ruins objectives - light infantry presence
-    ["loc_Ruin", [
-        ["infantry", 1]
-    ]],
-    
-    // Recon objectives - small infantry and light vehicles
-    ["o_recon", [
-        ["infantry", 2],
-        ["motorized", 1],
-        ["helicopter", 1]
-    ]],
-    
-    // Infantry objectives - heavier infantry presence
-    ["o_inf", [
-        ["infantry", 4],
-        ["motorized", 1]
+
+    // Automatically generated clusters
+    ["cluster", [
+        ["infantry", 2]
     ]]
 ];
 
