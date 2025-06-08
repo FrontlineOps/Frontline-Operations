@@ -35,6 +35,35 @@ private _filterNonCivGroups = {
     _result
 };
 
+// Utility: find nearest objective from FLO_Objectives
+private _getNearestObjective = {
+    params ["_pos"];
+    if (isNil "FLO_Objectives") exitWith {""};
+    private _closest = "";
+    private _minDist = 1e9;
+    {
+        private _data = FLO_Objectives get _x;
+        if (!isNil "_data") then {
+            private _d = _pos distance2D (_data get "position");
+            if (_d < _minDist) then { _minDist = _d; _closest = _x; };
+        };
+    } forEach (keys FLO_Objectives);
+    _closest
+};
+
+// Utility: random position inside an objective radius
+private _getRandomObjectivePos = {
+    params ["_objId"];
+    if (isNil "FLO_Objectives") exitWith { [0,0,0] };
+    private _obj = FLO_Objectives get _objId;
+    if (isNil "_obj") exitWith { [0,0,0] };
+    private _pos = _obj get "position";
+    private _radius = _obj getOrDefault ["radius", 50];
+    private _dir = random 360;
+    private _dist = random _radius;
+    _pos getPos [_dist, _dir]
+};
+
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
     ["_threatLevel", _currentThreatLevel],
@@ -42,9 +71,11 @@ private _aiCommander = createHashMapObject [[
     ["_activeAttackGroups", []],
     ["_activeDefenseGroups", []],
     ["_garrisonedGroups", []],
+    ["_attackOperations", createHashMap],
     ["_maxAttackingGroups", 0],  // Will be set in initialize
     ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
+    ["_attackStageTime", 120],
 
     ["_calculateMaxAttackingGroups", {
         private _playerCount = count (allPlayers - entities "HeadlessClient_F");
@@ -79,10 +110,26 @@ private _aiCommander = createHashMapObject [[
         {
             private _groupId = _x;
             private _groupData = _y;
-            // Only non-civilian groups are considered garrisoned
+
             _garrisonedGroups pushBack _groupId;
-            // Store the original position as the garrison position
-            _groupData set ["garrisonPosition", _groupData get "position"];
+
+            // Determine garrison objective and position
+            private _objId = _groupData get "objective";
+            if (_objId isEqualTo "") then {
+                _objId = [(_groupData get "position")] call _getNearestObjective;
+            };
+            _groupData set ["garrisonObjective", _objId];
+
+            if (_objId != "" && {!isNil "FLO_Objectives"}) then {
+                private _objData = FLO_Objectives get _objId;
+                if (!isNil "_objData") then {
+                    _groupData set ["garrisonPosition", [_objId] call _getRandomObjectivePos];
+                } else {
+                    _groupData set ["garrisonPosition", _groupData get "position"];
+                };
+            } else {
+                _groupData set ["garrisonPosition", _groupData get "position"];
+            };
         } forEach _allGroups;
 
         // Store the garrisoned groups
@@ -148,11 +195,33 @@ private _aiCommander = createHashMapObject [[
                 _garrisonedGroups deleteAt (_garrisonedGroups find _selectedGroupId);
                 _activeAttackGroups pushBack _selectedGroupId;
                 
-                // Set up attack waypoints
-                private _waypoints = [
-                    [_targetPos, "SAD", "AWARE", "NORMAL", "WEDGE", "RED", 50]  // Larger radius for SAD waypoints
-                ];
+                // Set up staging waypoints for unified push
+                private _ops = _self get "_attackOperations";
+                private _op = _ops getOrDefault [_targetType, nil];
+                if (isNil "_op") then {
+                    _op = createHashMap;
+                    _op set ["objectiveId", _targetType];
+                    _op set ["objectivePos", _targetPos];
+                    private _dir = random 360;
+                    private _dist = 400 + random 200;
+                    _op set ["stagingPos", _targetPos getPos [_dist, _dir]];
+                    _op set ["groups", []];
+                    _op set ["startTime", diag_tickTime];
+                    _op set ["attackStarted", false];
+                };
+
+                private _stage = _op get "stagingPos";
+                private _waypoints = [[_stage, "MOVE", "AWARE", "NORMAL", "WEDGE", "YELLOW", 10]];
                 [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+
+                private _grpArr = _op get "groups";
+                _grpArr pushBack _selectedGroupId;
+                _op set ["groups", _grpArr];
+                _ops set [_targetType, _op];
+                _self set ["_attackOperations", _ops];
+
+                _groupData set ["currentOrder", "STAGE"];
+                _groupData set ["attackObjective", _targetType];
                 
                 _assignedGroups pushBack _selectedGroupId;
                 ["AI Commander", 3, format["Assigned group %1 to attack %2", _selectedGroupId, _targetType]] call FLO_fnc_log;
@@ -163,7 +232,7 @@ private _aiCommander = createHashMapObject [[
     }],
 
     ["_assignGroupToDefend", {
-        params ["_targetPos", "_reason"];
+        params ["_targetPos", "_reason", "_objectiveId"];
         
         // Check if we're at the defense group limit
         if (count (_self get "_activeDefenseGroups") >= (_self get "_maxDefendingGroups")) exitWith {
@@ -221,6 +290,10 @@ private _aiCommander = createHashMapObject [[
                     [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "YELLOW", 30]  // Medium radius for defense positions
                 ];
                 [_selectedGroupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+
+                // Attach group to this objective for future garrisoning
+                _groupData set ["garrisonObjective", _objectiveId];
+                _groupData set ["garrisonPosition", [_objectiveId] call _getRandomObjectivePos];
                 
                 _assignedGroups pushBack _selectedGroupId;
                 ["AI Commander", 3, format["Assigned group %1 to defend - %2", _selectedGroupId, _reason]] call FLO_fnc_log;
@@ -245,14 +318,23 @@ private _aiCommander = createHashMapObject [[
             ["AI Commander", 4, format["Group %1 still has waypoints to complete - keeping on task", _groupId]] call FLO_fnc_log;
         };
         
-        // Get original garrison position
+        // Determine garrison position based on assigned objective
         private _garrisonPos = _groupData getOrDefault ["garrisonPosition", _groupData get "position"];
+        private _objId = _groupData getOrDefault ["garrisonObjective", ""];
+        if (_objId != "" && {!isNil "FLO_Objectives"}) then {
+            private _odata = FLO_Objectives get _objId;
+            if (!isNil "_odata") then { _garrisonPos = [_objId] call _getRandomObjectivePos; };
+        };
         
         // Update group assignments
         private _garrisonedGroups = _self get "_garrisonedGroups";
         private _activeGroups = _self get (["_activeAttackGroups", "_activeDefenseGroups"] select (_currentRole == "DEFEND"));
         _activeGroups deleteAt (_activeGroups find _groupId);
         _garrisonedGroups pushBack _groupId;
+
+        // Update group data so next time it's pulled it knows its garrison objective
+        _groupData set ["garrisonPosition", _garrisonPos];
+        _groupData set ["garrisonObjective", _objId];
         
         // Set up return waypoints
         private _waypoints = [
@@ -265,52 +347,89 @@ private _aiCommander = createHashMapObject [[
 
     ["_assessThreats", {
         private _threats = [];
-        
-        // Check for BLUFOR units near OPFOR objectives
-        private _opforObjectives = allMapMarkers select {
-                markerColor _x in ["colorOPFOR", "ColorEAST"] && 
-            markerType _x in ["o_support", "n_support", "o_installation", "n_installation", "loc_Power", "o_recon", "o_antiair", "loc_Ruin"]
-        };
-        
+
+        if (isNil "FLO_Objectives") exitWith {[]};
+
+        private _bluforUnits = allUnits select {side _x == west && alive _x && !(captive _x)};
+
         {
-            private _objective = _x;
-            private _objectivePos = getMarkerPos _objective;
-            private _nearBlufor = _objectivePos nearEntities [["Man", "LandVehicle"], 500];
-            _nearBlufor = _nearBlufor select {side _x == west && !(captive _x)};
-            
-            if (count _nearBlufor > 0) then {
-                _threats pushBack ["DEFEND", _objective, _objectivePos, count _nearBlufor];
+            private _id = _x;
+            private _data = FLO_Objectives get _id;
+            if (isNil "_data") then { continue };
+
+            private _pos = _data get "position";
+            private _priority = _data getOrDefault ["priority",50];
+            private _owner = _data getOrDefault ["owner", east];
+            private _near = _bluforUnits inAreaArray [_pos, 500, 500];
+            private _count = count _near;
+
+            if (_owner == east) then {
+                if (_count > 0) then {
+                    private _score = _priority + (_count * 10);
+                    _threats pushBack ["DEFEND", _id, _pos, _score];
+                };
+            } else {
+                private _score = _priority + (_count * 10);
+                _threats pushBack ["ATTACK", _id, _pos, _score];
             };
-        } forEach _opforObjectives;
-        
-        // Check for BLUFOR groups in the field
+        } forEach (keys FLO_Objectives);
+
+        // Additional threat: roaming BLUFOR groups not tied to an objective
         private _bluforGroups = allGroups select {side _x == west};
         {
             private _group = _x;
             private _units = units _group select {alive _x && !(captive _x)};
             if (count _units > 2) then {
-                _threats pushBack ["ATTACK", str _group, getPos (leader _group), count _units];
+                private _p = getPos (leader _group);
+                private _score = count _units * 10;
+                _threats pushBack ["ATTACK", str _group, _p, _score];
             };
         } forEach _bluforGroups;
-        
-        // If no BLUFOR groups found, check BLUFOR objectives for attack
-        if (count (_threats select {_x select 0 == "ATTACK"}) == 0) then {
-            private _bluforObjectives = allMapMarkers select {
-                markerColor _x in ["ColorYellow", "ColorBLUFOR", "ColorWEST"] &&
-                markerType _x in ["b_installation", "b_support", "b_hq"]
-            };
-            
-            {
-                private _objective = _x;
-                private _objectivePos = getMarkerPos _objective;
-                _threats pushBack ["ATTACK", _objective, _objectivePos, 1];
-            } forEach _bluforObjectives;
-        };
-        
-        // Sort threats by priority (number of enemies)
+
         _threats = [_threats, [], {_x select 3}, "DESCEND"] call BIS_fnc_sortBy;
-        
+
         _threats
+    }],
+
+    ["_processAttackOperations", {
+        private _ops = _self get "_attackOperations";
+        private _stageTime = _self get "_attackStageTime";
+        private _toRemove = [];
+
+        {
+            private _id = _x;
+            private _op = _y;
+            private _groups = _op get "groups";
+            private _started = _op get "attackStarted";
+            private _stagePos = _op get "stagingPos";
+            private _objPos = _op get "objectivePos";
+            if (!_started) then {
+                private _ready = [];
+                {
+                    private _gData = (FLO_virtualGroups get "_groups") get _x;
+                    if (isNil "_gData") then { continue }; 
+                    private _pos = _gData get "position";
+                    if (_pos distance2D _stagePos < 50) then { _ready pushBack _x; };
+                } forEach _groups;
+                if ((count _ready) >= (count _groups) || {diag_tickTime - (_op get "startTime") > _stageTime}) then {
+                    {
+                        private _gData = (FLO_virtualGroups get "_groups") get _x;
+                        if (isNil "_gData") then { continue };
+                        private _w = [[_objPos, "SAD", "AWARE", "NORMAL", "WEDGE", "RED", 50]];
+                        [_x, _w, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                        _gData set ["currentOrder", "ATTACK"];
+                    } forEach _groups;
+                    _op set ["attackStarted", true];
+                };
+            } else {
+                private _alive = _groups select { _x in (_self get "_activeAttackGroups") };
+                if (count _alive == 0) then { _toRemove pushBack _id; };
+            };
+            _ops set [_id, _op];
+        } forEach _ops;
+
+        { _ops deleteAt _x; } forEach _toRemove;
+        _self set ["_attackOperations", _ops];
     }],
     
     ["_update", {
@@ -365,7 +484,7 @@ private _aiCommander = createHashMapObject [[
         // Handle defense threats first (protect our objectives)
         {
             _x params ["_type", "_id", "_pos", "_strength"];
-            _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack (%2 enemies)", _id, _strength]]];
+            _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack (%2 enemies)", _id, _strength], _id]];
         } forEach _defenseThreats;
         
         // Then handle attack threats
@@ -373,6 +492,9 @@ private _aiCommander = createHashMapObject [[
             _x params ["_type", "_id", "_pos", "_strength"];
             _self call ["_assignGroupToAttack", [_pos, _id]];
         } forEach _attackThreats;
+
+        // Process staging and launch of attack operations
+        _self call ["_processAttackOperations", []];
         
         // Check if any active groups should return to garrison
         {

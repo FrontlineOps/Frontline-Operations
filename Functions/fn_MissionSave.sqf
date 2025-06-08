@@ -299,6 +299,7 @@ if (!isNil "FLO_virtualGroups") then {
         _savedGroupData set ["waypoints", _groupData get "waypoints"];
         _savedGroupData set ["currentWaypointIndex", _groupData get "currentWaypointIndex"];
         _savedGroupData set ["garrisonPosition", _groupData getOrDefault ["garrisonPosition", []]];
+        _savedGroupData set ["garrisonObjective", _groupData getOrDefault ["garrisonObjective", ""]];
         
         _virtualGroupsHash set [_groupId, _savedGroupData];
     } forEach _groups;
