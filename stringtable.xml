@@ -51,6 +51,9 @@
             </Key>
             <Key ID="STR_FLO_INTEL_SCOUT">
                 <English>Scout Intel Received : grid %1</English>
+            </Key>
+            <Key ID="STR_FLO_INTEL_NONE">
+                <English>No useful intel found</English>
             </Key>            
         </Container>
         <Container name="SUPPORT DISABLED">

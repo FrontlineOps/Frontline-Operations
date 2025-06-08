@@ -3,31 +3,61 @@
 
 // Init Intel Creation Items
 [] spawn {
-    private _markerTypes = [
-        "o_antiair", "loc_Lighthouse", "loc_Transmitter", "o_service",
-        "loc_Power", "o_support", "n_support", "loc_Ruin",
-        "n_installation", "o_installation"
-    ];
-
     while {true} do {
         sleep 10; // Check every 10 seconds
 
-        private _markers = allMapMarkers select {
-            (markerAlpha _x == 0.001 || markerAlpha _x == 0) &&
-            ((markerPos _x) distance (getPos cursorObject) <= 50) &&
-            (_x in _markerTypes)
-        };
+        if (isNil "FLO_virtualGroups") then { continue; };
 
-        if (count _markers > 0) then {
-            ScouTPos = getPos cursorObject;
-            private _MMarks = allMapMarkers select { _x in _markerTypes };
-            private _M = [_MMarks, ScouTPos] call BIS_fnc_nearestPosition;
+        private _cursorPos = getPos cursorObject;
+        private _groups = [];
 
-            if (markerAlpha _M in [0.001, 0]) then {
-                _M setMarkerAlpha 1;
-                private _attackingAtGrid = mapGridPosition getMarkerPos _M;
-                ["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_SCOUT", _attackingAtGrid], "info"] call FLO_fnc_sendNotification;
+        {
+            private _gPos = _y get "position";
+            private _side = _y getOrDefault ["side", east];
+            if (_side == east && { _gPos distance _cursorPos <= 500 }) then {
+                _groups pushBack [_x, _y];
             };
+        } forEach (FLO_virtualGroups get "_groups");
+
+        if (count _groups > 0) then {
+            _groups sortBy { (_x select 1 get "position") distance _cursorPos };
+            private _sel = _groups select 0;
+            _sel params ["_gid", "_gdata"];
+            private _gpos = _gdata get "position";
+
+            private _base = format ["scoutIntel_%1_%2", _gid, floor diag_tickTime];
+            private _mrk = createMarkerLocal [_base, _gpos];
+            _mrk setMarkerType "o_unknown";
+            _mrk setMarkerColor "colorOPFOR";
+            _mrk setMarkerSize [0.8,0.8];
+            _mrk setMarkerAlpha 1;
+
+            private _marks = [_mrk];
+            private _wpts = _gdata getOrDefault ["waypoints", []];
+            {
+                private _wpName = format ["%1_wp_%2", _base, _forEachIndex];
+                private _wpPos = _x select 0;
+                private _wpMark = createMarkerLocal [_wpName, _wpPos];
+                _wpMark setMarkerType "hd_dot";
+                _wpMark setMarkerColor "colorOPFOR";
+                _wpMark setMarkerSize [0.5,0.5];
+                _wpMark setMarkerAlpha 1;
+                _marks pushBack _wpMark;
+            } forEach _wpts;
+
+            [_marks] spawn {
+                params ["_ms"];
+                private _steps = 10;
+                for "_i" from 1 to _steps do {
+                    private _a = 1 - (_i / _steps);
+                    { _x setMarkerAlpha _a; } forEach _ms;
+                    sleep 6;
+                };
+                { deleteMarker _x; } forEach _ms;
+            };
+
+            private _grid = mapGridPosition _gpos;
+            ["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_SCOUT", _grid], "info"] call FLO_fnc_sendNotification;
         };
     };
 };
