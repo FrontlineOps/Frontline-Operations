@@ -16,7 +16,7 @@ private _locationTypes = [
     ["NameCityCapital", "civilian", "capital"],
     ["NameCity", "civilian", "city"],
     ["NameVillage", "civilian", "village"],
-    ["NameLocal", "civilian", "local"],
+    ["NameLocal", "military", "local"],
     // Military/Strategic
     ["NameMarine", "military", "marine"]
     // Terrain/Other (optional, for diversity)
