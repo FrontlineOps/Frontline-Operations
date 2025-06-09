@@ -90,6 +90,22 @@ private _vehicle = FLO_TaskForce_Garrison_Integration call ["_pullVehicleFromGar
 FLO_TaskForce_Garrison_Integration call ["_returnVehicleToGarrison", [_vehicle, "marker_outpost_1"]];
 ```
 
+### Artillery Asset Manager
+Virtual artillery groups created by the virtualization system can be used for fire missions via the artillery asset manager. This manager unvirtualizes a group, orders it to fire, then moves and revirtualizes it to simulate shoot‑and‑scoot tactics.
+
+Use `FLO_fnc_requestVirtualArtillery` for a simple support call interface:
+```sqf
+// Request a fire mission of six rounds at a target position
+[getPos player, 6] call FLO_fnc_requestVirtualArtillery;
+```
+
+The AI Commander provides a convenient method to request artillery as well:
+```sqf
+private _commander = call FLO_fnc_aiCommander;
+_commander call ["_callArtillerySupport", [getPos player, 6]];
+```
+This method broadcasts a warning notification when artillery is incoming.
+
 ### Customizing Vehicle Selection
 The system uses the vehicle arrays from `CUSTOM_ENEMY_FACTION.sqf` to select appropriate vehicles:
 
