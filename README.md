@@ -11,6 +11,9 @@ A dynamic frontline operations mission for Arma 3 that creates an evolving battl
 - Intel gathering and radio tower control mechanics
 - Automated resource management for OPFOR forces
 - Dynamic vehicle spawning system
+- Virtualized artillery asset manager for shoot-and-scoot fire missions
+- Virtual artillery fire support via `FLO_fnc_requestVirtualArtillery`
+- AI Commander automatically calls artillery during assaults (warning notifications)
 - Customizable faction loadouts and equipment
 
 ## Setup Instructions

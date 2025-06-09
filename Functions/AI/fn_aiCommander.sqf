@@ -382,6 +382,8 @@ private _aiCommander = createHashMapObject [[
                         _gData set ["currentOrder", "ATTACK"];
                     } forEach _groups;
                     _op set ["attackStarted", true];
+                    // Call artillery to soften the target before the assault
+                    _self call ["_callArtillerySupport", [_objPos, 6]];
                 };
             } else {
                 private _alive = _groups select { _x in (_self get "_activeAttackGroups") };
@@ -392,6 +394,18 @@ private _aiCommander = createHashMapObject [[
 
         { _ops deleteAt _x; } forEach _toRemove;
         _self set ["_attackOperations", _ops];
+    }],
+
+    ["_callArtillerySupport", {
+        params ["_self", "_targetPos", ["_rounds", 6]];
+
+        private _success = [_targetPos, _rounds] call FLO_fnc_requestVirtualArtillery;
+        if (_success) then {
+            private _grid = mapGridPosition _targetPos;
+            ["STR_FLO_WARNING_TITLE", format ["%1 at grid %2", localize "STR_FLO_WARNING_EARTYINC", _grid], "warning"] call FLO_fnc_sendNotification;
+        };
+
+        _success
     }],
     
     ["_update", {
