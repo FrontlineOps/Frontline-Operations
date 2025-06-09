@@ -94,7 +94,7 @@ private _fnc_notifyPlayers = {
         _notified pushBack false;
     } forEach _notificationTimes;
     
-    while {true} do {
+    while { true } do {
         private _minutesUntilRestart = [_restartIntervals, _fnc_getCurrentTime] call _fnc_getTimeUntilRestart;
         
         // Check each notification threshold
