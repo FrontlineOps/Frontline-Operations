@@ -13,14 +13,15 @@ FLO_Objectives_Debug = false;
 StartingLocationDone = false;
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
-[] call FLO_fnc_heartbeat;
+// Initialize Heartbeat System
+[] spawn FLO_fnc_heartbeat;
 
 if (isNil "F_Init") then {F_Init = false;};
 
 // After Mission Loaded
 waitUntil {MissionLoadedLitterally};
 
-//Mission Settings Loading
+// Mission Settings Loading
 waitUntil {StartingLocationDone};
 
 // Dedicated server needs to know factions too
