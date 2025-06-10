@@ -22,247 +22,151 @@ private _DVRT = "NO";
         private _trg = createTrigger ["EmptyDetector", position player];
         [_trg] spawn {
             params ["_thisPatrolTrigger"];
+            
+            // Get aggression score from marker
+            private _aggrScore = FLO_DifficultyHandle get "value";
+            
+            private _targetBuilding = [getPos _thisPatrolTrigger] call FLO_fnc_findMissionHouse;
+            if (isNull _targetBuilding) exitWith {};
+            
+            // Create objective stash
+            private _stashPos = selectRandom (_targetBuilding buildingPos -1);
+            private _stash = createVehicle ["Box_FIA_Ammo_F", _stashPos, [], 500, "NONE"];
+            _stash allowDamage false;
+            _stash setPos _stashPos;
+            sleep 3;
+            _stash allowDamage true;
+            
+            // Add stash destruction handler
+            _stash addEventHandler ["Killed", {
+                private _missionMarkers = allMapMarkers select {markerText _x == "Mission : Counter Insurgency"};
+                private _nearestMarker = [_missionMarkers, (_this select 0)] call BIS_fnc_nearestPosition;
+                deleteMarker _nearestMarker;
+                
+                ["ScoreAdded", ["Insurgent Stash Destroyed", 30]] call BIS_fnc_showNotification;
+                [30] call FLO_fnc_addReward;
+                [-0.35, "decrease"] call FLO_fnc_adjustAggression;
+                playMusic "EventTrack01_F_Curator";
+            }];
+            
+            // Spawn officer with intel
+            private _officerPos = selectRandom (_targetBuilding buildingPos -1);
+            private _officerGroup = [_officerPos, East, [selectRandom East_Units_Officers]] call BIS_fnc_spawnGroup;
+            private _officer = (units _officerGroup) select 0;
+            _officer disableAI "PATH";
+            
+            // Add intel action to officer
+            [
+                _officer,
+                "Search Officer",
+                "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa",
+                "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa",
+                "(_this distance _target)<2",
+                "(_this distance _target)<2",
+                {playSound3D ["a3\missions_f_oldman\data\sound\intel_body\1sec\intel_body_1sec_02.wss", (_this select 0)]},
+                {},
+                {[] call FLO_fnc_militaryIntel},
+                {},
+                [],
+                3,
+                0,
+                true,
+                false
+            ] remoteExec ["BIS_fnc_holdActionAdd", 0, _officer];
+            
+            // Function to create insurgent unit
+            private _createInsurgent = {
+                params ["_pos", "_disablePath"];
+                private _group = [_pos, East, [selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
+                {
+                    private _uniform = uniform _x;
+                    _x setUnitLoadout (selectRandom GuerMenArray);
+                    removeHeadgear _x;
+                    _x forceAddUniform _uniform;
+                } forEach units _group;
+                if (_disablePath) then {
+                    ((units _group) select 0) disableAI "PATH";
+                };
+                _group
+            };
+            
+            // Get nearby buildings for garrison
+            private _nearbyBuildings = nearestObjects [getPos _targetBuilding, ["HOUSE"], 200];
+            private _validBuildings = _nearbyBuildings select {count (_x buildingPos -1) > 0};
+            
+            // Spawn garrison units
+            for "_i" from 1 to 3 do {
+                private _pos = selectRandom (_targetBuilding buildingPos -1);
+                [_pos, true] call _createInsurgent;
+            };
+            
+            // Spawn additional units based on aggression score
+            if (_aggrScore > 5) then {
+                private _extraBuilding = selectRandom _validBuildings;
+                for "_i" from 1 to 3 do {
+                    private _pos = selectRandom (_extraBuilding buildingPos -1);
+                    [_pos, true] call _createInsurgent;
+                };
+            };
+            
+            if (_aggrScore > 10) then {
+                private _extraBuilding = selectRandom _validBuildings;
+                for "_i" from 1 to 3 do {
+                    private _pos = selectRandom (_extraBuilding buildingPos -1);
+                    [_pos, true] call _createInsurgent;
+                };
+            };
+            
+            // Spawn guard units
+            for "_i" from 1 to (1 + (_aggrScore > 5) + (_aggrScore > 10)) do {
+                private _guardPos = [getPos _targetBuilding, 10, 30, 5, 1, 0] call BIS_fnc_findSafePos;
+                [_guardPos, true] call _createInsurgent;
+            };
+            
+            // Spawn patrol groups
+            private _patrolPos = (getPos _targetBuilding) getPos [30, 50];
+            private _patrolGroup = [_patrolPos, East, [selectRandom CivMenArray, selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
+            {
+                private _uniform = uniform _x;
+                _x setUnitLoadout (selectRandom GuerMenArray);
+                removeHeadgear _x;
+                _x forceAddUniform _uniform;
+            } forEach units _patrolGroup;
+            [_patrolGroup, getPos _targetBuilding, 20] call BIS_fnc_taskPatrol;
+            
+            if (_aggrScore > 5) then {
+                private _patrolPos = (getPos _targetBuilding) getPos [30, 180];
+                private _patrolGroup = [_patrolPos, East, [selectRandom CivMenArray, selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
+                {
+                    private _uniform = uniform _x;
+                    _x setUnitLoadout (selectRandom GuerMenArray);
+                    removeHeadgear _x;
+                    _x forceAddUniform _uniform;
+                } forEach units _patrolGroup;
+                [_patrolGroup, getPos _targetBuilding, 200] call BIS_fnc_taskPatrol;
+            };
+            
+            // Spawn vehicles based on aggression score
+            if (_aggrScore > 5 && {count [(getPos _targetBuilding) nearRoads 70] > 0}) then {
+                private _nearRoad = selectRandom ((getPos _targetBuilding) nearRoads 70);
+                private _vehicle = createVehicle [selectRandom CivVehArray, (_nearRoad getRelPos [0, 0]), [], 4, "NONE"];
+                private _nextRoad = (roadsConnectedTo _nearRoad) select 0;
+                _vehicle setDir (_nearRoad getDir _nextRoad);
+            };
+            
+            if (_aggrScore > 10 && {count [(getPos _targetBuilding) nearRoads 70] > 0}) then {
+                private _nearRoad = selectRandom ((getPos _targetBuilding) nearRoads 70);
+                private _vehicle = createVehicle [selectRandom CivVehArray, (_nearRoad getRelPos [0, 0]), [], 4, "NONE"];
+                private _nextRoad = (roadsConnectedTo _nearRoad) select 0;
+                _vehicle setDir (_nearRoad getDir _nextRoad);
+            };
+            
+            // Remove units from Zeus
+            {
+                if !(side _x == west) then {
+                    ZEUS removeCuratorEditableObjects [[_x], true];
+                };
+            } forEach allUnits;
         };
-/////////////////////Rescue POW////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-_thisPatrolTrigger = _this select 0; 
-
-_mrkrs = allMapMarkers select {markerColor _x == "Color6_FD_F"};
-_mrkr = _mrkrs select 0;
-_AGGRSCORE = parseNumber (markerText _mrkr) ;  
-
-_Chance = selectRandom [1, 2, 3]; 
- 
-//////OBJECTIVE/////////////////////////////////////////////////////////////////////////////////////////
-
-
-_Buildings = nearestObjects [(getpos _thisPatrolTrigger), ["House"], 200];  
-_allPositionBuildings = _Buildings select {count (_x buildingPos -1) > 2}; 
-_Position = _allPositionBuildings select 0;
-_Pos = selectRandom (_Position buildingPos -1);
-
-_V = createVehicle ["Box_FIA_Ammo_F", _Pos, [], 500, "NONE"]; 
-_V allowDammage false;
-_V setPos _Pos;
-sleep 3;
-_V allowDammage true;
-_V addEventHandler ["Killed", { 
-_MMarks = allMapMarkers select { markerText _x == "Mission : Counter Insurgency"};
-_M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
-
-deleteMarker _M ; 
-  
-["ScoreAdded", ["Insurgent Stash Destroyed", 30]] call BIS_fnc_showNotification; 
-
-[30] call FLO_fnc_addReward;
-[-0.35, "decrease"] call FLO_fnc_adjustAggression;
-
-    // Placeholder for old civilian relations script (missing)
-
- playMusic "EventTrack01_F_Curator"; 
-}];
-
-
-
-//////Garrisons/////////////////////////////////////////////////////////////////////////////////////////
-
-_Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom East_Units_Officers]] call BIS_fnc_spawnGroup;     
-_OFC = ((units G) select 0) ;
-_OFC disableAI "PATH";
-[ 
- _OFC,            
- "Search Officer",           
- "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa",  
- "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa",  
- "(_this distance _target)<2",       
- "(_this distance _target)<2",       
- { 
- playSound3D [ "a3\missions_f_oldman\data\sound\intel_body\1sec\intel_body_1sec_02.wss", (_this select 0)];  
-  
- },             
- {},              
- {  
- 
-[] call FLO_fnc_militaryIntel;
- 
- },    
- {},              
- [],             
- 3,            
- 0,             
- true,             
- false             
-] remoteExec ["BIS_fnc_holdActionAdd", 0, _OFC]; 
- 
- _Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;   
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;  
- ((units G) select 0) disableAI "PATH";
- 
-_Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;    
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;   
-
- 
- _Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;    
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;   
-
-
-
-if (_AGGRSCORE > 5) then {
-_allPositionBuildings = _Buildings select {count (_x buildingPos -1) > 2}; 
-_Position = selectRandom _allPositionBuildings ;
-_Pos = selectRandom (_Position buildingPos -1);
-G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;   
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;  
- ((units G) select 0) disableAI "PATH";
- 
-  _Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup; 
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;   
-
- 
-_Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup; 
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;   
-
-};
-
-if (_AGGRSCORE > 10) then {
-_allPositionBuildings = _Buildings select {count (_x buildingPos -1) > 2}; 
-_Position = selectRandom _allPositionBuildings ;
-_Pos = selectRandom (_Position buildingPos -1);
-G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup; 
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;      
-((units G) select 0) disableAI "PATH";
-
- _Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;   
-
- 
-_Pos = selectRandom (_Position buildingPos -1);
- G = [_Pos, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup; 
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;   
-
-};
-
-//////Gaurds/////////////////////////////////////////////////////////////////////////////////////////
- 
-
-_poss = [getpos _Position, 10, 30, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;  
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;  
-((units G) select 0) disableAI "PATH"; 
-
-if (_AGGRSCORE > 5) then {
-_poss = [getpos _Position, 10, 30, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;  
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;  
-((units G) select 0) disableAI "PATH"; 
-}; 
-if (_AGGRSCORE > 10) then {
-_poss = [getpos _Position, 10, 30, 5, 1 , 0] call BIS_fnc_findSafePos; 
-G = [_poss, East,[selectRandom CivMenArray]] call BIS_fnc_spawnGroup;  
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units G;  
-((units G) select 0) disableAI "PATH"; 
-}; 
- 
-//////GROUPS/////////////////////////////////////////////////////////////////////////////////////////
-
-
-PRL = [(getPos _Position) getPos [30, 50], East, [selectRandom CivMenArray, selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units PRL;  
-[PRL, getpos _Position, 20] call BIS_fnc_taskPatrol;
-
-if (_AGGRSCORE > 5) then {
-PRL = [(getPos _Position) getPos [30, 180], East, [selectRandom CivMenArray, selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
-{_uniform = uniform _x;
-_x setUnitLoadout (selectRandom GuerMenArray);
-removeHeadgear _x; 
-_x forceAddUniform _uniform;
-} foreach Units PRL;  
-[PRL, getpos _Position, 200] call BIS_fnc_taskPatrol;
-};
-
-//////Vehicles/////////////////////////////////////////////////////////////////////////////////////////
-
-
-if ((_AGGRSCORE > 5) && (count [(getpos _Position) nearRoads 70] > 0))then {
-	
-_nearRoad = selectRandom ( (getpos _Position) nearRoads 70 ) ; 
-_V = createVehicle [ selectRandom CivVehArray, (_nearRoad getRelPos [0, 0]), [], 4, "NONE"]; 
-_nextRoad = ( roadsConnectedTo _nearRoad ) select 0;
-_dir = _nearRoad getDir _nextRoad;
-_V setDir _dir;
-	};
-
-if ((_AGGRSCORE > 10) && (count [(getpos _Position) nearRoads 70] > 0)) then {
-	
-_nearRoad = selectRandom ((getpos _Position) nearRoads 70 ) ; 
-_V = createVehicle [ selectRandom CivVehArray, (_nearRoad getRelPos [0, 0]), [], 4, "NONE"]; 
-_nextRoad = ( roadsConnectedTo _nearRoad ) select 0;
-_dir = _nearRoad getDir _nextRoad;
-_V setDir _dir;
-	};
-
-
-{ if !((side _x) == west) then {
-            ZEUS removeCuratorEditableObjects [[_x],true];
-}; } foreach allUnits;
-
     };
 };
