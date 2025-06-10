@@ -4,7 +4,6 @@ class FLO {
 
         class MissionSave       {};
         class MissionStartup    {};
-        class ICS               {};
         class MissionLoad       {preInit = 1;};
         class initializeFOB     {};
         class initializeOP      {};
