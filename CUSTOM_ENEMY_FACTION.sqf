@@ -77,7 +77,8 @@ OPFOR_Objective_Groups = [
         ["motorized", 2],
         ["mechanized", 1],
         ["air", 1],
-        ["armor", 1]
+        ["armor", 1],
+        ["artillery", 1]
     ]],
 
     // Major cities
