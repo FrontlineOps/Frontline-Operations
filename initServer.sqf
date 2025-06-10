@@ -140,6 +140,9 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 // Initialize Intel System
 [] call FLO_fnc_intelSystem;
 
+// Register default side missions
+[] call FLO_fnc_registerDefaultMissions;
+
 // Initialize the resource system
 [] call FLO_fnc_opforResources;
 
