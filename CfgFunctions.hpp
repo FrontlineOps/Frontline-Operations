@@ -86,6 +86,7 @@ class FLO {
 
         class militaryIntel {};
         class civilianIntel {};
+        class revealRandomEnemyGroup {};
     };
 
     class Arsenal {
@@ -116,6 +117,24 @@ class FLO {
         class displayNotification       {};
         class adjustAggression          {};
         class adjustReputation          {};
+    };
+
+    class SideMissions {
+        file = "Functions\\SideMissions";
+
+        class registerSideMission       {};
+        class startSideMission          {};
+        class registerDefaultMissions   {};
+        class sideMissionPilot          {};
+        class sideMissionSquad          {};
+        class sideMissionConvoy         {};
+        class sideMissionCustomConvoy  {};
+        class sideMissionPatrol        {};
+        class sideMissionSabotage      {};
+        class sideMissionPOW            {};
+        class sideMissionIntel          {};
+        class addIntelItems             {};
+        class findMissionHouse          {};
     };
     
     class Misc {

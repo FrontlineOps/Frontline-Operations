@@ -12,6 +12,7 @@ A dynamic frontline operations mission for Arma 3 that creates an evolving battl
 - Automated resource management for OPFOR forces
 - Dynamic vehicle spawning system
 - Customizable faction loadouts and equipment
+- Extensible side mission framework for intel events including POW rescue, intel gathering, convoy ambushes, patrol sweeps and sabotage missions
 
 ## Setup Instructions
 
@@ -313,6 +314,24 @@ private _grenades = [
    - Arsenal restrictions are applied only once per box
    - Uses efficient event handlers to manage updates
    - Prevents duplicate initialization
+
+## Side Mission Framework
+
+The mission includes a modular side mission system. Missions are
+registered via `FLO_fnc_registerSideMission` and started with
+`FLO_fnc_startSideMission`. Default missions are defined in
+`Functions/SideMissions` and are loaded automatically on server start.
+
+Default missions currently available:
+
+- Pilot Rescue
+- Squad Rescue
+- Convoy Interdiction
+- Custom Convoy
+- Patrol Sweep
+- Sabotage Tech
+- POW Rescue
+- Intel Gathering
 
 ## Contributing
 
