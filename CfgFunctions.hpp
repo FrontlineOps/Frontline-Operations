@@ -130,13 +130,18 @@ class FLO {
         class sideMissionPilot          {};
         class sideMissionSquad          {};
         class sideMissionConvoy         {};
-        class sideMissionCustomConvoy  {};
-        class sideMissionPatrol        {};
-        class sideMissionSabotage      {};
+        class sideMissionCustomConvoy   {};
+        class sideMissionPatrol         {};
+        class sideMissionSabotage       {};
         class sideMissionPOW            {};
         class sideMissionIntel          {};
-        class addIntelItems             {};
-        class findMissionHouse          {};
+    };
+
+    class SideMissionUtilities {
+        file = "Functions\SideMissions\Utilities";
+
+        class addIntelItems    {};
+        class findMissionHouse {};
     };
     
     class Misc {
