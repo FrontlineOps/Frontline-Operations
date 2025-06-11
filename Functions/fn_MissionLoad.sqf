@@ -172,7 +172,17 @@ if ("objectives" in _data) then {
         private _pos = _data get "position";
         private _radius = _data get "radius";
         private _owner = _data getOrDefault ["owner", east];
-        private _marker = createMarker [format ["obj_%1", _id], _pos];
+        private _markerName = format ["obj_%1", _id];
+        
+        // Delete existing marker if it exists
+        // This can happen because we save all Markers in the Namespace (so we need to delete and reload these markers)
+        // as they are special
+        if (getMarkerColor _markerName != "") then {
+            deleteMarker _markerName;
+        };
+        
+        // Create new marker with explicit channel
+        private _marker = createMarker [_markerName, _pos];
         _marker setMarkerShape "ELLIPSE";
         _marker setMarkerSize [_radius, _radius];
         private _color = switch (_owner) do {
@@ -183,10 +193,12 @@ if ("objectives" in _data) then {
         };
         _marker setMarkerColor _color;
         _marker setMarkerAlpha 0.3;
+        _marker setMarkerBrush "Solid";
+        _marker setMarkerText format["%1", _id];
     } forEach (keys FLO_Objectives);
 
     // Build road links between objectives
-    [false] call FLO_fnc_buildObjectiveGraph;
+    [false] spawn FLO_fnc_buildObjectiveGraph;
     
     // Start monitoring objective dominance
     [] spawn FLO_fnc_monitorObjectiveDominance;
