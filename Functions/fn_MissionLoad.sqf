@@ -161,7 +161,36 @@ private _crateHash = _data getOrDefault ["crates", createHashMap];
 
 //------------------------------------------------------
 // Restore objectives
-if ("objectives" in _data) then { FLO_Objectives = _data get "objectives"; publicVariable "FLO_Objectives"; };
+if ("objectives" in _data) then { 
+    FLO_Objectives = _data get "objectives"; 
+    publicVariable "FLO_Objectives";
+    
+    // Create markers for all objectives
+    {
+        private _id = _x;
+        private _data = FLO_Objectives get _id;
+        private _pos = _data get "position";
+        private _radius = _data get "radius";
+        private _owner = _data getOrDefault ["owner", east];
+        private _marker = createMarker [format ["obj_%1", _id], _pos];
+        _marker setMarkerShape "ELLIPSE";
+        _marker setMarkerSize [_radius, _radius];
+        private _color = switch (_owner) do {
+            case west: {"colorBLUFOR"};
+            case east: {"colorOPFOR"};
+            case resistance: {"ColorGUER"};
+            default {"ColorBlack"};
+        };
+        _marker setMarkerColor _color;
+        _marker setMarkerAlpha 0.3;
+    } forEach (keys FLO_Objectives);
+
+    // Build road links between objectives
+    [false] call FLO_fnc_buildObjectiveGraph;
+    
+    // Start monitoring objective dominance
+    [] spawn FLO_fnc_monitorObjectiveDominance;
+};
 //if (!isNil (_data get "virtualObjectives")) then { FLO_VirtualObjectives = _data get "virtualObjectives"; publicVariable "FLO_VirtualObjectives"; };
 
 //------------------------------------------------------
