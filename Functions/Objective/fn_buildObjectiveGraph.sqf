@@ -60,34 +60,31 @@ private _ids = keys FLO_Objectives;
 
         private _otherData = FLO_Objectives get _other;
         if (isNil "_otherData") then { continue; };
-        private _otherPos = _otherData get "position";
 
-        private _path = [_pos, _otherPos] call FLO_fnc_findRoadPathSync;
-        if (count _path == 0) then { _path = [_otherPos]; };
+        // Only store start/end points. Pathfinding will occur on demand
         private _linkMap = createHashMapFromArray [
             ["from", _id],
             ["to", _other],
-            ["waypoints", _path]
+            ["waypoints", []]
         ];
         FLO_ObjectiveLinks set [_key, _linkMap];
+
         if (_debug) then {
-            private _pts = [_pos] + _path;
-            for "_j" from 1 to (count _pts - 1) do {
-                private _p1 = _pts select (_j - 1);
-                private _p2 = _pts select _j;
-                private _name = format ["objLink_%1_%2_%3", _sorted select 0, _sorted select 1, _j];
-                private _mid = [
-                    (_p1 select 0) + ((_p2 select 0) - (_p1 select 0)) / 2,
-                    (_p1 select 1) + ((_p2 select 1) - (_p1 select 1)) / 2
-                ];
-                createMarkerLocal [_name, _mid];
-                _name setMarkerShapeLocal "RECTANGLE";
-                _name setMarkerColorLocal "ColorBrown";
-                _name setMarkerAlphaLocal 1;
-                _name setMarkerSizeLocal [5, (_p1 distance2D _p2) / 2];
-                _name setMarkerDir ([_p1, _p2] call BIS_fnc_dirTo);
-                FLO_ObjectiveLinkMarkers pushBack _name;
-            };
+            private _otherPos = _otherData get "position";
+            private _p1 = _pos;
+            private _p2 = _otherPos;
+            private _name = format ["objLink_%1_%2", _sorted select 0, _sorted select 1];
+            private _mid = [
+                (_p1 select 0) + ((_p2 select 0) - (_p1 select 0)) / 2,
+                (_p1 select 1) + ((_p2 select 1) - (_p1 select 1)) / 2
+            ];
+            createMarkerLocal [_name, _mid];
+            _name setMarkerShapeLocal "RECTANGLE";
+            _name setMarkerColorLocal "ColorBrown";
+            _name setMarkerAlphaLocal 1;
+            _name setMarkerSizeLocal [5, (_p1 distance2D _p2) / 2];
+            _name setMarkerDir ([_p1, _p2] call BIS_fnc_dirTo);
+            FLO_ObjectiveLinkMarkers pushBack _name;
         };
     } forEach _links;
 } forEach _ids;
