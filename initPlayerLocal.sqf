@@ -13,7 +13,7 @@ waitUntil {MissionLoadedLitterally};
 // Check if the starting location has been set & blufor installations already exist
 // if so assume the mission has been loaded from a saved game
 private _installationCount = count (allMapMarkers select {markerType _x isEqualTo "b_installation"});
-if (count (allMapMarkers select {markerType _x isEqualTo "loc_SafetyZone"}) >= 6 && (_installationCount > 0)) then {
+if (_installationCount > 0) then {
     StartingLocationDone = true; 
     publicVariable "StartingLocationDone";
 };
