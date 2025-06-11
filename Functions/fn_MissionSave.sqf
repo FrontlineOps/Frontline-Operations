@@ -2,428 +2,222 @@ if (!isServer) exitWith {};
 
 ["Mission", 3, "Saving Mission ..."] call FLO_fnc_log;
 
-private _Centerposition = [worldSize / 2, worldsize / 2, 0];
+private _center = [worldSize/2, worldSize/2, 0];
+private _data = missionProfileNamespace getVariable ["FLO_MissionData", createHashMap];
 
-private _missionTag = missionName;
-_missionTag = [_missionTag] call BIS_fnc_filterString;
+//------------------------------------------------------
+// Save time
+_data set ["time", date];
 
-private _MarkerTimeName = _missionTag + "_Time";
-private _MarkerDataName = _missionTag + "_markers";
-private _VehicleDataName = _missionTag + "_Vehicles";
-private _ObjectDataName = _missionTag + "_Objects";
-private _structureMarkerName = _missionTag + "_StructureMarkers";
-private _missionStructureTypes = _missionTag + "_StructureTypes";
-private _CrateDataName = _missionTag + "_Crates";
-private _ResourcesDataName = _missionTag + "_Resources";
-private _VirtualGroupsDataName = _missionTag + "_VirtualGroups";
+//------------------------------------------------------
+// Clean up any debug spheres or group markers
+{
+    if (!isNull _x) then { deleteVehicle _x }; 
+} forEach (nearestObjects [_center, ["Sign_Sphere10cm_F"], 40000]);
+{ deleteMarker _x } forEach (allMapMarkers select {markerType _x isEqualTo "b_unknown" && markerColor _x isEqualTo "Color6_FD_F"});
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _spheres = nearestObjects [_Centerposition, ["Sign_Sphere10cm_F"], 40000];
-if (!isNil "_spheres" && {count _spheres > 0}) then {
-    {
-        if (!isNull _x) then {
-            deleteVehicle _x;
-        };
-    } forEach _spheres;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _GroupMarks = allMapMarkers select {markerType _x isEqualTo "b_unknown" && markerColor _x isEqualTo "Color6_FD_F"};
-{deleteMarker _x;} forEach _GroupMarks;
-
-// Define array of valid unit types
+//------------------------------------------------------
+// Save player group compositions as marker text
 private _validUnitTypes = [
-    F_Diver_Eod, F_Diver_Rfl, F_Diver_TL, 
-    F_Recon_Eod, F_Recon_Med, F_Recon_Eng, F_Recon_Mg, F_Recon_AT, F_Recon_Mrk, F_Recon_Snp, F_Recon_Sct, F_Recon_TL,
-    F_Assault_AT, F_Assault_Amm, F_Assault_Mg, F_Assault_SL, F_Assault_TL, F_Assault_Eng, F_Assault_Eod, F_Assault_Mrk, F_Assault_Uav, F_Assault_Med,
+    F_Diver_Eod, F_Diver_Rfl, F_Diver_TL,
+    F_Recon_Eod, F_Recon_Med, F_Recon_Eng, F_Recon_Mg, F_Recon_AT, F_Recon_Mrk,
+    F_Recon_Snp, F_Recon_Sct, F_Recon_TL,
+    F_Assault_AT, F_Assault_Amm, F_Assault_Mg, F_Assault_SL, F_Assault_TL,
+    F_Assault_Eng, F_Assault_Eod, F_Assault_Mrk, F_Assault_Uav, F_Assault_Med,
     F_Officer
 ];
-
-private _SaveGroups = allGroups select {
+private _saveGroups = allGroups select {
     if (count units _x > 0) then {
-        private _firstUnit = units _x select 0;
-        if (!isNull _firstUnit) then {
-            (typeOf _firstUnit) in _validUnitTypes && 
-            !captive _firstUnit && 
-            side _firstUnit isEqualTo west && 
-            alive _firstUnit
-        };
-    };
+        private _first = units _x select 0;
+        if (!isNull _first) then {
+            (typeOf _first) in _validUnitTypes && !captive _first && side _first isEqualTo west && alive _first
+        } else {false}
+    } else {false}
 };
-
 {
-	if (!isNull _x) then {
-    	private _group = _x;
-    	private _units = units _group;
-    	private _UnitsArray = [];
-    
-    	// Build array of unit types
-    	{
-    	    private _unitClass = typeOf _x;
-    	    _UnitsArray pushBack _unitClass;
-    	} forEach _units;
-    
-    	// Remove first unit if it's a player
-    	if (isPlayer (_units select 0)) then {
-    	    _UnitsArray deleteAt 0;
-    	};
-    
-    	// Create marker for the group
-    	private _mrkr = createMarkerLocal [str(_units select 0), getPos (_units select 0)];
-    	_mrkr setMarkerTypeLocal "b_unknown";
-    	_mrkr setMarkerSizeLocal [0.5, 0.5];
-    	_mrkr setMarkerColorLocal "Color6_FD_F";
-    	_mrkr setMarkerAlphaLocal 0.006;
-    	_mrkr setMarkerText str _UnitsArray;
-	};
-} forEach _SaveGroups;
-	
-["Mission", 3, "Groups Saved Successfully ..."] call FLO_fnc_log;
+    private _units = units _x;
+    private _types = [];
+    { _types pushBack typeOf _x } forEach _units;
+    if (isPlayer (_units select 0)) then { _types deleteAt 0 };
+    private _m = createMarkerLocal [str (_units select 0), getPos (_units select 0)];
+    _m setMarkerTypeLocal "b_unknown";
+    _m setMarkerSizeLocal [0.5,0.5];
+    _m setMarkerColorLocal "Color6_FD_F";
+    _m setMarkerAlphaLocal 0.006;
+    _m setMarkerText str _types;
+} forEach _saveGroups;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-profileNamespace setVariable [_MarkerTimeName, date];
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _VehicleDataName = _missionTag + "_Vehicles";
-
-private _VehicleDataHash = createHashMap;
-private _vehicles = [];
-
-private _allFOBMarks = allMapMarkers select {markerType _x isEqualTo "b_installation"};
+//------------------------------------------------------
+// Save battlefield markers
+private _markerHash = createHashMap;
 {
-    private _markerPos = getMarkerPos _x;
-    private _nearbyVehicles = nearestObjects [_markerPos, ["Air", "Ship", "LandVehicle"], 250];
-    private _aliveVehicles = _nearbyVehicles select {alive _x};
-    _vehicles append _aliveVehicles;
-} forEach _allFOBMarks;
+    private _entry = createHashMapFromArray [
+        ["name", _x],
+        ["alpha", markerAlpha _x],
+        ["brush", markerBrush _x],
+        ["color", getMarkerColor _x],
+        ["dir", markerDir _x],
+        ["pos", getMarkerPos _x],
+        ["shape", markerShape _x],
+        ["size", getMarkerSize _x],
+        ["text", markerText _x],
+        ["type", markerType _x]
+    ];
+    _markerHash set [_x, _entry];
+} forEach allMapMarkers;
+_data set ["markers", _markerHash];
 
-private _vehiclesToSave = _vehicles select {alive _x};
-private _finalVehiclesToSave = _vehiclesToSave arrayIntersect _vehiclesToSave;
-
+//------------------------------------------------------
+// Save vehicles around FOB markers
+private _vehHash = createHashMap;
 {
-    private _vehicle = _x;
-    private _vehicleDataHashEach = createHashMap;
-    private _vehicleNameStr = str getPosATL _vehicle + "_Veh";
-    _vehicle setVehicleVarName _vehicleNameStr;
-    
-    private _vehicleName = vehicleVarName _vehicle;
-    
-    _vehicleDataHashEach set ["type", typeOf _vehicle];
-    _vehicleDataHashEach set ["posATL", getPosATL _vehicle];
-    _vehicleDataHashEach set ["fuel", fuel _vehicle];
-    _vehicleDataHashEach set ["damage", damage _vehicle];
-    _vehicleDataHashEach set ["damages", getAllHitPointsDamage _vehicle];
-    _vehicleDataHashEach set ["vectorDirAndUp", [vectorDir _vehicle, vectorUp _vehicle]];
-    
-    _VehicleDataHash set [_vehicleName, _vehicleDataHashEach];
-} forEach _finalVehiclesToSave;
-
-profileNamespace setVariable [_VehicleDataName, _VehicleDataHash];
-
-["Mission", 3, "Vehicles Saved Successfully ..."] call FLO_fnc_log;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _ObjectDataName = _missionTag + "_Objects";
-private _ObjectDataHash = createHashMap;
-private _SaveStatics = [];
-
-// Define crate types to exclude from general object saving
-private _excludedCrateTypes = [
-    "Box_NATO_WpsSpecial_F",
-    "Box_NATO_AmmoOrd_F",
-    "Box_NATO_Ammo_F",
-    "Box_NATO_Wps_F",
-    "VirtualReammoBox_small_F"
-];
-
-private _allFOBMarks = allMapMarkers select {markerType _x isEqualTo "b_installation" && markerColor _x isEqualTo "ColorYellow" && markerText _x isEqualTo "FOB"};  
-{
-    private _markerPos = getMarkerPos _x;
-    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "ReammoBox_F"], 300];
-    private _staticsNewAlive = _staticsNew select {
-        alive _x && 
-        !(typeOf _x in _excludedCrateTypes) &&  // Exclude specific crate types
-        !(_x getVariable ["FLO_save_crate", false]) // Also exclude anything marked as a save crate
-    };
-    private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 300];
-    private _staticsSaving = _staticsNewAlive - _staticsTerrain;
-    _SaveStatics append _staticsSaving;    
-} forEach _allFOBMarks;
-
-private _allNonFOBMarks = allMapMarkers select {
-    markerType _x isEqualTo "b_installation" && 
-    (markerColor _x isEqualTo "ColorYellow" || markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST") && 
-    markerText _x != "FOB"
-};  
-{
-    private _markerPos = getMarkerPos _x;
-    private _staticsNew = nearestobjects [_markerPos, ["Static", "Thing", "ReammoBox_F"], 200];
-    private _staticsNewAlive = _staticsNew select {
-        alive _x && 
-        !(typeOf _x in _excludedCrateTypes) &&  // Exclude specific crate types
-        !(_x getVariable ["FLO_save_crate", false]) // Also exclude anything marked as a save crate
-    };
-    private _staticsTerrain = nearestTerrainObjects [_markerPos, [], 200];
-    private _staticsSaving = _staticsNewAlive - _staticsTerrain;
-    _SaveStatics append _staticsSaving;    
-} forEach _allNonFOBMarks;
-
-private _towerTypes = ["Land_TTowerBig_2_F", "Land_TTowerBig_1_F"];
-private _staticsNew = nearestobjects [_Centerposition, _towerTypes, 40000];
-private _staticsNewAlive = _staticsNew select {alive _x};
-private _staticsTerrain = nearestTerrainObjects [_Centerposition, _towerTypes, 40000];
-private _staticsSaving = _staticsNewAlive - _staticsTerrain;
-{
-    _SaveStatics pushBack _x;    
-} forEach _staticsSaving;
-
-private _FinalSaving = _SaveStatics arrayIntersect _SaveStatics;
-
-{
-    private _ObjectDataHashEach = createHashMap;
-    private _ObjectNameStr = str getPosASL _x + "_Obj";
-    private _isPlacedEntity = _x getVariable ["IDS_Logistics_isPlacedEntity", false];
-        
-    _x setVehicleVarName _ObjectNameStr;
-    
-    private _ObjectName = vehicleVarName _x;
-    
-    _ObjectDataHashEach set ["type", typeOf _x];
-    _ObjectDataHashEach set ["posASL", getPosASL _x];
-    _ObjectDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
-    _ObjectDataHashEach set ["isPlacedEntity", _isPlacedEntity];
-
-    _ObjectDataHash set [_ObjectName, _ObjectDataHashEach];
-} forEach _FinalSaving;
-
-profileNamespace setVariable [_ObjectDataName, _ObjectDataHash];
-
-["Mission", 3, "Structures Saved Successfully ..."] call FLO_fnc_log;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _MarkerDataName = _missionTag + "_markers";
-
-private _MarkerDataHash = createHashMap;
-
-// Define marker types to save by category
-private _opforMarkerTypes = [
-    "loc_Transmitter", "o_support", "n_support", "o_installation", "n_installation",
-    "loc_Ruin", "loc_Power", "loc_mine", "o_recon", "o_armor", "o_inf", 
-    "o_service", "o_plane", "o_antiair"
-];
-
-private _hdMarkerTypes = [
-    "hd_warning", "hd_unknown", "hd_start", "hd_pickup", "hd_objective",
-    "hd_join", "hd_flag", "hd_end", "hd_dot", "hd_destroy", "hd_arrow", "hd_ambush"
-];
-
-private _otherMarkerTypes = [
-    "b_installation", "loc_SafetyZone", "White", "RedCrystal"
-];
-
-// Select markers to save
-private _SaveMarks = allMapMarkers select {
-    // OPFOR markers
-    (markerColor _x isEqualTo "colorOPFOR" && markerType _x in _opforMarkerTypes) || 
-    // HD markers
-    markerType _x in _hdMarkerTypes ||
-    // Other marker types
-    markerType _x in _otherMarkerTypes ||
-    // Special cases
-    (markerType _x isEqualTo "b_unknown" && markerColor _x isEqualTo "Color6_FD_F") ||
-    (markerType _x isEqualTo "loc_Transmitter" && markerColor _x isEqualTo "colorBLUFOR")
-};
-		
-{
-	private _MarkerDataHashEach = createHashMap;
-    private _markerColor = getMarkerColor _x;
-    private _markerType = markerType _x;
-    
-    // If marker is b_installation and color is grey, change it to colorBLUFOR when saving
-    if (_markerType isEqualTo "b_installation" && _markerColor isEqualTo "ColorGrey") then {
-        _markerColor = "ColorWEST";
-    };
-
-	_MarkerDataHashEach set ["name",_x];
-	_MarkerDataHashEach set ["alpha",markerAlpha _x];
-	_MarkerDataHashEach set ["brush",markerBrush _x];
-	_MarkerDataHashEach set ["color",_markerColor];
-	_MarkerDataHashEach set ["dir",markerDir _x];
-	_MarkerDataHashEach set ["pos",getMarkerPos _x];
-	_MarkerDataHashEach set ["shape",markerShape _x];
-	_MarkerDataHashEach set ["size",getMarkerSize _x];
-	_MarkerDataHashEach set ["text",markerText _x];
-	_MarkerDataHashEach set ["type",_markerType];
-
-	_MarkerDataHash set [_x, _MarkerDataHashEach];
-
-} forEach _SaveMarks;
-
-profileNamespace setVariable [_MarkerDataName, _MarkerDataHash];
-
-["Mission", 3, "BattleField Saved Successfully ..."] call FLO_fnc_log;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Save OPFOR resources state
-private _resourceSaveResult = FLO_OPFOR_Resources call ["saveResources", []];
-if !(_resourceSaveResult) then {
-    [[west,"HQ"], "Warning: Failed to save OPFOR resources state"] remoteExec ["sideChat", 0];
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Save virtual groups
-if (!isNil "FLO_virtualGroups") then {
-    private _virtualGroupsHash = createHashMap;
-    private _groups = FLO_virtualGroups get "_groups";
-    
+    private _pos = getMarkerPos _x;
+    private _near = nearestObjects [_pos, ["Air","Ship","LandVehicle"],250];
     {
-        private _groupId = _x;
-        private _groupData = _y;
-        private _savedGroupData = createHashMap;
-        
-        // Save essential group data
-        _savedGroupData set ["position", _groupData get "position"];
-        _savedGroupData set ["groupType", _groupData get "groupType"];
-        _savedGroupData set ["objective", _groupData get "objective"];
-        _savedGroupData set ["unitCount", _groupData get "unitCount"];
-        _savedGroupData set ["side", _groupData get "side"];
-        _savedGroupData set ["state", _groupData get "state"];
-        _savedGroupData set ["waypoints", _groupData get "waypoints"];
-        _savedGroupData set ["currentWaypointIndex", _groupData get "currentWaypointIndex"];
-        _savedGroupData set ["garrisonPosition", _groupData getOrDefault ["garrisonPosition", []]];
-        _savedGroupData set ["garrisonObjective", _groupData getOrDefault ["garrisonObjective", ""]];
-        
-        _virtualGroupsHash set [_groupId, _savedGroupData];
-    } forEach _groups;
-    
-    profileNamespace setVariable [_VirtualGroupsDataName, _virtualGroupsHash];
-    ["Mission", 3, format["Saved %1 virtual groups", count _virtualGroupsHash]] call FLO_fnc_log;
-} else {
-    ["Mission", 2, "No virtual groups to save"] call FLO_fnc_log;
-};
+        if (alive _x) then {
+            private _id = str getPosATL _x + "_Veh";
+            _x setVehicleVarName _id;
+            private _entry = createHashMapFromArray [
+                ["type", typeOf _x],
+                ["posATL", getPosATL _x],
+                ["fuel", fuel _x],
+                ["damage", damage _x],
+                ["damages", getAllHitPointsDamage _x],
+                ["vectorDirAndUp", [vectorDir _x, vectorUp _x]]
+            ];
+            _vehHash set [_id, _entry];
+        };
+    } forEach (_near select {alive _x});
+} forEach (allMapMarkers select {markerType _x isEqualTo "b_installation"});
+_data set ["vehicles", _vehHash];
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------
+// Save placed objects
+private _objHash = createHashMap;
+private _excludeCrates = ["Box_NATO_WpsSpecial_F","Box_NATO_AmmoOrd_F","Box_NATO_Ammo_F","Box_NATO_Wps_F","VirtualReammoBox_small_F"];
+private _saveStatics = [];
+{
+    private _pos = getMarkerPos _x;
+    private _objs = nearestObjects [_pos,["Static","Thing","ReammoBox_F"],300];
+    _objs = _objs select { alive _x && !(typeOf _x in _excludeCrates) && !(_x getVariable ["FLO_save_crate",false]) };
+    _saveStatics append _objs;
+} forEach (allMapMarkers select {markerType _x isEqualTo "b_installation"});
+{
+    private _entry = createHashMapFromArray [
+        ["type", typeOf _x],
+        ["posASL", getPosASL _x],
+        ["vectorDirAndUp", [vectorDir _x, vectorUp _x]],
+        ["isPlacedEntity", _x getVariable ["IDS_Logistics_isPlacedEntity", false]]
+    ];
+    private _id = str getPosASL _x + "_Obj";
+    _x setVehicleVarName _id;
+    _objHash set [_id, _entry];
+} forEach (_saveStatics arrayIntersect _saveStatics);
+_data set ["objects", _objHash];
 
-// Save building types for FOB and OP
-// Had to add this because the mission load is pre-mission startup and the variables are not yet defined
+//------------------------------------------------------
+// Save structure marker references and types
+private _structureMarkers = createHashMap;
 private _fobTypeClass = if (!isNil "F_HQ_01") then {F_HQ_01};
 private _opTypeClass = if (!isNil "F_OP_01") then {F_OP_01};
-profileNamespace setVariable [_missionStructureTypes, [_fobTypeClass, _opTypeClass]];
-["Mission", 3, format["Saved structure types: FOB = %1, OP = %2", _fobTypeClass, _opTypeClass]] call FLO_fnc_log;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Save FOB and OP marker references
-private _structureMarkerHash = createHashMap;
-
-// Find and save all FOB marker references
-private _fobBuildings = nearestObjects [_Centerposition, [_fobTypeClass, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
 {
-    if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_FOB_Initialized", false]}) then {
-        private _markerName = _x getVariable ["fobMarkerName", ""];
-        if (_markerName != "") then {
-            private _objectPos = getPosASL _x;
-            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
-            _structureMarkerHash set [_objectPosString, [_markerName, "FOB"]];
+    if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_FOB_Initialized",false]}) then {
+        private _mn = _x getVariable ["fobMarkerName",""];
+        if (_mn != "") then {
+            private _pos = getPosASL _x;
+            _structureMarkers set [format["%1_%2_%3",_pos#0,_pos#1,_pos#2],[ _mn, "FOB"]];
         };
     };
-} forEach _fobBuildings;
-
-// Find and save all OP marker references
-private _opBuildings = nearestObjects [_Centerposition, [_opTypeClass], 40000];
+} forEach nearestObjects [_center, [_fobTypeClass,"Land_Cargo_HQ_V3_F","Land_Cargo_HQ_V1_F"],40000];
 {
-    if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_OP_Initialized", false]}) then {
-        private _markerName = _x getVariable ["opMarkerName", ""];
-        if (_markerName != "") then {
-            private _objectPos = getPosASL _x;
-            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
-            _structureMarkerHash set [_objectPosString, [_markerName, "OP"]];
+    if (!isNil "_x" && {alive _x} && {_x getVariable ["FLO_OP_Initialized",false]}) then {
+        private _mn = _x getVariable ["opMarkerName",""];
+        if (_mn != "") then {
+            private _pos = getPosASL _x;
+            _structureMarkers set [format["%1_%2_%3",_pos#0,_pos#1,_pos#2],[ _mn, "OP"]];
         };
     };
-} forEach _opBuildings;
+} forEach nearestObjects [_center, [_opTypeClass],40000];
+_data set ["structureMarkers", _structureMarkers];
+_data set ["structureTypes", [_fobTypeClass,_opTypeClass]];
 
-// Save the structure marker references
-profileNamespace setVariable [_structureMarkerName, _structureMarkerHash];
-["Mission", 3, format["Saved %1 FOB/OP marker references", count _structureMarkerHash]] call FLO_fnc_log;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//------------------------------------------------------
 // Save supply crates
-private _CrateDataHash = createHashMap;
-
-// Find all supply crates in the world
-private _allCrates = entities "ReammoBox_F";
-// Filter to only include crates that have the save flag variable set
-private _cratesToSave = _allCrates select {alive _x && {_x getVariable ["FLO_save_crate", false]}};
+private _crateHash = createHashMap;
 {
-    if (!isNil "_x") then {
-        private _crateDataHashEach = createHashMap;
-        private _crateNameStr = str getPosASL _x + "_Crate";
-        _x setVehicleVarName _crateNameStr;
-        
-        private _crateName = vehicleVarName _x;
-        
-        // Get the actual current contents of the crate
-        private _currentItems = [];
-        
-        // Get weapons and counts
-        private _weaponCargo = getWeaponCargo _x;
-        private _weaponTypes = _weaponCargo select 0;
-        private _weaponCounts = _weaponCargo select 1;
-        {
-            _currentItems pushBack [_x, _weaponCounts select _forEachIndex];
-        } forEach _weaponTypes;
-        
-        // Get magazines and counts
-        private _magazineCargo = getMagazineCargo _x;
-        private _magazineTypes = _magazineCargo select 0;
-        private _magazineCounts = _magazineCargo select 1;
-        {
-            _currentItems pushBack [_x, _magazineCounts select _forEachIndex];
-        } forEach _magazineTypes;
-        
-        // Get items and counts
-        private _itemCargo = getItemCargo _x;
-        private _itemTypes = _itemCargo select 0;
-        private _itemCounts = _itemCargo select 1;
-        {
-            _currentItems pushBack [_x, _itemCounts select _forEachIndex];
-        } forEach _itemTypes;
-        
-        // Get backpacks and counts
-        private _backpackCargo = getBackpackCargo _x;
-        private _backpackTypes = _backpackCargo select 0;
-        private _backpackCounts = _backpackCargo select 1;
-        {
-            _currentItems pushBack [_x, _backpackCounts select _forEachIndex];
-        } forEach _backpackTypes;
-        
-        // Store for loading
-        _x setVariable ["FLO_crate_items", _currentItems, true];
-        
-        _crateDataHashEach set ["type", typeOf _x];
-        _crateDataHashEach set ["posASL", getPosASL _x];
-        _crateDataHashEach set ["vectorDirAndUp", [vectorDir _x, vectorUp _x]];
-        _crateDataHashEach set ["items", _currentItems];
-        
-        _CrateDataHash set [_crateName, _crateDataHashEach];
+    if (alive _x && {_x getVariable ["FLO_save_crate",false]}) then {
+        private _items = [];
+        private _wp = getWeaponCargo _x; { _items pushBack [_x, _wp#1 select _forEachIndex] } forEach (_wp#0);
+        private _mg = getMagazineCargo _x; { _items pushBack [_x, _mg#1 select _forEachIndex] } forEach (_mg#0);
+        private _it = getItemCargo _x; { _items pushBack [_x, _it#1 select _forEachIndex] } forEach (_it#0);
+        private _bp = getBackpackCargo _x; { _items pushBack [_x, _bp#1 select _forEachIndex] } forEach (_bp#0);
+        _x setVariable ["FLO_crate_items", _items, true];
+        private _entry = createHashMapFromArray [
+            ["type", typeOf _x],
+            ["posASL", getPosASL _x],
+            ["vectorDirAndUp", [vectorDir _x, vectorUp _x]],
+            ["items", _items]
+        ];
+        private _id = str getPosASL _x + "_Crate";
+        _x setVehicleVarName _id;
+        _crateHash set [_id, _entry];
     };
-} forEach _cratesToSave;
+} forEach (entities "ReammoBox_F");
+_data set ["crates", _crateHash];
 
-profileNamespace setVariable [_CrateDataName, _CrateDataHash];
+//------------------------------------------------------
+// Save OPFOR resources
+private _missionTag = missionName; _missionTag = [_missionTag] call BIS_fnc_filterString;
+private _resVar = _missionTag + "_Resources";
+private _resResult = FLO_OPFOR_Resources call ["saveResources", []];
+private _resData = profileNamespace getVariable [_resVar, createHashMap];
+_data set ["resources", _resData];
 
-["Mission", 3, format["Saved %1 supply crates", count _CrateDataHash]] call FLO_fnc_log;
+//------------------------------------------------------
+// Save virtual groups
+if (!isNil "FLO_virtualGroups") then {
+    private _vh = createHashMap;
+    private _groups = FLO_virtualGroups get "_groups";
+    {
+        private _gData = _y;
+        private _s = createHashMapFromArray [
+            ["position", _gData get "position"],
+            ["groupType", _gData get "groupType"],
+            ["objective", _gData get "objective"],
+            ["unitCount", _gData get "unitCount"],
+            ["side", _gData get "side"],
+            ["state", _gData get "state"],
+            ["waypoints", _gData get "waypoints"],
+            ["currentWaypointIndex", _gData get "currentWaypointIndex"],
+            ["garrisonPosition", _gData getOrDefault ["garrisonPosition", []]],
+            ["garrisonObjective", _gData getOrDefault ["garrisonObjective",""]]
+        ];
+        _vh set [_x, _s];
+    } forEach _groups;
+    _data set ["virtualGroups", _vh];
+};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------
+// Save objectives if they exist
+if (!isNil "FLO_Objectives") then {_data set ["objectives", FLO_Objectives]};
+if (!isNil "FLO_VirtualObjectives") then {_data set ["virtualObjectives", FLO_VirtualObjectives]};
 
-saveProfileNamespace;
+//------------------------------------------------------
+// Save AI Commander state (minimal)
+if (!isNil "FLO_AI_Commander") then {
+    private _cmd = createHashMapFromArray [
+        ["threatLevel", FLO_AI_Commander get "_threatLevel"],
+        ["lastUpdate", FLO_AI_Commander get "_lastUpdate"],
+        ["attackOperations", FLO_AI_Commander get "_attackOperations"],
+        ["activeAttackGroups", FLO_AI_Commander get "_activeAttackGroups"],
+        ["activeDefenseGroups", FLO_AI_Commander get "_activeDefenseGroups"],
+        ["garrisonedGroups", FLO_AI_Commander get "_garrisonedGroups"]
+    ];
+    _data set ["aiCommander", _cmd];
+};
 
-["Mission", 3, "Mission Saved !"] call FLO_fnc_log;
+//------------------------------------------------------
+missionProfileNamespace setVariable ["FLO_MissionData", _data];
+saveMissionProfileNamespace;
+
+["Mission",3,"Mission Saved!"] call FLO_fnc_log;
