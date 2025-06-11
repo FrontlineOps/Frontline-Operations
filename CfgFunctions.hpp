@@ -121,7 +121,7 @@ class FLO {
     };
 
     class SideMissions {
-        file = "Functions\\SideMissions";
+        file = "Functions\SideMissions";
 
         class registerSideMission       {};
         class startSideMission          {};

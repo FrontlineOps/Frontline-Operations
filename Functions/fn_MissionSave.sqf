@@ -200,7 +200,7 @@ if (!isNil "FLO_virtualGroups") then {
 //------------------------------------------------------
 // Save objectives if they exist
 if (!isNil "FLO_Objectives") then {_data set ["objectives", FLO_Objectives]};
-if (!isNil "FLO_VirtualObjectives") then {_data set ["virtualObjectives", FLO_VirtualObjectives]};
+//if (!isNil "FLO_VirtualObjectives") then {_data set ["virtualObjectives", FLO_VirtualObjectives]};
 
 //------------------------------------------------------
 // Save AI Commander state (minimal)

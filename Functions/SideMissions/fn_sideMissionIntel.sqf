@@ -80,7 +80,7 @@ private _DVRT = "NO";
             [
                 _mapBoard,
                 [
-                    "<img size=2 color='#7CC2FF' image='Screens\\FOBA\\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Investigate Enemy Plans",
+                    "<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Investigate Enemy Plans",
                     {
                         params ["_target"];
                         [_target] call FLO_fnc_militaryIntel;

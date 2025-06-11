@@ -161,7 +161,7 @@ private _crateHash = _data getOrDefault ["crates", createHashMap];
 //------------------------------------------------------
 // Restore objectives
 if (!isNil (_data get "objectives")) then { FLO_Objectives = _data get "objectives"; publicVariable "FLO_Objectives"; };
-if (!isNil (_data get "virtualObjectives")) then { FLO_VirtualObjectives = _data get "virtualObjectives"; publicVariable "FLO_VirtualObjectives"; };
+//if (!isNil (_data get "virtualObjectives")) then { FLO_VirtualObjectives = _data get "virtualObjectives"; publicVariable "FLO_VirtualObjectives"; };
 
 //------------------------------------------------------
 // Restore AI Commander minimal state

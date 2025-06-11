@@ -11,7 +11,7 @@
  * Returns: Nothing
  */
 
-params ["_name", "_fnc", ["_data", nil]];
+params ["_name", "_fnc", ["_data", []]];
 
 if (isNil "FLO_registeredSideMissions") then {
     FLO_registeredSideMissions = createHashMap;
