@@ -217,6 +217,16 @@ if (!isNil "FLO_AI_Commander") then {
 };
 
 //------------------------------------------------------
+// Save mission setup variables
+if (!isNil "FLO_FriendlyHandle") then { _data set ["friendlyHandle", FLO_FriendlyHandle] };
+if (!isNil "FLO_EnemyHandle") then { _data set ["enemyHandle", FLO_EnemyHandle] };
+if (!isNil "FLO_CivilianHandle") then { _data set ["civilianHandle", FLO_CivilianHandle] };
+if (!isNil "FLO_MoneyHandle") then { _data set ["moneyHandle", FLO_MoneyHandle] };
+if (!isNil "FLO_DifficultyHandle") then { _data set ["difficultyHandle", FLO_DifficultyHandle] };
+if (!isNil "FLO_ReputationHandle") then { _data set ["reputationHandle", FLO_ReputationHandle] };
+if (!isNil "EnemyPrec") then { _data set ["enemyPrec", EnemyPrec] };
+
+//------------------------------------------------------
 missionProfileNamespace setVariable ["FLO_MissionData", _data];
 saveMissionProfileNamespace;
 

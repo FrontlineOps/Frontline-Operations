@@ -3,25 +3,6 @@ if (!isServer) exitWith {};
 Centerposition = [worldSize / 2, worldsize / 2, 0];
 
 ["LOADING . . . "] remoteExec ["hint", 0];
-///////// Init Weather //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _Fog_Int = selectRandom [0, 0, 0.05, 0.05, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0.4, 0.5] ;
-private _Fog_Dec = selectRandom [0.01, 0.01, 0.01, 0.02, 0.03,  0.05, 0.05, 0.1, 0.1] ;
-private _OverC_Int = selectRandom [ 0.1, 0.1, 0.1, 0.3,  0.3,  0.3,  0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1, 1] ;
-
-private _Fog_Alt = 0 ;
-
-if (_OverC_Int >= 0.6) then {
-    0 setFog [_Fog_Int, _Fog_Dec, _Fog_Alt];
-} else {
-    0 setFog [0, _Fog_Dec, _Fog_Alt];
-};
-
-0 setOvercast _OverC_Int;
-
-forceWeatherChange;
-
-["Weather", 3, "Weather Initialized Successfully ..."] call FLO_fnc_log;
 
 ///////// Init FOBs //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -349,18 +330,6 @@ _MOBARS = nearestobjects [Centerposition, [F_Truck_03], 40000];
 
 ["Support Stations", 3, "Support Stations Initialized Successfully ..."] call FLO_fnc_log;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Set MRZR texture to olive mud if using woodland theme
-_mrzrVehicles = nearestobjects [Centerposition, ["rhsusf_mrzr4_d"], 40000]; 
-if (((markerText "Friendly_Handle" isEqualTo "United States Armed Forces _ Woodland _ CUP + RHS") || 
-     (markerText "Friendly_Handle" isEqualTo "United States Armed Forces _ Woodland _ RHS")) && 
-     (count _mrzrVehicles > 0)) then {
-    {
-        [_x, ["mud_olive", 1]] call BIS_fnc_initVehicle;
-    } forEach _mrzrVehicles;
-};
-
 // Clean up map markers and invisible barriers
 {
     _mapObjects = nearestObjects [Centerposition, [
@@ -375,18 +344,6 @@ if (((markerText "Friendly_Handle" isEqualTo "United States Armed Forces _ Woodl
         deleteVehicle _x;
     } forEach _mapObjects;
 } remoteExec ["call", 0];
-
-// Create crews for AA systems
-_antiAirSystems = nearestObjects [Centerposition, [
-    "O_Radar_System_02_F",
-    "O_SAM_System_04_F",
-    "vn_o_nva_navy_static_v11m", 
-    "vn_o_pl_static_zpu4"
-], 40000];
-
-{
-    createVehicleCrew _x;
-} forEach _antiAirSystems;
 
 // Notify mission startup completion
 ["Mission StartUp", 3, "Mission StartUp Initialized Successfully ..."] call FLO_fnc_log;

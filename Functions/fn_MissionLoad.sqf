@@ -136,7 +136,8 @@ private _crateHash = _data getOrDefault ["crates", createHashMap];
 
 //------------------------------------------------------
 // Load virtual groups
-[] spawn {
+[_data] spawn {
+    params ["_data"];
     waitUntil {!isNil "FLO_OPFOR_Resources"};
     waitUntil {!isNil "F_Init" && {F_Init}};
     private _groupsHash = _data getOrDefault ["virtualGroups", createHashMap];
@@ -175,6 +176,16 @@ if ("aiCommander" in _data) then {
     FLO_AI_Commander set ["_activeDefenseGroups", _cmd get "activeDefenseGroups"];
     FLO_AI_Commander set ["_garrisonedGroups", _cmd get "garrisonedGroups"];
 };
+
+//------------------------------------------------------
+// Restore mission setup variables
+if ("friendlyHandle" in _data) then { FLO_FriendlyHandle = _data get "friendlyHandle"; publicVariable "FLO_FriendlyHandle"; };
+if ("enemyHandle" in _data) then { FLO_EnemyHandle = _data get "enemyHandle"; publicVariable "FLO_EnemyHandle"; };
+if ("civilianHandle" in _data) then { FLO_CivilianHandle = _data get "civilianHandle"; publicVariable "FLO_CivilianHandle"; };
+if ("moneyHandle" in _data) then { FLO_MoneyHandle = _data get "moneyHandle"; publicVariable "FLO_MoneyHandle"; };
+if ("difficultyHandle" in _data) then { FLO_DifficultyHandle = _data get "difficultyHandle"; publicVariable "FLO_DifficultyHandle"; };
+if ("reputationHandle" in _data) then { FLO_ReputationHandle = _data get "reputationHandle"; publicVariable "FLO_ReputationHandle"; };
+if ("enemyPrec" in _data) then { EnemyPrec = _data get "enemyPrec"; publicVariable "EnemyPrec"; };
 
 //------------------------------------------------------
 MissionLoadedLitterally = true;
