@@ -103,6 +103,124 @@ F_Plane_04 = "B_T_VTOL_01_vehicle_F";
 F_Plane_05 = "B_Plane_Fighter_01_F";
 F_Plane_06 = "";
 
+// Vehicle lists with custom prices
+F_Bike_List = [
+    [F_Bike_01, 5]
+];
+
+F_Car_List = [
+    [F_Car_01, 35],
+    [F_Car_02, 35],
+    [F_Car_03, 35],
+    [F_Car_04, 35],
+    [F_Car_05, 35],
+    [F_Car_06, 35]
+];
+
+F_MRAP_List = [
+    [F_MRAP_01, 55],
+    [F_MRAP_02, 55],
+    [F_MRAP_03, 55],
+    [F_MRAP_04, 55],
+    [F_MRAP_05, 55],
+    [F_MRAP_06, 55]
+];
+
+F_Truck_List = [
+    [F_Truck_01, 65],
+    [F_Truck_02, 65],
+    [F_Truck_06, 65]
+];
+
+F_Truck_Special_List = [
+    [F_Truck_03, 65],
+    [F_Truck_04, 65]
+];
+
+F_Truck_Respawn_List = [
+    [F_Truck_05, 65]
+];
+
+F_APC_List = [
+    [F_APC_01, 75],
+    [F_APC_02, 75],
+    [F_APC_03, 75],
+    [F_APC_04, 75],
+    [F_APC_05, 75],
+    [F_APC_06, 75]
+];
+
+F_Tank_List = [
+    [F_TNK_01, 95],
+    [F_TNK_02, 95],
+    [F_TNK_03, 95],
+    [F_TNK_04, 95]
+];
+
+F_Artillery_List = [
+    [F_Art_01, 95],
+    [F_Art_02, 95]
+];
+
+F_Heli_List = [
+    [F_Heli_01, 55],
+    [F_Heli_02, 55],
+    [F_Heli_03, 55],
+    [F_Heli_05, 55]
+];
+
+F_Heli_Respawn_List = [
+    [F_Heli_04, 55]
+];
+
+F_Heli_Gunship_List = [
+    [F_Heli_06_G, 80],
+    [F_Heli_07_G, 80]
+];
+
+F_Plane_List = [
+    [F_Plane_01_CAS, 95],
+    [F_Plane_02_CAS, 95],
+    [F_Plane_03, 95],
+    [F_Plane_04, 95],
+    [F_Plane_05, 95],
+    [F_Plane_06, 95]
+];
+
+F_Boat_List = [
+    [F_ABT_01, 55]
+];
+
+F_UAV_List = [
+    [F_UAV_01, 80],
+    [F_UAV_02, 80],
+    [F_UAV_03, 80]
+];
+
+F_UGV_List = [
+    [F_UGV_01, 55]
+];
+
+F_Container_List = [
+    ["B_Slingload_01_Medevac_F", 35],
+    ["B_Slingload_01_Ammo_F", 35],
+    ["B_Slingload_01_Repair_F", 100],
+    ["B_Slingload_01_Fuel_F", 35]
+];
+
+F_Turret_List = [
+    [F_turret_01, 35],
+    [F_turret_02, 35],
+    [F_turret_03, 35]
+];
+
+F_SAM_List = [
+    ["B_SAM_System_01_F", 35],
+    ["B_SAM_System_02_F", 35],
+    ["B_SAM_System_03_F", 35],
+    ["B_AAA_System_01_F", 35]
+];
+
 // Default squad compositions
 F_ASSLT_ENG = [F_Assault_Eng, F_Assault_AT, F_Assault_Eod];
 
