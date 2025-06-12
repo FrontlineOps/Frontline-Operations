@@ -44,10 +44,6 @@ FLO_fnc_addConditionalItem = {
     };
 };
 
-// Helper function to add vehicles from a list where each entry can be either a
-// classname string or [classname, cost]. The provided default cost is used when
-// an entry does not include a custom value.
-
 // INFORMATION
 FLO_fnc_updateInformation = {
     private _Money = FLO_MoneyHandle get "value"; 
@@ -263,19 +259,6 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
             [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]]
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Turret_List;
-
-    
-    // ARTILLERY (if available)
-    if (F_Art_00 != "") then {
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach [[F_Art_00, 35]];
-    };
 
     if (_hasRadar) then {
         // SAM and AAA systems

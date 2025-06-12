@@ -56,21 +56,8 @@ if ( ((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lea
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Turret_List;
 
-
-    // ARTILLERY (if available)
-    if (F_Art_00 != "") then {
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach [[F_Art_00, 35]];
-    };
-
-    };
 };
+
 
 // INFORMATION
 FLO_fnc_updateInformation = {
