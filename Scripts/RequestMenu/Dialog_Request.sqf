@@ -110,7 +110,7 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Truck_List;
     
-    // TRUCKS (Special - Orange)
+    // TRUCKS (Ammo - Orange)
     {
         private _veh = _x select 0;
         private _price = _x select 1;
@@ -118,7 +118,17 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
             _veh != "",
             [2101, _veh, _veh, "TRUCK", _price, "\a3\soft_f_gamma\Truck_01\Data\UI\Truck_01_Ammo_CA.paa", [1,0.6,0,1]]
         ] call FLO_fnc_addConditionalItem;
-    } forEach F_Truck_Special_List;
+    } forEach F_Truck_Ammo_List;
+
+    // TRUCKS (Construction - Orange)
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2101, _veh, _veh, "TRUCK", _price, "\a3\soft_f_gamma\Truck_01\Data\UI\Truck_01_Ammo_CA.paa", [1,0.6,0,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Truck_Construction_List;
     
     // TRUCK RESPAWN (Yellow-Green)
     {

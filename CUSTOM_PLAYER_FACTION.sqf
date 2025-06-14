@@ -59,8 +59,11 @@ F_Truck_List = [
     ["B_Truck_01_transport_F", 65]
 ];
 
-F_Truck_Special_List = [
-    ["B_Truck_01_ammo_F", 100],
+F_Truck_Construction_List = [
+    ["B_Truck_01_ammo_F", 100]
+];
+
+F_Truck_Ammo_List = [
     ["B_Truck_01_box_F", 100]
 ];
 
