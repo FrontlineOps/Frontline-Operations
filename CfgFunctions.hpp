@@ -54,6 +54,7 @@ class FLO {
         class filterNonCivGroups {};
         class getGroupTypeCount  {};
         class getRoadParkingPos  {};
+        class getSafeUnvirtualizePos {};
     };
 
     class Objective {

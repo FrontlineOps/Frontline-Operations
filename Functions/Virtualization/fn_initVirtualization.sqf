@@ -11,7 +11,7 @@
  * Virtual Groups HashMap <HASHMAP>
  *
  * Example:
- * [2000] call FLO_fnc_initVirtualization;
+* [2000] call FLO_fnc_initVirtualization;
  */
 
 params [["_activationDistance", 2000, [0]]];

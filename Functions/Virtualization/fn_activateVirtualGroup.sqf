@@ -31,6 +31,10 @@ private _waypoints = _groupData getOrDefault ["waypoints", []];
 private _comp = _groupData getOrDefault ["comp", []];
 private _realGroup = grpNull;
 
+// Ensure we don't spawn on top of players
+_position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
+_groupData set ["position", _position];
+
 // Get group data
 private _unitCount = _groupData get "unitCount";
 if (isNil "_unitCount") then {

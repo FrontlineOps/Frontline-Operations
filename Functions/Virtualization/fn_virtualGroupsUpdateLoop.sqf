@@ -170,6 +170,20 @@ while {true} do {
                 if (!_isActive) then {
                     [_groupData, _groupId, _currentTime] call _processVirtualMovement;
                     _position = _groupData get "position"; // Update position after movement
+
+                    // If the group is idle with no waypoints, assign a cycle patrol
+                    if ((_groupData getOrDefault ["state", ""] == "idle") && {count (_groupData getOrDefault ["waypoints", []]) == 0} && {!(_groupData getOrDefault ["autoPatrol", false])}) then {
+                        private _centerPos = _groupData getOrDefault ["garrisonPosition", _position];
+                        private _radius = 200 + random 200; // Random 200-400m patrol radius
+                        private _dirBase = random 360;
+
+                        private _wp1 = [_centerPos getPos [_radius, _dirBase], "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+                        private _wp2 = [_centerPos getPos [_radius, _dirBase + 120], "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+                        private _wp3 = [_centerPos getPos [_radius, _dirBase + 240], "CYCLE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+
+                        [_groupId, [_wp1, _wp2, _wp3]] call FLO_fnc_updateVirtualGroupWaypoints;
+                        _groupData set ["autoPatrol", true];
+                    };
                 } else {
                     // Update position from real group if active
                     if (!isNull _realGroup) then {
