@@ -280,7 +280,7 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
                 [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [0.2,0.6,0.99,1]]
             ] call FLO_fnc_addConditionalItem;
         } forEach F_SAM_List;
-    }
+    };
 
     
     // RADAR system

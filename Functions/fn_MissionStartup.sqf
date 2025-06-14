@@ -187,9 +187,10 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Repair_F"], 40000];
         
         {deleteMarker _x} forEach _MOBRESMarks;
         
+        private _respawnVehicles = (F_Truck_Respawn_List + F_Heli_Respawn_List) apply {_x select 0};
+        
         _MOBRESVeh = vehicles select {
-            (typeOf _x isEqualTo F_Truck_Respawn_List || typeOf _x isEqualTo F_Heli_Respawn_List) && 
-            alive _x
+            ((typeOf _x) in _respawnVehicles) && alive _x
         };	
         
         {
@@ -206,7 +207,10 @@ _FOBC = nearestObjects [Centerposition, ["B_Slingload_01_Repair_F"], 40000];
 };
 
 // Initialize mobile service stations
-_MOBSER = nearestobjects [Centerposition, [F_Truck_Construction_List], 40000];
+private _constructionVehicles = F_Truck_Construction_List apply {_x select 0};
+private _ammoVehicles = F_Truck_Ammo_List apply {_x select 0};
+
+_MOBSER = nearestobjects [Centerposition, _constructionVehicles, 40000];
 {
     if (!isNil "_x" && {!isNull _x}) then {
         [_x, [
@@ -223,7 +227,7 @@ _MOBSER = nearestobjects [Centerposition, [F_Truck_Construction_List], 40000];
 } forEach _MOBSER;
 
 // Initialize mobile arsenal stations
-_MOBARS = nearestobjects [Centerposition, [F_Truck_Ammo_List], 40000];
+_MOBARS = nearestobjects [Centerposition, _ammoVehicles, 40000];
 {
     [_x, [
         "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
