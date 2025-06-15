@@ -47,10 +47,14 @@ if (isNil "FLO_airTaskOrder") then {
                 };
 
                 if (!isNull _air) then {
-                    private _wp = _grp addWaypoint [_pos, 0];
-                    _wp setWaypointType "SAD";
-                    _wp setWaypointBehaviour "COMBAT";
-                    _wp setWaypointCombatMode "RED";
+                    if (_mission in ["BOMB", "LASER", "CAS"]) then {
+                        [_air, _pos, _mission, _alt] spawn FLO_fnc_precisionStrike;
+                    } else {
+                        private _wp = _grp addWaypoint [_pos, 0];
+                        _wp setWaypointType "SAD";
+                        _wp setWaypointBehaviour "COMBAT";
+                        _wp setWaypointCombatMode "RED";
+                    };
                     [_air, time + 300, _gid] spawn {
                         params ["_a", "_t", "_gid"];
                         waitUntil {sleep 5; time > _t || !alive _a};
