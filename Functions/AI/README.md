@@ -117,11 +117,28 @@ private _result = _mgr call ["_requestAirAsset", [getPos player]];
 ### Air Tasking Order System
 The ATO system allows the commander to queue multiple CAS or strike missions.
 Queued tasks are processed using the air asset manager and will only assign aircraft that already exist in the virtualization system.
+Mission types `"CAS"`, `"BOMB"`, and `"LASER"` are supported. All three use the
+precision strike routine to fire the aircraft's configured ordnance.
+`"CAS"` performs a rocket or cannon run, `"BOMB"` drops conventional bombs and
+`"LASER"` fires laser guided missiles. Laser strikes create a temporary
+`LaserTargetE` attached to the nearest enemy unit or vehicle so guided missiles
+track accurately; the marker is removed once the ordnance detonates.
+If no altitude is specified, the commander will use 300&nbsp;m for strike
+missions and 150&nbsp;m for CAS. When the mission parameter is omitted,
+the commander evaluates the target area: tanks result in a laser guided
+strike, any other vehicles or large infantry groups prompt a bombing run,
+otherwise close air support is used.
 
 ```sqf
 private _commander = call FLO_fnc_aiCommander;
-// Queue a laser guided strike at the player's position
-_commander call ["_callAirSupport", [getPos player, "STRIKE", "", 300]];
+// Let the commander decide the best mission type
+_commander call ["_callAirSupport", [getPos player]];
+// Request close air support explicitly
+_commander call ["_callAirSupport", [getPos player, "CAS"]];
+// Queue a laser guided strike
+_commander call ["_callAirSupport", [getPos player, "LASER"]];
+// Queue a precision bombing run
+_commander call ["_callAirSupport", [getPosATL player, "BOMB"]];
 ```
 
 ### Customizing Vehicle Selection

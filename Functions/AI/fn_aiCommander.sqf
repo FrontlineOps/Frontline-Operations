@@ -409,8 +409,50 @@ private _aiCommander = createHashMapObject [[
         _success
     }],
 
+    ["_selectAirMission", {
+        params ["_self", "_targetPos"];
+
+        private _rad = 300;
+
+        // Look for enemy vehicles around the target
+        private _veh = vehicles select {
+            side _x == west && alive _x && { _x distance2D _targetPos < _rad }
+        };
+        private _tanks = _veh select { _x isKindOf "Tank" };
+
+        if (count _tanks > 0) exitWith {"LASER"};
+        if (count _veh > 0) exitWith {"BOMB"};
+
+        // Count infantry not inside vehicles
+        private _inf = allUnits select {
+            side _x == west && alive _x && { _x distance2D _targetPos < _rad } &&
+            { vehicle _x == _x }
+        };
+        if (count _inf > 10) exitWith {"BOMB"};
+
+        "CAS"
+    }],
+
     ["_callAirSupport", {
-        params ["_self", "_targetPos", ["_mission", "CAS"], ["_type", ""], ["_alt", 150]];
+        /*
+            Queues a mission for the Air Tasking Order. Mission types can be
+            "CAS", "BOMB" or "LASER". CAS missions perform a rocket or cannon
+            strafe while the strike missions drop bombs or fire laser guided
+            missiles. If the mission is empty the commander selects an
+            appropriate type based on nearby enemy vehicles. If no altitude is
+            provided the function defaults to 300 metres for strike missions and
+            150 metres for CAS.
+        */
+        params ["_self", "_targetPos", ["_mission", ""], ["_type", ""], ["_alt", -1]];
+
+        if (_mission isEqualTo "") then {
+            _mission = _self call ["_selectAirMission", [_targetPos]];
+        };
+
+        if (_alt < 0) then {
+            _alt = if (_mission in ["BOMB", "LASER"]) then {300} else {150};
+        };
+
         private _ato = _self get "_airTaskOrder";
         _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
     }],
