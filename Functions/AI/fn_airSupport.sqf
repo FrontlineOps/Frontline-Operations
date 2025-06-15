@@ -48,23 +48,36 @@ if (isNil "FLO_airSupport") then {
         }],
         ["createAircraft", {
             params ["_type", "_pos", "_alt", "_missionType"];
-            
-            // Calculate cost based on aircraft type and mission
-            private _cost = if (_type isKindOf "Helicopter") then {
-                _AIRCRAFT_COSTS get "CAS_HELI"
+
+            // Try to use an existing virtual air asset first
+            private _mgr = call FLO_fnc_airAssetManager;
+            private _virtual = _mgr call ["_requestAirAsset", [_pos, _missionType]];
+            private _aircraft = objNull;
+            private _group = grpNull;
+
+            if (_virtual isNotEqualTo objNull) then {
+                _virtual params ["_aircraft", "_gid"];
+                _group = group _aircraft;
+                _aircraft setVariable ["FLO_virtualGroupId", _gid];
+                _aircraft flyInHeight _alt;
+                diag_log format ["[FLO][AirSupport] Using virtual air asset from group %1", _gid];
             } else {
-                if (_missionType == "CAS") then {
-                    _AIRCRAFT_COSTS get "CAS_JET"
+                // Calculate cost based on aircraft type and mission
+                private _cost = if (_type isKindOf "Helicopter") then {
+                    _AIRCRAFT_COSTS get "CAS_HELI"
                 } else {
-                    _AIRCRAFT_COSTS get "STRIKE"
-                }
-            };
-            
-            // Check if we have enough resources
-            if !(FLO_OPFOR_Resources call ["spendResources", [_cost, "air_support"]]) exitWith {
-                diag_log "[FLO][AirSupport] Insufficient resources for new aircraft";
-                objNull
-            };
+                    if (_missionType == "CAS") then {
+                        _AIRCRAFT_COSTS get "CAS_JET"
+                    } else {
+                        _AIRCRAFT_COSTS get "STRIKE"
+                    }
+                };
+
+                // Check if we have enough resources
+                if !(FLO_OPFOR_Resources call ["spendResources", [_cost, "air_support"]]) exitWith {
+                    diag_log "[FLO][AirSupport] Insufficient resources for new aircraft";
+                    objNull
+                };
             
             // Find all OPFOR objective markers
             private _opforMarkers = allMapMarkers select {
@@ -106,6 +119,7 @@ if (isNil "FLO_airSupport") then {
             private _group = createGroup [east, true];
             createVehicleCrew _aircraft;
             (crew _aircraft) joinSilent _group;
+        };
             
             // Configure weapon systems and categorize them
             private _weaponSystems = [];

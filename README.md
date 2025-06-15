@@ -14,6 +14,8 @@ A dynamic frontline operations mission for Arma 3 that creates an evolving battl
 - Virtualized artillery asset manager for shoot-and-scoot fire missions
 - Virtual artillery fire support via `FLO_fnc_requestVirtualArtillery`
 - AI Commander automatically calls artillery during assaults (warning notifications)
+- Air Tasking Order system uses existing virtual aircraft for CAS and strike missions (no new spawns)
+- Virtual air asset manager acquires aircraft already present in the virtualization system
 - Customizable faction loadouts and equipment
 - Extensible side mission framework for intel events including POW rescue, intel gathering, convoy ambushes, patrol sweeps and sabotage missions
 

@@ -35,6 +35,7 @@ private _aiCommander = createHashMapObject [[
     ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
     ["_attackStageTime", 120],
+    ["_airTaskOrder", call FLO_fnc_airTaskOrder],
 
     ["_calculateMaxAttackingGroups", {
         private _playerCount = count (allPlayers - entities "HeadlessClient_F");
@@ -407,6 +408,12 @@ private _aiCommander = createHashMapObject [[
 
         _success
     }],
+
+    ["_callAirSupport", {
+        params ["_self", "_targetPos", ["_mission", "CAS"], ["_type", ""], ["_alt", 150]];
+        private _ato = _self get "_airTaskOrder";
+        _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+    }],
     
     ["_update", {
         private _currentTime = diag_tickTime;
@@ -498,7 +505,10 @@ private _aiCommander = createHashMapObject [[
                 };
             };
         } forEach (_self get "_activeDefenseGroups");
-        
+
+        // Process any queued air support tasks
+        (_self get "_airTaskOrder") call ["_processTasks", []];
+
         // Update last update time
         _self set ["_lastUpdate", _currentTime];
     }]
