@@ -43,17 +43,8 @@ if (true) then {
     private _cargoCount = _maxCargo - (count units _pilotGroup) - 1;
     
     for "_i" from 1 to _cargoCount do {
-        // 5% chance to add a fire observer, otherwise use regular infantry
-        private _unitType = if (random 1 < 0.05) then {
-            selectRandom (FLO_configCache get "fireObservers")
-        } else {
-            selectRandom (FLO_configCache get "units")
-        };
-        
+        private _unitType = selectRandom (FLO_configCache get "units");
         private _unit = _qrfGroup createUnit [_unitType, _spawnPosAir, [], 0, "NONE"];
-        if (_unitType in (FLO_configCache get "fireObservers")) then {
-            [_unit, EAST] call FLO_fnc_fireObserver;
-        };
         [_unit] joinSilent _qrfGroup;
     };
 

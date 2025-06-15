@@ -12,10 +12,8 @@ class FLO {
     class AI {
         file = "Functions\AI";
 
-        class artilleryPrep                     {};
         class airRecon                          {};
         class airSupport                        {};
-        class fireObserver                      {};
         class artilleryAssetManager             {};
         class requestVirtualArtillery           {};
         class heliInsert                        {};
