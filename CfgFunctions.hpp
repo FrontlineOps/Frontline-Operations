@@ -17,7 +17,9 @@ class FLO {
         class airSupport                        {};
         class fireObserver                      {};
         class artilleryAssetManager             {};
+        class airAssetManager                   {};
         class requestVirtualArtillery           {};
+        class airTaskOrder                      {};
         class heliInsert                        {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};

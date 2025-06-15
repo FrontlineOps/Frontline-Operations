@@ -106,6 +106,24 @@ _commander call ["_callArtillerySupport", [getPos player, 6]];
 ```
 This method broadcasts a warning notification when artillery is incoming.
 
+### Air Asset Manager
+Existing virtual air groups can be leveraged for CAS or strike missions via `FLO_fnc_airAssetManager`. The manager activates a nearby helicopter or jet and returns the aircraft for use with your own scripts.
+
+```sqf
+private _mgr = call FLO_fnc_airAssetManager;
+private _result = _mgr call ["_requestAirAsset", [getPos player]];
+```
+
+### Air Tasking Order System
+The ATO system allows the commander to queue multiple CAS or strike missions.
+Queued tasks are processed using the air asset manager and will only assign aircraft that already exist in the virtualization system.
+
+```sqf
+private _commander = call FLO_fnc_aiCommander;
+// Queue a laser guided strike at the player's position
+_commander call ["_callAirSupport", [getPos player, "STRIKE", "", 300]];
+```
+
 ### Customizing Vehicle Selection
 The system uses the vehicle arrays from `CUSTOM_ENEMY_FACTION.sqf` to select appropriate vehicles:
 
