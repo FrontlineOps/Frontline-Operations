@@ -12,11 +12,9 @@ class FLO {
     class AI {
         file = "Functions\AI";
 
-        class airRecon                          {};
         class airSupport                        {};
         class artilleryAssetManager             {};
         class requestVirtualArtillery           {};
-        class heliInsert                        {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
     };
