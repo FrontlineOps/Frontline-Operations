@@ -8,11 +8,11 @@ _respawnMarker setMarkerAlpha 1;
 // Server-side only objective system initialization
 [] remoteExec ["FLO_fnc_indexObjectives", 2];
 
-// Build road links between objectives (spawned)
+// Build road links between objectives
 [false] remoteExec ["FLO_fnc_startObjectiveGraph", 2];
 
-// Start objective dominance monitoring (continuous loop)
-[] remoteExec ["FLO_fnc_startObjectiveMonitoring", 2];
+// Start objective dominance monitoring
+[] remoteExec ["FLO_fnc_monitorObjectiveDominance", 2];
 
 MarLOCC = 1;
 publicVariable "MarLOCC";
