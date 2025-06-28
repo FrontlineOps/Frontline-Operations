@@ -58,10 +58,21 @@ private _vehHash = _data getOrDefault ["vehicles", createHashMap];
     _veh setPosATL (_attr get "posATL");
     _veh setFuel (_attr get "fuel");
     _veh setDamage (_attr get "damage");
-    {
-        private _val = (_attr get "damages" # 2) # _forEachIndex;
-        _veh setHitPointDamage [_x, _val];
-    } forEach ((_attr get "damages") # 0);
+    
+    // Load hitpoint damages if available and valid
+    private _damages = _attr get "damages";
+    if (!isNil "_damages" && {_damages isEqualType []} && {count _damages >= 3}) then {
+        private _hitPointNames = _damages select 0;
+        private _hitPointDamages = _damages select 2;
+        if (_hitPointNames isEqualType [] && _hitPointDamages isEqualType []) then {
+            {
+                if (_forEachIndex < count _hitPointDamages) then {
+                    private _val = _hitPointDamages select _forEachIndex;
+                    _veh setHitPointDamage [_x, _val];
+                };
+            } forEach _hitPointNames;
+        };
+    };
 } forEach (keys _vehHash);
 
 //------------------------------------------------------
