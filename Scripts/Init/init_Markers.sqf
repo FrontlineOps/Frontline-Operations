@@ -5,12 +5,14 @@ _respawnMarker setMarkerSize [0.6, 0.6];
 _respawnMarker setMarkerText "Respawn";
 _respawnMarker setMarkerAlpha 1;
 
-[] call FLO_fnc_indexObjectives;
+// Server-side only objective system initialization
+[] remoteExec ["FLO_fnc_indexObjectives", 2];
 
-// Build road links between objectives
-[false] spawn FLO_fnc_buildObjectiveGraph;
+// Build road links between objectives (spawned)
+[false] remoteExec ["FLO_fnc_startObjectiveGraph", 2];
 
-[] spawn FLO_fnc_monitorObjectiveDominance;
+// Start objective dominance monitoring (continuous loop)
+[] remoteExec ["FLO_fnc_startObjectiveMonitoring", 2];
 
 MarLOCC = 1;
 publicVariable "MarLOCC";

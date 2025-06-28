@@ -21,9 +21,9 @@
             } forEach _intelItems;
 
             if (random 1 < 0.5) then {
-                [] call FLO_fnc_militaryIntel;
+                [] remoteExec ["FLO_fnc_militaryIntel", 0];
             } else {
-                [] call FLO_fnc_revealRandomEnemyGroup;
+                [] remoteExec ["FLO_fnc_revealRandomEnemyGroup", 0];
             };
         };
     };

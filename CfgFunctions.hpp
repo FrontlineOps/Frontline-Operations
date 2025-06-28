@@ -63,6 +63,8 @@ class FLO {
         class buildObjectiveGraph       {};
         class flipObjective             {};
         class monitorObjectiveDominance {};
+        class startObjectiveMonitoring  {};
+        class startObjectiveGraph       {};
     };
 
     class ObjectiveUtilities {
