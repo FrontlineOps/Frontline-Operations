@@ -177,7 +177,7 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 
 // Initialize AI Commander
 FLO_AICommander = [] call FLO_fnc_aiCommander;
-[FLO_AICommander, true] call FLO_fnc_aiCommanderStagingDebug;
+[FLO_AICommander, false] call FLO_fnc_aiCommanderStagingDebug;
 
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {
