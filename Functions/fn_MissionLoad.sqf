@@ -1,388 +1,244 @@
 if (!isServer) exitWith {};
 
-private _Centerposition = [worldSize / 2, worldsize / 2, 0];
-
-MissionLoadedLitterally = 0 ; 
+MissionLoadedLitterally = 0;
 publicVariable "MissionLoadedLitterally";
 
-private _missionTag = missionName;
-_missionTag = [_missionTag] call BIS_fnc_filterString;
+private _center = [worldSize/2, worldSize/2, 0];
+private _data = missionProfileNamespace getVariable ["FLO_MissionData", createHashMap];
 
-private _MarkerDataName = _missionTag + "_markers";
-private _VehicleDataName = _missionTag + "_Vehicles";
-private _ObjectDataName = _missionTag + "_Objects";
-private _MarkerTimeName = _missionTag + "_Time";
-private _structureMarkerName = _missionTag + "_StructureMarkers";
-private _missionStructureTypes = _missionTag + "_StructureTypes";
-private _CrateDataName = _missionTag + "_Crates";
-private _ResourcesDataName = _missionTag + "_Resources";
-private _VirtualGroupsDataName = _missionTag + "_VirtualGroups";
-
+// Handle fresh start parameter
 FreshStartVal = "FreshStart" call BIS_fnc_getParamValue;
 if (FreshStartVal isEqualTo 1) then {
-    
-	profileNamespace setVariable [_MarkerTimeName, nil];
-	profileNamespace setVariable [_MarkerDataName, nil];
-	profileNamespace setVariable [_VehicleDataName, nil];
-	profileNamespace setVariable [_ObjectDataName, nil];
-    profileNamespace setVariable [_missionStructureTypes, nil];
-    profileNamespace setVariable [_structureMarkerName, nil];
-    profileNamespace setVariable [_CrateDataName, nil];
-    profileNamespace setVariable [_ResourcesDataName, nil];
-    profileNamespace setVariable [_VirtualGroupsDataName, nil];
-};	
+    missionProfileNamespace setVariable ["FLO_MissionData", nil];
+    saveMissionProfileNamespace;
+    MissionLoadedLitterally = true; publicVariable "MissionLoadedLitterally";
+    return;
+};
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _date = profileNamespace getVariable _MarkerTimeName;
+//------------------------------------------------------
+// Load date
+private _date = _data get "time";
 if (!isNil "_date") then { setDate _date; };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _GetVariableMark = profileNamespace getVariable _MarkerDataName;
-
-if (!isNil "_GetVariableMark") then {
-    private _allMarkNames = keys _GetVariableMark;
-    
-    {
-        private _markerName = _x;
-        private _markerAttributes = _GetVariableMark get _markerName;
-        
-        private _marker = createMarkerLocal [_markerName, [0,0,0]];
-        _marker setMarkerPosLocal (_markerAttributes get "pos");
-        _marker setMarkerTypeLocal (_markerAttributes get "type");
-        _marker setMarkerBrushLocal (_markerAttributes get "brush");
-        _marker setMarkerShapeLocal "ICON"; // Using fixed ICON instead of _markerAttributes get "shape"
-        _marker setMarkerSizeLocal (_markerAttributes get "size");
-        _marker setMarkerTextLocal (_markerAttributes get "text");
-        _marker setMarkerDirLocal (_markerAttributes get "dir");
-        _marker setMarkerColorLocal (_markerAttributes get "color");
-        _marker setMarkerAlpha (_markerAttributes get "alpha");
-    } forEach _allMarkNames;
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _GetVariableStatic = profileNamespace getVariable _ObjectDataName;
-
-if (!isNil "_GetVariableStatic") then {
-    private _allObjectNames = keys _GetVariableStatic;
-    
-    {
-        private _objectAttributes = _GetVariableStatic get _x;
-        private _posASL = _objectAttributes get "posASL";
-        private _type = _objectAttributes get "type";
-        private _dirAndUp = _objectAttributes get "vectorDirAndUp";
-        private _isPlacedEntity = _objectAttributes get "isPlacedEntity";
-        
-        private _newObject = createVehicle [_type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
-        _newObject setVectorDirAndUp _dirAndUp;
-        _newObject setPosASL _posASL;
-        _newObject setVariable ["IDS_Logistics_isPlacedEntity", _isPlacedEntity, true];
-    } forEach _allObjectNames;
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-private _GetVariableVeh = profileNamespace getVariable _VehicleDataName;
-private _allVehNames = keys _GetVariableVeh;
-
+//------------------------------------------------------
+// Load markers
+private _markerHash = _data getOrDefault ["markers", createHashMap];
 {
-    private _VehAtts = _GetVariableVeh get _x;
-    private _posATL = _VehAtts get "posATL";
-    private _Type = _VehAtts get "type";
-    private _DirUp = _VehAtts get "vectorDirAndUp";
-    private _fuel = _VehAtts get "fuel";
-    private _damage = _VehAtts get "damage";
-    private _damages = _VehAtts get "damages";
+    private _attr = _markerHash get _x;
+    private _m = createMarkerLocal [_x, [0,0,0]];
+    _m setMarkerPosLocal (_attr get "pos");
+    _m setMarkerTypeLocal (_attr get "type");
+    _m setMarkerBrushLocal (_attr get "brush");
+    _m setMarkerShapeLocal "ICON";
+    _m setMarkerSizeLocal (_attr get "size");
+    _m setMarkerTextLocal (_attr get "text");
+    _m setMarkerDirLocal (_attr get "dir");
+    _m setMarkerColorLocal (_attr get "color");
+    _m setMarkerAlpha (_attr get "alpha");
+} forEach (keys _markerHash);
 
-    private _NewVeh = createVehicle [_Type, [0,0, (500 + random 2000)], [], 0, "CAN_COLLIDE"];
-    _NewVeh setVectorDirAndUp _DirUp;
-    _NewVeh setPosATL _posATL;
-    _NewVeh setFuel _fuel;
-    _NewVeh setDamage _damage;
+//------------------------------------------------------
+// Load objects
+private _objHash = _data getOrDefault ["objects", createHashMap];
+{
+    private _attr = _objHash get _x;
+    private _obj = createVehicle [_attr get "type", [0,0,0], [], 0, "CAN_COLLIDE"];
+    _obj setVectorDirAndUp (_attr get "vectorDirAndUp");
+    _obj setPosASL (_attr get "posASL");
+    _obj setVariable ["IDS_Logistics_isPlacedEntity", _attr get "isPlacedEntity", true];
+} forEach (keys _objHash);
+
+//------------------------------------------------------
+// Load vehicles
+private _vehHash = _data getOrDefault ["vehicles", createHashMap];
+{
+    private _attr = _vehHash get _x;
+    private _veh = createVehicle [_attr get "type", [0,0,0], [], 0, "CAN_COLLIDE"];
+    _veh setVectorDirAndUp (_attr get "vectorDirAndUp");
+    _veh setPosATL (_attr get "posATL");
+    _veh setFuel (_attr get "fuel");
+    _veh setDamage (_attr get "damage");
     
-    {
-        private _key = _x;
-        private _value = (_damages # 2) # _forEachIndex;
-        _NewVeh setHitPointDamage [_key, _value];
-    } forEach (_damages # 0);
+    // Load hitpoint damages if available and valid
+    private _damages = _attr get "damages";
+    if (!isNil "_damages" && {_damages isEqualType []} && {count _damages >= 3}) then {
+        private _hitPointNames = _damages select 0;
+        private _hitPointDamages = _damages select 2;
+        if (_hitPointNames isEqualType [] && _hitPointDamages isEqualType []) then {
+            {
+                if (_forEachIndex < count _hitPointDamages) then {
+                    private _val = _hitPointDamages select _forEachIndex;
+                    _veh setHitPointDamage [_x, _val];
+                };
+            } forEach _hitPointNames;
+        };
+    };
+} forEach (keys _vehHash);
 
-    // private _vehicleConfig = configFile >> "CfgVehicles" >> typeOf _NewVeh;
-    // private _crewType = [west, _vehicleConfig] call BIS_fnc_selectCrew;
-    // private _CrewFull = createVehicleCrew _NewVeh;
-    // private _CrewSelCnt = count (units _CrewFull) - 1; 
-    // deleteVehicleCrew _NewVeh;
-    
-    // private _Group = createGroup West;
-    // for "_i" from 0 to _CrewSelCnt do { 
-    //     private _unit = _Group createUnit [_crewType, [0,0,0], [], 0, "CAN_COLLIDE"]; 
-    // };
-    
-    // {_x moveInAny _NewVeh} forEach units _Group;
-} forEach _allVehNames;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Load OPFOR resources state
+//------------------------------------------------------
+// Restore resource data for logistic system
+private _missionTag = missionName; _missionTag = [_missionTag] call BIS_fnc_filterString;
+private _resVar = _missionTag + "_Resources";
+private _resData = _data getOrDefault ["resources", createHashMap];
+profileNamespace setVariable [_resVar, _resData];
 private _resourceLoadResult = FLO_OPFOR_Resources call ["loadResources", []];
 if (_resourceLoadResult) then {
     [[west,"HQ"], "OPFOR resources state loaded successfully..."] remoteExec ["sideChat", 0];
-} else {
-    [[west,"HQ"], "No saved OPFOR resources state found"] remoteExec ["sideChat", 0];
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Load structure types from saved mission data
-private _structureTypes = profileNamespace getVariable _missionStructureTypes;
-private _fobTypeClass = _structureTypes select 0;
-private _opTypeClass = _structureTypes select 1;
-["Mission", 3, format["Loaded structure types: FOB = %1, OP = %2", _fobTypeClass, _opTypeClass]] call FLO_fnc_log;
-
-// Load FOB and OP marker references
-private _structureMarkerHash = profileNamespace getVariable [_structureMarkerName, createHashMap];
-
-if (count _structureMarkerHash > 0 && count _structureTypes > 0) then {
-    // Process FOB buildings
-    private _fobBuildings = nearestObjects [_Centerposition, [_fobTypeClass, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"], 40000];
+//------------------------------------------------------
+// Restore structure markers and initialize FOB/OP
+private _structureTypes = _data getOrDefault ["structureTypes", []];
+private _fobTypeClass = _structureTypes param [0, objNull];
+private _opTypeClass = _structureTypes param [1, objNull];
+private _structureMarkerHash = _data getOrDefault ["structureMarkers", createHashMap];
+if (count _structureMarkerHash > 0) then {
+    private _fobBuildings = nearestObjects [_center, [_fobTypeClass,"Land_Cargo_HQ_V3_F","Land_Cargo_HQ_V1_F"], 40000];
     {
         if (!isNil "_x" && {alive _x}) then {
-            private _objectPos = getPosASL _x;
-            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
-            private _markerData = _structureMarkerHash getOrDefault [_objectPosString, []];
-            
+            private _pos = getPosASL _x;
+            private _id = format["%1_%2_%3",_pos#0,_pos#1,_pos#2];
+            private _markerData = _structureMarkerHash getOrDefault [_id, []];
             if (count _markerData > 0) then {
-                private _markerName = _markerData#0;
+                private _mn = _markerData#0;
                 private _type = _markerData#1;
-                
                 if (_type isEqualTo "FOB") then {
-                    // Store marker name but DON'T mark as initialized
-                    _x setVariable ["fobMarkerName", _markerName, true];
-                    // Use a different variable to indicate markers were restored
+                    _x setVariable ["fobMarkerName", _mn, true];
                     _x setVariable ["FLO_FOB_MarkersRestored", true, true];
-                    ["Mission", 3, format["Restored FOB marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
-                    
-                    // Re-initialize the FOB but tell it to preserve the marker
                     [_x, true] call FLO_fnc_initializeFOB;
                 };
             };
         };
     } forEach _fobBuildings;
-    
-    // Process OP buildings
-    private _opBuildings = nearestObjects [_Centerposition, [_opTypeClass], 40000];
+
+    private _opBuildings = nearestObjects [_center, [_opTypeClass], 40000];
     {
         if (!isNil "_x" && {alive _x}) then {
-            private _objectPos = getPosASL _x;
-            private _objectPosString = format ["%1_%2_%3", _objectPos#0, _objectPos#1, _objectPos#2];
-            private _markerData = _structureMarkerHash getOrDefault [_objectPosString, []];
-            
+            private _pos = getPosASL _x;
+            private _id = format["%1_%2_%3",_pos#0,_pos#1,_pos#2];
+            private _markerData = _structureMarkerHash getOrDefault [_id, []];
             if (count _markerData > 0) then {
-                private _markerName = _markerData#0;
+                private _mn = _markerData#0;
                 private _type = _markerData#1;
-                
                 if (_type isEqualTo "OP") then {
-                    // Store marker name but DON'T mark as initialized
-                    _x setVariable ["opMarkerName", _markerName, true];
-                    // Use a different variable to indicate markers were restored
+                    _x setVariable ["opMarkerName", _mn, true];
                     _x setVariable ["FLO_OP_MarkersRestored", true, true];
-                    ["Mission", 3, format["Restored OP marker reference %1 for building at %2", _markerName, _objectPos]] call FLO_fnc_log;
-                    
-                    // Re-initialize the OP but tell it to preserve the marker
                     [_x, true] call FLO_fnc_initializeOP;
                 };
             };
         };
     } forEach _opBuildings;
-    
-    [[west,"HQ"], format["Restored %1 FOB/OP marker references", count _structureMarkerHash]] remoteExec ["sideChat", 0];
-} else {
-    ["Mission", 2, "No FOB/OP marker references found to restore"] call FLO_fnc_log;
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------
+// Load crates
+private _crateHash = _data getOrDefault ["crates", createHashMap];
+{
+    private _attr = _crateHash get _x;
+    private _crate = createVehicle [_attr get "type", _attr get "posASL", [], 0, "CAN_COLLIDE"];
+    [_crate, [[],[],[],[]]] call bis_fnc_initAmmoBox;
+    _crate setVectorDirAndUp (_attr get "vectorDirAndUp");
+    _crate setPosASL (_attr get "posASL");
+    _crate setVariable ["FLO_save_crate", true, true];
+    _crate setVariable ["FLO_crate_items", _attr get "items", true];
+    { _x params ["_i","_c"]; _crate addItemCargoGlobal [_i,_c]; } forEach (_attr get "items");
+    [_crate, true, [0,2,0],0] remoteExec ["ace_dragging_fnc_setDraggable",0,true];
+} forEach (keys _crateHash);
 
-// Load supply crates
-private _GetVariableCrates = profileNamespace getVariable [_CrateDataName, createHashMap];
-
-if (count _GetVariableCrates > 0) then {
-    private _allCrateNames = keys _GetVariableCrates;
-    
-    {
-        private _crateAtts = _GetVariableCrates get _x;
-        private _posASL = _crateAtts get "posASL";
-        private _type = _crateAtts get "type";
-        private _dirUp = _crateAtts get "vectorDirAndUp";
-        private _items = _crateAtts get "items";
-        
-        // Create the crate at final position directly
-        private _newCrate = createVehicle [_type, _posASL, [], 0, "CAN_COLLIDE"];
-        
-        // IMPORTANT: Clear cargo BEFORE setting position to prevent default items
-        clearWeaponCargoGlobal _newCrate;
-        clearMagazineCargoGlobal _newCrate;
-        clearItemCargoGlobal _newCrate;
-        clearBackpackCargoGlobal _newCrate;
-        
-        // Verify cargo is actually cleared
-        private _initialWeapons = weaponCargo _newCrate;
-        private _initialMags = magazineCargo _newCrate;
-        private _initialItems = itemCargo _newCrate;
-        private _initialBags = backpackCargo _newCrate;
-        
-        if ((count _initialWeapons + count _initialMags + count _initialItems + count _initialBags) > 0) then {
-            ["Mission", 2, format["Warning: Crate %1 not properly cleared, attempting force clear", _type]] call FLO_fnc_log;
-            [_newCrate, [[], [], [], []]] call bis_fnc_initAmmoBox;
-        };
-        
-        _newCrate setVectorDirAndUp _dirUp;
-        _newCrate setPosASL _posASL;
-        
-        // Mark for saving system
-        _newCrate setVariable ["FLO_save_crate", true, true];
-        _newCrate setVariable ["FLO_crate_items", _items, true];
-        
-        // Add items to the crate
-        if (!isNil "_items" && {count _items > 0}) then {
-            {
-                _x params ["_item", "_count"];
-                
-                if (!isNil "_item" && {_count > 0}) then {
-                    if (isClass (configFile >> "CfgWeapons" >> _item)) then {
-                        _newCrate addWeaponCargoGlobal [_item, _count];
-                        ["Mission", 3, format["Added weapon %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
-                    } else {
-                        if (isClass (configFile >> "CfgMagazines" >> _item)) then {
-                            _newCrate addMagazineCargoGlobal [_item, _count];
-                            ["Mission", 3, format["Added magazine %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
-                        } else {
-                            if (isClass (configFile >> "CfgVehicles" >> _item)) then {
-                                _newCrate addBackpackCargoGlobal [_item, _count];
-                                ["Mission", 3, format["Added backpack %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
-                            } else {
-                                _newCrate addItemCargoGlobal [_item, _count];
-                                ["Mission", 3, format["Added item %1 x%2 to crate", _item, _count]] call FLO_fnc_log;
-                            };
-                        };
-                    };
-                };
-            } forEach _items;
-            
-            // Verify items were actually added
-            private _finalWeapons = weaponCargo _newCrate;
-            private _finalMags = magazineCargo _newCrate;
-            private _finalItems = itemCargo _newCrate;
-            private _finalBags = backpackCargo _newCrate;
-            
-            ["Mission", 3, format["Crate contents after loading - Weapons: %1, Magazines: %2, Items: %3, Backpacks: %4", 
-                count _finalWeapons, 
-                count _finalMags, 
-                count _finalItems, 
-                count _finalBags
-            ]] call FLO_fnc_log;
-        };
-        
-        // Make draggable with ACE
-        [_newCrate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
-        
-        ["Mission", 3, format["Loaded crate %1 at position %2", _type, _posASL]] call FLO_fnc_log;
-    } forEach _allCrateNames;
-    
-    ["Mission", 3, format["Loaded %1 supply crates", count _allCrateNames]] call FLO_fnc_log;
-} else {
-    ["Mission", 2, "No saved supply crates found"] call FLO_fnc_log;
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//------------------------------------------------------
 // Load virtual groups
-[] spawn {
+[_data] spawn {
+    params ["_data"];
     waitUntil {!isNil "FLO_OPFOR_Resources"};
     waitUntil {!isNil "F_Init" && {F_Init}};
-    
-    private _missionTag = missionName;
-    ["Mission", 3, format["Original mission name: %1", _missionTag]] call FLO_fnc_log;
-    
-    _missionTag = [_missionTag] call BIS_fnc_filterString;
-    ["Mission", 3, format["Filtered mission name: %1", _missionTag]] call FLO_fnc_log;
-    
-    private _VirtualGroupsDataName = _missionTag + "_VirtualGroups";
-    ["Mission", 3, format["Virtual groups data name: %1", _VirtualGroupsDataName]] call FLO_fnc_log;
-    
-    // List all profile namespace variables for debugging
-    private _allVars = allVariables profileNamespace;
-    private _relevantVars = _allVars select {_x find "_VirtualGroups" > -1};
-    ["Mission", 3, format["Found profile variables containing '_VirtualGroups': %1", _relevantVars]] call FLO_fnc_log;
-    
-    private _savedVirtualGroups = profileNamespace getVariable [_VirtualGroupsDataName, createHashMap];
-    
-    ["Mission", 3, format["Found %1 saved virtual groups to load", count _savedVirtualGroups]] call FLO_fnc_log;
-    
-    if (count _savedVirtualGroups > 0) then {
-        // Initialize virtualization system
-        if (isNil "FLO_virtualGroups") then {
-            ["Mission", 3, "Initializing virtualization system"] call FLO_fnc_log;
-            [2000] call FLO_fnc_initVirtualization;
-        };
-        
-        // Set initialization flag
-        InitializationOG = true;
-        publicVariable "InitializationOG";
-        
-        private _loadedCount = 0;
-        
+    private _groupsHash = _data getOrDefault ["virtualGroups", createHashMap];
+    if (count _groupsHash > 0) then {
+        if (isNil "FLO_virtualGroups") then { [2000] call FLO_fnc_initVirtualization; };
+        InitializationOG = true; publicVariable "InitializationOG";
         {
-            private _groupId = _x;
             private _groupData = _y;
-            
-            ["Mission", 4, format["Loading virtual group: %1", _groupId]] call FLO_fnc_log;
-            
-            private _position = _groupData get "position";
-            private _groupType = _groupData get "groupType";
-            private _objective = _groupData get "objective";
-            private _unitCount = _groupData get "unitCount";
-            private _side = _groupData get "side";
-            
-            // Create new virtual group
-            private _newGroupId = [_position, _groupType, nil, _objective, _unitCount, _side] call FLO_fnc_createVirtualGroup;
-            
-            if (_newGroupId != "") then {
-                private _newGroupData = (FLO_virtualGroups get "_groups") get _newGroupId;
-                
-                // Restore additional data
-                _newGroupData set ["state", _groupData get "state"];
-                _newGroupData set ["waypoints", _groupData get "waypoints"];
-                _newGroupData set ["currentWaypointIndex", _groupData get "currentWaypointIndex"];
-                
-                private _garrisonPos = _groupData get "garrisonPosition";
-                if (count _garrisonPos > 0) then {
-                    _newGroupData set ["garrisonPosition", _garrisonPos];
-                };
-                private _garrisonObj = _groupData get "garrisonObjective";
-                if (!isNil "_garrisonObj") then {
-                    _newGroupData set ["garrisonObjective", _garrisonObj];
-                };
-                
-                _loadedCount = _loadedCount + 1;
-                ["Mission", 4, format["Successfully loaded group %1 at position %2", _newGroupId, _position]] call FLO_fnc_log;
-            } else {
-                ["Mission", 2, format["Failed to create virtual group for saved group %1", _groupId]] call FLO_fnc_log;
+            private _newId = [_groupData get "position", _groupData get "groupType", nil, _groupData get "objective", _groupData get "unitCount", _groupData get "side"] call FLO_fnc_createVirtualGroup;
+            if (_newId != "") then {
+                private _newData = (FLO_virtualGroups get "_groups") get _newId;
+                _newData set ["state", _groupData get "state"];
+                _newData set ["waypoints", _groupData get "waypoints"];
+                _newData set ["currentWaypointIndex", _groupData get "currentWaypointIndex"];
+                _newData set ["garrisonPosition", _groupData getOrDefault ["garrisonPosition", []]];
+                _newData set ["garrisonObjective", _groupData getOrDefault ["garrisonObjective", ""]];
             };
-        } forEach _savedVirtualGroups;
-        
-        ["Mission", 3, format["Successfully loaded %1 out of %2 virtual groups", _loadedCount, count _savedVirtualGroups]] call FLO_fnc_log;
-        
-        // Initialize AI Commander
-        // I don't think this is needed, but just in case
-        if (isNil "FLO_AI_Commander") then {
-            ["Mission", 3, "Initializing AI Commander with loaded groups"] call FLO_fnc_log;
-            FLO_AI_Commander = [] call FLO_fnc_aiCommander;
-        };
+        } forEach _groupsHash;
     };
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------
+// Restore objectives
+if ("objectives" in _data) then { 
+    FLO_Objectives = _data get "objectives"; 
+    publicVariable "FLO_Objectives";
+    
+    // Create markers for all objectives
+    {
+        private _id = _x;
+        private _data = FLO_Objectives get _id;
+        private _pos = _data get "position";
+        private _radius = _data get "radius";
+        private _owner = _data getOrDefault ["owner", east];
+        private _markerName = format ["obj_%1", _id];
+        
+        // Delete existing marker if it exists
+        // This can happen because we save all Markers in the Namespace (so we need to delete and reload these markers)
+        // as they are special
+        if (getMarkerColor _markerName != "") then {
+            deleteMarker _markerName;
+        };
+        
+        // Create new marker with explicit channel
+        private _marker = createMarker [_markerName, _pos];
+        _marker setMarkerShape "ELLIPSE";
+        _marker setMarkerSize [_radius, _radius];
+        private _color = switch (_owner) do {
+            case west: {"colorBLUFOR"};
+            case east: {"colorOPFOR"};
+            case resistance: {"ColorGUER"};
+            default {"ColorBlack"};
+        };
+        _marker setMarkerColor _color;
+        _marker setMarkerAlpha 0.3;
+        _marker setMarkerBrush "Solid";
+        _marker setMarkerText format["%1", _id];
+    } forEach (keys FLO_Objectives);
 
+    // Build road links between objectives
+    [false] spawn FLO_fnc_buildObjectiveGraph;
+    
+    // Start monitoring objective dominance
+    [] spawn FLO_fnc_monitorObjectiveDominance;
+};
+//if (!isNil (_data get "virtualObjectives")) then { FLO_VirtualObjectives = _data get "virtualObjectives"; publicVariable "FLO_VirtualObjectives"; };
+
+//------------------------------------------------------
+// Restore AI Commander minimal state
+if ("aiCommander" in _data) then {
+    if (isNil "FLO_AI_Commander") then { FLO_AI_Commander = [] call FLO_fnc_aiCommander; };
+    private _cmd = _data get "aiCommander";
+    FLO_AI_Commander set ["_threatLevel", _cmd get "threatLevel"];
+    FLO_AI_Commander set ["_lastUpdate", _cmd get "lastUpdate"];
+    FLO_AI_Commander set ["_attackOperations", _cmd get "attackOperations"];
+    FLO_AI_Commander set ["_activeAttackGroups", _cmd get "activeAttackGroups"];
+    FLO_AI_Commander set ["_activeDefenseGroups", _cmd get "activeDefenseGroups"];
+    FLO_AI_Commander set ["_garrisonedGroups", _cmd get "garrisonedGroups"];
+};
+
+//------------------------------------------------------
+// Restore mission setup variables
+if ("friendlyHandle" in _data) then { FLO_FriendlyHandle = _data get "friendlyHandle"; publicVariable "FLO_FriendlyHandle"; };
+if ("enemyHandle" in _data) then { FLO_EnemyHandle = _data get "enemyHandle"; publicVariable "FLO_EnemyHandle"; };
+if ("civilianHandle" in _data) then { FLO_CivilianHandle = _data get "civilianHandle"; publicVariable "FLO_CivilianHandle"; };
+if ("moneyHandle" in _data) then { FLO_MoneyHandle = _data get "moneyHandle"; publicVariable "FLO_MoneyHandle"; };
+if ("difficultyHandle" in _data) then { FLO_DifficultyHandle = _data get "difficultyHandle"; publicVariable "FLO_DifficultyHandle"; };
+if ("reputationHandle" in _data) then { FLO_ReputationHandle = _data get "reputationHandle"; publicVariable "FLO_ReputationHandle"; };
+if ("enemyPrec" in _data) then { EnemyPrec = _data get "enemyPrec"; publicVariable "EnemyPrec"; };
+
+//------------------------------------------------------
 MissionLoadedLitterally = true;
 publicVariable "MissionLoadedLitterally";

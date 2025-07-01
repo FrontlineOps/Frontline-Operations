@@ -30,24 +30,34 @@ FLO_fnc_addListBoxItem = {
     _index
 };
 
+// Helper to add vehicles from a list where each entry can be a classname or
+// [classname, cost].
+
 if ( ((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (leader group player == player)) or (isServer) or (player == TheCommander) or ((serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) ) then {
 
     // CONTAINERS
-    [2103, "B_Slingload_01_Medevac_F", "B_Slingload_01_Medevac_F", "CONTAINER", 35, "Screens\FOBA\container_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, "B_Slingload_01_Ammo_F", "B_Slingload_01_Ammo_F", "CONTAINER", 35, "Screens\FOBA\container_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, "B_Slingload_01_Repair_F", "B_Slingload_01_Repair_F", "CONTAINER", 100, "Screens\FOBA\container_ca.paa", [1,0.6,0,1]] call FLO_fnc_addListBoxItem;
-    [2103, "B_Slingload_01_Fuel_F", "B_Slingload_01_Fuel_F", "CONTAINER", 35, "Screens\FOBA\container_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2103, _veh, _veh, "CONTAINER", _price, "Screens\FOBA\container_ca.paa", [1,1,1,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Container_List;
+
 
     // STATIC WEAPONS
-    [2103, F_turret_01, F_turret_01, "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, F_turret_02, F_turret_02, "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    [2103, F_turret_03, F_turret_03, "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Turret_List;
 
-    // ARTILLERY (if available)
-    if (F_Art_00 != "") then { 
-        [2103, F_Art_00, F_Art_00, "STATIC", 35, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]] call FLO_fnc_addListBoxItem;
-    };
 };
+
 
 // INFORMATION
 FLO_fnc_updateInformation = {

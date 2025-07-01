@@ -90,6 +90,57 @@ private _vehicle = FLO_TaskForce_Garrison_Integration call ["_pullVehicleFromGar
 FLO_TaskForce_Garrison_Integration call ["_returnVehicleToGarrison", [_vehicle, "marker_outpost_1"]];
 ```
 
+### Artillery Asset Manager
+Virtual artillery groups created by the virtualization system can be used for fire missions via the artillery asset manager. This manager unvirtualizes a group, orders it to fire, then moves and revirtualizes it to simulate shoot‑and‑scoot tactics.
+
+Use `FLO_fnc_requestVirtualArtillery` for a simple support call interface:
+```sqf
+// Request a fire mission of six rounds at a target position
+[getPos player, 6] call FLO_fnc_requestVirtualArtillery;
+```
+
+The AI Commander provides a convenient method to request artillery as well:
+```sqf
+private _commander = call FLO_fnc_aiCommander;
+_commander call ["_callArtillerySupport", [getPos player, 6]];
+```
+This method broadcasts a warning notification when artillery is incoming.
+
+### Air Asset Manager
+Existing virtual air groups can be leveraged for CAS or strike missions via `FLO_fnc_airAssetManager`. The manager activates a nearby helicopter or jet and returns the aircraft for use with your own scripts.
+
+```sqf
+private _mgr = call FLO_fnc_airAssetManager;
+private _result = _mgr call ["_requestAirAsset", [getPos player]];
+```
+
+### Air Tasking Order System
+The ATO system allows the commander to queue multiple CAS or strike missions.
+Queued tasks are processed using the air asset manager and will only assign aircraft that already exist in the virtualization system.
+Mission types `"CAS"`, `"BOMB"`, and `"LASER"` are supported. All three use the
+precision strike routine to fire the aircraft's configured ordnance.
+`"CAS"` performs a rocket or cannon run, `"BOMB"` drops conventional bombs and
+`"LASER"` fires laser guided missiles. Laser strikes create a temporary
+`LaserTargetE` attached to the nearest enemy unit or vehicle so guided missiles
+track accurately; the marker is removed once the ordnance detonates.
+If no altitude is specified, the commander will use 300&nbsp;m for strike
+missions and 150&nbsp;m for CAS. When the mission parameter is omitted,
+the commander evaluates the target area: tanks result in a laser guided
+strike, any other vehicles or large infantry groups prompt a bombing run,
+otherwise close air support is used.
+
+```sqf
+private _commander = call FLO_fnc_aiCommander;
+// Let the commander decide the best mission type
+_commander call ["_callAirSupport", [getPos player]];
+// Request close air support explicitly
+_commander call ["_callAirSupport", [getPos player, "CAS"]];
+// Queue a laser guided strike
+_commander call ["_callAirSupport", [getPos player, "LASER"]];
+// Queue a precision bombing run
+_commander call ["_callAirSupport", [getPosATL player, "BOMB"]];
+```
+
 ### Customizing Vehicle Selection
 The system uses the vehicle arrays from `CUSTOM_ENEMY_FACTION.sqf` to select appropriate vehicles:
 

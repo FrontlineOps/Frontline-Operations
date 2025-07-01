@@ -25,5 +25,16 @@ private _link = FLO_ObjectiveLinks get _key;
 if (isNil "_link") exitWith { [] };
 
 private _path = +(_link get "waypoints");
-if ((_link get "from") != _from) then { reverse _path; };
-_path
+// If no cached path yet, generate it and store for future use
+if (count _path == 0) then {
+    private _fromPos = (FLO_Objectives get _from) get "position";
+    private _toPos = (FLO_Objectives get _to) get "position";
+    _path = [_fromPos, _toPos] call FLO_fnc_findRoadPathSync;
+    if (count _path == 0) then { _path = [_toPos]; };
+    _link set ["waypoints", _path];
+    FLO_ObjectiveLinks set [_key, _link];
+};
+
+private _result = +_path;
+if ((_link get "from") != _from) then { reverse _result; };
+_result

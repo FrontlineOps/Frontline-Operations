@@ -60,64 +60,87 @@ publicVariable "FLO_configCache";
 //Resource Loops//Convoy Loops//Radio Tower Loops
 [] spawn {  
     while { sleep 60 ; time > 0 } do {  
-        private _allENMMarks = allMapMarkers select {markerShape _x isEqualTo "RECTANGLE" && markerBrush _x isEqualTo "FDiagonal"};
-        {deleteMarker _x} forEach _allENMMarks;
+        // Count BLUFOR objectives
+        private _bluforObjectives = 0;
+        {
+            private _objData = FLO_Objectives get _x;
+            if (!isNil "_objData" && {(_objData get "owner") isEqualTo west}) then {
+                _bluforObjectives = _bluforObjectives + 1;
+            };
+        } forEach (keys FLO_Objectives);
 
-        if (count (allMapMarkers select { markerType _x isEqualTo "loc_Transmitter" && markerColor _x isEqualTo "colorBLUFOR"}) > 0) then {
-            remoteExec ["FLO_fnc_ICS", 2];
+        // Add reward based on number of BLUFOR objectives
+        if (_bluforObjectives > 0) then {
+            [_bluforObjectives * 2] call FLO_fnc_addReward;
         };
+    };
+};
 
-        // Why is this here?
-        // This is a convoy loop, move it to it's own file so we can preprocessFileLineNumbers it and pass CGM Properly
-        // This causes convoys to be broken due to no CGM being passed
+// Separate convoy loop
+[] spawn {
+    while { sleep 60 ; time > 0 } do {
         if (ConVLocc isEqualTo 1) then {
+            // Clean up old road markers
             private _RoadMrks = allMapMarkers select {markerType _x isEqualTo "mil_dot" && markerColor _x isEqualTo "colorCivilian" && markerAlpha _x isEqualTo 0.3};
             {deleteMarker _x} forEach _RoadMrks;
 
             // Get the CGM from missionNamespace
             private _CGM = missionNamespace getVariable ["CGM", grpNull];
             
-            // Make sure CGM exists before proceeding
-            if (!isNull _CGM) then {
-                {deleteWaypoint((waypoints _CGM) select 0);} forEach waypoints _CGM;
+            // Make sure CGM exists and has vehicles before proceeding
+            if (!isNull _CGM && {count (units _CGM) > 0}) then {
+                // Get the lead vehicle (V0)
+                private _leadVehicle = vehicle (leader _CGM);
+                
+                // Only update waypoints if we have a valid lead vehicle
+                if (!isNull _leadVehicle && {alive _leadVehicle}) then {
+                    // Clear existing waypoints
+                    {deleteWaypoint((waypoints _CGM) select 0);} forEach waypoints _CGM;
 
-                (calculatePath ["wheeled_APC", "safe", position V0, position (selectRandom ((getMarkerPos "ConvoyDest") nearRoads 500))]) addEventHandler ["PathCalculated", {
-                    private _posesArr = _this select 1;
-                    private _posesArrCnt = count _posesArr;
-                    private _posesArrCntndd = round (_posesArrCnt / 10);
-                    private _indexed = [1,2,3,4,5,6,7,8,9];
-                    private _CGM = missionNamespace getVariable ["CGM", grpNull];
+                    // Calculate new path
+                    (calculatePath ["wheeled_APC", "safe", position _leadVehicle, position (selectRandom ((getMarkerPos "ConvoyDest") nearRoads 500))]) addEventHandler ["PathCalculated", {
+                        params ["_path", "_posesArr"];
+                        private _CGM = missionNamespace getVariable ["CGM", grpNull];
+                        
+                        if (!isNull _CGM) then {
+                            private _posesArrCnt = count _posesArr;
+                            private _posesArrCntndd = round (_posesArrCnt / 10);
+                            private _indexed = [1,2,3,4,5,6,7,8,9];
 
-                    {
-                        private _Waypos = _posesArr select (_x * _posesArrCntndd);
-                        private _wp = _CGM addWaypoint [_Waypos, 0];
-                        _wp SetWaypointType "MOVE";
-                        _wp setWaypointBehaviour "SAFE";
-                        _wp setWaypointSpeed "LIMITED";
-                    } forEach _indexed;
+                            // Create waypoints
+                            {
+                                private _Waypos = _posesArr select (_x * _posesArrCntndd);
+                                private _wp = _CGM addWaypoint [_Waypos, 0];
+                                _wp SetWaypointType "MOVE";
+                                _wp setWaypointBehaviour "SAFE";
+                                _wp setWaypointSpeed "LIMITED";
+                            } forEach _indexed;
 
-                    {
-                        private _marker = createMarkerLocal [(str position V0) + str _forEachIndex, _x];
-                        _marker setMarkerTypeLocal "mil_dot";
-                        _marker setMarkerSizeLocal [0.5, 0.5];
-                        _marker setMarkerColorLocal "colorCivilian";
-                        _marker setMarkerAlpha 0.3;
-                    } forEach (_this select 1);
-                }];
-                sleep 2;
-                _CGM setFormation "WEDGE";
-                sleep 2;
-                _CGM setFormation "COLUMN";
+                            // Create markers for the path
+                            {
+                                private _marker = createMarkerLocal [(str position _leadVehicle) + str _forEachIndex, _x];
+                                _marker setMarkerTypeLocal "mil_dot";
+                                _marker setMarkerSizeLocal [0.5, 0.5];
+                                _marker setMarkerColorLocal "colorCivilian";
+                                _marker setMarkerAlpha 0.3;
+                            } forEach _posesArr;
+                        };
+                    }];
+                    
+                    // Update formation
+                    sleep 2;
+                    _CGM setFormation "WEDGE";
+                    sleep 2;
+                    _CGM setFormation "COLUMN";
+                };
             } else {
-                diag_log "ERROR: CGM is null in convoy loop";
+                // If CGM is null or has no units, reset convoy state
+                if (ConVLocc isEqualTo 1) then {
+                    ConVLocc = 0;
+                    publicVariable "ConVLocc";
+                };
             };
         };
-
-        private _BluezoneMarks = allMapMarkers select { 
-            markerType _x isEqualTo "b_installation" && 
-            (markerColor _x isEqualTo "colorBLUFOR" || markerColor _x isEqualTo "ColorWEST" || markerColor _x isEqualTo "ColorYellow") 
-        };
-        { [1] call FLO_fnc_addReward; } foreach _BluezoneMarks;
     };
 };
 
@@ -140,6 +163,9 @@ if (AutoSaveSwitchVal isEqualTo 1) then {
 // Initialize Intel System
 [] call FLO_fnc_intelSystem;
 
+// Register default side missions
+[] call FLO_fnc_registerDefaultMissions;
+
 // Initialize the resource system
 [] call FLO_fnc_opforResources;
 
@@ -151,6 +177,7 @@ FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityA
 
 // Initialize AI Commander
 FLO_AICommander = [] call FLO_fnc_aiCommander;
+[FLO_AICommander, false] call FLO_fnc_aiCommanderStagingDebug;
 
 private _RestrictedArsenalVal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_RestrictedArsenalVal isEqualTo 0) then {

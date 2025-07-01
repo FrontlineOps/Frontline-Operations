@@ -41,6 +41,9 @@ if (_groupData isEqualTo createHashMap) exitWith {
     false
 };
 
+// Clear any automatic patrol flag when updating waypoints
+_groupData set ["autoPatrol", false];
+
 // Get the current position of the group
 private _currentPos = _groupData get "position";
 

@@ -99,22 +99,4 @@ false,
 false
 ] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
 
-
-[ _FOBT,
-	"<img size=2 color='#FF0000' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FF0000'>Create Custom Mission",
-'Screens\FOBA\b_hq.paa',
-'Screens\FOBA\b_hq.paa',
-"((player == TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player == TheCommander) && (isServer)) || ((player == TheCommander) && (isServer))",       
-'_caller distance _target < 40',  
-{},
-{},
-{ execVM "Scripts\Mission_Select_Action.sqf" ;},
-{},
-[],
-2,
-1.5,
-false,
-false
-] remoteExec ["BIS_fnc_holdActionAdd",0,true];   
-
 [playerSide, "HQ"] commandChat "FOB Deployed!";

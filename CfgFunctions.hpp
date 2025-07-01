@@ -4,7 +4,6 @@ class FLO {
 
         class MissionSave       {};
         class MissionStartup    {};
-        class ICS               {};
         class MissionLoad       {preInit = 1;};
         class initializeFOB     {};
         class initializeOP      {};
@@ -13,13 +12,14 @@ class FLO {
     class AI {
         file = "Functions\AI";
 
-        class artilleryPrep                     {};
-        class airRecon                          {};
-        class airSupport                        {};
-        class fireObserver                      {};
-        class heliInsert                        {};
+        class artilleryAssetManager             {};
+        class airAssetManager                   {};
+        class requestVirtualArtillery           {};
+        class precisionStrike                   {};
+        class airTaskOrder                      {};
         class aiCommander                       {};
         class aiCommanderUnitCapabilityAnalyzer {};
+        class aiCommanderStagingDebug          {};
     };
     
     class Interactions {
@@ -53,6 +53,7 @@ class FLO {
         class filterNonCivGroups {};
         class getGroupTypeCount  {};
         class getRoadParkingPos  {};
+        class getSafeUnvirtualizePos {};
     };
 
     class Objective {
@@ -63,6 +64,7 @@ class FLO {
         class buildObjectiveGraph       {};
         class flipObjective             {};
         class monitorObjectiveDominance {};
+        class startObjectiveGraph       {};
     };
 
     class ObjectiveUtilities {
@@ -86,6 +88,7 @@ class FLO {
 
         class militaryIntel {};
         class civilianIntel {};
+        class revealRandomEnemyGroup {};
     };
 
     class Arsenal {
@@ -116,6 +119,29 @@ class FLO {
         class displayNotification       {};
         class adjustAggression          {};
         class adjustReputation          {};
+    };
+
+    class SideMissions {
+        file = "Functions\SideMissions";
+
+        class registerSideMission       {};
+        class startSideMission          {};
+        class registerDefaultMissions   {};
+        class sideMissionPilot          {};
+        class sideMissionSquad          {};
+        class sideMissionConvoy         {};
+        class sideMissionCustomConvoy   {};
+        class sideMissionPatrol         {};
+        class sideMissionSabotage       {};
+        class sideMissionPOW            {};
+        class sideMissionIntel          {};
+    };
+
+    class SideMissionUtilities {
+        file = "Functions\SideMissions\Utilities";
+
+        class addIntelItems    {};
+        class findMissionHouse {};
     };
     
     class Misc {

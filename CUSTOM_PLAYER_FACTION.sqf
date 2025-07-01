@@ -37,71 +37,109 @@ F_HQ_C_01 = "Land_TripodScreen_01_large_sand_F";      // Use "Land_TripodScreen_
 F_OP_01 = "Land_Cargo_House_V3_F";      // Use "Land_Cargo_House_V1_F" for Woodland Camo   // "Land_Cargo_House_V3_F" for Desert Camo
 F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";      // Use "Land_TripodScreen_01_dual_v2_F" for Woodland Camo   // "Land_TripodScreen_01_dual_v2_sand_F" for Desert Camo
 
-F_Bike_01 = "B_Quadbike_01_F";      // Use "B_T_Quadbike_01_F" for Woodland Camo   // "B_Quadbike_01_F" for Desert Camo
+// Vehicle lists with custom prices
+F_Bike_List = [
+    ["B_Quadbike_01_F", 5]
+];
 
-F_ABT_01 = "";
+F_Car_List = [
+    ["B_LSV_01_unarmed_F", 25],
+    ["B_LSV_01_light_F", 35],
+    ["B_MRAP_01_F", 50],
+    ["B_LSV_01_armed_F", 50]
+];
 
-F_UAV_01 = "B_UAV_02_dynamicLoadout_F";     //  UCAV
-F_UAV_02 = "B_UAV_05_F";     //  UAV
-F_UAV_03 = "B_T_UAV_03_dynamicLoadout_F";     //  Armed helicopter UAV
-F_UGV_01 = "B_UGV_01_rcws_F";      // Use "B_T_UGV_01_rcws_olive_F" for Woodland Camo   // "B_UGV_01_rcws_F" for Desert Camo
+F_MRAP_List = [
+    ["B_MRAP_01_hmg_F", 70],
+    ["B_MRAP_01_gmg_F", 100]
+];
 
-F_turret_01 = "B_HMG_01_high_F";       // HMG
-F_turret_02 = "B_GMG_01_high_F";       // GMG
-F_turret_03 = "B_static_AT_F";       // AT
+F_Truck_List = [
+    ["B_Truck_01_covered_F", 65],
+    ["B_Truck_01_transport_F", 65]
+];
 
-F_Car_01 = "B_MRAP_01_F";
-F_Car_02 = "B_LSV_01_unarmed_F";
-F_Car_03 = "B_LSV_01_light_F";
-F_Car_04 = "B_LSV_01_armed_F";
-F_Car_05 = "";
-F_Car_06 = "";
+F_Truck_Construction_List = [
+    ["B_Truck_01_ammo_F", 100]
+];
 
-F_MRAP_01 = "B_MRAP_01_gmg_F";
-F_MRAP_02 = "B_MRAP_01_hmg_F";
-F_MRAP_03 = "";
-F_MRAP_04 = "";
-F_MRAP_05 = "";
-F_MRAP_06 = "";
+F_Truck_Ammo_List = [
+    ["B_Truck_01_box_F", 100]
+];
 
-F_Truck_01 = "B_Truck_01_covered_F";
-F_Truck_02 = "B_Truck_01_transport_F";
-F_Truck_03 = "B_Truck_01_ammo_F";        // Mobile Armory and Arsenal Vehicle
-F_Truck_04 = "B_Truck_01_box_F";        // Mobile Base Building Factory Vehicle
-F_Truck_05 = "B_Truck_01_medical_F";       // Mobile GROUND Respawn Vehicle
-F_Truck_06 = "";        
+F_Truck_Respawn_List = [
+    ["B_Truck_01_medical_F", 150]
+];
 
-F_APC_01 = "B_APC_Wheeled_01_cannon_F";
-F_APC_02 = "B_APC_Tracked_01_AA_F";
-F_APC_03 = "B_APC_Tracked_01_CRV_F";
-F_APC_04 = "B_APC_Tracked_01_rcws_F";
-F_APC_05 = "";
-F_APC_06 = "";
+F_APC_List = [
+    ["B_APC_Tracked_01_AA_F", 200],
+    ["B_APC_Tracked_01_CRV_F", 200],
+    ["B_APC_Tracked_01_rcws_F", 250],
+    ["B_APC_Wheeled_01_cannon_F", 350]
+];
 
-F_TNK_01 = "B_MBT_01_cannon_F";
-F_TNK_02 = "B_MBT_01_TUSK_F";
-F_TNK_03 = "";
-F_TNK_04 = "";
+F_Tank_List = [
+    ["B_MBT_01_cannon_F", 500],
+    ["B_MBT_01_TUSK_F", 650]
+];
 
-F_Art_00 = "B_Mortar_01_F";      // Mortar   //For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_Mortar_01_F" for Woodland Camo   // "B_Mortar_01_F" for Desert Camo
-F_Art_01 = "B_MBT_01_arty_F";      // Heavy Artillery   //For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_MBT_01_arty_F" for Woodland Camo   // "B_MBT_01_arty_F" for Desert Camo
-F_Art_02 = "B_MBT_01_mlrs_F";      // Heavy Artillery   // For COMBAT SUPPORT ISSUES, PREFER THESE CLASSES,  Use "B_T_MBT_01_mlrs_F" for Woodland Camo   // "B_MBT_01_mlrs_F" for Desert Camo
+F_Artillery_List = [
+    ["B_Mortar_01_F", 75],    
+    ["B_MBT_01_arty_F", 400],
+    ["B_MBT_01_mlrs_F", 500]
+];
 
-F_Heli_01 = "B_Heli_Transport_01_F";
-F_Heli_02 = "B_Heli_Transport_03_F";
-F_Heli_03 = "B_Heli_Light_01_F";
-F_Heli_04 = "B_Heli_Transport_01_medevac_F";       // Mobile AIR Respawn Vehicle
-F_Heli_05 = "";
+F_Heli_List = [
+    ["B_Heli_Transport_01_F", 200],
+    ["B_Heli_Transport_03_F", 400],
+    ["B_Heli_Light_01_F", 250]
+];
 
-F_Heli_06_G = "B_Heli_Attack_01_dynamicLoadout_F";       // Gunship Chopper
-F_Heli_07_G = "";       // Gunship Chopper
+F_Heli_Respawn_List = [
+    ["B_Heli_Transport_01_medevac_F", 550]
+];
 
-F_Plane_01_CAS = "B_Plane_CAS_01_dynamicLoadout_F";
-F_Plane_02_CAS = "";
-F_Plane_03 = "B_T_VTOL_01_infantry_F";
-F_Plane_04 = "B_T_VTOL_01_vehicle_F";
-F_Plane_05 = "B_Plane_Fighter_01_F";
-F_Plane_06 = "";
+F_Heli_Gunship_List = [
+    ["B_Heli_Attack_01_dynamicLoadout_F", 750]
+];
+
+F_Plane_List = [
+    ["B_T_VTOL_01_infantry_F", 1200],
+    ["B_T_VTOL_01_vehicle_F", 1200],
+    ["B_Plane_CAS_01_dynamicLoadout_F", 1500]
+];
+
+F_Boat_List = [];
+
+F_UAV_List = [
+    ["B_UAV_02_dynamicLoadout_F", 80],
+    ["B_UAV_05_F", 80],
+    ["B_T_UAV_03_dynamicLoadout_F", 80]
+];
+
+F_UGV_List = [
+    ["B_UGV_01_rcws_F", 55]
+];
+
+F_Container_List = [
+    ["B_Slingload_01_Medevac_F", 35],
+    ["B_Slingload_01_Ammo_F", 35],
+    ["B_Slingload_01_Repair_F", 100],
+    ["B_Slingload_01_Fuel_F", 35]
+];
+
+F_Turret_List = [
+    ["B_HMG_01_high_F", 35],
+    ["B_GMG_01_high_F", 35],
+    ["B_static_AT_F", 35]
+];
+
+F_SAM_List = [
+    ["B_SAM_System_01_F", 35],
+    ["B_SAM_System_02_F", 35],
+    ["B_SAM_System_03_F", 35],
+    ["B_AAA_System_01_F", 35]
+];
 
 // Default squad compositions
 F_ASSLT_ENG = [F_Assault_Eng, F_Assault_AT, F_Assault_Eod];
