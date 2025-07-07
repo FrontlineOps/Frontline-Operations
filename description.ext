@@ -35,10 +35,12 @@ minPlayerDistance[] = {300, 1200, 300};
 #include "Scripts\defines.hpp"
 #include "IDS_Logistics\CfgLogistics.hpp"
 #include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
+#include "IDS_Notifications\ui\RscNotifications.hpp"
 class CfgFunctions {
 	#include "CfgFunctions.hpp"
 	#include "LARs\spawnComp\functions\functions.cpp"
 	#include "IDS_Logistics\IDS_Logistics_Functions.hpp"
+	#include "IDS_Notifications\IDS_Notifications_Functions.hpp"
 };
 
 

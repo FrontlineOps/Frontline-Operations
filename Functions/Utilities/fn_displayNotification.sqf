@@ -41,6 +41,13 @@ if (_msg isEqualType []) then {
     // else localize the msg
     _msg = localize _msg;
 };
+
+// TODO:
+// 1. Create RscTitles class in description.ext for HUD notification element
+// 2. Implement ctrWebBrowser control for HTML/CSS based notifications
+// 3. Add BIS or CBA Event System for notification requests
+// 4. Create notification types/templates (info, warning, error, reward)
+// 5. Add queue system for multiple notifications
 // Format and display notification
 private _formattedMsg = format [
     "<t color='%1' font='PuristaBold' align='right' shadow='1' size='2'>%2</t><br/><t align='right' shadow='1' size='1'>%3</t>",

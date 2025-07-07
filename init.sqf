@@ -1,0 +1,1 @@
+("NotificationHudLayer" call BIS_fnc_rscLayer) cutRsc ["RscNotifications", "PLAIN"];
