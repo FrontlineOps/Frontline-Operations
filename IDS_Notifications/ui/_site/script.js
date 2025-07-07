@@ -249,7 +249,7 @@ const clearAllNotifications = () => {
 };
 
 // Listen for global notification events (for Arma/SQF or other scripts)
-window.addEventListener('forge:notify', function (e) {
+window.addEventListener('ids:notify', function (e) {
     if (!e || !e.detail) return;
     const { type, title, message, duration } = e.detail;
     showNotification(type, title, message, duration);
