@@ -98,12 +98,14 @@ private _aiCommander = createHashMapObject [[
 
         // Get all virtual groups to assess capabilities
         private _groups = FLO_virtualGroups get "_groups";
-        private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
 
         // Prioritize groups for reserve (armor, mechanized, then motorized)
+        // Note: _allGroups already contains only non-civilian group IDs from initialization
         private _prioritizedGroups = [_allGroups, [], {
-            private _groupData = _virtualGroups get _x;
-            private _groupType = _groupData get "groupType";
+            private _groupData = _groups getOrDefault [_x, nil];
+            if (isNil "_groupData") exitWith { 0 }; // Skip groups that no longer exist
+            private _groupType = _groupData getOrDefault ["groupType", ""];
+            if (_groupType in ["civilian", "civilianVehicle"]) exitWith { 0 }; // Extra safety check
             switch (_groupType) do {
                 case "armor": { 100 };
                 case "mechanized": { 80 };
@@ -225,7 +227,7 @@ private _aiCommander = createHashMapObject [[
             private _concealedPos = _objectPos getPos [_dist, _dir];
 
             // Ensure position is not in water and has reasonable terrain
-            if (!surfaceIsWater _concealedPos && {(getTerrainHeightASL _concealedPos) select 2 > 0}) then {
+            if (!surfaceIsWater _concealedPos && {getTerrainHeightASL _concealedPos > 0}) then {
                 _concealedPos
             } else {
                 []
