@@ -38,28 +38,89 @@ private _aiCommander = createHashMapObject [[
     ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
     ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
     ["_attackStageTime", 280],
-    ["_defenseStageTime", 120],  
+    ["_defenseStageTime", 120],
     ["_minStagingForce", 2],     // Minimum units required before launching operation
     ["_maxStagingForce", 4],     // Maximum units for single operation
     ["_airTaskOrder", call FLO_fnc_airTaskOrder],
+    ["_artilleryAssetManager", call FLO_fnc_artilleryAssetManager],
+    ["_airAssetManager", call FLO_fnc_airAssetManager],
+    ["_strategicReserve", []],   // High-priority units held in reserve
+    ["_reserveRatio", 0.25],     // Percentage of total forces to keep in reserve
+    ["_lastThreatLevel", 0],     // Track threat level changes
+    ["_operationHistory", []],   // Track operation success/failure for learning
+    ["_activeAirMissions", []],  // Track ongoing air missions
+    ["_activeArtilleryMissions", []], // Track ongoing artillery missions
+    ["_preparatoryFiresActive", createHashMap], // Track prep fires by target
 
     ["_calculateMaxAttackingGroups", {
         private _playerCount = count (allPlayers - entities "HeadlessClient_F");
-        
+
         // No attacks with 1-2 players
         if (_playerCount <= 2) exitWith { 0 };
-        
+
         // Calculate groups: subtract 2 from player count and divide by 2 (rounded down)
         private _maxGroups = floor((_playerCount - 2) / 2);
-        
+
         // Add aggression score
         private _AGGRSCORE = FLO_DifficultyHandle get "value";
         private _maxGroups = _maxGroups + floor (_AGGRSCORE / 4);
-        
+
         // Cap at maximum of 16 groups
         _maxGroups = _maxGroups min 16;
-        
+
         _maxGroups
+    }],
+
+    // Enhanced resource management - calculate dynamic garrison requirements
+    ["_calculateDynamicGarrisonRequirements", {
+        private _currentThreat = _self get "_threatLevel";
+        private _totalGroups = count (_self get "_garrisonedGroups") + count (_self get "_activeAttackGroups") + count (_self get "_activeDefenseGroups");
+
+        // Base minimum garrison
+        private _baseGarrison = 2;
+
+        // Increase garrison requirements based on threat level
+        private _threatMultiplier = 1 + (_currentThreat / 10);
+        private _dynamicGarrison = ceil(_baseGarrison * _threatMultiplier);
+
+        // Ensure we always have strategic reserves
+        private _reserveRequirement = ceil(_totalGroups * (_self get "_reserveRatio"));
+
+        // Return the higher of dynamic garrison or reserve requirement
+        _dynamicGarrison max _reserveRequirement max _baseGarrison
+    }],
+
+    // Manage strategic reserves - high-priority units for critical situations
+    ["_manageStrategicReserve", {
+        private _allGroups = (_self get "_garrisonedGroups") + (_self get "_activeAttackGroups") + (_self get "_activeDefenseGroups");
+        private _totalGroups = count _allGroups;
+        private _reserveSize = ceil(_totalGroups * (_self get "_reserveRatio"));
+
+        // Get all virtual groups to assess capabilities
+        private _groups = FLO_virtualGroups get "_groups";
+
+        // Prioritize groups for reserve (armor, mechanized, then motorized)
+        // Note: _allGroups already contains only non-civilian group IDs from initialization
+        private _prioritizedGroups = [_allGroups, [], {
+            private _groupData = _groups getOrDefault [_x, nil];
+            if (isNil "_groupData") exitWith { 0 }; // Skip groups that no longer exist
+            private _groupType = _groupData getOrDefault ["groupType", ""];
+            if (_groupType in ["civilian", "civilianVehicle"]) exitWith { 0 }; // Extra safety check
+            switch (_groupType) do {
+                case "armor": { 100 };
+                case "mechanized": { 80 };
+                case "motorized": { 60 };
+                case "helicopter": { 90 };
+                case "jet": { 95 };
+                default { 40 };
+            };
+        }, "DESCEND"] call BIS_fnc_sortBy;
+
+        // Update strategic reserve
+        private _newReserve = _prioritizedGroups select [0, _reserveSize min count _prioritizedGroups];
+        _self set ["_strategicReserve", _newReserve];
+
+        ["AI Commander", 4, format["Updated strategic reserve: %1 groups of %2 total", count _newReserve, _totalGroups]] call FLO_fnc_log;
     }],
 
     // Find a valid nearby objective for staging (must be inside another objective, not the main target, not contested, not in water)
@@ -91,11 +152,12 @@ private _aiCommander = createHashMapObject [[
         _chosen
     }],
 
-    // Generate staging point for operations (must be inside a valid objective)
+    // Enhanced staging point generation with multiple staging areas and concealment
     ["_generateStagingPoint", {
-        params ["_targetPos", "_operationType", "_distance", ["_targetId", ""]];
-        private _stagingPos = [];
+        params ["_targetPos", "_operationType", "_distance", ["_targetId", ""], ["_multiStaging", false]];
+        private _stagingPositions = [];
         private _side = east; // Default to OPFOR, can be parameterized if needed
+
         if (_targetId != "" && {!isNil "FLO_Objectives"}) then {
             private _stagingObj = _self call ["_findStagingObjective", [_targetId, _side]];
             if (!isNil "_stagingObj") then {
@@ -103,35 +165,106 @@ private _aiCommander = createHashMapObject [[
                 private _obj = _stagingObj select 1;
                 private _pos = _obj get "position";
                 private _radius = _obj getOrDefault ["radius", 100];
-                // Pick a random point inside the objective's area
-                private _dir = random 360;
-                private _dist = random (_radius * 0.8);
-                _stagingPos = _pos getPos [_dist, _dir];
+
+                if (_multiStaging && _operationType == "ATTACK") then {
+                    // Generate multiple staging points for coordinated attacks
+                    private _numStaging = 2 + floor(random 2); // 2-3 staging areas
+                    for "_i" from 1 to _numStaging do {
+                        private _dir = (360 / _numStaging) * _i + random 60 - 30; // Spread around target
+                        private _dist = _distance + random 200;
+                        private _stagingPos = _targetPos getPos [_dist, _dir];
+
+                        // Try to find concealed position (near trees, buildings, or terrain features)
+                        private _concealedPos = _self call ["_findConcealedPosition", [_stagingPos, 150]];
+                        if (count _concealedPos > 0) then {
+                            _stagingPos = _concealedPos;
+                        };
+
+                        _stagingPositions pushBack _stagingPos;
+                    };
+                } else {
+                    // Single staging point with concealment
+                    private _dir = random 360;
+                    private _dist = random (_radius * 0.8);
+                    private _stagingPos = _pos getPos [_dist, _dir];
+
+                    // Try to find concealed position
+                    private _concealedPos = _self call ["_findConcealedPosition", [_stagingPos, 100]];
+                    if (count _concealedPos > 0) then {
+                        _stagingPos = _concealedPos;
+                    };
+
+                    _stagingPositions pushBack _stagingPos;
+                };
             } else {
                 ["AI Commander", 2, format["No valid staging objective found for %1. Skipping staging point.", _targetId]] call FLO_fnc_log;
             };
         };
-        if (count _stagingPos == 0) exitWith {[]};
-        ["AI Commander", 4, format["Generated %1 staging point at %2 for target %3", _operationType, _stagingPos, _targetPos]] call FLO_fnc_log;
-        _stagingPos
+
+        if (count _stagingPositions == 0) exitWith {[]};
+        ["AI Commander", 4, format["Generated %1 staging point(s) for %2 operation against %3", count _stagingPositions, _operationType, _targetPos]] call FLO_fnc_log;
+
+        // Return single position for compatibility, or array for multi-staging
+        if (_multiStaging) then {_stagingPositions} else {_stagingPositions select 0}
     }],
 
-    // Create staging operation with better coordination
+    // Find concealed positions for staging areas
+    ["_findConcealedPosition", {
+        params ["_centerPos", "_searchRadius"];
+
+        // Look for positions near trees, buildings, or terrain features
+        private _trees = nearestObjects [_centerPos, ["Tree", "Bush"], _searchRadius];
+        private _buildings = nearestObjects [_centerPos, ["House", "Building"], _searchRadius];
+        private _concealmentObjects = _trees + _buildings;
+
+        if (count _concealmentObjects > 0) then {
+            private _selectedObject = selectRandom _concealmentObjects;
+            private _objectPos = getPos _selectedObject;
+
+            // Position near the concealment object
+            private _dir = random 360;
+            private _dist = 20 + random 30; // 20-50m from concealment
+            private _concealedPos = _objectPos getPos [_dist, _dir];
+
+            // Ensure position is not in water and has reasonable terrain
+            if (!surfaceIsWater _concealedPos && {getTerrainHeightASL _concealedPos > 0}) then {
+                _concealedPos
+            } else {
+                []
+            };
+        } else {
+            []
+        };
+    }],
+
+    // Create staging operation with enhanced coordination and multi-staging
     ["_createStagingOperation", {
         params ["_targetPos", "_targetId", "_operationType", "_priority"];
         private _operation = createHashMap;
         private _distance = if (_operationType == "ATTACK") then {500 + random 300} else {300 + random 200};
+
+        // Determine if this should be a multi-staging operation (high priority attacks)
+        private _useMultiStaging = (_operationType == "ATTACK" && _priority >= 2);
+
         _operation set ["operationType", _operationType];
         _operation set ["targetId", _targetId];
         _operation set ["targetPos", _targetPos];
         _operation set ["priority", _priority];
-        _operation set ["stagingPos", _self call ["_generateStagingPoint", [_targetPos, _operationType, _distance, _targetId]]];
+        _operation set ["stagingPos", _self call ["_generateStagingPoint", [_targetPos, _operationType, _distance, _targetId, _useMultiStaging]]];
+        _operation set ["multiStaging", _useMultiStaging];
         _operation set ["groups", []];
         _operation set ["startTime", diag_tickTime];
         _operation set ["operationLaunched", false];
         _operation set ["minForce", _self get "_minStagingForce"];
-        _operation set ["maxForce", _self get "_maxStagingForce"];
+        _operation set ["maxForce", if (_useMultiStaging) then {_self get "_maxStagingForce" + 2} else {_self get "_maxStagingForce"}]; // Larger forces for multi-staging
         _operation set ["stageTime", if (_operationType == "ATTACK") then {_self get "_attackStageTime"} else {_self get "_defenseStageTime"}];
+
+        // Enhanced staging for attacks includes preparatory phase
+        if (_operationType == "ATTACK") then {
+            _operation set ["preparatoryPhase", true];
+            _operation set ["preparatoryTime", 180]; // 3 minutes of prep fires
+        };
+
         _operation
     }],
 
@@ -208,10 +341,16 @@ private _aiCommander = createHashMapObject [[
             false
         };
         
-        // Find available garrison groups
+        // Find available garrison groups using dynamic requirements
         private _availableGroups = _self get "_garrisonedGroups";
-        if (count _availableGroups <= (_self get "_minGarrisonGroups")) exitWith {
-            ["AI Commander", 3, "Cannot assign more attack groups - minimum garrison requirement"] call FLO_fnc_log;
+        private _strategicReserve = _self get "_strategicReserve";
+        private _dynamicMinGarrison = _self call ["_calculateDynamicGarrisonRequirements", []];
+
+        // Exclude strategic reserve from normal operations unless critical
+        private _availableNonReserve = _availableGroups - _strategicReserve;
+
+        if (count _availableNonReserve <= _dynamicMinGarrison) exitWith {
+            ["AI Commander", 3, format["Cannot assign more attack groups - dynamic garrison requirement: %1, available: %2", _dynamicMinGarrison, count _availableNonReserve]] call FLO_fnc_log;
             false
         };
         
@@ -219,17 +358,31 @@ private _aiCommander = createHashMapObject [[
         private _groups = FLO_virtualGroups get "_groups";
         private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
         
-        // Sort groups by distance to staging point (not target)
+        // Sort groups by priority: capability first, then distance to staging point
         private _stagingPos = _op get "stagingPos";
-        private _sortedGroups = [_availableGroups, [], {
+        private _sortedGroups = [_availableNonReserve, [], {
             private _groupData = _virtualGroups get _x;
             private _groupPos = _groupData get "position";
-            _groupPos distance2D _stagingPos
-        }, "ASCEND"] call BIS_fnc_sortBy;
+            private _groupType = _groupData get "groupType";
+
+            // Priority scoring: capability (higher is better) + distance penalty
+            private _capabilityScore = switch (_groupType) do {
+                case "armor": { 1000 };
+                case "mechanized": { 800 };
+                case "motorized": { 600 };
+                case "infantry": { 400 };
+                default { 200 };
+            };
+
+            private _distance = _groupPos distance2D _stagingPos;
+            private _distancePenalty = _distance / 10; // 1 point per 10m
+
+            _capabilityScore - _distancePenalty
+        }, "DESCEND"] call BIS_fnc_sortBy;
         
         // Calculate how many groups we can assign to this operation
         private _slotsInOperation = (_op get "maxForce") - count (_currentGroups);
-        private _availableCount = count _availableGroups - (_self get "_minGarrisonGroups");
+        private _availableCount = count _availableNonReserve - _dynamicMinGarrison;
         private _remainingSlots = (_self get "_maxAttackingGroups") - count (_self get "_activeAttackGroups");
         private _groupsToAssign = _availableCount min _remainingSlots min _slotsInOperation min 2; // Assign up to 2 groups per cycle
         
@@ -307,10 +460,20 @@ private _aiCommander = createHashMapObject [[
             false
         };
         
-        // Find available garrison groups
+        // Find available garrison groups using dynamic requirements
         private _availableGroups = _self get "_garrisonedGroups";
-        if (count _availableGroups <= (_self get "_minGarrisonGroups")) exitWith {
-            ["AI Commander", 3, "Cannot assign more defense groups - minimum garrison requirement"] call FLO_fnc_log;
+        private _strategicReserve = _self get "_strategicReserve";
+        private _dynamicMinGarrison = _self call ["_calculateDynamicGarrisonRequirements", []];
+
+        // For critical defense, can use strategic reserve
+        private _availableForDefense = if (_priority >= 3) then {
+            _availableGroups // Can use all groups including reserve for critical defense
+        } else {
+            _availableGroups - _strategicReserve // Normal defense excludes reserve
+        };
+
+        if (count _availableForDefense <= _dynamicMinGarrison) exitWith {
+            ["AI Commander", 3, format["Cannot assign more defense groups - dynamic garrison requirement: %1, available: %2", _dynamicMinGarrison, count _availableForDefense]] call FLO_fnc_log;
             false
         };
         
@@ -318,17 +481,31 @@ private _aiCommander = createHashMapObject [[
         private _groups = FLO_virtualGroups get "_groups";
         private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
         
-        // Sort groups by distance to staging point
+        // Sort groups by capability and distance for defense
         private _stagingPos = _op get "stagingPos";
-        private _sortedGroups = [_availableGroups, [], {
+        private _sortedGroups = [_availableForDefense, [], {
             private _groupData = _virtualGroups get _x;
             private _groupPos = _groupData get "position";
-            _groupPos distance2D _stagingPos
-        }, "ASCEND"] call BIS_fnc_sortBy;
+            private _groupType = _groupData get "groupType";
+
+            // Defense priority: fast response units first, then heavy units
+            private _capabilityScore = switch (_groupType) do {
+                case "motorized": { 1000 }; // Fast response
+                case "mechanized": { 900 };
+                case "armor": { 800 }; // Heavy but slower
+                case "infantry": { 600 };
+                default { 400 };
+            };
+
+            private _distance = _groupPos distance2D _stagingPos;
+            private _distancePenalty = _distance / 5; // Higher penalty for defense (need fast response)
+
+            _capabilityScore - _distancePenalty
+        }, "DESCEND"] call BIS_fnc_sortBy;
         
         // Calculate how many groups we can assign
         private _slotsInOperation = (_op get "maxForce") - count (_currentGroups);
-        private _availableCount = count _availableGroups - (_self get "_minGarrisonGroups");
+        private _availableCount = count _availableForDefense - _dynamicMinGarrison;
         private _remainingSlots = (_self get "_maxDefendingGroups") - count (_self get "_activeDefenseGroups");
         private _groupsToAssign = _availableCount min _remainingSlots min _slotsInOperation min 2; // Assign up to 2 groups per cycle
         
@@ -542,10 +719,15 @@ private _aiCommander = createHashMapObject [[
                 };
                 
                 if (_shouldLaunch) then {
-                    // Call artillery/air support to soften the target
-                    _self call ["_callArtillerySupport", [_targetPos, 8]];
-                    _self call ["_callAirSupport", [_targetPos, "BOMB"]];
-                    
+                    // Enhanced preparatory fires and air support
+                    _self call ["_callArtillerySupport", [_targetPos, 8, "PREPARATORY", 1]];
+                    _self call ["_callAirSupport", [_targetPos, "BOMB", "", -1, "PREPARATORY"]];
+
+                    // SEAD mission if high-value target
+                    if (_priority >= 2) then {
+                        _self call ["_callAirSupport", [_targetPos, "LASER", "", -1, "SEAD"]];
+                    };
+
                     // Launch attack with ready groups
                     {
                         private _gData = (FLO_virtualGroups get "_groups") get _x;
@@ -678,9 +860,9 @@ private _aiCommander = createHashMapObject [[
                 };
             } else {
                 // Check if defense is complete
-                private _aliveGroups = _groups select { 
-                    _x in (_self get "_activeDefenseGroups") && 
-                    {!isNil ((FLO_virtualGroups get "_groups") get _x)}
+                private _aliveGroups = _groups select {
+                    _x in (_self get "_activeDefenseGroups") &&
+                    {((FLO_virtualGroups get "_groups") getOrDefault [_x, nil]) isNotEqualTo nil}
                 };
                 
                 if (count _aliveGroups == 0) then { 
@@ -706,11 +888,75 @@ private _aiCommander = createHashMapObject [[
         _self set ["_defenseOperations", _ops];
     }],
 
+    // Enhanced artillery support with preparatory fires and mission tracking
     ["_callArtillerySupport", {
-        params ["_self", "_targetPos", ["_rounds", 6]];
+        params ["_self", "_targetPos", ["_rounds", 6], ["_missionType", "IMMEDIATE"], ["_priority", 1]];
 
-        private _success = [_targetPos, _rounds] call FLO_fnc_requestVirtualArtillery;
+        private _artilleryMgr = _self get "_artilleryAssetManager";
+        private _success = false;
+
+        switch (_missionType) do {
+            case "PREPARATORY": {
+                // Preparatory fires before major operations
+                private _prepRounds = _rounds * 2; // More rounds for prep fires
+                _success = _artilleryMgr call ["_requestFireMission", [_targetPos, _prepRounds]];
+
+                if (_success) then {
+                    // Track preparatory fires
+                    private _prepFires = _self get "_preparatoryFiresActive";
+                    _prepFires set [str _targetPos, diag_tickTime];
+                    _self set ["_preparatoryFiresActive", _prepFires];
+
+                    ["AI Commander", 3, format["Preparatory artillery fires initiated at %1 (%2 rounds)", _targetPos, _prepRounds]] call FLO_fnc_log;
+                };
+            };
+
+            case "SUPPRESSIVE": {
+                // Ongoing suppressive fires during operations
+                _success = _artilleryMgr call ["_requestFireMission", [_targetPos, _rounds]];
+
+                if (_success) then {
+                    // Schedule follow-up suppressive fires using spawn
+                    [_targetPos, _artilleryMgr, _rounds] spawn {
+                        params ["_pos", "_mgr", "_rounds"];
+                        sleep 120;
+                        _mgr call ["_requestFireMission", [_pos, _rounds]];
+                    };
+
+                    ["AI Commander", 3, format["Suppressive artillery fires at %1", _targetPos]] call FLO_fnc_log;
+                };
+            };
+
+            case "COUNTER_BATTERY": {
+                // Counter-battery fires against player artillery
+                private _cbRounds = _rounds + 4; // More rounds for counter-battery
+                _success = _artilleryMgr call ["_requestFireMission", [_targetPos, _cbRounds]];
+
+                if (_success) then {
+                    ["AI Commander", 2, format["Counter-battery fires at detected artillery position %1", _targetPos]] call FLO_fnc_log;
+                };
+            };
+
+            default {
+                // Immediate fires (original behavior)
+                _success = _artilleryMgr call ["_requestFireMission", [_targetPos, _rounds]];
+            };
+        };
+
         if (_success) then {
+            // Track the mission
+            private _activeMissions = _self get "_activeArtilleryMissions";
+            private _missionData = createHashMapFromArray [
+                ["targetPos", _targetPos],
+                ["rounds", _rounds],
+                ["type", _missionType],
+                ["startTime", diag_tickTime],
+                ["priority", _priority]
+            ];
+            _activeMissions pushBack _missionData;
+            _self set ["_activeArtilleryMissions", _activeMissions];
+
+            // Send notification
             private _grid = mapGridPosition _targetPos;
             ["STR_FLO_WARNING_TITLE", format ["%1 at grid %2", localize "STR_FLO_WARNING_EARTYINC", _grid], "warning"] call FLO_fnc_sendNotification;
         };
@@ -742,17 +988,17 @@ private _aiCommander = createHashMapObject [[
         "CAS"
     }],
 
+    // Enhanced air support with mission types and coordination
     ["_callAirSupport", {
         /*
-            Queues a mission for the Air Tasking Order. Mission types can be
-            "CAS", "BOMB" or "LASER". CAS missions perform a rocket or cannon
-            strafe while the strike missions drop bombs or fire laser guided
-            missiles. If the mission is empty the commander selects an
-            appropriate type based on nearby enemy vehicles. If no altitude is
-            provided the function defaults to 300 metres for strike missions and
-            150 metres for CAS.
+            Enhanced air support system with multiple mission types:
+            - PREPARATORY: Pre-attack strikes to soften targets
+            - CAS: Close Air Support during operations
+            - SEAD: Suppress Enemy Air Defenses
+            - CAP: Combat Air Patrol for air superiority
+            - INTERDICTION: Strike enemy supply lines/reinforcements
         */
-        params ["_self", "_targetPos", ["_mission", ""], ["_type", ""], ["_alt", -1]];
+        params ["_self", "_targetPos", ["_mission", ""], ["_type", ""], ["_alt", -1], ["_missionType", "IMMEDIATE"]];
 
         if (_mission isEqualTo "") then {
             _mission = _self call ["_selectAirMission", [_targetPos]];
@@ -763,7 +1009,98 @@ private _aiCommander = createHashMapObject [[
         };
 
         private _ato = _self get "_airTaskOrder";
-        _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+        private _success = false;
+
+        switch (_missionType) do {
+            case "PREPARATORY": {
+                // Pre-attack strikes - use heavy ordnance
+                _mission = "BOMB";
+                _alt = 400; // Higher altitude for safety
+                _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+
+                // Schedule follow-up strike
+                [_targetPos, _mission, _type, _alt, _ato] spawn {
+                    params ["_pos", "_miss", "_typ", "_altitude", "_airTaskOrder"];
+                    sleep (60 + random 60); // 1-2 minutes later
+                    _airTaskOrder call ["_addTask", [_pos, _miss, _typ, _altitude]];
+                };
+
+                _success = true;
+                ["AI Commander", 3, format["Preparatory air strikes ordered at %1", _targetPos]] call FLO_fnc_log;
+            };
+
+            case "SEAD": {
+                // Suppress Enemy Air Defenses
+                _mission = "LASER"; // Precision strikes against AA
+                _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+                _success = true;
+                ["AI Commander", 3, format["SEAD mission ordered at %1", _targetPos]] call FLO_fnc_log;
+            };
+
+            case "CAP": {
+                // Combat Air Patrol - establish air superiority
+                private _airMgr = _self get "_airAssetManager";
+                private _aircraft = _airMgr call ["_requestAirAsset", [_targetPos, "CAP"]];
+
+                if (!isNull _aircraft) then {
+                    // Set up patrol pattern around target area
+                    private _patrolRadius = 2000;
+                    private _patrolWaypoints = [];
+                    for "_i" from 0 to 3 do {
+                        private _dir = _i * 90;
+                        private _patrolPos = _targetPos getPos [_patrolRadius, _dir];
+                        _patrolWaypoints pushBack _patrolPos;
+                    };
+
+                    // Create patrol waypoints for the aircraft
+                    private _grp = group _aircraft;
+                    {
+                        private _wp = _grp addWaypoint [_x, 0];
+                        _wp setWaypointType "MOVE";
+                        _wp setWaypointBehaviour "COMBAT";
+                        _wp setWaypointCombatMode "RED";
+                        _wp setWaypointSpeed "NORMAL";
+                    } forEach _patrolWaypoints;
+
+                    // Add cycle waypoint to continue patrol
+                    private _cycleWp = _grp addWaypoint [_patrolWaypoints select 0, 0];
+                    _cycleWp setWaypointType "CYCLE";
+
+                    _success = true;
+                    ["AI Commander", 3, format["CAP established over %1", _targetPos]] call FLO_fnc_log;
+                };
+            };
+
+            case "INTERDICTION": {
+                // Strike supply lines and reinforcements
+                _mission = "BOMB";
+                _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+                _success = true;
+                ["AI Commander", 3, format["Interdiction strike ordered at %1", _targetPos]] call FLO_fnc_log;
+            };
+
+            default {
+                // Immediate support (original behavior)
+                _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+                _success = true;
+            };
+        };
+
+        if (_success) then {
+            // Track the air mission
+            private _activeMissions = _self get "_activeAirMissions";
+            private _missionData = createHashMapFromArray [
+                ["targetPos", _targetPos],
+                ["mission", _mission],
+                ["type", _missionType],
+                ["startTime", diag_tickTime],
+                ["altitude", _alt]
+            ];
+            _activeMissions pushBack _missionData;
+            _self set ["_activeAirMissions", _activeMissions];
+        };
+
+        _success
     }],
     
     ["_update", {
@@ -773,7 +1110,10 @@ private _aiCommander = createHashMapObject [[
         
         // Only update periodically
         if (_currentTime - _lastUpdate < _updateInterval) exitWith {};
-        
+
+        // Update resource management
+        _self call ["_manageStrategicReserve", []];
+
         // Clean up any dead groups first
         private _allGroups = (_self get "_activeAttackGroups") + (_self get "_activeDefenseGroups") + (_self get "_garrisonedGroups");
         private _deadGroups = [];
@@ -860,8 +1200,49 @@ private _aiCommander = createHashMapObject [[
         // Process any queued air support tasks
         (_self get "_airTaskOrder") call ["_processTasks", []];
 
+        // Clean up completed missions
+        _self call ["_cleanupCompletedMissions", []];
+
         // Update last update time
         _self set ["_lastUpdate", _currentTime];
+    }],
+
+    // Clean up completed air and artillery missions
+    ["_cleanupCompletedMissions", {
+        private _currentTime = diag_tickTime;
+
+        // Clean up old artillery missions (completed after 10 minutes)
+        private _artilleryMissions = _self get "_activeArtilleryMissions";
+        private _activeArtillery = _artilleryMissions select {
+            (_currentTime - (_x get "startTime")) < 600 // 10 minutes
+        };
+        _self set ["_activeArtilleryMissions", _activeArtillery];
+
+        // Clean up old air missions (completed after 15 minutes)
+        private _airMissions = _self get "_activeAirMissions";
+        private _activeAir = _airMissions select {
+            (_currentTime - (_x get "startTime")) < 900 // 15 minutes
+        };
+        _self set ["_activeAirMissions", _activeAir];
+
+        // Clean up old preparatory fires (expire after 5 minutes)
+        private _prepFires = _self get "_preparatoryFiresActive";
+        private _expiredFires = [];
+        {
+            if ((_currentTime - _y) > 300) then { // 5 minutes
+                _expiredFires pushBack _x;
+            };
+        } forEach _prepFires;
+
+        {
+            _prepFires deleteAt _x;
+        } forEach _expiredFires;
+
+        _self set ["_preparatoryFiresActive", _prepFires];
+
+        if (count _expiredFires > 0) then {
+            ["AI Commander", 4, format["Cleaned up %1 expired preparatory fires", count _expiredFires]] call FLO_fnc_log;
+        };
     }]
 ]];
 
