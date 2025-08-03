@@ -19,26 +19,26 @@ populateFactionBoxF = {
 	
 	_ctrl lbAdd "CUSTOM_PLAYER_FACTION"; 
 	
-	if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "NATO Forces _ Desert"; };  
-	if (isClass (configfile >> "CfgFactionClasses" >> "BLU_NATO_lxWS") == true ) then {_ctrl lbAdd "NATO Forces _ Desert _ Western Sahara"; };  
-	if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "NATO Forces _ Woodland"; }; 
+	// if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "NATO Forces _ Desert"; };  
+	// if (isClass (configfile >> "CfgFactionClasses" >> "BLU_NATO_lxWS") == true ) then {_ctrl lbAdd "NATO Forces _ Desert _ Western Sahara"; };  
+	// if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "NATO Forces _ Woodland"; }; 
 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "Marine_BLU_USMC_F") == true ) then {_ctrl lbAdd "United States Armed Forces _ Desert _ AEW"; }; 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Marine_BLU_USMC_F") == true ) then {_ctrl lbAdd "United States Armed Forces _ Woodland _ AEW"; }; 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "British Armed Forces _ Desert _ AEW"; }; 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "British Armed Forces _ Woodland _ AEW"; }; 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "German Armed Forces _ Woodland _ AEW"; }; 		
-	if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "Isreal Armed Forces _ Woodland _ AEW"; }; 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "Livonia Defence Forces _ Woodland _ AEW"; }; 		
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Marine_BLU_USMC_F") == true ) then {_ctrl lbAdd "United States Armed Forces _ Desert _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Marine_BLU_USMC_F") == true ) then {_ctrl lbAdd "United States Armed Forces _ Woodland _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "British Armed Forces _ Desert _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "British Armed Forces _ Woodland _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "German Armed Forces _ Woodland _ AEW"; }; 		
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "Isreal Armed Forces _ Woodland _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "Livonia Defence Forces _ Woodland _ AEW"; }; 		
 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_usmc_wd") == true ) then {_ctrl lbAdd "United States Armed Forces _ Desert _ RHS";};
-	if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_usmc_wd") == true ) then {_ctrl lbAdd "United States Armed Forces _ Woodland _ RHS";}; 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "B_MACV") == true ) then {_ctrl lbAdd "United States Armed Forces _ Woodland _ SOG Praire Fire";}; 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "British Armed Forces _ Desert _ CUP";};
-	if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "British Armed Forces _ Woodland _ CUP"; };
-	if ((isClass (configfile >> "CfgFactionClasses" >> "BWA3_Faction_Fleck") == true ) && (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_GER") == true )) then {_ctrl lbAdd "German Armed Forces _ Desert _ BW"; }; 
-	if ((isClass (configfile >> "CfgFactionClasses" >> "BWA3_Faction_Fleck") == true ) && (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_GER") == true )) then {_ctrl lbAdd "German Armed Forces _ Woodland _ BW"; };
-	if (isClass (configfile >> "CfgFactionClasses" >> "FFAA") == true ) then {_ctrl lbAdd "Spanish Armed Forces  _ Woodland _ FFAA"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_usmc_wd") == true ) then {_ctrl lbAdd "United States Armed Forces _ Desert _ RHS";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_usmc_wd") == true ) then {_ctrl lbAdd "United States Armed Forces _ Woodland _ RHS";}; 	
+	// if (isClass (configfile >> "CfgFactionClasses" >> "B_MACV") == true ) then {_ctrl lbAdd "United States Armed Forces _ Woodland _ SOG Praire Fire";}; 	
+	// if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "British Armed Forces _ Desert _ CUP";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "British Armed Forces _ Woodland _ CUP"; };
+	// if ((isClass (configfile >> "CfgFactionClasses" >> "BWA3_Faction_Fleck") == true ) && (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_GER") == true )) then {_ctrl lbAdd "German Armed Forces _ Desert _ BW"; }; 
+	// if ((isClass (configfile >> "CfgFactionClasses" >> "BWA3_Faction_Fleck") == true ) && (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_GER") == true )) then {_ctrl lbAdd "German Armed Forces _ Woodland _ BW"; };
+	// if (isClass (configfile >> "CfgFactionClasses" >> "FFAA") == true ) then {_ctrl lbAdd "Spanish Armed Forces  _ Woodland _ FFAA"; }; 
 	_ctrl lbSetCurSel 0;
 };
 
@@ -48,30 +48,30 @@ populateFactionBoxE = {
 	
 	_ctrl lbAdd "CUSTOM_ENEMY_FACTION"; 
 	
-	if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "CSAT Forces _ Desert"; }else{_ctrl lbAdd "Iran Armed Forces _ Desert _ AEW"; }; 
-	if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "CSAT Forces _ Woodland"; }else{_ctrl lbAdd "Chinese Armed Forces _ Woodland _ AEW"; }; 
+	// if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "CSAT Forces _ Desert"; }else{_ctrl lbAdd "Iran Armed Forces _ Desert _ AEW"; }; 
+	// if (!isClass (configfile >> "CfgFactionClasses" >> "Atlas_BLU_G_F") == true ) then {_ctrl lbAdd "CSAT Forces _ Woodland"; }else{_ctrl lbAdd "Chinese Armed Forces _ Woodland _ AEW"; }; 
    
-    _ctrl lbAdd "Altis Armed Forces _ Woodland"; 
-    _ctrl lbAdd "Livonia Defence Forces _ Woodland";  
+    // _ctrl lbAdd "Altis Armed Forces _ Woodland"; 
+    // _ctrl lbAdd "Livonia Defence Forces _ Woodland";  
 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "OPF_SFIA_lxWS") == true ) then {_ctrl lbAdd "Sefrawi Freedom Forces _ Desert _ Western Sahara"; }; 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "OPF_TURA_lxWS") == true ) then {_ctrl lbAdd "Tura tribe insurgents _ Desert _ Western Sahara"; };
-	if (isClass (configfile >> "CfgFactionClasses" >> "O_PAVN") == true ) then {_ctrl lbAdd "North Vietnam _ Woodland _ SOG Praire Fire"; };
-    _ctrl lbAdd "Syndikat Insurgents _ Woodland";  
+	// if (isClass (configfile >> "CfgFactionClasses" >> "OPF_SFIA_lxWS") == true ) then {_ctrl lbAdd "Sefrawi Freedom Forces _ Desert _ Western Sahara"; }; 	
+	// if (isClass (configfile >> "CfgFactionClasses" >> "OPF_TURA_lxWS") == true ) then {_ctrl lbAdd "Tura tribe insurgents _ Desert _ Western Sahara"; };
+	// if (isClass (configfile >> "CfgFactionClasses" >> "O_PAVN") == true ) then {_ctrl lbAdd "North Vietnam _ Woodland _ SOG Praire Fire"; };
+    // _ctrl lbAdd "Syndikat Insurgents _ Woodland";  
 
-	if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "Afghan Insurgents _ CUP";};
-	if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "Afghan Armed Forces _ CUP"; };
+	// if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "Afghan Insurgents _ CUP";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "CUP_B_US_Army") == true ) then {_ctrl lbAdd "Afghan Armed Forces _ CUP"; };
 
-	if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "African Insurgents _ POF";};
-	if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "Syrian Armed Forces _ POF"; };
-	if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "ISIS Insurgents _ POF";};
-	if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "Iran Armed Forces _ POF"; };
+	// if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "African Insurgents _ POF";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "Syrian Armed Forces _ POF"; };
+	// if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "ISIS Insurgents _ POF";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "LOP_IRAN") == true ) then {_ctrl lbAdd "Iran Armed Forces _ POF"; };
 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Opf_OPF_S_F") == true ) then {_ctrl lbAdd "East Europe Insurgents _ Desert _ AEW"; }; 
-	if (isClass (configfile >> "CfgFactionClasses" >> "Opf_OPF_S_F") == true ) then {_ctrl lbAdd "East Europe Insurgents _ Woodland _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Opf_OPF_S_F") == true ) then {_ctrl lbAdd "East Europe Insurgents _ Desert _ AEW"; }; 
+	// if (isClass (configfile >> "CfgFactionClasses" >> "Opf_OPF_S_F") == true ) then {_ctrl lbAdd "East Europe Insurgents _ Woodland _ AEW"; }; 
 	
-	if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_msv") == true ) then {_ctrl lbAdd "Russian Armed Forces _ Desert _ RHS";};
-	if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_msv") == true ) then {	_ctrl lbAdd "Russian Armed Forces _ Woodland _ RHS";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_msv") == true ) then {_ctrl lbAdd "Russian Armed Forces _ Desert _ RHS";};
+	// if (isClass (configfile >> "CfgFactionClasses" >> "rhs_faction_msv") == true ) then {	_ctrl lbAdd "Russian Armed Forces _ Woodland _ RHS";};
 	_ctrl lbSetCurSel 0;
 
 };
@@ -82,14 +82,14 @@ populateFactionBoxC = {
 
 	_ctrl lbAdd "CUSTOM_CIVILIAN_FACTION"; 
 	
-    _ctrl lbAdd "Greek_Civilians_Insurgents"; 
-    _ctrl lbAdd "EastEurope_Civilians_Insurgents";  
-		if (isClass (configfile >> "CfgFactionClasses" >> "OPF_TURA_lxWS") == true ) then {_ctrl lbAdd "SefrouRamal_Civilians_Insurgents_Western Sahara";};
-		if (isClass (configfile >> "CfgFactionClasses" >> "I_LAO") == true ) then {_ctrl lbAdd "Vietnam_Civilians_Insurgents";};
-		if (isClass (configfile >> "CfgFactionClasses" >> "CUP_C_CHERNARUS") == true ) then {_ctrl lbAdd "EastEurope_Civilians_Insurgents_CUP";};
-    _ctrl lbAdd "Tanoan_Civilians_Insurgents";  
-		if (isClass (configfile >> "CfgFactionClasses" >> "CUP_C_TK") == true ) then {_ctrl lbAdd "MiddleEast_Civilians_Insurgents_CUP";};
-    _ctrl lbAdd "Asian_Civilians_Insurgents";  
+    // _ctrl lbAdd "Greek_Civilians_Insurgents"; 
+    // _ctrl lbAdd "EastEurope_Civilians_Insurgents";  
+	// 	if (isClass (configfile >> "CfgFactionClasses" >> "OPF_TURA_lxWS") == true ) then {_ctrl lbAdd "SefrouRamal_Civilians_Insurgents_Western Sahara";};
+	// 	if (isClass (configfile >> "CfgFactionClasses" >> "I_LAO") == true ) then {_ctrl lbAdd "Vietnam_Civilians_Insurgents";};
+	// 	if (isClass (configfile >> "CfgFactionClasses" >> "CUP_C_CHERNARUS") == true ) then {_ctrl lbAdd "EastEurope_Civilians_Insurgents_CUP";};
+    // _ctrl lbAdd "Tanoan_Civilians_Insurgents";  
+	// 	if (isClass (configfile >> "CfgFactionClasses" >> "CUP_C_TK") == true ) then {_ctrl lbAdd "MiddleEast_Civilians_Insurgents_CUP";};
+    // _ctrl lbAdd "Asian_Civilians_Insurgents";  
 	_ctrl lbSetCurSel 0;
 
 };
