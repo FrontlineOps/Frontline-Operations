@@ -860,9 +860,9 @@ private _aiCommander = createHashMapObject [[
                 };
             } else {
                 // Check if defense is complete
-                private _aliveGroups = _groups select { 
-                    _x in (_self get "_activeDefenseGroups") && 
-                    {!isNil ((FLO_virtualGroups get "_groups") get _x)}
+                private _aliveGroups = _groups select {
+                    _x in (_self get "_activeDefenseGroups") &&
+                    {((FLO_virtualGroups get "_groups") getOrDefault [_x, nil]) isNotEqualTo nil}
                 };
                 
                 if (count _aliveGroups == 0) then { 
