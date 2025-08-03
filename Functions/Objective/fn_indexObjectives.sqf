@@ -103,7 +103,7 @@ for "_i" from 0 to (count _allLocations - 1) do {
         ["radius", _radius],
         ["structures", _allFound],
         ["structurePositions", _structurePositions],
-        ["location", _loc],
+        ["location", str _loc],  // Convert LOCATION to string for serialization
         ["locType", _locType],
         ["owner", east]
     ];
