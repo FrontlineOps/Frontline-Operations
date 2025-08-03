@@ -19,7 +19,7 @@
 params [];
 
 if (isNil "FLO_ArtilleryManager") then {
-    FLO_ArtilleryManager = createHashMapObject [
+    FLO_ArtilleryManager = createHashMapObject [[
         ["missions", createHashMap],
         ["shootAndScootTime", 90],
         ["_requestFireMission", {
@@ -95,7 +95,7 @@ if (isNil "FLO_ArtilleryManager") then {
             };
             true
         }]
-    ];
+    ]];
 };
 
 FLO_ArtilleryManager

@@ -22,7 +22,7 @@
 params [];
 
 if (isNil "FLO_AirAssetManager") then {
-    FLO_AirAssetManager = createHashMapObject [
+    FLO_AirAssetManager = createHashMapObject [[
         ["missions", createHashMap],
         ["_requestAirAsset", {
             params ["_self", "_targetPos", ["_missionType", "CAS"]];
@@ -83,7 +83,7 @@ if (isNil "FLO_AirAssetManager") then {
                 (_self get "missions") deleteAt _gid;
             };
         }]
-    ];
+    ]];
 };
 
 FLO_AirAssetManager

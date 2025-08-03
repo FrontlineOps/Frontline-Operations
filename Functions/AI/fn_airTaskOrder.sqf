@@ -15,7 +15,7 @@
 if (!isServer) exitWith {};
 
 if (isNil "FLO_airTaskOrder") then {
-    FLO_airTaskOrder = createHashMapObject [
+    FLO_airTaskOrder = createHashMapObject [[
         ["_taskQueue", []],
         ["_addTask", {
             params [
@@ -69,7 +69,7 @@ if (isNil "FLO_airTaskOrder") then {
             } forEach _queue;
             _self set ["_taskQueue", []];
         }]
-    ];
+    ]];
 };
 
 FLO_airTaskOrder
