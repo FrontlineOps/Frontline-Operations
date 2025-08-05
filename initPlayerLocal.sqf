@@ -41,7 +41,7 @@ if (time > _loadTimeout) then {
 // SAVE GAME DETECTION
 // ============================================================================
 
-// Optimized save game detection
+// Save game detection
 private _fnc_detectSaveGame = {
     // Check for existing BLUFOR installations (indicates saved game)
     private _bluforMarkers = allMapMarkers select {markerType _x isEqualTo "b_installation"};
