@@ -1,7 +1,7 @@
 /*
  * Function: FLO_fnc_initializeFOB
  * Author: Frontline Operations Development Group
- * Description: Optimized FOB initialization with modular design and error handling
+ * Description: FOB initialization
  *
  * Parameters:
  * 0: FOB Building <OBJECT> - The FOB building to initialize
@@ -83,7 +83,7 @@ private _fnc_createMarker = {
         _markerName = "respawn_west" + (str (getPos _building));
         _building setVariable [_markerVariable, _markerName, true];
 
-        // Check if marker already exists (optimized check)
+        // Check if marker already exists
         private _markerExists = _markerName in allMapMarkers;
 
         if (_markerExists) then {
@@ -256,14 +256,14 @@ private _triggers = [_fobBuilding, _config] call _fnc_createTriggers;
 // EVENT HANDLERS
 // ============================================================================
 
-// Optimized building destruction handler
+// Building destruction handler
 _fobBuilding addEventHandler ["Killed", {
     params ["_unit", "_killer", "_instigator", "_useEffects"];
 
     try {
         [playerSide, 'HQ'] commandChat 'All Forces Fall Back. We Lost the FOB...';
 
-        // Clean up related objects efficiently
+        // Clean up related objects
         private _cleanupObjects = [
             [['B_Slingload_01_Cargo_F'], 1000],
             [[F_HQ_01], 1000],
@@ -290,7 +290,7 @@ _fobBuilding addEventHandler ["Killed", {
             deleteMarker _markerName;
         };
 
-        // Clean up triggers efficiently
+        // Clean up triggers
         private _allTriggers = allMissionObjects "EmptyDetector";
         private _nearbyTriggers = _allTriggers select {position _x distance _unit < 20};
         {deleteVehicle _x} forEach _nearbyTriggers;
@@ -306,13 +306,13 @@ _fobBuilding addEventHandler ["Killed", {
 // SIEGE MONITORING SYSTEM
 // ============================================================================
 
-// Optimized siege monitoring with better performance and error handling
+// Siege monitoring
 [_fobBuilding, _config] spawn {
     params ["_fob", "_config"];
 
     private _holdoutTime = 0;
     private _maxHoldTime = _config get "holdoutTime"; // From config (900 seconds for FOB)
-    private _checkInterval = 5; // Reduced frequency for better performance
+    private _checkInterval = 5; 
     private _areaRadius = _config get "holdoutRadius"; // From config (150m for FOB)
     private _statusMarker = nil;
     private _lastNotification = 0;
