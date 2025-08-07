@@ -40,6 +40,14 @@ private _processVirtualMovement = {
     
     // Get current waypoint
     private _currentWaypoint = _waypoints select _currentWaypointIndex;
+
+    // Validate waypoint data
+    if (isNil "_currentWaypoint" || {count _currentWaypoint < 2}) exitWith {
+        ["VIRTUALIZATION", 1, format["Invalid waypoint data for group %1", _groupId]] call FLO_fnc_log;
+        _groupData set ["state", "idle"];
+        _groupData set ["currentWaypointIndex", 0];
+    };
+
     private _waypointPos = _currentWaypoint select 0;
     private _waypointType = _currentWaypoint select 1;
     
