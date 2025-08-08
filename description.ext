@@ -29,8 +29,7 @@ wreckManagerMode = 3; // Default: 0 for SP, 2 for MP
 wreckLimit = 10; // seconds. Default: 15
 wreckRemovalMinTime = 60; // seconds. Default: 10
 wreckRemovalMaxTime = 900; // seconds. Default: 36000 (10 hours)
-minPlayerDistance[] = {300, 1200, 300};
-//minPlayerDistance[] = {300, 1200, 300, 60, 120, 300}; // For 2.20 Arma 3
+minPlayerDistance[] = {300, 1200, 300, 60, 120, 300}; // {minDistance, maxDistance, minTime, maxTime, minCount, maxCount}
 
 #include "Scripts\defines.hpp"
 #include "IDS_Logistics\CfgLogistics.hpp"
