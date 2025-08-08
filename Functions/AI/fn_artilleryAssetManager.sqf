@@ -80,7 +80,7 @@ if (isNil "FLO_ArtilleryManager") then {
             // Start shoot-and-scoot behaviour
             [_gid, _gdata, _self] spawn {
                 params ["_gid","_gdata","_mgr"];
-                sleep 30; // wait for firing
+                sleep 60; // wait for firing
                 private _veh = vehicle (leader (_gdata get "realGroup"));
                 private _cur = getPos _veh;
                 private _dir = random 360;
