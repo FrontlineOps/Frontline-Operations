@@ -74,14 +74,40 @@ private _DVRT = "NO";
                     // Fallback if objectives are not available
                     _startPos = player getPos [1500 + random 1000, random 360];
                     _endPos = _startPos getPos [2000 + random 1000, random 360];
-                }
+                };
+
+                // Ensure start/end are on roads (not water)
+                private _findRoadNear = {
+                    params ["_pos", ["_radius", 800], ["_attempts", 6]];
+                    private _road = objNull;
+                    private _rad = _radius;
+                    for "_i" from 1 to _attempts do {
+                        private _roads = _pos nearRoads _rad;
+                        if (count _roads > 0) then {
+                            private _pairs = _roads apply { [_x, _pos distance2D (getPosATL _x)] };
+                            _pairs sort true;
+                            private _cand = (_pairs select 0) select 0;
+                            private _rp = getPosATL _cand;
+                            if !(surfaceIsWater _rp) exitWith { _road = _cand; };
+                        };
+                        _rad = _rad + 250;
+                    };
+                    _road
+                };
+
+                private _startRoad = [_startPos, 800, 6] call _findRoadNear;
+                private _endRoad   = [_endPos,   800, 6] call _findRoadNear;
+                if (isNull _startRoad || {isNull _endRoad}) exitWith { ConVLocc = 0; };
+
+                _startPos = getPosATL _startRoad;
+                _endPos   = getPosATL _endRoad;
 
                 // Create convoy markers
                 {
                     private _markerName = _x;
                     private _pos = if (_x == "ConvoyStrt") then {_startPos} else {_endPos};
                     private _text = if (_x == "ConvoyStrt") then {"Convoy Start"} else {"Convoy End"};
-                    
+
                     private _mrkr = createMarker [_markerName, _pos];
                     _mrkr setMarkerType "mil_marker_noShadow";
                     _mrkr setMarkerColor "colorOPFOR";
@@ -97,23 +123,22 @@ private _DVRT = "NO";
                 ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_ECONVOY4", "warning"] call FLO_fnc_sendNotification;
 
                 ConVLocc = 1;
-                private _CNV = selectRandom (_startPos nearRoads 200);
+                private _CNV = _startRoad;
                 trg1 = 0;
 
                 // Function to create convoy vehicle
                 private _fnc_createConvoyVehicle = {
-                    params ["_vehicleType", "_position", "_group"];
-                    
-                    private _nearRoad = selectRandom (getpos _CNV nearRoads 200);
-                    private _vehicle = createVehicle [_vehicleType, _nearRoad getRelPos [0,0], [], 10, "NONE"];
-                    _vehicle setDir (getMarkerPos "ConvoyStrt" getDir getMarkerPos "ConvoyDest");
+                    params ["_vehicleType", "_spawnPos", "_group", "_dir"];
+
+                    private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 10, "NONE"];
+                    _vehicle setDir _dir;
                     _vehicle setUnloadInCombat [true, false];
-                    
+
                     private _crewCount = [typeOf _vehicle, true] call BIS_fnc_crewCount;
-                    private _crewGroup = [getPosATL _nearRoad, east, _crewCount] call BIS_fnc_spawnGroup;
+                    private _crewGroup = [_spawnPos, east, _crewCount] call BIS_fnc_spawnGroup;
                     { _x moveInAny _vehicle } forEach units _crewGroup;
                     { [_x] join _group } forEach units _crewGroup;
-                    
+
                     _convoyVehicles pushBack _vehicle;
                     _vehicle
                 };
@@ -122,22 +147,28 @@ private _DVRT = "NO";
                 private _mainGroup = [getPosATL _CNV, east, 0] call BIS_fnc_spawnGroup;
                 missionNamespace setVariable ["CGM", _mainGroup, true];
 
+                // Compute road direction and lined-up spawn slots
+                private _nextRoad = (roadsConnectedTo _startRoad) select 0;
+                private _spawnDir = if (!isNil "_nextRoad" && {!isNull _nextRoad}) then { _startRoad getDir _nextRoad } else { _startPos getDir _endPos };
+                private _basePos = getPosATL _startRoad;
+                private _spacing = 12;
+                private _slots = [];
+                for "_i" from 0 to 6 do { _slots pushBack (_basePos getPos [_i * _spacing, (_spawnDir + 180)]); };
+
                 // Create initial vehicles
-                private _v0 = [selectRandom East_Ground_Vehicles_Light, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
-                waitUntil {((getMarkerPos "ConvoyStrt") distance (getPos _v0)) > 600};
-                
-                private _v1 = [selectRandom East_Ground_Transport, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
-                private _v2 = [selectRandom East_Ground_Vehicles_Light, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
+                private _v0 = [selectRandom East_Ground_Vehicles_Light, _slots select 0, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
+                private _v1 = [selectRandom East_Ground_Transport,       _slots select 1, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
+                private _v2 = [selectRandom East_Ground_Vehicles_Light,  _slots select 2, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
 
                 // Add additional vehicles based on difficulty
                 if (_AGGRSCORE > 5) then {
-                    private _v3 = [selectRandom East_Ground_Transport, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
-                    private _v4 = [selectRandom East_Ground_Vehicles_Light, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
+                    private _v3 = [selectRandom East_Ground_Transport,     _slots select 3, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
+                    private _v4 = [selectRandom East_Ground_Vehicles_Light,_slots select 4, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
                 };
 
                 if (_AGGRSCORE > 10) then {
-                    private _v5 = [selectRandom East_Ground_Transport, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
-                    private _v6 = [selectRandom East_Ground_Vehicles_Light, _startPos, _mainGroup] call _fnc_createConvoyVehicle;
+                    private _v5 = [selectRandom East_Ground_Transport,     _slots select 5, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
+                    private _v6 = [selectRandom East_Ground_Vehicles_Light,_slots select 6, _mainGroup, _spawnDir] call _fnc_createConvoyVehicle;
                 };
 
                 // Add event handlers for vehicles and crew

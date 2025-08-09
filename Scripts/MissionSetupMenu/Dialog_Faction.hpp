@@ -2,7 +2,8 @@ class factionselect_dialog2
 {
 	idd = 999;
 	movingenable = true;
-	onLoad = "escKeyEH = (_this select 0) displayAddEventHandler [""KeyDown"", ""if (((_this select 1) == 1)) then {true} else {false};""];";
+	onLoad = "uiNamespace setVariable ['FLO_FactionDialog', _this select 0]; private _eh = (_this select 0) displayAddEventHandler ['KeyDown', { params ['_d','_k']; if (_k isEqualTo 1) then { closeDialog 0; true } else { false } }]; (_this select 0) setVariable ['FLO_FactionDialog_EH', _eh];";
+	onUnload = "params ['_d']; private _eh = _d getVariable ['FLO_FactionDialog_EH', -1]; if (_eh >= 0) then { _d displayRemoveEventHandler ['KeyDown', _eh]; }; uiNamespace setVariable ['FLO_FactionDialog', displayNull];";
 
 	// Modern UI base classes
 	class suprChooseFactionCombo: RscCombo
@@ -251,7 +252,7 @@ class controls
 		colorBackgroundActive[] = {0.5,0.1,0.1,1};
 		colorFocused[] = {0.5,0.1,0.1,0.8};
 		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-		action = "_nul = [true] execvm ""Scripts\MissionSetupMenu\Dialog_Faction_Done.sqf""";
+		action = "with uiNamespace do { private _d = FLO_FactionDialog; if (!isNull _d) then { (_d displayCtrl 1600) ctrlEnable false; }; }; _nul = [true] execVM 'Scripts\MissionSetupMenu\Dialog_Faction_Done.sqf';";
 		tooltip = "";
 		font = "PuristaBold";
 	};
