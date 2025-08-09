@@ -134,6 +134,7 @@ private _fnc_markStarted = {
 
         // Determine how many new missions we need
         private _currentCount = count FLO_recentMissions;
+        if (_currentCount >= _desiredActive) exitWith {};
         private _missing = _desiredActive - _currentCount;
 
         if (_missing > 0) then {
