@@ -149,9 +149,14 @@ class FLO {
     
     class Misc {
         file = "Functions\Misc";
-        
+
         class ragequitBlocker     {};
         class disableSystemChat   {};
+    };
+
+    class UI {
+        file = "Functions\UI";
+        class safeConfirm         {};
     };
 
     class Pathfinding {

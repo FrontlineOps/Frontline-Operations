@@ -133,7 +133,7 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 
 	// Initialize virtualization system on the server (guard and retry)
 	[] spawn {
-		private _max = 5; private _i = 0;
+		private _max = 10; private _i = 0;
 		while {_i < _max} do {
 			if (isServer) exitWith { [OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization; };
 			[OPFOR_Virtualization_Distance] remoteExec ["FLO_fnc_initVirtualization", 2];

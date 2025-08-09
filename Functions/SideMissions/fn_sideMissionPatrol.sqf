@@ -14,7 +14,7 @@ private _DVRT = "NO";
     private _result = [
         "Enemy patrols are active nearby. We can track and eliminate them (Optional Mission: Disrupt Patrol)",
         "", _DVRT, _GNRT, nil, false, false
-    ] call BIS_fnc_guiMessage;
+    ] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         [player] call FLO_fnc_revealRandomEnemyGroup;

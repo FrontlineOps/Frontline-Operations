@@ -14,7 +14,7 @@ private _DVRT = "NO";
     private _result = [
         "A high value enemy convoy is on the move. We can ambush it (Optional Mission: Intercept Convoy)",
         "", _DVRT, _GNRT, nil, false, false
-    ] call BIS_fnc_guiMessage;
+    ] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         [player] call FLO_fnc_revealRandomEnemyGroup;

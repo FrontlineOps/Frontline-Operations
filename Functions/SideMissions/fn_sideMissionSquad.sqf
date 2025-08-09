@@ -14,7 +14,7 @@ private _GNRT = "YES";
 private _DVRT = "NO";
 [_DVRT, _GNRT] spawn {
     params ["_DVRT", "_GNRT"];
-    private _result = ["Intel Suggest the whereabouts of the Friendly Squad we Lost Contact with Earlier, We can Track them down and Rescue Them,  (Optional Mission : Rescue Missing Squad)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
+    private _result = ["Intel Suggest the whereabouts of the Friendly Squad we Lost Contact with Earlier, We can Track them down and Rescue Them,  (Optional Mission : Rescue Missing Squad)", "", _DVRT, _GNRT,nil, false, false] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         // Reveal a random enemy group for the players

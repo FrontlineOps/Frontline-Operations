@@ -14,7 +14,7 @@ private _GNRT = "YES";
 private _DVRT = "NO";
 [_DVRT, _GNRT] spawn {
     params ["_DVRT", "_GNRT"];
-    private _result = ["Intel Suggests Enemy Support Convoy will be Launched toward Frontlines, We can Intercept the Convoy and Dismantle their Reinforcements and Support operation,  (Optional Mission : Destroy Enemy Convoy)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
+    private _result = ["Intel Suggests Enemy Support Convoy will be Launched toward Frontlines, We can Intercept the Convoy and Dismantle their Reinforcements and Support operation,  (Optional Mission : Destroy Enemy Convoy)", "", _DVRT, _GNRT,nil, false, false] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         // Reveal intel on a nearby enemy convoy group

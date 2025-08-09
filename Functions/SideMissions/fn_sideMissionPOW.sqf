@@ -13,7 +13,7 @@ private _GNRT = "YES";
 private _DVRT = "NO";
 [_DVRT, _GNRT] spawn {
     params ["_DVRT", "_GNRT"];
-    private _result = ["Intel indicates a nearby POW camp. We can rescue our captured forces (Optional Mission: Rescue POWs)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
+    private _result = ["Intel indicates a nearby POW camp. We can rescue our captured forces (Optional Mission: Rescue POWs)", "", _DVRT, _GNRT,nil, false, false] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         // Show a random enemy group instead of a marker reveal

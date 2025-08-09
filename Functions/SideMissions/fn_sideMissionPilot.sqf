@@ -15,7 +15,7 @@ private _GNRT = "YES";
 private _DVRT = "NO";
 [_DVRT, _GNRT] spawn {
     params ["_DVRT", "_GNRT"];
-    private _result = ["Intel is about a Friendly Aircraft CrashSite, We can Track them Down and Rescue the Pilot and Destroy the Wreck,  (Optional Mission : Rescue Captured Pilot)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
+    private _result = ["Intel is about a Friendly Aircraft CrashSite, We can Track them Down and Rescue the Pilot and Destroy the Wreck,  (Optional Mission : Rescue Captured Pilot)", "", _DVRT, _GNRT,nil, false, false] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         // Reveal a random nearby enemy group just like civilian intel

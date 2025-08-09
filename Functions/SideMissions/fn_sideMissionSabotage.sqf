@@ -24,7 +24,7 @@ private _DVRT = "NO";
     private _result = [
         "Intel reports a valuable enemy device in the area. Destroy it (Optional Mission: Sabotage Tech)",
         "", _DVRT, _GNRT, nil, false, false
-    ] call BIS_fnc_guiMessage;
+    ] call FLO_fnc_safeConfirm;
 
     // Close behavior is inherent when result returns; we just gate follow-up actions
     if (_result) then {
