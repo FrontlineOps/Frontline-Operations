@@ -1,17 +1,14 @@
 // _placement = _this select 0;
-ctrlDelete (findDisplay 999 displayCtrl 1600);
-ctrlDelete (findDisplay 999 displayCtrl 1955);
-ctrlDelete (findDisplay 999 displayCtrl 1956);
+private _disp = findDisplay 999;
+if (isNull _disp) exitWith { ["SETUP", 1, "Faction dialog not found; aborting"] call FLO_fnc_log; };
 
-(findDisplay 999) closeDisplay 1;
-
-private _playerbox = findDisplay 999 displayCtrl 1955;
-private _enemybox = findDisplay 999 displayCtrl 1956;
-private _civilianbox = findDisplay 999 displayCtrl 1957;
-private _Presencebox = findDisplay 999 displayCtrl 1958;
-private _Resourcesbox = findDisplay 999 displayCtrl 1959;
-private _Reputationbox = findDisplay 999 displayCtrl 1960;
-private _Difficultybox = findDisplay 999 displayCtrl 1961;
+private _playerbox = _disp displayCtrl 1955;
+private _enemybox = _disp displayCtrl 1956;
+private _civilianbox = _disp displayCtrl 1957;
+private _Presencebox = _disp displayCtrl 1958;
+private _Resourcesbox = _disp displayCtrl 1959;
+private _Reputationbox = _disp displayCtrl 1960;
+private _Difficultybox = _disp displayCtrl 1961;
 
 private _PlayerfactionName = _playerbox lbText lbCurSel _playerbox;
 private _EnemyfactionName = _enemybox lbText lbCurSel _enemybox;
@@ -20,6 +17,8 @@ private _PresenceName = _Presencebox lbText lbCurSel _Presencebox;
 private _ResourcesName = _Resourcesbox lbText lbCurSel _Resourcesbox;
 private _ReputationName = _Reputationbox lbText lbCurSel _Reputationbox;
 private _DifficultyName = _Difficultybox lbText lbCurSel _Difficultybox;
+
+_disp closeDisplay 1;
 
 if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_CivilianfactionName isEqualTo "") || (_PresenceName isEqualTo "") || (_ResourcesName isEqualTo "") || (_ReputationName isEqualTo "") || (_DifficultyName isEqualTo "")) then {execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";} else {
 
@@ -126,17 +125,25 @@ if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_C
 	publicVariable "StartingLocationDone";
 
 	// Initialize Virtualization System
-	waitUntil {F_Init}; // Wait for faction initialization to complete
+	waitUntil { !isNil "F_Init" && {F_Init} }; // Wait for faction initialization flag
 
 	ZonMarkers = execVM "Scripts\Init\init_Markers.sqf";
-	waitUntil { scriptDone ZonMarkers };
+	waitUntil { !isNil "ZonMarkers" && { scriptDone ZonMarkers } };
 	["VIRTUALIZATION", 3, "Faction initialization complete, starting virtualization"] call FLO_fnc_log;
 
-	// Initialize virtualization system on the server
-	[OPFOR_Virtualization_Distance] remoteExec ["FLO_fnc_initVirtualization", 2];
+	// Initialize virtualization system on the server (guard and retry)
+	[] spawn {
+		private _max = 10; private _i = 0;
+		while {_i < _max} do {
+			if (isServer) exitWith { [OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization; };
+			[OPFOR_Virtualization_Distance] remoteExec ["FLO_fnc_initVirtualization", 2];
+			uiSleep 0.5; _i = _i + 1;
+		};
+	};
 
-	// Wait a moment for virtualization to initialize
-	sleep 1;
+	// Wait until virtualization signals ready (or timeout)
+	private _t0 = diag_tickTime;
+	waitUntil { !isNil "FLO_VirtualizationReady" || {diag_tickTime - _t0 > 10} };
 
 	// Initialize objective groups on the server
 	[] remoteExec ["FLO_fnc_initializeObjectiveGroups", 2];

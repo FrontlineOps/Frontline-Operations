@@ -18,7 +18,7 @@ INotificationClass = createHashMapObject [[
     ["#type", "INotificationClass"],
     ["#create", {
         private _display = uiNamespace getVariable ["IDS_Notifications", nil];
-        private _control = _display displayCtrl 1337;
+        private _control = _display displayCtrl 1002;
 
         _self set ["control", _control];
         _self set ["isLoaded", false];

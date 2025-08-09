@@ -40,8 +40,30 @@ private _processVirtualMovement = {
     
     // Get current waypoint
     private _currentWaypoint = _waypoints select _currentWaypointIndex;
+
+    // Validate waypoint data
+    if (isNil "_currentWaypoint" || {count _currentWaypoint < 2}) exitWith {
+        ["VIRTUALIZATION", 1, format["Invalid waypoint data for group %1", _groupId]] call FLO_fnc_log;
+        _groupData set ["state", "idle"];
+        _groupData set ["currentWaypointIndex", 0];
+    };
+
     private _waypointPos = _currentWaypoint select 0;
     private _waypointType = _currentWaypoint select 1;
+
+    // Additional validation for waypoint position and type
+    // Need to figure out why on loading, the waypoints that existed when saving become invalid.
+    if (isNil "_waypointPos" || {!(_waypointPos isEqualType [])} || {count _waypointPos < 2}) exitWith {
+        ["VIRTUALIZATION", 1, format["Invalid waypoint position for group %1, skipping waypoint", _groupId]] call FLO_fnc_log;
+        _groupData set ["state", "idle"];
+        _groupData set ["currentWaypointIndex", 0];
+    };
+
+    if (isNil "_waypointType" || {!(_waypointType isEqualType "")}) exitWith {
+        ["VIRTUALIZATION", 1, format["Invalid waypoint type for group %1, skipping waypoint", _groupId]] call FLO_fnc_log;
+        _groupData set ["state", "idle"];
+        _groupData set ["currentWaypointIndex", 0];
+    };
     
     // Calculate movement
     private _timeDelta = _currentTime - _lastMoveTime;

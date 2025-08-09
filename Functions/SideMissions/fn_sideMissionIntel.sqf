@@ -13,7 +13,7 @@ private _GNRT = "YES";
 private _DVRT = "NO";
 [_DVRT, _GNRT] spawn {
     params ["_DVRT", "_GNRT"];
-    private _result = ["Reports hint at enemy plans stored nearby. Investigate to gather intel (Optional Mission: Recover Enemy Intel)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
+    private _result = ["Reports hint at enemy plans stored nearby. Investigate to gather intel (Optional Mission: Recover Enemy Intel)", "", _DVRT, _GNRT,nil, false, false] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         [player] call FLO_fnc_revealRandomEnemyGroup;
@@ -155,7 +155,6 @@ private _DVRT = "NO";
         _trgA setTriggerStatements [
             "this",
             "[thisTrigger] spawn (missionNamespace getVariable 'FLO_fnc_inlineIntelGather')",
-            "",
             ""
         ];
 

@@ -15,6 +15,15 @@ params [
     ["_gridSize", 100]
 ];
 
+// Debug logging for initial parameter values
+["OBJECTIVE", 3, format["fn_indexVirtualObjectives called with _gridSize: %1 (type: %2)", _gridSize, typeName _gridSize]] call FLO_fnc_log;
+
+// Safety check for gridSize at function level
+if (!(_gridSize isEqualType 0) || _gridSize <= 0) then {
+    ["OBJECTIVE", 3, format["Invalid gridSize detected at function start: %1 (type: %2). Using fallback value of 100", _gridSize, typeName _gridSize]] call FLO_fnc_log;
+    _gridSize = 100;
+};
+
 private _minRadius = 90;
 private _maxRadius = 300;
 
@@ -42,11 +51,46 @@ private _coveredList = [];
         private _pos = _data get "position";
         private _radius = (_data get "radius") max 60;
         _coveredList pushBack [_pos, _radius];
-        // Mark all grid cells covered by this objective
-        private _minX = floor ((_pos select 0 - _radius) / _gridSize);
-        private _maxX = ceil  ((_pos select 0 + _radius) / _gridSize);
-        private _minY = floor ((_pos select 1 - _radius) / _gridSize);
-        private _maxY = ceil  ((_pos select 1 + _radius) / _gridSize);
+
+        // Debug logging for zero divisor issue
+        ["OBJECTIVE", 3, format["fn_indexVirtualObjectives - _gridSize value: %1, type: %2", _gridSize, typeName _gridSize]] call FLO_fnc_log;
+        ["OBJECTIVE", 3, format["fn_indexVirtualObjectives - _pos: %1, _radius: %2", _pos, _radius]] call FLO_fnc_log;
+
+        // Force gridSize to be valid right before calculation
+        private _safeGridSize = 100;
+        ["OBJECTIVE", 3, format["fn_indexVirtualObjectives - Forced _safeGridSize to: %1", _safeGridSize]] call FLO_fnc_log;
+
+        private _posX = _pos select 0;
+        private _posY = _pos select 1;
+        ["OBJECTIVE", 3, format["fn_indexVirtualObjectives - _posX: %1, _posY: %2, _radius: %3", _posX, _posY, _radius]] call FLO_fnc_log;   
+
+        // Calculate bounds step by step
+        private _leftBound = _posX - _radius;
+        private _rightBound = _posX + _radius;
+        private _topBound = _posY - _radius;
+        private _bottomBound = _posY + _radius;
+
+        ["OBJECTIVE", 3, format["fn_indexVirtualObjectives - bounds: left=%1, right=%2, top=%3, bottom=%4", _leftBound, _rightBound, _topBound, _bottomBound]] call FLO_fnc_log;
+        // Perform division with explicit safety check
+        private _minX = 0;
+        private _maxX = 0;
+        private _minY = 0;
+        private _maxY = 0;
+
+        if (_safeGridSize > 0) then {
+            _minX = floor (_leftBound / _safeGridSize);
+            _maxX = ceil (_rightBound / _safeGridSize);
+            _minY = floor (_topBound / _safeGridSize);
+            _maxY = ceil (_bottomBound / _safeGridSize);
+        } else {
+            diag_log "[FLO_ERROR] _safeGridSize is still zero or negative!";
+            _minX = 0;
+            _maxX = 1;
+            _minY = 0;
+            _maxY = 1;
+        };
+
+        ["OBJECTIVE", 3, format["fn_indexVirtualObjectives - grid bounds: minX=%1, maxX=%2, minY=%3, maxY=%4", _minX, _maxX, _minY, _maxY]] call FLO_fnc_log;
         for "_gx" from _minX to _maxX do {
             for "_gy" from _minY to _maxY do {
                 private _cell = format ["%1_%2", _gx, _gy];
@@ -61,8 +105,10 @@ private _coveredList = [];
 private _uncovered = [];
 {
     private _pos = getPosWorld _x;
-    private _gx = floor ((_pos select 0) / _gridSize);
-    private _gy = floor ((_pos select 1) / _gridSize);
+    private _safeGridSize = _gridSize;
+    if (!(_safeGridSize isEqualType 0) || _safeGridSize <= 0) then { _safeGridSize = 100; };
+    private _gx = floor ((_pos select 0) / _safeGridSize);
+    private _gy = floor ((_pos select 1) / _safeGridSize);
     private _cell = format ["%1_%2", _gx, _gy];
     private _covered = false;
     private _cellList = _coveredGrid getOrDefault [_cell, []];
@@ -76,8 +122,10 @@ private _uncovered = [];
 private _structureGrid = createHashMap;
 {
     private _pos = getPosWorld _x;
-    private _gx = floor ((_pos select 0) / _gridSize);
-    private _gy = floor ((_pos select 1) / _gridSize);
+    private _safeGridSize = _gridSize;
+    if (!(_safeGridSize isEqualType 0) || _safeGridSize <= 0) then { _safeGridSize = 100; };
+    private _gx = floor ((_pos select 0) / _safeGridSize);
+    private _gy = floor ((_pos select 1) / _safeGridSize);
     private _cell = format ["%1_%2", _gx, _gy];
     if (isNil {_structureGrid get _cell}) then { _structureGrid set [_cell, []]; };
     (_structureGrid get _cell) pushBack _x;
@@ -87,8 +135,10 @@ private _clusters = [];
 private _visited = createHashMap;
 {
     private _pos = getPosWorld _x;
-    private _gx = floor ((_pos select 0) / _gridSize);
-    private _gy = floor ((_pos select 1) / _gridSize);
+    private _safeGridSize = _gridSize;
+    if (!(_safeGridSize isEqualType 0) || _safeGridSize <= 0) then { _safeGridSize = 100; };
+    private _gx = floor ((_pos select 0) / _safeGridSize);
+    private _gy = floor ((_pos select 1) / _safeGridSize);
     private _cell = format ["%1_%2", _gx, _gy];
     if (!isNil {_visited get _cell}) then { continue; };
     // Gather all structures in this cell and neighbors

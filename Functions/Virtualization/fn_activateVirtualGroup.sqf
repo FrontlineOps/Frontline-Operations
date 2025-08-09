@@ -61,13 +61,23 @@ switch (true) do {
     
     // Infantry based on East_Units array
     case (_groupType isEqualTo "infantry"): {
-        _realGroup = createGroup [_side, true];
-        
+        _realGroup = createGroup [east, true];
+        private _tempEastGroup = createGroup [east, true];
+
+        // Create all units in temp group first
         for "_i" from 1 to _unitCount do {
             private _unitType = selectRandom East_Units;
             private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-            private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+            private _unit = _tempEastGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
         };
+
+        // Transfer all units to the real group
+        {
+            [_x] joinSilent _realGroup;
+        } forEach units _tempEastGroup;
+
+        // Clean up temporary group
+        deleteGroup _tempEastGroup;
     };
     
     // Civilian group
@@ -237,7 +247,7 @@ switch (true) do {
     
     // Default case if we don't recognize the group type
     default {
-        ["VIRTUALIZATION", 1, format["Unknown group type %1 for virtual group %2", _groupType, _groupId]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 2, format["Unknown group type %1 for virtual group %2", _groupType, _groupId]] call FLO_fnc_log;
         _realGroup = createGroup [_side, true];
         private _unitType = selectRandom East_Units;
         private _unit = _realGroup createUnit [_unitType, _position, [], 0, "NONE"];

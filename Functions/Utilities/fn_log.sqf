@@ -7,7 +7,7 @@
     Parameters:
     _component - The component name for the log message (String)
     _level - The log level (Number)
-             0 = Off, 1 = Errors, 2 = Warnings, 3 = Info, 4 = Debug, 5 = All
+             0 = Off, 1 = Errors only, 2 = Warnings only, 3 = Info only, 4 = Debug only, 5 = All levels
     _message - The message to log (String)
     
     Returns:
@@ -20,13 +20,13 @@ params [
     ["_message", "", [""]]
 ];
 
-// Debug Level Control: 0 = Off, 1 = Errors, 2 = Warnings, 3 = Info, 4 = Debug, 5 = All
+// Debug Level Control: 0 = Off, 1 = Errors only, 2 = Warnings only, 3 = Info only, 4 = Debug only, 5 = All levels
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 0;  // Default to Info level
+    FLO_Debug_Level = 1;  // Default to show all levels
 };
 
-// Only log if the current level is high enough
-if (_level <= FLO_Debug_Level) then {
+// Only log if the level matches exactly (or if level 5 is selected to show all)
+if (_level == FLO_Debug_Level || FLO_Debug_Level == 5) then {
     private _prefix = switch (_level) do {
         case 0: {"OFF"};
         case 1: {"ERROR"};

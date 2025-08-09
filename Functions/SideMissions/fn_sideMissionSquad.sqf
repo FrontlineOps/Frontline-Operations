@@ -14,7 +14,7 @@ private _GNRT = "YES";
 private _DVRT = "NO";
 [_DVRT, _GNRT] spawn {
     params ["_DVRT", "_GNRT"];
-    private _result = ["Intel Suggest the whereabouts of the Friendly Squad we Lost Contact with Earlier, We can Track them down and Rescue Them,  (Optional Mission : Rescue Missing Squad)", "", _DVRT, _GNRT,nil, false, false] call BIS_fnc_guiMessage;
+    private _result = ["Intel Suggest the whereabouts of the Friendly Squad we Lost Contact with Earlier, We can Track them down and Rescue Them,  (Optional Mission : Rescue Missing Squad)", "", _DVRT, _GNRT,nil, false, false] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         // Reveal a random enemy group for the players
@@ -22,10 +22,13 @@ private _DVRT = "NO";
     };
 
     if (!_result) then {
-        private _HQB = [player] call FLO_fnc_findMissionHouse;
+        // Choose objective near players and find a suitable house near it
+        private _objId = [4000, getPos player] call FLO_fnc_getObjectiveNearPlayer;
+        private _centerPos = if (_objId != "") then { [_objId] call FLO_fnc_getRandomObjectivePos } else { getPos player };
+        private _HQB = [_centerPos] call FLO_fnc_findMissionHouse;
         if (isNull _HQB) exitWith {};
 
-        // Create marker with optimized format string
+        // Create marker
         private _mrkr = createMarker [format ["InvesMark_%1", floor diag_tickTime], getPos _HQB];
         _mrkr setMarkerType "mil_warning";
         _mrkr setMarkerColor "colorOPFOR";
@@ -38,15 +41,19 @@ private _DVRT = "NO";
             // Get difficulty score once
             private _AGGRSCORE = FLO_DifficultyHandle get "value";
             
-            // marker filtering with pre-defined array
-            private _objective = [FLO_Objectives] call FLO_fnc_getRandomObjective;
-            private _allMarks = _objective get "structures";
-            
-            // Pre-allocate and batch process house positions
+            // Choose an objective near players using helper (fallback nearest to trigger)
+            private _allMarks = [];
+            if (!isNil "FLO_Objectives" && {count (keys FLO_Objectives) > 0}) then {
+                private _objIdInline = [4000, getPos _thisSquadTrigger] call FLO_fnc_getObjectiveNearPlayer;
+                if (_objIdInline == "") then { _objIdInline = [getPos _thisSquadTrigger] call FLO_fnc_getNearestObjective; };
+                private _objective = FLO_Objectives get _objIdInline;
+                if (!isNil "_objective") then { _allMarks = _objective getOrDefault ["structures", []]; };
+            };
+
+            // Process house positions
             private _NOSHs = [];
-            _NOSHs resize (count _allMarks * 5);
             {
-                _NOSHs append (nearestObjects [getMarkerPos _x, ["HOUSE"], 400]);
+                _NOSHs append (nearestObjects [getPos _x, ["HOUSE"], 400]);
             } forEach _allMarks;
             
             // Find HQ building with single query
@@ -57,7 +64,7 @@ private _DVRT = "NO";
             // Spawn intel with cached position
             ["Intel_MIS_01", selectRandom _buildingPositions, [0,0,0], 0, false, false, true] call LARs_fnc_spawnComp;
             
-            // Optimize garrison spawning with batch processing
+            // Garrison spawning
             private _garrisonGroups = [];
             {
                 private _group = [selectRandom _buildingPositions, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
@@ -67,18 +74,18 @@ private _DVRT = "NO";
                 _garrisonGroups pushBack _group;
             } forEach [1,2,3,4];
             
-            // Spawn patrol with optimized group creation
+            // Spawn patrol
             private _patrolGroup = [getPos _HQB, East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
             [_patrolGroup, getPos _HQB, 200] call BIS_fnc_taskPatrol;
             
-            // Spawn guards with optimized count calculation
-            private _guardCount = 2 + (_AGGRSCORE > 5) + (_AGGRSCORE > 10);
+            // Spawn guards
+            private _guardCount = 2 + (if (_AGGRSCORE > 5) then {1} else {0}) + (if (_AGGRSCORE > 10) then {1} else {0});
             for "_i" from 1 to _guardCount do {
                 private _pos = _HQB getPos [20 + random 200, random 360];
                 [East, [selectRandom East_Units], _pos] call BIS_fnc_spawnGroup;
             };
             
-            // Spawn additional patrols with optimized position calculation
+            // Spawn additional patrols
             private _patrolPos = _HQB getPos [100 + random 700, random 360];
             private _patrolGroup2 = [East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units, selectRandom East_Units], _patrolPos] call BIS_fnc_spawnGroup;
             [_patrolGroup2, getPos _HQB, 500] call BIS_fnc_taskPatrol;
@@ -90,7 +97,7 @@ private _DVRT = "NO";
             };
         }];
 
-        // Create trigger with optimized parameters
+        // Create trigger
         private _trgA = createTrigger ["EmptyDetector", getPos _HQB];
         _trgA setTriggerArea [2000, 2000, 0, false, 60];
         _trgA setTriggerInterval 3;
@@ -99,7 +106,6 @@ private _DVRT = "NO";
         _trgA setTriggerStatements [
             "this",
             "[thisTrigger] spawn (missionNamespace getVariable 'FLO_fnc_inlineSquad')",
-            "",
             ""
         ];
 

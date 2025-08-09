@@ -14,7 +14,7 @@ private _DVRT = "NO";
     private _result = [
         "Enemy patrols are active nearby. We can track and eliminate them (Optional Mission: Disrupt Patrol)",
         "", _DVRT, _GNRT, nil, false, false
-    ] call BIS_fnc_guiMessage;
+    ] call FLO_fnc_safeConfirm;
 
     if (_result) then {
         [player] call FLO_fnc_revealRandomEnemyGroup;
@@ -118,7 +118,9 @@ private _DVRT = "NO";
             };
             
             // Spawn guard units
-            for "_i" from 1 to (1 + (_aggrScore > 5) + (_aggrScore > 10)) do {
+            private _extra5 = if (_aggrScore > 5) then {1} else {0};
+            private _extra10 = if (_aggrScore > 10) then {1} else {0};
+            for "_i" from 1 to (1 + _extra5 + _extra10) do {
                 private _guardPos = [getPos _targetBuilding, 10, 30, 5, 1, 0] call BIS_fnc_findSafePos;
                 [_guardPos, true] call _createInsurgent;
             };

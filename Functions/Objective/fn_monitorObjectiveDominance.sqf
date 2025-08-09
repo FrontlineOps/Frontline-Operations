@@ -14,10 +14,23 @@
 if (!isServer) exitWith {};
 ["OBJECTIVEMONITOR", 3, "MonitorObjectiveDominance function started"] call FLO_fnc_log;
 
+// Wait for objectives to be initialized
+if (isNil "FLO_Objectives") then {
+    ["OBJECTIVEMONITOR", 3, "Waiting for FLO_Objectives to be initialized..."] call FLO_fnc_log;
+    waitUntil {!isNil "FLO_Objectives"};
+    ["OBJECTIVEMONITOR", 3, "FLO_Objectives initialized, starting monitoring"] call FLO_fnc_log;
+};
+
 private _captureTime = 20;      // seconds needed to capture
 private _checkInterval = 5;     // time between checks
 
 while {true} do {
+    // Safety check in case FLO_Objectives gets undefined during runtime
+    if (isNil "FLO_Objectives") then {
+        ["OBJECTIVEMONITOR", 2, "FLO_Objectives became undefined, waiting for reinitialization..."] call FLO_fnc_log;
+        waitUntil {!isNil "FLO_Objectives"};
+        ["OBJECTIVEMONITOR", 3, "FLO_Objectives reinitialized, resuming monitoring"] call FLO_fnc_log;
+    };
     ["OBJECTIVEMONITOR", 3, "Starting objective check loop"] call FLO_fnc_log;
     {
         private _id = _x;
