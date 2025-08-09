@@ -265,6 +265,13 @@ private _fnc_finalizeInit = {
             hintSilent "";
         };
 
+        // Initialize Notifications Module
+        [] call IDS_Notifications_fnc_initNotificationClass;
+        [] spawn {
+            waitUntil { !isNil "IDS_NotificationClass" };
+            IDS_NotificationClass call ["init", []];
+        };
+
     } catch {
         ["INIT_CLIENT", 1, format ["Error in final initialization: %1", _exception]] call FLO_fnc_log;
         hintSilent "LOADED WITH ERRORS!";
