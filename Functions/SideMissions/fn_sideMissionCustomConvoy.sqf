@@ -24,23 +24,66 @@ private _DVRT = "NO";
                 sleep 10;
 
                 private _AGGRSCORE = FLO_DifficultyHandle get "value";
-                private _startPos = player getPos [1500 + random 1000, random 360];
-                private _endPos = _startPos getPos [2000 + random 1000, random 360];
+
+                // Determine destination (front line) objective near players and a far-away start objective
+                private _startPos = objNull;
+                private _endPos = objNull;
+                if (!isNil "FLO_Objectives" && {count (keys FLO_Objectives) > 0}) then {
+                    private _players = allPlayers;
+                    private _frontlineMaxDist = 4000; // near players
+                    private _minStartDist = 6000;     // far from frontline
+
+                    // Choose frontline objective near players
+                    // Destination objective near players (frontline)
+                    private _destObjId = [_frontlineMaxDist, if (count _players > 0) then { getPos (selectRandom _players) } else { getPos player }] call FLO_fnc_getObjectiveNearPlayer;
+
+                    private _destData = FLO_Objectives get _destObjId;
+                    private _destPosCenter = if (!isNil "_destData") then { _destData get "position" } else { getPos player };
+
+                    // Choose start objective far away from destination
+                    private _startCandidates = (keys FLO_Objectives) select {
+                        _x != _destObjId && {
+                            private _p = (FLO_Objectives get _x) get "position";
+                            (_p distance2D _destPosCenter) >= _minStartDist
+                        }
+                    };
+                    private _startObjId = if (count _startCandidates > 0) then {
+                        private _farthest = "";
+                        private _maxD = -1;
+                        {
+                            private _p = (FLO_Objectives get _x) get "position";
+                            private _d = _p distance2D _destPosCenter;
+                            if (_d > _maxD) then { _maxD = _d; _farthest = _x; };
+                        } forEach _startCandidates;
+                        _farthest
+                    } else {
+                        selectRandom (keys FLO_Objectives)
+                    };
+
+                    _startPos = [_startObjId] call FLO_fnc_getRandomObjectivePos;
+                    _endPos = [_destObjId] call FLO_fnc_getRandomObjectivePos;
+                } else {
+                    // Fallback if objectives are not available
+                    private _tmpStart = player getPos [1500 + random 1000, random 360];
+                    _startPos = _tmpStart;
+                    _endPos = _tmpStart getPos [2000 + random 1000, random 360];
+                }
 
                 // Create convoy markers
                 private _createMarker = {
                     params ["_name", "_pos", "_text"];
-                    private _mrkr = createMarker [_name, _pos];
-                    _mrkr setMarkerType "mil_marker_noShadow";
-                    _mrkr setMarkerColor "colorOPFOR";
-                    _mrkr setMarkerText _text;
-                    _mrkr setMarkerSize [1.5, 1.5];
-                    _mrkr setMarkerAlpha 0.7;
-                    _mrkr
+                    private _id = createMarker [_name, _pos];
+                    _id setMarkerType "mil_marker_noShadow";
+                    _id setMarkerColor "colorOPFOR";
+                    _id setMarkerText _text;
+                    _id setMarkerSize [1.5, 1.5];
+                    _id setMarkerAlpha 0.7;
+                    _id
                 };
 
-                [_createMarker, "ConvoyStrt", _startPos, "Convoy Start"] call _createMarker;
-                [_createMarker, "ConvoyDest", _endPos, "Convoy End"] call _createMarker;
+                // Create markers
+                ["ConvoyStrt", _startPos, "Convoy Start"] call _createMarker;
+                ["ConvoyDest", _endPos, "Convoy End"] call _createMarker;
 
                 // Send notifications
                 ["STR_FLO_WARNING_TITLE", "STR_FLO_WARNING_ECONVOY3", "warning"] call FLO_fnc_sendNotification;

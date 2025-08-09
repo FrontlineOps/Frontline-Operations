@@ -73,6 +73,7 @@ class FLO {
         class getRandomObjectivePos {};
         class getNearestObjective   {};
         class getObjectivePath      {};
+        class getObjectiveNearPlayer {};
     };
 
     class Logistics {
@@ -89,6 +90,7 @@ class FLO {
         class militaryIntel {};
         class civilianIntel {};
         class revealRandomEnemyGroup {};
+        class backgroundEvents {};
     };
 
     class Arsenal {
@@ -135,6 +137,7 @@ class FLO {
         class sideMissionSabotage       {};
         class sideMissionPOW            {};
         class sideMissionIntel          {};
+        class missionQueue              {};
     };
 
     class SideMissionUtilities {

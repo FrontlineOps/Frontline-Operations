@@ -149,7 +149,6 @@ private _DVRT = "NO";
         _trgA setTriggerStatements [
             "this",
             "[thisTrigger] spawn (missionNamespace getVariable 'FLO_fnc_inlinePilot')",
-            "",
             ""
         ];
 

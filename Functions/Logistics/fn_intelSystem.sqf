@@ -109,7 +109,7 @@ if (isNil "FLO_Intel_System") then {
             _new
         }],
         
-        // Initialize the intel decay loop with optimized broadcasting
+        // Initialize the intel decay loop
         ["initDecayLoop", {
              [] spawn {
 

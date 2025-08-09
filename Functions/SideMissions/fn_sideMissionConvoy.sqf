@@ -27,10 +27,54 @@ private _DVRT = "NO";
                 sleep 10;
 
                 private _AGGRSCORE = FLO_DifficultyHandle get "value";
-                private _startPos = player getPos [1500 + random 1000, random 360];
-                private _endPos = _startPos getPos [2000 + random 1000, random 360];
+
+                // Determine destination (front line) objective near players and a far-away start objective
+                private _startPos = objNull;
+                private _endPos = objNull;
                 private _convoyVehicles = [];
                 private _markers = [];
+
+                if (!isNil "FLO_Objectives" && {count (keys FLO_Objectives) > 0}) then {
+                    private _players = allPlayers;
+                    private _frontlineMaxDist = 4000; // near players
+                    private _minStartDist = 6000;     // far from frontline
+
+                    // Choose frontline objective near players
+                    // Destination objective near players (frontline)
+                    private _destObjId = [_frontlineMaxDist, if (count _players > 0) then { getPos (selectRandom _players) } else { [worldSize/2, worldSize/2, 0] }] call FLO_fnc_getObjectiveNearPlayer;
+
+                    private _destData = FLO_Objectives get _destObjId;
+                    private _destPosCenter = if (!isNil "_destData") then { _destData get "position" } else { [worldSize/2, worldSize/2, 0] };
+
+                    // Choose start objective far away from destination
+                    private _startCandidates = (keys FLO_Objectives) select {
+                        _x != _destObjId && {
+                            private _p = (FLO_Objectives get _x) get "position";
+                            (_p distance2D _destPosCenter) >= _minStartDist
+                        }
+                    };
+                    private _startObjId = if (count _startCandidates > 0) then {
+                        // pick the farthest
+                        private _farthest = "";
+                        private _maxD = -1;
+                        {
+                            private _p = (FLO_Objectives get _x) get "position";
+                            private _d = _p distance2D _destPosCenter;
+                            if (_d > _maxD) then { _maxD = _d; _farthest = _x; };
+                        } forEach _startCandidates;
+                        _farthest
+                    } else {
+                        selectRandom (keys FLO_Objectives)
+                    };
+
+                    // Pick concrete positions within objectives
+                    _startPos = [_startObjId] call FLO_fnc_getRandomObjectivePos;
+                    _endPos = [_destObjId] call FLO_fnc_getRandomObjectivePos;
+                } else {
+                    // Fallback if objectives are not available
+                    _startPos = player getPos [1500 + random 1000, random 360];
+                    _endPos = _startPos getPos [2000 + random 1000, random 360];
+                }
 
                 // Create convoy markers
                 {
