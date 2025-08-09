@@ -159,25 +159,29 @@ private _DVRT = "NO";
                     V6 = [selectRandom East_Ground_Vehicles_Light,_slots select 6, CGM, _spawnDir] call _createConvoyVehicle;
                 };
 
-                // Add kill event handlers
+                // Collect spawned convoy vehicles (some may be undefined based on difficulty)
+                private _vehicles = [];
+                { if (!isNil _x) then { _vehicles pushBack (call compile _x); }; } forEach ["V0","V1","V2","V3","V4","V5","V6"];
+
+                // Add kill event handlers per vehicle
                 private _addKillEH = {
-                    params ["_vehicle"];
-                    if (alive _vehicle) then {
-                        private _mrkr = createMarker [str getPos _vehicle, getPos _vehicle];
+                    params ["_veh"];
+                    if (!isNull _veh && {alive _veh}) then {
+                        private _mName = format ["CNV_M_%1", netId _veh];
+                        private _mrkr = createMarker [_mName, getPos _veh];
                         _mrkr setMarkerType "mil_marker_noShadow";
                         _mrkr setMarkerText "DESTROY";
                         _mrkr setMarkerColor "colorOPFOR";
                         _mrkr setMarkerSize [0.9, 0.9];
                         _mrkr setMarkerAlpha 0.7;
-                        _vehicle addEventHandler ["Killed", {
-                            private _MMarks = allMapMarkers select {markerType _x == "mil_marker_noShadow" && markerAlpha _x == 0.7};
-                            private _M = [_MMarks, (_this select 0)] call BIS_fnc_nearestPosition;
-                            deleteMarker _M;
+                        _veh addEventHandler ["Killed", {
+                            params ["_killed"];
+                            deleteMarker format ["CNV_M_%1", netId _killed];
                         }];
                     };
                 };
 
-                { [_x] call _addKillEH } forEach [V0, V1, V2, V3, V4, V5, V6];
+                { [_x] call _addKillEH } forEach _vehicles;
 
                 // Add unit kill event handlers
                 {

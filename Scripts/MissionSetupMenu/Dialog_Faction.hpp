@@ -20,12 +20,78 @@ class factionselect_dialog2
 		soundSelect[] = {"\A3\ui_f\data\sound\RscCombo\soundSelect",0.1,1};
 		soundExpand[] = {"\A3\ui_f\data\sound\RscCombo\soundExpand",0.1,1};
 		soundCollapse[] = {"\A3\ui_f\data\sound\RscCombo\soundCollapse",0.1,1};
+
+        // Modern theme helpers
+        class RscTitleBar: RscText {
+            colorText[] = {1,1,1,1};
+            colorBackground[] = {0.12,0.12,0.18,1};
+            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
+            shadow = 1;
+            font = "PuristaBold";
+        };
+        class RscCard: RscText {
+            colorText[] = {0.85,0.85,0.85,1};
+            colorBackground[] = {0.08,0.08,0.08,0.92};
+            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
+            font = "PuristaMedium";
+            shadow = 0;
+        };
+        class RscButtonPrimary: RscButton {
+            colorText[] = {1,1,1,1};
+            colorBackground[] = {0.2,0.2,0.2,1};
+            colorBackgroundActive[] = {0.5,0.15,0.15,1};
+            colorFocused[] = {0.5,0.15,0.15,0.9};
+            colorShadow[] = {0,0,0,0};
+            colorBorder[] = {0,0,0,0};
+            font = "PuristaBold";
+            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
+        };
+        class RscCaption: RscText {
+            colorText[] = {0.85,0.35,0.35,1};
+            colorBackground[] = {0,0,0,0};
+            font = "PuristaBold";
+            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.05)";
+            shadow = 1;
+        };
 	};
-	
+
+	// Modern theme helpers
+	class RscTitleBar: RscText {
+		colorText[] = {1,1,1,1};
+		colorBackground[] = {0.12,0.12,0.18,1};
+		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
+		shadow = 1;
+		font = "PuristaBold";
+	};
+	class RscCard: RscText {
+		colorText[] = {0.85,0.85,0.85,1};
+		colorBackground[] = {0.08,0.08,0.08,0.92};
+		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
+		font = "PuristaMedium";
+		shadow = 0;
+	};
+	class RscButtonPrimary: RscButton {
+		colorText[] = {1,1,1,1};
+		colorBackground[] = {0.2,0.2,0.2,1};
+		colorBackgroundActive[] = {0.5,0.15,0.15,1};
+		colorFocused[] = {0.5,0.15,0.15,0.9};
+		colorShadow[] = {0,0,0,0};
+		colorBorder[] = {0,0,0,0};
+		font = "PuristaBold";
+		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
+	};
+	class RscCaption: RscText {
+		colorText[] = {0.85,0.35,0.35,1};
+		colorBackground[] = {0,0,0,0};
+		font = "PuristaBold";
+		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.05)";
+		shadow = 1;
+	};
+
 class controls
 {
 	// Modern semi-transparent background panel
-	class BackgroundPanel: RscText
+	class BackgroundPanel: RscCard
 	{
 		idc = -1;
 		x = safeZoneX + safeZoneW/2 - 25 * GUI_GRID_W;
@@ -34,9 +100,9 @@ class controls
 		h = 15 * GUI_GRID_H;
 		colorBackground[] = {0,0,0,0.85};
 	};
-	
+
 	// Top header bar
-	class HeaderBar: RscText
+	class HeaderBar: RscTitleBar
 	{
 		idc = -1;
 		x = safeZoneX + safeZoneW/2 - 25 * GUI_GRID_W;
@@ -51,19 +117,38 @@ class controls
 		font = "PuristaBold";
 		align = "center";
 		text = "MISSION SETUP";
+
+        // Close (X) button on header bar
+        class HeaderClose: RscButton
+        {
+            idc = 1601;
+            text = "X";
+            x = safeZoneX + safeZoneW/2 + 25 * GUI_GRID_W - 1.5 * GUI_GRID_W;
+            y = safeZoneY + safeZoneH/2 - 8.5 * GUI_GRID_H;
+            w = 1.5 * GUI_GRID_W;
+            h = 1 * GUI_GRID_H;
+            colorText[] = {1,1,1,1};
+            colorBackground[] = {0.8,0.2,0.2,1};
+            colorBackgroundActive[] = {1,0.2,0.2,1};
+            colorFocused[] = {0.9,0.3,0.3,1};
+            font = "PuristaBold";
+            sizeEx = 0.9 * GUI_GRID_H;
+            action = "closeDialog 0";
+            tooltip = "Close";
+        };
 	};
 
 	// Title text
-	class RscText_1000: RscText
+	class RscText_1000: RscCaption
 	{
 		idc = 1000;
-		text = "CHOOSE FACTIONS"; 
+		text = "CHOOSE FACTIONS";
 		x = safeZoneX + safeZoneW/2 - 24 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 7 * GUI_GRID_H;
 		w = 12 * GUI_GRID_W;
 		h = 1 * GUI_GRID_H;
 		colorText[] = {0.5,0.1,0.1,1};
-		colorBackground[] = {0,0,0,0};	
+		colorBackground[] = {0,0,0,0};
 		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.1)";
 		shadow = 1;
 		colorShadow[] = {0,0,0,0.5};
@@ -71,12 +156,12 @@ class controls
 	};
 
 	/* FACTION SELECTION SECTION */
-	
+
 	// Player Faction Frame
 	class RscFrame_1800: RscText
 	{
 		idc = 1800;
-		text = "Player Faction"; 
+		text = "Player Faction";
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -91,7 +176,7 @@ class controls
 	class RscFrame_1801: RscText
 	{
 		idc = 1801;
-		text = "Enemy Faction"; 
+		text = "Enemy Faction";
 		x = safeZoneX + safeZoneW/2 - 6 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -105,7 +190,7 @@ class controls
 	class RscFrame_1802: RscText
 	{
 		idc = 1802;
-		text = "Civilian Faction"; 
+		text = "Civilian Faction";
 		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -114,12 +199,12 @@ class controls
 		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
 		font = "PuristaMedium";
 	};
-	
+
 	// Starting Zones Frame
 	class RscFrame_1803: RscText
 	{
 		idc = 1803;
-		text = "Starting Zones"; 
+		text = "Starting Zones";
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 2 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -129,12 +214,12 @@ class controls
 		font = "PuristaMedium";
 		tooltip = "";
 	};
-	
+
 	// Starting Resources Frame
 	class RscFrame_1804: RscText
 	{
 		idc = 1804;
-		text = "Starting Resources"; 
+		text = "Starting Resources";
 		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 - 2 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -144,12 +229,12 @@ class controls
 		font = "PuristaMedium";
 		tooltip = "";
 	};
-	
+
 	// Starting Difficulty Frame
 	class RscFrame_1805: RscText
 	{
 		idc = 1805;
-		text = "Starting Difficulty"; 
+		text = "Starting Difficulty";
 		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 + 2 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -164,7 +249,7 @@ class controls
 	class RscFrame_1806: RscText
 	{
 		idc = 1806;
-		text = "Starting Reputation"; 
+		text = "Starting Reputation";
 		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 + 2 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
@@ -174,7 +259,7 @@ class controls
 		font = "PuristaMedium";
 		tooltip = "";
 	};
-	
+
 	// Player Faction Dropdown
 	class faction_selection_listbox: suprChooseFactionCombo
 	{
@@ -183,7 +268,7 @@ class controls
 		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// Enemy Faction Dropdown
 	class faction_selection_enemy_listbox: suprChooseFactionCombo
 	{
@@ -192,7 +277,7 @@ class controls
 		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// Civilian Faction Dropdown
 	class faction_selection_civilian_listbox: suprChooseFactionCombo
 	{
@@ -201,7 +286,7 @@ class controls
 		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// Enemy Presence Dropdown
 	class faction_selection_presence_listbox: suprChooseFactionCombo
 	{
@@ -210,7 +295,7 @@ class controls
 		y = safeZoneY + safeZoneH/2 - 0 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// Starting Resources Dropdown
 	class faction_selection_Resources_listbox: suprChooseFactionCombo
 	{
@@ -219,7 +304,7 @@ class controls
 		y = safeZoneY + safeZoneH/2 - 0 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// Reputation Dropdown
 	class Reputation_selection_listbox: suprChooseFactionCombo
 	{
@@ -228,7 +313,7 @@ class controls
 		y = safeZoneY + safeZoneH/2 + 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// Difficulty Dropdown
 	class Difficulty_selection_listbox: suprChooseFactionCombo
 	{
@@ -237,12 +322,12 @@ class controls
 		y = safeZoneY + safeZoneH/2 + 4 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
 	};
-	
+
 	// START MISSION Button
-	class RscButton_1600: RscButton
+	class RscButton_1600: RscButtonPrimary
 	{
 		idc = 1600;
-		text = "START MISSION"; 
+		text = "START MISSION";
 		x = safeZoneX + safeZoneW/2 - 7 * GUI_GRID_W;
 		y = safeZoneY + safeZoneH/2 + 6 * GUI_GRID_H;
 		w = 14 * GUI_GRID_W;
