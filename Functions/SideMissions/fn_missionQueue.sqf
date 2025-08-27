@@ -15,6 +15,13 @@
 
 if (!isServer) exitWith {};
 
+// Respect startup grace period
+private _missionStartTime = missionNamespace getVariable ["FLO_missionStartTime", 0];
+private _gracePeriod = 600; // 10 minutes
+if (_missionStartTime > 0 && {diag_tickTime - _missionStartTime < _gracePeriod}) exitWith {
+    ["QUEUE", 2, format ["Mission queue waiting for grace period (%1s remaining)", _gracePeriod - (diag_tickTime - _missionStartTime)]] call FLO_fnc_log;
+};
+
 private _desiredActive = 2;              // Target number of concurrent missions
 private _recentTTL = 15 * 60;            // Consider missions "active/recent" for 15 minutes
 private _perTypeCooldown = 10 * 60;      // Minimum time before the same mission can be started again
@@ -25,50 +32,6 @@ private _convoyTypes = ["convoyInterdiction", "customConvoy"]; // Mutually exclu
 // Initialize state containers if missing
 if (isNil "FLO_recentMissions") then { FLO_recentMissions = []; publicVariable "FLO_recentMissions"; };
 if (isNil "FLO_missionCooldowns") then { FLO_missionCooldowns = createHashMap; publicVariable "FLO_missionCooldowns"; };
-
-// prune expired recent missions
-private _fnc_prune = {
-    private _now = time;
-    private _filtered = [];
-    {
-        _x params ["_name", "_startTime"];
-        if ((_now - _startTime) < _recentTTL) then { _filtered pushBack _x; };
-    } forEach FLO_recentMissions;
-    FLO_recentMissions = _filtered;
-    publicVariable "FLO_recentMissions";
-};
-
-// can start mission type now?
-private _fnc_canStart = {
-    params ["_name"];
-
-    // Prevent convoys overlapping
-    if (_name in _convoyTypes) then {
-        if (!isNil "ConVLocc" && {ConVLocc > 0}) exitWith {false};
-        // Also prevent another convoy type if the other is recent
-        if ((FLO_recentMissions findIf { (_x select 0) in _convoyTypes }) > -1) exitWith {false};
-    };
-
-    // Per-type cooldown check
-    private _now = time;
-    private _cooldowns = FLO_missionCooldowns;
-    private _until = _cooldowns getOrDefault [_name, 0];
-    if (_now < _until) exitWith {false};
-
-    // Avoid instant duplicates in recent list
-    if ((FLO_recentMissions findIf { (_x select 0) == _name }) > -1) exitWith {false};
-
-    true
-};
-
-// mark mission started
-private _fnc_markStarted = {
-    params ["_name"];
-    FLO_recentMissions pushBack [_name, time];
-    publicVariable "FLO_recentMissions";
-    FLO_missionCooldowns set [_name, time + _perTypeCooldown];
-    publicVariable "FLO_missionCooldowns";
-};
 
 // Main loop
 [] spawn {
@@ -128,6 +91,14 @@ private _fnc_markStarted = {
     while {true} do {
         // Ensure registrations exist; if not, wait and retry
         if (isNil "FLO_registeredSideMissions") then { sleep 5; continue; };
+
+        // Respect startup grace period
+        private _missionStartTime = missionNamespace getVariable ["FLO_missionStartTime", 0];
+        private _gracePeriod = 600; // 10 minutes
+        if (_missionStartTime > 0 && {diag_tickTime - _missionStartTime < _gracePeriod}) then {
+            sleep 10;
+            continue;
+        };
 
         // Prune old entries
         call _prune;

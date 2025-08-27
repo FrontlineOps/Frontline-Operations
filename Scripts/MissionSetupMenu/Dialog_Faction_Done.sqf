@@ -20,6 +20,9 @@ private _DifficultyName = _Difficultybox lbText lbCurSel _Difficultybox;
 
 _disp closeDisplay 1;
 
+// Set mission start time for grace period tracking
+missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
+
 if ((_PlayerfactionName isEqualTo "") || (_EnemyfactionName isEqualTo "") || (_CivilianfactionName isEqualTo "") || (_PresenceName isEqualTo "") || (_ResourcesName isEqualTo "") || (_ReputationName isEqualTo "") || (_DifficultyName isEqualTo "")) then {execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";} else {
 
 	hint "Done";

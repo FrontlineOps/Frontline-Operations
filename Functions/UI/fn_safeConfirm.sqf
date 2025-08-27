@@ -37,6 +37,14 @@ private _modal = if (_paramCount > 6) then { _this select 6 } else { false };
 // Only show dialogs on clients with interface
 if (!hasInterface) exitWith {false};
 
+// Prevent mission suggestions during startup grace period
+private _missionStartTime = missionNamespace getVariable ["FLO_missionStartTime", 0];
+private _gracePeriod = 600; // 10 minutes grace period
+if (_missionStartTime > 0 && {diag_tickTime - _missionStartTime < _gracePeriod}) exitWith {
+    ["UI", 2, format ["FLO_fnc_safeConfirm: Still in startup grace period (%1s remaining)", _gracePeriod - (diag_tickTime - _missionStartTime)]] call FLO_fnc_log;
+    false
+};
+
 // Prevent multiple dialogs from stacking
 if (uiNamespace getVariable ["FLO_confirmBusy", false]) exitWith {
     ["UI", 2, "FLO_fnc_safeConfirm: Dialog already active, ignoring request"] call FLO_fnc_log;
