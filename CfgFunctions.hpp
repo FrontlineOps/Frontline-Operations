@@ -134,7 +134,6 @@ class FLO {
         class sideMissionConvoy         {};
         class sideMissionCustomConvoy   {};
         class sideMissionPatrol         {};
-        class sideMissionSabotage       {};
         class sideMissionPOW            {};
         class sideMissionIntel          {};
         class missionQueue              {};
