@@ -267,8 +267,8 @@ try {
 
                 {
                     if (alive _x && !isPlayer _x) then {  // Skip player vehicles
-                        // Generate unique ID using CBA
-                        private _id = [] call CBA_fnc_createUUID;
+                        // Generate unique ID
+                        private _id = [] call FLO_fnc_createUUID;
 
                         _x setVehicleVarName _id;
                         _x setVariable ["FLO_SaveID", _id, true];
@@ -340,8 +340,8 @@ try {
 
             // Save object data
             {
-                // Generate unique ID using CBA
-                private _id = [] call CBA_fnc_createUUID;
+                // Generate unique ID
+                private _id = [] call FLO_fnc_createUUID;
 
                 _x setVehicleVarName _id;
                 _x setVariable ["FLO_SaveID", _id, true];
@@ -487,8 +487,8 @@ try {
                 private _items = [_x] call _fnc_getAllCargo;
                 _x setVariable ["FLO_crate_items", _items, true];
 
-                // Generate unique ID using CBA
-                private _id = [] call CBA_fnc_createUUID;
+                // Generate unique ID
+                private _id = [] call FLO_fnc_createUUID;
 
                 _x setVehicleVarName _id;
                 _x setVariable ["FLO_SaveID", _id, true];

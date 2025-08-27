@@ -121,6 +121,7 @@ class FLO {
         class displayNotification       {};
         class adjustAggression          {};
         class adjustReputation          {};
+        class createUUID                {};
     };
 
     class SideMissions {
