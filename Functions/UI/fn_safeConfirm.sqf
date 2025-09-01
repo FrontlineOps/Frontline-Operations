@@ -51,6 +51,13 @@ if (uiNamespace getVariable ["FLO_confirmBusy", false]) exitWith {
     false
 };
 
+// prevent dialogue if player is in ACE arsenal
+private _aceId = 1127001;
+if ( !isNull findDisplay _aceId) exitWith {
+    ["UI", 2, "FLO_fnc_safeConfirm: ace arsenal currently active, aborting dialogue"] call FLO_fnc_log;
+    false
+};
+
 // Set busy flag to prevent re-entry
 uiNamespace setVariable ["FLO_confirmBusy", true];
 
