@@ -1,4 +1,23 @@
-createDialog "supr_RequestsMenu";
+/*
+ * Request Menu Dialog Initialization
+ * Author: Frontline Operations
+ *
+ * Description:
+ * Initializes the Request Menu dialog, populating lists with available
+ * vehicles, supplies, and equipment based on player permissions and
+ * nearby infrastructure (radar systems).
+ *
+ * IDC Reference (from UI/constants.hpp):
+ * - Resources Text:   1000 (FLO_IDC_REQUEST_RESOURCES)
+ * - Resistance Text:  1001 (FLO_IDC_REQUEST_RESISTANCE)
+ * - Aggression Text:  1002 (FLO_IDC_REQUEST_AGGRESSION)
+ * - Ground List:      2101 (FLO_IDC_REQUEST_LIST_GROUND)
+ * - Air/Sea List:     2102 (FLO_IDC_REQUEST_LIST_AIR)
+ * - Supplies List:    2103 (FLO_IDC_REQUEST_LIST_SUPPLIES)
+ */
+
+// Open the Request Menu dialog
+createDialog "FLO_RequestMenuDialog";
 waitUntil {dialog};
 
 // Helper function to add items to a list box
@@ -26,9 +45,10 @@ FLO_fnc_addListBoxItem = {
     lbSetColor [_idc, _index, _color];   
     lbSetData [_idc, _index, _className];             
     lbSetValue [_idc, _index, _cost];             
-    lbSetPictureRight [_idc, _index, _picture]; 
+    lbSetPictureRight [_idc, _index, _picture];
+    // IDD 1599 = FLO_IDD_REQUEST (from UI/constants.hpp)
     (findDisplay 1599 displayCtrl _idc) lbSetPictureRightColor [_index, _color];
-    
+
     _index
 };
 

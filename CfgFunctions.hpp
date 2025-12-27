@@ -156,7 +156,11 @@ class FLO {
 
     class UI {
         file = "Functions\UI";
-        class safeConfirm         {};
+        class safeConfirm             {};
+        class factionDialogOnLoad     {};
+        class factionDialogOnUnload   {};
+        class factionDialogPopulate   {};
+        class factionDialogStart      {};
     };
 
     class Pathfinding {

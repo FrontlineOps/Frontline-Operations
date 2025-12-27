@@ -1,4 +1,18 @@
-createDialog "supr_RequestsMenu";
+/*
+ * OP (Observation Post) Request Menu Dialog Initialization
+ * Author: Frontline Operations
+ *
+ * Description:
+ * Initializes the Request Menu dialog for Observation Posts with a
+ * limited set of items (containers and static weapons only).
+ *
+ * IDC Reference (from UI/constants.hpp):
+ * - Supplies List: 2103 (FLO_IDC_REQUEST_LIST_SUPPLIES)
+ * - IDD: 1599 (FLO_IDD_REQUEST)
+ */
+
+// Open the Request Menu dialog
+createDialog "FLO_RequestMenuDialog";
 waitUntil {dialog};
 
 // Helper function to add items to a list box
@@ -12,21 +26,22 @@ FLO_fnc_addListBoxItem = {
         ["_picture", "", [""]],
         ["_color", [1,1,1,1], [[]]]
     ];
-    
+
     // Get display name from config if available, otherwise use provided displayName
     private _configDisplayName = getText (configFile >> "CfgVehicles" >> _className >> "displayName");
     if (_configDisplayName == "") then {
         _configDisplayName = _displayName;
     };
-    
+
     private _txt = format ["%1$ | %2 (%3)", _cost, _configDisplayName, _category];
-    private _index = lbAdd [_idc, _txt];            
-    lbSetColor [_idc, _index, _color];   
-    lbSetData [_idc, _index, _className];             
-    lbSetValue [_idc, _index, _cost];             
-    lbSetPictureRight [_idc, _index, _picture]; 
+    private _index = lbAdd [_idc, _txt];
+    lbSetColor [_idc, _index, _color];
+    lbSetData [_idc, _index, _className];
+    lbSetValue [_idc, _index, _cost];
+    lbSetPictureRight [_idc, _index, _picture];
+    // IDD 1599 = FLO_IDD_REQUEST (from UI/constants.hpp)
     (findDisplay 1599 displayCtrl _idc) lbSetPictureRightColor [_index, _color];
-    
+
     _index
 };
 

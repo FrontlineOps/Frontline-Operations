@@ -1,345 +1,283 @@
-class factionselect_dialog2
+/*
+ * Faction Selection Dialog
+ * Author: Frontline Operations
+ *
+ * Description:
+ * Mission setup dialog for selecting player, enemy, and civilian factions,
+ * along with starting parameters like resources, difficulty, and reputation.
+ *
+ * Dependencies:
+ * Requires UI/defines.hpp to be included before this file.
+ */
+
+// ============================================================================
+// DIALOG LAYOUT CONSTANTS
+// ============================================================================
+
+// Dialog dimensions
+#define FACTION_DIALOG_W        (50 * GUI_GRID_W)
+#define FACTION_DIALOG_H        (16 * GUI_GRID_H)
+#define FACTION_DIALOG_X        (safeZoneX + safeZoneW/2 - FACTION_DIALOG_W/2)
+#define FACTION_DIALOG_Y        (safeZoneY + safeZoneH/2 - FACTION_DIALOG_H/2)
+
+// Column layout (3 columns)
+#define FACTION_COL_W           (14 * GUI_GRID_W)
+#define FACTION_COL_GAP         (2 * GUI_GRID_W)
+#define FACTION_COL1_X          (FACTION_DIALOG_X + 2 * GUI_GRID_W)
+#define FACTION_COL2_X          (FACTION_COL1_X + FACTION_COL_W + FACTION_COL_GAP)
+#define FACTION_COL3_X          (FACTION_COL2_X + FACTION_COL_W + FACTION_COL_GAP)
+
+// Row layout
+#define FACTION_HEADER_H        (1.2 * GUI_GRID_H)
+#define FACTION_ROW_H           (1.2 * GUI_GRID_H)
+#define FACTION_LABEL_H         (0.8 * GUI_GRID_H)
+#define FACTION_ROW_GAP         (0.5 * GUI_GRID_H)
+
+// Content area
+#define FACTION_CONTENT_Y       (FACTION_DIALOG_Y + FACTION_HEADER_H + 1 * GUI_GRID_H)
+
+// ============================================================================
+// DIALOG-SPECIFIC COMBO CLASS
+// ============================================================================
+
+class FLO_FactionCombo: FLO_RscCombo
 {
-	idd = 999;
-	movingenable = true;
-	onLoad = "uiNamespace setVariable ['FLO_FactionDialog', _this select 0]; private _eh = (_this select 0) displayAddEventHandler ['KeyDown', { params ['_d','_k']; if (_k isEqualTo 1) then { closeDialog 0; true } else { false } }]; (_this select 0) setVariable ['FLO_FactionDialog_EH', _eh];";
-	onUnload = "params ['_d']; private _eh = _d getVariable ['FLO_FactionDialog_EH', -1]; if (_eh >= 0) then { _d displayRemoveEventHandler ['KeyDown', _eh]; }; uiNamespace setVariable ['FLO_FactionDialog', displayNull];";
+	w = FACTION_COL_W;
+	h = FACTION_ROW_H;
+	colorSelectBackground[] = FLO_COLOR_PRIMARY;
+	wholeHeight = 12 * GUI_GRID_H;
+};
 
-	// Modern UI base classes
-	class suprChooseFactionCombo: RscCombo
-	{
-		w = 20 * GUI_GRID_W;
-		h = 1.2 * GUI_GRID_H;
-		colorText[] = {1,1,1,1};
-		wholeHeight = 14 * GUI_GRID_H;
-		font = "PuristaMedium";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.9)";
-		colorBackground[] = {0.1,0.1,0.1,0.85};
-		colorSelectBackground[] = {0.5,0.1,0.1,0.85};
-		colorScrollbar[] = {0.5,0.1,0.1,1};
-		soundSelect[] = {"\A3\ui_f\data\sound\RscCombo\soundSelect",0.1,1};
-		soundExpand[] = {"\A3\ui_f\data\sound\RscCombo\soundExpand",0.1,1};
-		soundCollapse[] = {"\A3\ui_f\data\sound\RscCombo\soundCollapse",0.1,1};
+// ============================================================================
+// FACTION SELECTION DIALOG
+// ============================================================================
 
-        // Modern theme helpers
-        class RscTitleBar: RscText {
-            colorText[] = {1,1,1,1};
-            colorBackground[] = {0.12,0.12,0.18,1};
-            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-            shadow = 1;
-            font = "PuristaBold";
-        };
-        class RscCard: RscText {
-            colorText[] = {0.85,0.85,0.85,1};
-            colorBackground[] = {0.08,0.08,0.08,0.92};
-            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-            font = "PuristaMedium";
-            shadow = 0;
-        };
-        class RscButtonPrimary: RscButton {
-            colorText[] = {1,1,1,1};
-            colorBackground[] = {0.2,0.2,0.2,1};
-            colorBackgroundActive[] = {0.5,0.15,0.15,1};
-            colorFocused[] = {0.5,0.15,0.15,0.9};
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            font = "PuristaBold";
-            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-        };
-        class RscCaption: RscText {
-            colorText[] = {0.85,0.35,0.35,1};
-            colorBackground[] = {0,0,0,0};
-            font = "PuristaBold";
-            sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.05)";
-            shadow = 1;
-        };
-	};
-
-	// Modern theme helpers
-	class RscTitleBar: RscText {
-		colorText[] = {1,1,1,1};
-		colorBackground[] = {0.12,0.12,0.18,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-		shadow = 1;
-		font = "PuristaBold";
-	};
-	class RscCard: RscText {
-		colorText[] = {0.85,0.85,0.85,1};
-		colorBackground[] = {0.08,0.08,0.08,0.92};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		shadow = 0;
-	};
-	class RscButtonPrimary: RscButton {
-		colorText[] = {1,1,1,1};
-		colorBackground[] = {0.2,0.2,0.2,1};
-		colorBackgroundActive[] = {0.5,0.15,0.15,1};
-		colorFocused[] = {0.5,0.15,0.15,0.9};
-		colorShadow[] = {0,0,0,0};
-		colorBorder[] = {0,0,0,0};
-		font = "PuristaBold";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-	};
-	class RscCaption: RscText {
-		colorText[] = {0.85,0.35,0.35,1};
-		colorBackground[] = {0,0,0,0};
-		font = "PuristaBold";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.05)";
-		shadow = 1;
-	};
-
-class controls
+class FLO_FactionSelectDialog
 {
-	// Modern semi-transparent background panel
-	class BackgroundPanel: RscCard
+	idd = FLO_IDD_FACTION;
+	movingEnable = true;
+	enableSimulation = true;
+
+	onLoad = "_this call FLO_fnc_factionDialogOnLoad";
+	onUnload = "_this call FLO_fnc_factionDialogOnUnload";
+
+	class Controls
 	{
-		idc = -1;
-		x = safeZoneX + safeZoneW/2 - 25 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 7.5 * GUI_GRID_H;
-		w = 50 * GUI_GRID_W;
-		h = 15 * GUI_GRID_H;
-		colorBackground[] = {0,0,0,0.85};
-	};
+		// ====================================================================
+		// BACKGROUND LAYER
+		// ====================================================================
 
-	// Top header bar
-	class HeaderBar: RscTitleBar
-	{
-		idc = -1;
-		x = safeZoneX + safeZoneW/2 - 25 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 8.5 * GUI_GRID_H;
-		w = 50 * GUI_GRID_W;
-		h = 1 * GUI_GRID_H;
-		colorText[] = {1,1,1,1};
-		colorBackground[] = {0.2,0.2,0.2,1};
-		sizeEx = 0.8 * GUI_GRID_H;
-		shadow = 1;
-		colorShadow[] = {0,0,0,0.5};
-		font = "PuristaBold";
-		align = "center";
-		text = "MISSION SETUP";
+		class Background: FLO_RscBackground
+		{
+			idc = FLO_IDC_NONE;
+			x = FACTION_DIALOG_X;
+			y = FACTION_DIALOG_Y + FACTION_HEADER_H;
+			w = FACTION_DIALOG_W;
+			h = FACTION_DIALOG_H - FACTION_HEADER_H;
+		};
 
-        // Close (X) button on header bar
-        class HeaderClose: RscButton
-        {
-            idc = 1601;
-            text = "X";
-            x = safeZoneX + safeZoneW/2 + 25 * GUI_GRID_W - 1.5 * GUI_GRID_W;
-            y = safeZoneY + safeZoneH/2 - 8.5 * GUI_GRID_H;
-            w = 1.5 * GUI_GRID_W;
-            h = 1 * GUI_GRID_H;
-            colorText[] = {1,1,1,1};
-            colorBackground[] = {0.8,0.2,0.2,1};
-            colorBackgroundActive[] = {1,0.2,0.2,1};
-            colorFocused[] = {0.9,0.3,0.3,1};
-            font = "PuristaBold";
-            sizeEx = 0.9 * GUI_GRID_H;
-            action = "closeDialog 0";
-            tooltip = "Close";
-        };
-	};
+		// ====================================================================
+		// HEADER BAR
+		// ====================================================================
 
-	// Title text
-	class RscText_1000: RscCaption
-	{
-		idc = 1000;
-		text = "CHOOSE FACTIONS";
-		x = safeZoneX + safeZoneW/2 - 24 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 7 * GUI_GRID_H;
-		w = 12 * GUI_GRID_W;
-		h = 1 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		colorBackground[] = {0,0,0,0};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.1)";
-		shadow = 1;
-		colorShadow[] = {0,0,0,0.5};
-		font = "PuristaBold";
-	};
+		class HeaderBar: FLO_RscTitleBar
+		{
+			idc = FLO_IDC_NONE;
+			text = "MISSION SETUP";
+			x = FACTION_DIALOG_X;
+			y = FACTION_DIALOG_Y;
+			w = FACTION_DIALOG_W - FLO_UI_CLOSE_BTN_W;
+			h = FACTION_HEADER_H;
+		};
 
-	/* FACTION SELECTION SECTION */
+		class CloseButton: FLO_RscButton_Close
+		{
+			idc = FLO_IDC_FACTION_BTN_CLOSE;
+			x = FACTION_DIALOG_X + FACTION_DIALOG_W - FLO_UI_CLOSE_BTN_W;
+			y = FACTION_DIALOG_Y;
+			h = FACTION_HEADER_H;
+			action = "closeDialog 0";
+		};
 
-	// Player Faction Frame
-	class RscFrame_1800: RscText
-	{
-		idc = 1800;
-		text = "Player Faction";
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
+		// ====================================================================
+		// SECTION TITLE
+		// ====================================================================
 
-	// Enemy Faction Frame
-	class RscFrame_1801: RscText
-	{
-		idc = 1801;
-		text = "Enemy Faction";
-		x = safeZoneX + safeZoneW/2 - 6 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-	};
+		class SectionTitle: FLO_RscText_Title
+		{
+			idc = FLO_IDC_NONE;
+			text = "SELECT FACTIONS";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y;
+			w = FACTION_DIALOG_W - 4 * GUI_GRID_W;
+			h = FACTION_LABEL_H;
+			colorText[] = FLO_COLOR_PRIMARY;
+		};
 
-	// Civilian Faction Frame
-	class RscFrame_1802: RscText
-	{
-		idc = 1802;
-		text = "Civilian Faction";
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 6 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-	};
+		// ====================================================================
+		// ROW 1: FACTION SELECTION (Player, Enemy, Civilian)
+		// ====================================================================
 
-	// Starting Zones Frame
-	class RscFrame_1803: RscText
-	{
-		idc = 1803;
-		text = "Starting Zones";
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
+		// Player Faction
+		class LabelPlayerFaction: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Player Faction";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
 
-	// Starting Resources Frame
-	class RscFrame_1804: RscText
-	{
-		idc = 1804;
-		text = "Starting Resources";
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
+		class ComboPlayerFaction: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_PLAYER;
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP + FACTION_LABEL_H;
+			tooltip = "Select the player faction";
+		};
 
-	// Starting Difficulty Frame
-	class RscFrame_1805: RscText
-	{
-		idc = 1805;
-		text = "Starting Difficulty";
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
+		// Enemy Faction
+		class LabelEnemyFaction: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Enemy Faction";
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
 
-	// Starting Reputation Frame
-	class RscFrame_1806: RscText
-	{
-		idc = 1806;
-		text = "Starting Reputation";
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 2 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 2.5 * GUI_GRID_H;
-		colorText[] = {0.5,0.1,0.1,1};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.85)";
-		font = "PuristaMedium";
-		tooltip = "";
-	};
+		class ComboEnemyFaction: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_ENEMY;
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP + FACTION_LABEL_H;
+			tooltip = "Select the enemy faction";
+		};
 
-	// Player Faction Dropdown
-	class faction_selection_listbox: suprChooseFactionCombo
-	{
-		idc = 1955;
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		// Civilian Faction
+		class LabelCivilianFaction: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Civilian Faction";
+			x = FACTION_COL3_X;
+			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
 
-	// Enemy Faction Dropdown
-	class faction_selection_enemy_listbox: suprChooseFactionCombo
-	{
-		idc = 1956;
-		x = safeZoneX + safeZoneW/2 - 6 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		class ComboCivilianFaction: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_CIVILIAN;
+			x = FACTION_COL3_X;
+			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP + FACTION_LABEL_H;
+			tooltip = "Select the civilian faction";
+		};
 
-	// Civilian Faction Dropdown
-	class faction_selection_civilian_listbox: suprChooseFactionCombo
-	{
-		idc = 1957;
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		// ====================================================================
+		// ROW 2: STARTING CONDITIONS (Zones, Resources, Difficulty)
+		// ====================================================================
 
-	// Enemy Presence Dropdown
-	class faction_selection_presence_listbox: suprChooseFactionCombo
-	{
-		idc = 1958;
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 0 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		// Starting Zones (Enemy Presence)
+		class LabelStartingZones: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Starting Zones";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
 
-	// Starting Resources Dropdown
-	class faction_selection_Resources_listbox: suprChooseFactionCombo
-	{
-		idc = 1959;
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 - 0 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		class ComboStartingZones: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_PRESENCE;
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H + FACTION_LABEL_H;
+			tooltip = "Select enemy presence level";
+		};
 
-	// Reputation Dropdown
-	class Reputation_selection_listbox: suprChooseFactionCombo
-	{
-		idc = 1960;
-		x = safeZoneX + safeZoneW/2 - 23 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		// Starting Resources
+		class LabelStartingResources: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Starting Resources";
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
 
-	// Difficulty Dropdown
-	class Difficulty_selection_listbox: suprChooseFactionCombo
-	{
-		idc = 1961;
-		x = safeZoneX + safeZoneW/2 + 11 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 4 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-	};
+		class ComboStartingResources: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_RESOURCES;
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H + FACTION_LABEL_H;
+			tooltip = "Select starting resource level";
+		};
 
-	// START MISSION Button
-	class RscButton_1600: RscButtonPrimary
-	{
-		idc = 1600;
-		text = "START MISSION";
-		x = safeZoneX + safeZoneW/2 - 7 * GUI_GRID_W;
-		y = safeZoneY + safeZoneH/2 + 6 * GUI_GRID_H;
-		w = 14 * GUI_GRID_W;
-		h = 1.5 * GUI_GRID_H;
-		colorText[] = {1,1,1,1};
-		colorBackground[] = {0.2,0.2,0.2,1};
-		colorBackgroundActive[] = {0.5,0.1,0.1,1};
-		colorFocused[] = {0.5,0.1,0.1,0.8};
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-		action = "with uiNamespace do { private _d = FLO_FactionDialog; if (!isNull _d) then { (_d displayCtrl 1600) ctrlEnable false; }; }; _nul = [true] execVM 'Scripts\MissionSetupMenu\Dialog_Faction_Done.sqf';";
-		tooltip = "";
-		font = "PuristaBold";
+		// Starting Difficulty
+		class LabelStartingDifficulty: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Starting Difficulty";
+			x = FACTION_COL3_X;
+			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboStartingDifficulty: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_DIFFICULTY;
+			x = FACTION_COL3_X;
+			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H + FACTION_LABEL_H;
+			tooltip = "Select mission difficulty";
+		};
+
+		// ====================================================================
+		// ROW 3: REPUTATION
+		// ====================================================================
+
+		class LabelReputation: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Starting Reputation";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 6 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboReputation: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_REPUTATION;
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 6 * GUI_GRID_H + FACTION_LABEL_H;
+			tooltip = "Select starting reputation with civilians";
+		};
+
+		// ====================================================================
+		// ACTION BUTTONS
+		// ====================================================================
+
+		class StartButton: FLO_RscButton_Primary
+		{
+			idc = FLO_IDC_FACTION_BTN_START;
+			text = "START MISSION";
+			x = FACTION_DIALOG_X + FACTION_DIALOG_W/2 - 8 * GUI_GRID_W;
+			y = FACTION_DIALOG_Y + FACTION_DIALOG_H - 2 * GUI_GRID_H;
+			w = 16 * GUI_GRID_W;
+			h = 1.5 * GUI_GRID_H;
+			action = "[] call FLO_fnc_factionDialogStart";
+			tooltip = "Start the mission with selected settings";
+		};
 	};
 };
-};
+
+// ============================================================================
+// LEGACY ALIAS (for backward compatibility)
+// ============================================================================
+
+class factionselect_dialog2: FLO_FactionSelectDialog {};

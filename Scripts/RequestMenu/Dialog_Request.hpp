@@ -1,276 +1,291 @@
-class supr_RequestsMenu
+/*
+ * Request Menu Dialog
+ * Author: Frontline Operations
+ *
+ * Description:
+ * Dialog for requesting vehicles, supplies, and base containers.
+ * Shows available resources, resistance, and aggression levels.
+ *
+ * Dependencies:
+ * Requires UI/defines.hpp to be included before this file.
+ */
+
+// ============================================================================
+// DIALOG LAYOUT CONSTANTS
+// ============================================================================
+
+// Dialog dimensions (full width, partial height)
+#define REQUEST_DIALOG_X        (safeZoneX)
+#define REQUEST_DIALOG_Y        (safeZoneY + 0.11 * safeZoneH)
+#define REQUEST_DIALOG_W        (safeZoneW)
+#define REQUEST_DIALOG_H        (0.74 * safeZoneH)
+
+// Header bar
+#define REQUEST_HEADER_H        (1.2 * GUI_GRID_H)
+#define REQUEST_HEADER_Y        (REQUEST_DIALOG_Y)
+
+// Content area
+#define REQUEST_CONTENT_Y       (REQUEST_HEADER_Y + REQUEST_HEADER_H + 0.5 * GUI_GRID_H)
+
+// Column layout (3 columns)
+#define REQUEST_COL_GAP         (2.5 * GUI_GRID_W)
+#define REQUEST_COL1_X          (safeZoneX + 0.175 * safeZoneW)
+#define REQUEST_COL2_X          (safeZoneX + 0.425 * safeZoneW)
+#define REQUEST_COL3_X          (safeZoneX + 0.675 * safeZoneW)
+#define REQUEST_COL_W           (0.2 * safeZoneW)
+#define REQUEST_COL3_W          (0.15 * safeZoneW)
+
+// List and button dimensions
+#define REQUEST_LIST_H          (0.4 * safeZoneH)
+#define REQUEST_BTN_H           (1.2 * GUI_GRID_H)
+#define REQUEST_LABEL_H         (0.9 * GUI_GRID_H)
+
+// ============================================================================
+// DIALOG-SPECIFIC LISTBOX CLASS
+// ============================================================================
+
+class FLO_RequestListbox: FLO_RscListBox
 {
-	idd = 1599;
-	movingenable = true;
+	colorScrollbar[] = FLO_COLOR_PRIMARY;
+	colorSelectBackground[] = FLO_COLOR_SELECT_BG;
+	colorSelectBackground2[] = FLO_COLOR_SELECT_BG;
+	rowHeight = 1.2 * GUI_GRID_H;
+};
+
+// ============================================================================
+// REQUEST MENU DIALOG
+// ============================================================================
+
+class FLO_RequestMenuDialog
+{
+	idd = FLO_IDD_REQUEST;
+	movingEnable = true;
+	enableSimulation = true;
+
 	onLoad = "uiNamespace setVariable ['FLO_RequestDialog', _this select 0]";
-	
-	// Modern responsive UI base classes
-	class RscTextsupr_Request: RscText
-	{
-		colorText[] = {1,1,1,0.9};
-		shadow = 0;
-		font = "PuristaMedium";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.8)";
-	};
-	
-	class RscButtonsupr_Request: RscButton
-	{
-		colorText[] = {1,1,1,1};
-		colorBackground[] = {0.1,0.1,0.1,0.8};
-		colorBackgroundActive[] = {0.5,0.1,0.1,1};
-		colorBackgroundDisabled[] = {0.1,0.1,0.1,0.3};
-		colorFocused[] = {0.5,0.1,0.1,0.8};
-		colorShadow[] = {0,0,0,0};
-		colorBorder[] = {0,0,0,0};
-		shadow = 0;
-		font = "PuristaMedium";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.8)";
-		offsetX = 0;
-		offsetY = 0;
-		offsetPressedX = 0;
-		offsetPressedY = 0;
-		borderSize = 0;
-	};
-	
-	class RscListboxsupr_Request: RscListbox
-	{
-		colorText[] = {0.95,0.95,0.95,1};
-		colorBackground[] = {0.1,0.1,0.1,0.8};
-		colorScrollbar[] = {0.5,0.1,0.1,1};
-		colorSelect[] = {1,1,1,1};
-		colorSelect2[] = {1,1,1,1};
-		colorSelectBackground[] = {0.5,0.1,0.1,0.8};
-		colorSelectBackground2[] = {0.5,0.1,0.1,0.8};
-		colorShadow[] = {0,0,0,0.5};
-		colorPictureSelected[] = {1,1,1,1};
-		colorPictureRightSelected[] = {1,1,1,1};
-		font = "PuristaMedium";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.8)";
-		rowHeight = 0.04 * safezoneH;
-		soundSelect[] = {"\A3\ui_f\data\sound\RscListbox\soundSelect",0.09,1};
-	};
-	
-	class RscTextResourceBar: RscText
-	{
-		colorText[] = {1,1,1,1};
-		colorBackground[] = {0.1,0.1,0.1,0.8};
-		shadow = 0;
-		font = "PuristaMedium";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.8)";
-	};
-	
-class controls
-{
-	// Black background panel
-	class supr_requestbg: RscText
-	{
-		idc = -1;
-		x = safezoneX;
-		y = safezoneY + 0.15 * safezoneH;
-		w = safezoneW;
-		h = 0.7 * safezoneH;
-		colorBackground[] = {0.1,0.1,0.1,0.85};
-	};
+	onUnload = "uiNamespace setVariable ['FLO_RequestDialog', displayNull]";
 
-	// Title bar with modern look
-	class supr_requesttitlebar: RscTextsupr_Request
+	class Controls
 	{
-		idc = 1004;
-		x = safezoneX;
-		y = safezoneY + 0.15 * safezoneH - 0.04 * safezoneH;
-		w = safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.2,0.2,0.2,1};
-		colorText[] = {1,1,1,1};
-		font = "PuristaBold";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-	};
+		// ====================================================================
+		// BACKGROUND LAYER
+		// ====================================================================
 
-	class supr_requesttitlebarText: RscTextsupr_Request
-	{
-		idc = 1004;
-		text = "Request Menu"; 
-		x = safezoneX + 0.01 * safezoneW;
-		y = safezoneY + 0.15 * safezoneH - 0.04 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0,0,0,0};
-		colorText[] = {1,1,1,1};
-		font = "PuristaBold";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1)";
-	};
+		class Background: FLO_RscBackground
+		{
+			idc = FLO_IDC_NONE;
+			x = REQUEST_DIALOG_X;
+			y = REQUEST_CONTENT_Y;
+			w = REQUEST_DIALOG_W;
+			h = REQUEST_DIALOG_H - REQUEST_HEADER_H;
+		};
 
-	class supr_requestclose: RscButtonsupr_Request
-	{
-		idc = 1600;
-		text = "X";  // Changed from Unicode to standard X
-		x = safezoneX + safezoneW - 0.04 * safezoneW;
-		y = safezoneY + 0.15 * safezoneH - 0.04 * safezoneH;
-		w = 0.04 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.8,0.2,0.2,1};
-		colorBackgroundActive[] = {1,0.2,0.2,1};
-		action = "closeDialog 0";
-		font = "PuristaBold";
-		sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 1.2)"; // Made slightly larger for better visibility
-	};
+		// ====================================================================
+		// HEADER BAR WITH RESOURCE INFO
+		// ====================================================================
 
-	// Resource info bars
-	class supr_requestmanpowertext: RscTextResourceBar
-	{
-		idc = 1000;
-		text = "Resources: "; 
-		x = safezoneX + 0.2 * safezoneW;
-		y = safezoneY + 0.15 * safezoneH - 0.04 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.1,0.1,0.1,0.7};
-	};
+		class HeaderBar: FLO_RscTitleBar
+		{
+			idc = FLO_IDC_NONE;
+			text = "";
+			x = REQUEST_DIALOG_X;
+			y = REQUEST_HEADER_Y;
+			w = REQUEST_DIALOG_W - FLO_UI_CLOSE_BTN_W;
+			h = REQUEST_HEADER_H;
+		};
 
-	class supr_requestsupplytext: RscTextResourceBar
-	{
-		idc = 1001;
-		text = "Resistance: "; 
-		x = safezoneX + 0.4 * safezoneW;
-		y = safezoneY + 0.15 * safezoneH - 0.04 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.1,0.1,0.1,0.7};
-	};
+		class TitleText: FLO_RscText_Title
+		{
+			idc = FLO_IDC_REQUEST_TITLE;
+			text = "REQUEST MENU";
+			x = REQUEST_DIALOG_X + 0.5 * GUI_GRID_W;
+			y = REQUEST_HEADER_Y;
+			w = 8 * GUI_GRID_W;
+			h = REQUEST_HEADER_H;
+		};
 
-	class supr_requestinteltext: RscTextResourceBar
-	{
-		idc = 1002;
-		text = "Aggression: "; 
-		x = safezoneX + 0.6 * safezoneW;
-		y = safezoneY + 0.15 * safezoneH - 0.04 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.1,0.1,0.1,0.7};
-	};
+		class ResourcesText: FLO_RscText
+		{
+			idc = FLO_IDC_REQUEST_RESOURCES;
+			text = "Resources: ";
+			x = REQUEST_DIALOG_X + 10 * GUI_GRID_W;
+			y = REQUEST_HEADER_Y;
+			w = 10 * GUI_GRID_W;
+			h = REQUEST_HEADER_H;
+			colorBackground[] = FLO_COLOR_SURFACE;
+		};
 
-	/* GROUND */
-	class supr_requestsquadtext: RscTextsupr_Request
-	{
-		idc = 1005;
-		text = "GROUND VEHICLES"; 
-		x = safezoneX + 0.175 * safezoneW;
-		y = safezoneY + 0.18 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.03 * safezoneH;
-		colorBackground[] = {0.2,0.2,0.2,0.5};
-		font = "PuristaBold";
-	};
-	
-	class supr_requestsquadsbox: RscListboxsupr_Request
-	{
-		idc = 2101;
-		x = safezoneX + 0.175 * safezoneW;
-		y = safezoneY + 0.21 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.4 * safezoneH;
-	};
-	
-	class supr_requestsquadbutton: RscButtonsupr_Request
-	{
-		idc = 1602;
-		text = "Request"; 
-		x = safezoneX + 0.175 * safezoneW;
-		y = safezoneY + 0.62 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		action = "[2101] call VEH_REQUEST";
-	};
+		class ResistanceText: FLO_RscText
+		{
+			idc = FLO_IDC_REQUEST_RESISTANCE;
+			text = "Resistance: ";
+			x = REQUEST_DIALOG_X + 20 * GUI_GRID_W;
+			y = REQUEST_HEADER_Y;
+			w = 10 * GUI_GRID_W;
+			h = REQUEST_HEADER_H;
+			colorBackground[] = FLO_COLOR_SURFACE;
+		};
 
-	/* AIR\SEA */
-	class supr_requestvehiclestext: RscTextsupr_Request
-	{
-		idc = 1006;
-		text = "AIR | SEA VEHICLES"; 
-		x = safezoneX + 0.425 * safezoneW;
-		y = safezoneY + 0.18 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.03 * safezoneH;
-		colorBackground[] = {0.2,0.2,0.2,0.5};
-		font = "PuristaBold";
-	};
-	
-	class supr_requestvehiclesbox: RscListboxsupr_Request
-	{
-		idc = 2102;
-		x = safezoneX + 0.425 * safezoneW;
-		y = safezoneY + 0.21 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.4 * safezoneH;
-	};
-	
-	class supr_requestvehiclebutton: RscButtonsupr_Request
-	{
-		idc = 1603;
-		text = "Request"; 
-		x = safezoneX + 0.425 * safezoneW;
-		y = safezoneY + 0.62 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		action = "[2102] call VEH_REQUEST";
-	};
-	
-	/* SUPPLIES */
-	class supr_requestsupportstext: RscTextsupr_Request
-	{
-		idc = 1007;
-		text = "SUPPLIES"; 
-		x = safezoneX + 0.675 * safezoneW;
-		y = safezoneY + 0.18 * safezoneH;
-		w = 0.15 * safezoneW;
-		h = 0.03 * safezoneH;
-		colorBackground[] = {0.2,0.2,0.2,0.5};
-		font = "PuristaBold";
-	};
+		class AggressionText: FLO_RscText
+		{
+			idc = FLO_IDC_REQUEST_AGGRESSION;
+			text = "Aggression: ";
+			x = REQUEST_DIALOG_X + 30 * GUI_GRID_W;
+			y = REQUEST_HEADER_Y;
+			w = 10 * GUI_GRID_W;
+			h = REQUEST_HEADER_H;
+			colorBackground[] = FLO_COLOR_SURFACE;
+		};
 
-	class supr_requestsupportsbox: RscListboxsupr_Request
-	{
-		idc = 2103;
-		x = safezoneX + 0.675 * safezoneW;
-		y = safezoneY + 0.21 * safezoneH;
-		w = 0.15 * safezoneW;
-		h = 0.4 * safezoneH;
-	};
+		class CloseButton: FLO_RscButton_Close
+		{
+			idc = FLO_IDC_REQUEST_BTN_CLOSE;
+			x = REQUEST_DIALOG_X + REQUEST_DIALOG_W - FLO_UI_CLOSE_BTN_W;
+			y = REQUEST_HEADER_Y;
+			h = REQUEST_HEADER_H;
+			action = "closeDialog 0";
+		};
 
-	class supr_unlocksupportsbutton: RscButtonsupr_Request
-	{
-		idc = 1604;
-		text = "Request"; 
-		x = safezoneX + 0.675 * safezoneW;
-		y = safezoneY + 0.62 * safezoneH;
-		w = 0.15 * safezoneW;
-		h = 0.04 * safezoneH;
-		action = "[2103] call VEH_REQUEST";
-	};
-	
-	/* CONTAINER BUTTONS - CENTERED */
-	class supr_requestFOBbutton: RscButtonsupr_Request
-	{
-		idc = 1888;
-		text = "New <FOB> Container <2000$>"; 
-		x = safezoneX + 0.3 * safezoneW;
-		y = safezoneY + 0.68 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.3,0.3,0.3,1};
-		action = "execVM 'Scripts\PObjectives\FOBHQ.sqf'";
-	};
-	
-	class supr_requestBRIBEbutton: RscButtonsupr_Request
-	{
-		idc = 1999;
-		text = "New <OP> Container <100$>"; 
-		x = safezoneX + 0.5 * safezoneW;
-		y = safezoneY + 0.68 * safezoneH;
-		w = 0.2 * safezoneW;
-		h = 0.04 * safezoneH;
-		colorBackground[] = {0.3,0.3,0.3,1};
-		action = "execVM 'Scripts\PObjectives\OPHQ.sqf'";
+		// ====================================================================
+		// COLUMN 1: GROUND VEHICLES
+		// ====================================================================
+
+		class LabelGroundVehicles: FLO_RscText_Label
+		{
+			idc = FLO_IDC_REQUEST_LABEL_GROUND;
+			text = "GROUND VEHICLES";
+			x = REQUEST_COL1_X;
+			y = REQUEST_CONTENT_Y;
+			w = REQUEST_COL_W;
+			h = REQUEST_LABEL_H;
+			colorBackground[] = FLO_COLOR_HEADER;
+			style = ST_CENTER;
+		};
+
+		class ListGroundVehicles: FLO_RequestListbox
+		{
+			idc = FLO_IDC_REQUEST_LIST_GROUND;
+			x = REQUEST_COL1_X;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H;
+			w = REQUEST_COL_W;
+			h = REQUEST_LIST_H;
+		};
+
+		class BtnRequestGround: FLO_RscButton
+		{
+			idc = FLO_IDC_REQUEST_BTN_GROUND;
+			text = "Request";
+			x = REQUEST_COL1_X;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H + REQUEST_LIST_H + 0.3 * GUI_GRID_H;
+			w = REQUEST_COL_W;
+			h = REQUEST_BTN_H;
+			action = "[2101] call VEH_REQUEST";
+		};
+
+		// ====================================================================
+		// COLUMN 2: AIR / SEA VEHICLES
+		// ====================================================================
+
+		class LabelAirSeaVehicles: FLO_RscText_Label
+		{
+			idc = FLO_IDC_REQUEST_LABEL_AIR;
+			text = "AIR | SEA VEHICLES";
+			x = REQUEST_COL2_X;
+			y = REQUEST_CONTENT_Y;
+			w = REQUEST_COL_W;
+			h = REQUEST_LABEL_H;
+			colorBackground[] = FLO_COLOR_HEADER;
+			style = ST_CENTER;
+		};
+
+		class ListAirSeaVehicles: FLO_RequestListbox
+		{
+			idc = FLO_IDC_REQUEST_LIST_AIR;
+			x = REQUEST_COL2_X;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H;
+			w = REQUEST_COL_W;
+			h = REQUEST_LIST_H;
+		};
+
+		class BtnRequestAirSea: FLO_RscButton
+		{
+			idc = FLO_IDC_REQUEST_BTN_AIR;
+			text = "Request";
+			x = REQUEST_COL2_X;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H + REQUEST_LIST_H + 0.3 * GUI_GRID_H;
+			w = REQUEST_COL_W;
+			h = REQUEST_BTN_H;
+			action = "[2102] call VEH_REQUEST";
+		};
+
+		// ====================================================================
+		// COLUMN 3: SUPPLIES
+		// ====================================================================
+
+		class LabelSupplies: FLO_RscText_Label
+		{
+			idc = FLO_IDC_REQUEST_LABEL_SUPPLIES;
+			text = "SUPPLIES";
+			x = REQUEST_COL3_X;
+			y = REQUEST_CONTENT_Y;
+			w = REQUEST_COL3_W;
+			h = REQUEST_LABEL_H;
+			colorBackground[] = FLO_COLOR_HEADER;
+			style = ST_CENTER;
+		};
+
+		class ListSupplies: FLO_RequestListbox
+		{
+			idc = FLO_IDC_REQUEST_LIST_SUPPLIES;
+			x = REQUEST_COL3_X;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H;
+			w = REQUEST_COL3_W;
+			h = REQUEST_LIST_H;
+		};
+
+		class BtnRequestSupplies: FLO_RscButton
+		{
+			idc = FLO_IDC_REQUEST_BTN_SUPPLIES;
+			text = "Request";
+			x = REQUEST_COL3_X;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H + REQUEST_LIST_H + 0.3 * GUI_GRID_H;
+			w = REQUEST_COL3_W;
+			h = REQUEST_BTN_H;
+			action = "[2103] call VEH_REQUEST";
+		};
+
+		// ====================================================================
+		// CONTAINER BUTTONS (Bottom Row)
+		// ====================================================================
+
+		class BtnNewFOB: FLO_RscButton_Primary
+		{
+			idc = FLO_IDC_REQUEST_BTN_FOB;
+			text = "New FOB Container [$2000]";
+			x = safeZoneX + 0.3 * safeZoneW;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H + REQUEST_LIST_H + REQUEST_BTN_H + 1.5 * GUI_GRID_H;
+			w = 0.2 * safeZoneW;
+			h = REQUEST_BTN_H;
+			action = "execVM 'Scripts\PObjectives\FOBHQ.sqf'";
+			tooltip = "Deploy a new Forward Operating Base container";
+		};
+
+		class BtnNewOP: FLO_RscButton
+		{
+			idc = FLO_IDC_REQUEST_BTN_OP;
+			text = "New OP Container [$100]";
+			x = safeZoneX + 0.5 * safeZoneW;
+			y = REQUEST_CONTENT_Y + REQUEST_LABEL_H + REQUEST_LIST_H + REQUEST_BTN_H + 1.5 * GUI_GRID_H;
+			w = 0.2 * safeZoneW;
+			h = REQUEST_BTN_H;
+			action = "execVM 'Scripts\PObjectives\OPHQ.sqf'";
+			tooltip = "Deploy a new Observation Post container";
+		};
 	};
 };
-};
+
+// ============================================================================
+// LEGACY ALIAS (for backward compatibility)
+// ============================================================================
+
+class supr_RequestsMenu: FLO_RequestMenuDialog {};

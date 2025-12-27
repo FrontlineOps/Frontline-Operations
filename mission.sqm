@@ -16,11 +16,11 @@ class EditorData
 	};
 	class LayerIndexProvider
 	{
-		nextID=16845;
+		nextID=16863;
 	};
 	class Camera
 	{
-		pos[]={-569.30414,42.176586,482.2908};
+		pos[]={-569.84027,50.036644,476.18689};
 		dir[]={0.20914726,-0.7325474,0.6477899};
 		up[]={0.22507223,0.68071604,0.69711417};
 		aside[]={0.95163012,0,-0.30724597};
@@ -39,16 +39,13 @@ addons[]=
 	"A3_Modules_F_Hc",
 	"A3_Characters_F",
 	"A3_Weapons_F",
-	"ace_explosives",
-	"A3_Characters_F_Mark",
-	"ace_gforces",
-	"ace_parachute"
+	"A3_Characters_F_Mark"
 };
 class AddonsMetaData
 {
 	class List
 	{
-		items=9;
+		items=7;
 		class Item0
 		{
 			className="A3_Structures_F_Ind";
@@ -93,24 +90,10 @@ class AddonsMetaData
 		};
 		class Item6
 		{
-			className="ace_explosives";
-			name="ACE3 - Explosives";
-			author="ACE-Team";
-			url="https://ace3.acemod.org/";
-		};
-		class Item7
-		{
 			className="A3_Characters_F_Mark";
 			name="Arma 3 Marksmen - Characters and Clothing";
 			author="Bohemia Interactive";
 			url="https://www.arma3.com";
-		};
-		class Item8
-		{
-			className="ace_parachute";
-			name="ACE3 - Parachute";
-			author="ACE-Team";
-			url="https://ace3.acemod.org/";
 		};
 	};
 };
@@ -9201,19 +9184,6 @@ class Mission
 					{
 						class Attribute0
 						{
-							property="ace_isMedic";
-							expression="if (_value != -1 && {_value != (parseNumber (_this getUnitTrait 'medic'))}) then {_this setVariable [""ace_medical_medicClass"", _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute1
-						{
 							property="allowDamage";
 							expression="_this allowdamage _value;";
 							class Value
@@ -9225,7 +9195,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute2
+						class Attribute1
 						{
 							property="speaker";
 							expression="_this setspeaker _value;";
@@ -9238,7 +9208,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -9251,7 +9221,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -9264,7 +9234,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 			};
@@ -9568,19 +9538,6 @@ class Mission
 					{
 						class Attribute0
 						{
-							property="ace_isMedic";
-							expression="if (_value != -1 && {_value != (parseNumber (_this getUnitTrait 'medic'))}) then {_this setVariable [""ace_medical_medicClass"", _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=2;
-								};
-							};
-						};
-						class Attribute1
-						{
 							property="allowDamage";
 							expression="_this allowdamage _value;";
 							class Value
@@ -9592,7 +9549,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute2
+						class Attribute1
 						{
 							property="speaker";
 							expression="_this setspeaker _value;";
@@ -9605,7 +9562,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -9618,7 +9575,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -9631,7 +9588,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 			};
@@ -14027,19 +13984,6 @@ class Mission
 					{
 						class Attribute0
 						{
-							property="ace_isMedic";
-							expression="if (_value != -1 && {_value != (parseNumber (_this getUnitTrait 'medic'))}) then {_this setVariable [""ace_medical_medicClass"", _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=2;
-								};
-							};
-						};
-						class Attribute1
-						{
 							property="allowDamage";
 							expression="_this allowdamage _value;";
 							class Value
@@ -14051,7 +13995,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute2
+						class Attribute1
 						{
 							property="speaker";
 							expression="_this setspeaker _value;";
@@ -14064,7 +14008,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -14077,7 +14021,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -14090,7 +14034,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item1
@@ -14122,19 +14066,6 @@ class Mission
 					{
 						class Attribute0
 						{
-							property="ace_isMedic";
-							expression="if (_value != -1 && {_value != (parseNumber (_this getUnitTrait 'medic'))}) then {_this setVariable [""ace_medical_medicClass"", _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=2;
-								};
-							};
-						};
-						class Attribute1
-						{
 							property="allowDamage";
 							expression="_this allowdamage _value;";
 							class Value
@@ -14146,7 +14077,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute2
+						class Attribute1
 						{
 							property="speaker";
 							expression="_this setspeaker _value;";
@@ -14159,7 +14090,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -14172,7 +14103,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -14185,7 +14116,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item2
@@ -14217,19 +14148,6 @@ class Mission
 					{
 						class Attribute0
 						{
-							property="ace_isMedic";
-							expression="if (_value != -1 && {_value != (parseNumber (_this getUnitTrait 'medic'))}) then {_this setVariable [""ace_medical_medicClass"", _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=2;
-								};
-							};
-						};
-						class Attribute1
-						{
 							property="allowDamage";
 							expression="_this allowdamage _value;";
 							class Value
@@ -14241,7 +14159,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute2
+						class Attribute1
 						{
 							property="speaker";
 							expression="_this setspeaker _value;";
@@ -14254,7 +14172,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -14267,7 +14185,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -14280,7 +14198,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item3
@@ -15027,19 +14945,6 @@ class Mission
 					{
 						class Attribute0
 						{
-							property="ace_isMedic";
-							expression="if (_value != -1 && {_value != (parseNumber (_this getUnitTrait 'medic'))}) then {_this setVariable [""ace_medical_medicClass"", _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=1;
-								};
-							};
-						};
-						class Attribute1
-						{
 							property="allowDamage";
 							expression="_this allowdamage _value;";
 							class Value
@@ -15051,20 +14956,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute2
-						{
-							property="ace_advanced_fatigue_performanceFactor";
-							expression="_this setVariable [""ace_advanced_fatigue_performanceFactor"", _value, true]";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=1.3144276;
-								};
-							};
-						};
-						class Attribute3
+						class Attribute1
 						{
 							property="speaker";
 							expression="_this setspeaker _value;";
@@ -15077,7 +14969,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15090,7 +14982,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute5
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15103,7 +14995,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=6;
+						nAttributes=4;
 					};
 				};
 				class Item1
@@ -15147,19 +15039,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_advanced_fatigue_performanceFactor";
-							expression="_this setVariable [""ace_advanced_fatigue_performanceFactor"", _value, true]";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=1.3144276;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15171,7 +15050,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15184,7 +15063,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15197,7 +15076,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item2
@@ -15239,19 +15118,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_advanced_fatigue_performanceFactor";
-							expression="_this setVariable [""ace_advanced_fatigue_performanceFactor"", _value, true]";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=1.2581593;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15263,7 +15129,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15276,7 +15142,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15289,7 +15155,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item3
@@ -15331,19 +15197,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_advanced_fatigue_performanceFactor";
-							expression="_this setVariable [""ace_advanced_fatigue_performanceFactor"", _value, true]";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=1.2581593;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15355,7 +15208,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15368,7 +15221,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15381,7 +15234,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item4
@@ -15425,32 +15278,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=2;
-								};
-							};
-						};
-						class Attribute2
-						{
-							property="ace_advanced_fatigue_performanceFactor";
-							expression="_this setVariable [""ace_advanced_fatigue_performanceFactor"", _value, true]";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=1.3144276;
-								};
-							};
-						};
-						class Attribute3
-						{
 							property="pitch";
 							expression="_this setpitch _value;";
 							class Value
@@ -15462,7 +15289,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute2
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15475,7 +15302,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=3;
 					};
 				};
 			};
@@ -15551,19 +15378,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15575,7 +15389,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15588,7 +15402,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15601,7 +15415,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item1
@@ -15644,19 +15458,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15668,7 +15469,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15681,7 +15482,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15694,7 +15495,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item2
@@ -15737,19 +15538,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15761,7 +15549,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15774,7 +15562,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15787,7 +15575,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item3
@@ -15831,19 +15619,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15855,7 +15630,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15868,7 +15643,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -15881,7 +15656,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 			};
@@ -15957,19 +15732,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -15981,7 +15743,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -15994,7 +15756,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -16007,7 +15769,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item1
@@ -16050,19 +15812,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -16074,7 +15823,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -16087,7 +15836,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -16100,7 +15849,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item2
@@ -16143,19 +15892,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -16167,7 +15903,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -16180,7 +15916,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -16193,7 +15929,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 				class Item3
@@ -16237,19 +15973,6 @@ class Mission
 						};
 						class Attribute1
 						{
-							property="ace_isEngineer";
-							expression="if !(_value == ([0, 1] select (_this getUnitTrait 'engineer')) || {_value == -1}) then {_this setVariable ['ace_isEngineer', _value, true]}";
-							class Value
-							{
-								class data
-								{
-									singleType="SCALAR";
-									value=0;
-								};
-							};
-						};
-						class Attribute2
-						{
 							property="speaker";
 							expression="_this setspeaker _value;";
 							class Value
@@ -16261,7 +15984,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute3
+						class Attribute2
 						{
 							property="pitch";
 							expression="_this setpitch _value;";
@@ -16274,7 +15997,7 @@ class Mission
 								};
 							};
 						};
-						class Attribute4
+						class Attribute3
 						{
 							property="hideObject";
 							expression="if !(is3DEN) then {_this hideobjectglobal _value;};";
@@ -16287,7 +16010,7 @@ class Mission
 								};
 							};
 						};
-						nAttributes=5;
+						nAttributes=4;
 					};
 				};
 			};
