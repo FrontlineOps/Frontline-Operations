@@ -124,20 +124,33 @@ class FLO {
         class createUUID                {};
     };
 
-    class SideMissions {
-        file = "Functions\SideMissions";
+    // === SIDE MISSIONS - CORE SYSTEM ===
+    class SideMissionCore {
+        file = "Functions\SideMissions\Core";
 
-        class registerSideMission       {};
+        class sideMissionState          {};
+        class sideMissionRegistry       {};
+        class sideMissionTemplate       {};
+        class sideMissionManager        {};
+        class sideMissionEntityTracker  {};
+        class sideMissionTaskCreate     {};
+        class sideMissionTaskUpdate     {};
+        class sideMissionTaskCleanup    {};
+        class sideMissionTemplatesInit  {};
         class startSideMission          {};
-        class registerDefaultMissions   {};
-        class sideMissionPilot          {};
-        class sideMissionSquad          {};
-        class sideMissionConvoy         {};
-        class sideMissionCustomConvoy   {};
-        class sideMissionPatrol         {};
-        class sideMissionPOW            {};
-        class sideMissionIntel          {};
-        class missionQueue              {};
+    };
+
+    // === SIDE MISSIONS - TEMPLATES ===
+    class SideMissionTemplates {
+        file = "Functions\SideMissions\Templates";
+
+        class templatePilotRescue       {};
+        class templateSquadRescue       {};
+        class templateConvoyInterdiction {};
+        class templateHVTConvoy         {};
+        class templatePatrolSweep       {};
+        class templatePOWRescue         {};
+        class templateIntelGathering    {};
     };
 
     class SideMissionUtilities {

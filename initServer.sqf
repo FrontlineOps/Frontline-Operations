@@ -493,8 +493,8 @@ call _fnc_initAutoSave;
 private _fnc_initSystems = {
     private _systems = [
         ["Intel System", {[] call FLO_fnc_intelSystem}],
-        ["Side Missions", {[] call FLO_fnc_registerDefaultMissions}],
-        ["Mission Queue", {[] call FLO_fnc_missionQueue}],
+        ["Side Mission Templates", {[] call FLO_fnc_sideMissionTemplatesInit}],
+        ["Side Mission Manager", {["start"] call FLO_fnc_sideMissionManager}],
         ["Background Events", {[] call FLO_fnc_backgroundEvents}],
         ["OPFOR Resources", {[] call FLO_fnc_opforResources}],
         ["Logistics Network", {[] call FLO_fnc_logisticsNetwork}],

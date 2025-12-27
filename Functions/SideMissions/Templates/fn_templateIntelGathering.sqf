@@ -1,0 +1,145 @@
+/*
+ * Function: FLO_fnc_templateIntelGathering
+ * Author: Frontline Operations Development Group
+ * Description:
+ *   Template for the Intel Gathering side mission.
+ *   Investigate enemy positions and recover intel documents.
+ *
+ * Returns:
+ *   HASHMAP - Mission template configuration
+ */
+
+private _template = createHashMapFromArray [
+    ["name", "Gather Enemy Intel"],
+    ["description", "Reports hint at enemy plans stored nearby. Investigate recon positions and gather intel."],
+    ["icon", "mil_unknown"],
+    ["color", "colorOPFOR"],
+    ["cooldown", 600],
+    ["timeout", 2400],
+    ["maxActive", 2],
+    ["reward", 30],
+    ["isConvoy", false],
+    
+    ["fnc_setup", {
+        params ["_typeName"];
+        
+        private _position = [0,0,0];
+        private _canSpawn = false;
+        
+        // Look for elevated positions (mounts)
+        private _mounts = nearestLocations [getPos player, ["Mount"], 1500];
+        if (count _mounts > 0) then {
+            _position = locationPosition (selectRandom _mounts);
+            _canSpawn = true;
+        } else {
+            private _house = [getPos player] call FLO_fnc_findMissionHouse;
+            if (!isNull _house) then {
+                _position = getPos _house;
+                _canSpawn = true;
+            };
+        };
+        
+        [_canSpawn, _position]
+    }],
+    
+    ["fnc_spawn", {
+        params ["_missionId"];
+        
+        private _instance = ["get", [_missionId]] call FLO_fnc_sideMissionRegistry;
+        private _position = _instance get "position";
+        private _aggrScore = FLO_DifficultyHandle getOrDefault ["value", 5];
+        
+        private _data = _instance get "data";
+        _data set ["intelCollected", false];
+        
+        // Spawn recon composition
+        ["Recon_OPF_1", _position, [0,0,0], 0, true] call LARs_fnc_spawnComp;
+        
+        // Find map board after composition spawns
+        [_position, _data, _missionId] spawn {
+            params ["_position", "_data", "_missionId"];
+            sleep 3;
+            private _mapBoard = nearestObjects [_position, ["MapBoard_altis_F"], 50] select 0;
+            if (!isNull _mapBoard) then {
+                _data set ["mapBoard", _mapBoard];
+                ["addEntity", [_missionId, _mapBoard]] call FLO_fnc_sideMissionEntityTracker;
+            };
+        };
+        
+        // Set proper loadouts on spawned units
+        {
+            _x setUnitLoadout (selectRandom East_Units);
+            ["addEntity", [_missionId, _x]] call FLO_fnc_sideMissionEntityTracker;
+        } forEach (nearestObjects [_position, ["Man"], 50] select { side _x == East });
+        
+        // Spawn patrol
+        private _patrolGrp = [_position getPos [30, random 360], East, [
+            selectRandom East_Units, selectRandom East_Units, selectRandom East_Units,
+            selectRandom East_Units, selectRandom East_Units
+        ]] call BIS_fnc_spawnGroup;
+        [_patrolGrp, _position, 70] call BIS_fnc_taskPatrol;
+        _patrolGrp deleteGroupWhenEmpty true;
+        ["addGroup", [_missionId, _patrolGrp]] call FLO_fnc_sideMissionEntityTracker;
+        
+        // Additional positions based on difficulty
+        if (_aggrScore > 5) then {
+            private _mounts = nearestLocations [_position, ["Mount"], 500];
+            if (count _mounts > 0) then {
+                private _pos2 = locationPosition (selectRandom _mounts);
+                ["Watchpost_8", _pos2, [0,0,0], 0, true] call LARs_fnc_spawnComp;
+                
+                private _grp = [_pos2 getPos [20, random 360], East, [
+                    selectRandom East_Units, selectRandom East_Units
+                ]] call BIS_fnc_spawnGroup;
+                [_grp, _pos2, 50] call BIS_fnc_taskPatrol;
+                ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
+            };
+        };
+        
+        if (_aggrScore > 10) then {
+            private _mounts = nearestLocations [_position, ["Mount"], 500];
+            if (count _mounts > 0) then {
+                private _pos3 = locationPosition (selectRandom _mounts);
+                ["Recon_OPF_3", _pos3, [0,0,0], 0, true] call LARs_fnc_spawnComp;
+                
+                private _grp = [_pos3 getPos [20, random 360], East, [
+                    selectRandom East_Units, selectRandom East_Units, selectRandom East_Units
+                ]] call BIS_fnc_spawnGroup;
+                [_grp, _pos3, 70] call BIS_fnc_taskPatrol;
+                ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
+            };
+        };
+        
+        // Add intel items nearby
+        [_position, 300] call FLO_fnc_addIntelItems;
+        
+        [_missionId] call FLO_fnc_sideMissionTaskCreate;
+    }],
+    
+    // Success - intel collected (via action on map board or all enemies killed)
+    ["fnc_checkSuccess", {
+        params ["_missionId", "_instance"];
+        private _data = _instance get "data";
+        
+        // Check if intel was marked as collected
+        if (_data getOrDefault ["intelCollected", false]) exitWith { true };
+        
+        // Or check if all nearby enemies eliminated (simpler check)
+        private _position = _instance get "position";
+        private _enemies = (_position nearEntities ["Man", 150]) select { side _x == East && alive _x };
+        
+        count _enemies == 0
+    }],
+    
+    ["fnc_checkFail", {
+        params ["_missionId", "_instance"];
+        false
+    }],
+    
+    ["fnc_cleanup", {
+        params ["_missionId", "_instance"];
+    }]
+];
+
+_template
+
