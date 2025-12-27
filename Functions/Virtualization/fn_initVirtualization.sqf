@@ -14,19 +14,34 @@
 * [2000] call FLO_fnc_initVirtualization;
  */
 
+// Ensure we're running on the server
+if (!isServer) exitWith {
+    ["VIRTUALIZATION", 2, "initVirtualization called on non-server - ignoring"] call FLO_fnc_log;
+    nil
+};
+
 params [["_activationDistance", 2000, [0]]];
 
 // Log function start
-["VIRTUALIZATION", 3, "Initializing OPFOR Virtualization System"] call FLO_fnc_log;
+["VIRTUALIZATION", 3, format["Initializing OPFOR Virtualization System (activation distance: %1m)", _activationDistance]] call FLO_fnc_log;
+
+// Check if already initialized
+if (!isNil "FLO_virtualGroups") exitWith {
+    ["VIRTUALIZATION", 3, "Virtualization system already exists - skipping creation"] call FLO_fnc_log;
+
+    // ALWAYS set the ready flag, even if already initialized
+    FLO_VirtualizationReady = true;
+    publicVariable "FLO_VirtualizationReady";
+
+    FLO_virtualGroups
+};
 
 // Create main virtualization HashMap
-if (isNil "FLO_virtualGroups") then {
-    FLO_virtualGroups = createHashMapObject [
-        [
-            ["_groups", createHashMap],          // All virtualized groups
-            ["_activationDistance", _activationDistance],
-            ["_enabled", true],
-            ["_debugMode", false],
+FLO_virtualGroups = createHashMapObject [[
+    ["_groups", createHashMap],          // All virtualized groups
+    ["_activationDistance", _activationDistance],
+    ["_enabled", true],
+    ["_debugMode", false],
             
             // Method to enable/disable the system
             ["_setEnabled", {
@@ -124,15 +139,17 @@ if (isNil "FLO_virtualGroups") then {
                         };
                     };
                 };
-            }]
-        ]
-    ];
-    
-    // Initialize update loop for checking activation distances
-    [] spawn FLO_fnc_virtualGroupsUpdateLoop;
-    
-    ["VIRTUALIZATION", 3, "OPFOR Virtualization System initialized"] call FLO_fnc_log;
-};
+    }]
+]];
+
+// Initialize update loop for checking activation distances
+[] spawn FLO_fnc_virtualGroupsUpdateLoop;
+
+// Set ready flag for synchronization with other systems
+FLO_VirtualizationReady = true;
+publicVariable "FLO_VirtualizationReady";
+
+["VIRTUALIZATION", 3, "OPFOR Virtualization System initialized and ready"] call FLO_fnc_log;
 
 // Return the virtualization object
 FLO_virtualGroups

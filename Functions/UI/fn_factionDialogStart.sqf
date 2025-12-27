@@ -175,34 +175,32 @@ _display closeDisplay 1;
 	
 	// Wait for faction initialization
 	waitUntil {!isNil "F_Init" && {F_Init}};
-	
-	// Initialize markers
+
+	["UI", 3, "Faction initialization complete"] call FLO_fnc_log;
+
+	// Initialize markers (creates respawn marker and triggers objective indexing)
 	private _markerScript = execVM "Scripts\Init\init_Markers.sqf";
 	waitUntil {!isNil "_markerScript" && {scriptDone _markerScript}};
-	
-	["VIRTUALIZATION", 3, "Faction initialization complete, starting virtualization"] call FLO_fnc_log;
-	
-	// Initialize virtualization system
-	[] spawn {
-		private _maxAttempts = 10;
-		private _attempt = 0;
-		while {_attempt < _maxAttempts} do {
-			if (isServer) exitWith {
-				[OPFOR_Virtualization_Distance] call FLO_fnc_initVirtualization;
-			};
-			[OPFOR_Virtualization_Distance] remoteExec ["FLO_fnc_initVirtualization", 2];
-			uiSleep 0.5;
-			_attempt = _attempt + 1;
-		};
-	};
-	
-	// Wait for virtualization
+
+	["UI", 3, "Markers initialized"] call FLO_fnc_log;
+
+	// Wait for virtualization system to be ready (initialized by initServer.sqf)
+	// This ensures objective groups are created before we continue
 	private _startTime = diag_tickTime;
-	waitUntil {!isNil "FLO_VirtualizationReady" || {diag_tickTime - _startTime > 10}};
-	
-	// Initialize objective groups
-	[] remoteExec ["FLO_fnc_initializeObjectiveGroups", 2];
-	
+	private _timeout = 60; // Give more time for large maps
+
+	waitUntil {
+		uiSleep 0.5;
+		(!isNil "InitializationOG" && {InitializationOG}) ||
+		{diag_tickTime - _startTime > _timeout}
+	};
+
+	if (!isNil "InitializationOG" && {InitializationOG}) then {
+		["UI", 3, "Objective groups ready - mission setup complete"] call FLO_fnc_log;
+	} else {
+		["UI", 2, "Objective groups initialization timeout - continuing anyway"] call FLO_fnc_log;
+	};
+
 	["UI", 3, "Mission setup complete"] call FLO_fnc_log;
 };
 

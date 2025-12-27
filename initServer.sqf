@@ -48,26 +48,70 @@ waitUntil {sleep 0.1; !isNil "MissionLoadedLitterally" && {MissionLoadedLitteral
 waitUntil {sleep 0.1; StartingLocationDone};
 
 // ============================================================================
-// FACTION INITIALIZATION (DEDICATED SERVER)
+// FACTION INITIALIZATION
 // ============================================================================
 
+// On dedicated server, we run init_groups.sqf ourselves
+// On listen server, the host player runs it via initPlayerLocal.sqf
 if (isDedicated) then {
+    ["INIT_SERVER", 3, "Dedicated server - running faction initialization"] call FLO_fnc_log;
     execVM "Scripts\Init\init_groups.sqf";
     setViewDistance 3000; // Required for AI knowsAbout calculations
-    sleep 1;
-    waitUntil {sleep 0.1; F_Init};
+} else {
+    ["INIT_SERVER", 3, "Listen server - waiting for host player faction initialization"] call FLO_fnc_log;
+};
+
+// Wait for faction initialization to complete (ALL server types)
+// This ensures init_groups.sqf has finished before we continue
+private _factionInitStart = diag_tickTime;
+private _factionInitTimeout = 120; // 2 minutes timeout
+
+waitUntil {
+    sleep 0.5;
+    private _fInitReady = !isNil "F_Init" && {F_Init};
+    private _timedOut = (diag_tickTime - _factionInitStart) > _factionInitTimeout;
+
+    if (_timedOut && !_fInitReady) then {
+        ["INIT_SERVER", 1, "CRITICAL: Faction initialization timeout! F_Init not set after 2 minutes."] call FLO_fnc_log;
+    };
+
+    _fInitReady || _timedOut
+};
+
+if (!isNil "F_Init" && {F_Init}) then {
+    ["INIT_SERVER", 3, format["Faction initialization complete (took %1 seconds)", diag_tickTime - _factionInitStart]] call FLO_fnc_log;
+} else {
+    ["INIT_SERVER", 1, "Faction initialization failed - continuing with defaults"] call FLO_fnc_log;
 };
 
 // ============================================================================
 // CONFIG CACHE INITIALIZATION
 // ============================================================================
 
-// Wait for faction arrays to be initialized
+// Wait for faction arrays to be initialized (should already be done if F_Init is true)
+private _arrayWaitStart = diag_tickTime;
+private _arrayWaitTimeout = 30;
+
 waitUntil {
     sleep 0.1;
-    !isNil "East_Units" &&
-    !isNil "East_Air_Transport" &&
-    !isNil "East_Ground_Vehicles_Light"
+    private _arraysReady = !isNil "East_Units" && !isNil "East_Air_Transport" && !isNil "East_Ground_Vehicles_Light";
+    private _timedOut = (diag_tickTime - _arrayWaitStart) > _arrayWaitTimeout;
+
+    if (_timedOut && !_arraysReady) then {
+        ["INIT_SERVER", 1, format["CRITICAL: Faction arrays not initialized! Missing: %1",
+            [
+                if (isNil "East_Units") then {"East_Units"} else {""},
+                if (isNil "East_Air_Transport") then {"East_Air_Transport"} else {""},
+                if (isNil "East_Ground_Vehicles_Light") then {"East_Ground_Vehicles_Light"} else {""}
+            ] select {_x != ""}
+        ]] call FLO_fnc_log;
+    };
+
+    _arraysReady || _timedOut
+};
+
+if (isNil "East_Units" || isNil "East_Air_Transport" || isNil "East_Ground_Vehicles_Light") exitWith {
+    ["INIT_SERVER", 1, "FATAL: Cannot continue without faction arrays. Mission initialization aborted."] call FLO_fnc_log;
 };
 
 // Initialize config cache with categorized data
@@ -153,6 +197,97 @@ private _fnc_initConfigCache = {
 
 FLO_configCache = call _fnc_initConfigCache;
 publicVariable "FLO_configCache";
+
+// ============================================================================
+// VIRTUALIZATION SYSTEM INITIALIZATION
+// ============================================================================
+
+// Initialize the virtualization system after faction arrays are ready
+// This must happen before objective groups are created
+private _fnc_initVirtualizationSystem = {
+    // Get activation distance from faction config, default to 2000m
+    private _activationDistance = missionNamespace getVariable ["OPFOR_Virtualization_Distance", 2000];
+
+    ["INIT_SERVER", 3, format["Initializing virtualization system (activation distance: %1m)", _activationDistance]] call FLO_fnc_log;
+
+    // Initialize the virtualization system
+    [_activationDistance] call FLO_fnc_initVirtualization;
+
+    // Wait for confirmation
+    private _startTime = diag_tickTime;
+    private _timeout = 10;
+    waitUntil {
+        sleep 0.1;
+        (!isNil "FLO_VirtualizationReady" && {FLO_VirtualizationReady}) ||
+        {diag_tickTime - _startTime > _timeout}
+    };
+
+    if (!isNil "FLO_VirtualizationReady" && {FLO_VirtualizationReady}) then {
+        ["INIT_SERVER", 3, "Virtualization system ready"] call FLO_fnc_log;
+    } else {
+        ["INIT_SERVER", 1, "Virtualization system initialization timeout!"] call FLO_fnc_log;
+    };
+};
+
+call _fnc_initVirtualizationSystem;
+
+// ============================================================================
+// OBJECTIVE GROUPS INITIALIZATION
+// ============================================================================
+
+// Create virtual groups at objectives after virtualization is ready
+private _fnc_initObjectiveGroups = {
+    ["INIT_SERVER", 3, "Waiting for objectives to be indexed..."] call FLO_fnc_log;
+
+    // Wait for objectives to be indexed
+    private _startTime = diag_tickTime;
+    private _timeout = 60; // Give more time for large maps
+
+    waitUntil {
+        sleep 0.5;
+        (!isNil "FLO_Objectives" && {count keys FLO_Objectives > 0}) ||
+        {diag_tickTime - _startTime > _timeout}
+    };
+
+    if (isNil "FLO_Objectives" || {count keys FLO_Objectives == 0}) exitWith {
+        ["INIT_SERVER", 2, "No objectives found after 60s - skipping objective group initialization"] call FLO_fnc_log;
+        // Still set InitializationOG so other systems don't hang
+        InitializationOG = true;
+        publicVariable "InitializationOG";
+    };
+
+    ["INIT_SERVER", 3, format["Found %1 objectives - initializing virtual groups", count keys FLO_Objectives]] call FLO_fnc_log;
+
+    // Verify virtualization is ready before creating groups
+    if (isNil "FLO_virtualGroups") then {
+        ["INIT_SERVER", 1, "Virtualization system not ready - attempting to initialize"] call FLO_fnc_log;
+        [2000] call FLO_fnc_initVirtualization;
+    };
+
+    // Initialize objective groups
+    [] call FLO_fnc_initializeObjectiveGroups;
+
+    // Wait for completion with timeout
+    private _ogStartTime = diag_tickTime;
+    private _ogTimeout = 120; // 2 minutes for large maps
+
+    waitUntil {
+        sleep 0.5;
+        (!isNil "InitializationOG" && {InitializationOG}) ||
+        {diag_tickTime - _ogStartTime > _ogTimeout}
+    };
+
+    if (!isNil "InitializationOG" && {InitializationOG}) then {
+        ["INIT_SERVER", 3, format["Objective groups initialization complete (took %1 seconds)", diag_tickTime - _ogStartTime]] call FLO_fnc_log;
+    } else {
+        ["INIT_SERVER", 1, "Objective groups initialization timeout - setting flag anyway"] call FLO_fnc_log;
+        InitializationOG = true;
+        publicVariable "InitializationOG";
+    };
+};
+
+// Spawn objective group initialization to not block other systems
+[] spawn _fnc_initObjectiveGroups;
 
 // ============================================================================
 // BACKGROUND SYSTEMS INITIALIZATION

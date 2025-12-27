@@ -77,68 +77,52 @@ East_Units_Officers = ["O_officer_F","O_T_Officer_F"];
  * These are the default settings that will be used by the virtualization system
 */
 
-// Structure: [objective type, [[group type, count], [group type, count], ...]]
+/*
+ * OPFOR Virtualization Objective Configuration
+ * This section defines how many of each unit type should spawn at different
+ * objective subtypes produced by the objective indexing system. Subtypes
+ * include "capital", "city", "village", "local", "marine" and "cluster".
+ *
+ * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
+ */
 OPFOR_Objective_Groups = [
-    // Support objectives - mix of infantry and light vehicles
-    ["o_support", [
-        ["infantry", 3], 
+    // Capital objectives - highest concentration of defenders
+    ["capital", [
+        ["infantry", 12],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["air", 1],
+        ["armor", 1],
+        ["artillery", 1]
+    ]],
+
+    // Major cities
+    ["city", [
+        ["infantry", 7],
         ["motorized", 2]
     ]],
-    
-    // Neutral support objectives - lighter security
-    ["n_support", [
-        ["infantry", 2], 
-        ["motorized", 1]
+
+    // Villages
+    ["village", [
+        ["infantry", 3]
     ]],
-    
-    // Installation objectives - mix of infantry and heavy vehicles
-    ["o_installation", [
-        ["infantry", 4], 
-        ["mechanized", 2],
-        ["armor", 1]
-    ]],
-    
-    // Neutral installation objectives
-    ["n_installation", [
-        ["infantry", 3], 
+
+    // Small local objectives (military bases, strategic infrastructure)
+    ["local", [
+        ["infantry", 6],
+        ["motorized", 2],
         ["mechanized", 1]
     ]],
-    
-    // Anti-air objectives - AA vehicles and infantry
-    ["o_antiair", [
-        ["infantry", 2],
-        ["motorized", 1],
-        ["air", 1]
-    ]],
-    
-    // Service objectives - light vehicles and infantry
-    ["o_service", [
-        ["infantry", 2],
-        ["motorized", 2]
-    ]],
-    
-    // Power plant objectives - infantry defense
-    ["loc_Power", [
+
+    // Coastal or marine facilities
+    ["marine", [
         ["infantry", 3],
         ["motorized", 1]
     ]],
-    
-    // Ruins objectives - light infantry presence
-    ["loc_Ruin", [
-        ["infantry", 1]
-    ]],
-    
-    // Recon objectives - small infantry and light vehicles
-    ["o_recon", [
-        ["infantry", 2],
-        ["motorized", 1],
-        ["helicopter", 1]
-    ]],
-    
-    // Infantry objectives - heavier infantry presence
-    ["o_inf", [
-        ["infantry", 4],
-        ["motorized", 1]
+
+    // Automatically generated clusters (docks, industrial areas, etc.)
+    ["cluster", [
+        ["infantry", 2]
     ]]
 ];
 
@@ -156,6 +140,14 @@ OPFOR_Group_Counts = [
     ["air", 1],               // Number of aircraft
     ["artillery", 1]          // Number of artillery pieces
 ];
+
+/*
+ * Cluster Size Threshold Configuration
+ * Defines the minimum number of structures required to form a objective
+ * Options: "Small" (4), "Medium" (8), "Large" (12), "Huge" (24)
+ * Default: "Medium"
+ */
+OPFOR_Objective_Size_Threshold = "Medium";
 
 /*
  * Configure activation distance for the virtualization system
