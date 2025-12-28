@@ -85,34 +85,11 @@ private _opCount = 0;
 
 
 // ============================================================================
-// FOB SCREEN ACTIONS
+// FOB SCREEN ACTIONS - Now handled by fn_initializeFOB
 // ============================================================================
-
-["STARTUP", 3, "Initializing FOB screen actions..."] call FLO_fnc_log;
-
-// Commander condition - works on dedicated servers (checks if player is TheCommander)
-// Note: serverCommandAvailable only works for logged-in admins, so we just check TheCommander
-private _commanderCondition = "player isEqualTo TheCommander";
-
-// Define FOB actions [title, code, priority]
-private _fobActions = [
-    ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, 4],
-    ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, 4],
-    ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, 6],
-    ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress", { { execVM "Scripts\MissionReset.sqf"; } remoteExec ["call", 2]; }, 5],
-    ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, 3]
-];
-
-// Add actions to all FOB containers (reuse cached list)
-{
-    private _container = _x;
-    {
-        _x params ["_title", "_code", "_priority"];
-        [_container, [_title, _code, nil, _priority, true, true, "", _commanderCondition]] remoteExec ["addAction", 0, true];
-    } forEach _fobActions;
-} forEach _allFobContainers;
-
-["STARTUP", 3, format ["Added FOB actions to %1 containers", count _allFobContainers]] call FLO_fnc_log;
+// Commander actions (Skip Time, Weather, Save, Reset, Bribe) are now added
+// in fn_initializeFOB via _fnc_addContainerActions. This ensures actions are
+// added both at startup AND when FOBs are deployed via FOBUNPACK.
 
 // ============================================================================
 // DEPLOYABLE CONTAINERS (Slingload FOB/OP)

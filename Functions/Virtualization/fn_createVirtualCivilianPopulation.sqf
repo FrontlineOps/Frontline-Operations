@@ -24,16 +24,21 @@ private _totalCivsPlaced = 0;
         case "circle": {
             for "_i" from 0 to 5 do {
                 private _angle = _i * 60;
-                private _wpPos = [(_pos select 0) + (sin _angle * _size), (_pos select 1) + (cos _angle * _size), 0];
+                private _rawPos = [(_pos select 0) + (sin _angle * _size), (_pos select 1) + (cos _angle * _size), 0];
+                private _wpPos = [_rawPos, _size] call FLO_fnc_getSafeLandPos;
                 _waypoints pushBack [_wpPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5];
             };
         };
         case "square": {
+            private _p1 = [[(_pos select 0) + _size, (_pos select 1) + _size, 0], _size] call FLO_fnc_getSafeLandPos;
+            private _p2 = [[(_pos select 0) - _size, (_pos select 1) + _size, 0], _size] call FLO_fnc_getSafeLandPos;
+            private _p3 = [[(_pos select 0) - _size, (_pos select 1) - _size, 0], _size] call FLO_fnc_getSafeLandPos;
+            private _p4 = [[(_pos select 0) + _size, (_pos select 1) - _size, 0], _size] call FLO_fnc_getSafeLandPos;
             _waypoints = [
-                [[(_pos select 0) + _size, (_pos select 1) + _size, 0], "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
-                [[(_pos select 0) - _size, (_pos select 1) + _size, 0], "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
-                [[(_pos select 0) - _size, (_pos select 1) - _size, 0], "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
-                [[(_pos select 0) + _size, (_pos select 1) - _size, 0], "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5]
+                [_p1, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
+                [_p2, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
+                [_p3, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
+                [_p4, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5]
             ];
         };
         case "stationary": {
@@ -75,12 +80,21 @@ private _totalCivsPlaced = 0;
                 };
             };
         } else {
-            // Simple patrol
+            // Simple patrol - ensure waypoints are on roads or at least on land
             private _carPatrol = [];
             for "_j" from 0 to 2 do {
                 private _angle = random 360;
                 private _dist = 1000 + random 200; // 1000-1200m from car position
-                private _wp = [(_carPos select 0) + (sin _angle * _dist), (_carPos select 1) + (cos _angle * _dist), 0];
+                private _rawPos = [(_carPos select 0) + (sin _angle * _dist), (_carPos select 1) + (cos _angle * _dist), 0];
+
+                // Try to find a road position, otherwise use safe land position
+                private _roads = _rawPos nearRoads 200;
+                private _wp = if (count _roads > 0) then {
+                    getPos (selectRandom _roads)
+                } else {
+                    [_rawPos, 300] call FLO_fnc_getSafeLandPos
+                };
+
                 _carPatrol pushBack [_wp, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 3];
             };
             [_carGroupId, _carPatrol] call FLO_fnc_updateVirtualGroupWaypoints;

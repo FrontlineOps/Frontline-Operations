@@ -38,33 +38,55 @@ if (time > _loadTimeout) then {
 };
 
 // ============================================================================
-// SAVE GAME DETECTION
+// SAVE GAME DETECTION - Wait for server's Phase 0 detection
 // ============================================================================
 
-// Save game detection
-private _fnc_detectSaveGame = {
-    // Check for existing BLUFOR installations (indicates saved game)
-    private _bluforMarkers = allMapMarkers select {markerType _x isEqualTo "b_installation"};
-    private _installationCount = count _bluforMarkers;
+// Wait for server to complete Phase 0 (save detection) with timeout
+private _fnc_waitForSaveDetection = {
+    private _startTime = diag_tickTime;
+    private _timeout = 30; // 30 second timeout for save detection
 
-    if (_installationCount > 0) then {
-        ["INIT_CLIENT", 3, format ["Detected %1 existing installations - loading from save", _installationCount]] call FLO_fnc_log;
+    ["INIT_CLIENT", 3, "Waiting for server save detection..."] call FLO_fnc_log;
+
+    // Wait for the server to broadcast FLO_IsLoadedSave (happens in Phase 0)
+    // The variable is always set (to true or false) before Phase 1 starts
+    waitUntil {
+        sleep 0.3;
+        // FLO_IsLoadedSave is always set (true/false) before Phase 1
+        // We also check FLO_InitPhase to know server has started
+        private _serverStarted = !isNil "FLO_InitPhase";
+        private _saveStatusKnown = !isNil "FLO_IsLoadedSave";
+        private _timedOut = (diag_tickTime - _startTime) > _timeout;
+
+        // Wait until we know the save status, or we're past phase 0
+        (_serverStarted && _saveStatusKnown) ||
+        (_serverStarted && {FLO_InitPhase >= 1}) ||
+        _timedOut
+    };
+
+    // Small delay to ensure network sync
+    sleep 0.5;
+
+    // Check if this is a saved game from server's detection
+    private _isSavedGame = !isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave};
+
+    if (_isSavedGame) then {
+        ["INIT_CLIENT", 3, "Server detected saved game - skipping faction dialog"] call FLO_fnc_log;
         StartingLocationDone = true;
-        publicVariable "StartingLocationDone";
-        true
     } else {
-        ["INIT_CLIENT", 3, "No existing installations found - fresh mission start"] call FLO_fnc_log;
-        false
-    }
+        ["INIT_CLIENT", 3, "Server detected fresh start"] call FLO_fnc_log;
+    };
+
+    _isSavedGame
 };
 
-private _isSavedGame = call _fnc_detectSaveGame;
+private _isSavedGame = call _fnc_waitForSaveDetection;
 
 // ============================================================================
 // FRESH START INITIALIZATION
 // ============================================================================
 
-if (!StartingLocationDone) then {
+if (!_isSavedGame && !StartingLocationDone) then {
     // Commander validation
     private _fnc_validateCommander = {
         if (isNil "TheCommander") then {

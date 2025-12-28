@@ -47,31 +47,55 @@ _groupData set ["autoPatrol", false];
 // Get the current position of the group
 private _currentPos = _groupData get "position";
 
+// Get the group type to check if it's a boat/naval group
+private _groupType = _groupData get "groupType";
+private _isNavalGroup = _groupType in ["boat", "naval", "submarine"];
+
+// Sanitize waypoints - ensure non-naval groups don't have waypoints in water
+private _sanitizedWaypoints = [];
+if (!_isNavalGroup) then {
+    {
+        private _wpPos = _x select 0;
+
+        // Check if waypoint is on water
+        if (surfaceIsWater _wpPos) then {
+            // Find safe land position
+            private _safePos = [_wpPos, 500] call FLO_fnc_getSafeLandPos;
+            private _newWp = +_x; // Copy the waypoint
+            _newWp set [0, _safePos];
+            _sanitizedWaypoints pushBack _newWp;
+        } else {
+            _sanitizedWaypoints pushBack _x;
+        };
+    } forEach _waypoints;
+} else {
+    _sanitizedWaypoints = _waypoints;
+};
+
 // If no waypoints or using direct assignment (no pathfinding)
-if (count _waypoints == 0 || !_usePathfinding) then {
+if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
     // Store the waypoints and initialize tracking for both virtual and physical movement
-    _groupData set ["waypoints", _waypoints];
+    _groupData set ["waypoints", _sanitizedWaypoints];
 
     // Add or update virtual waypoint data
-    if (count _waypoints > 0) then {
+    if (count _sanitizedWaypoints > 0) then {
         // Set group state to moving
         _groupData set ["state", "moving"];
-        
+
         // Initialize virtual waypoint tracking
         _groupData set ["currentWaypointIndex", 0];
         _groupData set ["lastMoveTime", diag_tickTime];
-        
+
         // Calculate speed in meters per second based on waypoint speed setting
-        private _wpSpeed = (_waypoints select 0) select 3;
+        private _wpSpeed = (_sanitizedWaypoints select 0) select 3;
         private _speedMPS = switch (_wpSpeed) do {
             case "LIMITED": { 2 }; // ~7 km/h
             case "NORMAL": { 4 }; // ~14 km/h
             case "FULL": { 8 }; // ~29 km/h
             default { 4 };
         };
-        
+
         // Adjust speed based on group type
-        private _groupType = _groupData get "groupType";
         private _speedMultiplier = switch (_groupType) do {
             case "infantry": { 1.0 };
             case "motorized": { 2.5 };
@@ -82,15 +106,15 @@ if (count _waypoints == 0 || !_usePathfinding) then {
             case "jet": { 10.0 };
             default { 1.0 };
         };
-        
+
         _groupData set ["virtualSpeed", _speedMPS * _speedMultiplier];
-        
+
         // Create or update waypoint visualization in debug mode
         if (FLO_virtualGroups get "_debugMode") then {
-            [_groupId, _waypoints, 0] call FLO_fnc_createVirtualWaypointMarkers;
+            [_groupId, _sanitizedWaypoints, 0] call FLO_fnc_createVirtualWaypointMarkers;
         };
-        
-        ["VIRTUALIZATION", 3, format["Set up virtual movement for group %1 (Speed: %2 m/s)", 
+
+        ["VIRTUALIZATION", 3, format["Set up virtual movement for group %1 (Speed: %2 m/s)",
             _groupId, _speedMPS * _speedMultiplier]] call FLO_fnc_log;
     };
 
@@ -120,8 +144,8 @@ if (count _waypoints == 0 || !_usePathfinding) then {
                 _wp setWaypointFormation _wpFormation;
                 _wp setWaypointCombatMode _wpMode;
                 _wp setWaypointCompletionRadius _wpCompletionRadius;
-            } forEach _waypoints;
-            
+            } forEach _sanitizedWaypoints;
+
             // Update marker if debug mode is on
             if (FLO_virtualGroups get "_debugMode") then {
                 [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
@@ -131,8 +155,8 @@ if (count _waypoints == 0 || !_usePathfinding) then {
 } else {
     // Using pathfinding - we'll need to temporarily store the waypoint settings
     // Store only the first waypoint settings temporarily (we'll apply them to all generated waypoints)
-    if (count _waypoints > 0) then {
-        private _firstWaypoint = _waypoints select 0;
+    if (count _sanitizedWaypoints > 0) then {
+        private _firstWaypoint = _sanitizedWaypoints select 0;
         private _endPos = _firstWaypoint select 0;
         
         // Temporary storage for waypoint settings
@@ -158,10 +182,15 @@ if (count _waypoints == 0 || !_usePathfinding) then {
             private _wpMode = _waypointSettings select 5;
             private _wpCompletionRadius = _waypointSettings select 6;
             
-            // Create new waypoints array
+            // Create new waypoints array, ensuring positions are on land
             private _newWaypoints = [];
             {
-                _newWaypoints pushBack [_x, _wpType, _wpBehavior, _wpSpeed, _wpFormation, _wpMode, _wpCompletionRadius];
+                private _wpPos = _x;
+                // Skip water positions for non-naval groups
+                if (surfaceIsWater _wpPos) then {
+                    _wpPos = [_wpPos, 300] call FLO_fnc_getSafeLandPos;
+                };
+                _newWaypoints pushBack [_wpPos, _wpType, _wpBehavior, _wpSpeed, _wpFormation, _wpMode, _wpCompletionRadius];
             } forEach _posArray;
             
             // Update the virtual group with the new waypoints

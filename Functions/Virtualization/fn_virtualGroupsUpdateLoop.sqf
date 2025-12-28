@@ -21,6 +21,12 @@
 // Ensure we're running on the server
 if (!isServer) exitWith {};
 
+// Prevent multiple loops from running
+if (!isNil "FLO_VirtualGroupsUpdateLoopRunning" && {FLO_VirtualGroupsUpdateLoopRunning}) exitWith {
+    ["VIRTUALIZATION", 2, "Virtual groups update loop already running - not starting duplicate"] call FLO_fnc_log;
+};
+
+FLO_VirtualGroupsUpdateLoopRunning = true;
 ["VIRTUALIZATION", 3, "Starting virtual groups update loop"] call FLO_fnc_log;
 
 private _processVirtualMovement = {
@@ -63,7 +69,7 @@ private _processVirtualMovement = {
     // Additional validation for waypoint position and type
     // Need to figure out why on loading, the waypoints that existed when saving become invalid.
     if (isNil "_waypointPos" || {!(_waypointPos isEqualType [])} || {count _waypointPos < 2}) exitWith {
-        ["VIRTUALIZATION", 1, format["Invalid waypoint position for group %1, skipping waypoint", _groupId]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 2, format["Invalid waypoint position for group %1, skipping waypoint", _groupId]] call FLO_fnc_log;
         _groupData set ["state", "idle"];
         _groupData set ["currentWaypointIndex", 0];
     };
@@ -200,20 +206,42 @@ while {true} do {
                 // Process virtual movement for inactive groups
                 if (!_isActive) then {
                     [_groupData, _groupId, _currentTime] call _processVirtualMovement;
-                    _position = _groupData get "position"; // Update position after movement
+                    private _updatedPos = _groupData get "position";
+                    // Only update if we got a valid position back
+                    if (!isNil "_updatedPos" && {_updatedPos isEqualType [] && {count _updatedPos >= 2}}) then {
+                        _position = _updatedPos;
+                    };
 
                     // If the group is idle with no waypoints, assign a cycle patrol
                     if ((_groupData getOrDefault ["state", ""] == "idle") && {count (_groupData getOrDefault ["waypoints", []]) == 0} && {!(_groupData getOrDefault ["autoPatrol", false])}) then {
-                        private _centerPos = _groupData getOrDefault ["garrisonPosition", _position];
-                        private _radius = 200 + random 200; // Random 200-400m patrol radius
-                        private _dirBase = random 360;
+                        // Get garrison position, validating it's a proper position array
+                        private _garrisonPos = _groupData getOrDefault ["garrisonPosition", []];
+                        private _centerPos = if (_garrisonPos isEqualType [] && {count _garrisonPos >= 2} && {(_garrisonPos select 0) > 0 || (_garrisonPos select 1) > 0}) then {
+                            _garrisonPos
+                        } else {
+                            _position
+                        };
 
-                        private _wp1 = [_centerPos getPos [_radius, _dirBase], "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
-                        private _wp2 = [_centerPos getPos [_radius, _dirBase + 120], "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
-                        private _wp3 = [_centerPos getPos [_radius, _dirBase + 240], "CYCLE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+                        // Validate center position before creating waypoints
+                        if (_centerPos isEqualType [] && {count _centerPos >= 2} && {(_centerPos select 0) > 0 || (_centerPos select 1) > 0}) then {
+                            private _radius = 200 + random 200; // Random 200-400m patrol radius
+                            private _dirBase = random 360;
 
-                        [_groupId, [_wp1, _wp2, _wp3]] call FLO_fnc_updateVirtualGroupWaypoints;
-                        _groupData set ["autoPatrol", true];
+                            // Get positions and ensure they're on land (not water)
+                            private _pos1 = [_centerPos getPos [_radius, _dirBase], _radius] call FLO_fnc_getSafeLandPos;
+                            private _pos2 = [_centerPos getPos [_radius, _dirBase + 120], _radius] call FLO_fnc_getSafeLandPos;
+                            private _pos3 = [_centerPos getPos [_radius, _dirBase + 240], _radius] call FLO_fnc_getSafeLandPos;
+
+                            private _wp1 = [_pos1, "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+                            private _wp2 = [_pos2, "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+                            private _wp3 = [_pos3, "CYCLE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+
+                            [_groupId, [_wp1, _wp2, _wp3]] call FLO_fnc_updateVirtualGroupWaypoints;
+                            _groupData set ["autoPatrol", true];
+                        } else {
+                            // Invalid position - skip patrol assignment, will retry next cycle
+                            ["VIRTUALIZATION", 2, format ["Group %1 has invalid position for patrol: %2", _groupId, _centerPos]] call FLO_fnc_log;
+                        };
                     };
                 } else {
                     // Update position from real group if active
@@ -242,7 +270,13 @@ while {true} do {
                 
                 // Handle activation/deactivation
                 private _nearestPlayerDistance = [_position] call _getNearestPlayerDistance;
-                
+
+                // Debug: Log distance checks for active groups periodically
+                // if (_isActive && {random 1 < 0.01}) then {
+                //     ["VIRTUALIZATION", 4, format["Active group %1: pos=%2, dist=%3m, threshold=%4m",
+                //         _groupId, _position, round _nearestPlayerDistance, _activationDistance]] call FLO_fnc_log;
+                // };
+
                 if (_nearestPlayerDistance <= _activationDistance && !_isActive) then {
                     ["VIRTUALIZATION", 3, format["Activating virtual group %1 (Distance: %2m)", _groupId, _nearestPlayerDistance]] call FLO_fnc_log;
                     [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;

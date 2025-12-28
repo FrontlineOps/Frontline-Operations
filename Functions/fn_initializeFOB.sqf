@@ -175,9 +175,46 @@ private _fnc_addActions = {
     [_type, 3, format["Added %1 actions to %2", count _actions, _type]] call FLO_fnc_log;
 };
 
+// Add commander actions to the FOB container (screen/board)
+private _fnc_addContainerActions = {
+    params ["_building", "_config"];
+
+    private _type = _config get "type";
+    private _containerType = if (!isNil "F_HQ_C_01") then { F_HQ_C_01 } else { "Land_Cargo20_military_green_F" };
+
+    // Find nearby FOB container
+    private _containers = nearestObjects [_building, [_containerType], 25];
+    if (count _containers == 0) exitWith {
+        [_type, 2, "No FOB container found nearby for commander actions"] call FLO_fnc_log;
+    };
+
+    private _container = _containers select 0;
+    private _commanderCondition = "player isEqualTo TheCommander";
+
+    // Commander-only actions for the container/board
+    private _containerActions = [
+        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, nil, 4, true, true, "", _commanderCondition],
+        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, nil, 4, true, true, "", _commanderCondition],
+        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, nil, 6, true, true, "", _commanderCondition],
+        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress", { { execVM "Scripts\MissionReset.sqf"; } remoteExec ["call", 2]; }, nil, 5, true, true, "", _commanderCondition],
+        ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, nil, 3, true, true, "", _commanderCondition]
+    ];
+
+    {
+        try {
+            [_container, _x] remoteExec ["addAction", 0, true];
+        } catch {
+            [_type, 1, format["Failed to add container action %1: %2", _forEachIndex, _exception]] call FLO_fnc_log;
+        };
+    } forEach _containerActions;
+
+    [_type, 3, format["Added %1 commander actions to container", count _containerActions]] call FLO_fnc_log;
+};
+
 // Execute setup functions
 [_fobBuilding, _config] call _fnc_setupArsenal;
 [_fobBuilding, _config] call _fnc_addActions;
+[_fobBuilding, _config] call _fnc_addContainerActions;
 
 // ============================================================================
 // TRIGGER SETUP

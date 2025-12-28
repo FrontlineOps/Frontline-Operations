@@ -17,44 +17,48 @@ diag_log "[FLO_INIT_P1] Waiting for mission configuration...";
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
     diag_log "[FLO_INIT_P1] Loading from saved game - using saved config";
 
-    // The saved config has integer faction indices, which Phase 2 will use
-    // We need to restore the actual handle values from the saved game data
+    // Restore faction handles from saved game data
+    // The save stores config under "config" sub-hashmap
     if (!isNil "FLO_SavedGameData") then {
         private _savedData = FLO_SavedGameData;
+        // Config is stored under "config" key, not at root level
+        private _configData = _savedData getOrDefault ["config", createHashMap];
 
-        // Restore faction handles from save (these are the actual HashMap handles)
-        if ("friendlyHandle" in _savedData) then {
-            FLO_FriendlyHandle = _savedData get "friendlyHandle";
+        diag_log format ["[FLO_INIT_P1] Loading config from save - found %1 keys in config", count keys _configData];
+
+        // Restore faction handles from the config sub-hashmap
+        if ("friendlyHandle" in _configData) then {
+            FLO_FriendlyHandle = _configData get "friendlyHandle";
             publicVariable "FLO_FriendlyHandle";
         };
-        if ("enemyHandle" in _savedData) then {
-            FLO_EnemyHandle = _savedData get "enemyHandle";
+        if ("enemyHandle" in _configData) then {
+            FLO_EnemyHandle = _configData get "enemyHandle";
             publicVariable "FLO_EnemyHandle";
         };
-        if ("civilianHandle" in _savedData) then {
-            FLO_CivilianHandle = _savedData get "civilianHandle";
+        if ("civilianHandle" in _configData) then {
+            FLO_CivilianHandle = _configData get "civilianHandle";
             publicVariable "FLO_CivilianHandle";
         };
-        if ("reputationHandle" in _savedData) then {
-            FLO_ReputationHandle = _savedData get "reputationHandle";
+        if ("reputationHandle" in _configData) then {
+            FLO_ReputationHandle = _configData get "reputationHandle";
             publicVariable "FLO_ReputationHandle";
         };
-        if ("difficultyHandle" in _savedData) then {
-            FLO_DifficultyHandle = _savedData get "difficultyHandle";
+        if ("difficultyHandle" in _configData) then {
+            FLO_DifficultyHandle = _configData get "difficultyHandle";
             publicVariable "FLO_DifficultyHandle";
         };
-        if ("moneyHandle" in _savedData) then {
-            FLO_MoneyHandle = _savedData get "moneyHandle";
+        if ("moneyHandle" in _configData) then {
+            FLO_MoneyHandle = _configData get "moneyHandle";
             publicVariable "FLO_MoneyHandle";
         };
-        if ("enemyPrec" in _savedData) then {
-            EnemyPrec = _savedData get "enemyPrec";
+        if ("enemyPrec" in _configData) then {
+            EnemyPrec = _configData get "enemyPrec";
             publicVariable "EnemyPrec";
         };
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
-            if (!isNil "FLO_FriendlyHandle" && {FLO_FriendlyHandle isEqualType createHashMap}) then {FLO_FriendlyHandle get "name"} else {"(index)"},
-            if (!isNil "FLO_EnemyHandle" && {FLO_EnemyHandle isEqualType createHashMap}) then {FLO_EnemyHandle get "name"} else {"(index)"}
+            if (!isNil "FLO_FriendlyHandle" && {FLO_FriendlyHandle isEqualType createHashMap}) then {FLO_FriendlyHandle get "name"} else {"(not set)"},
+            if (!isNil "FLO_EnemyHandle" && {FLO_EnemyHandle isEqualType createHashMap}) then {FLO_EnemyHandle get "name"} else {"(not set)"}
         ];
     };
 

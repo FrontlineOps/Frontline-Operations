@@ -115,7 +115,12 @@ for "_i" from 1 to _remainingGroups do {
         private _parking = [_groupPos, 200, 8 + random 5] call FLO_fnc_getRoadParkingPos;
         _groupPos = _parking select 0;
     };
-    
+
+    // Ensure position is not on water (unless naval group)
+    if (!(_groupType in ["boat", "naval", "submarine"]) && {surfaceIsWater _groupPos}) then {
+        _groupPos = [_groupPos, _distributionRadius] call FLO_fnc_getSafeLandPos;
+    };
+
     // Find safe position near the calculated point
     private _safePos = [_groupPos, 0, 30, 3, 0, 0.5, 0] call BIS_fnc_findSafePos;
 

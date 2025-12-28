@@ -263,12 +263,39 @@ try {
             {
                 private _gData = _y;
                 if (!isNil "_gData" && { _gData isEqualType createHashMap }) then {
+                    // Get position with validation - ensure we save a valid position
+                    private _pos = _gData getOrDefault ["position", [0,0,0]];
+                    if !(_pos isEqualType [] && {count _pos >= 2}) then { _pos = [0,0,0]; };
+
+                    // Get garrison position with validation
+                    private _garrisonPos = _gData getOrDefault ["garrisonPosition", []];
+                    if !(_garrisonPos isEqualType []) then { _garrisonPos = []; };
+
+                    // Validate waypoints before saving - filter out corrupt data
+                    private _rawWaypoints = _gData getOrDefault ["waypoints", []];
+                    private _validWaypoints = [];
+                    if (_rawWaypoints isEqualType []) then {
+                        {
+                            if (_x isEqualType [] && {count _x >= 2}) then {
+                                private _wpPos = _x select 0;
+                                private _wpType = _x select 1;
+                                if (_wpPos isEqualType [] && {count _wpPos >= 2} && {_wpType isEqualType ""}) then {
+                                    _validWaypoints pushBack _x;
+                                };
+                            };
+                        } forEach _rawWaypoints;
+                    };
+
                     _vgHash set [_x, createHashMapFromArray [
-                        ["position", _gData get "position"], ["groupType", _gData get "groupType"],
-                        ["objective", _gData get "objective"], ["unitCount", _gData get "unitCount"],
-                        ["side", _gData get "side"], ["state", _gData get "state"],
-                        ["waypoints", _gData get "waypoints"], ["currentWaypointIndex", _gData get "currentWaypointIndex"],
-                        ["garrisonPosition", _gData getOrDefault ["garrisonPosition", []]],
+                        ["position", _pos],
+                        ["groupType", _gData getOrDefault ["groupType", "infantry_squad"]],
+                        ["objective", _gData getOrDefault ["objective", ""]],
+                        ["unitCount", _gData getOrDefault ["unitCount", 4]],
+                        ["side", _gData getOrDefault ["side", east]],
+                        ["state", _gData getOrDefault ["state", "idle"]],
+                        ["waypoints", _validWaypoints],
+                        ["currentWaypointIndex", _gData getOrDefault ["currentWaypointIndex", 0]],
+                        ["garrisonPosition", _garrisonPos],
                         ["garrisonObjective", _gData getOrDefault ["garrisonObjective", ""]]
                     ]];
                 };

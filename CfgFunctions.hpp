@@ -63,10 +63,11 @@ class FLO {
 
     class VirtualizationUtilities {
         file = "Functions\Virtualization\Utilities";
-        
-        class filterNonCivGroups {};
-        class getGroupTypeCount  {};
-        class getRoadParkingPos  {};
+
+        class filterNonCivGroups     {};
+        class getGroupTypeCount      {};
+        class getRoadParkingPos      {};
+        class getSafeLandPos         {};
         class getSafeUnvirtualizePos {};
     };
 

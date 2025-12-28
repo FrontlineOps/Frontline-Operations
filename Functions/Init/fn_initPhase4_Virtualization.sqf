@@ -25,6 +25,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         private _savedGroups = _savedData get "virtualGroups";
         private _loadedCount = 0;
+        private _skippedCount = 0;
 
         if (!isNil "_savedGroups" && {_savedGroups isEqualType createHashMap}) then {
             {
@@ -32,34 +33,70 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                 private _groupData = _savedGroups get _groupId;
 
                 if (!isNil "_groupData") then {
-                    // Create the virtual group
-                    private _newId = [
-                        _groupData getOrDefault ["position", [0,0,0]],
-                        _groupData getOrDefault ["groupType", "infantry_squad"],
-                        nil,
-                        _groupData getOrDefault ["objective", ""],
-                        _groupData getOrDefault ["unitCount", 4],
-                        _groupData getOrDefault ["side", east]
-                    ] call FLO_fnc_createVirtualGroup;
+                    // Validate position before creating group
+                    private _pos = _groupData getOrDefault ["position", [0,0,0]];
 
-                    if (_newId != "") then {
-                        // Restore additional state
-                        private _groups = FLO_virtualGroups get "_groups";
-                        private _newData = _groups get _newId;
+                    // Skip groups with invalid positions (position must have at least X or Y > 0)
+                    if !(_pos isEqualType [] && {count _pos >= 2} && {(_pos select 0) > 100 || (_pos select 1) > 100}) then {
+                        diag_log format ["[FLO_INIT_P4] Skipping group %1 - invalid position: %2", _groupId, _pos];
+                        _skippedCount = _skippedCount + 1;
+                    } else {
+                        // Create the virtual group
+                        private _newId = [
+                            _pos,
+                            _groupData getOrDefault ["groupType", "infantry_squad"],
+                            nil,
+                            _groupData getOrDefault ["objective", ""],
+                            _groupData getOrDefault ["unitCount", 4],
+                            _groupData getOrDefault ["side", east]
+                        ] call FLO_fnc_createVirtualGroup;
 
-                        if (!isNil "_newData") then {
-                            _newData set ["state", _groupData getOrDefault ["state", "idle"]];
-                            _newData set ["waypoints", _groupData getOrDefault ["waypoints", []]];
-                            _newData set ["currentWaypointIndex", _groupData getOrDefault ["currentWaypointIndex", 0]];
-                            _newData set ["garrisonPosition", _groupData getOrDefault ["garrisonPosition", []]];
-                            _newData set ["garrisonObjective", _groupData getOrDefault ["garrisonObjective", ""]];
-                            _loadedCount = _loadedCount + 1;
+                        if (_newId != "") then {
+                            // Restore additional state
+                            private _groups = FLO_virtualGroups get "_groups";
+                            private _newData = _groups get _newId;
+
+                            if (!isNil "_newData") then {
+                                _newData set ["state", _groupData getOrDefault ["state", "idle"]];
+
+                                // Validate and restore waypoints
+                                private _savedWaypoints = _groupData getOrDefault ["waypoints", []];
+                                private _validWaypoints = [];
+
+                                if (_savedWaypoints isEqualType []) then {
+                                    {
+                                        // Basic validation - waypoint must be array with position and type
+                                        if (_x isEqualType [] && {count _x >= 2}) then {
+                                            _validWaypoints pushBack _x;
+                                        };
+                                    } forEach _savedWaypoints;
+                                };
+
+                                // if (count _validWaypoints > 0) then {
+                                //     diag_log format ["[FLO_INIT_P4] Restored %1/%2 waypoints for %3", count _validWaypoints, count _savedWaypoints, _newId];
+                                // };
+
+                                _newData set ["waypoints", _validWaypoints];
+                                _newData set ["currentWaypointIndex", if (count _validWaypoints > 0) then {(_groupData getOrDefault ["currentWaypointIndex", 0]) min (count _validWaypoints - 1)} else {0}];
+
+                                // Validate garrison position before restoring
+                                private _garrisonPos = _groupData getOrDefault ["garrisonPosition", []];
+                                if (_garrisonPos isEqualType [] && {count _garrisonPos >= 2} && {(_garrisonPos select 0) > 0 || (_garrisonPos select 1) > 0}) then {
+                                    _newData set ["garrisonPosition", _garrisonPos];
+                                } else {
+                                    // Use the group position as garrison if no valid garrison position
+                                    _newData set ["garrisonPosition", _pos];
+                                };
+
+                                _newData set ["garrisonObjective", _groupData getOrDefault ["garrisonObjective", ""]];
+                                _loadedCount = _loadedCount + 1;
+                            };
                         };
                     };
                 };
             } forEach (keys _savedGroups);
 
-            diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save", _loadedCount];
+            // diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save (skipped %2 invalid)", _loadedCount, _skippedCount];
         };
 
         // Mark as initialized and start loop
@@ -68,11 +105,11 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         [] spawn FLO_fnc_virtualGroupsUpdateLoop;
 
-        // Exit early - we loaded from save
+        diag_log "[FLO_INIT_P4] Virtualization loaded from save - complete";
     };
 };
 
-// Check if already initialized (from save load above)
+// Check if already initialized (from save load above or previous run)
 if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
     diag_log "[FLO_INIT_P4] Virtualization already initialized";
 

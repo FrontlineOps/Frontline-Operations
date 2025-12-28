@@ -65,7 +65,10 @@ if (!_hasRequired) exitWith {
 // These are the handles that were set during initial faction dialog
 private _savedConfig = createHashMap;
 
-// Try to get saved faction handles
+// Get the config sub-hashmap
+private _configData = _saveData getOrDefault ["config", createHashMap];
+
+// Try to get saved faction handles from the config sub-hashmap
 private _handleKeys = [
     ["friendlyHandle", "FLO_FriendlyHandle"],
     ["enemyHandle", "FLO_EnemyHandle"],
@@ -78,8 +81,8 @@ private _handleKeys = [
 private _foundHandles = 0;
 {
     _x params ["_saveKey", "_varName"];
-    if (_saveKey in _saveData) then {
-        private _value = _saveData get _saveKey;
+    if (_saveKey in _configData) then {
+        private _value = _configData get _saveKey;
         _savedConfig set [_varName, _value];
         _foundHandles = _foundHandles + 1;
     };

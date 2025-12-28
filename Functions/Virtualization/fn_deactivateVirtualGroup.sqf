@@ -46,23 +46,40 @@ if (!isNull _leader && {alive _leader}) then {
 };
 
 // Save any current waypoints before deleting
-private _waypoints = [];
-{
-    if (_forEachIndex > 0) then { // Skip the first waypoint (which is the current position)
-        private _waypointData = [
-            waypointPosition _x,
-            waypointType _x,
-            waypointBehaviour _x,
-            waypointSpeed _x,
-            waypointFormation _x,
-            waypointCombatMode _x
-        ];
-        _waypoints pushBack _waypointData;
-    };
-} forEach waypoints _realGroup;
+// Only overwrite virtual waypoints if the real group has actual waypoints
+private _realWaypoints = waypoints _realGroup;
+if (count _realWaypoints > 1) then {
+    // Real group has waypoints beyond the initial one - save them
+    private _savedWaypoints = [];
+    {
+        if (_forEachIndex > 0) then { // Skip the first waypoint (which is the current position)
+            private _wpPos = waypointPosition _x;
 
-// Update the waypoints in the group data
-_groupData set ["waypoints", _waypoints];
+            // Only save if position is valid
+            if (_wpPos isEqualType [] && {count _wpPos >= 2} && {(_wpPos select 0) > 100 || (_wpPos select 1) > 100}) then {
+                private _waypointData = [
+                    _wpPos,
+                    waypointType _x,
+                    waypointBehaviour _x,
+                    waypointSpeed _x,
+                    waypointFormation _x,
+                    waypointCombatMode _x
+                ];
+                _savedWaypoints pushBack _waypointData;
+            };
+        };
+    } forEach _realWaypoints;
+
+    // Only update if we got valid waypoints
+    if (count _savedWaypoints > 0) then {
+        _groupData set ["waypoints", _savedWaypoints];
+        ["VIRTUALIZATION", 4, format["Saved %1 waypoints from real group %2", count _savedWaypoints, _groupId]] call FLO_fnc_log;
+    };
+    // If no valid waypoints from real group, keep existing virtual waypoints
+} else {
+    // Real group has no waypoints - keep the existing virtual waypoints if any
+    ["VIRTUALIZATION", 4, format["Keeping existing virtual waypoints for %1 (real group had no waypoints)", _groupId]] call FLO_fnc_log;
+};
 
 // Save the current state/behavior before deleting
 private _state = "idle";
