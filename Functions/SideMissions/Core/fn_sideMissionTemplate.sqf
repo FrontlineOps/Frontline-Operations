@@ -104,27 +104,29 @@ switch (toLower _operation) do {
     // Check if a mission type can spawn (cooldown + maxActive)
     case "canspawn": {
         _args params [["_typeName", ""]];
-        
+
         private _template = FLO_SM_Templates getOrDefault [_typeName, nil];
         if (isNil "_template") exitWith { _result = false; };
-        
+
         // Check cooldown
         private _cooldown = _template getOrDefault ["cooldown", 600];
         private _lastSpawn = FLO_SM_Cooldowns getOrDefault [_typeName, 0];
         if (serverTime - _lastSpawn < _cooldown) exitWith { _result = false; };
-        
+
         // Check max active
         private _maxActive = _template getOrDefault ["maxActive", -1];
+        private _canSpawn = true;
+
         if (_maxActive > 0) then {
             private _activeOfType = ["getByType", [_typeName]] call FLO_fnc_sideMissionRegistry;
             private _activeCount = {
                 private _state = ["get", [_x]] call FLO_fnc_sideMissionState;
                 _state >= 0 && _state < 3
             } count _activeOfType;
-            if (_activeCount >= _maxActive) exitWith { _result = false; };
+            if (_activeCount >= _maxActive) then { _canSpawn = false; };
         };
-        
-        _result = true;
+
+        _result = _canSpawn;
     };
     
     // Mark cooldown for a type

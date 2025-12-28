@@ -98,24 +98,63 @@ if (!StartingLocationDone) then {
 };
 
 // ============================================================================
-// FACTION INITIALIZATION
+// WAIT FOR SERVER PHASE MANAGER
 // ============================================================================
-
-// Wait for starting location configuration
-waitUntil {sleep 0.1; StartingLocationDone};
-
-// Update loading status
-hintSilent "LOADING . . . ";
-
-// Initialize faction system
-F_Init = false;
-execVM "Scripts\Init\init_groups.sqf";
 
 // Disable saving during initialization
 enableSaving [false, false];
 
-// Wait for faction initialization
-waitUntil {sleep 0.1; F_Init};
+// Wait for server Phase Manager to complete all initialization
+// This replaces the old fragmented approach (init_groups, init_Markers, etc.)
+private _fnc_waitForPhaseManager = {
+    private _startTime = diag_tickTime;
+    private _timeout = 300; // 5 minute timeout
+
+    waitUntil {
+        sleep 1;
+
+        // Show progress to player based on current phase
+        if (!isNil "FLO_InitPhase") then {
+            private _phaseName = switch (FLO_InitPhase) do {
+                case 0: { "Waiting for configuration..." };
+                case 1: { "Loading factions..." };
+                case 2: { "Configuring factions..." };
+                case 3: { "Indexing objectives..." };
+                case 4: { "Setting up OPFOR forces..." };
+                case 5: { "Starting mission systems..." };
+                case 99: { "Ready!" };
+                case -1: { "ERROR" };
+                default { "Initializing..." };
+            };
+            hintSilent format ["Mission Setup: %1", _phaseName];
+        } else {
+            hintSilent "Waiting for server...";
+        };
+
+        // Check for completion or error
+        private _ready = !isNil "FLO_MissionReady" && {FLO_MissionReady};
+        private _error = !isNil "FLO_InitPhase" && {FLO_InitPhase == -1};
+        private _timedOut = (diag_tickTime - _startTime) > _timeout;
+
+        _ready || _error || _timedOut
+    };
+
+    // Handle result
+    if (!isNil "FLO_MissionReady" && {FLO_MissionReady}) then {
+        ["INIT_CLIENT", 3, "Phase Manager completed - mission ready"] call FLO_fnc_log;
+        true
+    } else {
+        if (!isNil "FLO_InitPhase" && {FLO_InitPhase == -1}) then {
+            private _error = if (!isNil "FLO_InitError") then { FLO_InitError } else { "Unknown error" };
+            ["INIT_CLIENT", 1, format ["Phase Manager failed: %1", _error]] call FLO_fnc_log;
+        } else {
+            ["INIT_CLIENT", 1, "Phase Manager timeout"] call FLO_fnc_log;
+        };
+        false
+    }
+};
+
+private _phaseSuccess = call _fnc_waitForPhaseManager;
 
 // ============================================================================
 // USER INTERFACE SETUP
@@ -179,34 +218,16 @@ private _fnc_initCTab = {
 call _fnc_initCTab;
 
 // ============================================================================
-// MISSION READINESS WAIT
+// MISSION READINESS CHECK
 // ============================================================================
 
-// Wait for mission systems to be ready
-private _fnc_waitForMissionReady = {
-    private _startTime = time;
-    private _timeout = 300; // 5 minute timeout
-
-    waitUntil {
-        sleep 0.5;
-
-        // Check multiple conditions for mission readiness
-        private _markerReady = (MarLOCC isEqualTo 1);
-        private _installationsExist = (count (allMapMarkers select {markerType _x isEqualTo "b_installation"}) > 0);
-        private _respawnExists = (count (allMapMarkers select {markerType _x isEqualTo "b_unknown"}) > 0);
-        private _timeoutReached = (time - _startTime > _timeout);
-
-        if (_timeoutReached) then {
-            ["INIT_CLIENT", 1, "Mission readiness timeout reached"] call FLO_fnc_log;
-        };
-
-        _markerReady || _installationsExist || _respawnExists || _timeoutReached
-    };
-
+// Note: We already waited for Phase Manager above, but do a final sanity check
+if (!_phaseSuccess) then {
+    ["INIT_CLIENT", 1, "Mission initialization failed - some features may not work correctly"] call FLO_fnc_log;
+    hint "Warning: Mission initialization encountered errors.\nSome features may not work correctly.";
+} else {
     ["INIT_CLIENT", 3, "Mission readiness confirmed"] call FLO_fnc_log;
 };
-
-call _fnc_waitForMissionReady;
 
 // ============================================================================
 // CLIENT FEATURE INITIALIZATION

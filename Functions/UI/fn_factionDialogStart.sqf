@@ -74,15 +74,15 @@ _display closeDisplay 1;
 ["UI", 3, format["Mission starting with: Player=%1, Enemy=%2, Civilian=%3", 
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
-// Execute mission setup (spawn to allow async operations)
+// Execute mission setup
 [_playerFaction, _enemyFaction, _civilianFaction, _presence, _resources, _reputation, _difficulty] spawn {
 	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_presence", "_resources", "_reputation", "_difficulty"];
-	
+
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
-	
+
 	hint "Setting up mission...";
-	
+
 	// Process reputation
 	private _reputationValue = switch (_reputation) do {
 		case "LOW_Enemy to Guerillas": {2};
@@ -90,13 +90,7 @@ _display closeDisplay 1;
 		case "HIGH_Friendly to Guerillas": {16};
 		default {9};
 	};
-	
-	FLO_ReputationHandle = createHashMapFromArray [
-		["value", _reputationValue],
-		["name", _reputation]
-	];
-	publicVariable "FLO_ReputationHandle";
-	
+
 	// Process difficulty
 	private _difficultyValue = switch (_difficulty) do {
 		case "EASY _ Low Enemy Presence _ progressive": {0.5};
@@ -104,41 +98,30 @@ _display closeDisplay 1;
 		case "HARD _ Full Enemy Presence _ progressive": {1.5};
 		default {1};
 	};
-	
-	FLO_DifficultyHandle = createHashMapFromArray [
-		["value", _difficultyValue],
-		["name", _difficulty]
-	];
-	publicVariable "FLO_DifficultyHandle";
-	
+
 	// Process resources
 	private _resourceValue = parseNumber _resources;
-	
-	FLO_MoneyHandle = createHashMapFromArray [
-		["value", _resourceValue],
-		["name", _resources]
-	];
-	publicVariable "FLO_MoneyHandle";
-	
-	// Set faction handles
-	FLO_FriendlyHandle = createHashMapFromArray [["name", _playerFaction]];
-	publicVariable "FLO_FriendlyHandle";
-	
-	FLO_EnemyHandle = createHashMapFromArray [["name", _enemyFaction]];
-	publicVariable "FLO_EnemyHandle";
-	
-	FLO_CivilianHandle = createHashMapFromArray [["name", _civilianFaction]];
-	publicVariable "FLO_CivilianHandle";
-	
+
+	// Process enemy presence
+	private _enemyPresence = switch (_presence) do {
+		case "10% _ Small Operation": {7};
+		case "30% _ Short Campaign": {3};
+		case "50% _ Medium Campaign": {2};
+		case "75% _ Long Campaign": {1.5};
+		case "100% _ Dedi Servers with HCs": {1};
+		default {2};
+	};
+
 	// Fade to black and prompt for starting location
 	titleText ["", "BLACK IN", 7, true, true];
-	
+
 	HQLOCC = 0;
 	publicVariable "HQLOCC";
 	hint "Choose Your Starting Point";
 	openMap [true, true];
-	
+
 	// Add map click handler for starting location
+	private _startPos = getPos player;
 	FLO_mapClickDFD = addMissionEventHandler ["MapSingleClick", {
 		params ["_control", "_pos", "_alt", "_shift"];
 
@@ -149,58 +132,98 @@ _display closeDisplay 1;
 		HQLOCC = 1;
 		publicVariable "HQLOCC";
 
+		// Store the selected position
+		missionNamespace setVariable ["FLO_StartPosition", _pos, true];
+
 		titleText ["", "BLACK IN", 999, true, true];
 	}];
-	
+
 	waitUntil {HQLOCC == 1};
 	openMap [true, false];
 	openMap [false, false];
-	
+
+	// Get final start position
+	_startPos = missionNamespace getVariable ["FLO_StartPosition", getPos player];
+
 	// Create FOB container
 	private _fobContainer = createVehicle ["B_Slingload_01_Cargo_F", (player getPos [random 10, random 360]), [], 0, "NONE"];
 	_fobContainer allowDamage false;
-	
-	// Process enemy presence
-	EnemyPrec = switch (_presence) do {
-		case "10% _ Small Operation": {7};
-		case "30% _ Short Campaign": {3};
-		case "50% _ Medium Campaign": {2};
-		case "75% _ Long Campaign": {1.5};
-		case "100% _ Dedi Servers with HCs": {1};
-		default {2};
-	};
-	
-	StartingLocationDone = true;
-	publicVariable "StartingLocationDone";
-	
-	// Wait for faction initialization
-	waitUntil {!isNil "F_Init" && {F_Init}};
 
-	["UI", 3, "Faction initialization complete"] call FLO_fnc_log;
+	// ============================================================================
+	// SEND CONFIG TO SERVER VIA FLO_MissionConfig
+	// The Phase Manager (FLO_fnc_initPhase1_MissionConfig) is waiting for this
+	// ============================================================================
 
-	// Initialize markers (creates respawn marker and triggers objective indexing)
-	private _markerScript = execVM "Scripts\Init\init_Markers.sqf";
-	waitUntil {!isNil "_markerScript" && {scriptDone _markerScript}};
+	FLO_MissionConfig = createHashMapFromArray [
+		["friendlyHandle", createHashMapFromArray [["name", _playerFaction]]],
+		["enemyHandle", createHashMapFromArray [["name", _enemyFaction]]],
+		["civilianHandle", createHashMapFromArray [["name", _civilianFaction]]],
+		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
+		["difficultyHandle", createHashMapFromArray [["value", _difficultyValue], ["name", _difficulty]]],
+		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
+		["enemyPresence", _enemyPresence],
+		["startPosition", _startPos]
+	];
+	publicVariable "FLO_MissionConfig";
 
-	["UI", 3, "Markers initialized"] call FLO_fnc_log;
+	["UI", 3, "Mission config sent to server - Phase Manager will handle initialization"] call FLO_fnc_log;
 
-	// Wait for virtualization system to be ready (initialized by initServer.sqf)
-	// This ensures objective groups are created before we continue
+	// ============================================================================
+	// WAIT FOR SERVER PHASE MANAGER TO COMPLETE
+	// No more local init_groups, init_Markers - server handles everything
+	// ============================================================================
+
+	hint "Initializing mission systems...";
+
 	private _startTime = diag_tickTime;
-	private _timeout = 60; // Give more time for large maps
+	private _timeout = 300; // 5 minute timeout for full initialization
 
 	waitUntil {
-		uiSleep 0.5;
-		(!isNil "InitializationOG" && {InitializationOG}) ||
+		uiSleep 1;
+
+		// Show progress to player
+		if (!isNil "FLO_InitPhase") then {
+			private _phaseName = switch (FLO_InitPhase) do {
+				case 1: { "Loading factions..." };
+				case 2: { "Configuring factions..." };
+				case 3: { "Indexing objectives..." };
+				case 4: { "Setting up OPFOR forces..." };
+				case 5: { "Starting mission systems..." };
+				case 99: { "Complete!" };
+				case -1: { "ERROR - Check server log" };
+				default { "Initializing..." };
+			};
+			hintSilent format ["Mission Setup: %1\nPhase %2", _phaseName, FLO_InitPhase];
+		};
+
+		(!isNil "FLO_MissionReady" && {FLO_MissionReady}) ||
+		(!isNil "FLO_InitPhase" && {FLO_InitPhase == -1}) ||
 		{diag_tickTime - _startTime > _timeout}
 	};
 
-	if (!isNil "InitializationOG" && {InitializationOG}) then {
-		["UI", 3, "Objective groups ready - mission setup complete"] call FLO_fnc_log;
+	// Check result
+	if (!isNil "FLO_MissionReady" && {FLO_MissionReady}) then {
+		["UI", 3, "Mission initialization complete - ready to play"] call FLO_fnc_log;
+
+		// Create local respawn marker
+		private _respawnMarker = createMarkerLocal ["respawn_west", _startPos];
+		_respawnMarker setMarkerTypeLocal "hd_start";
+		_respawnMarker setMarkerTextLocal "Respawn";
+
+		// Set MarLOCC for backwards compatibility
+		MarLOCC = 1;
+
+		// Final notification
+		titleText ["", "BLACK IN", 3, true, true];
+		private _msg = "<t size='1.2' color='#00ff00'>Mission Ready</t><br/><t size='0.9'>Good luck, Commander</t>";
+		[_msg, 0, 0.3, 4, 0] spawn BIS_fnc_dynamicText;
+
 	} else {
-		["UI", 2, "Objective groups initialization timeout - continuing anyway"] call FLO_fnc_log;
+		private _errorMsg = if (!isNil "FLO_InitError") then { FLO_InitError } else { "Unknown error" };
+		["UI", 1, format["Mission initialization FAILED: %1", _errorMsg]] call FLO_fnc_log;
+		hint format ["Mission initialization failed:\n%1\n\nCheck server RPT for details.", _errorMsg];
 	};
 
-	["UI", 3, "Mission setup complete"] call FLO_fnc_log;
+	["UI", 3, "Faction dialog setup complete"] call FLO_fnc_log;
 };
 

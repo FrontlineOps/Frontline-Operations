@@ -44,22 +44,50 @@ switch (toLower _operation) do {
     
     // Start the mission manager loop
     case "start": {
-        if (FLO_SM_Running) exitWith { 
+        if (FLO_SM_Running) exitWith {
             diag_log "[FLO_SM] Manager already running";
-            _result = false; 
+            _result = false;
         };
-        
+
         FLO_SM_Running = true;
         diag_log "[FLO_SM] Starting mission manager loop";
-        
+
         [] spawn {
+            // Wait for objectives to be indexed before spawning missions
+            // This prevents the race condition where missions try to spawn before objectives exist
+            private _waitStart = diag_tickTime;
+            private _timeout = 120;
+
+            waitUntil {
+                sleep 2;
+                private _hasObjectives = !isNil "FLO_Objectives" && {count FLO_Objectives > 0};
+                private _timedOut = (diag_tickTime - _waitStart) > _timeout;
+
+                if (!_hasObjectives && !_timedOut) then {
+                    diag_log "[FLO_SM] Waiting for objectives to be indexed...";
+                };
+
+                _hasObjectives || _timedOut || !FLO_SM_Running
+            };
+
+            if (!FLO_SM_Running) exitWith {
+                diag_log "[FLO_SM] Manager stopped while waiting for objectives";
+            };
+
+            if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) then {
+                diag_log "[FLO_SM] WARNING: No objectives available - side missions will not spawn properly";
+            } else {
+                diag_log format ["[FLO_SM] Objectives ready (%1 found) - starting mission loop", count FLO_Objectives];
+            };
+
+            // Main loop
             while {FLO_SM_Running} do {
                 ["tick"] call FLO_fnc_sideMissionManager;
                 sleep FLO_SM_TickInterval;
             };
             diag_log "[FLO_SM] Mission manager loop stopped";
         };
-        
+
         _result = true;
     };
     

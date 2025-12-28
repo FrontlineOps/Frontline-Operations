@@ -9,6 +9,19 @@ class FLO {
         class initializeOP      {};
     };
 
+    // === INITIALIZATION PHASE SYSTEM ===
+    class Init {
+        file = "Functions\Init";
+
+        class initPhaseManager      {};
+        class initPhase1_MissionConfig {};
+        class initPhase2_Factions   {};
+        class initPhase3_Objectives {};
+        class initPhase4_Virtualization {};
+        class initPhase5_MissionSystems {};
+        class initClientFinalize    {};
+    };
+
     class AI {
         file = "Functions\AI";
 
