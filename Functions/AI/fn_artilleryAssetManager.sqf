@@ -23,7 +23,7 @@ if (isNil "FLO_ArtilleryManager") then {
         ["missions", createHashMap],
         ["shootAndScootTime", 90],
         ["_requestFireMission", {
-            params ["_self", "_targetPos", ["_rounds", 6]];
+            params ["_targetPos", ["_rounds", 6]];
 
             if (isNil "FLO_virtualGroups") exitWith {false};
             private _groups = FLO_virtualGroups get "_groups";
@@ -38,9 +38,11 @@ if (isNil "FLO_ArtilleryManager") then {
             if (count _artGroups == 0) exitWith {false};
 
             // Filter out groups already on mission
+            // Capture missions for use in select callback
+            private _missions = _self get "missions";
             _artGroups = _artGroups select {
                 private _id = _x select 0;
-                !((_self get "missions") in [_id]) && {true}
+                !(_id in _missions)
             };
             if (count _artGroups == 0) exitWith {false};
 

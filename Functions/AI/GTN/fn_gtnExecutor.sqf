@@ -1,0 +1,620 @@
+/*
+ * Function: FLO_fnc_gtnExecutor
+ * Author: Frontline Operations Development Group
+ * 
+ * Description:
+ * Goal Task Network Plan Executor - Executes primitive actions from plans.
+ * Bridges GTN plans to actual game commands (group orders, fire missions, etc.)
+ * Handles action completion monitoring and failure recovery.
+ *
+ * Arguments:
+ * 0: Commander Reference <HASHMAP> - The OPFOR commander object
+ *
+ * Return Value:
+ * Executor HashMap Object <HASHMAP>
+ *
+ * Example:
+ * private _executor = [_commander] call FLO_fnc_gtnExecutor;
+ * _executor call ["_executePrimitive", [_taskNode]];
+ */
+
+params [["_commander", nil]];
+
+if (isNil "_commander") exitWith {
+    ["GTN", 1, "Executor requires commander reference"] call FLO_fnc_log;
+    nil
+};
+
+["GTN", 3, "Initializing GTN Executor"] call FLO_fnc_log;
+
+private _executor = createHashMapObject [[
+    // AI Commander reference (passed in)
+    ["_aiCommander", _commander],
+
+    // GTN Commander reference (set after creation)
+    ["_gtnCommander", nil],
+
+    // Active executions (taskId -> execution data)
+    ["_activeExecutions", createHashMap],
+
+    // Execution handlers (primitive id -> handler function)
+    ["_handlers", createHashMap],
+
+    // Set GTN Commander reference (called after GTN commander is created)
+    ["_setGTNCommander", {
+        params ["_gtnCmdr"];
+        _self set ["_gtnCommander", _gtnCmdr];
+    }],
+    
+    // === HANDLER REGISTRATION ===
+    
+    ["_registerHandler", {
+        params ["_primitiveId", "_handlerFn"];
+        private _handlers = _self get "_handlers";
+        _handlers set [_primitiveId, _handlerFn];
+        _self set ["_handlers", _handlers];
+    }],
+    
+    // Completed task data for param resolution
+    ["_completedTaskData", createHashMap],
+
+    // Store completed task data for later reference
+    ["_storeTaskData", {
+        params ["_key", "_value"];
+        private _data = _self get "_completedTaskData";
+        _data set [_key, _value];
+        _self set ["_completedTaskData", _data];
+    }],
+
+    // Resolve dynamic parameter references
+    ["_resolveRuntimeParams", {
+        params ["_params"];
+
+        private _resolved = [];
+        private _completedData = _self get "_completedTaskData";
+
+        {
+            private _param = _x;
+
+            if (_param isEqualType "" && {_param find "_SELECTED_" == 0}) then {
+                // Look up in completed task data
+                private _key = _param select [1];  // Remove leading underscore
+                private _value = _completedData getOrDefault [_key, nil];
+                if (!isNil "_value") then {
+                    _resolved pushBack _value;
+                } else {
+                    ["GTN", 2, format["Could not resolve param: %1", _param]] call FLO_fnc_log;
+                    _resolved pushBack "";
+                };
+            } else {
+                _resolved pushBack _param;
+            };
+        } forEach _params;
+
+        _resolved
+    }],
+
+    // === PRIMITIVE EXECUTION ===
+
+    // Execute a primitive task node
+    ["_executePrimitive", {
+        params ["_taskNode"];
+
+        private _taskId = _taskNode get "taskId";
+        private _rawParams = _taskNode get "params";
+
+        // Resolve any dynamic parameter references
+        private _params = _self call ["_resolveRuntimeParams", [_rawParams]];
+        
+        private _handlers = _self get "_handlers";
+        private _handler = _handlers getOrDefault [_taskId, nil];
+        
+        if (isNil "_handler") exitWith {
+            ["GTN", 2, format["No handler registered for primitive: %1", _taskId]] call FLO_fnc_log;
+            false
+        };
+
+        ["GTN", 3, format[">>> EXECUTING PRIMITIVE: %1 with params: %2", _taskId, _params]] call FLO_fnc_log;
+        
+        // Create execution context
+        private _context = createHashMapFromArray [
+            ["commander", _self get "_gtnCommander"],
+            ["aiCommander", _self get "_aiCommander"],
+            ["executor", _self],
+            ["taskNode", _taskNode],
+            ["params", _params],
+            ["startTime", diag_tickTime],
+            ["status", "RUNNING"]
+        ];
+        
+        // Execute handler
+        private _result = [_context] call _handler;
+        
+        // Store active execution
+        private _active = _self get "_activeExecutions";
+        _active set [_taskId, _context];
+        
+        _result
+    }],
+    
+    // Check execution status
+    ["_checkExecution", {
+        params ["_taskId"];
+        
+        private _active = _self get "_activeExecutions";
+        private _context = _active getOrDefault [_taskId, nil];
+        
+        if (isNil "_context") exitWith { "UNKNOWN" };
+        
+        _context get "status"
+    }],
+    
+    // Update execution data
+    ["_updateExecution", {
+        params ["_taskId", "_key", "_value"];
+        
+        private _active = _self get "_activeExecutions";
+        private _context = _active getOrDefault [_taskId, nil];
+        
+        if (!isNil "_context") then {
+            _context set [_key, _value];
+        };
+    }],
+    
+    // Complete an execution
+    ["_completeExecution", {
+        params ["_taskId", ["_success", true]];
+        
+        private _active = _self get "_activeExecutions";
+        private _context = _active getOrDefault [_taskId, nil];
+        
+        if (!isNil "_context") then {
+            _context set ["status", if (_success) then { "SUCCESS" } else { "FAILED" }];
+            _context set ["endTime", diag_tickTime];
+        };
+    }],
+    
+    // === INITIALIZATION - Register all handlers ===
+    
+    ["_initialize", {
+        // Register all primitive handlers
+        _self call ["_registerHandlers", []];
+        ["GTN", 3, "Executor handlers registered"] call FLO_fnc_log;
+    }],
+    
+    ["_registerHandlers", {
+        private _cmdr = _self get "_commander";
+        
+        // prim_select_staging_point
+        _self call ["_registerHandler", ["prim_select_staging_point", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _cmdr = _ctx get "commander";
+
+            // Use GTN Commander's staging position calculation
+            private _stagingPos = _cmdr call ["_getStagingPosition", [_objId]];
+
+            if (_stagingPos isEqualTo [0,0,0]) exitWith {
+                ["GTN", 2, format["Cannot create staging point - no position for %1", _objId]] call FLO_fnc_log;
+                false
+            };
+
+            // Store in task node for later use
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["stagingPosition", _stagingPos];
+            _primData set ["targetObjective", _objId];
+            _taskNode set ["primitiveData", _primData];
+
+            ["GTN", 3, format["Staging point created at %1 for objective %2", _stagingPos, _objId]] call FLO_fnc_log;
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+        
+        // prim_assign_groups_to_staging
+        _self call ["_registerHandler", ["prim_assign_groups_to_staging", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _count = _params param [1, 4];
+            private _cmdr = _ctx get "commander";
+            
+            // Get available groups
+            private _available = _cmdr call ["_getAvailableGroups", [_count]];
+
+            if (count _available < 1) exitWith {
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
+            // Get staging position from previous task
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _stagingPos = _primData getOrDefault ["stagingPosition", [0,0,0]];
+
+            // Order groups to staging
+            {
+                _cmdr call ["_orderGroupMove", [_x, _stagingPos, "AWARE"]];
+            } forEach _available;
+
+            _primData set ["groupsAssigned", count _available];
+            _primData set ["groupsArrived", 0];
+            _primData set ["assignedGroups", _available];
+            _taskNode set ["primitiveData", _primData];
+
+            true
+        }]];
+
+        // prim_wait_for_staging
+        _self call ["_registerHandler", ["prim_wait_for_staging", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+
+            // Get staging info from previous tasks
+            private _stagingPos = _primData getOrDefault ["stagingPosition", [0,0,0]];
+            private _groups = _primData getOrDefault ["assignedGroups", []];
+
+            if (count _groups == 0 || _stagingPos isEqualTo [0,0,0]) exitWith {
+                // No groups or position - auto-complete
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            // Check if groups have arrived
+            private _arrived = _cmdr call ["_checkGroupsArrived", [_groups, _stagingPos, 150]];
+
+            if (_arrived) then {
+                _primData set ["groupsArrived", count _groups];
+                _taskNode set ["primitiveData", _primData];
+                _ctx set ["status", "SUCCESS"];
+                ["GTN", 3, format["Groups arrived at staging position"]] call FLO_fnc_log;
+            } else {
+                // Still waiting - check timeout
+                private _startTime = _primData getOrDefault ["waitStartTime", diag_tickTime];
+                if (isNil {_primData get "waitStartTime"}) then {
+                    _primData set ["waitStartTime", diag_tickTime];
+                    _taskNode set ["primitiveData", _primData];
+                };
+
+                // Timeout after 5 minutes
+                if (diag_tickTime - _startTime > 300) then {
+                    ["GTN", 2, "Staging wait timeout - proceeding anyway"] call FLO_fnc_log;
+                    _ctx set ["status", "SUCCESS"];
+                } else {
+                    _ctx set ["status", "RUNNING"];
+                };
+            };
+
+            true
+        }]];
+
+        // prim_attack_objective
+        _self call ["_registerHandler", ["prim_attack_objective", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _cmdr = _ctx get "commander";
+
+            // Get objective position
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            // Get attack groups (from staging or available)
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _groups = _primData getOrDefault ["assignedGroups", []];
+
+            if (count _groups < 1) then {
+                _groups = _cmdr call ["_getAvailableGroups", [4]];
+            };
+
+            // Order attack
+            {
+                _cmdr call ["_orderGroupAttack", [_x, _objPos]];
+            } forEach _groups;
+
+            _primData set ["objectiveId", _objId];
+            _primData set ["attackGroups", _groups];
+            _taskNode set ["primitiveData", _primData];
+
+            true
+        }]];
+
+        // prim_call_artillery
+        _self call ["_registerHandler", ["prim_call_artillery", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _missionType = _params param [1, "PREPARATORY"];
+            private _rounds = _params param [2, 8];
+            private _cmdr = _ctx get "commander";
+
+            // Get objective position
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith {
+                ["GTN", 2, format["Artillery failed - no position for %1", _objId]] call FLO_fnc_log;
+                false
+            };
+
+            // Request fire mission via GTN Commander
+            private _result = _cmdr call ["_requestArtillery", [_objPos, _missionType, _rounds]];
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["missionFired", _result];
+            _taskNode set ["primitiveData", _primData];
+
+            _result
+        }]];
+
+        // prim_call_cas
+        _self call ["_registerHandler", ["prim_call_cas", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _missionType = _params param [1, "CAS"];
+            private _cmdr = _ctx get "commander";
+
+            // Get objective position
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith {
+                ["GTN", 2, format["CAS failed - no position for %1", _objId]] call FLO_fnc_log;
+                false
+            };
+
+            // Request CAS via GTN Commander
+            private _result = _cmdr call ["_requestCAS", [_objPos, _missionType]];
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["missionComplete", _result];
+            _taskNode set ["primitiveData", _primData];
+
+            _result
+        }]];
+
+        // prim_assign_groups_to_defense
+        _self call ["_registerHandler", ["prim_assign_groups_to_defense", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _count = _params param [1, 2];
+            private _cmdr = _ctx get "commander";
+
+            // Get objective position
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            // Get available groups
+            private _available = _cmdr call ["_getAvailableGroups", [_count]];
+
+            if (count _available < 1) exitWith { false };
+
+            // Order to defend
+            {
+                _cmdr call ["_orderGroupDefend", [_x, _objPos]];
+            } forEach _available;
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["groupsArrived", count _available];
+            _taskNode set ["primitiveData", _primData];
+
+            true
+        }]];
+
+        // prim_set_defense_posture
+        _self call ["_registerHandler", ["prim_set_defense_posture", {
+            params ["_ctx"];
+            // Immediate completion - posture is set by defend order
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_move_to_position
+        _self call ["_registerHandler", ["prim_move_to_position", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _mode = _params param [1, "AWARE"];
+            private _cmdr = _ctx get "commander";
+
+            // Get objective position
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            // Get available groups
+            private _available = _cmdr call ["_getAvailableGroups", [2]];
+
+            if (count _available < 1) exitWith { false };
+
+            // Order move
+            {
+                _cmdr call ["_orderGroupMove", [_x, _objPos, _mode]];
+            } forEach _available;
+
+            true
+        }]];
+
+        // prim_select_priority_objective
+        _self call ["_registerHandler", ["prim_select_priority_objective", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
+
+            // Get highest priority enemy objective
+            private _objId = _cmdr call ["_selectPriorityObjective", []];
+
+            if (isNil "_objId" || _objId == "") exitWith {
+                ["GTN", 2, "No priority objective found"] call FLO_fnc_log;
+                false
+            };
+
+            ["GTN", 3, format["Selected priority objective: %1", _objId]] call FLO_fnc_log;
+
+            // Store in executor's shared data for param resolution
+            _executor call ["_storeTaskData", ["SELECTED_OBJECTIVE", _objId]];
+
+            // Also store in task node for local reference
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["selectedObjective", _objId];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_identify_weak_sector
+        _self call ["_registerHandler", ["prim_identify_weak_sector", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
+            private _ws = _cmdr get "_worldState";
+
+            // Find sector with lowest friendly force count
+            private _objectives = _ws call ["_getObjectives", []];
+            private _weakest = "";
+            private _lowestCount = 999;
+
+            {
+                private _obj = _objectives get _x;
+                if ((_obj get "owner") == east) then {
+                    private _friendly = _obj get "friendlyCount";
+                    if (_friendly < _lowestCount) then {
+                        _lowestCount = _friendly;
+                        _weakest = _x;
+                    };
+                };
+            } forEach (keys _objectives);
+
+            ["GTN", 3, format["Identified weak sector: %1 (friendly count: %2)", _weakest, _lowestCount]] call FLO_fnc_log;
+
+            // Store in executor's shared data for param resolution
+            _executor call ["_storeTaskData", ["WEAK_SECTOR", _weakest]];
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["weakSector", _weakest];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_move_forces_to_sector
+        _self call ["_registerHandler", ["prim_move_forces_to_sector", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _cmdr = _ctx get "commander";
+
+            // Get the weak sector from previous task
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _sectorId = _primData getOrDefault ["weakSector", _params param [0, ""]];
+
+            private _objPos = [_sectorId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            private _available = _cmdr call ["_getAvailableGroups", [2]];
+            if (count _available < 1) exitWith { false };
+
+            {
+                _cmdr call ["_orderGroupMove", [_x, _objPos, "AWARE"]];
+            } forEach _available;
+
+            _primData set ["arrived", false];
+            _taskNode set ["primitiveData", _primData];
+            true
+        }]];
+
+        // prim_attack_vulnerable_objective
+        _self call ["_registerHandler", ["prim_attack_vulnerable_objective", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _ws = _cmdr get "_worldState";
+
+            // Get vulnerable objectives
+            private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
+            if (count (keys _vulnObjs) == 0) exitWith { false };
+
+            // Select first vulnerable objective
+            private _objId = (keys _vulnObjs) select 0;
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            private _available = _cmdr call ["_getAvailableGroups", [4]];
+            if (count _available < 2) exitWith { false };
+
+            {
+                _cmdr call ["_orderGroupAttack", [_x, _objPos]];
+            } forEach _available;
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["objectiveId", _objId];
+            _taskNode set ["primitiveData", _primData];
+
+            true
+        }]];
+
+        // prim_call_defensive_fires
+        _self call ["_registerHandler", ["prim_call_defensive_fires", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _cmdr = _ctx get "commander";
+
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            // Call for defensive artillery
+            private _result = _cmdr call ["_requestArtillery", [_objPos, "DEFENSIVE", 6]];
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["missionFired", _result];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", if (_result) then {"SUCCESS"} else {"FAILED"}];
+            _result
+        }]];
+
+        // prim_establish_defense
+        _self call ["_registerHandler", ["prim_establish_defense", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _cmdr = _ctx get "commander";
+
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            private _available = _cmdr call ["_getAvailableGroups", [2]];
+            if (count _available < 1) exitWith { false };
+
+            {
+                _cmdr call ["_orderGroupDefend", [_x, _objPos]];
+            } forEach _available;
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["established", true];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+    }]
+]];
+
+// Initialize handlers
+_executor call ["_initialize", []];
+
+["GTN", 3, "GTN Executor initialized"] call FLO_fnc_log;
+
+_executor

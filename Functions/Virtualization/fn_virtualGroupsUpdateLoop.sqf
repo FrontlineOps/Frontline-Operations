@@ -118,12 +118,12 @@ private _processVirtualMovement = {
                     _waypoints pushBack _completedWaypoint;
                     _groupData set ["waypoints", _waypoints];
                     _groupData set ["currentWaypointIndex", 0];
-                    ["VIRTUALIZATION", 3, format["Virtual group %1 cycling waypoints", _groupId]] call FLO_fnc_log;
+                    ["VIRTUALIZATION", 4, format["Virtual group %1 cycling waypoints", _groupId]] call FLO_fnc_log;
                 };
                 case "SENTRY": {
                     // For sentry, keep the waypoint but update last visit time
                     _groupData set ["lastSentryTime", _currentTime];
-                    ["VIRTUALIZATION", 3, format["Virtual group %1 holding sentry position", _groupId]] call FLO_fnc_log;
+                    ["VIRTUALIZATION", 4, format["Virtual group %1 holding sentry position", _groupId]] call FLO_fnc_log;
                 };
                 default {
                     // For all other types, delete the completed waypoint
@@ -135,12 +135,12 @@ private _processVirtualMovement = {
                         // If we deleted the current waypoint, keep the same index (it now points to the next waypoint)
                         // Otherwise, the index stays the same
                         _groupData set ["currentWaypointIndex", _currentWaypointIndex min ((count _waypoints) - 1)];
-                        ["VIRTUALIZATION", 3, format["Virtual group %1 completed waypoint, moving to next", _groupId]] call FLO_fnc_log;
+                        ["VIRTUALIZATION", 4, format["Virtual group %1 completed waypoint, moving to next", _groupId]] call FLO_fnc_log;
                     } else {
                         // No more waypoints
                         _groupData set ["state", "idle"];
                         _groupData set ["currentWaypointIndex", 0];
-                        ["VIRTUALIZATION", 3, format["Virtual group %1 completed all waypoints", _groupId]] call FLO_fnc_log;
+                        ["VIRTUALIZATION", 4, format["Virtual group %1 completed all waypoints", _groupId]] call FLO_fnc_log;
                     };
                 };
             };

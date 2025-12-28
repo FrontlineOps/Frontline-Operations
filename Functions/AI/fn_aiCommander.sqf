@@ -19,54 +19,155 @@
 // Log function start
 ["AI Commander", 3, "Starting AI Commander"] call FLO_fnc_log;
 
-// Initialize variables
+// Load configuration
+private _config = call FLO_fnc_aiCommanderConfig;
+
+// Initialize variables from config
 private _lastCommanderUpdate = diag_tickTime;
-private _commanderUpdateInterval = 300; // 5 minutes between strategy updates
 private _currentThreatLevel = 0;
 
 // Set up the Commander object using a HashMap
 private _aiCommander = createHashMapObject [[
+    // Runtime state
     ["_threatLevel", _currentThreatLevel],
     ["_lastUpdate", _lastCommanderUpdate],
     ["_activeAttackGroups", []],
     ["_activeDefenseGroups", []],
     ["_garrisonedGroups", []],
     ["_attackOperations", createHashMap],
-    ["_defenseOperations", createHashMap], // Defense staging operations
-    ["_stagingPoints", createHashMap], // Global staging point management
-    ["_maxAttackingGroups", 0],  // Will be set in initialize
-    ["_maxDefendingGroups", 6],  // Maximum number of groups that can be defending/QRF simultaneously
-    ["_minGarrisonGroups", 2],   // Minimum number of groups that must remain in garrison
-    ["_attackStageTime", 280],
-    ["_defenseStageTime", 120],
-    ["_minStagingForce", 2],     // Minimum units required before launching operation
-    ["_maxStagingForce", 4],     // Maximum units for single operation
+    ["_defenseOperations", createHashMap],
+    ["_stagingPoints", createHashMap],
+    ["_strategicReserve", []],
+    ["_lastThreatLevel", 0],
+    ["_operationHistory", []],
+    ["_activeAirMissions", []],
+    ["_activeArtilleryMissions", []],
+    ["_preparatoryFiresActive", createHashMap],
+
+    // Cached filtered groups (refreshed each update cycle)
+    ["_cachedMilitaryGroups", createHashMap],
+    ["_cachedMilitaryGroupsTime", 0],
+
+    // Telemetry/Metrics tracking
+    ["_metrics", createHashMapFromArray [
+        ["attacksLaunched", 0],
+        ["attacksSuccessful", 0],
+        ["attacksFailed", 0],
+        ["defensesLaunched", 0],
+        ["defensesSuccessful", 0],
+        ["defensesFailed", 0],
+        ["groupsLost", 0],
+        ["artilleryMissionsFired", 0],
+        ["airMissionsFlown", 0],
+        ["avgStagingTime", 0],
+        ["totalStagingTime", 0],
+        ["stagingCount", 0],
+        ["lastUpdateDuration", 0],
+        ["startTime", diag_tickTime]
+    ]],
+
+    // Configuration reference
+    ["_config", _config],
+
+    // Computed limits (will be set in initialize)
+    ["_maxAttackingGroups", 0],
+
+    // Config-driven properties (cached for performance)
+    ["_maxDefendingGroups", _config get "maxDefendingGroups"],
+    ["_minGarrisonGroups", _config get "minGarrisonGroups"],
+    ["_attackStageTime", _config get "attackStageTime"],
+    ["_defenseStageTime", _config get "defenseStageTime"],
+    ["_minStagingForce", _config get "minStagingForce"],
+    ["_maxStagingForce", _config get "maxStagingForce"],
+    ["_reserveRatio", _config get "reserveRatio"],
+    ["_commanderUpdateInterval", _config get "strategyInterval"],
+
+    // Asset managers
     ["_airTaskOrder", call FLO_fnc_airTaskOrder],
     ["_artilleryAssetManager", call FLO_fnc_artilleryAssetManager],
     ["_airAssetManager", call FLO_fnc_airAssetManager],
-    ["_strategicReserve", []],   // High-priority units held in reserve
-    ["_reserveRatio", 0.25],     // Percentage of total forces to keep in reserve
-    ["_lastThreatLevel", 0],     // Track threat level changes
-    ["_operationHistory", []],   // Track operation success/failure for learning
-    ["_activeAirMissions", []],  // Track ongoing air missions
-    ["_activeArtilleryMissions", []], // Track ongoing artillery missions
-    ["_preparatoryFiresActive", createHashMap], // Track prep fires by target
+
+    // GTN (Goal Task Network) system - initialized later
+    ["_gtnCommander", nil],
+    ["_gtnEnabled", true],  // Toggle for GTN vs reactive mode
+
+    // Get cached military groups (refreshes every 30 seconds)
+    ["_getMilitaryGroups", {
+        // Safety check for virtualization system
+        if (isNil "FLO_virtualGroups") exitWith { createHashMap };
+
+        private _cacheTime = _self get "_cachedMilitaryGroupsTime";
+        private _cfg = _self get "_config";
+        private _cacheExpiry = _cfg getOrDefault ["groupCacheExpiry", 30];
+
+        if (diag_tickTime - _cacheTime > _cacheExpiry) then {
+            private _groups = FLO_virtualGroups getOrDefault ["_groups", createHashMap];
+            private _filtered = [_groups] call FLO_fnc_filterNonCivGroups;
+            _self set ["_cachedMilitaryGroups", _filtered];
+            _self set ["_cachedMilitaryGroupsTime", diag_tickTime];
+        };
+
+        _self get "_cachedMilitaryGroups"
+    }],
+
+    // Update a metric value
+    ["_updateMetric", {
+        params ["_metricName", "_value", ["_operation", "SET"]];
+        private _metrics = _self get "_metrics";
+
+        switch (_operation) do {
+            case "SET": { _metrics set [_metricName, _value]; };
+            case "ADD": { _metrics set [_metricName, (_metrics getOrDefault [_metricName, 0]) + _value]; };
+            case "INC": { _metrics set [_metricName, (_metrics getOrDefault [_metricName, 0]) + 1]; };
+        };
+    }],
+
+    // Get metrics report
+    ["_getMetricsReport", {
+        private _metrics = _self get "_metrics";
+        private _runtime = diag_tickTime - (_metrics get "startTime");
+
+        private _attackSuccess = if ((_metrics get "attacksLaunched") > 0) then {
+            ((_metrics get "attacksSuccessful") / (_metrics get "attacksLaunched")) * 100
+        } else { 0 };
+
+        private _defenseSuccess = if ((_metrics get "defensesLaunched") > 0) then {
+            ((_metrics get "defensesSuccessful") / (_metrics get "defensesLaunched")) * 100
+        } else { 0 };
+
+        format[
+            "AI Commander Metrics (Runtime: %1 min):\n- Attacks: %2 launched, %3%4 success\n- Defenses: %5 launched, %6%7 success\n- Groups Lost: %8\n- Artillery Missions: %9\n- Air Missions: %10\n- Avg Staging Time: %11s",
+            round(_runtime / 60),
+            _metrics get "attacksLaunched",
+            round _attackSuccess, "%",
+            _metrics get "defensesLaunched",
+            round _defenseSuccess, "%",
+            _metrics get "groupsLost",
+            _metrics get "artilleryMissionsFired",
+            _metrics get "airMissionsFlown",
+            round((_metrics get "avgStagingTime"))
+        ]
+    }],
 
     ["_calculateMaxAttackingGroups", {
+        private _cfg = _self get "_config";
         private _playerCount = count (allPlayers - entities "HeadlessClient_F");
 
-        // No attacks with 1-2 players
-        if (_playerCount <= 2) exitWith { 0 };
+        // No attacks with few players
+        if (_playerCount <= (_cfg get "minPlayersForAttack")) exitWith { 0 };
 
-        // Calculate groups: subtract 2 from player count and divide by 2 (rounded down)
-        private _maxGroups = floor((_playerCount - 2) / 2);
+        // Calculate groups based on player count
+        private _playersPerGroup = _cfg get "playersPerAttackGroup";
+        private _minPlayers = _cfg get "minPlayersForAttack";
+        private _maxGroups = floor((_playerCount - _minPlayers) / _playersPerGroup);
 
-        // Add aggression score
+        // Add aggression score bonus
         private _AGGRSCORE = FLO_DifficultyHandle get "value";
-        private _maxGroups = _maxGroups + floor (_AGGRSCORE / 4);
+        private _aggrBonus = _cfg get "aggressionGroupBonus";
+        _maxGroups = _maxGroups + floor (_AGGRSCORE / _aggrBonus);
 
-        // Cap at maximum of 16 groups
-        _maxGroups = _maxGroups min 16;
+        // Cap at maximum
+        _maxGroups = _maxGroups min (_cfg get "maxAttackGroups");
 
         _maxGroups
     }],
@@ -180,6 +281,11 @@ private _aiCommander = createHashMapObject [[
                             _stagingPos = _concealedPos;
                         };
 
+                        // Ensure staging position is on land
+                        if (surfaceIsWater _stagingPos) then {
+                            _stagingPos = [_stagingPos, 500] call FLO_fnc_getSafeLandPos;
+                        };
+
                         _stagingPositions pushBack _stagingPos;
                     };
                 } else {
@@ -194,6 +300,11 @@ private _aiCommander = createHashMapObject [[
                         _stagingPos = _concealedPos;
                     };
 
+                    // Ensure staging position is on land
+                    if (surfaceIsWater _stagingPos) then {
+                        _stagingPos = [_stagingPos, 500] call FLO_fnc_getSafeLandPos;
+                    };
+
                     _stagingPositions pushBack _stagingPos;
                 };
             } else {
@@ -202,7 +313,7 @@ private _aiCommander = createHashMapObject [[
         };
 
         if (count _stagingPositions == 0) exitWith {[]};
-        ["AI Commander", 4, format["Generated %1 staging point(s) for %2 operation against %3", count _stagingPositions, _operationType, _targetPos]] call FLO_fnc_log;
+        ["AI Commander", 3, format["Generated %1 staging point(s) for %2 operation against %3", count _stagingPositions, _operationType, _targetPos]] call FLO_fnc_log;
 
         // Return single position for compatibility, or array for multi-staging
         if (_multiStaging) then {_stagingPositions} else {_stagingPositions select 0}
@@ -240,11 +351,20 @@ private _aiCommander = createHashMapObject [[
     // Create staging operation with enhanced coordination and multi-staging
     ["_createStagingOperation", {
         params ["_targetPos", "_targetId", "_operationType", "_priority"];
+        private _cfg = _self get "_config";
         private _operation = createHashMap;
-        private _distance = if (_operationType == "ATTACK") then {500 + random 300} else {300 + random 200};
+
+        // Calculate staging distance from config
+        private _distConfig = if (_operationType == "ATTACK") then {
+            _cfg get "stagingDistanceAttack"
+        } else {
+            _cfg get "stagingDistanceDefense"
+        };
+        private _distance = (_distConfig select 0) + random (_distConfig select 1);
 
         // Determine if this should be a multi-staging operation (high priority attacks)
-        private _useMultiStaging = (_operationType == "ATTACK" && _priority >= 2);
+        private _multiThreshold = _cfg get "multiStagingThreshold";
+        private _useMultiStaging = (_operationType == "ATTACK" && _priority >= _multiThreshold);
 
         _operation set ["operationType", _operationType];
         _operation set ["targetId", _targetId];
@@ -256,13 +376,13 @@ private _aiCommander = createHashMapObject [[
         _operation set ["startTime", diag_tickTime];
         _operation set ["operationLaunched", false];
         _operation set ["minForce", _self get "_minStagingForce"];
-        _operation set ["maxForce", if (_useMultiStaging) then {_self get "_maxStagingForce" + 2} else {_self get "_maxStagingForce"}]; // Larger forces for multi-staging
+        _operation set ["maxForce", if (_useMultiStaging) then {_cfg get "maxStagingForceMulti"} else {_self get "_maxStagingForce"}];
         _operation set ["stageTime", if (_operationType == "ATTACK") then {_self get "_attackStageTime"} else {_self get "_defenseStageTime"}];
 
         // Enhanced staging for attacks includes preparatory phase
         if (_operationType == "ATTACK") then {
             _operation set ["preparatoryPhase", true];
-            _operation set ["preparatoryTime", 180]; // 3 minutes of prep fires
+            _operation set ["preparatoryTime", _cfg get "preparatoryFireTime"];
         };
 
         _operation
@@ -275,9 +395,8 @@ private _aiCommander = createHashMapObject [[
         // Calculate initial max attacking groups
         _self set ["_maxAttackingGroups", _self call ["_calculateMaxAttackingGroups", []]];
 
-        // Get all virtual groups from the virtualization system
-        private _groups = FLO_virtualGroups get "_groups";
-        private _allGroups = [_groups] call FLO_fnc_filterNonCivGroups;
+        // Get all virtual groups from the virtualization system (using cache)
+        private _allGroups = _self call ["_getMilitaryGroups", []];
         private _garrisonedGroups = [];
 
         {
@@ -354,10 +473,9 @@ private _aiCommander = createHashMapObject [[
             false
         };
         
-        // Get all virtual groups
-        private _groups = FLO_virtualGroups get "_groups";
-        private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
-        
+        // Get all virtual groups (using cache)
+        private _virtualGroups = _self call ["_getMilitaryGroups", []];
+
         // Sort groups by priority: capability first, then distance to staging point
         private _stagingPos = _op get "stagingPos";
         private _sortedGroups = [_availableNonReserve, [], {
@@ -477,10 +595,9 @@ private _aiCommander = createHashMapObject [[
             false
         };
         
-        // Get all virtual groups
-        private _groups = FLO_virtualGroups get "_groups";
-        private _virtualGroups = [_groups] call FLO_fnc_filterNonCivGroups;
-        
+        // Get all virtual groups (using cache)
+        private _virtualGroups = _self call ["_getMilitaryGroups", []];
+
         // Sort groups by capability and distance for defense
         private _stagingPos = _op get "stagingPos";
         private _sortedGroups = [_availableForDefense, [], {
@@ -557,10 +674,16 @@ private _aiCommander = createHashMapObject [[
     // Return group to garrison with better operation cleanup
     ["_returnGroupToGarrison", {
         params ["_groupId", "_currentRole"];
-        
-        // Get the group's data
-        private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-        if (_groupData isEqualTo createHashMap) exitWith {
+
+        // Safety check for virtualization system
+        if (isNil "FLO_virtualGroups") exitWith {
+            ["AI Commander", 2, format["Cannot return group %1 - virtualization not initialized", _groupId]] call FLO_fnc_log;
+        };
+
+        // Get the group's data with proper nil handling
+        private _groups = FLO_virtualGroups getOrDefault ["_groups", createHashMap];
+        private _groupData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_groupData") exitWith {
             ["AI Commander", 3, format["Failed to return group %1 to garrison - group not found", _groupId]] call FLO_fnc_log;
         };
         
@@ -661,6 +784,169 @@ private _aiCommander = createHashMapObject [[
         _threats
     }],
 
+    // === GTN HELPER METHODS ===
+    // These methods are called by the GTN executor to interface with commander operations
+
+    // Get available groups for GTN operations
+    ["_getAvailableGroups", {
+        params [["_count", 1]];
+
+        private _garrisoned = _self get "_garrisonedGroups";
+        private _reserve = _self get "_strategicReserve";
+        private _available = _garrisoned - _reserve;
+        private _dynamicMin = _self call ["_calculateDynamicGarrisonRequirements", []];
+
+        // Respect minimum garrison
+        private _canTake = (count _available) - _dynamicMin;
+        if (_canTake <= 0) exitWith { [] };
+
+        private _toReturn = _available select [0, _count min _canTake];
+        _toReturn
+    }],
+
+    // Order a group to move to a position (for GTN)
+    ["_orderGroupMove", {
+        params ["_groupId", "_targetPos", ["_mode", "AWARE"]];
+
+        private _groups = (FLO_virtualGroups get "_groups");
+        private _gData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_gData") exitWith { false };
+
+        private _speed = switch (_mode) do {
+            case "COMBAT": { "FULL" };
+            case "STEALTH": { "LIMITED" };
+            default { "NORMAL" };
+        };
+
+        private _waypoints = [
+            [_targetPos, "MOVE", _mode, _speed, "WEDGE", "YELLOW", 50]
+        ];
+
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        _gData set ["currentOrder", "MOVE"];
+
+        true
+    }],
+
+    // Order a group to attack a position (for GTN)
+    ["_orderGroupAttack", {
+        params ["_groupId", "_targetPos"];
+
+        private _groups = (FLO_virtualGroups get "_groups");
+        private _gData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_gData") exitWith { false };
+
+        // Remove from garrison, add to attack
+        private _garrisoned = _self get "_garrisonedGroups";
+        private _attacking = _self get "_activeAttackGroups";
+
+        _garrisoned deleteAt (_garrisoned find _groupId);
+        if !(_groupId in _attacking) then { _attacking pushBack _groupId };
+
+        private _waypoints = [
+            [_targetPos, "SAD", "COMBAT", "FULL", "WEDGE", "RED", 75],
+            [_targetPos, "DESTROY", "COMBAT", "NORMAL", "LINE", "RED", 50]
+        ];
+
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        _gData set ["currentOrder", "ATTACK"];
+
+        true
+    }],
+
+    // Order a group to defend a position (for GTN)
+    ["_orderGroupDefend", {
+        params ["_groupId", "_targetPos"];
+
+        private _groups = (FLO_virtualGroups get "_groups");
+        private _gData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_gData") exitWith { false };
+
+        // Remove from garrison, add to defense
+        private _garrisoned = _self get "_garrisonedGroups";
+        private _defending = _self get "_activeDefenseGroups";
+
+        _garrisoned deleteAt (_garrisoned find _groupId);
+        if !(_groupId in _defending) then { _defending pushBack _groupId };
+
+        private _waypoints = [
+            [_targetPos, "MOVE", "COMBAT", "FULL", "WEDGE", "RED", 40],
+            [_targetPos, "GUARD", "COMBAT", "NORMAL", "LINE", "RED", 60]
+        ];
+
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        _gData set ["currentOrder", "DEFEND"];
+
+        true
+    }],
+
+    // Select highest priority enemy objective (for GTN)
+    ["_selectPriorityObjective", {
+        if (isNil "FLO_Objectives") exitWith { "" };
+
+        private _bestObj = "";
+        private _bestScore = -1;
+
+        {
+            private _data = FLO_Objectives get _x;
+            if (isNil "_data") then { continue };
+
+            private _owner = _data getOrDefault ["owner", east];
+            if (_owner == east) then { continue };  // Skip our objectives
+
+            private _priority = _data getOrDefault ["priority", 50];
+            private _pos = _data get "position";
+
+            // Factor in enemy presence (less enemies = easier target)
+            private _blufor = allUnits select {side _x == west && alive _x};
+            private _defenders = count (_blufor inAreaArray [_pos, 300, 300]);
+
+            private _score = _priority - (_defenders * 5);
+
+            if (_score > _bestScore) then {
+                _bestScore = _score;
+                _bestObj = _x;
+            };
+        } forEach (keys FLO_Objectives);
+
+        _bestObj
+    }],
+
+    // Initialize GTN system
+    ["_initializeGTN", {
+        ["AI Commander", 3, "Initializing GTN subsystem"] call FLO_fnc_log;
+
+        private _gtn = [_self] call FLO_fnc_gtnCommander;
+        _self set ["_gtnCommander", _gtn];
+
+        if (!isNil "_gtn") then {
+            _self set ["_gtnEnabled", true];
+            _gtn call ["_start", []];
+            ["AI Commander", 2, "GTN Commander initialized and started"] call FLO_fnc_log;
+        } else {
+            ["AI Commander", 1, "Failed to initialize GTN Commander"] call FLO_fnc_log;
+        };
+    }],
+
+    // Toggle GTN mode
+    ["_setGTNEnabled", {
+        params ["_enabled"];
+        _self set ["_gtnEnabled", _enabled];
+
+        private _gtn = _self get "_gtnCommander";
+        if (!isNil "_gtn") then {
+            if (_enabled) then {
+                _gtn call ["_start", []];
+            } else {
+                _gtn call ["_stop", []];
+            };
+        };
+
+        ["AI Commander", 2, format["GTN mode: %1", if (_enabled) then {"ENABLED"} else {"DISABLED"}]] call FLO_fnc_log;
+    }],
+
+    // === END GTN HELPER METHODS ===
+
     // Process both attack and defense staging operations
     ["_processStagingOperations", {
         _self call ["_processAttackOperations", []];
@@ -669,7 +955,10 @@ private _aiCommander = createHashMapObject [[
 
     ["_processAttackOperations", {
         private _ops = _self get "_attackOperations";
+        private _cfg = _self get "_config";
         private _toRemove = [];
+        private _stagingRadius = _cfg get "stagingArrivalRadius";
+        private _forceActivate = _cfg get "forceActivateForOperations";
 
         {
             private _id = _x;
@@ -680,17 +969,29 @@ private _aiCommander = createHashMapObject [[
             private _targetPos = _op get "targetPos";
             private _stageTime = _op get "stageTime";
             private _minForce = _op get "minForce";
-            
+            private _priority = _op get "priority";
+
             if (!_launched) then {
+                // CRITICAL: Force-activate groups for operations if enabled
+                if (_forceActivate) then {
+                    {
+                        private _gData = (FLO_virtualGroups get "_groups") get _x;
+                        if (!isNil "_gData" && {!(_gData getOrDefault ["isActive", false])}) then {
+                            [_x, _gData] call FLO_fnc_activateVirtualGroup;
+                            ["AI Commander", 3, format["Force-activated group %1 for attack operation %2", _x, _id]] call FLO_fnc_log;
+                        };
+                    } forEach _groups;
+                };
+
                 // Check how many groups are ready at staging point
                 private _ready = [];
                 private _enRoute = [];
                 {
                     private _gData = (FLO_virtualGroups get "_groups") get _x;
-                    if (isNil "_gData") then { continue }; 
+                    if (isNil "_gData") then { continue };
                     private _pos = _gData get "position";
-                    if (_pos distance2D _stagePos < 75) then { 
-                        _ready pushBack _x; 
+                    if (_pos distance2D _stagePos < _stagingRadius) then {
+                        _ready pushBack _x;
                     } else {
                         _enRoute pushBack _x;
                     };
@@ -720,11 +1021,13 @@ private _aiCommander = createHashMapObject [[
                 
                 if (_shouldLaunch) then {
                     // Enhanced preparatory fires and air support
-                    _self call ["_callArtillerySupport", [_targetPos, 8, "PREPARATORY", 1]];
+                    private _prepRounds = _cfg get "preparatoryFireRounds";
+                    _self call ["_callArtillerySupport", [_targetPos, _prepRounds, "PREPARATORY", 1]];
                     _self call ["_callAirSupport", [_targetPos, "BOMB", "", -1, "PREPARATORY"]];
 
                     // SEAD mission if high-value target
-                    if (_priority >= 2) then {
+                    private _multiThreshold = _cfg get "multiStagingThreshold";
+                    if (_priority >= _multiThreshold) then {
                         _self call ["_callAirSupport", [_targetPos, "LASER", "", -1, "SEAD"]];
                     };
 
@@ -754,23 +1057,35 @@ private _aiCommander = createHashMapObject [[
                     
                     _op set ["operationLaunched", true];
                     _op set ["launchTime", diag_tickTime];
+
+                    // Track metrics
+                    _self call ["_updateMetric", ["attacksLaunched", 1, "INC"]];
+                    private _stagingTime = diag_tickTime - (_op get "startTime");
+                    _self call ["_updateMetric", ["totalStagingTime", _stagingTime, "ADD"]];
+                    _self call ["_updateMetric", ["stagingCount", 1, "INC"]];
+                    private _metrics = _self get "_metrics";
+                    _metrics set ["avgStagingTime", (_metrics get "totalStagingTime") / (_metrics get "stagingCount")];
                 };
             } else {
                 // Check if attack is complete or failed
-                private _aliveGroups = _groups select { 
+                private _aliveGroups = _groups select {
                     _x in (_self get "_activeAttackGroups") && 
                     {!isNil ((FLO_virtualGroups get "_groups") get _x)}
                 };
                 
-                if (count _aliveGroups == 0) then { 
+                if (count _aliveGroups == 0) then {
                     _toRemove pushBack _id;
                     ["AI Commander", 3, format["Attack operation %1 completed - no groups remaining", _id]] call FLO_fnc_log;
+                    // Track as successful if objective was captured (groups eliminated means they fought)
+                    _self call ["_updateMetric", ["attacksSuccessful", 1, "INC"]];
                 } else {
                     // Check if attack has been running too long without progress
                     private _launchTime = _op getOrDefault ["launchTime", diag_tickTime];
-                    if (diag_tickTime - _launchTime > 1800) then { // 30 minute timeout
+                    private _attackTimeout = _cfg get "attackTimeout";
+                    if (diag_tickTime - _launchTime > _attackTimeout) then {
                         _toRemove pushBack _id;
                         ["AI Commander", 3, format["Attack operation %1 timed out - recalling groups", _id]] call FLO_fnc_log;
+                        _self call ["_updateMetric", ["attacksFailed", 1, "INC"]];
                         // Recall remaining groups
                         {
                             _self call ["_returnGroupToGarrison", [_x, "ATTACK"]];
@@ -788,7 +1103,10 @@ private _aiCommander = createHashMapObject [[
     // Process defense staging operations
     ["_processDefenseOperations", {
         private _ops = _self get "_defenseOperations";
+        private _cfg = _self get "_config";
         private _toRemove = [];
+        private _stagingRadius = _cfg get "defenseStagingArrivalRadius";
+        private _forceActivate = _cfg get "forceActivateForOperations";
 
         {
             private _id = _x;
@@ -799,17 +1117,28 @@ private _aiCommander = createHashMapObject [[
             private _targetPos = _op get "targetPos";
             private _stageTime = _op get "stageTime";
             private _minForce = _op get "minForce";
-            
+
             if (!_launched) then {
+                // CRITICAL: Force-activate groups for defense operations if enabled
+                if (_forceActivate) then {
+                    {
+                        private _gData = (FLO_virtualGroups get "_groups") get _x;
+                        if (!isNil "_gData" && {!(_gData getOrDefault ["isActive", false])}) then {
+                            [_x, _gData] call FLO_fnc_activateVirtualGroup;
+                            ["AI Commander", 3, format["Force-activated group %1 for defense operation %2", _x, _id]] call FLO_fnc_log;
+                        };
+                    } forEach _groups;
+                };
+
                 // Check how many groups are ready at staging point
                 private _ready = [];
                 private _enRoute = [];
                 {
                     private _gData = (FLO_virtualGroups get "_groups") get _x;
-                    if (isNil "_gData") then { continue }; 
+                    if (isNil "_gData") then { continue };
                     private _pos = _gData get "position";
-                    if (_pos distance2D _stagePos < 50) then { 
-                        _ready pushBack _x; 
+                    if (_pos distance2D _stagePos < _stagingRadius) then {
+                        _ready pushBack _x;
                     } else {
                         _enRoute pushBack _x;
                     };
@@ -857,6 +1186,9 @@ private _aiCommander = createHashMapObject [[
                     
                     _op set ["operationLaunched", true];
                     _op set ["launchTime", diag_tickTime];
+
+                    // Track metrics
+                    _self call ["_updateMetric", ["defensesLaunched", 1, "INC"]];
                 };
             } else {
                 // Check if defense is complete
@@ -864,14 +1196,16 @@ private _aiCommander = createHashMapObject [[
                     _x in (_self get "_activeDefenseGroups") &&
                     {((FLO_virtualGroups get "_groups") getOrDefault [_x, nil]) isNotEqualTo nil}
                 };
-                
-                if (count _aliveGroups == 0) then { 
+
+                if (count _aliveGroups == 0) then {
                     _toRemove pushBack _id;
                     ["AI Commander", 3, format["Defense operation %1 completed - no groups remaining", _id]] call FLO_fnc_log;
+                    _self call ["_updateMetric", ["defensesSuccessful", 1, "INC"]];
                 } else {
                     // Check if defense has been running too long
                     private _launchTime = _op getOrDefault ["launchTime", diag_tickTime];
-                    if (diag_tickTime - _launchTime > 1200) then { // 20 minute timeout for defense
+                    private _defenseTimeout = _cfg get "defenseTimeout";
+                    if (diag_tickTime - _launchTime > _defenseTimeout) then {
                         _toRemove pushBack _id;
                         ["AI Commander", 3, format["Defense operation %1 timed out - recalling groups", _id]] call FLO_fnc_log;
                         // Recall remaining groups
@@ -955,6 +1289,9 @@ private _aiCommander = createHashMapObject [[
             ];
             _activeMissions pushBack _missionData;
             _self set ["_activeArtilleryMissions", _activeMissions];
+
+            // Track metrics
+            _self call ["_updateMetric", ["artilleryMissionsFired", 1, "INC"]];
 
             // Send notification
             private _grid = mapGridPosition _targetPos;
@@ -1098,16 +1435,24 @@ private _aiCommander = createHashMapObject [[
             ];
             _activeMissions pushBack _missionData;
             _self set ["_activeAirMissions", _activeMissions];
+
+            // Track metrics
+            _self call ["_updateMetric", ["airMissionsFlown", 1, "INC"]];
         };
 
         _success
     }],
     
     ["_update", {
+        // Safety check - ensure virtualization system exists
+        if (isNil "FLO_virtualGroups") exitWith {
+            ["AI Commander", 2, "Update skipped - virtualization system not initialized"] call FLO_fnc_log;
+        };
+
         private _currentTime = diag_tickTime;
         private _lastUpdate = _self get "_lastUpdate";
         private _updateInterval = _self get "_commanderUpdateInterval";
-        
+
         // Only update periodically
         if (_currentTime - _lastUpdate < _updateInterval) exitWith {};
 
@@ -1132,66 +1477,89 @@ private _aiCommander = createHashMapObject [[
             };
         } forEach _allGroups;
         
-        // Remove dead groups from all tracked arrays
-        {
+        // Remove dead groups from all tracked arrays (batched for performance)
+        if (count _deadGroups > 0) then {
             private _activeAttackGroups = _self get "_activeAttackGroups";
             private _activeDefenseGroups = _self get "_activeDefenseGroups";
             private _garrisonedGroups = _self get "_garrisonedGroups";
-            
-            _activeAttackGroups = _activeAttackGroups - [_x];
-            _activeDefenseGroups = _activeDefenseGroups - [_x];
-            _garrisonedGroups = _garrisonedGroups - [_x];
-            
+
+            _activeAttackGroups = _activeAttackGroups - _deadGroups;
+            _activeDefenseGroups = _activeDefenseGroups - _deadGroups;
+            _garrisonedGroups = _garrisonedGroups - _deadGroups;
+
             _self set ["_activeAttackGroups", _activeAttackGroups];
             _self set ["_activeDefenseGroups", _activeDefenseGroups];
             _self set ["_garrisonedGroups", _garrisonedGroups];
-            diag_log format["Removed group %1 from tracking", _x];
-        } forEach _deadGroups;
-        
-        // Get current threats
-        private _threats = _self call ["_assessThreats", []];
-        
-        // Process threats by type
-        private _attackThreats = _threats select {_x select 0 == "ATTACK"};
-        private _defenseThreats = _threats select {_x select 0 == "DEFEND"};
-        
-        // Handle defense threats first (protect our objectives)
-        {
-            _x params ["_type", "_id", "_pos", "_strength"];
-            _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack (%2 enemies)", _id, _strength], _id, 1]];
-        } forEach _defenseThreats;
-        
-        // Then handle attack threats
-        {
-            _x params ["_type", "_id", "_pos", "_strength"];
-            _self call ["_assignGroupToAttack", [_pos, _id, 1]];
-        } forEach _attackThreats;
 
-        // Process staging and launch of operations
-        _self call ["_processStagingOperations", []];
+            // Track groups lost metric
+            _self call ["_updateMetric", ["groupsLost", count _deadGroups, "ADD"]];
+            ["AI Commander", 3, format["Removed %1 dead groups from tracking", count _deadGroups]] call FLO_fnc_log;
+        };
         
+        // === GTN vs REACTIVE MODE ===
+        // If GTN is enabled, let GTN handle strategic decisions
+        // Otherwise, use the reactive threat-response system
+
+        private _gtnEnabled = _self get "_gtnEnabled";
+        private _gtn = _self get "_gtnCommander";
+
+        if (_gtnEnabled && {!isNil "_gtn"}) then {
+            // GTN Mode: Goal-driven planning
+            _gtn call ["_update", []];
+        } else {
+            // Reactive Mode: Traditional threat-response
+            // Get current threats
+            private _threats = _self call ["_assessThreats", []];
+
+            // Early exit if no threats
+            if (count _threats > 0) then {
+                // Process threats by type
+                private _attackThreats = _threats select {_x select 0 == "ATTACK"};
+                private _defenseThreats = _threats select {_x select 0 == "DEFEND"};
+
+                // Handle defense threats first (protect our objectives)
+                {
+                    _x params ["_type", "_id", "_pos", "_strength"];
+                    _self call ["_assignGroupToDefend", [_pos, format["Objective %1 under attack (%2 enemies)", _id, _strength], _id, 1]];
+                } forEach _defenseThreats;
+
+                // Then handle attack threats
+                {
+                    _x params ["_type", "_id", "_pos", "_strength"];
+                    _self call ["_assignGroupToAttack", [_pos, _id, 1]];
+                } forEach _attackThreats;
+            };
+
+            // Process staging and launch of operations (reactive mode only)
+            _self call ["_processStagingOperations", []];
+        };
+
         // Check if any active groups should return to garrison
+        private _cfg = _self get "_config";
+        private _attackReturnDist = _cfg get "attackReturnDistance";
+        private _defenseReturnDist = _cfg get "defenseReturnDistance";
+
         {
             private _groupId = _x;
             private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-            
+
             if (!isNull (_groupData getOrDefault ["realGroup", grpNull])) then {
                 private _nearestEnemy = leader (_groupData get "realGroup") findNearestEnemy (leader (_groupData get "realGroup"));
-                
-                if (isNull _nearestEnemy || {_nearestEnemy distance (leader (_groupData get "realGroup")) > 800}) then {
+
+                if (isNull _nearestEnemy || {_nearestEnemy distance (leader (_groupData get "realGroup")) > _attackReturnDist}) then {
                     _self call ["_returnGroupToGarrison", [_groupId, "ATTACK"]];
                 };
             };
         } forEach (_self get "_activeAttackGroups");
-        
+
         {
             private _groupId = _x;
             private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-            
+
             if (!isNull (_groupData getOrDefault ["realGroup", grpNull])) then {
                 private _nearestEnemy = leader (_groupData get "realGroup") findNearestEnemy (leader (_groupData get "realGroup"));
-                
-                if (isNull _nearestEnemy || {_nearestEnemy distance (leader (_groupData get "realGroup")) > 1000}) then {
+
+                if (isNull _nearestEnemy || {_nearestEnemy distance (leader (_groupData get "realGroup")) > _defenseReturnDist}) then {
                     _self call ["_returnGroupToGarrison", [_groupId, "DEFEND"]];
                 };
             };
@@ -1210,26 +1578,30 @@ private _aiCommander = createHashMapObject [[
     // Clean up completed air and artillery missions
     ["_cleanupCompletedMissions", {
         private _currentTime = diag_tickTime;
+        private _cfg = _self get "_config";
 
-        // Clean up old artillery missions (completed after 10 minutes)
+        // Clean up old artillery missions
+        private _artilleryExpiry = _cfg get "artilleryMissionExpiry";
         private _artilleryMissions = _self get "_activeArtilleryMissions";
         private _activeArtillery = _artilleryMissions select {
-            (_currentTime - (_x get "startTime")) < 600 // 10 minutes
+            (_currentTime - (_x get "startTime")) < _artilleryExpiry
         };
         _self set ["_activeArtilleryMissions", _activeArtillery];
 
-        // Clean up old air missions (completed after 15 minutes)
+        // Clean up old air missions
+        private _airExpiry = _cfg get "airMissionExpiry";
         private _airMissions = _self get "_activeAirMissions";
         private _activeAir = _airMissions select {
-            (_currentTime - (_x get "startTime")) < 900 // 15 minutes
+            (_currentTime - (_x get "startTime")) < _airExpiry
         };
         _self set ["_activeAirMissions", _activeAir];
 
-        // Clean up old preparatory fires (expire after 5 minutes)
+        // Clean up old preparatory fires
+        private _prepExpiry = _cfg get "prepFiresExpiry";
         private _prepFires = _self get "_preparatoryFiresActive";
         private _expiredFires = [];
         {
-            if ((_currentTime - _y) > 300) then { // 5 minutes
+            if ((_currentTime - _y) > _prepExpiry) then {
                 _expiredFires pushBack _x;
             };
         } forEach _prepFires;
@@ -1246,21 +1618,33 @@ private _aiCommander = createHashMapObject [[
     }]
 ]];
 
-// Initialize Commander
-_aiCommander set ["_commanderUpdateInterval", 300];
+// Initialize Commander (strategy interval already set from config)
+["AI Commander", 3, format["Initialized with strategy interval: %1s, update interval: %2s",
+    _config get "strategyInterval", _config get "updateInterval"]] call FLO_fnc_log;
+
+// Detect airports for air operations
+call FLO_fnc_detectAirports;
 
 // Initialize groups
 _aiCommander call ["_initializeGroups", []];
 
+// Initialize GTN system if enabled in config
+private _gtnEnabled = _config getOrDefault ["gtnEnabled", true];
+if (_gtnEnabled) then {
+    _aiCommander call ["_initializeGTN", []];
+} else {
+    ["AI Commander", 3, "GTN system disabled in config - using reactive mode"] call FLO_fnc_log;
+};
+
 // Start the commander loop
-[_aiCommander] spawn {
-    params ["_commander"];
-    
+[_aiCommander, _config get "updateInterval"] spawn {
+    params ["_commander", "_updateInterval"];
+
     while {true} do {
         _commander call ["_update", []];
-        sleep 60;
+        sleep _updateInterval;
     };
 };
 
 // Return the commander object
-_aiCommander 
+_aiCommander

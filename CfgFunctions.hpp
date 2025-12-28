@@ -32,8 +32,21 @@ class FLO {
         class precisionStrike                   {};
         class airTaskOrder                      {};
         class aiCommander                       {};
+        class aiCommanderConfig                 {};
         class aiCommanderUnitCapabilityAnalyzer {};
-        class aiCommanderStagingDebug          {};
+        class aiCommanderStagingDebug           {};
+        class detectAirports                    {};
+    };
+
+    class GTN {
+        file = "Functions\AI\GTN";
+
+        class gtnWorldState     {};
+        class gtnGoalLibrary    {};
+        class gtnPlanner        {};
+        class gtnExecutor       {};
+        class gtnMonitor        {};
+        class gtnCommander      {};
     };
     
     class Interactions {
@@ -90,6 +103,7 @@ class FLO {
         class getNearestObjective     {};
         class getObjectivePath        {};
         class getObjectiveNearPlayer  {};
+        class getObjectivePosition    {};
         class isPositionInObjective   {};
         class createObjectiveMarker   {};
     };

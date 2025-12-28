@@ -1,0 +1,651 @@
+/*
+ * Function: FLO_fnc_gtnCommander
+ * Author: Frontline Operations Development Group
+ * 
+ * Description:
+ * Goal Task Network Commander - Main integration point for GTN-based AI Commander.
+ * Creates and manages all GTN subsystems (World State, Goal Library, Planner, Executor, Monitor).
+ * Provides the main update loop that drives goal-driven behavior.
+ *
+ * Arguments:
+ * 0: Commander Reference <HASHMAP> - The existing OPFOR commander object
+ *
+ * Return Value:
+ * GTN Commander HashMap Object <HASHMAP>
+ *
+ * Example:
+ * private _gtnCmdr = [_opforCommander] call FLO_fnc_gtnCommander;
+ * _gtnCmdr call ["_start", []];
+ */
+
+params [["_commander", nil]];
+
+if (isNil "_commander") exitWith {
+    ["GTN", 1, "GTN Commander requires commander reference"] call FLO_fnc_log;
+    nil
+};
+
+["GTN", 2, "Initializing GTN Commander System"] call FLO_fnc_log;
+
+// Create all subsystems
+private _worldState = call FLO_fnc_gtnWorldState;
+private _goalLibrary = call FLO_fnc_gtnGoalLibrary;
+private _planner = [_goalLibrary, _worldState] call FLO_fnc_gtnPlanner;
+private _executor = [_commander] call FLO_fnc_gtnExecutor;
+private _monitor = [_planner, _worldState] call FLO_fnc_gtnMonitor;
+
+// Link world state to commander
+_worldState call ["_setCommander", [_commander]];
+
+private _gtnCommander = createHashMapObject [[
+    // Subsystem references
+    ["_commander", _commander],
+    ["_worldState", _worldState],
+    ["_goalLibrary", _goalLibrary],
+    ["_planner", _planner],
+    ["_executor", _executor],
+    ["_monitor", _monitor],
+    
+    // State (using 0/1 for booleans to avoid parsing issues)
+    ["_isRunning", 0],
+    ["_updateInterval", 5],  // Seconds between GTN cycles
+    ["_lastUpdate", 0],
+    
+    // Current operation
+    ["_currentGoal", "control_ao"],
+    ["_currentPlan", []],
+    
+    // Configuration
+    ["_config", createHashMapFromArray [
+        ["aggressiveness", 0.5],      // 0-1, affects offensive vs defensive posture
+        ["riskTolerance", 0.5],       // 0-1, affects willingness to attack with lower ratios
+        ["replanInterval", 60],       // Minimum seconds between replans
+        ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
+        ["debugMode", false]          // Enable verbose logging
+    ]],
+    
+    // Statistics
+    ["_stats", createHashMapFromArray [
+        ["cyclesRun", 0],
+        ["plansCreated", 0],
+        ["tasksExecuted", 0],
+        ["replans", 0],
+        ["startTime", 0]
+    ]],
+    
+    // === MAIN CONTROL ===
+    
+    // Start the GTN commander
+    ["_start", {
+        if ((_self get "_isRunning") isEqualTo 1) exitWith {
+            ["GTN", 3, "GTN Commander already running"] call FLO_fnc_log;
+        };
+
+        _self set ["_isRunning", 1];
+
+        private _stats = _self get "_stats";
+        _stats set ["startTime", diag_tickTime];
+
+        // Set initial goal
+        private _monitor = _self get "_monitor";
+        _monitor call ["_setCurrentGoal", [_self get "_currentGoal", []]];
+
+        // Create initial plan
+        _self call ["_createPlan", []];
+
+        ["GTN", 2, "GTN Commander started"] call FLO_fnc_log;
+    }],
+
+    // Stop the GTN commander
+    ["_stop", {
+        _self set ["_isRunning", 0];
+        ["GTN", 2, "GTN Commander stopped"] call FLO_fnc_log;
+    }],
+
+    // Main update cycle - call this from commander's update loop
+    ["_update", {
+        if ((_self get "_isRunning") isEqualTo 0) exitWith {};
+        
+        private _now = diag_tickTime;
+        private _lastUpdate = _self get "_lastUpdate";
+        private _interval = _self get "_updateInterval";
+        
+        if (_now - _lastUpdate < _interval) exitWith {};
+        
+        _self set ["_lastUpdate", _now];
+        
+        private _stats = _self get "_stats";
+        _stats set ["cyclesRun", (_stats get "cyclesRun") + 1];
+        
+        private _config = _self get "_config";
+        ["GTN", 3, format["GTN Cycle %1 starting", _stats get "cyclesRun"]] call FLO_fnc_log;
+
+        // Update world state
+        private _ws = _self get "_worldState";
+        _ws call ["_update", []];
+
+        // Log world state summary
+        private _forces = _ws call ["_getForces", []];
+        private _situation = _ws call ["_getTacticalSituation", []];
+        private _enemyObjs = _ws call ["_getEnemyObjectives", []];
+        ["GTN", 3, format["World State: Available=%1, Momentum=%2, EnemyObjs=%3",
+            _forces get "availableGroups",
+            _situation get "momentum",
+            count (keys _enemyObjs)
+        ]] call FLO_fnc_log;
+
+        // Check for replan triggers
+        private _monitor = _self get "_monitor";
+        if (_monitor call ["_checkReplanTriggers", []]) then {
+            _self call ["_handleReplan", []];
+        };
+
+        // Log current plan status
+        private _planner = _self get "_planner";
+        private _planStatus = _planner call ["_getPlanStatus", []];
+        private _currentPlan = _planner call ["_getCurrentPlan", []];
+        ["GTN", 3, format["Plan Status: %1, Tasks: %2", _planStatus, count _currentPlan]] call FLO_fnc_log;
+
+        // Execute current plan
+        _self call ["_executePlan", []];
+    }],
+    
+    // === PLANNING ===
+    
+    // Create a new plan for current goal
+    ["_createPlan", {
+        private _planner = _self get "_planner";
+        private _goal = _self get "_currentGoal";
+
+        ["GTN", 3, format["Creating plan for goal: %1", _goal]] call FLO_fnc_log;
+
+        private _planResult = _planner call ["_plan", [_goal, []]];
+
+        // Ensure we have a valid plan array, not nil
+        private _plan = if (isNil "_planResult") then { [] } else { _planResult };
+
+        if (count _plan > 0) then {
+            _self set ["_currentPlan", _plan];
+
+            private _stats = _self get "_stats";
+            _stats set ["plansCreated", (_stats get "plansCreated") + 1];
+
+            ["GTN", 3, format["Plan created with %1 tasks", count _plan]] call FLO_fnc_log;
+        } else {
+            _self set ["_currentPlan", []];
+            ["GTN", 2, "Failed to create plan - no tasks generated"] call FLO_fnc_log;
+        };
+
+        _plan
+    }],
+    
+    // Handle replan trigger
+    ["_handleReplan", {
+        private _monitor = _self get "_monitor";
+        
+        ["GTN", 3, "Handling replan trigger"] call FLO_fnc_log;
+        
+        private _stats = _self get "_stats";
+        _stats set ["replans", (_stats get "replans") + 1];
+        
+        // Trigger replan through monitor (handles throttling)
+        _monitor call ["_triggerReplan", []];
+        
+        // Update our plan reference
+        private _planner = _self get "_planner";
+        _self set ["_currentPlan", _planner call ["_getCurrentPlan", []]];
+    }],
+
+    // === PLAN EXECUTION ===
+
+    // Execute current plan step
+    ["_executePlan", {
+        private _planner = _self get "_planner";
+        private _executor = _self get "_executor";
+
+        private _status = _planner call ["_getPlanStatus", []];
+
+        switch (_status) do {
+            case "PENDING";
+            case "RUNNING": {
+                // Unified execution loop for both PENDING and RUNNING states
+                private _maxTasksPerCycle = 10;
+                private _tasksThisCycle = 0;
+                private _continueLoop = true;
+
+                while {_continueLoop && {_tasksThisCycle < _maxTasksPerCycle}} do {
+                    private _currentStatus = _planner call ["_getPlanStatus", []];
+
+                    if (_currentStatus == "PENDING") then {
+                        // First task - just execute and mark as running
+                        private _currentTask = _planner call ["_getCurrentTask", []];
+                        if (!isNil "_currentTask") then {
+                            ["GTN", 3, format["Starting execution: %1", _currentTask get "taskId"]] call FLO_fnc_log;
+                            private _result = _executor call ["_executePrimitive", [_currentTask]];
+                            _planner call ["_executeNext", []];
+
+                            private _stats = _self get "_stats";
+                            _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
+                            _tasksThisCycle = _tasksThisCycle + 1;
+                        } else {
+                            ["GTN", 2, "No tasks in plan"] call FLO_fnc_log;
+                            _planner set ["_planStatus", "SUCCESS"];
+                            _continueLoop = false;
+                        };
+                    } else {
+                        if (_currentStatus == "RUNNING") then {
+                            // Check if current task is complete
+                            if (_planner call ["_checkCurrentTask", []]) then {
+                                // Task complete - execute next
+                                private _currentTask = _planner call ["_getCurrentTask", []];
+                                if (!isNil "_currentTask") then {
+                                    ["GTN", 3, format["Executing: %1", _currentTask get "taskId"]] call FLO_fnc_log;
+                                    private _result = _executor call ["_executePrimitive", [_currentTask]];
+                                    _planner call ["_executeNext", []];
+
+                                    private _stats = _self get "_stats";
+                                    _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
+                                    _tasksThisCycle = _tasksThisCycle + 1;
+                                } else {
+                                    // No more tasks - plan complete
+                                    _continueLoop = false;
+                                };
+                            } else {
+                                // Current task not complete yet
+                                _continueLoop = false;
+                            };
+                        } else {
+                            // Plan ended (SUCCESS or FAILED)
+                            _continueLoop = false;
+                        };
+                    };
+                };
+            };
+            case "SUCCESS": {
+                // Plan complete - create new plan
+                ["GTN", 3, "Plan completed successfully, creating new plan"] call FLO_fnc_log;
+                _self call ["_createPlan", []];
+            };
+            case "FAILED": {
+                // Plan failed - will be handled by replan trigger
+                ["GTN", 2, "Plan failed, awaiting replan"] call FLO_fnc_log;
+            };
+        };
+    }],
+
+    // === GOAL MANAGEMENT ===
+
+    // Set a new strategic goal
+    ["_setGoal", {
+        params ["_goalId", ["_params", []]];
+
+        _self set ["_currentGoal", _goalId];
+
+        private _monitor = _self get "_monitor";
+        _monitor call ["_setCurrentGoal", [_goalId, _params]];
+
+        // Create new plan for new goal
+        _self call ["_createPlan", []];
+
+        ["GTN", 3, format["Goal set to: %1", _goalId]] call FLO_fnc_log;
+    }],
+
+    // === CONFIGURATION ===
+
+    ["_configure", {
+        params ["_key", "_value"];
+        private _config = _self get "_config";
+        _config set [_key, _value];
+
+        // Apply relevant config to subsystems
+        if (_key == "replanInterval") then {
+            private _monitor = _self get "_monitor";
+            _monitor call ["_setThresholds", [nil, _value, nil]];
+        };
+
+        if (_key == "casualtyThreshold") then {
+            private _monitor = _self get "_monitor";
+            _monitor call ["_setThresholds", [_value, nil, nil]];
+        };
+    }],
+
+    // === QUERY METHODS ===
+
+    ["_getWorldState", {
+        _self get "_worldState"
+    }],
+
+    ["_getPlanner", {
+        _self get "_planner"
+    }],
+
+    ["_getStats", {
+        _self get "_stats"
+    }],
+
+    ["_isRunning", {
+        _self get "_isRunning"
+    }],
+
+    // === TACTICAL METHODS (used by executor handlers) ===
+
+    // Select highest priority enemy objective
+    ["_selectPriorityObjective", {
+        private _ws = _self get "_worldState";
+        private _enemyObjs = _ws call ["_getEnemyObjectives", []];
+
+        if (count (keys _enemyObjs) == 0) exitWith { "" };
+
+        // Find highest priority
+        private _bestObj = "";
+        private _bestPriority = -1;
+
+        {
+            private _obj = _enemyObjs get _x;
+            private _priority = _obj getOrDefault ["priority", 50];
+            if (_priority > _bestPriority) then {
+                _bestPriority = _priority;
+                _bestObj = _x;
+            };
+        } forEach (keys _enemyObjs);
+
+        _bestObj
+    }],
+
+    // Groups currently tasked by GTN (prevent AI Commander from using them)
+    ["_gtnTaskedGroups", []],
+
+    // Get available groups for tasking from virtualization system
+    ["_getAvailableGroups", {
+        params [["_count", 4]];
+
+        if (isNil "FLO_virtualGroups") exitWith { [] };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gtnTasked = _self get "_gtnTaskedGroups";
+        private _available = [];
+
+        // Find groups that are:
+        // 1. Military (not civilian)
+        // 2. Not already tasked by GTN
+        // 3. In garrison/idle state (currentOrder is empty or "PATROL")
+        {
+            private _groupId = _x;
+            private _gData = _y;
+
+            if (isNil "_gData") then { continue };
+
+            private _groupType = _gData getOrDefault ["groupType", ""];
+            private _currentOrder = _gData getOrDefault ["currentOrder", ""];
+            private _side = _gData getOrDefault ["side", east];
+
+            // Skip non-military or wrong side
+            if (_groupType in ["civilian", "ambient"]) then { continue };
+            if (_side != east) then { continue };
+
+            // Skip already tasked groups
+            if (_groupId in _gtnTasked) then { continue };
+
+            // Skip groups with active orders (unless patrolling)
+            if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", ""])}) then { continue };
+
+            _available pushBack _groupId;
+
+            // Stop if we have enough
+            if (count _available >= _count) exitWith {};
+        } forEach _groups;
+
+        ["GTN", 3, format["Found %1 available groups (requested %2)", count _available, _count]] call FLO_fnc_log;
+        _available
+    }],
+
+    // Mark groups as tasked by GTN
+    ["_taskGroups", {
+        params ["_groupIds"];
+        private _tasked = _self get "_gtnTaskedGroups";
+        { _tasked pushBackUnique _x; } forEach _groupIds;
+        _self set ["_gtnTaskedGroups", _tasked];
+    }],
+
+    // Release groups from GTN tasking
+    ["_releaseGroups", {
+        params ["_groupIds"];
+        private _tasked = _self get "_gtnTaskedGroups";
+        { _tasked = _tasked - [_x]; } forEach _groupIds;
+        _self set ["_gtnTaskedGroups", _tasked];
+    }],
+
+    // Order group to move using virtualization waypoints
+    ["_orderGroupMove", {
+        params ["_groupId", "_pos", ["_mode", "AWARE"]];
+
+        if (isNil "FLO_virtualGroups") exitWith { false };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_gData") exitWith {
+            ["GTN", 2, format["Cannot order move - group %1 not found", _groupId]] call FLO_fnc_log;
+            false
+        };
+
+        // Create waypoints for movement
+        private _combatMode = switch (_mode) do {
+            case "COMBAT": { "RED" };
+            case "STEALTH": { "GREEN" };
+            default { "YELLOW" };
+        };
+
+        private _waypoints = [
+            [_pos, "MOVE", _mode, "NORMAL", "WEDGE", _combatMode, 30]
+        ];
+
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        _gData set ["currentOrder", "MOVE"];
+
+        // Mark as tasked
+        _self call ["_taskGroups", [[_groupId]]];
+
+        ["GTN", 3, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
+        true
+    }],
+
+    // Order group to attack using virtualization waypoints
+    ["_orderGroupAttack", {
+        params ["_groupId", "_pos"];
+
+        if (isNil "FLO_virtualGroups") exitWith { false };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_gData") exitWith {
+            ["GTN", 2, format["Cannot order attack - group %1 not found", _groupId]] call FLO_fnc_log;
+            false
+        };
+
+        // Create attack waypoints
+        private _waypoints = [
+            [_pos, "SAD", "COMBAT", "NORMAL", "WEDGE", "RED", 75],
+            [_pos, "DESTROY", "COMBAT", "NORMAL", "LINE", "RED", 50]
+        ];
+
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        _gData set ["currentOrder", "ATTACK"];
+
+        // Mark as tasked
+        _self call ["_taskGroups", [[_groupId]]];
+
+        ["GTN", 3, format["Ordered group %1 to attack %2", _groupId, _pos]] call FLO_fnc_log;
+        true
+    }],
+
+    // Order group to defend using virtualization waypoints
+    ["_orderGroupDefend", {
+        params ["_groupId", "_pos"];
+
+        if (isNil "FLO_virtualGroups") exitWith { false };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gData = _groups getOrDefault [_groupId, nil];
+        if (isNil "_gData") exitWith {
+            ["GTN", 2, format["Cannot order defend - group %1 not found", _groupId]] call FLO_fnc_log;
+            false
+        };
+
+        // Create defense waypoints
+        private _waypoints = [
+            [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 40],
+            [_pos, "GUARD", "COMBAT", "NORMAL", "LINE", "RED", 60]
+        ];
+
+        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        _gData set ["currentOrder", "DEFEND"];
+
+        // Mark as tasked
+        _self call ["_taskGroups", [[_groupId]]];
+
+        ["GTN", 3, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
+        true
+    }],
+
+    // Request artillery fire using the artillery asset manager
+    ["_requestArtillery", {
+        params ["_pos", "_missionType", "_rounds"];
+
+        private _success = [_pos, _rounds] call FLO_fnc_requestVirtualArtillery;
+
+        if (_success) then {
+            ["GTN", 3, format["Artillery %1 mission fired at %2 (%3 rounds)", _missionType, _pos, _rounds]] call FLO_fnc_log;
+        } else {
+            ["GTN", 2, format["Artillery request failed - no available assets"]] call FLO_fnc_log;
+        };
+
+        _success
+    }],
+
+    // Request CAS using the AI Commander's air support system
+    ["_requestCAS", {
+        params ["_pos", ["_missionType", "CAS"]];
+
+        // Use the Air Tasking Order system
+        private _ato = call FLO_fnc_airTaskOrder;
+        private _altitude = if (_missionType in ["BOMB", "LASER"]) then { 300 } else { 150 };
+
+        _ato call ["_addTask", [_pos, _missionType, "", _altitude]];
+
+        ["GTN", 3, format["CAS mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+
+        // Process immediately
+        _ato call ["_processTasks", []];
+
+        true
+    }],
+
+    // Check if groups have arrived at a position (within threshold)
+    ["_checkGroupsArrived", {
+        params ["_groupIds", "_pos", ["_threshold", 100]];
+
+        if (isNil "FLO_virtualGroups") exitWith { false };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _arrivedCount = 0;
+
+        {
+            private _gData = _groups getOrDefault [_x, nil];
+            if (isNil "_gData") then { continue };
+
+            private _groupPos = _gData getOrDefault ["position", [0,0,0]];
+            if (_groupPos distance2D _pos <= _threshold) then {
+                _arrivedCount = _arrivedCount + 1;
+            };
+        } forEach _groupIds;
+
+        // Return true if at least half have arrived
+        _arrivedCount >= (ceil ((count _groupIds) / 2))
+    }],
+
+    // Identify objective with weakest defense (for opportunistic attacks)
+    ["_identifyWeakSector", {
+        private _ws = _self get "_worldState";
+        private _enemyObjs = _ws call ["_getEnemyObjectives", []];
+
+        if (count (keys _enemyObjs) == 0) exitWith { "" };
+
+        // Find objective with lowest defense strength
+        private _weakest = "";
+        private _lowestStrength = 1000;
+
+        {
+            private _obj = _enemyObjs get _x;
+            private _strength = _obj getOrDefault ["defenseStrength", 50];
+
+            // Prefer lower strength
+            if (_strength < _lowestStrength) then {
+                _lowestStrength = _strength;
+                _weakest = _x;
+            };
+        } forEach (keys _enemyObjs);
+
+        _weakest
+    }],
+
+    // Get staging position for an objective (offset from target)
+    ["_getStagingPosition", {
+        params ["_objId"];
+
+        private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+        if (isNil "_objPos") exitWith { [0,0,0] };
+
+        // Find a position 300-500m from objective, preferring roads
+        private _offset = 300 + random 200;
+        private _dir = random 360;
+
+        private _stagingPos = _objPos getPos [_offset, _dir];
+
+        // Try to find a nearby road
+        private _roads = _stagingPos nearRoads 100;
+        if (count _roads > 0) then {
+            _stagingPos = getPos (selectRandom _roads);
+        };
+
+        _stagingPos
+    }],
+
+    // === DEBUG ===
+
+    ["_debugPrint", {
+        private _stats = _self get "_stats";
+        private _planner = _self get "_planner";
+        private _ws = _self get "_worldState";
+        private _monitor = _self get "_monitor";
+
+        private _planDebug = _planner call ["_debugPrint", []];
+        private _wsDebug = _ws call ["_debugPrint", []];
+        private _monitorDebug = _monitor call ["_debugPrint", []];
+
+        format[
+            "=== GTN Commander ===\nRunning: %1\nCycles: %2, Plans: %3, Tasks: %4, Replans: %5\n\n%6\n\n%7\n\n%8",
+            _self get "_isRunning",
+            _stats get "cyclesRun",
+            _stats get "plansCreated",
+            _stats get "tasksExecuted",
+            _stats get "replans",
+            _wsDebug,
+            _planDebug,
+            _monitorDebug
+        ]
+    }],
+
+    // Full status dump for debugging
+    ["_dumpStatus", {
+        private _debug = _self call ["_debugPrint", []];
+        ["GTN", 2, _debug] call FLO_fnc_log;
+        _debug
+    }]
+]];
+
+// Link executor back to GTN commander (circular reference needed for handlers)
+_executor call ["_setGTNCommander", [_gtnCommander]];
+
+["GTN", 2, "GTN Commander System initialized"] call FLO_fnc_log;
+
+_gtnCommander
