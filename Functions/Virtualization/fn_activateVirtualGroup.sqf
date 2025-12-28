@@ -65,31 +65,33 @@ switch (true) do {
         } forEach _comp;
     };
 
-    // If we have a valid group config, use it to create the group
-    case (_groupCfg isEqualType [] && {count _groupCfg > 0}): {
-        private _selectedCfg = selectRandom _groupCfg;
-        _realGroup = [_position, _side, _selectedCfg] call BIS_fnc_spawnGroup;
-    };
-    
-    // Infantry based on East_Units array
+    // Infantry - try group configs first, fallback to East_Units
     case (_groupType isEqualTo "infantry"): {
-        _realGroup = createGroup [east, true];
-        private _tempEastGroup = createGroup [east, true];
-
-        // Create all units in temp group first
-        for "_i" from 1 to _unitCount do {
-            private _unitType = selectRandom East_Units;
-            private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-            private _unit = _tempEastGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+        // Try group configs if available and valid
+        if (_groupCfg isEqualType [] && {count _groupCfg > 0}) then {
+            private _selectedCfg = selectRandom _groupCfg;
+            if (isClass _selectedCfg) then {
+                _realGroup = [_position, _side, _selectedCfg] call BIS_fnc_spawnGroup;
+            };
         };
 
-        // Transfer all units to the real group
-        {
-            [_x] joinSilent _realGroup;
-        } forEach units _tempEastGroup;
+        // Fallback to East_Units if no group spawned
+        if (isNull _realGroup || {count units _realGroup == 0}) then {
+            if (!isNull _realGroup) then { deleteGroup _realGroup; };
 
-        // Clean up temporary group
-        deleteGroup _tempEastGroup;
+            _realGroup = createGroup [_side, true];
+            private _tempGroup = createGroup [_side, true];
+            private _spawnCount = if (_unitCount > 0) then { _unitCount } else { 6 };
+
+            for "_i" from 1 to _spawnCount do {
+                private _unitType = selectRandom East_Units;
+                private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
+                _tempGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+            };
+
+            { [_x] joinSilent _realGroup; } forEach units _tempGroup;
+            deleteGroup _tempGroup;
+        };
     };
     
     // Civilian group
@@ -344,7 +346,7 @@ if (FLO_virtualGroups get "_debugMode") then {
     [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
 };
 
-["VIRTUALIZATION", 3, format["Activated virtual group: %1", _groupId]] call FLO_fnc_log;
+["VIRTUALIZATION", 3, format["Activated virtual group: %1 with %2 units", _groupId, count units _realGroup]] call FLO_fnc_log;
 
 // Return success
-true 
+true

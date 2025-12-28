@@ -78,7 +78,7 @@ _distributionRadius = _distributionRadius max 30;
 
 // Get group config if infantry
 private _groupCfg = objNull;
-if (_groupType isEqualTo "infantry" && {count East_Groups > 0}) then {
+if (_groupType isEqualTo "infantry" && {!isNil "East_Groups"} && {count East_Groups > 0}) then {
     _groupCfg = East_Groups;
 };
 

@@ -25,7 +25,8 @@ private ["_position", "_groupType", "_groupCfg", "_objective", "_unitCount", "_s
 
 _position = _this param [0, [0,0,0], [[]]];
 _groupType = _this param [1, "infantry", [""]];
-_groupCfg = _this param [2, configNull];
+// NOTE: Don't use param for groupCfg - it can be array OR config
+_groupCfg = if (count _this > 2) then { _this select 2 } else { configNull };
 _objective = _this param [3, "", [""]];
 _unitCount = _this param [4, -1, [0]];
 _side = _this param [5, east, [east]];
