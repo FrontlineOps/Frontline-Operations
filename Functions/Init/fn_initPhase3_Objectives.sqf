@@ -48,8 +48,8 @@ if (!isNil "FLO_Objectives" && {count FLO_Objectives > 0}) exitWith {
     true
 };
 
-// Initialize objectives array
-FLO_Objectives = [];
+// Initialize objectives as HashMap
+FLO_Objectives = createHashMap;
 publicVariable "FLO_Objectives";
 
 // Run the objective indexer directly on server
@@ -58,14 +58,28 @@ diag_log "[FLO_INIT_P3] Calling FLO_fnc_indexObjectives...";
 private _indexResult = [] call FLO_fnc_indexObjectives;
 
 // Verify objectives were indexed
-if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) exitWith {
+if (isNil "FLO_Objectives") exitWith {
+    FLO_InitError = "Objective indexing returned nil";
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P3] ERROR: %1", FLO_InitError];
+    false
+};
+
+if !(FLO_Objectives isEqualType createHashMap) exitWith {
+    FLO_InitError = format ["Objective indexing returned wrong type: %1", typeName FLO_Objectives];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P3] ERROR: %1", FLO_InitError];
+    false
+};
+
+if (count keys FLO_Objectives == 0) exitWith {
     FLO_InitError = "Objective indexing returned no objectives";
     publicVariable "FLO_InitError";
     diag_log format ["[FLO_INIT_P3] ERROR: %1", FLO_InitError];
     false
 };
 
-diag_log format ["[FLO_INIT_P3] Indexed %1 objectives", count FLO_Objectives];
+diag_log format ["[FLO_INIT_P3] Indexed %1 objectives", count keys FLO_Objectives];
 
 // Index virtual objectives
 diag_log "[FLO_INIT_P3] Calling FLO_fnc_indexVirtualObjectives...";
@@ -83,7 +97,7 @@ diag_log format ["[FLO_INIT_P3] Created %1 virtual objectives", count FLO_Virtua
 diag_log "[FLO_INIT_P3] Building objective graph...";
 [] call FLO_fnc_buildObjectiveGraph;
 
-// Start objective graph (dominance tracking)
+// Start objective graph
 diag_log "[FLO_INIT_P3] Starting objective graph...";
 [] spawn FLO_fnc_startObjectiveGraph;
 
@@ -91,8 +105,8 @@ diag_log "[FLO_INIT_P3] Starting objective graph...";
 diag_log "[FLO_INIT_P3] Starting objective dominance monitoring...";
 [] spawn FLO_fnc_monitorObjectiveDominance;
 
-diag_log format ["[FLO_INIT_P3] Objectives phase complete: %1 objectives, %2 virtual objectives", 
-    count FLO_Objectives, 
+diag_log format ["[FLO_INIT_P3] Objectives phase complete: %1 objectives, %2 virtual objectives",
+    count keys FLO_Objectives,
     count FLO_VirtualObjectives
 ];
 

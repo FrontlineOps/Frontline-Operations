@@ -106,7 +106,6 @@ switch (true) do {
                 };
                 private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
                 _civUnits pushBack _unit;
-                _usedPositions = _usedPositions + 1;
             };
         } else {
             for "_i" from 1 to _unitCount do {

@@ -50,6 +50,13 @@ if (isNil "_objData") then {
     _markerName = format ["obj_%1", _objective];
 };
 
+// Validate position
+if (_position isEqualTo [0,0,0]) exitWith {
+    ["VIRTUALIZATION", 2, format ["ERROR: Invalid position [0,0,0] for objective %1 - skipping", _objective]] call FLO_fnc_log;
+    []
+};
+
+
 // Initialize return array for group IDs
 private _createdGroups = [];
 
