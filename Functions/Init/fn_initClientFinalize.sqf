@@ -39,9 +39,13 @@ if (_respawnPos isEqualTo [0,0,0]) then {
 // Initialize client-side systems
 diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
 
-// Load arsenal restrictions if applicable
-if (!isNil "FLO_fnc_restrictedArsenal") then {
+// Load arsenal restrictions if enabled (param 0 = enabled, 1 = disabled)
+private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+if (_restrictedArsenal isEqualTo 0 && {!isNil "FLO_fnc_restrictedArsenal"}) then {
     [] call FLO_fnc_restrictedArsenal;
+    diag_log "[FLO_INIT_CLIENT] Restricted arsenal enabled";
+} else {
+    diag_log "[FLO_INIT_CLIENT] Restricted arsenal disabled by mission parameter";
 };
 
 // Set briefing/notes
