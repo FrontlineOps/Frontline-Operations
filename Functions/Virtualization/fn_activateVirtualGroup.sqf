@@ -31,6 +31,18 @@ private _waypoints = _groupData getOrDefault ["waypoints", []];
 private _comp = _groupData getOrDefault ["comp", []];
 private _realGroup = grpNull;
 
+// Validate position - skip activation if position is invalid
+if (isNil "_position" || {!(_position isEqualType [])} || {count _position < 2}) exitWith {
+    ["VIRTUALIZATION", 1, format["ERROR: Group %1 has invalid position (nil or wrong type) - skipping activation", _groupId]] call FLO_fnc_log;
+    false
+};
+
+// Check for [0,0,0] or near map origin - this indicates a failed position lookup
+if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {
+    ["VIRTUALIZATION", 1, format["ERROR: Group %1 has position near origin %2 - skipping activation", _groupId, _position]] call FLO_fnc_log;
+    false
+};
+
 // Ensure we don't spawn on top of players
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
 _groupData set ["position", _position];
@@ -86,25 +98,11 @@ switch (true) do {
         private _civUnits = [];
         private _objective = _groupData getOrDefault ["objective", ""];
         if (_objective isEqualTo "civ_building") then {
-            // Find nearest building(s) to _position
-            private _buildings = nearestObjects [_position, ["House", "Building"], 50];
-            private _buildingPositions = [];
-            {
-                private _bldg = _x;
-                {
-                    _buildingPositions pushBack _x;
-                } forEach (_bldg buildingPos -1);
-            } forEach _buildings;
-            // Place civilians in available building positions
-            _buildingPositions = _buildingPositions call BIS_fnc_arrayShuffle;
+            // civ_building civilians already have their exact building position stored
+            // Spawn directly at the stored position (don't re-search for buildings)
             for "_i" from 1 to _unitCount do {
                 private _unitType = selectRandom CivMenArray;
-                private _spawnPos = if (count _buildingPositions > 0) then {
-                    _buildingPositions deleteAt 0
-                } else {
-                    [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
-                };
-                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                private _unit = _realGroup createUnit [_unitType, _position, [], 0, "NONE"];
                 _civUnits pushBack _unit;
             };
         } else {
@@ -122,10 +120,10 @@ switch (true) do {
     // Vehicle groups
     case (_groupType in ["motorized", "mechanized", "armor"]): {
         _realGroup = createGroup [_side, true];
-        
+
         for "_i" from 1 to _unitCount do {
             private _vehicleType = "";
-            
+
             // Select appropriate vehicle type
             switch (_groupType) do {
                 case "motorized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
@@ -133,16 +131,27 @@ switch (true) do {
                 case "armor": { _vehicleType = selectRandom East_Ground_Vehicles_Heavy; };
                 default { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
             };
-            
-            // Find safe position for vehicle
-            private _spawnPos = [_position, 5 + (10 * _i), 50, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
-            
+
+            // Find safe position for vehicle with larger radius and vehicle-appropriate spacing
+            private _minDist = 10 + (20 * _i);
+            private _spawnPos = [_position, _minDist, 150, 10, 0, 0.2, 0] call BIS_fnc_findSafePos;
+
+            // Fallback if BIS_fnc_findSafePos returns the center position (failure)
+            if (_spawnPos distance2D _position > 200) then {
+                _spawnPos = _position getPos [_minDist, random 360];
+                _spawnPos set [2, 0];
+            };
+
             // Create vehicle and crew
             private _veh = [_spawnPos, random 360, _vehicleType, _side] call BIS_fnc_spawnVehicle;
             private _vehicle = _veh select 0;
             private _crew = _veh select 1;
             private _vehGroup = _veh select 2;
-            
+
+            // Ensure vehicle is grounded properly
+            _vehicle setPos [getPos _vehicle select 0, getPos _vehicle select 1, 0];
+            _vehicle setVectorUp [0,0,1];
+
             // Transfer crew to our group and delete empty group
             {
                 [_x] joinSilent _realGroup;
@@ -191,19 +200,30 @@ switch (true) do {
     // Artillery groups
     case (_groupType isEqualTo "artillery"): {
         _realGroup = createGroup [_side, true];
-        
+
         for "_i" from 1 to _unitCount do {
             private _artilleryType = selectRandom East_Ground_Artillery;
-            
-            // Find safe position for artillery, spread them out
-            private _spawnPos = [_position, 10 + (15 * _i), 50, 5, 0, 0.5, 0] call BIS_fnc_findSafePos;
-            
+
+            // Find safe position for artillery with larger spacing (artillery needs more room)
+            private _minDist = 15 + (25 * _i);
+            private _spawnPos = [_position, _minDist, 150, 12, 0, 0.15, 0] call BIS_fnc_findSafePos;
+
+            // Fallback if position search failed
+            if (_spawnPos distance2D _position > 200) then {
+                _spawnPos = _position getPos [_minDist, random 360];
+                _spawnPos set [2, 0];
+            };
+
             // Create vehicle and crew
             private _veh = [_spawnPos, random 360, _artilleryType, _side] call BIS_fnc_spawnVehicle;
             private _vehicle = _veh select 0;
             private _crew = _veh select 1;
             private _vehGroup = _veh select 2;
-            
+
+            // Ensure artillery is grounded properly
+            _vehicle setPos [getPos _vehicle select 0, getPos _vehicle select 1, 0];
+            _vehicle setVectorUp [0,0,1];
+
             // Transfer crew to our group and delete empty group
             {
                 [_x] joinSilent _realGroup;
@@ -216,29 +236,47 @@ switch (true) do {
     case (_groupType isEqualTo "civilianVehicle"): {
         _realGroup = createGroup [civilian, true];
         private _vehicleType = selectRandom CivVehArray;
+
+        // Find a safe position for the vehicle - check roads first, then open terrain
         private _spawnPos = _position;
-        private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "NONE"];
+        private _roads = _position nearRoads 100;
+        if (count _roads > 0) then {
+            // Try to spawn on a road
+            private _road = selectRandom _roads;
+            _spawnPos = getPos _road;
+        } else {
+            // Find safe position on open terrain (larger search radius, vehicle-safe)
+            _spawnPos = [_position, 5, 100, 8, 0, 0.3, 0] call BIS_fnc_findSafePos;
+        };
+
+        // Create vehicle with "CAN_COLLIDE" first, then set position properly
+        private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "CAN_COLLIDE"];
+        _vehicle setPos [_spawnPos select 0, _spawnPos select 1, 0];
+        _vehicle setVectorUp [0,0,1]; // Ensure vehicle is upright
         _vehicle setDir (random 360);
-        _vehicle lock 0; // Unlocked
+        _vehicle lock 0;
         _vehicle setFuel 1;
         _vehicle setDamage 0;
         _vehicle setVehicleLock "UNLOCKED";
+
         // Fill only the driver and sometimes passengers
         private _crewPositions = fullCrew [_vehicle, "", true];
         private _driverPos = _crewPositions select {(_x select 1) == "driver"};
         private _cargoPos = _crewPositions select {(_x select 1) == "cargo"};
+
         // Always fill driver
         if (count _driverPos > 0) then {
             private _unitType = selectRandom CivMenArray;
-            private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
-            (_unit) moveInDriver _vehicle;
+            private _unit = _realGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
+            _unit moveInDriver _vehicle;
         };
+
         // Randomly fill 0-2 passengers if available
         private _numPassengers = (count _cargoPos) min (floor random 3);
         for "_i" from 0 to (_numPassengers - 1) do {
             if (_i < count _cargoPos) then {
                 private _unitType = selectRandom CivMenArray;
-                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                private _unit = _realGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
                 _unit moveInCargo _vehicle;
             };
         };

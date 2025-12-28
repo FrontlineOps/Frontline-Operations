@@ -138,6 +138,55 @@ if (count _missingArrays > 0) exitWith {
     false
 };
 
+// ============================================================================
+// BROADCAST FACTION DATA TO CLIENTS (for Request Menu UI and other client needs)
+// ============================================================================
+
+// Player faction unit types (needed for permission checks)
+private _playerFactionVars = [
+    "F_Officer", "F_Assault_Eng", "F_Assault_TL", "F_Assault_SL", "F_Assault_Eod",
+    "F_Assault_Mrk", "F_Assault_AT", "F_Assault_Amm", "F_Assault_Mg", "F_Assault_Med",
+    "F_Assault_Uav", "F_Recon_Snp", "F_Recon_Sct", "F_Recon_TL", "F_Recon_Mrk",
+    "F_Recon_AT", "F_Recon_Mg", "F_Recon_Eod", "F_Recon_Med", "F_Recon_Eng",
+    "F_Diver_TL", "F_Diver_Eod", "F_Diver_Rfl"
+];
+
+// Player faction building types
+private _buildingVars = ["F_HQ_01", "F_HQ_C_01", "F_OP_01", "F_OP_C_01", "F_RADAR"];
+
+// Request menu vehicle/equipment lists
+private _requestMenuVars = [
+    "F_Bike_List", "F_Car_List", "F_MRAP_List", "F_Truck_List",
+    "F_Truck_Construction_List", "F_Truck_Ammo_List", "F_Truck_Respawn_List",
+    "F_APC_List", "F_Tank_List", "F_Artillery_List",
+    "F_Heli_List", "F_Heli_Respawn_List", "F_Heli_Gunship_List",
+    "F_Plane_List", "F_Boat_List", "F_UAV_List", "F_UGV_List",
+    "F_Container_List", "F_Turret_List", "F_SAM_List"
+];
+
+// Squad compositions (for infantry requests)
+private _squadCompVars = [
+    "F_ASSLT_ENG", "F_ASSLT_TEAM", "F_ASSLT_SQD",
+    "F_SNP_TEAM", "F_RCN_TEAM", "F_RCN_SQD",
+    "F_DVR_TEAM", "F_OFFICER_TEAM"
+];
+
+// Civilian arrays
+private _civilianVars = ["CivVehArray", "CivMenArray"];
+
+// Broadcast all faction variables to clients
+private _allVarsToPublish = _playerFactionVars + _buildingVars + _requestMenuVars + _squadCompVars + _civilianVars;
+private _publishedCount = 0;
+
+{
+    if (!isNil _x) then {
+        publicVariable _x;
+        _publishedCount = _publishedCount + 1;
+    };
+} forEach _allVarsToPublish;
+
+diag_log format ["[FLO_INIT_P2] Broadcast %1 faction variables to clients", _publishedCount];
+
 // Mark factions as loaded
 F_Init = true;
 publicVariable "F_Init";

@@ -30,6 +30,12 @@ _objective = _this param [3, "", [""]];
 _unitCount = _this param [4, -1, [0]];
 _side = _this param [5, east, [east]];
 
+// Validate position - reject groups with invalid positions
+if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {
+    ["VIRTUALIZATION", 1, format["ERROR: Attempted to create group with invalid position %1 - rejecting", _position]] call FLO_fnc_log;
+    ""
+};
+
 // Ensure virtualization system is initialized
 if (isNil "FLO_virtualGroups") then {
     [2000] call FLO_fnc_initVirtualization;

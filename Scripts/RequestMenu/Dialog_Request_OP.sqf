@@ -11,6 +11,13 @@
  * - IDD: 1599 (FLO_IDD_REQUEST)
  */
 
+// Wait for faction data to be available (broadcast from server)
+if (isNil "F_Init" || {!F_Init}) then {
+    hint "Waiting for faction data...";
+    waitUntil {sleep 0.5; !isNil "F_Init" && {F_Init}};
+    hintSilent "";
+};
+
 // Open the Request Menu dialog
 createDialog "FLO_RequestMenuDialog";
 waitUntil {dialog};

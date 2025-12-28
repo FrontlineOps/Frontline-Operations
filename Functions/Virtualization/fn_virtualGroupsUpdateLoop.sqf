@@ -25,8 +25,17 @@ if (!isServer) exitWith {};
 
 private _processVirtualMovement = {
     params ["_groupData", "_groupId", "_currentTime"];
-    
+
     private _position = _groupData get "position";
+
+    // Validate position before processing movement
+    if (isNil "_position" || {!(_position isEqualType [])} || {count _position < 2}) exitWith {
+        ["VIRTUALIZATION", 1, format["ERROR: Group %1 has invalid position type - skipping movement", _groupId]] call FLO_fnc_log;
+    };
+    if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {
+        ["VIRTUALIZATION", 1, format["ERROR: Group %1 position near origin %2 - skipping movement", _groupId, _position]] call FLO_fnc_log;
+    };
+
     private _waypoints = _groupData getOrDefault ["waypoints", []];
     private _currentWaypointIndex = _groupData getOrDefault ["currentWaypointIndex", 0];
     private _virtualSpeed = _groupData getOrDefault ["virtualSpeed", 10]; // Default 10 m/s if not set
@@ -209,16 +218,23 @@ while {true} do {
                 } else {
                     // Update position from real group if active
                     if (!isNull _realGroup) then {
-                        private _realPos = getPos leader _realGroup;
-                        _groupData set ["position", _realPos];
-                        _position = _realPos;
-                        
-                        // Update debug marker if enabled
-                        if (FLO_virtualGroups get "_debugMode") then {
-                            private _marker = format["vgroup_%1", _groupId];
-                            if (getMarkerColor _marker != "") then {
-                                _marker setMarkerPos _realPos;
-                                _marker setMarkerDir getDir leader _realGroup;
+                        private _leader = leader _realGroup;
+                        // Only update if leader exists and is alive
+                        if (!isNull _leader && {alive _leader}) then {
+                            private _realPos = getPos _leader;
+                            // Validate position before saving - don't save bad positions
+                            if ((_realPos select 0) > 100 || (_realPos select 1) > 100) then {
+                                _groupData set ["position", _realPos];
+                                _position = _realPos;
+
+                                // Update debug marker if enabled
+                                if (FLO_virtualGroups get "_debugMode") then {
+                                    private _marker = format["vgroup_%1", _groupId];
+                                    if (getMarkerColor _marker != "") then {
+                                        _marker setMarkerPos _realPos;
+                                        _marker setMarkerDir getDir _leader;
+                                    };
+                                };
                             };
                         };
                     };

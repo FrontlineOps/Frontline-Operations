@@ -18,6 +18,9 @@
 
 params [["_position", [0,0,0], [[]]]];
 
+// Validate position - return nil if invalid to signal caller
+if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {_position};
+
 private _nearestPlayer = objNull;
 private _nearestDist = 999999;
 {
@@ -35,7 +38,11 @@ private _nearestDist = 999999;
 
 if (!isNull _nearestPlayer && {_nearestDist < 500}) then {
     private _dir = _nearestPlayer getDir _position;
-    _position = _nearestPlayer getPos [500, _dir];
+    private _newPos = _nearestPlayer getPos [500, _dir];
+
+    // Ensure the new position has proper terrain height (not underwater/underground)
+    private _terrainHeight = getTerrainHeightASL _newPos;
+    _position = [_newPos select 0, _newPos select 1, _terrainHeight max 0];
 };
 
 _position

@@ -32,10 +32,17 @@ if (isNull _realGroup) exitWith {
 };
 
 // Save the current position before deleting the group
-private _currentPos = [0,0,0];
-if (count units _realGroup > 0) then {
-    _currentPos = getPos (leader _realGroup);
-    _groupData set ["position", _currentPos];
+// Only save if we get a valid position from a living leader
+private _leader = leader _realGroup;
+if (!isNull _leader && {alive _leader}) then {
+    private _currentPos = getPos _leader;
+    // Validate position - only save if it's not near origin
+    if ((_currentPos select 0) > 100 || (_currentPos select 1) > 100) then {
+        _groupData set ["position", _currentPos];
+        ["VIRTUALIZATION", 4, format["Saved position %1 for group %2", _currentPos, _groupId]] call FLO_fnc_log;
+    } else {
+        ["VIRTUALIZATION", 2, format["WARNING: Not saving invalid position %1 for group %2 - keeping original", _currentPos, _groupId]] call FLO_fnc_log;
+    };
 };
 
 // Save any current waypoints before deleting
