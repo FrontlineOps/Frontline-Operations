@@ -192,6 +192,8 @@ class FLO {
         class factionDialogOnUnload   {};
         class factionDialogPopulate   {};
         class factionDialogStart      {};
+        class captureUI               {};
+        class captureUIUpdate         {};
     };
 
     class Pathfinding {

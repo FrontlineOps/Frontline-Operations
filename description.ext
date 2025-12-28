@@ -43,6 +43,7 @@ class CfgFunctions {
 
 class RscTitles {
 	#include "IDS_Notifications\ui\RscNotifications.hpp"
+	#include "UI\FLO_captureUI.hpp"
 
 	titles[] = {};
 };

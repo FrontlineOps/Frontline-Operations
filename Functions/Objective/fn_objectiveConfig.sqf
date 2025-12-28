@@ -54,7 +54,7 @@ if (isNil "FLO_ObjectiveConfig") then {
         
         // Capture/dominance settings
         ["captureTime", 20],      // Seconds to capture
-        ["checkInterval", 5],     // Seconds between dominance checks
+        // ["checkInterval", 5],     // Seconds between dominance checks
         
         // Marker settings
         ["markerAlpha", 0.3],
@@ -68,7 +68,7 @@ if (isNil "FLO_ObjectiveConfig") then {
 
         // Capture settings
         ["captureTime", 20],      // Seconds needed to capture
-        ["checkInterval", 5],     // Time between dominance checks
+        // ["checkInterval", 5],     // Time between dominance checks
         
         // Location type mappings
         ["locationTypes", [

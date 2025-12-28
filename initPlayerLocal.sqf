@@ -315,6 +315,10 @@ private _fnc_finalizeInit = {
             IDS_NotificationClass call ["init", []];
         };
 
+        // Initialize Capture Balance UI (updates pushed from server)
+        ["init"] call FLO_fnc_captureUI;
+        ["INIT_CLIENT", 3, "Capture UI initialized"] call FLO_fnc_log;
+
     } catch {
         ["INIT_CLIENT", 1, format ["Error in final initialization: %1", _exception]] call FLO_fnc_log;
         hintSilent "LOADED WITH ERRORS!";

@@ -117,8 +117,12 @@ private _template = createHashMapFromArray [
         _convoyGrp deleteGroupWhenEmpty true;
         
         // Calculate spawn direction
-        private _nextRoad = (roadsConnectedTo _startRoad) select 0;
-        private _spawnDir = if (!isNull _nextRoad) then { _startRoad getDir _nextRoad } else { _startPos getDir _endPos };
+        private _connectedRoads = roadsConnectedTo _startRoad;
+        private _spawnDir = if (count _connectedRoads > 0) then {
+            _startRoad getDir (_connectedRoads select 0)
+        } else {
+            _startPos getDir _endPos
+        };
         
         // Spawn vehicles
         private _vehicles = [];

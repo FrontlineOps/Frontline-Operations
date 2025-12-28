@@ -4,7 +4,7 @@
  * Description:
  *   Continuously checks unit presence at objectives and flips ownership
  *   when one side holds dominance for a period of time.
- *   Uses isPositionInObjective for accurate containment checks.
+ *   Updates FLO_Objectives which is publicVariable'd for client UI sync.
  *
  * Arguments: None
  *
@@ -24,14 +24,25 @@ waitUntil { !isNil "FLO_Objectives" };
 
 // Get config values
 private _captureTime = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
-private _checkInterval = ["get", "checkInterval"] call FLO_fnc_objectiveConfig;
+
+// 0.5s is reasonable for capture logic; clients poll faster for UI
+private _updateInterval = 0.5;
+
+// Track time for progress calculation
+private _lastTickTime = diag_tickTime;
 
 while {true} do {
+    private _currentTime = diag_tickTime;
+    private _deltaTime = _currentTime - _lastTickTime;
+    _lastTickTime = _currentTime;
+
     // Safety check
     if (isNil "FLO_Objectives") then {
         ["OBJECTIVEMONITOR", 2, "FLO_Objectives undefined, waiting..."] call FLO_fnc_log;
         waitUntil { !isNil "FLO_Objectives" };
     };
+
+    private _dataChanged = false;
 
     {
         private _id = _x;
@@ -77,16 +88,17 @@ while {true} do {
             } forEach _groups;
         };
 
-        // Update capture progress
+        // Update capture progress (scaled by deltaTime for frame-rate independence)
+        private _progressRate = 1; // 1 unit of progress per second
         if (_bluforCount > _opforCount && {_bluforCount > 0}) then {
-            _progress = (_progress + _checkInterval) min _captureTime;
+            _progress = (_progress + (_deltaTime * _progressRate)) min _captureTime;
         } else {
             if (_opforCount > _bluforCount && {_opforCount > 0}) then {
-                _progress = (_progress - _checkInterval) max (-_captureTime);
+                _progress = (_progress - (_deltaTime * _progressRate)) max (-_captureTime);
             } else {
                 // Decay towards neutral
-                if (_progress > 0) then { _progress = (_progress - _checkInterval) max 0 };
-                if (_progress < 0) then { _progress = (_progress + _checkInterval) min 0 };
+                if (_progress > 0) then { _progress = (_progress - (_deltaTime * _progressRate)) max 0 };
+                if (_progress < 0) then { _progress = (_progress + (_deltaTime * _progressRate)) min 0 };
             };
         };
 
@@ -103,10 +115,20 @@ while {true} do {
             };
         };
 
-        // Store progress
+        // Store progress and counts
         _data set ["captureProgress", _progress];
+        _data set ["bluforCount", _bluforCount];
+        _data set ["opforCount", _opforCount];
+        _data set ["captureTime", _captureTime];
         FLO_Objectives set [_id, _data];
+        _dataChanged = true;
+
     } forEach (keys FLO_Objectives);
 
-    sleep _checkInterval;
+    // Sync to clients once per tick (not per objective!)
+    if (_dataChanged) then {
+        publicVariable "FLO_Objectives";
+    };
+
+    sleep _updateInterval;
 };
