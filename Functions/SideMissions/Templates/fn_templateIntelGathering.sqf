@@ -22,23 +22,47 @@ private _template = createHashMapFromArray [
     
     ["fnc_setup", {
         params ["_typeName"];
-        
+
         private _position = [0,0,0];
         private _canSpawn = false;
-        
-        // Look for elevated positions (mounts)
+
+        // Helper to check if position is in OPFOR territory
+        private _fnc_isInEnemyTerritory = {
+            params ["_pos"];
+            private _inEnemy = false;
+            if (!isNil "FLO_Objectives") then {
+                {
+                    private _objData = FLO_Objectives get _x;
+                    if (!isNil "_objData") then {
+                        private _owner = _objData getOrDefault ["owner", east];
+                        if (_owner isEqualTo east) then {
+                            if ([_pos, _objData] call FLO_fnc_isPositionInObjective) then {
+                                _inEnemy = true;
+                            };
+                        };
+                    };
+                    if (_inEnemy) then { break };
+                } forEach (keys FLO_Objectives);
+            };
+            _inEnemy
+        };
+
+        // Look for elevated positions (mounts) in OPFOR territory
         private _mounts = nearestLocations [getPos player, ["Mount"], 1500];
-        if (count _mounts > 0) then {
-            _position = locationPosition (selectRandom _mounts);
+        private _validMounts = _mounts select { [locationPosition _x] call _fnc_isInEnemyTerritory };
+
+        if (count _validMounts > 0) then {
+            _position = locationPosition (selectRandom _validMounts);
             _canSpawn = true;
         } else {
+            // Fallback to house in enemy territory
             private _house = [getPos player] call FLO_fnc_findMissionHouse;
             if (!isNull _house) then {
                 _position = getPos _house;
                 _canSpawn = true;
             };
         };
-        
+
         [_canSpawn, _position]
     }],
     

@@ -27,8 +27,8 @@ private _template = createHashMapFromArray [
         private _position = [0,0,0];
         private _canSpawn = false;
         
-        // Find a suitable house near an objective
-        private _objId = [4000, getPos player] call FLO_fnc_getObjectiveNearPlayer;
+        // Find a suitable house near an OPFOR-controlled objective
+        private _objId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
         if (_objId != "") then {
             _position = [_objId] call FLO_fnc_getRandomObjectivePos;
         } else {

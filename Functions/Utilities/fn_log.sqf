@@ -22,7 +22,7 @@ params [
 
 // Debug Level Control: 0 = Off, 1 = Errors only, 2 = Warnings only, 3 = Info only, 4 = Debug only, 5 = All levels
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 1;  // Default to show all levels
+    FLO_Debug_Level = 5;  // Default to show all levels
 };
 
 // Only log if the level matches exactly (or if level 5 is selected to show all)

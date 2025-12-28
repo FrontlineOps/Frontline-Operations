@@ -58,7 +58,8 @@ class FLO {
 
     class Objective {
         file = "Functions\Objective";
-        
+
+        class objectiveConfig           {};
         class indexObjectives           {};
         class indexVirtualObjectives    {};
         class buildObjectiveGraph       {};
@@ -69,11 +70,13 @@ class FLO {
 
     class ObjectiveUtilities {
         file = "Functions\Objective\Utilities";
-        
-        class getRandomObjectivePos {};
-        class getNearestObjective   {};
-        class getObjectivePath      {};
-        class getObjectiveNearPlayer {};
+
+        class getRandomObjectivePos   {};
+        class getNearestObjective     {};
+        class getObjectivePath        {};
+        class getObjectiveNearPlayer  {};
+        class isPositionInObjective   {};
+        class createObjectiveMarker   {};
     };
 
     class Logistics {

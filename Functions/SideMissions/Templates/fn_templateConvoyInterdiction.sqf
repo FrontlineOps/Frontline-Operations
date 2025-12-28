@@ -29,24 +29,28 @@ private _template = createHashMapFromArray [
         private _canSpawn = false;
         private _startPos = [0,0,0];
         
-        // Find start and end objectives
+        // Find start and end objectives - OPFOR controlled only
         if (!isNil "FLO_Objectives" && {count (keys FLO_Objectives) > 0}) then {
-            private _destObjId = [4000, getPos player] call FLO_fnc_getObjectiveNearPlayer;
+            private _destObjId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
             if (_destObjId != "") then {
                 private _destPos = [_destObjId] call FLO_fnc_getRandomObjectivePos;
-                
-                // Find far objective for start
+
+                // Find far OPFOR objective for start
                 private _startCandidates = (keys FLO_Objectives) select {
                     _x != _destObjId && {
-                        private _p = (FLO_Objectives get _x) get "position";
-                        (_p distance2D _destPos) >= 6000
+                        private _data = FLO_Objectives get _x;
+                        private _owner = _data getOrDefault ["owner", east];
+                        _owner isEqualTo east && {
+                            private _p = _data get "position";
+                            (_p distance2D _destPos) >= 6000
+                        }
                     }
                 };
-                
+
                 if (count _startCandidates > 0) then {
                     private _startObjId = selectRandom _startCandidates;
                     _startPos = [_startObjId] call FLO_fnc_getRandomObjectivePos;
-                    
+
                     // Verify road access
                     private _startRoads = _startPos nearRoads 800;
                     private _destRoads = _destPos nearRoads 800;
@@ -71,12 +75,12 @@ private _template = createHashMapFromArray [
         
         ConVLocc = 1;
         
-        // Find destination
-        private _destObjId = [4000, getPos player] call FLO_fnc_getObjectiveNearPlayer;
-        private _endPos = if (_destObjId != "") then { 
-            [_destObjId] call FLO_fnc_getRandomObjectivePos 
-        } else { 
-            _startPos getPos [3000, _startPos getDir player] 
+        // Find destination (OPFOR controlled)
+        private _destObjId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
+        private _endPos = if (_destObjId != "") then {
+            [_destObjId] call FLO_fnc_getRandomObjectivePos
+        } else {
+            _startPos getPos [3000, _startPos getDir player]
         };
         
         // Find roads

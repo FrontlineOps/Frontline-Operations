@@ -2,43 +2,45 @@
  * Function: FLO_fnc_flipObjective
  * Author: Frontline Operations Development Group
  * Description:
- *   Changes the owner of a virtual objective and updates its marker color.
+ *   Changes the owner of an objective and updates its marker color.
+ *   Uses centralized config for marker colors.
  *
  * Arguments:
- *   0: Objective ID <STRING>
- *   1: New owner <SIDE>
+ *   0: Objective ID (STRING)
+ *   1: New owner (SIDE)
  *
- * Returns: <BOOL> Success
+ * Returns: BOOL - Success
  *
  * Example:
  *   ["virtual_1", west] call FLO_fnc_flipObjective;
  */
 
-params ["_objectiveId", "_newOwner"];
+params [
+    ["_objectiveId", ""],
+    ["_newOwner", civilian]
+];
 
-if (isNil "FLO_Objectives") exitWith {false};
+// Validate inputs
+if (_objectiveId == "") exitWith { false };
+if (isNil "FLO_Objectives") exitWith { false };
 
 private _obj = FLO_Objectives get _objectiveId;
-if (isNil "_obj") exitWith {false};
+if (isNil "_obj") exitWith { false };
 
+// Store previous owner for event
+private _previousOwner = _obj getOrDefault ["owner", east];
+
+// Update owner
 _obj set ["owner", _newOwner];
 FLO_Objectives set [_objectiveId, _obj];
 
-private _pos = _obj get "position";
-private _radius = _obj get "radius";
-private _marker = format ["obj_%1", _objectiveId];
-if (getMarkerColor _marker == "") then {
-    createMarker [_marker, _pos];
-    _marker setMarkerShape "ELLIPSE";
-    _marker setMarkerSize [_radius, _radius];
-};
+// Update marker using centralized function
+[_objectiveId, _obj] call FLO_fnc_createObjectiveMarker;
 
-private _color = switch (_newOwner) do {
-    case west: {"colorBLUFOR"};
-    case east: {"colorOPFOR"};
-    case resistance: {"ColorGUER"};
-    default {"ColorBlack"};
-};
+// Broadcast change
+publicVariable "FLO_Objectives";
 
-_marker setMarkerColor _color;
+// Log the flip
+["OBJECTIVE", 3, format ["Objective %1 flipped from %2 to %3", _objectiveId, _previousOwner, _newOwner]] call FLO_fnc_log;
+
 true
