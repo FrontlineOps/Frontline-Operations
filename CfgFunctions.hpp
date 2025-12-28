@@ -13,6 +13,7 @@ class FLO {
     class Init {
         file = "Functions\Init";
 
+        class detectSavedGame       {};
         class initPhaseManager      {};
         class initPhase1_MissionConfig {};
         class initPhase2_Factions   {};

@@ -4,21 +4,23 @@
  * Description:
  *   Central initialization phase manager. Controls the entire mission startup
  *   sequence with proper dependency tracking and error handling.
- *   
+ *
  *   ALL initialization runs on the server. Clients just wait for completion.
  *
  * Phases:
- *   0: Pre-Init (engine handles this)
- *   1: Mission Config - Wait for faction dialog, receive config from commander
+ *   0: Save Detection - Check for saved game, load config if present
+ *   1: Mission Config - Wait for faction dialog OR use saved config
  *   2: Factions - Load faction scripts based on config
- *   3: Objectives - Index all map objectives
- *   4: Virtualization - Setup virtualization and spawn OPFOR groups
- *   5: Mission Systems - Start side missions, AI commander, etc.
+ *   3: Objectives - Index objectives OR restore from save
+ *   4: Virtualization - Setup virtualization OR restore from save
+ *   5: Mission Systems - Start side missions, AI commander, startup systems
  *
  * Global Variables Set:
  *   FLO_InitPhase - Current phase number (0-5, 99=complete, -1=error)
  *   FLO_InitError - Error message if initialization failed
  *   FLO_MissionReady - Final ready flag for clients to check
+ *   FLO_IsLoadedSave - True if loading from saved game
+ *   FLO_SavedGameData - Raw save data (if loading from save)
  *
  * Arguments: None
  * Returns: Boolean - True if initialization completed successfully
@@ -36,13 +38,36 @@ if (!isServer) exitWith {
 FLO_InitPhase = 0;
 FLO_InitError = "";
 FLO_MissionReady = false;
+FLO_IsLoadedSave = false;
 publicVariable "FLO_InitPhase";
 publicVariable "FLO_InitError";
 publicVariable "FLO_MissionReady";
+publicVariable "FLO_IsLoadedSave";
 
 diag_log "[FLO_INIT] ========================================";
 diag_log "[FLO_INIT] Phase Manager Starting";
 diag_log "[FLO_INIT] ========================================";
+
+// ============================================================================
+// PHASE 0: SAVE DETECTION
+// ============================================================================
+
+diag_log "[FLO_INIT] === PHASE 0: Save Detection ===";
+private _saveResult = [] call FLO_fnc_detectSavedGame;
+_saveResult params ["_hasSave", "_savedConfig"];
+
+if (_hasSave) then {
+    FLO_IsLoadedSave = true;
+    publicVariable "FLO_IsLoadedSave";
+
+    // Set the mission config from save so Phase 1 can use it
+    FLO_MissionConfig = _savedConfig;
+    publicVariable "FLO_MissionConfig";
+
+    diag_log "[FLO_INIT] Loading from saved game - skipping faction dialog";
+} else {
+    diag_log "[FLO_INIT] Fresh start - will wait for faction dialog";
+};
 
 // Helper function to run a phase with error handling
 private _fnc_runPhase = {

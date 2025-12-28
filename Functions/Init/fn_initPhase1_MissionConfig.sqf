@@ -13,28 +13,55 @@ if (!isServer) exitWith { false };
 
 diag_log "[FLO_INIT_P1] Waiting for mission configuration...";
 
-// Check if this is a saved game (FLO_MissionConfig already exists)
-if (!isNil "FLO_MissionConfig" && {count keys FLO_MissionConfig > 0}) exitWith {
-    diag_log "[FLO_INIT_P1] Loading from saved game - config already exists";
-    
-    // Restore handles from saved config
-    if (isNil "FLO_FriendlyHandle") then {
-        FLO_FriendlyHandle = FLO_MissionConfig getOrDefault ["friendlyHandle", createHashMapFromArray [["name", "NATO _ Woodland"]]];
-        publicVariable "FLO_FriendlyHandle";
+// Check if this is a saved game (FLO_IsLoadedSave flag set by Phase 0)
+if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
+    diag_log "[FLO_INIT_P1] Loading from saved game - using saved config";
+
+    // The saved config has integer faction indices, which Phase 2 will use
+    // We need to restore the actual handle values from the saved game data
+    if (!isNil "FLO_SavedGameData") then {
+        private _savedData = FLO_SavedGameData;
+
+        // Restore faction handles from save (these are the actual HashMap handles)
+        if ("friendlyHandle" in _savedData) then {
+            FLO_FriendlyHandle = _savedData get "friendlyHandle";
+            publicVariable "FLO_FriendlyHandle";
+        };
+        if ("enemyHandle" in _savedData) then {
+            FLO_EnemyHandle = _savedData get "enemyHandle";
+            publicVariable "FLO_EnemyHandle";
+        };
+        if ("civilianHandle" in _savedData) then {
+            FLO_CivilianHandle = _savedData get "civilianHandle";
+            publicVariable "FLO_CivilianHandle";
+        };
+        if ("reputationHandle" in _savedData) then {
+            FLO_ReputationHandle = _savedData get "reputationHandle";
+            publicVariable "FLO_ReputationHandle";
+        };
+        if ("difficultyHandle" in _savedData) then {
+            FLO_DifficultyHandle = _savedData get "difficultyHandle";
+            publicVariable "FLO_DifficultyHandle";
+        };
+        if ("moneyHandle" in _savedData) then {
+            FLO_MoneyHandle = _savedData get "moneyHandle";
+            publicVariable "FLO_MoneyHandle";
+        };
+        if ("enemyPrec" in _savedData) then {
+            EnemyPrec = _savedData get "enemyPrec";
+            publicVariable "EnemyPrec";
+        };
+
+        diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
+            if (!isNil "FLO_FriendlyHandle" && {FLO_FriendlyHandle isEqualType createHashMap}) then {FLO_FriendlyHandle get "name"} else {"(index)"},
+            if (!isNil "FLO_EnemyHandle" && {FLO_EnemyHandle isEqualType createHashMap}) then {FLO_EnemyHandle get "name"} else {"(index)"}
+        ];
     };
-    if (isNil "FLO_EnemyHandle") then {
-        FLO_EnemyHandle = FLO_MissionConfig getOrDefault ["enemyHandle", createHashMapFromArray [["name", "CSAT _ Woodland"]]];
-        publicVariable "FLO_EnemyHandle";
-    };
-    if (isNil "FLO_CivilianHandle") then {
-        FLO_CivilianHandle = FLO_MissionConfig getOrDefault ["civilianHandle", createHashMapFromArray [["name", "Greek Civilians"]]];
-        publicVariable "FLO_CivilianHandle";
-    };
-    
+
     // Mark starting location as done for saved games
     StartingLocationDone = true;
     publicVariable "StartingLocationDone";
-    
+
     true
 };
 

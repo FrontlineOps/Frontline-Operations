@@ -2,246 +2,253 @@
  * Function: FLO_fnc_MissionStartup
  * Author: Frontline Operations Development Group
  * Description:
- * Initializes FOBs, OPs, and support systems
-*/
+ *   Initializes FOBs, OPs, and support systems.
+ *   Called from Phase 5 AFTER factions are loaded.
+ *
+ * Dependencies:
+ *   - Faction variables (F_HQ_01, F_OP_01, etc.) must be set
+ *   - Called after Phase 2 (Factions) completes
+ *
+ * Returns: Nothing
+ */
 
 if (!isServer) exitWith {};
 
-// Constants
-private _worldCenter = [worldSize / 2, worldSize / 2, 0];
-private _searchRadius = worldSize * 0.7;
+["STARTUP", 3, "MissionStartup beginning..."] call FLO_fnc_log;
 
-["LOADING . . . "] remoteExec ["hint", 0];
+// ============================================================================
+// DEFAULTS AND VALIDATION
+// ============================================================================
 
-// Initialize FOBs
-private _fnc_initializeFOBs = {
-    ["STARTUP", 3, "Initializing FOBs..."] call FLO_fnc_log;
+// Set defaults for missing faction variables
+if (isNil "F_HQ_01") then { F_HQ_01 = "Land_Cargo_HQ_V3_F"; ["STARTUP", 2, "F_HQ_01 not set, using default"] call FLO_fnc_log; };
+if (isNil "F_HQ_C_01") then { F_HQ_C_01 = "Land_Cargo20_military_green_F"; };
+if (isNil "F_OP_01") then { F_OP_01 = "Land_Cargo_Patrol_V3_F"; ["STARTUP", 2, "F_OP_01 not set, using default"] call FLO_fnc_log; };
+if (isNil "F_OP_C_01") then { F_OP_C_01 = "Land_Cargo10_military_green_F"; };
 
-    // Collect all FOB building types
-    private _fobTypes = [F_HQ_01, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"];
-    private _allFobBuildings = [];
+// Ensure vehicle lists exist
+if (isNil "F_Truck_Respawn_List") then { F_Truck_Respawn_List = []; };
+if (isNil "F_Heli_Respawn_List") then { F_Heli_Respawn_List = []; };
+if (isNil "F_Truck_Construction_List") then { F_Truck_Construction_List = []; };
+if (isNil "F_Truck_Ammo_List") then { F_Truck_Ammo_List = []; };
 
+// Unique ID counter for markers
+private _markerCounter = 0;
+
+// ============================================================================
+// INITIALIZE FOBs
+// ============================================================================
+
+["STARTUP", 3, "Initializing FOBs..."] call FLO_fnc_log;
+
+// Use allMissionObjects for efficient world-wide search (no duplicates needed)
+private _fobTypes = [F_HQ_01, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"] arrayIntersect [F_HQ_01, "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F"];
+private _allFobBuildings = [];
+{ _allFobBuildings append (allMissionObjects _x); } forEach _fobTypes;
+FOBB = _allFobBuildings arrayIntersect _allFobBuildings;
+
+// Cache all FOB containers once
+private _allFobContainers = allMissionObjects F_HQ_C_01;
+
+private _fobCount = 0;
+{
+    private _building = _x;
+    private _hasContainer = (_allFobContainers findIf { _x distance _building < 20 }) > -1;
+    if (_hasContainer) then {
+        [_building] call FLO_fnc_initializeFOB;
+        _fobCount = _fobCount + 1;
+    };
+} forEach FOBB;
+
+["STARTUP", 3, format ["Initialized %1 FOBs", _fobCount]] call FLO_fnc_log;
+
+// ============================================================================
+// INITIALIZE OPs
+// ============================================================================
+
+["STARTUP", 3, "Initializing OPs..."] call FLO_fnc_log;
+
+private _opBuildings = allMissionObjects F_OP_01;
+private _allOpContainers = allMissionObjects F_OP_C_01;
+
+private _opCount = 0;
+{
+    private _building = _x;
+    private _hasContainer = (_allOpContainers findIf { _x distance _building < 6 }) > -1;
+    if (_hasContainer) then {
+        [_building] call FLO_fnc_initializeOP;
+        _opCount = _opCount + 1;
+    };
+} forEach _opBuildings;
+
+["STARTUP", 3, format ["Initialized %1 OPs", _opCount]] call FLO_fnc_log;
+
+
+// ============================================================================
+// FOB SCREEN ACTIONS
+// ============================================================================
+
+["STARTUP", 3, "Initializing FOB screen actions..."] call FLO_fnc_log;
+
+// Commander condition - works on dedicated servers (checks if player is TheCommander)
+// Note: serverCommandAvailable only works for logged-in admins, so we just check TheCommander
+private _commanderCondition = "player isEqualTo TheCommander";
+
+// Define FOB actions [title, code, priority]
+private _fobActions = [
+    ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, 4],
+    ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, 4],
+    ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, 6],
+    ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress", { { execVM "Scripts\MissionReset.sqf"; } remoteExec ["call", 2]; }, 5],
+    ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, 3]
+];
+
+// Add actions to all FOB containers (reuse cached list)
+{
+    private _container = _x;
     {
-        private _buildings = nearestObjects [_worldCenter, [_x], _searchRadius];
-        _allFobBuildings append _buildings;
-    } forEach _fobTypes;
+        _x params ["_title", "_code", "_priority"];
+        [_container, [_title, _code, nil, _priority, true, true, "", _commanderCondition]] remoteExec ["addAction", 0, true];
+    } forEach _fobActions;
+} forEach _allFobContainers;
 
-    // Remove duplicates and store globally
-    FOBB = _allFobBuildings arrayIntersect _allFobBuildings;
+["STARTUP", 3, format ["Added FOB actions to %1 containers", count _allFobContainers]] call FLO_fnc_log;
 
-    // Initialize FOBs that have containers nearby
-    private _initializedCount = 0;
-    {
-        private _nearbyContainers = nearestObjects [_x, [F_HQ_C_01], 20];
-        if (count _nearbyContainers > 0) then {
-            [_x] call FLO_fnc_initializeFOB;
-            _initializedCount = _initializedCount + 1;
-        };
-    } forEach FOBB;
+// ============================================================================
+// DEPLOYABLE CONTAINERS (Slingload FOB/OP)
+// ============================================================================
 
-    ["STARTUP", 3, format["Initialized %1 FOBs successfully", _initializedCount]] call FLO_fnc_log;
-};
+["STARTUP", 3, "Initializing deployable containers..."] call FLO_fnc_log;
 
-call _fnc_initializeFOBs;
+// FOB slingload containers
+private _fobSlingloads = allMissionObjects "B_Slingload_01_Cargo_F";
+{
+    [_x, [
+        "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
+        "Scripts\PObjectives\FOBUNPACK.sqf", nil, 0, true, true, "", "true", 40, false, "", ""
+    ]] remoteExec ["addAction", 0, true];
+    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+    [_x, [
+        "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>",
+        { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
+    ]] remoteExec ["addAction", 0, true];
+} forEach _fobSlingloads;
 
-// Initialize OPs
-private _fnc_initializeOPs = {
-    ["STARTUP", 3, "Initializing OPs..."] call FLO_fnc_log;
+// OP slingload containers
+private _opSlingloads = allMissionObjects "B_Slingload_01_Repair_F";
+{
+    [_x, [
+        "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
+        "Scripts\PObjectives\OPUNPACK.sqf", nil, 0, true, true, "", "true", 40, false, "", ""
+    ]] remoteExec ["addAction", 0, true];
+    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+    [_x, [
+        "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>",
+        { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
+    ]] remoteExec ["addAction", 0, true];
+} forEach _opSlingloads;
 
-    private _opBuildings = nearestObjects [_worldCenter, [F_OP_01], _searchRadius];
-    private _initializedCount = 0;
+["STARTUP", 3, format ["Initialized %1 FOB and %2 OP slingloads", count _fobSlingloads, count _opSlingloads]] call FLO_fnc_log;
 
-    {
-        private _nearbyContainers = nearestObjects [_x, [F_OP_C_01], 6];
-        if (count _nearbyContainers > 0) then {
-            [_x] call FLO_fnc_initializeOP;
-            _initializedCount = _initializedCount + 1;
-        };
-    } forEach _opBuildings;
+// ============================================================================
+// MOBILE RESPAWN MARKER SYSTEM
+// ============================================================================
 
-    ["STARTUP", 3, format["Initialized %1 OPs successfully", _initializedCount]] call FLO_fnc_log;
-};
+["STARTUP", 3, "Starting mobile respawn marker system..."] call FLO_fnc_log;
 
-call _fnc_initializeOPs;
+// Build respawn vehicle type set and store globally for spawned code
+private _respawnVehicleTypes = [];
+if (count F_Truck_Respawn_List > 0) then { _respawnVehicleTypes append (F_Truck_Respawn_List apply { _x # 0 }); };
+if (count F_Heli_Respawn_List > 0) then { _respawnVehicleTypes append (F_Heli_Respawn_List apply { _x # 0 }); };
+FLO_RespawnVehicleTypeSet = createHashMapFromArray (_respawnVehicleTypes apply { [_x, true] });
 
+// Spawn respawn marker loop with error handling
+[] spawn {
+    private _counter = 0;
 
-// Initialize FOB Screen Actions
-private _fnc_initializeFOBActions = {
-    ["STARTUP", 3, "Initializing FOB screen actions..."] call FLO_fnc_log;
-
-    private _fobContainers = nearestObjects [_worldCenter, [F_HQ_C_01], _searchRadius];
-    private _commanderCondition = "((player isEqualTo TheCommander) && (serverCommandAvailable '#kick') && (serverCommandAvailable '#debug')) || ((player isEqualTo TheCommander) && (isServer))";
-
-    // Define FOB actions
-    private _fobActions = [
-        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", {createDialog 'C_LOCK';}, 4],
-        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", {{ null = execVM "Scripts\Init\init_Weather.sqf" ;} remoteExec ["call", 2];}, 4],
-        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", {remoteExec ["FLO_fnc_MissionSave", 2];}, 6],
-        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress", {{ null = execVM "Scripts\MissionReset.sqf" } remoteExec ["call", 2];}, 5],
-        ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", {[] execVM "Scripts\BRIBE.sqf";}, 3]
-    ];
-
-    // Add actions to all FOB containers
-    {
-        private _container = _x;
-        {
-            _x params ["_title", "_script", "_priority"];
-            [_container, [_title, _script, nil, _priority, true, true, "", _commanderCondition]] remoteExec ["addAction", 0, true];
-        } forEach _fobActions;
-    } forEach _fobContainers;
-
-    ["STARTUP", 3, format["Added FOB actions to %1 containers", count _fobContainers]] call FLO_fnc_log;
-};
-
-call _fnc_initializeFOBActions;
- 
-
-// Initialize deployable FOB/OP containers
-private _fnc_initializeDeployables = {
-    ["STARTUP", 3, "Initializing deployable containers..."] call FLO_fnc_log;
-
-    // FOB containers
-    private _fobContainers = nearestObjects [_worldCenter, ["B_Slingload_01_Cargo_F"], _searchRadius];
-    {
-        [_x, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
-            "Scripts\PObjectives\FOBUNPACK.sqf",
-            nil, 0, true, true, "", "true", 40, false, "", ""
-        ]] remoteExec ["addAction", 0, true];
-
-        _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-
-        [_x, [
-            "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>",
-            { [player, true] call IDS_Logistics_fnc_initBuildCamera; },
-            nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-        ]] remoteExec ["addAction", 0, true];
-    } forEach _fobContainers;
-
-    // OP containers
-    private _opContainers = nearestObjects [_worldCenter, ["B_Slingload_01_Repair_F"], _searchRadius];
-    {
-        [_x, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-            "Scripts\PObjectives\OPUNPACK.sqf",
-            nil, 0, true, true, "", "true", 40, false, "", ""
-        ]] remoteExec ["addAction", 0, true];
-
-        _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-
-        [_x, [
-            "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>",
-            { [player, true] call IDS_Logistics_fnc_initBuildCamera; },
-            nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-        ]] remoteExec ["addAction", 0, true];
-    } forEach _opContainers;
-
-    ["STARTUP", 3, format["Initialized %1 FOB and %2 OP containers", count _fobContainers, count _opContainers]] call FLO_fnc_log;
-};
-
-call _fnc_initializeDeployables;
-
-// Initialize mobile respawn marker system
-private _fnc_initializeMobileRespawn = {
-    ["STARTUP", 3, "Starting mobile respawn marker system..."] call FLO_fnc_log;
-
-    [] spawn {
-        private _respawnVehicleTypes = (F_Truck_Respawn_List + F_Heli_Respawn_List) apply {_x select 0};
-
-        while {true} do {
-            // Clean up old markers
+    while { true } do {
+        try {
+            // Clean up old respawn markers
             private _oldMarkers = allMapMarkers select {
-                markerType _x isEqualTo "b_unknown" &&
-                markerColor _x isEqualTo "ColorYellow" &&
-                markerAlpha _x isEqualTo 0.7
+                markerType _x == "b_unknown" && markerColor _x == "ColorYellow" && markerAlpha _x == 0.7
             };
-            {deleteMarker _x} forEach _oldMarkers;
+            { deleteMarker _x } forEach _oldMarkers;
 
-            // Find active respawn vehicles
-            private _respawnVehicles = vehicles select {
-                (typeOf _x in _respawnVehicleTypes) && {alive _x}
-            };
-
-            // Create new markers
+            // Find alive respawn vehicles and create markers
+            private _respawnVehs = vehicles select { alive _x && { (FLO_RespawnVehicleTypeSet getOrDefault [typeOf _x, false]) } };
             {
-                private _markerName = "respawn_west" + str(getPos _x);
+                private _markerName = format ["respawn_west_%1", _counter];
+                _counter = _counter + 1;
                 private _marker = createMarkerLocal [_markerName, getPos _x];
                 _marker setMarkerTypeLocal "b_unknown";
                 _marker setMarkerColorLocal "ColorYellow";
                 _marker setMarkerSizeLocal [1, 1];
                 _marker setMarkerAlpha 0.7;
-            } forEach _respawnVehicles;
-
-            sleep 5;
+            } forEach _respawnVehs;
+        } catch {
+            ["STARTUP", 1, format ["Respawn marker error: %1", _exception]] call FLO_fnc_log;
         };
+
+        sleep 5;
     };
 };
 
-call _fnc_initializeMobileRespawn;
+// ============================================================================
+// MOBILE SERVICE STATIONS
+// ============================================================================
 
-// Initialize mobile service stations
-private _fnc_initializeMobileStations = {
-    ["STARTUP", 3, "Initializing mobile service stations..."] call FLO_fnc_log;
+["STARTUP", 3, "Initializing mobile service stations..."] call FLO_fnc_log;
 
-    // Construction vehicles
-    private _constructionVehicleTypes = F_Truck_Construction_List apply {_x select 0};
-    private _constructionVehicles = nearestObjects [_worldCenter, _constructionVehicleTypes, _searchRadius];
+// Construction vehicles - find by type
+private _constructionVehicles = [];
+{ _constructionVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Construction_List;
 
-    {
-        if (!isNull _x) then {
-            [_x, [
-                "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
-                { [player] call IDS_Logistics_fnc_initBuildCamera; },
-                nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-            ]] remoteExec ["addAction", 0, true];
-        };
-    } forEach _constructionVehicles;
-
-    // Arsenal vehicles
-    private _arsenalVehicleTypes = F_Truck_Ammo_List apply {_x select 0};
-    private _arsenalVehicles = nearestObjects [_worldCenter, _arsenalVehicleTypes, _searchRadius];
-
-    {
+{
+    if (!isNull _x) then {
         [_x, [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil, 1, true, true, "", "_this distance _target < 10"
+            "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
+            { [player] call IDS_Logistics_fnc_initBuildCamera; }, nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
         ]] remoteExec ["addAction", 0, true];
-    } forEach _arsenalVehicles;
+    };
+} forEach _constructionVehicles;
 
-    ["STARTUP", 3, format["Initialized %1 construction and %2 arsenal vehicles", count _constructionVehicles, count _arsenalVehicles]] call FLO_fnc_log;
-};
+// Arsenal vehicles
+private _arsenalVehicles = [];
+{ _arsenalVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Ammo_List;
 
-call _fnc_initializeMobileStations;
+{
+    [_x, [
+        "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+        {
+            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                [player, player, true] call ace_arsenal_fnc_openBox;
+            } else {
+                ["Open", true] spawn BIS_fnc_arsenal;
+            };
+        },
+        nil, 1, true, true, "", "_this distance _target < 10"
+    ]] remoteExec ["addAction", 0, true];
+} forEach _arsenalVehicles;
 
-// Clean up map objects
-private _fnc_cleanupMapObjects = {
-    ["STARTUP", 3, "Cleaning up map objects..."] call FLO_fnc_log;
+["STARTUP", 3, format ["Initialized %1 construction and %2 arsenal vehicles", count _constructionVehicles, count _arsenalVehicles]] call FLO_fnc_log;
 
-    private _cleanupTypes = [
-        "Sign_Pointer_Blue_F",
-        "Land_InvisibleBarrier_F",
-        "LocationCityCapital_F",
-        "LocationCity_F"
-    ];
+// ============================================================================
+// CLEANUP MAP OBJECTS
+// ============================================================================
 
-    private _objectsToDelete = nearestObjects [_worldCenter, _cleanupTypes, _searchRadius];
+["STARTUP", 3, "Cleaning up map objects..."] call FLO_fnc_log;
 
-    // Delete objects on all clients
-    {
-        [_x] remoteExec ["deleteVehicle", 0];
-    } forEach _objectsToDelete;
+private _cleanupTypes = ["Sign_Pointer_Blue_F", "Land_InvisibleBarrier_F", "LocationCityCapital_F", "LocationCity_F"];
+private _objectsToDelete = [];
+{ _objectsToDelete append (allMissionObjects _x); } forEach _cleanupTypes;
 
-    ["STARTUP", 3, format["Cleaned up %1 map objects", count _objectsToDelete]] call FLO_fnc_log;
-};
+// Delete on server only
+{ deleteVehicle _x } forEach _objectsToDelete;
 
-call _fnc_cleanupMapObjects;
+["STARTUP", 3, format ["Cleaned up %1 map objects", count _objectsToDelete]] call FLO_fnc_log;
 
-// Mission startup completion
+// ============================================================================
+// COMPLETION
+// ============================================================================
+
 ["STARTUP", 3, "Mission startup completed successfully"] call FLO_fnc_log;

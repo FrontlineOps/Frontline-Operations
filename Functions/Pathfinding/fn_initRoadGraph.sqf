@@ -157,10 +157,12 @@ XPS_PF_typ_RoadGraph = [
 		// _m setmarkerdir (_pos getdir _ePosC);  
 
 		{
-			_ct set [str _x,_x];
+			_ct set [str _x, _x];
 			private _rct = _self get "Roads" get (str _x);
-			_rct get "ConnectedTo" set [str _object,_object];
-
+			// Only update connected road if it exists in our graph
+			if (!isNil "_rct") then {
+				_rct get "ConnectedTo" set [str _object, _object];
+			};
 		} forEach _roadArray;
 		_node set ["Intersection", count (_node get "ConnectedTo") > 2];
 	}],
