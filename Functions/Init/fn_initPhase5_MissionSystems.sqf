@@ -277,26 +277,26 @@ if (!isNil "FLO_fnc_aiCommander") then {
 // ============================================
 // Side Mission System
 // ============================================
-diag_log "[FLO_INIT_P5] Registering side mission templates...";
+diag_log "[FLO_INIT_P5] Initializing side mission system...";
 
-// Register all side mission templates
-if (!isNil "FLO_fnc_sideMissionTemplate") then {
-    // Register supply convoy template
-    if (!isNil "FLO_fnc_smSupplyConvoy") then {
-        ["register", "supply_convoy", ["supply_convoy", FLO_fnc_smSupplyConvoy, 30, 60, ["logistics", "convoy"], ["all"], nil]] call FLO_fnc_sideMissionTemplate;
-    };
-    
-    // Register more templates here as they are created
-    // ["register", "hvt_elimination", [...]] call FLO_fnc_sideMissionTemplate;
-    // ["register", "intel_recovery", [...]] call FLO_fnc_sideMissionTemplate;
-    
-    diag_log "[FLO_INIT_P5] Side mission templates registered";
-} else {
-    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_sideMissionTemplate not found";
-};
-
-diag_log "[FLO_INIT_P5] Starting side mission manager...";
 if (!isNil "FLO_fnc_sideMissionManager") then {
+    // Initialize the mission manager (sets up state, registry, template storage)
+    ["init"] call FLO_fnc_sideMissionManager;
+    diag_log "[FLO_INIT_P5] Side mission manager initialized";
+
+    // Register all templates via the templates init function
+    if (!isNil "FLO_fnc_sideMissionTemplatesInit") then {
+        private _templatesOk = [] call FLO_fnc_sideMissionTemplatesInit;
+        if (_templatesOk) then {
+            diag_log "[FLO_INIT_P5] Side mission templates registered successfully";
+        } else {
+            diag_log "[FLO_INIT_P5] WARNING: Some side mission templates failed to register";
+        };
+    } else {
+        diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_sideMissionTemplatesInit not found";
+    };
+
+    // Start the mission manager loop
     ["start"] call FLO_fnc_sideMissionManager;
     diag_log "[FLO_INIT_P5] Side mission manager started";
 } else {
