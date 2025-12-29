@@ -87,7 +87,7 @@ if (isNil "FLO_Logistics_Network") then {
                 ]]];
                 _self set ["_lastUpdate", time];
 
-                ["LOGISTICS", 2, format["Restored from save: %1 total replacements",
+                ["LOGISTICS", 3, format["Restored from save: %1 total replacements",
                     (_self get "_stats") getOrDefault ["totalReplacements", 0]]] call FLO_fnc_log;
             } else {
                 // Fresh start - wait and capture initial composition
@@ -266,7 +266,7 @@ if (isNil "FLO_Logistics_Network") then {
                 if (isNil {FLO_Logistics_Network get "_initialComposition"}) then {
                     private _comp = FLO_Logistics_Network call ["_captureInitialComposition", []];
                     FLO_Logistics_Network set ["_initialComposition", _comp];
-                    ["LOGISTICS", 2, format["Captured initial composition: %1", _comp]] call FLO_fnc_log;
+                    ["LOGISTICS", 3, format["Captured initial composition: %1", _comp]] call FLO_fnc_log;
                 };
 
                 // Main loop
@@ -352,7 +352,7 @@ if (isNil "FLO_Logistics_Network") then {
                         _self call ["_recordReplacement", [_groupType, _cost]];
                         _replaced = _replaced + 1;
 
-                        ["LOGISTICS", 2, format["Created %1 reinforcement -> %2 (cost: %3)",
+                        ["LOGISTICS", 3, format["Created %1 reinforcement -> %2 (cost: %3)",
                             _groupType, _targetObj, _cost]] call FLO_fnc_log;
                     };
                 };
@@ -360,7 +360,7 @@ if (isNil "FLO_Logistics_Network") then {
 
             if (_replaced > 0) then {
                 private _stats = _self get "_stats";
-                ["LOGISTICS", 2, format["Replacement cycle: %1 created | Total: %2 | Spent: %3",
+                ["LOGISTICS", 3, format["Replacement cycle: %1 created | Total: %2 | Spent: %3",
                     _replaced,
                     _stats getOrDefault ["totalReplacements", 0],
                     _stats getOrDefault ["resourcesSpent", 0]]] call FLO_fnc_log;
@@ -387,7 +387,7 @@ if (isNil "FLO_Logistics_Network") then {
         ["setEnabled", {
             params ["_enabled"];
             _self set ["_enabled", _enabled];
-            ["LOGISTICS", 2, format["Logistics network %1", if (_enabled) then {"enabled"} else {"disabled"}]] call FLO_fnc_log;
+            ["LOGISTICS", 3, format["Logistics network %1", if (_enabled) then {"enabled"} else {"disabled"}]] call FLO_fnc_log;
         }],
 
         // Serialize state for saving
@@ -400,5 +400,5 @@ if (isNil "FLO_Logistics_Network") then {
     ];
 
     FLO_Logistics_Network = createHashMapObject [_logisticsClass];
-    ["LOGISTICS", 2, "Logistics Network initialized"] call FLO_fnc_log;
+    ["LOGISTICS", 3, "Logistics Network initialized"] call FLO_fnc_log;
 };
