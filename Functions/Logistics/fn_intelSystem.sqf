@@ -1,152 +1,233 @@
 /*
     Function: FLO_fnc_intelSystem
-    
+
     Description:
-    Manages BLUFOR's intelligence level based on collected intel and radio tower control.
-    Intel decays over time but can be increased through intel collection and radio tower control.
-    
+    OOP-based BLUFOR intelligence system. Integrates with FLO_Objectives
+    for dynamic intel generation based on controlled territory.
+
+    Intel Generation (per 5-minute cycle):
+    - Capital: 15 intel (major comms infrastructure)
+    - City: 10 intel (population intelligence network)
+    - Marine: 8 intel (port surveillance)
+    - Local: 6 intel (military signals)
+    - Village: 3 intel (local informants)
+    - Cluster: 1 intel (limited coverage)
+
+    Base decay: 5 intel/cycle
+    Net intel = generation + tempBonus - decay
+
+    Intel Tiers & Effects:
+    - HIGH (75-100): Full enemy visibility, accurate garrison estimates
+    - MODERATE (50-74): Objective ownership visible, approximate estimates
+    - LIMITED (25-49): Frontline info only, vague garrison data
+    - MINIMAL (0-24): Minimal intel, OPFOR has surprise advantage
+
     Parameter(s):
-    _mode - The function mode to execute ["init", "get", "add", "notify", "showNotification"] (String)
-    _params - Parameters based on mode (Array)
-        init: [] - No parameters needed
-        get: [] - No parameters needed
-        add: [_amount, _source] - Amount to add and source of intel
-        notify: [_message, _importance] - Message to broadcast and its importance (1-3)
-        showNotification: [_title, _message, _type] - Title, message and type ("warning", "intel", "success", "info")
-    
+        None (self-initializing)
+
     Returns:
-    Based on mode:
-        init: Nothing
-        get: Number - Current intel level
-        add: Number - New intel level
-        notify: Boolean - True if message was broadcast
-        showNotification: Boolean - True if notification was shown
+        Creates FLO_Intel_System global object
+
+    Public Methods:
+        getIntelLevel: Returns current intel level (0-100)
+        getIntelTier: Returns tier string (HIGH/MODERATE/LIMITED/MINIMAL)
+        addIntel: [amount, source, duration] - Add intel
+        serialize: Returns HashMap for saving
 */
 
-params [
-    ["_mode", "init", [""]],
-    ["_params", [], [[]]]
-];
-
-// Only execute on server to prevent multiple intel systems running
 if (!isServer) exitWith {};
 
-// System configuration constants
-private _INTEL_DECAY_RATE = 0.01;        // Intel points lost per minute
-private _RADIO_TOWER_BONUS = 0.3;       // Multiplier for intel gain per radio tower
-private _MAX_INTEL_LEVEL = 100;         // Maximum intel level
-private _MIN_INTEL_LEVEL = 0;           // Minimum intel level
-private _DECAY_INTERVAL = 300;           // Seconds between decay checks
-
-// Initialize intel system if it doesn't exist (server only)
 if (isNil "FLO_Intel_System") then {
     private _intelClass = [
-        // Class identifier
         ["#type", "IntelSystem"],
-        
-        // Constructor - Called when object is created
+
+        // ========================================
+        // CLASS CONSTANTS
+        // ========================================
+        ["INTEL_VALUES", createHashMapFromArray [
+            ["capital", 15],
+            ["city", 10],
+            ["marine", 8],
+            ["local", 6],
+            ["village", 3],
+            ["cluster", 1]
+        ]],
+
+        ["BASE_DECAY", 5],
+        ["MAX_LEVEL", 100],
+        ["MIN_LEVEL", 0],
+        ["UPDATE_INTERVAL", 300],
+
+        // ========================================
+        // STATE PROPERTIES
+        // ========================================
+        ["_intelLevel", 25],
+        ["_lastUpdate", 0],
+        ["_bluforObjectives", 0],
+        ["_tempBonus", 0],
+        ["_tempBonusExpiry", 0],
+
+        // ========================================
+        // CONSTRUCTOR
+        // ========================================
         ["#create", {
-            params [
-                "_decayRate",
-                "_radioTowerBonus",
-                "_maxIntelLevel",
-                "_minIntelLevel",
-                "_decayInterval"
-            ];
-
-            _self set ["decayRate", _decayRate];
-            _self set ["radioTowerBonus", _radioTowerBonus];
-            _self set ["maxIntelLevel", _maxIntelLevel];
-            _self set ["minIntelLevel", _minIntelLevel];
-            _self set ["decayInterval", _decayInterval];
-            _self call ["initDecayLoop", []];
-        }],
-        
-        // Initial state properties
-        ["intelLevel", 0],
-        ["lastUpdate", time],
-        ["radioTowers", 0],
-        
-        // Update and return the count of BLUFOR-controlled radio towers
-        ["updateRadioTowers", {
-            private _towers = count (allMapMarkers select { 
-                markerType _x == "loc_Transmitter" && 
-                markerColor _x == "colorBLUFOR" 
-            });
-            _self set ["radioTowers", _towers];
-            _towers
-        }],
-        
-        // Add intel from various sources with radio tower bonus
-        ["addIntel", {
-            params ["_amount", "_source"];
-            
-            // Get radio tower bonus multiplier
-            private _radioTowers = _self call ["updateRadioTowers", []];
-            private _bonus = 1 + (_radioTowers * (_self get "radioTowerBonus"));
-            
-            // Special case for intel items
-            if (_source == "intel_item") then {
-                _amount = 0.005;
-                _bonus = 1;
+            // Check for saved game data
+            private _savedState = nil;
+            if (!isNil "FLO_SavedGameData") then {
+                _savedState = FLO_SavedGameData getOrDefault ["intelSystem", nil];
             };
-            
-            // Calculate and apply new intel level with bounds
-            private _adjustedAmount = _amount * _bonus;
-            private _current = _self get "intelLevel";
-            private _new = ((_current + _adjustedAmount) min (_self get "maxIntelLevel")) max (_self get "minIntelLevel");
-            
-            _self set ["intelLevel", _new];
-            _self set ["lastUpdate", time];
-            
-            // TODO convert to FLO_fnc_sendNotification and add to string table
-            // // Notify of significant intel gains
-            // if (_adjustedAmount >= 10) then {
-            //     private _msg = format ["Significant intelligence gained from %1", _source];
-            //     _self call ["notify", [_msg, 2]];
-            // };
-            
-            _new
-        }],
-        
-        // Initialize the intel decay loop
-        ["initDecayLoop", {
-             [] spawn {
 
-                private _lastBroadcast = time;
-                
+            if (!isNil "_savedState" && {_savedState isEqualType createHashMap}) then {
+                // Restore from save
+                _self set ["_intelLevel", _savedState getOrDefault ["intelLevel", 25]];
+                _self set ["_tempBonus", _savedState getOrDefault ["tempBonus", 0]];
+                _self set ["_tempBonusExpiry", time + (_savedState getOrDefault ["tempBonusRemaining", 0])];
+                _self set ["_lastUpdate", time];
+
+                ["INTEL", 2, format["Restored from save: %1 intel", _self get "_intelLevel"]] call FLO_fnc_log;
+            } else {
+                // Fresh start
+                _self set ["_intelLevel", 25];
+                _self set ["_lastUpdate", time];
+                _self set ["_tempBonus", 0];
+                _self set ["_tempBonusExpiry", 0];
+
+                ["INTEL", 2, "Fresh start: 25 intel"] call FLO_fnc_log;
+            };
+
+            // Start update loop
+            _self call ["_startUpdateLoop", []];
+        }],
+
+        // ========================================
+        // PRIVATE METHODS
+        // ========================================
+
+        // Calculate intel generation from BLUFOR objectives
+        ["_calculateObjectiveIntel", {
+            if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) exitWith { 0 };
+
+            private _intelValues = _self get "INTEL_VALUES";
+            private _totalIntel = 0;
+            private _bluforCount = 0;
+
+            {
+                if ((_y getOrDefault ["owner", east]) isEqualTo west) then {
+                    private _subtype = _y getOrDefault ["subtype", "cluster"];
+                    _totalIntel = _totalIntel + (_intelValues getOrDefault [_subtype, 1]);
+                    _bluforCount = _bluforCount + 1;
+                };
+            } forEach FLO_Objectives;
+
+            _self set ["_bluforObjectives", _bluforCount];
+            _totalIntel
+        }],
+
+        // Start the background update loop
+        ["_startUpdateLoop", {
+            [] spawn {
+                waitUntil { sleep 1; !isNil "FLO_Objectives" && {count FLO_Objectives > 0} };
+
                 while {true} do {
-                    // Get current intel state
-                    private _currentLevel = FLO_Intel_System get "intelLevel";
-                    private _lastUpdate = FLO_Intel_System get "lastUpdate";
-                    private _timePassed = (time - _lastUpdate) / 60;
-                    
-                    // Update radio tower count
-                    FLO_Intel_System call ["updateRadioTowers", []];
-                    
-                    // Calculate and apply intel decay
-                    private _decay = (FLO_Intel_System get "decayRate") * _timePassed;
-                    private _newLevel = (_currentLevel - _decay) max (FLO_Intel_System get "minIntelLevel");
-                    
-                    FLO_Intel_System set ["intelLevel", _newLevel];
-                    FLO_Intel_System set ["lastUpdate", time];
-                    
-                    // Update players with current intel coverage level
-                    private _intelText = switch (true) do {
-                        case (_newLevel >= 75): {"High Intelligence Coverage"};
-                        case (_newLevel >= 50): {"Moderate Intelligence Coverage"};
-                        case (_newLevel >= 25): {"Limited Intelligence Coverage"};
-                        default {"Minimal Intelligence Coverage"};
+                    if (isNil "FLO_Intel_System") exitWith {};
+
+                    private _currentLevel = FLO_Intel_System get "_intelLevel";
+                    private _baseDecay = FLO_Intel_System get "BASE_DECAY";
+                    private _maxLevel = FLO_Intel_System get "MAX_LEVEL";
+                    private _minLevel = FLO_Intel_System get "MIN_LEVEL";
+
+                    // Calculate intel from BLUFOR objectives
+                    private _objectiveIntel = FLO_Intel_System call ["_calculateObjectiveIntel", []];
+
+                    // Check temporary bonus expiry
+                    private _tempBonus = FLO_Intel_System get "_tempBonus";
+                    private _tempExpiry = FLO_Intel_System get "_tempBonusExpiry";
+                    if (time > _tempExpiry && _tempBonus > 0) then {
+                        _tempBonus = (_tempBonus - 2) max 0;
+                        FLO_Intel_System set ["_tempBonus", _tempBonus];
                     };
-                    
-                    [_intelText, _newLevel] remoteExec ["hint", 0];
-                    
-                    sleep (FLO_Intel_System get "decayInterval");
+
+                    // Calculate net intel change
+                    private _netChange = _objectiveIntel + _tempBonus - _baseDecay;
+
+                    // Apply with bounds
+                    private _newLevel = ((_currentLevel + _netChange) min _maxLevel) max _minLevel;
+                    FLO_Intel_System set ["_intelLevel", _newLevel];
+                    FLO_Intel_System set ["_lastUpdate", time];
+
+                    // Broadcast to clients
+                    private _tier = FLO_Intel_System call ["getIntelTier", []];
+                    FLO_Intel_Level = _newLevel;
+                    FLO_Intel_Tier = _tier;
+                    publicVariable "FLO_Intel_Level";
+                    publicVariable "FLO_Intel_Tier";
+
+                    ["INTEL", 3, format["Intel: %1 (%2) | Gen: +%3 | Temp: +%4 | Decay: -%5 | Net: %6",
+                        round _newLevel, _tier, _objectiveIntel, _tempBonus, _baseDecay, round _netChange]] call FLO_fnc_log;
+
+                    sleep (FLO_Intel_System get "UPDATE_INTERVAL");
                 };
             };
-        }]        
+        }],
+
+        // ========================================
+        // PUBLIC METHODS
+        // ========================================
+
+        // Get current intel level
+        ["getIntelLevel", {
+            _self get "_intelLevel"
+        }],
+
+        // Get intel tier string
+        ["getIntelTier", {
+            private _level = _self get "_intelLevel";
+            switch (true) do {
+                case (_level >= 75): { "HIGH" };
+                case (_level >= 50): { "MODERATE" };
+                case (_level >= 25): { "LIMITED" };
+                default { "MINIMAL" };
+            }
+        }],
+
+        // Add intel from items or other sources
+        ["addIntel", {
+            params ["_amount", ["_source", "unknown"], ["_duration", 0]];
+
+            private _max = _self get "MAX_LEVEL";
+            private _min = _self get "MIN_LEVEL";
+
+            if (_source == "intel_item") then {
+                // Temporary bonus
+                private _currentBonus = _self get "_tempBonus";
+                _self set ["_tempBonus", (_currentBonus + _amount) min 20];
+                _self set ["_tempBonusExpiry", time + (if (_duration > 0) then {_duration} else {600})];
+
+                ["INTEL", 3, format["Intel item: +%1 temp bonus", _amount]] call FLO_fnc_log;
+            } else {
+                // Direct addition
+                private _current = _self get "_intelLevel";
+                private _new = ((_current + _amount) min _max) max _min;
+                _self set ["_intelLevel", _new];
+                _self set ["_lastUpdate", time];
+            };
+
+            _self get "_intelLevel"
+        }],
+
+        // Serialize state for saving
+        ["serialize", {
+            private _tempExpiry = _self get "_tempBonusExpiry";
+            private _tempRemaining = if (_tempExpiry > time) then { _tempExpiry - time } else { 0 };
+
+            createHashMapFromArray [
+                ["intelLevel", _self get "_intelLevel"],
+                ["tempBonus", _self get "_tempBonus"],
+                ["tempBonusRemaining", _tempRemaining]
+            ]
+        }]
     ];
-    
-    // Create the intel management object and make it public
-    FLO_Intel_System = createHashMapObject [_intelClass, [_INTEL_DECAY_RATE, _RADIO_TOWER_BONUS, _MAX_INTEL_LEVEL, _MIN_INTEL_LEVEL, _DECAY_INTERVAL]];
+
+    FLO_Intel_System = createHashMapObject [_intelClass];
+    ["INTEL", 2, "Intel System initialized"] call FLO_fnc_log;
 };

@@ -20,6 +20,14 @@ params ["_groupId", "_groupData"];
 // Ensure we're running on the server
 if (!isServer) exitWith {false};
 
+// Check if this group is attached to a transport - skip activation (transport spawns passengers)
+private _attachedTo = _groupData getOrDefault ["attachedTo", ""];
+if (_attachedTo != "") exitWith {
+    ["VIRTUALIZATION", 3, format["Group %1 is attached to transport %2 - skipping individual activation",
+        _groupId, _attachedTo]] call FLO_fnc_log;
+    false
+};
+
 ["VIRTUALIZATION", 3, format["Activating virtual group %1", _groupId]] call FLO_fnc_log;
 
 // Extract data from group
@@ -30,6 +38,10 @@ private _groupCfg = _groupData getOrDefault ["groupCfg", objNull];
 private _waypoints = _groupData getOrDefault ["waypoints", []];
 private _comp = _groupData getOrDefault ["comp", []];
 private _realGroup = grpNull;
+
+// Check if this is a transport with attached groups
+private _isTransport = _groupData getOrDefault ["isTransport", false];
+private _attachedGroups = _groupData getOrDefault ["attachedGroups", []];
 
 // Validate position - skip activation if position is invalid
 if (isNil "_position" || {!(_position isEqualType [])} || {count _position < 2}) exitWith {
@@ -312,6 +324,89 @@ if !(_groupType in ["civilian", "civilianVehicle"]) then {
 _groupData set ["realGroup", _realGroup];
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
+
+// ========================================================================
+// TRANSPORT PASSENGER LOADING
+// If this is a transport with attached groups, spawn passengers and load them
+// ========================================================================
+if (_isTransport && count _attachedGroups > 0) then {
+    ["VIRTUALIZATION", 3, format["Transport %1 spawning with %2 attached groups", _groupId, count _attachedGroups]] call FLO_fnc_log;
+
+    // Get the transport vehicle(s)
+    private _transportVehicles = (units _realGroup) select {vehicle _x != _x};
+    _transportVehicles = _transportVehicles apply {vehicle _x};
+    _transportVehicles = _transportVehicles arrayIntersect _transportVehicles; // Remove duplicates
+
+    // If no vehicles found, get vehicles from group
+    if (count _transportVehicles == 0) then {
+        _transportVehicles = [];
+        {
+            private _veh = vehicle _x;
+            if (_veh != _x && !(_veh in _transportVehicles)) then {
+                _transportVehicles pushBack _veh;
+            };
+        } forEach units _realGroup;
+    };
+
+    private _groups = FLO_virtualGroups get "_groups";
+
+    // Spawn and load each attached infantry group
+    {
+        private _attachedId = _x;
+        private _attachedData = _groups getOrDefault [_attachedId, nil];
+
+        if (!isNil "_attachedData") then {
+            private _infSide = _attachedData get "side";
+            private _infComp = _attachedData getOrDefault ["comp", []];
+            private _infUnitCount = _attachedData getOrDefault ["unitCount", 4];
+            private _infGroup = createGroup [_infSide, true];
+
+            // Create infantry units
+            if (_infComp isNotEqualTo []) then {
+                {
+                    private _unitType = _x;
+                    private _unit = _infGroup createUnit [_unitType, _position, [], 0, "NONE"];
+                } forEach _infComp;
+            } else {
+                for "_i" from 1 to _infUnitCount do {
+                    private _unitType = selectRandom East_Units;
+                    private _unit = _infGroup createUnit [_unitType, _position, [], 0, "NONE"];
+                };
+            };
+
+            // Load infantry into transport vehicles
+            if (count _transportVehicles > 0) then {
+                private _vehicleIndex = 0;
+                {
+                    private _unit = _x;
+                    private _vehicle = _transportVehicles select _vehicleIndex;
+
+                    // Check if vehicle has cargo space
+                    private _emptySeats = _vehicle emptyPositions "cargo";
+                    if (_emptySeats > 0) then {
+                        _unit moveInCargo _vehicle;
+                    } else {
+                        // Try next vehicle
+                        _vehicleIndex = (_vehicleIndex + 1) mod (count _transportVehicles);
+                        private _nextVeh = _transportVehicles select _vehicleIndex;
+                        if (_nextVeh emptyPositions "cargo" > 0) then {
+                            _unit moveInCargo _nextVeh;
+                        };
+                    };
+                } forEach units _infGroup;
+            };
+
+            // Mark attached group as active with its own real group
+            _attachedData set ["realGroup", _infGroup];
+            _attachedData set ["isActive", true];
+            _attachedData set ["lastStateChangeTime", diag_tickTime];
+            _attachedData set ["mountedIn", _groupId]; // Track that they're mounted
+
+            ["VIRTUALIZATION", 3, format["Loaded attached group %1 (%2 units) into transport %3",
+                _attachedId, count units _infGroup, _groupId]] call FLO_fnc_log;
+        };
+    } forEach _attachedGroups;
+};
 
 // Disable AI pathfinding if objective is civ_building
 private _objective = _groupData getOrDefault ["objective", ""];

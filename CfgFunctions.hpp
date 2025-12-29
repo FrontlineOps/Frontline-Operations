@@ -68,6 +68,7 @@ class FLO {
         class distributeVirtualGroups         {};
         class activateSavedVirtualGroup       {};
         class createVirtualCivilianPopulation {};
+        class virtualTransport                {};
     };
 
     class VirtualizationUtilities {

@@ -159,6 +159,10 @@ diag_log format ["[FLO_INIT_P4] Created %1 virtual groups", _groupCount];
 diag_log "[FLO_INIT_P4] Starting virtual groups update loop...";
 [] spawn FLO_fnc_virtualGroupsUpdateLoop;
 
+// Initialize virtual transport system
+diag_log "[FLO_INIT_P4] Initializing virtual transport system...";
+[] call FLO_fnc_virtualTransport;
+
 // Mark initialization complete
 InitializationOG = true;
 publicVariable "InitializationOG";

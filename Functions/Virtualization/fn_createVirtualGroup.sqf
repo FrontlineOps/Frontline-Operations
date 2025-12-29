@@ -74,7 +74,14 @@ private _groupData = createHashMapFromArray [
     ["realGroup", grpNull],
     ["state", "idle"],
     ["waypoints", []],
-    ["comp", []]
+    ["comp", []],
+    // Transport system fields
+    ["attachedTo", ""],           // GroupId of transport this group is riding in
+    ["attachedGroups", []],       // Array of groupIds attached to this transport
+    ["attachedType", ""],         // "GROUND" or "AIR"
+    ["isTransport", false],       // Whether this group can carry others
+    ["dismountAtWaypoint", -1],   // Waypoint index to auto-dismount (-1 = never)
+    ["mountedIn", ""]             // GroupId of transport when spawned mounted
 ];
 
 // Add group to virtualization system

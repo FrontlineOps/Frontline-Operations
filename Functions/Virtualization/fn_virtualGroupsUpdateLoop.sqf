@@ -214,7 +214,29 @@ while {true} do {
                 
                 // Process virtual movement for inactive groups
                 if (!_isActive) then {
-                    [_groupData, _groupId, _currentTime] call _processVirtualMovement;
+                    // Check if this group is attached to a transport - skip independent movement
+                    private _attachedTo = _groupData getOrDefault ["attachedTo", ""];
+                    if (_attachedTo != "") then {
+                        // Attached groups don't move independently - their position is updated by transport
+                        // Just verify the transport still exists
+                        private _transportData = _groups getOrDefault [_attachedTo, nil];
+                        if (isNil "_transportData") then {
+                            // Transport no longer exists - detach
+                            _groupData set ["attachedTo", ""];
+                            _groupData set ["attachedType", ""];
+                            ["VIRTUALIZATION", 2, format["Group %1 transport %2 no longer exists - auto-detaching",
+                                _groupId, _attachedTo]] call FLO_fnc_log;
+                        } else {
+                            // Sync position with transport
+                            private _transportPos = _transportData get "position";
+                            _groupData set ["position", _transportPos];
+                            _position = _transportPos;
+                        };
+                    } else {
+                        // Normal movement processing for non-attached groups
+                        [_groupData, _groupId, _currentTime] call _processVirtualMovement;
+                    };
+
                     private _updatedPos = _groupData get "position";
                     // Only update if we got a valid position back
                     if (!isNil "_updatedPos" && {_updatedPos isEqualType [] && {count _updatedPos >= 2}}) then {
@@ -314,8 +336,30 @@ while {true} do {
                 };
             };
         } forEach _groups;
+
+        // Update attached group positions (transport system integration)
+        if (!isNil "FLO_VirtualTransport") then {
+            FLO_VirtualTransport call ["_updateAttachedPositions", []];
+
+            // Check for transports that should dismount their passengers
+            {
+                private _groupId = _x;
+                private _groupData = _y;
+
+                if (_groupData getOrDefault ["isTransport", false]) then {
+                    private _attachedGroups = _groupData getOrDefault ["attachedGroups", []];
+                    if (count _attachedGroups > 0) then {
+                        if (FLO_VirtualTransport call ["_shouldDismount", [_groupId]]) then {
+                            FLO_VirtualTransport call ["_detachAllFromTransport", [_groupId]];
+                            _groupData set ["dismountAtWaypoint", -1]; // Clear after dismount
+                            ["VIRTUALIZATION", 3, format["Transport %1 auto-dismounting passengers at waypoint", _groupId]] call FLO_fnc_log;
+                        };
+                    };
+                };
+            } forEach _groups;
+        };
     };
-    
+
     // Sleep for a reasonable interval - adjust as needed for performance
     sleep 5;
 };

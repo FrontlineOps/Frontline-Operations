@@ -241,15 +241,37 @@ try {
 // ============================================================================
 
 try {
-    private _missionTag = [missionName] call BIS_fnc_filterString;
-    private _resVar = _missionTag + "_Resources";
     if (!isNil "FLO_OPFOR_Resources") then {
-        FLO_OPFOR_Resources call ["saveResources", []];
+        private _resData = FLO_OPFOR_Resources call ["serialize", []];
+        _data set ["opforResources", _resData];
+        ["SAVE", 3, format ["OPFOR Resources: %1", _resData getOrDefault ["resources", 0]]] call FLO_fnc_log;
     };
-    private _resData = missionProfileNamespace getVariable [_resVar, createHashMap];
-    _data set ["resources", _resData];
-    ["SAVE", 3, format ["Resources: %1 keys", count keys _resData]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };
+
+// ============================================================================
+// SAVE: INTEL SYSTEM
+// ============================================================================
+
+try {
+    if (!isNil "FLO_Intel_System") then {
+        private _intelData = FLO_Intel_System call ["serialize", []];
+        _data set ["intelSystem", _intelData];
+        ["SAVE", 3, format ["Intel System: %1", _intelData getOrDefault ["intelLevel", 0]]] call FLO_fnc_log;
+    };
+} catch { ["SAVE", 1, format ["Intel failed: %1", _exception]] call FLO_fnc_log; };
+
+// ============================================================================
+// SAVE: LOGISTICS NETWORK
+// ============================================================================
+
+try {
+    if (!isNil "FLO_Logistics_Network") then {
+        private _logData = FLO_Logistics_Network call ["serialize", []];
+        _data set ["logisticsNetwork", _logData];
+        private _stats = _logData getOrDefault ["stats", createHashMap];
+        ["SAVE", 3, format ["Logistics: %1 replacements", _stats getOrDefault ["totalReplacements", 0]]] call FLO_fnc_log;
+    };
+} catch { ["SAVE", 1, format ["Logistics failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // SAVE: VIRTUAL GROUPS

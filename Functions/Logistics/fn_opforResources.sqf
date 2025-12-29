@@ -1,294 +1,325 @@
 /*
     Function: FLO_fnc_opforResources
-    
+
     Description:
-    Manages resource generation for OPFOR installations.
-    Similar to Antistasi's resource system but adapted for FLO.
-    
-    Resources are generated from:
-    - Military Service Posts (n_support): 5 resources
-    - Military Road Posts (o_support): 3 resources
-    - Military Outpost (o_installation): 7 resources
-    - Military Headquarters (n_installation): 15 resources
-    
+    OOP-based OPFOR resource management system. Integrates with FLO_Objectives
+    for dynamic resource generation based on controlled territory.
+
+    Resource Generation (per 10-minute cycle):
+    - Capital: 20 resources (major hub)
+    - City: 12 resources (population center)
+    - Marine: 10 resources (port logistics)
+    - Local: 8 resources (military installation)
+    - Village: 4 resources (small settlement)
+    - Cluster: 2 resources (rural structures)
+
+    Contested objectives generate 50% reduced resources.
+
+    Spending Types & Modifiers:
+    - garrison: 1.0x cost, 10 threshold
+    - reinforcement: 1.0x cost, 20 threshold
+    - qrf: 1.5x cost, 100 threshold
+    - offensiveops: 4.0x cost, 500 threshold
+    - air_support: 2.0x cost, 250 threshold
+    - artillery: 3.0x cost, 150 threshold
+    - transport: 0.5x cost, 15 threshold
+
     Parameter(s):
-        Nothing
-    
+        None (self-initializing)
+
     Returns:
-        Nothing
+        Creates FLO_OPFOR_Resources global object
+
+    Public Methods:
+        getResources: Returns current resource count
+        addResources: [amount] - Add resources, returns new total
+        spendResources: [amount, type] - Spend with type modifier, returns bool
+        canAfford: [amount, type] - Check affordability without spending
+        serialize: Returns HashMap for saving
 */
 
-// Only execute on server to prevent multiple resource systems running
 if (!isServer) exitWith {};
 
-// Initialize OPFOR resources object if it doesn't exist
 if (isNil "FLO_OPFOR_Resources") then {
-    // Define the resource management class with its methods and properties
     private _resourceClass = [
-        // Class identifier
         ["#type", "OPFORResources"],
-        // Initial resource state - start with nil to indicate no initialization
-        ["resources", nil],
-        ["lastUpdate", nil],
-        
-        // Define spending modifiers at class level for consistency
-        ["spendingModifiers", createHashMapFromArray [
-            // [type, [base_multiplier, resource_threshold, efficiency_loss_per_use]]
+
+        // ========================================
+        // CLASS CONSTANTS
+        // ========================================
+
+        // Resource generation values by objective subtype
+        ["RESOURCE_VALUES", createHashMapFromArray [
+            ["capital", 20],
+            ["city", 12],
+            ["marine", 10],
+            ["local", 8],
+            ["village", 4],
+            ["cluster", 2]
+        ]],
+
+        // Starting resource values by subtype (one-time calculation)
+        ["STARTING_VALUES", createHashMapFromArray [
+            ["capital", 100],
+            ["city", 60],
+            ["marine", 50],
+            ["local", 40],
+            ["village", 20],
+            ["cluster", 10]
+        ]],
+
+        // Spending type configuration: [multiplier, threshold, efficiencyLoss]
+        ["SPENDING_TYPES", createHashMapFromArray [
             ["garrison", [1.0, 10, 0.05]],
-            ["qrf", [1.5, 100, 0.08]],    
+            ["reinforcement", [1.0, 20, 0.03]],
+            ["qrf", [1.5, 100, 0.08]],
             ["offensiveops", [4.0, 500, 0.15]],
             ["air_support", [2.0, 250, 0.12]],
-            ["artillery", [3.0, 150, 0.07]]
+            ["artillery", [3.0, 150, 0.07]],
+            ["transport", [0.5, 15, 0.02]]
         ]],
-        
-        // Constructor - Called when object is created
+
+        // ========================================
+        // STATE PROPERTIES
+        // ========================================
+        ["_resources", 0],
+        ["_lastUpdate", 0],
+        ["_efficiencies", nil],  // HashMap of efficiency per spending type
+
+        // ========================================
+        // CONSTRUCTOR
+        // ========================================
         ["#create", {
-            params [["_initialResources", -1]];
-            
-            // Only set initial values if resources is nil (not yet initialized)
-            if (isNil {_self get "resources"}) then {
-                // Try to load saved data first
-                private _missionTag = missionName;
-                _missionTag = [_missionTag] call BIS_fnc_filterString;
-                private _resourcesDataName = _missionTag + "_Resources";
-                private _savedData = missionProfileNamespace getVariable [_resourcesDataName, createHashMap];
-                
-                if (count _savedData > 0) then {
-                    // Load saved values
-                    private _savedResources = _savedData getOrDefault ["resources", 0];
-                    _self set ["resources", _savedResources];
-                    _self set ["lastUpdate", _savedData getOrDefault ["lastUpdate", time]];
-                    
-                    // Load efficiency values using spendingModifiers keys
-                    private _spendingModifiers = _self get "spendingModifiers";
-                    {
-                        private _effKey = format ["efficiency_%1", _x];
-                        private _efficiency = _savedData getOrDefault [_effKey, 1.0];
-                        _self set [_effKey, _efficiency];
-                    } forEach (keys _spendingModifiers);
-                    
-                    ["OPFOR Resources", 3, format["Initialized with saved data: %1 resources", _savedResources]] call FLO_fnc_log;
-                } else {
-                    // No saved data, use initial values
-                    _self set ["resources", if (_initialResources == -1) then {0} else {_initialResources}];
-                    _self set ["lastUpdate", time];
-                    ["OPFOR Resources", 3, format["Initialized fresh with %1 resources", _self get "resources"]] call FLO_fnc_log;
+            // Check for saved game data first
+            private _savedState = nil;
+            if (!isNil "FLO_SavedGameData") then {
+                _savedState = FLO_SavedGameData getOrDefault ["opforResources", nil];
+            };
+
+            if (!isNil "_savedState" && {_savedState isEqualType createHashMap}) then {
+                // Restore from save
+                _self set ["_resources", _savedState getOrDefault ["resources", 0]];
+                _self set ["_lastUpdate", time];
+                _self set ["_efficiencies", _savedState getOrDefault ["efficiencies", createHashMap]];
+
+                ["OPFOR_RES", 2, format["Restored from save: %1 resources", _self get "_resources"]] call FLO_fnc_log;
+            } else {
+                // Fresh start - calculate from objectives
+                private _startingResources = _self call ["_calculateStartingResources", []];
+                _self set ["_resources", _startingResources];
+                _self set ["_lastUpdate", time];
+                _self set ["_efficiencies", createHashMap];
+
+                ["OPFOR_RES", 2, format["Fresh start: %1 resources", _startingResources]] call FLO_fnc_log;
+            };
+
+            // Start resource generation loop
+            _self call ["_startGenerationLoop", []];
+        }],
+
+        // ========================================
+        // PRIVATE METHODS
+        // ========================================
+
+        // Calculate starting resources from OPFOR objectives
+        ["_calculateStartingResources", {
+            if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) exitWith { 200 };
+
+            private _startingValues = _self get "STARTING_VALUES";
+            private _total = 0;
+
+            {
+                if ((_y getOrDefault ["owner", east]) isEqualTo east) then {
+                    private _subtype = _y getOrDefault ["subtype", "cluster"];
+                    _total = _total + (_startingValues getOrDefault [_subtype, 10]);
                 };
-                
-                // Initialize the resource generation loop
-                _self call ["initResourceLoop", []];
+            } forEach FLO_Objectives;
+
+            _total max 100  // Minimum 100 starting resources
+        }],
+
+        // Get efficiency for a spending type (default 1.0)
+        ["_getEfficiency", {
+            params ["_type"];
+            private _efficiencies = _self get "_efficiencies";
+            if (isNil "_efficiencies") exitWith { 1.0 };
+            _efficiencies getOrDefault [_type, 1.0]
+        }],
+
+        // Set efficiency for a spending type
+        ["_setEfficiency", {
+            params ["_type", "_value"];
+            private _efficiencies = _self get "_efficiencies";
+            if (isNil "_efficiencies") then {
+                _efficiencies = createHashMap;
+                _self set ["_efficiencies", _efficiencies];
+            };
+            _efficiencies set [_type, (_value max 0.2) min 1.0];
+        }],
+
+        // Start the background resource generation loop
+        ["_startGenerationLoop", {
+            [] spawn {
+                // Wait for objectives
+                waitUntil { sleep 1; !isNil "FLO_Objectives" && {count FLO_Objectives > 0} };
+
+                private _eventCooldown = 0;
+
+                while {true} do {
+                    if (isNil "FLO_OPFOR_Resources") exitWith {};
+
+                    private _resourceValues = FLO_OPFOR_Resources get "RESOURCE_VALUES";
+                    private _totalGen = 0;
+                    private _activeCount = 0;
+                    private _contestedCount = 0;
+                    private _globalMod = 1.0;
+
+                    // Random events (5% chance each cycle)
+                    if (time > _eventCooldown && {random 100 < 5}) then {
+                        if (random 1 > 0.3) then {
+                            _globalMod = 1.5;
+                            ["OPFOR_RES", 2, "Supply optimization event: +50% generation"] call FLO_fnc_log;
+                        } else {
+                            _globalMod = 0.7;
+                            ["OPFOR_RES", 2, "Supply disruption event: -30% generation"] call FLO_fnc_log;
+                        };
+                        _eventCooldown = time + 1800 + random 1800;
+                    };
+
+                    // Calculate generation from OPFOR objectives
+                    {
+                        private _data = _y;
+                        if !((_data getOrDefault ["owner", east]) isEqualTo east) then { continue };
+
+                        private _subtype = _data getOrDefault ["subtype", "cluster"];
+                        private _pos = _data getOrDefault ["position", [0,0,0]];
+                        private _baseVal = _resourceValues getOrDefault [_subtype, 2];
+
+                        // Check if contested
+                        private _nearBlufor = count ((_pos nearEntities [["Man", "Car", "Tank", "LandVehicle"], 1000]) select {
+                            alive _x && {side _x == west}
+                        });
+
+                        private _contested = _nearBlufor > 0;
+                        private _contestMod = if (_contested) then { 0.5 } else { 1.0 };
+
+                        if (_contested) then { _contestedCount = _contestedCount + 1 };
+
+                        _totalGen = _totalGen + (_baseVal * _globalMod * _contestMod);
+                        _activeCount = _activeCount + 1;
+                    } forEach FLO_Objectives;
+
+                    // Add generated resources
+                    _totalGen = round _totalGen;
+                    if (_totalGen > 0) then {
+                        FLO_OPFOR_Resources call ["addResources", [_totalGen]];
+                    };
+
+                    ["OPFOR_RES", 3, format["Gen: +%1 from %2 obj (%3 contested) | Total: %4",
+                        _totalGen, _activeCount, _contestedCount,
+                        FLO_OPFOR_Resources call ["getResources", []]]] call FLO_fnc_log;
+
+                    sleep 600;  // 10 minute cycles
+                };
             };
         }],
-        
-        // Get current resource amount
+
+        // ========================================
+        // PUBLIC METHODS
+        // ========================================
+
+        // Get current resources
         ["getResources", {
-            _self get "resources"
+            _self get "_resources"
         }],
-        
-        // Add resources and update timestamp
+
+        // Add resources
         ["addResources", {
             params ["_amount"];
-            private _current = _self get "resources";
+            private _current = _self get "_resources";
             private _new = _current + _amount;
-            _self set ["resources", _new];
-            _self set ["lastUpdate", time];
+            _self set ["_resources", _new];
+            _self set ["_lastUpdate", time];
             _new
         }],
-        
-        // Attempt to spend resources
-        // Returns true if successful, false if insufficient resources
+
+        // Check if can afford without spending
+        ["canAfford", {
+            params ["_amount", "_type"];
+
+            private _spendingTypes = _self get "SPENDING_TYPES";
+            private _typeData = _spendingTypes getOrDefault [_type, [1.0, 30, 0.05]];
+            _typeData params ["_multiplier", "_threshold", "_effLoss"];
+
+            private _current = _self get "_resources";
+            if (_current < _threshold) exitWith { false };
+
+            private _efficiency = _self call ["_getEfficiency", [_type]];
+            private _cost = _amount * _multiplier * (1 / _efficiency);
+
+            _current >= _cost
+        }],
+
+        // Spend resources with type-based modifiers
         ["spendResources", {
             params ["_amount", "_type"];
-            private _current = _self get "resources";
-            private _currentTime = time;
 
-            private _spendingModifiers = _self get "spendingModifiers";
-            private _typeData = _spendingModifiers getOrDefault [_type, [1.0, 30, 0.05]];
-            _typeData params ["_multiplier", "_resourceThreshold", "_efficiencyLoss"];
+            private _spendingTypes = _self get "SPENDING_TYPES";
+            private _typeData = _spendingTypes getOrDefault [_type, [1.0, 30, 0.05]];
+            _typeData params ["_multiplier", "_threshold", "_effLoss"];
 
-            // Check if we have enough resources to maintain operational effectiveness
-            if (_current < _resourceThreshold) exitWith {
-                ["OPFOR Resources", 3, format ["Insufficient strategic resources for %1 (need %2, have %3)", 
-                    _type, _resourceThreshold, _current]] call FLO_fnc_log;
+            private _current = _self get "_resources";
+
+            // Check threshold
+            if (_current < _threshold) exitWith {
+                ["OPFOR_RES", 3, format["Denied %1: below threshold (%2 < %3)",
+                    _type, _current, _threshold]] call FLO_fnc_log;
                 false
             };
 
-            // Calculate final cost with strategic considerations
-            private _finalCost = _amount * _multiplier;
+            // Calculate cost with efficiency
+            private _efficiency = _self call ["_getEfficiency", [_type]];
+            private _cost = _amount * _multiplier * (1 / _efficiency);
 
-            // Get current efficiency for this type
-            private _efficiency = _self getOrDefault [format ["efficiency_%1", _type], 1.0];
-            
-            // Apply efficiency modifier
-            _finalCost = _finalCost * (1 / _efficiency);
-
-            if (_current >= _finalCost) then {
-                private _new = _current - _finalCost;
-                _self set ["resources", _new];
-                _self set ["lastUpdate", _currentTime];
-                
-                // Reduce efficiency for this type of operation
-                _efficiency = (_efficiency - _efficiencyLoss) max 0.2; // Won't go below 20% efficiency
-                _self set [format ["efficiency_%1", _type], _efficiency];
-
-                // If resources are abundant, slowly recover efficiency
-                if (_new > (_resourceThreshold * 2)) then {
-                    {
-                        private _currentEff = _self getOrDefault [format ["efficiency_%1", _x], 1.0];
-                        _self set [format ["efficiency_%1", _x], (_currentEff + 0.02) min 1.0];
-                    } forEach (keys _spendingModifiers);
-                };
-
-                true
-            } else {
-                ["OPFOR Resources", 3, format ["Cannot afford %1 operation (cost: %2, available: %3)", 
-                    _type, _finalCost, _current]] call FLO_fnc_log;
+            // Check affordability
+            if (_current < _cost) exitWith {
+                ["OPFOR_RES", 3, format["Cannot afford %1: cost %2, have %3",
+                    _type, round _cost, round _current]] call FLO_fnc_log;
                 false
-            }
-        }],
-        
-        // Initialize the resource generation loop
-        // This runs continuously in the background
-        ["initResourceLoop", {
-            // Define resource values with diminishing returns
-            private _resourceValues = createHashMapFromArray [
-                ["o_installation", 7],    // Military Outpost
-                ["n_support", 5],         // Military Service Post
-                ["o_support", 3],         // Military Road Post
-                ["n_installation", 15]    // Military Headquarters
-            ];
-
-            // Spawn continuous resource generation loop
-            [_resourceValues] spawn {
-                params ["_resourceValues"];
-                private _lastGeneratedAmount = 0;
-                private _eventCooldown = 0;
-                
-                while {true} do {
-                    private _totalResources = 0;
-                    private _activeInstallations = 0;
-                    private _globalModifier = 1;
-                    
-                    // Random event chance (every 30-60 minutes)
-                    if (time > _eventCooldown) then {
-                        private _eventRoll = random 100;
-                        private _eventID = "";
-                        switch (true) do {
-                            case (_eventRoll <= 7 && _eventRoll > 2): {
-                                _globalModifier = 1.5;
-                                _eventID = "STR_FLO_RESOURCES_OPTIMIZATION";
-                            };
-                            case (_eventRoll >= 0 && _eventRoll < 3): {
-                                _globalModifier = 0.7;
-                                _eventID = "STR_FLO_RESOURCES_DISRUPTION";
-                            };
-                        };
-                        if (_eventID != "") then {
-                            ["STR_FLO_WARNING_TITLE", _eventID, "warning", false] call FLO_fnc_sendNotification;
-                            _eventCooldown = time + (random 1800) + 1800; // 30-60 minutes
-                        };
-                    };
-                    
-                    // Find all OPFOR installations
-                    private _opforInstallations = allMapMarkers select {
-                        markerColor _x in ["colorOPFOR", "ColorEAST"] && 
-                        markerType _x in ["n_support", "o_support", "o_installation", "n_installation"]
-                    };
-                    
-                    // Process each installation
-                    {
-                        private _markerType = markerType _x;
-                        private _baseValue = _resourceValues get _markerType;
-                        private _pos = getMarkerPos _x;
-                        
-                        // Check for nearby BLUFOR units that might contest the installation
-                        private _nearbyBlufor = _pos nearEntities [["Man", "Car", "Tank", "Ship", "LandVehicle"], 500] select {side _x == west};
-                        
-                        // Only generate resources if installation is not contested
-                        if (count _nearbyBlufor == 0) then {
-                            private _finalValue = _baseValue * _globalModifier;
-                            _totalResources = _totalResources + _finalValue;
-                            
-                            // Log significant changes from events
-                            if (_globalModifier != 1) then {
-                                ["OPFOR Resources", 3, format["%1 at %2 generating %3 resources (Base: %4)", 
-                                    _markerType, mapGridPosition _pos, round _finalValue, _baseValue]] call FLO_fnc_log;
-                            };
-                        };
-                    } forEach _opforInstallations;
-                    
-                    // Add resources
-                    _totalResources = round _totalResources;
-                    if (_totalResources > 0) then {
-                        FLO_OPFOR_Resources call ["addResources", [_totalResources]];
-                        _lastGeneratedAmount = _totalResources;
-                        
-                        ["OPFOR Resources", 3, format["Generated %1 resources from %2 installations", 
-                            _totalResources, _activeInstallations]] call FLO_fnc_log;
-                    };
-                    
-                    // Wait 10 minutes before next resource generation cycle
-                    sleep 600;
-                };
             };
-        }],
 
-        // Save resources state to profileNamespace
-        ["saveResources", {
-            private _missionTag = missionName;
-            _missionTag = [_missionTag] call BIS_fnc_filterString;
-            private _resourcesDataName = _missionTag + "_Resources";
-            
-            private _resourcesDataHash = createHashMap;
-            
-            // Save core resource data
-            _resourcesDataHash set ["resources", _self call ["getResources", []]];
-            _resourcesDataHash set ["lastUpdate", _self get "lastUpdate"];
-            
-            // Save efficiency data using spendingModifiers keys
-            private _spendingModifiers = _self get "spendingModifiers";
-            {
-                private _effKey = format ["efficiency_%1", _x];
-                private _efficiency = _self getOrDefault [_effKey, 1.0];
-                _resourcesDataHash set [_effKey, _efficiency];
-            } forEach (keys _spendingModifiers);
-            
-            missionProfileNamespace setVariable [_resourcesDataName, _resourcesDataHash];
-            
-            ["OPFOR Resources", 3, format["Saved resource state with %1 resources", _self call ["getResources", []]]] call FLO_fnc_log;
+            // Deduct resources
+            private _new = _current - _cost;
+            _self set ["_resources", _new];
+            _self set ["_lastUpdate", time];
+
+            // Reduce efficiency for this type
+            private _newEff = _efficiency - _effLoss;
+            _self call ["_setEfficiency", [_type, _newEff]];
+
+            // Recover efficiency if resources abundant
+            if (_new > _threshold * 2) then {
+                {
+                    private _currEff = _self call ["_getEfficiency", [_x]];
+                    _self call ["_setEfficiency", [_x, _currEff + 0.02]];
+                } forEach (keys _spendingTypes);
+            };
+
+            ["OPFOR_RES", 3, format["Spent %1 on %2 (eff: %3) | Remaining: %4",
+                round _cost, _type, round (_newEff * 100), round _new]] call FLO_fnc_log;
             true
         }],
-        
-        ["loadResources", {
-            private _missionTag = missionName;
-            _missionTag = [_missionTag] call BIS_fnc_filterString;
-            private _resourcesDataName = _missionTag + "_Resources";
 
-            private _resourcesData = missionProfileNamespace getVariable [_resourcesDataName, createHashMap];
-            
-            if (count _resourcesData > 0) then {
-                // Load saved values
-                private _savedResources = _resourcesData getOrDefault ["resources", 0];
-                _self set ["resources", _savedResources];
-                _self set ["lastUpdate", _resourcesData getOrDefault ["lastUpdate", time]];
-                
-                // Load efficiency values using spendingModifiers keys
-                private _spendingModifiers = _self get "spendingModifiers";
-                {
-                    private _effKey = format ["efficiency_%1", _x];
-                    private _efficiency = _resourcesData getOrDefault [_effKey, 1.0];
-                    _self set [_effKey, _efficiency];
-                } forEach (keys _spendingModifiers);
-                
-                ["OPFOR Resources", 3, format["Loaded resource state with %1 resources", _savedResources]] call FLO_fnc_log;
-                true
-            } else {
-                ["OPFOR Resources", 2, "No saved resource state found"] call FLO_fnc_log;
-                false
-            }
+        // Serialize state for saving
+        ["serialize", {
+            createHashMapFromArray [
+                ["resources", _self get "_resources"],
+                ["lastUpdate", _self get "_lastUpdate"],
+                ["efficiencies", _self get "_efficiencies"]
+            ]
         }]
     ];
-    
-    // Create the resource management object with initial resources of 0
-    FLO_OPFOR_Resources = createHashMapObject [_resourceClass, 0];
+
+    FLO_OPFOR_Resources = createHashMapObject [_resourceClass];
+    ["OPFOR_RES", 2, "OPFOR Resource System initialized"] call FLO_fnc_log;
 };

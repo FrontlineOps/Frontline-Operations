@@ -203,20 +203,6 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         diag_log format ["[FLO_INIT_P5] Restored %1 supply crates", _loadedCrates];
     };
 
-    // Restore resources
-    if ("resources" in _savedData) then {
-        private _missionTag = missionName;
-        _missionTag = [_missionTag] call BIS_fnc_filterString;
-        private _resVar = _missionTag + "_Resources";
-        private _resData = _savedData get "resources";
-        missionProfileNamespace setVariable [_resVar, _resData];
-
-        if (!isNil "FLO_OPFOR_Resources") then {
-            FLO_OPFOR_Resources call ["loadResources", []];
-            diag_log "[FLO_INIT_P5] OPFOR resources restored";
-        };
-    };
-
     // Restore AI Commander state
     if ("aiCommander" in _savedData) then {
         if (isNil "FLO_AI_Commander") then {
