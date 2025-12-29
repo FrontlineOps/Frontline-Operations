@@ -42,6 +42,31 @@ private _globalVars = createHashMapFromArray [
 Centerposition = [worldSize / 2, worldSize / 2, 0];
 
 // ============================================================================
+// COMMANDER SYNCHRONIZATION
+// ============================================================================
+// On dedicated servers, TheCommander is set by mission.sqm when a player takes that slot.
+// We need to explicitly publicVariable it to ensure all clients can see it for action conditions.
+[] spawn {
+    // Wait for a player to take the Commander slot
+    waitUntil {sleep 1; !isNil "TheCommander" && {!isNull TheCommander}};
+
+    // Explicitly publicVariable to ensure all clients (including JIP) can see it
+    publicVariable "TheCommander";
+    diag_log format ["[FLO_INIT] TheCommander synchronized: %1", name TheCommander];
+
+    // Also monitor for commander changes (if player disconnects and reconnects)
+    private _lastCommander = TheCommander;
+    while {true} do {
+        sleep 30;
+        if (!isNil "TheCommander" && {!isNull TheCommander} && {TheCommander != _lastCommander}) then {
+            _lastCommander = TheCommander;
+            publicVariable "TheCommander";
+            diag_log format ["[FLO_INIT] TheCommander updated: %1", name TheCommander];
+        };
+    };
+};
+
+// ============================================================================
 // EARLY INITIALIZATION (Pre-Phase Manager)
 // ============================================================================
 

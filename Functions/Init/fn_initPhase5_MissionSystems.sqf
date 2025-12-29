@@ -209,7 +209,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         _missionTag = [_missionTag] call BIS_fnc_filterString;
         private _resVar = _missionTag + "_Resources";
         private _resData = _savedData get "resources";
-        profileNamespace setVariable [_resVar, _resData];
+        missionProfileNamespace setVariable [_resVar, _resData];
 
         if (!isNil "FLO_OPFOR_Resources") then {
             FLO_OPFOR_Resources call ["loadResources", []];

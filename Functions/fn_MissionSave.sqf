@@ -246,7 +246,7 @@ try {
     if (!isNil "FLO_OPFOR_Resources") then {
         FLO_OPFOR_Resources call ["saveResources", []];
     };
-    private _resData = profileNamespace getVariable [_resVar, createHashMap];
+    private _resData = missionProfileNamespace getVariable [_resVar, createHashMap];
     _data set ["resources", _resData];
     ["SAVE", 3, format ["Resources: %1 keys", count keys _resData]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };

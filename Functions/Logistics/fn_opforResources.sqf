@@ -51,7 +51,7 @@ if (isNil "FLO_OPFOR_Resources") then {
                 private _missionTag = missionName;
                 _missionTag = [_missionTag] call BIS_fnc_filterString;
                 private _resourcesDataName = _missionTag + "_Resources";
-                private _savedData = profileNamespace getVariable [_resourcesDataName, createHashMap];
+                private _savedData = missionProfileNamespace getVariable [_resourcesDataName, createHashMap];
                 
                 if (count _savedData > 0) then {
                     // Load saved values
@@ -253,20 +253,18 @@ if (isNil "FLO_OPFOR_Resources") then {
                 _resourcesDataHash set [_effKey, _efficiency];
             } forEach (keys _spendingModifiers);
             
-            // Save to profileNamespace
-            profileNamespace setVariable [_resourcesDataName, _resourcesDataHash];
+            missionProfileNamespace setVariable [_resourcesDataName, _resourcesDataHash];
             
             ["OPFOR Resources", 3, format["Saved resource state with %1 resources", _self call ["getResources", []]]] call FLO_fnc_log;
             true
         }],
         
-        // Load resources state from profileNamespace
         ["loadResources", {
             private _missionTag = missionName;
             _missionTag = [_missionTag] call BIS_fnc_filterString;
             private _resourcesDataName = _missionTag + "_Resources";
-            
-            private _resourcesData = profileNamespace getVariable [_resourcesDataName, createHashMap];
+
+            private _resourcesData = missionProfileNamespace getVariable [_resourcesDataName, createHashMap];
             
             if (count _resourcesData > 0) then {
                 // Load saved values

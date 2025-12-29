@@ -1,13 +1,13 @@
 /**
  * @name IDS_Logistics_fnc_testLoadEntities
  * @category Logistics_Debug
- * 
+ *
  * @author IDSolutions
  * @version 1.0
  * @date 2025-03-10
- * 
+ *
  * @description
- * Test function to load saved entities from profileNamespace.
+ * Test function to load saved entities from missionProfileNamespace.
  * Displays debug messages and can be executed from the debug console.
  *
  * @param {None}
@@ -22,8 +22,7 @@
 hint "Starting entity load test...";
 systemChat "IDS_Logistics: Starting entity load test...";
 
-// Check if we have saved entities
-private _savedData = profileNamespace getVariable ["IDS_Logistics_SavedEntities", []];
+private _savedData = missionProfileNamespace getVariable ["IDS_Logistics_SavedEntities", []];
 systemChat format ["IDS_Logistics: Found %1 entities in saved data", count _savedData];
 
 // Execute load function on the server

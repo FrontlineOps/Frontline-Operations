@@ -23,8 +23,7 @@ if (!isServer) exitWith {
     diag_log "IDS_Logistics_fnc_loadEntities: Must be executed on server";
 };
 
-// Get saved data from profileNamespace
-private _savedData = profileNamespace getVariable ["IDS_Logistics_SavedEntities", []];
+private _savedData = missionProfileNamespace getVariable ["IDS_Logistics_SavedEntities", []];
 
 // Check if we have any saved data
 if (count _savedData == 0) exitWith {

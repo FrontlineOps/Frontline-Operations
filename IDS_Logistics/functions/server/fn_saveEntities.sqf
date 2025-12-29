@@ -35,6 +35,5 @@ private _saveData = [];
     _saveData pushBack _entityData;
 } forEach IDS_Logistics_PlacedEntities;
 
-// Save to profileNamespace
-profileNamespace setVariable ["IDS_Logistics_SavedEntities", _saveData];
-saveProfileNamespace;
+missionProfileNamespace setVariable ["IDS_Logistics_SavedEntities", _saveData];
+saveMissionProfileNamespace;
