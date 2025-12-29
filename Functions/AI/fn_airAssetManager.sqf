@@ -62,6 +62,13 @@ if (isNil "FLO_AirAssetManager") then {
             private _realGroup = _gdata get "realGroup";
             if (isNull _realGroup) exitWith {objNull};
 
+            // Clear any existing waypoints - the calling code will set new ones
+            // This prevents old patrol/CYCLE waypoints from interfering with the new mission
+            while {count waypoints _realGroup > 0} do {
+                deleteWaypoint [_realGroup, 0];
+            };
+            ["Air Asset Manager", 3, format["Cleared existing waypoints for group %1", _gid]] call FLO_fnc_log;
+
             // Determine aircraft vehicle
             private _veh = objNull;
             {

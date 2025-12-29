@@ -110,15 +110,16 @@ private _processVirtualMovement = {
     } else {
         // Waypoint reached or non-movement waypoint
         if (_distanceToWaypoint <= 10) then {
+            // Check if this is a patrol group (has CYCLE waypoint anywhere)
+            private _isPatrol = _groupData getOrDefault ["autoPatrol", false] ||
+                               {(_x select 1) == "CYCLE"} count _waypoints > 0;
+
             // Handle waypoint completion
             switch (_waypointType) do {
                 case "CYCLE": {
-                    // For cycle, move the completed waypoint to the end of the array
-                    private _completedWaypoint = _waypoints deleteAt _currentWaypointIndex;
-                    _waypoints pushBack _completedWaypoint;
-                    _groupData set ["waypoints", _waypoints];
+                    // CYCLE reached - wrap back to first waypoint (don't delete anything)
                     _groupData set ["currentWaypointIndex", 0];
-                    ["VIRTUALIZATION", 4, format["Virtual group %1 cycling waypoints", _groupId]] call FLO_fnc_log;
+                    ["VIRTUALIZATION", 4, format["Virtual group %1 cycling back to first waypoint", _groupId]] call FLO_fnc_log;
                 };
                 case "SENTRY": {
                     // For sentry, keep the waypoint but update last visit time
@@ -126,25 +127,33 @@ private _processVirtualMovement = {
                     ["VIRTUALIZATION", 4, format["Virtual group %1 holding sentry position", _groupId]] call FLO_fnc_log;
                 };
                 default {
-                    // For all other types, delete the completed waypoint
-                    _waypoints deleteAt _currentWaypointIndex;
-                    _groupData set ["waypoints", _waypoints];
-                    
-                    // Check if there are more waypoints
-                    if (count _waypoints > 0) then {
-                        // If we deleted the current waypoint, keep the same index (it now points to the next waypoint)
-                        // Otherwise, the index stays the same
-                        _groupData set ["currentWaypointIndex", _currentWaypointIndex min ((count _waypoints) - 1)];
-                        ["VIRTUALIZATION", 4, format["Virtual group %1 completed waypoint, moving to next", _groupId]] call FLO_fnc_log;
+                    // For patrol groups, don't delete waypoints - just advance to next
+                    if (_isPatrol) then {
+                        private _nextIndex = _currentWaypointIndex + 1;
+                        if (_nextIndex >= count _waypoints) then {
+                            _nextIndex = 0; // Wrap around
+                        };
+                        _groupData set ["currentWaypointIndex", _nextIndex];
+                        ["VIRTUALIZATION", 4, format["Virtual group %1 patrol waypoint %2 -> %3", _groupId, _currentWaypointIndex, _nextIndex]] call FLO_fnc_log;
                     } else {
-                        // No more waypoints
-                        _groupData set ["state", "idle"];
-                        _groupData set ["currentWaypointIndex", 0];
-                        ["VIRTUALIZATION", 4, format["Virtual group %1 completed all waypoints", _groupId]] call FLO_fnc_log;
+                        // Non-patrol: delete the completed waypoint
+                        _waypoints deleteAt _currentWaypointIndex;
+                        _groupData set ["waypoints", _waypoints];
+
+                        // Check if there are more waypoints
+                        if (count _waypoints > 0) then {
+                            _groupData set ["currentWaypointIndex", _currentWaypointIndex min ((count _waypoints) - 1)];
+                            ["VIRTUALIZATION", 4, format["Virtual group %1 completed waypoint, moving to next", _groupId]] call FLO_fnc_log;
+                        } else {
+                            // No more waypoints
+                            _groupData set ["state", "idle"];
+                            _groupData set ["currentWaypointIndex", 0];
+                            ["VIRTUALIZATION", 4, format["Virtual group %1 completed all waypoints", _groupId]] call FLO_fnc_log;
+                        };
                     };
                 };
             };
-            
+
             // Update waypoint visualization
             if (FLO_virtualGroups get "_debugMode") then {
                 [_groupId, _waypoints, _groupData get "currentWaypointIndex"] call FLO_fnc_createVirtualWaypointMarkers;
@@ -232,9 +241,9 @@ while {true} do {
                             private _pos2 = [_centerPos getPos [_radius, _dirBase + 120], _radius] call FLO_fnc_getSafeLandPos;
                             private _pos3 = [_centerPos getPos [_radius, _dirBase + 240], _radius] call FLO_fnc_getSafeLandPos;
 
-                            private _wp1 = [_pos1, "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
-                            private _wp2 = [_pos2, "MOVE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
-                            private _wp3 = [_pos3, "CYCLE", "SAFE", "NORMAL", "COLUMN", "YELLOW", 20];
+                            private _wp1 = [_pos1, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20];
+                            private _wp2 = [_pos2, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20];
+                            private _wp3 = [_pos3, "CYCLE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20];
 
                             [_groupId, [_wp1, _wp2, _wp3]] call FLO_fnc_updateVirtualGroupWaypoints;
                             _groupData set ["autoPatrol", true];

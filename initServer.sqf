@@ -38,7 +38,7 @@ private _globalVars = createHashMapFromArray [
     publicVariable _x;
 } forEach _globalVars;
 
-// Initialize world center position (fix case sensitivity issue)
+// Initialize world center position
 Centerposition = [worldSize / 2, worldSize / 2, 0];
 
 // ============================================================================
@@ -265,10 +265,16 @@ remoteExec ["FLO_fnc_MissionStartup", 2];
 // ============================================================================
 
 private _fnc_initAutoSave = {
+    // Prevent multiple auto-save loops from running
+    if (!isNil "FLO_AutoSaveRunning" && {FLO_AutoSaveRunning}) exitWith {
+        ["AUTOSAVE", 4, "Auto-save loop already running - skipping duplicate"] call FLO_fnc_log;
+    };
+
     private _autoSaveEnabled = "AutoSaveSwitch" call BIS_fnc_getParamValue;
     private _autoSaveInterval = "AutoSaveInterval" call BIS_fnc_getParamValue;
 
     if (_autoSaveEnabled isEqualTo 1) then {
+        FLO_AutoSaveRunning = true;
         ["AUTOSAVE", 3, format ["Auto-save enabled with %1 second interval", _autoSaveInterval]] call FLO_fnc_log;
 
         [] spawn {

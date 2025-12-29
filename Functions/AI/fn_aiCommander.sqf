@@ -1377,34 +1377,52 @@ private _aiCommander = createHashMapObject [[
             case "CAP": {
                 // Combat Air Patrol - establish air superiority
                 private _airMgr = _self get "_airAssetManager";
-                private _aircraft = _airMgr call ["_requestAirAsset", [_targetPos, "CAP"]];
+                private _asset = _airMgr call ["_requestAirAsset", [_targetPos, "CAP"]];
 
-                if (!isNull _aircraft) then {
-                    // Set up patrol pattern around target area
-                    private _patrolRadius = 2000;
-                    private _patrolWaypoints = [];
-                    for "_i" from 0 to 3 do {
-                        private _dir = _i * 90;
-                        private _patrolPos = _targetPos getPos [_patrolRadius, _dir];
-                        _patrolWaypoints pushBack _patrolPos;
+                // _requestAirAsset returns [vehicle, groupId] or objNull
+                if (_asset isNotEqualTo objNull) then {
+                    _asset params ["_aircraft", "_gid"];
+
+                    if (!isNull _aircraft) then {
+                        // Set up patrol pattern around target area
+                        private _patrolRadius = 2000;
+                        private _patrolWaypoints = [];
+                        for "_i" from 0 to 3 do {
+                            private _dir = _i * 90;
+                            private _patrolPos = _targetPos getPos [_patrolRadius, _dir];
+                            _patrolWaypoints pushBack _patrolPos;
+                        };
+
+                        // Create patrol waypoints for the aircraft
+                        private _grp = group _aircraft;
+                        _aircraft flyInHeight _alt;
+
+                        {
+                            private _wp = _grp addWaypoint [_x, 0];
+                            _wp setWaypointType "MOVE";
+                            _wp setWaypointBehaviour "COMBAT";
+                            _wp setWaypointCombatMode "RED";
+                            _wp setWaypointSpeed "NORMAL";
+                        } forEach _patrolWaypoints;
+
+                        // Add cycle waypoint to continue patrol
+                        private _cycleWp = _grp addWaypoint [_patrolWaypoints select 0, 0];
+                        _cycleWp setWaypointType "CYCLE";
+
+                        _success = true;
+                        ["AI Commander", 3, format["CAP established over %1 with aircraft %2 (group %3)", _targetPos, typeOf _aircraft, _gid]] call FLO_fnc_log;
+
+                        // CAP patrol timer - release after 10 minutes or if destroyed
+                        [_aircraft, time + 600, _gid, _airMgr] spawn {
+                            params ["_a", "_t", "_gid", "_mgr"];
+                            waitUntil {sleep 10; time > _t || !alive _a};
+                            ["AI Commander", 3, format["CAP mission complete for group %1", _gid]] call FLO_fnc_log;
+                            // Release the air asset (clears onMission flag and deactivates)
+                            if (!isNil "_gid" && {_gid isNotEqualTo ""}) then {
+                                _mgr call ["_releaseAirAsset", [_gid]];
+                            };
+                        };
                     };
-
-                    // Create patrol waypoints for the aircraft
-                    private _grp = group _aircraft;
-                    {
-                        private _wp = _grp addWaypoint [_x, 0];
-                        _wp setWaypointType "MOVE";
-                        _wp setWaypointBehaviour "COMBAT";
-                        _wp setWaypointCombatMode "RED";
-                        _wp setWaypointSpeed "NORMAL";
-                    } forEach _patrolWaypoints;
-
-                    // Add cycle waypoint to continue patrol
-                    private _cycleWp = _grp addWaypoint [_patrolWaypoints select 0, 0];
-                    _cycleWp setWaypointType "CYCLE";
-
-                    _success = true;
-                    ["AI Commander", 3, format["CAP established over %1", _targetPos]] call FLO_fnc_log;
                 };
             };
 

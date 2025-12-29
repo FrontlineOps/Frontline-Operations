@@ -40,11 +40,13 @@ if (isNil "FLO_airTaskOrder") then {
 
                 private _asset = _mgr call ["_requestAirAsset", [_pos, _mission]];
                 private _air = objNull;
-                private _gid = -1;
+                private _gid = "";
                 private _grp = grpNull;
 
+                // Extract aircraft and group ID from asset result
                 if (_asset isNotEqualTo objNull) then {
-                    _asset params ["_air", "_gid"];
+                    _air = _asset select 0;
+                    _gid = _asset select 1;
                     _grp = group _air;
                     _air flyInHeight _alt;
                     ["ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
@@ -62,11 +64,40 @@ if (isNil "FLO_airTaskOrder") then {
                         _wp setWaypointType "SAD";
                         _wp setWaypointBehaviour "COMBAT";
                         _wp setWaypointCombatMode "RED";
+                        _wp setWaypointSpeed "FULL";
+                        _grp setCurrentWaypoint _wp;
                     };
-                    [_air, time + 300, _gid] spawn {
-                        params ["_a", "_t", "_gid"];
-                        waitUntil {sleep 5; time > _t || !alive _a};
-                        ["ATO", 3, format["Mission timer expired or aircraft destroyed for group %1", _gid]] call FLO_fnc_log;
+                    // Set initial activity timestamp - precisionStrike will update this during attack runs
+                    _air setVariable ["FLO_lastActivityTime", time, true];
+
+                    // Activity-based timeout: release aircraft if inactive for 120 seconds
+                    // This allows multi-pass attacks to extend the mission duration
+                    [_air, _gid] spawn {
+                        params ["_a", "_gid"];
+                        private _inactivityTimeout = 120; // seconds of inactivity before release
+                        private _maxMissionTime = 900;    // absolute max mission time (15 min)
+                        private _startTime = time;
+
+                        waitUntil {
+                            sleep 5;
+                            if (!alive _a) exitWith { true };
+
+                            private _lastActivity = _a getVariable ["FLO_lastActivityTime", _startTime];
+                            private _inactive = (time - _lastActivity) > _inactivityTimeout;
+                            private _timedOut = (time - _startTime) > _maxMissionTime;
+
+                            _inactive || _timedOut
+                        };
+
+                        private _reason = if (!alive _a) then { "destroyed" } else {
+                            if ((time - (_a getVariable ["FLO_lastActivityTime", 0])) > _inactivityTimeout) then {
+                                "inactivity timeout"
+                            } else {
+                                "max mission time exceeded"
+                            };
+                        };
+                        ["ATO", 3, format["Mission ended for group %1: %2", _gid, _reason]] call FLO_fnc_log;
+
                         if (!isNull _a && alive _a && isNull (_a getVariable ["FLO_virtualGroupId", objNull])) then {
                             deleteVehicle _a;
                         };

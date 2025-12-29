@@ -324,21 +324,28 @@ if (_objective isEqualTo "civ_building") then {
 
 // Apply waypoints if any
 if (count _waypoints > 0) then {
-    {
-        private _wpPos = _x select 0;
-        private _wpType = _x select 1;
-        private _wpBehavior = _x select 2;
-        private _wpSpeed = _x select 3;
-        private _wpFormation = _x select 4;
-        private _wpMode = _x select 5;
-        
-        private _wp = _realGroup addWaypoint [_wpPos, 0];
-        _wp setWaypointType _wpType;
-        _wp setWaypointBehaviour _wpBehavior;
-        _wp setWaypointSpeed _wpSpeed;
-        _wp setWaypointFormation _wpFormation;
-        _wp setWaypointCombatMode _wpMode;
-    } forEach _waypoints;
+    // Safety check: if first waypoint is CYCLE, that's invalid for Arma
+    // This can happen if waypoints got corrupted. Skip CYCLE-only waypoint lists.
+    private _firstWpType = (_waypoints select 0) select 1;
+    if (_firstWpType == "CYCLE" && count _waypoints == 1) then {
+        ["VIRTUALIZATION", 2, format["Group %1 has only CYCLE waypoint - skipping invalid waypoints", _groupId]] call FLO_fnc_log;
+    } else {
+        {
+            private _wpPos = _x select 0;
+            private _wpType = _x select 1;
+            private _wpBehavior = _x select 2;
+            private _wpSpeed = _x select 3;
+            private _wpFormation = _x select 4;
+            private _wpMode = _x select 5;
+
+            private _wp = _realGroup addWaypoint [_wpPos, 0];
+            _wp setWaypointType _wpType;
+            _wp setWaypointBehaviour _wpBehavior;
+            _wp setWaypointSpeed _wpSpeed;
+            _wp setWaypointFormation _wpFormation;
+            _wp setWaypointCombatMode _wpMode;
+        } forEach _waypoints;
+    };
 };
 
 // Update debug marker if needed
