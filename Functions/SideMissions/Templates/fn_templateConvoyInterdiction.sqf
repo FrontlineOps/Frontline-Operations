@@ -115,7 +115,7 @@ private _template = createHashMapFromArray [
         // Create convoy group
         private _convoyGrp = createGroup East;
         _convoyGrp deleteGroupWhenEmpty true;
-        _convoyGrp setFormation "LINE";
+        _convoyGrp setFormation "COLUMN";
 
         // Calculate spawn direction
         private _connectedRoads = roadsConnectedTo _startRoad;

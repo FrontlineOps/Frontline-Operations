@@ -112,7 +112,7 @@ private _template = createHashMapFromArray [
         // Create convoy group
         private _convoyGrp = createGroup East;
         _convoyGrp deleteGroupWhenEmpty true;
-        _convoyGrp setFormation "LINE";
+        _convoyGrp setFormation "COLUMN";
 
         private _nextRoad = (roadsConnectedTo _startRoad) select 0;
         private _spawnDir = if (!isNull _nextRoad) then { _startRoad getDir _nextRoad } else { _startPos getDir _endPos };
