@@ -357,7 +357,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Get available groups for tasking from virtualization system
     ["_getAvailableGroups", {
-        params [["_count", 4]];
+        params [["_count", 4], ["_targetPos", []]];
 
         if (isNil "FLO_virtualGroups") exitWith { [] };
 
@@ -383,20 +383,45 @@ private _gtnCommander = createHashMapObject [[
             if (_groupType in ["civilian", "ambient"]) then { continue };
             if (_side != east) then { continue };
 
+            // Skip air assets (handled separately by ATO)
+            if (_groupType in ["helicopter", "jet", "air"]) then { continue };
+
             // Skip already tasked groups
             if (_groupId in _gtnTasked) then { continue };
 
             // Skip groups with active orders (unless patrolling)
             if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", ""])}) then { continue };
 
-            _available pushBack _groupId;
-
-            // Stop if we have enough
-            if (count _available >= _count) exitWith {};
+            _available pushBack [_groupId, _gData];
         } forEach _groups;
 
-        ["GTN", 3, format["Found %1 available groups (requested %2)", count _available, _count]] call FLO_fnc_log;
-        _available
+        // Sort by distance to target if position provided
+        if (count _targetPos >= 2) then {
+            _available = [_available, [], {
+                private _gData = _x select 1;
+                private _groupPos = _gData getOrDefault ["position", [0,0,0]];
+                _groupPos distance2D _targetPos
+            }, "ASCEND"] call BIS_fnc_sortBy;
+        };
+
+        // Take requested count and extract just group IDs
+        private _result = [];
+        {
+            if (count _result >= _count) exitWith {};
+            _result pushBack (_x select 0);
+        } forEach _available;
+
+        ["GTN", 3, format["Found %1 available groups (requested %2), nearest to %3", count _result, _count, _targetPos]] call FLO_fnc_log;
+
+        // Log distances for debugging
+        {
+            private _gData = (_groups getOrDefault [_x, createHashMap]);
+            private _groupPos = _gData getOrDefault ["position", [0,0,0]];
+            private _dist = if (count _targetPos >= 2) then { _groupPos distance2D _targetPos } else { -1 };
+            ["GTN", 4, format["  Group %1 at %2 (dist: %3m)", _x, _groupPos, round _dist]] call FLO_fnc_log;
+        } forEach _result;
+
+        _result
     }],
 
     // Mark groups as tasked by GTN

@@ -301,16 +301,22 @@ private _executor = createHashMapObject [[
 
             // Get objective position
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") exitWith { false };
+            if (isNil "_objPos") exitWith {
+                ["GTN", 2, format["Attack failed - no position for objective: %1", _objId]] call FLO_fnc_log;
+                false
+            };
 
-            // Get attack groups (from staging or available)
+            // Get attack groups (from staging or available) 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             private _groups = _primData getOrDefault ["assignedGroups", []];
 
             if (count _groups < 1) then {
-                _groups = _cmdr call ["_getAvailableGroups", [4]];
+                // Pass objective position so groups are sorted by proximity
+                _groups = _cmdr call ["_getAvailableGroups", [4, _objPos]];
             };
+
+            ["GTN", 3, format["Attacking %1 at %2 with %3 groups", _objId, _objPos, count _groups]] call FLO_fnc_log;
 
             // Order attack
             {

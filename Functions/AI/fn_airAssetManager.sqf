@@ -74,6 +74,11 @@ if (isNil "FLO_AirAssetManager") then {
             if (isNull _veh) exitWith {objNull};
 
             (_self get "missions") set [_gid, _veh];
+
+            // Mark group as on mission so virtualization system won't deactivate it
+            _gdata set ["onMission", true];
+            ["Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
+
             [_veh, _gid]
         }],
         ["_releaseAirAsset", {
@@ -81,7 +86,12 @@ if (isNil "FLO_AirAssetManager") then {
             private _missions = _self get "missions";
             if (_gid in _missions) then {
                 private _data = (FLO_virtualGroups get "_groups") get _gid;
-                if (!isNil "_data") then { [_gid, _data] call FLO_fnc_deactivateVirtualGroup; };
+                if (!isNil "_data") then {
+                    // Clear mission flag before deactivating
+                    _data set ["onMission", false];
+                    ["Air Asset Manager", 3, format["Cleared onMission flag for group %1, deactivating", _gid]] call FLO_fnc_log;
+                    [_gid, _data] call FLO_fnc_deactivateVirtualGroup;
+                };
                 (_self get "missions") deleteAt _gid;
             };
         }],

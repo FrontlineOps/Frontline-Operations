@@ -282,8 +282,14 @@ while {true} do {
                     [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;
                 } else {
                     if (_nearestPlayerDistance > _activationDistance && _isActive) then {
-                        ["VIRTUALIZATION", 3, format["Deactivating virtual group %1 (Distance: %2m)", _groupId, _nearestPlayerDistance]] call FLO_fnc_log;
-                        [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
+                        // Check if group is on a mission (e.g., CAS) - don't deactivate if so
+                        private _onMission = _groupData getOrDefault ["onMission", false];
+                        if (_onMission) then {
+                            ["VIRTUALIZATION", 4, format["Group %1 is on mission - skipping deactivation despite distance %2m", _groupId, round _nearestPlayerDistance]] call FLO_fnc_log;
+                        } else {
+                            ["VIRTUALIZATION", 3, format["Deactivating virtual group %1 (Distance: %2m)", _groupId, _nearestPlayerDistance]] call FLO_fnc_log;
+                            [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
+                        };
                     };
                 };
                 
