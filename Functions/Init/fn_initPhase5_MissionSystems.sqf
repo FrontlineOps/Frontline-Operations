@@ -225,12 +225,28 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         private _cmd = _savedData get "aiCommander";
         if (!isNil "_cmd" && {_cmd isEqualType createHashMap}) then {
+            // Core state
             FLO_AI_Commander set ["_threatLevel", _cmd getOrDefault ["threatLevel", 0]];
+            FLO_AI_Commander set ["_lastThreatLevel", _cmd getOrDefault ["lastThreatLevel", 0]];
             FLO_AI_Commander set ["_lastUpdate", _cmd getOrDefault ["lastUpdate", time]];
-            FLO_AI_Commander set ["_attackOperations", _cmd getOrDefault ["attackOperations", []]];
+
+            // Active operations
+            FLO_AI_Commander set ["_attackOperations", _cmd getOrDefault ["attackOperations", createHashMap]];
+            FLO_AI_Commander set ["_defenseOperations", _cmd getOrDefault ["defenseOperations", createHashMap]];
+            FLO_AI_Commander set ["_stagingPoints", _cmd getOrDefault ["stagingPoints", createHashMap]];
+
+            // Group tracking
             FLO_AI_Commander set ["_activeAttackGroups", _cmd getOrDefault ["activeAttackGroups", []]];
             FLO_AI_Commander set ["_activeDefenseGroups", _cmd getOrDefault ["activeDefenseGroups", []]];
             FLO_AI_Commander set ["_garrisonedGroups", _cmd getOrDefault ["garrisonedGroups", []]];
+            FLO_AI_Commander set ["_strategicReserve", _cmd getOrDefault ["strategicReserve", []]];
+
+            // GTN state - restore if it was enabled
+            private _gtnWasEnabled = _cmd getOrDefault ["gtnEnabled", false];
+            if (_gtnWasEnabled && {isNil {FLO_AI_Commander get "_gtnCommander"}}) then {
+                FLO_AI_Commander call ["_initializeGTN", []];
+            };
+
             diag_log "[FLO_INIT_P5] AI Commander state restored";
         };
     };

@@ -314,12 +314,24 @@ try {
     if (!isNil "FLO_Objectives") then { _data set ["objectives", FLO_Objectives]; };
     if (!isNil "FLO_AI_Commander") then {
         _data set ["aiCommander", createHashMapFromArray [
+            // Core state
             ["threatLevel", FLO_AI_Commander get "_threatLevel"],
+            ["lastThreatLevel", FLO_AI_Commander get "_lastThreatLevel"],
             ["lastUpdate", FLO_AI_Commander get "_lastUpdate"],
+
+            // Active operations
             ["attackOperations", FLO_AI_Commander get "_attackOperations"],
+            ["defenseOperations", FLO_AI_Commander get "_defenseOperations"],
+            ["stagingPoints", FLO_AI_Commander get "_stagingPoints"],
+
+            // Group tracking
             ["activeAttackGroups", FLO_AI_Commander get "_activeAttackGroups"],
             ["activeDefenseGroups", FLO_AI_Commander get "_activeDefenseGroups"],
-            ["garrisonedGroups", FLO_AI_Commander get "_garrisonedGroups"]
+            ["garrisonedGroups", FLO_AI_Commander get "_garrisonedGroups"],
+            ["strategicReserve", FLO_AI_Commander get "_strategicReserve"],
+
+            // GTN state
+            ["gtnEnabled", FLO_AI_Commander getOrDefault ["_gtnEnabled", false]]
         ]];
     };
     ["SAVE", 3, "Objectives and AI Commander saved"] call FLO_fnc_log;
