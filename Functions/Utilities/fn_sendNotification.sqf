@@ -26,23 +26,26 @@
 
 //IF SERVER NOTIFICATION - check intel levels
 if (isServer) then {
-    private _intelLevel = FLO_Intel_System get "intelLevel";
-    private _radioTowers = FLO_Intel_System get "radioTowers";
-
-    // Define intel and radio tower requirements for different notification types
-    private _requirements = switch (_type) do {
-        case "warning": { [50, 5] };  // High priority - needs good intel
-        case "intel": { [25, 3] };    // Medium priority
-        case "success": { [0, 0] };   // Always show
-        case "info": { [0, 0] };      // Always show
-        default { [25, 1] };          // Default to medium priority
+    // Get intel level from Intel System
+    private _intelLevel = if (!isNil "FLO_Intel_System") then {
+        FLO_Intel_System call ["getIntelLevel", []]
+    } else {
+        // Fallback to public variable if system not ready
+        if (!isNil "FLO_Intel_Level") then { FLO_Intel_Level } else { 0 }
     };
 
-    _requirements params ["_requiredIntel", "_requiredTowers"];
+    // Define intel requirements for different notification types
+    private _requiredIntel = switch (_type) do {
+        case "warning": { 50 };   // High priority - needs good intel
+        case "intel": { 25 };     // Medium priority
+        case "success": { 0 };    // Always show
+        case "info": { 0 };       // Always show
+        default { 25 };           // Default to medium priority
+    };
 
     // Check if we meet the requirements to show this notification and exit if not
-    if (_intelLevel < _requiredIntel || _radioTowers < _requiredTowers) exitWith {
-        ["Notification", 3, format ["Notification not shown due to insufficient intel level (%1) or radio towers (%2)", _intelLevel, _radioTowers]] call FLO_fnc_log;
+    if (_intelLevel < _requiredIntel) exitWith {
+        ["Notification", 3, format ["Notification not shown: intel %1 < required %2", _intelLevel, _requiredIntel]] call FLO_fnc_log;
         nil
     };
 };
