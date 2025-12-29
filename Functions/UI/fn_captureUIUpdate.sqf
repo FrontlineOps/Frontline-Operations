@@ -14,7 +14,9 @@
 if (!hasInterface) exitWith {};
 
 // Prevent multiple loops
-if (!isNil "FLO_CaptureUI_LoopRunning" && {FLO_CaptureUI_LoopRunning}) exitWith {};
+if (!isNil "FLO_CaptureUI_LoopRunning" && {FLO_CaptureUI_LoopRunning}) exitWith {
+    ["UI", 4, "Capture UI loop already running - skipping duplicate"] call FLO_fnc_log;
+};
 FLO_CaptureUI_LoopRunning = true;
 
 // Initialize state
@@ -23,7 +25,9 @@ FLO_CaptureUI_HTMLReady = false;
 FLO_CaptureUI_CurrentObj = "";
 
 // Wait for objectives to sync from server
-waitUntil { sleep 0.5; !isNil "FLO_Objectives" && {count keys FLO_Objectives > 0} };
+["UI", 3, "Capture UI waiting for FLO_Objectives sync..."] call FLO_fnc_log;
+waitUntil { sleep 0.5; !isNil "FLO_Objectives" && {FLO_Objectives isEqualType createHashMap} && {count keys FLO_Objectives > 0} };
+["UI", 3, format["Capture UI objectives synced: %1 objectives", count keys FLO_Objectives]] call FLO_fnc_log;
 
 // Fast polling for responsive UI (0.05s = 20 FPS)
 private _pollInterval = 0.05;
@@ -55,6 +59,8 @@ while {FLO_CaptureUI_LoopRunning} do {
 
         // Open display if not already open
         if (!FLO_CaptureUI_DisplayOpen) then {
+            ["UI", 3, format["Player entered objective %1 - opening capture UI", _name]] call FLO_fnc_log;
+
             1 cutRsc ["FLO_CaptureUI", "PLAIN", 0.1];
             FLO_CaptureUI_DisplayOpen = true;
             FLO_CaptureUI_HTMLReady = false;
@@ -66,13 +72,18 @@ while {FLO_CaptureUI_LoopRunning} do {
                 sleep 0.3;
 
                 private _display = uiNamespace getVariable ["FLO_CaptureUI_Display", displayNull];
-                if (!isNull _display) then {
-                    private _ctrl = _display displayCtrl 1101;
-                    if (!isNull _ctrl) then {
-                        _ctrl ctrlWebBrowserAction ["ExecJS", format ["showCaptureUI('%1')", _objName]];
-                        FLO_CaptureUI_HTMLReady = true;
-                    };
+                if (isNull _display) exitWith {
+                    ["UI", 1, "Capture UI display is NULL after cutRsc"] call FLO_fnc_log;
                 };
+
+                private _ctrl = _display displayCtrl 1101;
+                if (isNull _ctrl) exitWith {
+                    ["UI", 1, "Capture UI iframe control (1101) is NULL"] call FLO_fnc_log;
+                };
+
+                _ctrl ctrlWebBrowserAction ["ExecJS", format ["showCaptureUI('%1')", _objName]];
+                FLO_CaptureUI_HTMLReady = true;
+                ["UI", 4, format["Capture UI HTML ready for %1", _objName]] call FLO_fnc_log;
             };
         };
 
@@ -101,6 +112,8 @@ while {FLO_CaptureUI_LoopRunning} do {
     } else {
         // Player not in any objective - hide UI if open
         if (FLO_CaptureUI_DisplayOpen) then {
+            ["UI", 4, format["Player left objective %1 - hiding capture UI", FLO_CaptureUI_CurrentObj]] call FLO_fnc_log;
+
             private _display = uiNamespace getVariable ["FLO_CaptureUI_Display", displayNull];
             if (!isNull _display) then {
                 private _ctrl = _display displayCtrl 1101;
