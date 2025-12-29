@@ -67,19 +67,35 @@ while {FLO_CaptureUI_LoopRunning} do {
             FLO_CaptureUI_CurrentObj = _currentObjId;
 
             // Wait for HTML to load then show
+            // Uses polling with timeout for dedicated server compatibility
             [_name] spawn {
                 params ["_objName"];
-                sleep 0.3;
 
-                private _display = uiNamespace getVariable ["FLO_CaptureUI_Display", displayNull];
+                private _startTime = diag_tickTime;
+                private _timeout = 3;
+                private _display = displayNull;
+                private _ctrl = controlNull;
+
+                // Poll until display and control are ready
+                waitUntil {
+                    sleep 0.1;
+                    _display = uiNamespace getVariable ["FLO_CaptureUI_Display", displayNull];
+                    if (!isNull _display) then {
+                        _ctrl = _display displayCtrl 1101;
+                    };
+                    (!isNull _ctrl) || {(diag_tickTime - _startTime) > _timeout}
+                };
+
                 if (isNull _display) exitWith {
-                    ["UI", 1, "Capture UI display is NULL after cutRsc"] call FLO_fnc_log;
+                    ["UI", 1, "Capture UI display is NULL after timeout"] call FLO_fnc_log;
                 };
 
-                private _ctrl = _display displayCtrl 1101;
                 if (isNull _ctrl) exitWith {
-                    ["UI", 1, "Capture UI iframe control (1101) is NULL"] call FLO_fnc_log;
+                    ["UI", 1, "Capture UI iframe control (1101) is NULL after timeout"] call FLO_fnc_log;
                 };
+
+                // Additional delay for JavaScript initialization on dedicated
+                sleep 0.5;
 
                 _ctrl ctrlWebBrowserAction ["ExecJS", format ["showCaptureUI('%1')", _objName]];
                 FLO_CaptureUI_HTMLReady = true;
