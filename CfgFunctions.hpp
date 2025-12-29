@@ -28,25 +28,21 @@ class FLO {
 
         class artilleryAssetManager             {};
         class airAssetManager                   {};
-        class requestVirtualArtillery           {};
-        class precisionStrike                   {};
         class airTaskOrder                      {};
         class aiCommander                       {};
         class aiCommanderConfig                 {};
-        class aiCommanderUnitCapabilityAnalyzer {};
-        class aiCommanderStagingDebug           {};
-        class detectAirports                    {};
     };
 
     class GTN {
         file = "Functions\AI\GTN";
 
-        class gtnWorldState     {};
-        class gtnGoalLibrary    {};
-        class gtnPlanner        {};
-        class gtnExecutor       {};
-        class gtnMonitor        {};
-        class gtnCommander      {};
+        class gtnWorldState         {};
+        class gtnGoalLibrary        {};
+        class gtnPlanner            {};
+        class gtnExecutor           {};
+        class gtnMonitor            {};
+        class gtnCommander          {};
+        class gtnCapabilityAnalyzer {};
     };
     
     class Interactions {

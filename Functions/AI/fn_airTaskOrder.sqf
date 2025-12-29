@@ -55,19 +55,41 @@ if (isNil "FLO_airTaskOrder") then {
                 };
 
                 if (!isNull _air) then {
-                    if (_mission in ["BOMB", "LASER", "CAS"]) then {
-                        ["ATO", 3, format["Spawning precision strike: %1 -> %2", typeOf _air, _pos]] call FLO_fnc_log;
-                        [_air, _pos, _mission, _alt] spawn FLO_fnc_precisionStrike;
-                    } else {
-                        ["ATO", 3, format["Setting SAD waypoint for %1", _air]] call FLO_fnc_log;
-                        private _wp = _grp addWaypoint [_pos, 0];
+                    // All air missions use SAD waypoints - simple and reliable
+                    // Create multiple SAD waypoints around the target area
+                    ["ATO", 3, format["Setting SAD waypoints for %1 at %2", typeOf _air, _pos]] call FLO_fnc_log;
+
+                    // Clear existing waypoints
+                    while {count waypoints _grp > 0} do {
+                        deleteWaypoint [_grp, 0];
+                    };
+
+                    // Set combat behavior
+                    _grp setBehaviour "COMBAT";
+                    _grp setCombatMode "RED";
+                    _grp setSpeedMode "FULL";
+
+                    // Create 3 SAD waypoints in a triangle around the target
+                    // This keeps the aircraft circling and engaging in the area
+                    private _sadRadius = 500; // Search radius around target
+
+                    for "_i" from 0 to 2 do {
+                        private _angle = _i * 120; // 0, 120, 240 degrees
+                        private _wpPos = _pos getPos [_sadRadius, _angle];
+                        private _wp = _grp addWaypoint [_wpPos, 100];
                         _wp setWaypointType "SAD";
                         _wp setWaypointBehaviour "COMBAT";
                         _wp setWaypointCombatMode "RED";
                         _wp setWaypointSpeed "FULL";
-                        _grp setCurrentWaypoint _wp;
+                        _wp setWaypointTimeout [30, 45, 60]; // Stay in area 30-60 seconds
                     };
-                    // Set initial activity timestamp - precisionStrike will update this during attack runs
+
+                    // Add a CYCLE waypoint to loop back
+                    private _cycleWp = _grp addWaypoint [_pos, 100];
+                    _cycleWp setWaypointType "CYCLE";
+
+                    _grp setCurrentWaypoint [_grp, 1];
+                    // Set initial activity timestamp
                     _air setVariable ["FLO_lastActivityTime", time, true];
 
                     // Activity-based timeout: release aircraft if inactive for 120 seconds

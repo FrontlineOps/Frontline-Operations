@@ -103,57 +103,7 @@ if (isNil "FLO_AirAssetManager") then {
             };
         }],
 
-        // Find nearest airport for an aircraft type
-        ["_findNearestAirport", {
-            params ["_pos", ["_aircraftType", "helicopter"]];
-
-            if (isNil "FLO_Airports") then { call FLO_fnc_detectAirports; };
-            if (isNil "FLO_Airports" || {count FLO_Airports == 0}) exitWith { nil };
-
-            private _isJet = _aircraftType in ["jet", "plane", "fixed_wing"];
-            private _validAirports = [];
-
-            {
-                private _airportData = _y;
-                private _airportType = _airportData get "type";
-
-                // Jets need runways, helicopters can use helipads
-                if (_isJet) then {
-                    if (_airportType in ["AIRFIELD", "MIXED"]) then {
-                        _validAirports pushBack [_x, _airportData];
-                    };
-                } else {
-                    // Helicopters can use any airport
-                    _validAirports pushBack [_x, _airportData];
-                };
-            } forEach FLO_Airports;
-
-            if (count _validAirports == 0) exitWith { nil };
-
-            // Sort by distance
-            private _sorted = [_validAirports, [], {(_x select 1) get "position" distance2D _pos}, "ASCEND"] call BIS_fnc_sortBy;
-            _sorted select 0
-        }],
-
-        // Assign aircraft to an airport
-        ["_assignToAirport", {
-            params ["_groupId", "_airportId"];
-
-            if (isNil "FLO_Airports") exitWith { false };
-            private _airport = FLO_Airports getOrDefault [_airportId, nil];
-            if (isNil "_airport") exitWith { false };
-
-            private _assigned = _airport get "assignedAircraft";
-            if !(_groupId in _assigned) then {
-                _assigned pushBack _groupId;
-                _airport set ["assignedAircraft", _assigned];
-            };
-
-            ["Air Asset Manager", 4, format["Assigned aircraft %1 to airport %2", _groupId, _airportId]] call FLO_fnc_log;
-            true
-        }],
-
-        // Get RTB position for an aircraft
+        // Get RTB position for an aircraft (returns spawn position)
         ["_getRTBPosition", {
             params ["_groupId"];
 
@@ -161,32 +111,8 @@ if (isNil "FLO_AirAssetManager") then {
             private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
             if (isNil "_gData") exitWith { nil };
 
-            private _pos = _gData get "position";
-            private _gType = _gData getOrDefault ["groupType", "helicopter"];
-
-            // Find nearest suitable airport
-            private _airport = _self call ["_findNearestAirport", [_pos, _gType]];
-            if (isNil "_airport") exitWith { _pos }; // Return to current position if no airport
-
-            private _airportData = _airport select 1;
-            private _airportPos = _airportData get "position";
-
-            // For jets, return runway position; for helicopters, return helipad if available
-            if (_gType in ["jet", "plane", "fixed_wing"]) then {
-                private _runways = _airportData get "runways";
-                if (count _runways > 0) then {
-                    (_runways select 0) select 0
-                } else {
-                    _airportPos
-                };
-            } else {
-                private _helipads = _airportData get "helipads";
-                if (count _helipads > 0) then {
-                    (_helipads select 0) select 0
-                } else {
-                    _airportPos
-                };
-            }
+            // Return the group's original spawn position
+            _gData get "position"
         }],
 
         // Send aircraft to RTB
@@ -199,16 +125,36 @@ if (isNil "FLO_AirAssetManager") then {
             private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
             if (isNil "_gData") exitWith { false };
 
-            // Set RTB waypoints
+            // Set RTB waypoints - fly to original position and loiter
             private _waypoints = [
                 [_rtbPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 50],
-                [_rtbPos, "LAND", "SAFE", "NORMAL", "COLUMN", "GREEN", 10]
+                [_rtbPos, "LOITER", "SAFE", "LIMITED", "COLUMN", "GREEN", 500]
             ];
             [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
             _gData set ["currentOrder", "RTB"];
 
             ["Air Asset Manager", 3, format["Sent aircraft %1 to RTB at %2", _groupId, _rtbPos]] call FLO_fnc_log;
             true
+        }],
+
+        // Get available aircraft for missions
+        ["_getAvailableAircraft", {
+            if (isNil "FLO_virtualGroups") exitWith { [] };
+            private _groups = FLO_virtualGroups get "_groups";
+            private _missions = _self get "missions";
+            private _available = [];
+
+            {
+                private _gData = _y;
+                private _gType = _gData getOrDefault ["groupType", ""];
+                if (_gType in ["helicopter", "jet", "air"]) then {
+                    if !(_x in _missions) then {
+                        _available pushBack _x;
+                    };
+                };
+            } forEach _groups;
+
+            _available
         }]
     ]];
 };

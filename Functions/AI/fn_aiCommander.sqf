@@ -1640,9 +1640,6 @@ private _aiCommander = createHashMapObject [[
 ["AI Commander", 3, format["Initialized with strategy interval: %1s, update interval: %2s",
     _config get "strategyInterval", _config get "updateInterval"]] call FLO_fnc_log;
 
-// Detect airports for air operations
-call FLO_fnc_detectAirports;
-
 // Initialize groups
 _aiCommander call ["_initializeGroups", []];
 

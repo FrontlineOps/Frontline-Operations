@@ -33,6 +33,7 @@ private _goalLibrary = call FLO_fnc_gtnGoalLibrary;
 private _planner = [_goalLibrary, _worldState] call FLO_fnc_gtnPlanner;
 private _executor = [_commander] call FLO_fnc_gtnExecutor;
 private _monitor = [_planner, _worldState] call FLO_fnc_gtnMonitor;
+private _capabilityAnalyzer = call FLO_fnc_gtnCapabilityAnalyzer;
 
 // Link world state to commander
 _worldState call ["_setCommander", [_commander]];
@@ -45,6 +46,7 @@ private _gtnCommander = createHashMapObject [[
     ["_planner", _planner],
     ["_executor", _executor],
     ["_monitor", _monitor],
+    ["_capabilityAnalyzer", _capabilityAnalyzer],
     
     // State (using 0/1 for booleans to avoid parsing issues)
     ["_isRunning", 0],
@@ -536,7 +538,8 @@ private _gtnCommander = createHashMapObject [[
     ["_requestArtillery", {
         params ["_pos", "_missionType", "_rounds"];
 
-        private _success = [_pos, _rounds] call FLO_fnc_requestVirtualArtillery;
+        private _manager = call FLO_fnc_artilleryAssetManager;
+        private _success = _manager call ["_requestFireMission", [_pos, _rounds]];
 
         if (_success) then {
             ["GTN", 3, format["Artillery %1 mission fired at %2 (%3 rounds)", _missionType, _pos, _rounds]] call FLO_fnc_log;
