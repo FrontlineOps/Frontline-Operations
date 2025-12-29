@@ -110,12 +110,23 @@ if (!_isSavedGame && !StartingLocationDone) then {
 
     call _fnc_validateCommander;
 
-    // Launch faction selection for commander
-    if (_player isEqualTo TheCommander) then {
-        ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
-        execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+    // Check if this is a loaded save - if so, skip the faction dialog
+    // Wait briefly for server to set FLO_IsLoadedSave
+    private _saveCheckStart = diag_tickTime;
+    waitUntil { sleep 0.2; !isNil "FLO_IsLoadedSave" || (diag_tickTime - _saveCheckStart > 5) };
+
+    private _isLoadedSave = !isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave};
+
+    if (_isLoadedSave) then {
+        ["INIT_CLIENT", 3, "Loading from saved game - skipping faction selection dialog"] call FLO_fnc_log;
     } else {
-        ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+        // Launch faction selection for commander (fresh start only)
+        if (_player isEqualTo TheCommander) then {
+            ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
+            execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+        } else {
+            ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+        };
     };
 };
 
