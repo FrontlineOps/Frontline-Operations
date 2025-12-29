@@ -1350,15 +1350,15 @@ private _aiCommander = createHashMapObject [[
 
         switch (_missionType) do {
             case "PREPARATORY": {
-                // Pre-attack strikes - use heavy ordnance
+                // Pre-attack strikes
                 _mission = "BOMB";
-                _alt = 400; // Higher altitude for safety
+                _alt = 400;
                 _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
 
                 // Schedule follow-up strike
                 [_targetPos, _mission, _type, _alt, _ato] spawn {
                     params ["_pos", "_miss", "_typ", "_altitude", "_airTaskOrder"];
-                    sleep (60 + random 60); // 1-2 minutes later
+                    sleep (60 + random 60);
                     _airTaskOrder call ["_addTask", [_pos, _miss, _typ, _altitude]];
                 };
 
@@ -1368,62 +1368,19 @@ private _aiCommander = createHashMapObject [[
 
             case "SEAD": {
                 // Suppress Enemy Air Defenses
-                _mission = "LASER"; // Precision strikes against AA
+                _mission = "LASER";
                 _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
                 _success = true;
                 ["AI Commander", 3, format["SEAD mission ordered at %1", _targetPos]] call FLO_fnc_log;
             };
 
             case "CAP": {
-                // Combat Air Patrol - establish air superiority
-                private _airMgr = _self get "_airAssetManager";
-                private _asset = _airMgr call ["_requestAirAsset", [_targetPos, "CAP"]];
-
-                // _requestAirAsset returns [vehicle, groupId] or objNull
-                if (_asset isNotEqualTo objNull) then {
-                    _asset params ["_aircraft", "_gid"];
-
-                    if (!isNull _aircraft) then {
-                        // Set up patrol pattern around target area
-                        private _patrolRadius = 2000;
-                        private _patrolWaypoints = [];
-                        for "_i" from 0 to 3 do {
-                            private _dir = _i * 90;
-                            private _patrolPos = _targetPos getPos [_patrolRadius, _dir];
-                            _patrolWaypoints pushBack _patrolPos;
-                        };
-
-                        // Create patrol waypoints for the aircraft
-                        private _grp = group _aircraft;
-                        _aircraft flyInHeight _alt;
-
-                        {
-                            private _wp = _grp addWaypoint [_x, 0];
-                            _wp setWaypointType "MOVE";
-                            _wp setWaypointBehaviour "COMBAT";
-                            _wp setWaypointCombatMode "RED";
-                            _wp setWaypointSpeed "NORMAL";
-                        } forEach _patrolWaypoints;
-
-                        // Add cycle waypoint to continue patrol
-                        private _cycleWp = _grp addWaypoint [_patrolWaypoints select 0, 0];
-                        _cycleWp setWaypointType "CYCLE";
-
-                        _success = true;
-                        ["AI Commander", 3, format["CAP established over %1 with aircraft %2 (group %3)", _targetPos, typeOf _aircraft, _gid]] call FLO_fnc_log;
-
-                        // CAP patrol timer - release after 10 minutes or if destroyed
-                        [_aircraft, time + 600, _gid, _airMgr] spawn {
-                            params ["_a", "_t", "_gid", "_mgr"];
-                            waitUntil {sleep 10; time > _t || !alive _a};
-                            ["AI Commander", 3, format["CAP mission complete for group %1", _gid]] call FLO_fnc_log;
-                            // Release the air asset (clears onMission flag and deactivates)
-                            if (!isNil "_gid" && {_gid isNotEqualTo ""}) then {
-                                _mgr call ["_releaseAirAsset", [_gid]];
-                            };
-                        };
-                    };
-                };
+                // Combat Air Patrol
+                _mission = "CAP";
+                _alt = if (_alt < 0) then { 300 } else { _alt };
+                _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
+                _success = true;
+                ["AI Commander", 3, format["CAP mission queued at %1 via ATO", _targetPos]] call FLO_fnc_log;
             };
 
             case "INTERDICTION": {
@@ -1435,7 +1392,7 @@ private _aiCommander = createHashMapObject [[
             };
 
             default {
-                // Immediate support (original behavior)
+                // Immediate support
                 _ato call ["_addTask", [_targetPos, _mission, _type, _alt]];
                 _success = true;
             };

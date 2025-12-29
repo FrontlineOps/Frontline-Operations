@@ -94,10 +94,14 @@ if (isNil "FLO_AirAssetManager") then {
             if (_gid in _missions) then {
                 private _data = (FLO_virtualGroups get "_groups") get _gid;
                 if (!isNil "_data") then {
-                    // Clear mission flag before deactivating
+                    // Clear mission flag - allows natural virtualization when far from players
                     _data set ["onMission", false];
-                    ["Air Asset Manager", 3, format["Cleared onMission flag for group %1, deactivating", _gid]] call FLO_fnc_log;
-                    [_gid, _data] call FLO_fnc_deactivateVirtualGroup;
+
+                    // Send to RTB instead of forcing immediate deactivation
+                    // The virtualization system will naturally deactivate when far from players
+                    _self call ["_sendToRTB", [_gid]];
+
+                    ["Air Asset Manager", 3, format["Released air asset %1 - RTB ordered, natural virtualization will handle deactivation", _gid]] call FLO_fnc_log;
                 };
                 (_self get "missions") deleteAt _gid;
             };
@@ -115,7 +119,7 @@ if (isNil "FLO_AirAssetManager") then {
             _gData get "position"
         }],
 
-        // Send aircraft to RTB
+        // Send aircraft to RTB - works for both active (real) and virtual groups
         ["_sendToRTB", {
             params ["_groupId"];
 
@@ -125,15 +129,49 @@ if (isNil "FLO_AirAssetManager") then {
             private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
             if (isNil "_gData") exitWith { false };
 
-            // Set RTB waypoints - fly to original position and loiter
-            private _waypoints = [
-                [_rtbPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 50],
-                [_rtbPos, "LOITER", "SAFE", "LIMITED", "COLUMN", "GREEN", 500]
-            ];
-            [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
-            _gData set ["currentOrder", "RTB"];
+            private _isActive = _gData getOrDefault ["isActive", false];
+            private _realGroup = _gData getOrDefault ["realGroup", grpNull];
 
-            ["Air Asset Manager", 3, format["Sent aircraft %1 to RTB at %2", _groupId, _rtbPos]] call FLO_fnc_log;
+            if (_isActive && !isNull _realGroup) then {
+                // Active group - set real waypoints on the actual group
+                // Clear existing waypoints
+                while {count waypoints _realGroup > 0} do {
+                    deleteWaypoint [_realGroup, 0];
+                };
+
+                // Set safe behavior for RTB
+                _realGroup setBehaviour "SAFE";
+                _realGroup setCombatMode "GREEN";
+                _realGroup setSpeedMode "NORMAL";
+
+                // Create RTB waypoint
+                private _wp = _realGroup addWaypoint [_rtbPos, 50];
+                _wp setWaypointType "MOVE";
+                _wp setWaypointBehaviour "SAFE";
+                _wp setWaypointCombatMode "GREEN";
+                _wp setWaypointSpeed "NORMAL";
+
+                // Add loiter waypoint at RTB position
+                private _loiterWp = _realGroup addWaypoint [_rtbPos, 500];
+                _loiterWp setWaypointType "LOITER";
+                _loiterWp setWaypointLoiterType "CIRCLE";
+                _loiterWp setWaypointLoiterRadius 500;
+
+                _realGroup setCurrentWaypoint [_realGroup, 1];
+
+                ["Air Asset Manager", 3, format["Set real RTB waypoints for active aircraft %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
+            } else {
+                // Virtual group - use virtual waypoint system
+                private _waypoints = [
+                    [_rtbPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 50],
+                    [_rtbPos, "LOITER", "SAFE", "LIMITED", "COLUMN", "GREEN", 500]
+                ];
+                [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+
+                ["Air Asset Manager", 3, format["Set virtual RTB waypoints for group %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
+            };
+
+            _gData set ["currentOrder", "RTB"];
             true
         }],
 

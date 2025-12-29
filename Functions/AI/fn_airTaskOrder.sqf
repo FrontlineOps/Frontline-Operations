@@ -6,6 +6,11 @@
     Missions only use existing virtual air assets. If no suitable aircraft is
     available the task is skipped.
 
+    Mission Types and Durations:
+    - CAS/BOMB/LASER: 5 minutes (combat missions, engage and leave)
+    - CAP: 10 minutes (patrol missions, sustained presence)
+    - SAD: 8 minutes (search and destroy, extended engagement)
+
     Returns:
     HashMap - ATO object with methods:
         _addTask - Add a mission to the queue [position, missionType, aircraftType, altitude]
@@ -17,6 +22,20 @@ if (!isServer) exitWith {};
 if (isNil "FLO_airTaskOrder") then {
     FLO_airTaskOrder = createHashMapObject [[
         ["_taskQueue", []],
+
+        // Get mission duration based on type
+        ["_getMissionDuration", {
+            params ["_missionType"];
+            switch (toUpper _missionType) do {
+                case "CAP": { 600 };      // 10 minutes for patrol
+                case "SAD": { 480 };      // 8 minutes for search & destroy
+                case "CAS": { 300 };      // 5 minutes for close air support
+                case "BOMB": { 300 };     // 5 minutes for bombing runs
+                case "LASER": { 300 };    // 5 minutes for precision strikes
+                default { 300 };          // 5 minutes default
+            };
+        }],
+
         ["_addTask", {
             params [
                 ["_pos", [0,0,0], [[]], [3]],
@@ -28,6 +47,7 @@ if (isNil "FLO_airTaskOrder") then {
             _queue pushBack [_pos, _missionType, _aircraftType, _altitude];
             _self set ["_taskQueue", _queue];
         }],
+
         ["_processTasks", {
             private _queue = _self get "_taskQueue";
             private _mgr = call FLO_fnc_airAssetManager;
@@ -55,9 +75,15 @@ if (isNil "FLO_airTaskOrder") then {
                 };
 
                 if (!isNull _air) then {
-                    // All air missions use SAD waypoints - simple and reliable
-                    // Create multiple SAD waypoints around the target area
-                    ["ATO", 3, format["Setting SAD waypoints for %1 at %2", typeOf _air, _pos]] call FLO_fnc_log;
+                    // Get mission duration based on type
+                    private _missionDuration = _self call ["_getMissionDuration", [_mission]];
+
+                    // Determine waypoint pattern based on mission type
+                    private _waypointType = if (toUpper _mission == "CAP") then { "MOVE" } else { "SAD" };
+                    private _patrolRadius = if (toUpper _mission == "CAP") then { 2000 } else { 500 };
+                    private _waypointCount = if (toUpper _mission == "CAP") then { 4 } else { 3 };
+
+                    ["ATO", 3, format["Setting %1 waypoints for %2 at %3 (duration: %4s)", _waypointType, typeOf _air, _pos, _missionDuration]] call FLO_fnc_log;
 
                     // Clear existing waypoints
                     while {count waypoints _grp > 0} do {
@@ -69,19 +95,22 @@ if (isNil "FLO_airTaskOrder") then {
                     _grp setCombatMode "RED";
                     _grp setSpeedMode "FULL";
 
-                    // Create 3 SAD waypoints in a triangle around the target
-                    // This keeps the aircraft circling and engaging in the area
-                    private _sadRadius = 500; // Search radius around target
-
-                    for "_i" from 0 to 2 do {
-                        private _angle = _i * 120; // 0, 120, 240 degrees
-                        private _wpPos = _pos getPos [_sadRadius, _angle];
+                    // Create waypoints in a pattern around the target
+                    private _angleStep = 360 / _waypointCount;
+                    for "_i" from 0 to (_waypointCount - 1) do {
+                        private _angle = _i * _angleStep;
+                        private _wpPos = _pos getPos [_patrolRadius, _angle];
                         private _wp = _grp addWaypoint [_wpPos, 100];
-                        _wp setWaypointType "SAD";
+                        _wp setWaypointType _waypointType;
                         _wp setWaypointBehaviour "COMBAT";
                         _wp setWaypointCombatMode "RED";
                         _wp setWaypointSpeed "FULL";
-                        _wp setWaypointTimeout [30, 45, 60]; // Stay in area 30-60 seconds
+                        // Longer timeout for CAP patrols
+                        if (_waypointType == "MOVE") then {
+                            _wp setWaypointTimeout [60, 90, 120];
+                        } else {
+                            _wp setWaypointTimeout [30, 45, 60];
+                        };
                     };
 
                     // Add a CYCLE waypoint to loop back
@@ -89,40 +118,28 @@ if (isNil "FLO_airTaskOrder") then {
                     _cycleWp setWaypointType "CYCLE";
 
                     _grp setCurrentWaypoint [_grp, 1];
-                    // Set initial activity timestamp
-                    _air setVariable ["FLO_lastActivityTime", time, true];
 
-                    // Activity-based timeout: release aircraft if inactive for 120 seconds
-                    // This allows multi-pass attacks to extend the mission duration
-                    [_air, _gid] spawn {
-                        params ["_a", "_gid"];
-                        private _inactivityTimeout = 120; // seconds of inactivity before release
-                        private _maxMissionTime = 900;    // absolute max mission time (15 min)
+                    // Mission timer: release aircraft after mission duration or if destroyed
+                    // Simple time-based approach - aircraft stays on station for the full duration
+                    [_air, _gid, _missionDuration, _mission] spawn {
+                        params ["_a", "_gid", "_duration", "_missionType"];
                         private _startTime = time;
+                        private _endTime = _startTime + _duration;
+
+                        ["ATO", 3, format["Mission timer started for %1: %2s duration, ends at %3", _gid, _duration, _endTime]] call FLO_fnc_log;
 
                         waitUntil {
-                            sleep 5;
-                            if (!alive _a) exitWith { true };
-
-                            private _lastActivity = _a getVariable ["FLO_lastActivityTime", _startTime];
-                            private _inactive = (time - _lastActivity) > _inactivityTimeout;
-                            private _timedOut = (time - _startTime) > _maxMissionTime;
-
-                            _inactive || _timedOut
+                            sleep 10;
+                            !alive _a || time >= _endTime
                         };
 
-                        private _reason = if (!alive _a) then { "destroyed" } else {
-                            if ((time - (_a getVariable ["FLO_lastActivityTime", 0])) > _inactivityTimeout) then {
-                                "inactivity timeout"
-                            } else {
-                                "max mission time exceeded"
-                            };
+                        private _reason = if (!alive _a) then {
+                            "aircraft destroyed"
+                        } else {
+                            format["mission duration complete (%1s)", _duration]
                         };
                         ["ATO", 3, format["Mission ended for group %1: %2", _gid, _reason]] call FLO_fnc_log;
 
-                        if (!isNull _a && alive _a && isNull (_a getVariable ["FLO_virtualGroupId", objNull])) then {
-                            deleteVehicle _a;
-                        };
                         // Release the air asset (clears onMission flag and deactivates)
                         if (!isNil "_gid" && {_gid isNotEqualTo ""}) then {
                             (call FLO_fnc_airAssetManager) call ["_releaseAirAsset", [_gid]];
