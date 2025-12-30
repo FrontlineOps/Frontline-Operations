@@ -1,316 +1,461 @@
-# FLO: Frontline Operations - Altis
+# FLO: Frontline Operations
 
-**Current Version**: 1.6.1
+**Current Version**: 2.0 - Alpha 5
 
-A dynamic frontline operations mission for Arma 3 that creates an evolving battlefield with intelligent OPFOR forces, logistics systems, and garrison management.
+A dynamic frontline operations mission for Arma 3 featuring intelligent AI commanders, virtualized forces, resource-based logistics, and persistent save states.
+
+---
+
+## Table of Contents
+
+1. [Features](#features)
+2. [Quick Start](#quick-start)
+3. [Mission Setup](#mission-setup)
+4. [Faction Configuration](#faction-configuration)
+5. [Parameter Reference](#parameter-reference)
+6. [Systems Overview](#systems-overview)
+7. [Server Administration](#server-administration)
+8. [Contributing](#contributing)
+
+---
 
 ## Features
-- Dynamic frontline system with intelligent OPFOR forces
-- Advanced logistics and supply network
-- Garrison management system
-- Intel gathering and radio tower control mechanics
-- Automated resource management for OPFOR forces
-- Dynamic vehicle spawning system
-- Virtualized artillery asset manager for shoot-and-scoot fire missions
-- Virtual artillery fire support via `FLO_fnc_requestVirtualArtillery`
-- AI Commander automatically calls artillery during assaults (warning notifications)
-- Air Tasking Order system uses existing virtual aircraft for CAS and strike missions (no new spawns)
-- Virtual air asset manager acquires aircraft already present in the virtualization system
-- Customizable faction loadouts and equipment
-- Extensible side mission framework for intel events including POW rescue, intel gathering, convoy ambushes, patrol sweeps and sabotage missions
 
-## Setup Instructions
+### Core Systems
+- **Dynamic Frontline** - Evolving battlefield with OPFOR forces that defend, reinforce, and counterattack
+- **Virtualization System** - Thousands of units simulated with minimal performance impact; only spawn when players approach
+- **AI Commander (GTN)** - Goal Task Network-based AI that plans operations, calls fire support, and coordinates reinforcements
+- **Persistent Save System** - Full mission state saved including objectives, resources, intel, and all virtual groups
 
-### Basic Mission Setup
-1. Download the mission files (MAKE SURE YOU UNPACK THE PBO)
-2. Place in your Arma 3 missions folder: `Documents/Arma 3 (Or Other Profile)/missions/`
-3. Load the mission in the Arma 3 editor to customize settings
+### Combat & Operations
+- **Virtual Artillery** - OPFOR artillery with shoot-and-scoot behavior, counterbattery avoidance
+- **Air Tasking Orders** - AI Commander requests CAS and strike missions from available aircraft
+- **Convoy Systems** - Supply convoys, HVT convoys, and convoy interdiction missions
+- **Side Mission Framework** - Modular system for rescue, sabotage, intel gathering, and patrol missions
 
-### Faction Customization
+### Logistics & Resources
+- **OPFOR Resource System** - Enemy forces consume resources to reinforce, resupply, and execute operations
+- **Intel System** - BLUFOR intel generation based on controlled territory; affects notification visibility
+- **Logistics Network** - Automated replacement of destroyed OPFOR groups using resource pools
 
-#### OPFOR Forces Setup
-- There are two ways to make factions. 
-1. For people using it for individual Unit/Community Usage. I recommend using the files:
-- `CUSTOM_CIVILIAN_FACTION, CUSTOM_FRIENDLY_FACTION, CUSTOM_ENEMY_FACTION`
-2. Create a new faction file in `Scripts/factions/` (e.g., `opf_custom.sqf`) with the following structure. This is useful for people wanting to contribute to the Github by adding new factions that be used by everyone.
+### Player Features
+- **FOB & OP Construction** - Build forward operating bases with full logistics support
+- **Restricted Arsenal** - Configurable loadout restrictions (ACE compatible)
+- **Civilian Relations** - Reputation system affecting intel and guerrilla activity
+
+---
+
+## Quick Start
+
+1. **Download** the mission files and **unpack the PBO**
+2. Place in: `Documents/Arma 3/missions/` (or your profile's missions folder)
+3. Load in Eden Editor, place player units, and export/play
+4. On first launch, the **Commander** selects factions and starting parameters
+
+---
+
+## Mission Setup
+
+### Initialization Flow
+
+The mission uses a phased initialization system:
+
+| Phase | Name | Description |
+|-------|------|-------------|
+| 0 | Save Detection | Check for existing save, load config if present |
+| 1 | Mission Config | Wait for Commander's faction dialog (or use saved config) |
+| 2 | Factions | Load faction scripts (units, vehicles, groups) |
+| 3 | Objectives | Index map locations or restore from save |
+| 4 | Virtualization | Create virtual OPFOR groups at objectives |
+| 5 | Mission Systems | Start AI Commander, side missions, logistics |
+
+### Required Editor Setup
+
+Follow these steps to set up the mission in Eden Editor:
+
+1. **Open the Mission**
+   - Launch Arma 3 and open Eden Editor
+   - Load the FLO mission from your missions folder
+
+2. **Place Player Units**
+   - Place at least one playable unit (BLUFOR recommended)
+   - Position units at a safe starting location (away from OPFOR objectives)
+
+3. **Designate the Commander**
+   - Select ONE player unit who will be the mission commander
+   - In the unit's init field, add: `TheCommander = this;`
+   - This player will configure factions and mission parameters at start
+
+4. **Configure Respawn (Optional)**
+   - Place a respawn marker named `respawn_west` for BLUFOR respawn
+   - Or use the FOB system for dynamic respawn points
+
+5. **Test the Mission**
+   - Preview the mission in multiplayer mode (even for single player testing)
+   - The Commander will see the faction selection dialog on first load
+
+### Starting the Mission
+
+- **Fresh Start**: Commander gets faction selection dialog to choose BLUFOR, OPFOR, and civilian factions
+- **Saved Game**: Automatically loads previous state (controlled by lobby parameter)
+- **Tip**: Use the "Reset" option in lobby parameters to force a fresh start
+
+---
+
+## Faction Configuration
+
+### Quick Setup (Recommended for Communities)
+
+Edit the three CUSTOM faction files in the mission root:
+
+| File | Purpose |
+|------|---------|
+| `CUSTOM_ENEMY_FACTION.sqf` | OPFOR units, vehicles, and garrison configuration |
+| `CUSTOM_PLAYER_FACTION.sqf` | BLUFOR units, vehicles, and purchasable assets |
+| `CUSTOM_CIVILIAN_FACTION.sqf` | Civilian and guerrilla populations |
+
+### Creating a New OPFOR Faction
 
 ```sqf
-// Vehicle Arrays
-East_Ground_Vehicles_Light = [
-    "O_MRAP_02_F",
-    "O_MRAP_02_hmg_F"
-];
+// === VEHICLE ARRAYS ===
+East_Ground_Vehicles_Ambient = ["classname1", "classname2"];  // Patrol/ambient vehicles
+East_Ground_Vehicles_Light = ["armed_mrap", "armed_lsv"];     // Light combat vehicles
+East_Ground_Vehicles_Heavy = ["tank", "apc"];                  // Heavy armor
+East_Ground_Transport = ["truck", "unarmed_mrap"];            // Transport vehicles
+East_Air_Transport = ["transport_heli"];                       // Transport helicopters
+East_Air_Heli = ["attack_heli"];                               // Attack helicopters
+East_Air_Jet = ["fighter", "cas_plane"];                       // Fixed-wing aircraft
+East_Ground_Artillery = ["howitzer"];                          // Artillery pieces
+East_Air_Drone = ["uav"];                                      // Drones
 
-East_Ground_Vehicles_Heavy = [
-    "O_MBT_02_cannon_F",
-    "O_APC_Tracked_02_cannon_F"
-];
-
-East_Air_Heli = [
-    "O_Heli_Attack_02_F",
-    "O_Heli_Light_02_F"
-];
-
-// Infantry Arrays
+// === INFANTRY ARRAYS ===
 East_Units = [
-    "O_Soldier_F",
-    "O_Soldier_GL_F",
-    "O_Soldier_AR_F"
+    "rifleman", "rifleman", "rifleman",  // Higher frequency = more common
+    "autorifleman", "autorifleman",
+    "grenadier",
+    "at_specialist",                      // Lower frequency = less common
+    "aa_specialist"
 ];
+East_Units_Officers = ["officer"];
+East_FireObserver = ["forward_observer"];
 
-// ... other arrays
+// === GROUP DEFINITIONS ===
+East_Groups = [
+    (configfile >> "CfgGroups" >> "East" >> "FACTION" >> "Infantry" >> "GroupClass1"),
+    (configfile >> "CfgGroups" >> "East" >> "FACTION" >> "Infantry" >> "GroupClass2")
+];
 ```
 
-### Map Configuration
+### Garrison Configuration
 
-The mission uses an automatic objective system that identifies and indexes map locations and structures. The system consists of two main components:
+Define how many groups spawn at each objective type:
 
-#### 1. Physical Objectives (`FLO_Objectives`)
-Physical objectives are automatically generated by `FLO_fnc_indexObjectives` based on map locations and structures. The system:
+```sqf
+OPFOR_Objective_Groups = [
+    // [objective_subtype, [[group_type, count], ...]]
+    ["capital", [
+        ["infantry", 12],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["armor", 1],
+        ["artillery", 1]
+    ]],
+    ["city", [
+        ["infantry", 7],
+        ["motorized", 2]
+    ]],
+    ["village", [
+        ["infantry", 3]
+    ]],
+    ["local", [           // Military bases, infrastructure
+        ["infantry", 6],
+        ["motorized", 2],
+        ["mechanized", 1]
+    ]],
+    ["marine", [          // Ports, coastal facilities
+        ["infantry", 3],
+        ["motorized", 1]
+    ]],
+    ["cluster", [         // Auto-generated areas
+        ["infantry", 2]
+    ]]
+];
+```
 
-1. **Location Types**:
-   - Civilian: NameCityCapital, NameCity, NameVillage
-   - Military: NameLocal, NameMarine
+### Group Size Configuration
 
-2. **Structure Detection**:
-   - Automatically detects buildings and structures within each location
-   - Ignores power line structures (PowerLines_base_F)
-   - Scans for: HeliH, AirportBase, Strategic, House_F, House_Small, House, HouseBase, Church
+```sqf
+OPFOR_Group_Counts = [
+    ["infantry", 10],      // Soldiers per infantry group
+    ["motorized", 2],      // Vehicles per motorized group
+    ["mechanized", 2],     // APCs per mechanized group
+    ["armor", 2],          // Tanks per armor group
+    ["helicopter", 1],     // Helicopters per air group
+    ["jet", 1],            // Jets per air group
+    ["artillery", 1]       // Guns per artillery group
+];
+```
 
-3. **Dynamic Radius Calculation (Note: THESE ARE CONFIGURATION)**:
-   - Minimum radius: 90 meters
-   - Maximum radius: 300 meters
-   - Grows radius in 30-meter steps until structure density drops
-   - Minimum growth threshold: 2 structures per step
+### Performance Tuning
 
-4. **Objective Properties**:
-   - Position: Location center
-   - Type: Civilian or Military
-   - Subtype: Capital, City, Village, Local, Marine
-   - Priority: Based on structure count (1-100)
-   - Radius: Dynamic based on structure density
-   - Structures: List of buildings in the area
-   - Owner: Default to East (OPFOR)
+```sqf
+// Objective density (fewer = better performance)
+OPFOR_Objective_Size_Threshold = "Medium";  // "Small", "Medium", "Large", "Huge"
 
-5. **Objective Linking**:
-   - Links objectives within 5km of each other
-   - Creates a network of connected objectives
-   - Used for mission generation and AI behavior
+// Spawn distance (lower = better performance, less immersion)
+OPFOR_Virtualization_Distance = 2000;  // Meters from player to spawn groups
+```
 
-#### 2. Virtual Objectives (`FLO_VirtualObjectives`)
-Virtual objectives are generated by `FLO_fnc_indexVirtualObjectives` to cover areas not included in physical objectives. The system:
+### BLUFOR Faction Setup
 
-1. **Structure Clustering**:
-   - Uses a grid-based approach (100m grid size)
-   - Identifies clusters of structures not covered by physical objectives
-   - Minimum cluster size based on OPFOR_Objective_Size_Threshold:
-     - Small: 4 structures
-     - Medium: 8 structures
-     - Large: 12 structures
-     - Huge: 24 structures
+Configure purchasable vehicles and their costs in `CUSTOM_PLAYER_FACTION.sqf`:
 
-2. **Cluster Processing**:
-   - Calculates centroid for each cluster
-   - Determines radius based on structure spread
-   - Minimum radius: 90 meters
-   - Maximum radius: 300 meters
-   - Adds padding to ensure coverage
+```sqf
+F_Car_List = [
+    ["B_LSV_01_unarmed_F", 25],    // [classname, cost]
+    ["B_MRAP_01_F", 50]
+];
 
-3. **Virtual Objective Properties**:
-   - Type: "virtual"
-   - Subtype: "cluster"
-   - Position: Cluster centroid
-   - Priority: Based on structure count
-   - Structures: All buildings in the cluster
-   - Owner: Default to East (OPFOR)
+F_Tank_List = [
+    ["B_MBT_01_cannon_F", 500],
+    ["B_MBT_01_TUSK_F", 650]
+];
 
-#### Objective System Features
+// Available categories:
+// F_Bike_List, F_Car_List, F_MRAP_List, F_Truck_List
+// F_APC_List, F_Tank_List, F_Artillery_List
+// F_Heli_List, F_Heli_Gunship_List, F_Plane_List
+// F_Boat_List, F_UAV_List, F_UGV_List
+// F_Container_List, F_Turret_List, F_SAM_List
+```
 
-1. **Automatic Indexing**
-   - Physical objectives indexed on mission start
-   - Virtual objectives generated to fill gaps
-   - Both stored in HashMaps for efficient access
+---
 
-2. **Debug Support**
-   - Optional debug markers for both physical and virtual objectives
-   - Shows objective boundaries and structure positions
-   - Displays priority values and coverage areas
+## Parameter Reference
 
-#### Best Practices for Map Setup
+### Lobby Parameters (description.ext)
 
-1. **Structure Placement**
-   - Place buildings in logical clusters
-   - Consider minimum cluster size for virtual objectives
-   - Avoid sparse placement that might create too many small objectives
+| Parameter | Options | Default | Description |
+|-----------|---------|---------|-------------|
+| AutoSaveSwitch | Activate/Deactivate | Activate | Enable automatic saving |
+| AutoSaveInterval | 5/10/20 minutes | 5 min | Time between auto-saves |
+| FreshStart | Load/Reset | Load | Load saved progress or start fresh |
+| RestrictedArsenal | Enable/Disable | Disable | Limit available arsenal items |
+| RagequitBlocker | Enable/Disable | Disable | Block abort while unconscious |
+| DisableSystemChat | Enable/Disable | Disable | Hide system messages |
 
-2. **Location Considerations**
-   - Use named locations (cities, villages) for better objective identification
-   - Consider terrain features when placing structures
-   - Ensure adequate spacing between major locations
+### Runtime Configuration
 
-3. **Performance Optimization**
-   - Avoid excessive structure density
-   - Consider the impact of large objective radii
-   - Balance between coverage and performance
+**Server Restart Timer** (`Functions/Utilities/fn_heartBeat.sqf`):
+```sqf
+private _restartIntervalHours = 8;  // Hours between restarts
+private _notificationThresholds = [60, 30, 15, 10, 5, 2, 1];  // Minutes before restart
+```
 
-#### Objective Density Control
+**OPFOR Resources** (`Functions/Logistics/fn_opforResources.sqf`):
+```sqf
+["BASE_GENERATION", 10],      // Base resources per cycle
+["GENERATION_INTERVAL", 300], // Seconds between generation
+["EFFICIENCY_DECAY", 0.02],   // Decay rate per cycle
+```
 
-The system automatically scales based on:
-- Map size (`worldSize`)
-- Structure density
-- OPFOR_Objective_Size_Threshold setting
+**Intel System** (`Functions/Logistics/fn_intelSystem.sqf`):
+```sqf
+["BASE_DECAY", 5],           // Intel lost per cycle
+["UPDATE_INTERVAL", 300],    // Seconds between updates
+// Intel per objective type:
+["INTEL_VALUES", createHashMapFromArray [
+    ["capital", 15],
+    ["city", 10],
+    ["marine", 8],
+    ["local", 6],
+    ["village", 3],
+    ["cluster", 1]
+]]
+```
 
-To adjust objective density:
-1. Modify the OPFOR_Objective_Size_Threshold parameter
-2. Adjust structure placement in the editor
-3. Consider the impact on mission generation and AI behavior
+---
 
-#### 3. Spawn Positions:
-- Spawn Positions will be selected when you first join the mission as the Company Commander. You will be prompted with the Dialog Menu in which you can 
-select Faction, Starting Aggression levels, Starting Civilian Relations, and More.
+## Systems Overview
 
-## Customization Tips
+### Virtualization System
+
+Groups exist in two states:
+- **Virtual**: Position tracked, no physical entities, minimal performance cost
+- **Active**: Physical units spawned when players within `OPFOR_Virtualization_Distance`
+
+Groups automatically:
+- Spawn when players approach
+- Despawn when players leave (if not in combat)
+- Preserve state (health, ammo, waypoints) between activations
+
+### AI Commander (GTN)
+
+The Goal Task Network system enables intelligent OPFOR behavior:
+
+1. **World State** - Tracks threats, resources, objectives
+2. **Goal Library** - Defines available actions (defend, reinforce, attack)
+3. **Planner** - Decomposes goals into executable tasks
+4. **Executor** - Runs primitive actions (move group, call artillery)
+5. **Monitor** - Detects when replanning is needed
 
 ### Resource System
-- Adjust OPFOR resource generation in `Functions/Logistics/fn_opforResources.sqf`
 
-### Intel System
-- Modify intel decay rates and bonuses in `Functions/Logistics/fn_intelSystem.sqf`
-- Adjust radio tower benefits in the intel system
+OPFOR resources affect:
+- Group replacement cost
+- Artillery availability
+- Air support frequency
+- Reinforcement speed
 
-### Performance Settings
-- Configure view distance in `initServer.sqf`
-- Adjust dynamic spawning ranges in garrison manager
+Resource efficiency decreases as:
+- More objectives are lost
+- Resources are spent rapidly
+- Territory shrinks
 
-### Arsenal Customization
-The mission uses a restricted arsenal system (`fn_restrictedArsenal.sqf`) that works with both ACE and vanilla arsenals. It can be disabled & enabled in Lobby Parameters before Mission Start. You can customize available equipment in the following categories:
+### Logistics Network
 
-#### Weapons and Attachments
-```sqf
-// Modify these arrays in fn_restrictedArsenal.sqf
-private _rifles = [
-    "arifle_MX_F",
-    "arifle_MXC_F",
-    // ... add or remove weapons
-];
+Automatically replaces destroyed OPFOR groups:
+- Monitors group composition vs. initial state
+- Spawns replacements from map edges or rear objectives
+- Prioritizes objectives under BLUFOR pressure
+- Consumes OPFOR resources
 
-private _launchers = [
-    "launch_B_Titan_F",
-    // ... add or remove launchers
-];
+---
 
-private _attachments = [
-    "optic_Hamr",
-    "acc_flashlight",
-    // ... add or remove attachments
-];
-```
+## Server Administration
 
-#### Equipment
-```sqf
-private _uniforms = [
-    "U_B_CombatUniform_mcam",
-    // ... add or remove uniforms
-];
+### Save System
 
-private _vests = [
-    "V_PlateCarrier1_rgr",
-    // ... add or remove vests
-];
+Saves are stored in the server's profile namespace. Key data includes:
+- Objective ownership and garrison state
+- All virtual group positions and compositions
+- Resource levels and efficiency ratings
+- Intel levels and bonuses
 
-private _headgear = [
-    "H_HelmetB",
-    // ... add or remove headgear
-];
+### Restart Notifications
 
-private _backpacks = [
-    "B_AssaultPack_mcamo",
-    // ... add or remove backpacks
-];
-```
+The heartbeat system notifies players before restart:
+- Notifications at 60, 30, 15, 10, 5, 2, 1 minutes
+- Urgency colors increase (white → yellow → orange → red)
+- Based on server uptime, not wall clock
 
-#### Items and Equipment
-```sqf
-private _medicalItems = [
-    "kat_AFAK",
-    // ... add or remove medical items
-];
+---
 
-private _toolItems = [
-    "ACE_CableTie",
-    // ... add or remove tools
-];
+## Side Missions
 
-private _navigationItems = [
-    "ItemMap",
-    "ItemGPS",
-    // ... add or remove navigation items
-];
-```
+Available mission templates:
 
-#### Ammunition and Explosives
-```sqf
-private _magazines = [
-    "30Rnd_65x39_caseless_mag",
-    // ... add or remove magazines
-];
+| Mission | Description |
+|---------|-------------|
+| Pilot Rescue | Rescue downed pilot before OPFOR captures them |
+| Squad Rescue | Extract stranded friendly squad |
+| POW Rescue | Free prisoners from OPFOR facility |
+| Convoy Interdiction | Destroy OPFOR supply convoy |
+| HVT Convoy | Intercept high-value target convoy |
+| Intel Gathering | Retrieve intel from enemy location |
+| Patrol Sweep | Clear enemy patrol from area |
 
-private _grenades = [
-    "HandGrenade",
-    "SmokeShell",
-    // ... add or remove grenades
-];
-```
-
-#### Implementation Notes:
-1. The arsenal system automatically:
-   - Works with both ACE and vanilla arsenals
-   - Applies to all arsenal boxes, FOBs, and OPs
-   - Updates dynamically when new FOBs/OPs are created
-
-2. Mod Compatibility:
-   - Supports ACE items and medical equipment
-   - Compatible with TFAR radio systems
-   - Works with KAT Advanced Medical items
-   - Supports custom mod items (just add their classnames)
-
-3. To add new items:
-   - Find the appropriate category in `fn_restrictedArsenal.sqf`
-   - Add the classname to the corresponding array
-   - Items will be available in all arsenals automatically
-
-4. Performance Optimization:
-   - Arsenal restrictions are applied only once per box
-   - Uses efficient event handlers to manage updates
-   - Prevents duplicate initialization
-
-## Side Mission Framework
-
-The mission includes a modular side mission system. Missions are
-registered via `FLO_fnc_registerSideMission` and started with
-`FLO_fnc_startSideMission`. Default missions are defined in
-`Functions/SideMissions` and are loaded automatically on server start.
-
-Default missions currently available:
-
-- Pilot Rescue
-- Squad Rescue
-- Convoy Interdiction
-- Custom Convoy
-- Patrol Sweep
-- Sabotage Tech
-- POW Rescue
-- Intel Gathering
+---
 
 ## Contributing
 
-Feel free to contribute improvements or report issues on our GitHub repository.
+We welcome contributions! Here's how to get started:
+
+### Getting Started
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally
+3. **Create a feature branch**: `git checkout -b feature/my-new-feature`
+4. **Make your changes** following the code style guidelines below
+5. **Test your changes** in-game
+6. **Commit with clear messages**: `git commit -m "Add: New feature description"`
+7. **Push to your fork**: `git push origin feature/my-new-feature`
+8. **Submit a Pull Request** to the `Develop` branch
+
+### Code Style Guidelines
+
+- **Indentation**: Use tabs for SQF files
+- **Variable Naming**:
+  - Local variables: `_camelCase`
+  - Global variables: `FLO_PascalCase`
+  - Parameters: `_paramName`
+- **Comments**: Add header comments to functions explaining purpose, parameters, and return values
+- **File Headers**: Include faction name, mod requirements, and author in faction files
+
+### Adding New Factions
+
+#### Faction File Naming Convention
+
+Format: `{side}_{faction}_{camo}_{mod}.sqf`
+
+| Component | Description | Examples |
+|-----------|-------------|----------|
+| `side` | Game side | `blu` (BLUFOR), `opf` (OPFOR), `ind` (Independent), `civ` (Civilian) |
+| `faction` | Military force | `NATO`, `US`, `BAF`, `GAF`, `CSAT`, `Russia` |
+| `camo` | Camouflage variant | `Desert`, `Wood`, `Winter`, `Urban` |
+| `mod` | Required mod(s) | `Vanilla`, `AEW`, `RHS`, `CUP`, `BW`, `FFAA` |
+
+**Examples:**
+- `blu_NATO_Desert_Vanilla.sqf` - Vanilla NATO in desert camo
+- `blu_US_Wood_CUP_RHS.sqf` - US forces requiring CUP and RHS mods
+- `opf_CSAT_Desert_Vanilla.sqf` - Vanilla CSAT in desert camo
+- `blu_GAF_Wood_BW.sqf` - German Armed Forces with Bundeswehr mod
+
+#### BLUFOR Faction Structure
+
+```sqf
+// ============================================================================
+// FACTION NAME - SIDE (Required Mods)
+// Description of the faction
+// ============================================================================
+
+// INFANTRY UNITS
+F_Officer = "classname";
+F_Assault_TL = "classname";
+// ... other unit definitions
+
+// SQUAD COMPOSITIONS
+F_ASSLT_TEAM = [F_Assault_TL, F_Assault_Eod, F_Assault_AT, ...];
+F_RCN_TEAM = [F_Recon_TL, F_Recon_AT, F_Recon_Mrk, ...];
+
+// VEHICLE LISTS - Format: [[classname, price], ...]
+F_Car_List = [
+    ["classname", 25],
+    ["classname", 50]
+];
+```
+
+#### OPFOR Faction Structure
+
+See the `CUSTOM_ENEMY_FACTION.sqf` template for the complete structure including:
+- Vehicle arrays by type
+- Infantry unit arrays
+- Group definitions
+- Garrison configuration
+
+### Testing Your Changes
+
+1. **Load in Eden Editor** and preview the mission
+2. **Test faction selection** - Verify your faction appears in the dialog
+3. **Test unit spawning** - Check that units spawn correctly at objectives
+4. **Test vehicle purchasing** - Verify vehicles can be purchased with correct prices
+5. **Test with required mods** - Ensure the faction works with its required mods
+
+### Pull Request Guidelines
+
+- Target the `Develop` branch, not `Release`
+- Include a clear description of changes
+- List any new mod dependencies
+- Include screenshots for visual changes
+- Ensure no merge conflicts
+
+---
 
 ## License
 
-This mission is available under the GNU GENERAL PUBLIC LICENSE.
+GNU General Public License v3.0
 
 ## Credits
 
-- Created by Frontline Operations Development Group
-- Special thanks to the Early Supporters for being there for literal years of support.
+- Created by **Frontline Operations Development Group**
+- Special thanks to our early supporters and community contributors
