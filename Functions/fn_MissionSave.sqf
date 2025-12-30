@@ -384,30 +384,24 @@ try {
 
 try {
     if (!isNil "FLO_Objectives") then { _data set ["objectives", FLO_Objectives]; };
-    if (!isNil "FLO_AI_Commander") then {
+    if (!isNil "FLO_GTN_ResourceManager") then {
         _data set ["aiCommander", createHashMapFromArray [
             // Core state
-            ["threatLevel", FLO_AI_Commander get "_threatLevel"],
-            ["lastThreatLevel", FLO_AI_Commander get "_lastThreatLevel"],
-            ["lastUpdate", FLO_AI_Commander get "_lastUpdate"],
-
-            // Active operations
-            ["attackOperations", FLO_AI_Commander get "_attackOperations"],
-            ["defenseOperations", FLO_AI_Commander get "_defenseOperations"],
-            ["stagingPoints", FLO_AI_Commander get "_stagingPoints"],
+            ["threatLevel", FLO_GTN_ResourceManager get "_threatLevel"],
+            ["lastUpdate", FLO_GTN_ResourceManager get "_lastUpdate"],
 
             // Group tracking
-            ["activeAttackGroups", FLO_AI_Commander get "_activeAttackGroups"],
-            ["activeDefenseGroups", FLO_AI_Commander get "_activeDefenseGroups"],
-            ["garrisonedGroups", FLO_AI_Commander get "_garrisonedGroups"],
-            ["strategicReserve", FLO_AI_Commander get "_strategicReserve"],
+            ["activeAttackGroups", FLO_GTN_ResourceManager get "_activeAttackGroups"],
+            ["activeDefenseGroups", FLO_GTN_ResourceManager get "_activeDefenseGroups"],
+            ["garrisonedGroups", FLO_GTN_ResourceManager get "_garrisonedGroups"],
+            ["strategicReserve", FLO_GTN_ResourceManager get "_strategicReserve"],
 
             // GTN state
-            ["gtnEnabled", FLO_AI_Commander getOrDefault ["_gtnEnabled", false]]
+            ["gtnEnabled", !isNil {FLO_GTN_ResourceManager get "_gtnCommander"}]
         ]];
     };
-    ["SAVE", 3, "Objectives and AI Commander saved"] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Objectives/AI failed: %1", _exception]] call FLO_fnc_log; };
+    ["SAVE", 3, "Objectives and GTN Resource Manager saved"] call FLO_fnc_log;
+} catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // FINALIZATION

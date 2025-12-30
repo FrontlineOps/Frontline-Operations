@@ -23,18 +23,9 @@ class FLO {
         class initClientFinalize    {};
     };
 
-    class AI {
-        file = "Functions\AI";
-
-        class artilleryAssetManager             {};
-        class airAssetManager                   {};
-        class airTaskOrder                      {};
-        class aiCommander                       {};
-        class aiCommanderConfig                 {};
-    };
-
-    class GTN {
-        file = "Functions\AI\GTN";
+    // === GTN (Goal Task Network) SYSTEM ===
+    class GTNCore {
+        file = "Functions\AI\GTN\Core";
 
         class gtnWorldState         {};
         class gtnGoalLibrary        {};
@@ -43,6 +34,21 @@ class FLO {
         class gtnMonitor            {};
         class gtnCommander          {};
         class gtnCapabilityAnalyzer {};
+    };
+
+    class GTNResourceManager {
+        file = "Functions\AI\GTN\ResourceManager";
+
+        class gtnResourceManager    {};
+        class gtnConfig             {};
+    };
+
+    class GTNAssets {
+        file = "Functions\AI\GTN\Assets";
+
+        class gtnAirAssetManager    {};
+        class gtnAirTaskOrder       {};
+        class gtnArtilleryManager   {};
     };
     
     class Interactions {

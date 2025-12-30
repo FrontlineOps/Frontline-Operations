@@ -1616,8 +1616,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
             case "ARTILLERY": {
                 // Check artillery asset manager
-                if (!isNil "FLO_ArtilleryManager") then {
-                    private _batteries = FLO_ArtilleryManager call ["_getAvailableBatteries", []];
+                if (!isNil "FLO_GTNArtilleryManager") then {
+                    private _batteries = FLO_GTNArtilleryManager call ["_getAvailableBatteries", []];
                     if (count _batteries > 0) then {
                         _result set ["feasible", true];
                         _result set ["availableAssets", _batteries];

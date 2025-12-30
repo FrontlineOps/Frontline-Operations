@@ -538,7 +538,7 @@ private _gtnCommander = createHashMapObject [[
     ["_requestArtillery", {
         params ["_pos", "_missionType", "_rounds"];
 
-        private _manager = call FLO_fnc_artilleryAssetManager;
+        private _manager = call FLO_fnc_gtnArtilleryManager;
         private _success = _manager call ["_requestFireMission", [_pos, _rounds]];
 
         if (_success) then {
@@ -550,12 +550,12 @@ private _gtnCommander = createHashMapObject [[
         _success
     }],
 
-    // Request CAS using the AI Commander's air support system
+    // Request CAS using the GTN air support system
     ["_requestCAS", {
         params ["_pos", ["_missionType", "CAS"]];
 
         // Use the Air Tasking Order system
-        private _ato = call FLO_fnc_airTaskOrder;
+        private _ato = call FLO_fnc_gtnAirTaskOrder;
         private _altitude = if (_missionType in ["BOMB", "LASER"]) then { 300 } else { 150 };
 
         _ato call ["_addTask", [_pos, _missionType, "", _altitude]];

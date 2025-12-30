@@ -1,5 +1,5 @@
 /*
-    Function: FLO_fnc_airAssetManager
+    Function: FLO_fnc_gtnAirAssetManager
 
     Description:
     Manages air groups that exist in the virtualization system. The manager
@@ -11,7 +11,7 @@
     HashMap object with methods to request and release air assets.
 
     Example:
-        private _mgr = call FLO_fnc_airAssetManager;
+        private _mgr = call FLO_fnc_gtnAirAssetManager;
         private _result = _mgr call ["_requestAirAsset", [getPos player]];
         if (_result isNotEqualTo objNull) then {
             private _aircraft = _result select 0;
@@ -21,8 +21,8 @@
 
 params [];
 
-if (isNil "FLO_AirAssetManager") then {
-    FLO_AirAssetManager = createHashMapObject [[
+if (isNil "FLO_GTNAirAssetManager") then {
+    FLO_GTNAirAssetManager = createHashMapObject [[
         ["missions", createHashMap],
         ["_requestAirAsset", {
             params ["_targetPos", ["_missionType", "CAS"]];
@@ -62,12 +62,11 @@ if (isNil "FLO_AirAssetManager") then {
             private _realGroup = _gdata get "realGroup";
             if (isNull _realGroup) exitWith {objNull};
 
-            // Clear any existing waypoints - the calling code will set new ones
-            // This prevents old patrol/CYCLE waypoints from interfering with the new mission
+            // Clear any existing waypoints
             while {count waypoints _realGroup > 0} do {
                 deleteWaypoint [_realGroup, 0];
             };
-            ["Air Asset Manager", 3, format["Cleared existing waypoints for group %1", _gid]] call FLO_fnc_log;
+            ["GTN Air Asset Manager", 3, format["Cleared existing waypoints for group %1", _gid]] call FLO_fnc_log;
 
             // Determine aircraft vehicle
             private _veh = objNull;
@@ -84,7 +83,7 @@ if (isNil "FLO_AirAssetManager") then {
 
             // Mark group as on mission so virtualization system won't deactivate it
             _gdata set ["onMission", true];
-            ["Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
+            ["GTN Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
 
             [_veh, _gid]
         }],
@@ -98,10 +97,9 @@ if (isNil "FLO_AirAssetManager") then {
                     _data set ["onMission", false];
 
                     // Send to RTB instead of forcing immediate deactivation
-                    // The virtualization system will naturally deactivate when far from players
                     _self call ["_sendToRTB", [_gid]];
 
-                    ["Air Asset Manager", 3, format["Released air asset %1 - RTB ordered, natural virtualization will handle deactivation", _gid]] call FLO_fnc_log;
+                    ["GTN Air Asset Manager", 3, format["Released air asset %1 - RTB ordered", _gid]] call FLO_fnc_log;
                 };
                 (_self get "missions") deleteAt _gid;
             };
@@ -134,24 +132,20 @@ if (isNil "FLO_AirAssetManager") then {
 
             if (_isActive && !isNull _realGroup) then {
                 // Active group - set real waypoints on the actual group
-                // Clear existing waypoints
                 while {count waypoints _realGroup > 0} do {
                     deleteWaypoint [_realGroup, 0];
                 };
 
-                // Set safe behavior for RTB
                 _realGroup setBehaviour "SAFE";
                 _realGroup setCombatMode "GREEN";
                 _realGroup setSpeedMode "NORMAL";
 
-                // Create RTB waypoint
                 private _wp = _realGroup addWaypoint [_rtbPos, 50];
                 _wp setWaypointType "MOVE";
                 _wp setWaypointBehaviour "SAFE";
                 _wp setWaypointCombatMode "GREEN";
                 _wp setWaypointSpeed "NORMAL";
 
-                // Add loiter waypoint at RTB position
                 private _loiterWp = _realGroup addWaypoint [_rtbPos, 500];
                 _loiterWp setWaypointType "LOITER";
                 _loiterWp setWaypointLoiterType "CIRCLE";
@@ -159,7 +153,7 @@ if (isNil "FLO_AirAssetManager") then {
 
                 _realGroup setCurrentWaypoint [_realGroup, 1];
 
-                ["Air Asset Manager", 3, format["Set real RTB waypoints for active aircraft %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
+                ["GTN Air Asset Manager", 3, format["Set real RTB waypoints for active aircraft %1", _groupId]] call FLO_fnc_log;
             } else {
                 // Virtual group - use virtual waypoint system
                 private _waypoints = [
@@ -168,7 +162,7 @@ if (isNil "FLO_AirAssetManager") then {
                 ];
                 [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
 
-                ["Air Asset Manager", 3, format["Set virtual RTB waypoints for group %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
+                ["GTN Air Asset Manager", 3, format["Set virtual RTB waypoints for group %1", _groupId]] call FLO_fnc_log;
             };
 
             _gData set ["currentOrder", "RTB"];
@@ -197,4 +191,5 @@ if (isNil "FLO_AirAssetManager") then {
     ]];
 };
 
-FLO_AirAssetManager
+FLO_GTNAirAssetManager
+

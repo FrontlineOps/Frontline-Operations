@@ -1,8 +1,8 @@
 /*
-    Function: FLO_fnc_airTaskOrder
+    Function: FLO_fnc_gtnAirTaskOrder
 
     Description:
-    Provides a lightweight Air Tasking Order (ATO) system for the AI Commander.
+    Provides a lightweight Air Tasking Order (ATO) system for the GTN Resource Manager.
     Missions only use existing virtual air assets. If no suitable aircraft is
     available the task is skipped.
 
@@ -19,8 +19,8 @@
 
 if (!isServer) exitWith {};
 
-if (isNil "FLO_airTaskOrder") then {
-    FLO_airTaskOrder = createHashMapObject [[
+if (isNil "FLO_GTNAirTaskOrder") then {
+    FLO_GTNAirTaskOrder = createHashMapObject [[
         ["_taskQueue", []],
 
         // Get mission duration based on type
@@ -50,13 +50,13 @@ if (isNil "FLO_airTaskOrder") then {
 
         ["_processTasks", {
             private _queue = _self get "_taskQueue";
-            private _mgr = call FLO_fnc_airAssetManager;
+            private _mgr = call FLO_fnc_gtnAirAssetManager;
 
-            ["ATO", 3, format["Processing %1 queued air tasks", count _queue]] call FLO_fnc_log;
+            ["GTN ATO", 3, format["Processing %1 queued air tasks", count _queue]] call FLO_fnc_log;
 
             {
                 _x params ["_pos", "_mission", "_airType", "_alt"];
-                ["ATO", 3, format["Task %1: %2 mission at %3, alt %4m", _forEachIndex + 1, _mission, _pos, _alt]] call FLO_fnc_log;
+                ["GTN ATO", 3, format["Task %1: %2 mission at %3, alt %4m", _forEachIndex + 1, _mission, _pos, _alt]] call FLO_fnc_log;
 
                 private _asset = _mgr call ["_requestAirAsset", [_pos, _mission]];
                 private _air = objNull;
@@ -69,9 +69,9 @@ if (isNil "FLO_airTaskOrder") then {
                     _gid = _asset select 1;
                     _grp = group _air;
                     _air flyInHeight _alt;
-                    ["ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
+                    ["GTN ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
                 } else {
-                    ["ATO", 2, "No available virtual air asset for task - skipping"] call FLO_fnc_log;
+                    ["GTN ATO", 2, "No available virtual air asset for task - skipping"] call FLO_fnc_log;
                 };
 
                 if (!isNull _air) then {
@@ -83,7 +83,7 @@ if (isNil "FLO_airTaskOrder") then {
                     private _patrolRadius = if (toUpper _mission == "CAP") then { 2000 } else { 500 };
                     private _waypointCount = if (toUpper _mission == "CAP") then { 4 } else { 3 };
 
-                    ["ATO", 3, format["Setting %1 waypoints for %2 at %3 (duration: %4s)", _waypointType, typeOf _air, _pos, _missionDuration]] call FLO_fnc_log;
+                    ["GTN ATO", 3, format["Setting %1 waypoints for %2 at %3 (duration: %4s)", _waypointType, typeOf _air, _pos, _missionDuration]] call FLO_fnc_log;
 
                     // Clear existing waypoints
                     while {count waypoints _grp > 0} do {
@@ -105,7 +105,6 @@ if (isNil "FLO_airTaskOrder") then {
                         _wp setWaypointBehaviour "COMBAT";
                         _wp setWaypointCombatMode "RED";
                         _wp setWaypointSpeed "FULL";
-                        // Longer timeout for CAP patrols
                         if (_waypointType == "MOVE") then {
                             _wp setWaypointTimeout [60, 90, 120];
                         } else {
@@ -120,13 +119,12 @@ if (isNil "FLO_airTaskOrder") then {
                     _grp setCurrentWaypoint [_grp, 1];
 
                     // Mission timer: release aircraft after mission duration or if destroyed
-                    // Simple time-based approach - aircraft stays on station for the full duration
                     [_air, _gid, _missionDuration, _mission] spawn {
                         params ["_a", "_gid", "_duration", "_missionType"];
                         private _startTime = time;
                         private _endTime = _startTime + _duration;
 
-                        ["ATO", 3, format["Mission timer started for %1: %2s duration, ends at %3", _gid, _duration, _endTime]] call FLO_fnc_log;
+                        ["GTN ATO", 3, format["Mission timer started for %1: %2s duration", _gid, _duration]] call FLO_fnc_log;
 
                         waitUntil {
                             sleep 10;
@@ -138,11 +136,11 @@ if (isNil "FLO_airTaskOrder") then {
                         } else {
                             format["mission duration complete (%1s)", _duration]
                         };
-                        ["ATO", 3, format["Mission ended for group %1: %2", _gid, _reason]] call FLO_fnc_log;
+                        ["GTN ATO", 3, format["Mission ended for group %1: %2", _gid, _reason]] call FLO_fnc_log;
 
-                        // Release the air asset (clears onMission flag and deactivates)
+                        // Release the air asset
                         if (!isNil "_gid" && {_gid isNotEqualTo ""}) then {
-                            (call FLO_fnc_airAssetManager) call ["_releaseAirAsset", [_gid]];
+                            (call FLO_fnc_gtnAirAssetManager) call ["_releaseAirAsset", [_gid]];
                         };
                     };
                 };
@@ -152,4 +150,5 @@ if (isNil "FLO_airTaskOrder") then {
     ]];
 };
 
-FLO_airTaskOrder
+FLO_GTNAirTaskOrder
+

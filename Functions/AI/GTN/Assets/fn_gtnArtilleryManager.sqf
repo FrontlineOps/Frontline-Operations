@@ -1,25 +1,25 @@
 /*
-    Function: FLO_fnc_artilleryAssetManager
+    Function: FLO_fnc_gtnArtilleryManager
 
     Description:
     Manages artillery groups that exist in the virtualization system. The manager
     can unvirtualize a group for a fire mission, command it to fire, then move
     and revirtualize the group to simulate shoot-and-scoot tactics. This allows
-    AI Commander or other systems to make use of existing virtual artillery
+    GTN Resource Manager or other systems to make use of existing virtual artillery
     assets without permanently spawning them in.
 
     Returns:
     HashMap object with a method to request fire missions.
 
     Example:
-        private _mgr = call FLO_fnc_artilleryAssetManager;
+        private _mgr = call FLO_fnc_gtnArtilleryManager;
         _mgr call ["_requestFireMission", [[1000,1000,0], 6]];
 */
 
 params [];
 
-if (isNil "FLO_ArtilleryManager") then {
-    FLO_ArtilleryManager = createHashMapObject [[
+if (isNil "FLO_GTNArtilleryManager") then {
+    FLO_GTNArtilleryManager = createHashMapObject [[
         ["missions", createHashMap],
         ["shootAndScootTime", 90],
         ["_requestFireMission", {
@@ -38,7 +38,6 @@ if (isNil "FLO_ArtilleryManager") then {
             if (count _artGroups == 0) exitWith {false};
 
             // Filter out groups already on mission
-            // Capture missions for use in select callback
             private _missions = _self get "missions";
             _artGroups = _artGroups select {
                 private _id = _x select 0;
@@ -100,4 +99,5 @@ if (isNil "FLO_ArtilleryManager") then {
     ]];
 };
 
-FLO_ArtilleryManager
+FLO_GTNArtilleryManager
+
