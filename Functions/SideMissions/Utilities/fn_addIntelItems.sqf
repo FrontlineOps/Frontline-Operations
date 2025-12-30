@@ -1,6 +1,18 @@
 /*
  * Function: FLO_fnc_addIntelItems
- * Generated from Scripts/INTLitems.sqf
+ * Author: Frontline Operations Development Group
+ * Description:
+ *   Adds random intelligence items to enemy units within a specified radius.
+ *   Used to spawn intel items in side missions.
+ *
+ * Arguments:
+ *   0: Center position (ARRAY)
+ *   1: Radius (NUMBER)
+ *
+ * Returns: Nothing
+ *
+ * Example:
+ *   [[1000, 2000, 0], 500] call FLO_fnc_addIntelItems;
  */
 // Get parameters from function call
 private _center = _this select 0;

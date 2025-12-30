@@ -196,7 +196,6 @@ private _fnc_addContainerActions = {
         ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, nil, 4, true, true, "", _commanderCondition],
         ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, nil, 4, true, true, "", _commanderCondition],
         ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, nil, 6, true, true, "", _commanderCondition],
-        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>RESET Mission Progress", { { execVM "Scripts\MissionReset.sqf"; } remoteExec ["call", 2]; }, nil, 5, true, true, "", _commanderCondition],
         ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, nil, 3, true, true, "", _commanderCondition]
     ];
 
@@ -271,7 +270,7 @@ private _fnc_createTriggers = {
                 if (!isNull _resource) then {
                     deleteVehicle _resource;
                     [100, 'STR_FLO_RESOURCE'] call FLO_fnc_sendRewardNotification;
-                    [100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
+                    [100] call FLO_fnc_addReward;
                 };
             ", _searchRadiusLarge], ""
         ];

@@ -124,7 +124,7 @@ private _template = createHashMapFromArray [
             private _mounts = nearestLocations [_position, ["Mount"], 500];
             if (count _mounts > 0) then {
                 private _pos3 = locationPosition (selectRandom _mounts);
-                ["Recon_OPF_3", _pos3, [0,0,0], 0, true] call LARs_fnc_spawnComp;
+                ["Recon_OPF_2", _pos3, [0,0,0], 0, true] call LARs_fnc_spawnComp;
                 
                 private _grp = [_pos3 getPos [20, random 360], East, [
                     selectRandom East_Units, selectRandom East_Units, selectRandom East_Units

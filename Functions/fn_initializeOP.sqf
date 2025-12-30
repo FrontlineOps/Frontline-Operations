@@ -230,7 +230,7 @@ private _fnc_createTriggers = {
                 if (!isNull _resource) then {
                     deleteVehicle _resource;
                     [100, 'STR_FLO_RESOURCE'] call FLO_fnc_sendRewardNotification;
-                    [100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
+                    [100] call FLO_fnc_addReward;
                 };
             ", _searchRadiusLarge], ""
         ];
