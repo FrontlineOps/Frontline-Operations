@@ -263,9 +263,9 @@ while {true} do {
                             private _pos2 = [_centerPos getPos [_radius, _dirBase + 120], _radius] call FLO_fnc_getSafeLandPos;
                             private _pos3 = [_centerPos getPos [_radius, _dirBase + 240], _radius] call FLO_fnc_getSafeLandPos;
 
-                            private _wp1 = [_pos1, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20];
-                            private _wp2 = [_pos2, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20];
-                            private _wp3 = [_pos3, "CYCLE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20];
+                            private _wp1 = [_pos1, "MOVE", "AWARE", "LIMITED", "COLUMN", "YELLOW", 20];
+                            private _wp2 = [_pos2, "MOVE", "AWARE", "LIMITED", "COLUMN", "YELLOW", 20];
+                            private _wp3 = [_pos3, "CYCLE", "AWARE", "LIMITED", "COLUMN", "YELLOW", 20];
 
                             [_groupId, [_wp1, _wp2, _wp3]] call FLO_fnc_updateVirtualGroupWaypoints;
                             _groupData set ["autoPatrol", true];
