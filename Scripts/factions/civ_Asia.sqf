@@ -3,9 +3,16 @@
 // Asian civilian population
 // ============================================================================
 
-// Civilian population configuration
+// ============================================================================
+// CIVILIAN POPULATION CONFIGURATION
+// ============================================================================
 CiviliansPerLocationMin = 5;
 CiviliansPerLocationMax = 15;
+
+// Building classes considered civilian (for spawning civilians inside)
+CivBuildingClasses = [
+    "House_F", "Building", "Land_i_House_Small_03_V1_F", "Land_i_House_Big_01_V1_F"
+];
 
 // ============================================================================
 // CIVILIAN UNITS

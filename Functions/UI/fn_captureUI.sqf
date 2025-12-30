@@ -24,15 +24,20 @@ private _result = nil;
 
 switch (toLower _operation) do {
 
-    // Initialize and start the polling loop
+    // Initialize CBA event handlers and optionally start polling loop
     case "init";
     case "start": {
         if (!hasInterface) exitWith { _result = false };
 
-        // Spawn the polling loop (defined in fn_captureUIUpdate)
+        // Register CBA event handlers for server-pushed UI updates
+        // This is the primary method for dedicated servers
+        [] call FLO_fnc_initCaptureUIEvents;
+
+        // Also spawn the polling loop as fallback for local/hosted
+        // The two systems work together - events for dedicated, polling for local
         [] spawn FLO_fnc_captureUIUpdate;
 
-        ["UI", 3, "Capture UI polling loop started"] call FLO_fnc_log;
+        ["UI", 3, "Capture UI initialized (CBA events + polling fallback)"] call FLO_fnc_log;
         _result = true;
     };
 

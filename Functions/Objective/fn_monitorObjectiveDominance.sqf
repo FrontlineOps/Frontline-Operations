@@ -5,6 +5,7 @@
  *   Continuously checks unit presence at objectives and flips ownership
  *   when one side holds dominance for a period of time.
  *   Updates FLO_Objectives which is publicVariable'd for client UI sync.
+ *   Fires CBA target events to clients when they enter/leave objectives.
  *
  * Arguments: None
  *
@@ -30,6 +31,10 @@ private _updateInterval = 0.5;
 
 // Track time for progress calculation
 private _lastTickTime = diag_tickTime;
+
+// Track which objective each player is in (for CBA event firing)
+// HashMap: playerUID -> objectiveId (or "" if not in any)
+FLO_PlayerObjectiveStates = createHashMap;
 
 while {true} do {
     private _currentTime = diag_tickTime;
@@ -129,6 +134,64 @@ while {true} do {
     if (_dataChanged) then {
         publicVariable "FLO_Objectives";
     };
+
+    // =========================================================================
+    // PLAYER OBJECTIVE TRACKING - Fire CBA events to clients
+    // =========================================================================
+    {
+        if (!alive _x) then { continue };
+        if (isNull _x) then { continue };
+
+        private _player = _x;
+        private _uid = getPlayerUID _player;
+        if (_uid == "") then { continue };
+
+        private _playerPos = getPosATL _player;
+        private _currentObjId = "";
+        private _currentObjData = createHashMap;
+
+        // Find which objective this player is in
+        {
+            private _objData = FLO_Objectives get _x;
+            if (!isNil "_objData") then {
+                if ([_playerPos, _objData] call FLO_fnc_isPositionInObjective) exitWith {
+                    _currentObjId = _x;
+                    _currentObjData = _objData;
+                };
+            };
+        } forEach (keys FLO_Objectives);
+
+        // Get previous state
+        private _previousObjId = FLO_PlayerObjectiveStates getOrDefault [_uid, ""];
+
+        // State change detection
+        if (_currentObjId != _previousObjId) then {
+            if (_currentObjId != "") then {
+                // Player entered an objective - fire SHOW event
+                private _objName = _currentObjData getOrDefault ["name", _currentObjId];
+                ["FLO_CaptureUI_Show", [_objName, _currentObjId], _player] call CBA_fnc_targetEvent;
+                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Show fired to %1 for %2", name _player, _objName]] call FLO_fnc_log;
+            } else {
+                // Player left all objectives - fire HIDE event
+                ["FLO_CaptureUI_Hide", [], _player] call CBA_fnc_targetEvent;
+                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Hide fired to %1", name _player]] call FLO_fnc_log;
+            };
+
+            // Update state
+            FLO_PlayerObjectiveStates set [_uid, _currentObjId];
+        };
+
+        // If player is in an objective, send update data
+        if (_currentObjId != "") then {
+            private _bluforCount = _currentObjData getOrDefault ["bluforCount", 0];
+            private _opforCount = _currentObjData getOrDefault ["opforCount", 0];
+            private _totalCount = _bluforCount + _opforCount;
+            private _ratio = if (_totalCount > 0) then { _bluforCount / _totalCount } else { 0.5 };
+
+            ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount], _player] call CBA_fnc_targetEvent;
+        };
+
+    } forEach allPlayers;
 
     sleep _updateInterval;
 };
