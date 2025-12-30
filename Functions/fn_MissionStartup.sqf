@@ -55,7 +55,9 @@ private _fobCount = 0;
     private _building = _x;
     private _hasContainer = (_allFobContainers findIf { _x distance _building < 20 }) > -1;
     if (_hasContainer) then {
-        [_building] call FLO_fnc_initializeFOB;
+        // Check if this FOB was restored from save (preserve marker)
+        private _isRestored = _building getVariable ["FLO_FOB_MarkersRestored", false];
+        [_building, _isRestored] call FLO_fnc_initializeFOB;
         _fobCount = _fobCount + 1;
     };
 } forEach FOBB;
@@ -76,7 +78,9 @@ private _opCount = 0;
     private _building = _x;
     private _hasContainer = (_allOpContainers findIf { _x distance _building < 6 }) > -1;
     if (_hasContainer) then {
-        [_building] call FLO_fnc_initializeOP;
+        // Check if this OP was restored from save (preserve marker)
+        private _isRestored = _building getVariable ["FLO_OP_MarkersRestored", false];
+        [_building, _isRestored] call FLO_fnc_initializeOP;
         _opCount = _opCount + 1;
     };
 } forEach _opBuildings;

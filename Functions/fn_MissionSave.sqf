@@ -197,43 +197,93 @@ try {
 } catch { ["SAVE", 1, format ["Crates failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
-// SAVE: STRUCTURE MARKERS (FOBs, OPs)
+// SAVE: STRUCTURES (FOBs, OPs)
 // ============================================================================
 
 try {
-    private _structHash = createHashMap;
+    private _fobArray = [];
+    private _opArray = [];
     private _fobType = if (!isNil "F_HQ_01") then { F_HQ_01 } else { "" };
+    private _fobContainerType = if (!isNil "F_HQ_C_01") then { F_HQ_C_01 } else { "" };
     private _opType = if (!isNil "F_OP_01") then { F_OP_01 } else { "" };
+    private _opContainerType = if (!isNil "F_OP_C_01") then { F_OP_C_01 } else { "" };
 
-    // Find FOBs
+    // Find and save FOBs with their containers
     if (_fobType != "") then {
+        private _allFobContainers = if (_fobContainerType != "") then { allMissionObjects _fobContainerType } else { [] };
         {
             if (!isNull _x && alive _x && { _x getVariable ["FLO_FOB_Initialized", false] }) then {
-                private _marker = _x getVariable ["fobMarkerName", ""];
-                if (_marker != "") then {
-                    private _pos = getPosASL _x;
-                    _structHash set [format ["fob_%1_%2", round (_pos # 0), round (_pos # 1)], [_marker, "FOB"]];
+                private _building = _x;
+                private _marker = _building getVariable ["fobMarkerName", ""];
+
+                // Find the container that's near this FOB
+                private _nearContainer = objNull;
+                {
+                    if (_x distance _building < 20) exitWith { _nearContainer = _x; };
+                } forEach _allFobContainers;
+
+                // Save full FOB data
+                private _fobData = createHashMapFromArray [
+                    ["buildingType", typeOf _building],
+                    ["buildingPosASL", getPosASL _building],
+                    ["buildingDir", getDir _building],
+                    ["buildingVectorUp", vectorUp _building],
+                    ["markerName", _marker]
+                ];
+
+                // Add container data if found
+                if (!isNull _nearContainer) then {
+                    _fobData set ["containerType", typeOf _nearContainer];
+                    _fobData set ["containerPosASL", getPosASL _nearContainer];
+                    _fobData set ["containerDir", getDir _nearContainer];
+                    _fobData set ["containerVectorUp", vectorUp _nearContainer];
                 };
+
+                _fobArray pushBack _fobData;
             };
         } forEach (allMissionObjects _fobType);
     };
 
-    // Find OPs
+    // Find and save OPs with their containers
     if (_opType != "") then {
+        private _allOpContainers = if (_opContainerType != "") then { allMissionObjects _opContainerType } else { [] };
         {
             if (!isNull _x && alive _x && { _x getVariable ["FLO_OP_Initialized", false] }) then {
-                private _marker = _x getVariable ["opMarkerName", ""];
-                if (_marker != "") then {
-                    private _pos = getPosASL _x;
-                    _structHash set [format ["op_%1_%2", round (_pos # 0), round (_pos # 1)], [_marker, "OP"]];
+                private _building = _x;
+                private _marker = _building getVariable ["opMarkerName", ""];
+
+                // Find the container that's near this OP
+                private _nearContainer = objNull;
+                {
+                    if (_x distance _building < 6) exitWith { _nearContainer = _x; };
+                } forEach _allOpContainers;
+
+                // Save full OP data
+                private _opData = createHashMapFromArray [
+                    ["buildingType", typeOf _building],
+                    ["buildingPosASL", getPosASL _building],
+                    ["buildingDir", getDir _building],
+                    ["buildingVectorUp", vectorUp _building],
+                    ["markerName", _marker]
+                ];
+
+                // Add container data if found
+                if (!isNull _nearContainer) then {
+                    _opData set ["containerType", typeOf _nearContainer];
+                    _opData set ["containerPosASL", getPosASL _nearContainer];
+                    _opData set ["containerDir", getDir _nearContainer];
+                    _opData set ["containerVectorUp", vectorUp _nearContainer];
                 };
+
+                _opArray pushBack _opData;
             };
         } forEach (allMissionObjects _opType);
     };
 
-    _data set ["structureMarkers", _structHash];
-    _data set ["structureTypes", [_fobType, _opType]];
-    ["SAVE", 3, format ["Structures: %1", count _structHash]] call FLO_fnc_log;
+    _data set ["fobs", _fobArray];
+    _data set ["ops", _opArray];
+    _data set ["structureTypes", [_fobType, _fobContainerType, _opType, _opContainerType]];
+    ["SAVE", 3, format ["Structures: %1 FOBs, %2 OPs", count _fobArray, count _opArray]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Structures failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================

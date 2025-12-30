@@ -30,9 +30,106 @@ if (isNil "InitializationOG" || {!InitializationOG}) exitWith {
 };
 
 // ============================================
+// RESTORE FOBs AND OPs FROM SAVE
+// ============================================
+if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
+    diag_log "[FLO_INIT_P5] Restoring FOBs and OPs from save...";
+
+    private _savedData = FLO_SavedGameData;
+
+    // Restore FOBs
+    if ("fobs" in _savedData) then {
+        private _fobArray = _savedData get "fobs";
+        private _fobCount = 0;
+
+        {
+            private _fobData = _x;
+
+            // Create the FOB building
+            private _buildingType = _fobData getOrDefault ["buildingType", ""];
+            private _buildingPos = _fobData getOrDefault ["buildingPosASL", []];
+
+            if (_buildingType != "" && count _buildingPos > 0) then {
+                private _building = createVehicle [_buildingType, [0,0,0], [], 0, "CAN_COLLIDE"];
+                _building setPosASL _buildingPos;
+                _building setDir (_fobData getOrDefault ["buildingDir", 0]);
+                _building setVectorUp (_fobData getOrDefault ["buildingVectorUp", [0,0,1]]);
+
+                // Store marker name for later initialization
+                private _markerName = _fobData getOrDefault ["markerName", ""];
+                if (_markerName != "") then {
+                    _building setVariable ["fobMarkerName", _markerName, true];
+                    _building setVariable ["FLO_FOB_MarkersRestored", true, true];
+                };
+
+                // Create the container if saved
+                private _containerType = _fobData getOrDefault ["containerType", ""];
+                private _containerPos = _fobData getOrDefault ["containerPosASL", []];
+
+                if (_containerType != "" && count _containerPos > 0) then {
+                    private _container = createVehicle [_containerType, [0,0,0], [], 0, "CAN_COLLIDE"];
+                    _container setPosASL _containerPos;
+                    _container setDir (_fobData getOrDefault ["containerDir", 0]);
+                    _container setVectorUp (_fobData getOrDefault ["containerVectorUp", [0,0,1]]);
+                };
+
+                _fobCount = _fobCount + 1;
+                diag_log format ["[FLO_INIT_P5] Restored FOB at %1", _buildingPos];
+            };
+        } forEach _fobArray;
+
+        diag_log format ["[FLO_INIT_P5] Restored %1 FOBs from save", _fobCount];
+    };
+
+    // Restore OPs
+    if ("ops" in _savedData) then {
+        private _opArray = _savedData get "ops";
+        private _opCount = 0;
+
+        {
+            private _opData = _x;
+
+            // Create the OP building
+            private _buildingType = _opData getOrDefault ["buildingType", ""];
+            private _buildingPos = _opData getOrDefault ["buildingPosASL", []];
+
+            if (_buildingType != "" && count _buildingPos > 0) then {
+                private _building = createVehicle [_buildingType, [0,0,0], [], 0, "CAN_COLLIDE"];
+                _building setPosASL _buildingPos;
+                _building setDir (_opData getOrDefault ["buildingDir", 0]);
+                _building setVectorUp (_opData getOrDefault ["buildingVectorUp", [0,0,1]]);
+
+                // Store marker name for later initialization
+                private _markerName = _opData getOrDefault ["markerName", ""];
+                if (_markerName != "") then {
+                    _building setVariable ["opMarkerName", _markerName, true];
+                    _building setVariable ["FLO_OP_MarkersRestored", true, true];
+                };
+
+                // Create the container if saved
+                private _containerType = _opData getOrDefault ["containerType", ""];
+                private _containerPos = _opData getOrDefault ["containerPosASL", []];
+
+                if (_containerType != "" && count _containerPos > 0) then {
+                    private _container = createVehicle [_containerType, [0,0,0], [], 0, "CAN_COLLIDE"];
+                    _container setPosASL _containerPos;
+                    _container setDir (_opData getOrDefault ["containerDir", 0]);
+                    _container setVectorUp (_opData getOrDefault ["containerVectorUp", [0,0,1]]);
+                };
+
+                _opCount = _opCount + 1;
+                diag_log format ["[FLO_INIT_P5] Restored OP at %1", _buildingPos];
+            };
+        } forEach _opArray;
+
+        diag_log format ["[FLO_INIT_P5] Restored %1 OPs from save", _opCount];
+    };
+};
+
+// ============================================
 // MISSION STARTUP (FOBs, OPs, Actions)
 // ============================================
-// This runs AFTER factions are loaded, so faction variables exist
+// This runs AFTER factions are loaded and FOBs/OPs are restored
 diag_log "[FLO_INIT_P5] Running MissionStartup...";
 if (!isNil "FLO_fnc_MissionStartup") then {
     [] call FLO_fnc_MissionStartup;

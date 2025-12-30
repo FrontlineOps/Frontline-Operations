@@ -66,8 +66,13 @@ if (_hasSave) then {
 
     diag_log "[FLO_INIT] Loading from saved game - skipping faction dialog";
 } else {
+    // Explicitly re-publish false to ensure clients get the value
+    FLO_IsLoadedSave = false;
+    publicVariable "FLO_IsLoadedSave";
     diag_log "[FLO_INIT] Fresh start - will wait for faction dialog";
 };
+
+sleep 0.5;
 
 // Helper function to run a phase with error handling
 private _fnc_runPhase = {

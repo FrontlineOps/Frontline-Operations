@@ -49,26 +49,31 @@ private _fnc_waitForSaveDetection = {
     ["INIT_CLIENT", 3, "Waiting for server save detection..."] call FLO_fnc_log;
 
     // Wait for the server to broadcast FLO_IsLoadedSave (happens in Phase 0)
-    // The variable is always set (to true or false) before Phase 1 starts
+    // We MUST wait for Phase 1 or later - that's when we know Phase 0 is COMPLETE
+    // and all publicVariables from Phase 0 have been sent
     waitUntil {
         sleep 0.3;
-        // FLO_IsLoadedSave is always set (true/false) before Phase 1
-        // We also check FLO_InitPhase to know server has started
-        private _serverStarted = !isNil "FLO_InitPhase";
-        private _saveStatusKnown = !isNil "FLO_IsLoadedSave";
+        private _serverPastPhase0 = !isNil "FLO_InitPhase" && {FLO_InitPhase >= 1};
         private _timedOut = (diag_tickTime - _startTime) > _timeout;
 
-        // Wait until we know the save status, or we're past phase 0
-        (_serverStarted && _saveStatusKnown) ||
-        (_serverStarted && {FLO_InitPhase >= 1}) ||
-        _timedOut
+        _serverPastPhase0 || _timedOut
     };
 
-    // Small delay to ensure network sync
-    sleep 0.5;
+    // Wait for network sync - publicVariable can take a moment to arrive
+    // This is critical on dedicated servers where network latency matters
+    sleep 1.0;
+
+    // Additional wait to ensure FLO_IsLoadedSave has synced
+    private _syncStart = diag_tickTime;
+    waitUntil {
+        sleep 0.1;
+        !isNil "FLO_IsLoadedSave" || (diag_tickTime - _syncStart) > 5
+    };
 
     // Check if this is a saved game from server's detection
     private _isSavedGame = !isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave};
+
+    ["INIT_CLIENT", 3, format ["Save detection result: FLO_IsLoadedSave=%1, isSavedGame=%2", FLO_IsLoadedSave, _isSavedGame]] call FLO_fnc_log;
 
     if (_isSavedGame) then {
         ["INIT_CLIENT", 3, "Server detected saved game - skipping faction dialog"] call FLO_fnc_log;
