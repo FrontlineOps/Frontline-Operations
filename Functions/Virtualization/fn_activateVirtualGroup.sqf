@@ -162,10 +162,23 @@ switch (true) do {
             private _minDist = 10 + (20 * _i);
             private _spawnPos = [_position, _minDist, 150, 10, 0, 0.2, 0] call BIS_fnc_findSafePos;
 
-            // Fallback if BIS_fnc_findSafePos returns the center position (failure)
-            if (_spawnPos distance2D _position > 200) then {
+            // Validate spawn position - BIS_fnc_findSafePos can return bad positions
+            // Check for: too far away, near map origin, or invalid array
+            private _spawnValid = true;
+            if (!(_spawnPos isEqualType []) || {count _spawnPos < 2}) then {
+                _spawnValid = false;
+            } else {
+                // Too far from intended position (should be within 150m max radius)
+                if (_spawnPos distance2D _position > 200) then { _spawnValid = false; };
+                // Near map origin (indicates failure)
+                if ((_spawnPos select 0) < 100 && (_spawnPos select 1) < 100) then { _spawnValid = false; };
+            };
+
+            // Fallback to simple offset from position
+            if (!_spawnValid) then {
                 _spawnPos = _position getPos [_minDist, random 360];
                 _spawnPos set [2, 0];
+                ["VIRTUALIZATION", 2, format["Vehicle spawn fallback used for group %1 - findSafePos failed", _groupId]] call FLO_fnc_log;
             };
 
             // Create vehicle and crew
@@ -234,10 +247,20 @@ switch (true) do {
             private _minDist = 15 + (25 * _i);
             private _spawnPos = [_position, _minDist, 150, 12, 0, 0.15, 0] call BIS_fnc_findSafePos;
 
+            // Validate spawn position
+            private _spawnValid = true;
+            if (!(_spawnPos isEqualType []) || {count _spawnPos < 2}) then {
+                _spawnValid = false;
+            } else {
+                if (_spawnPos distance2D _position > 200) then { _spawnValid = false; };
+                if ((_spawnPos select 0) < 100 && (_spawnPos select 1) < 100) then { _spawnValid = false; };
+            };
+
             // Fallback if position search failed
-            if (_spawnPos distance2D _position > 200) then {
+            if (!_spawnValid) then {
                 _spawnPos = _position getPos [_minDist, random 360];
                 _spawnPos set [2, 0];
+                ["VIRTUALIZATION", 2, format["Artillery spawn fallback used for group %1", _groupId]] call FLO_fnc_log;
             };
 
             // Create vehicle and crew
@@ -273,6 +296,14 @@ switch (true) do {
         } else {
             // Find safe position on open terrain (larger search radius, vehicle-safe)
             _spawnPos = [_position, 5, 100, 8, 0, 0.3, 0] call BIS_fnc_findSafePos;
+        };
+
+        // Validate spawn position
+        private _spawnValid = (_spawnPos isEqualType []) && {count _spawnPos >= 2} &&
+            {_spawnPos distance2D _position <= 150} &&
+            {(_spawnPos select 0) > 100 || (_spawnPos select 1) > 100};
+        if (!_spawnValid) then {
+            _spawnPos = _position;
         };
 
         // Create vehicle with "CAN_COLLIDE" first, then set position properly

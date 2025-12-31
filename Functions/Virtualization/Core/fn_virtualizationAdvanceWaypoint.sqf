@@ -76,13 +76,20 @@ switch (_wpType) do {
             // Non-patrol - delete completed waypoint
             _waypoints deleteAt _currentIdx;
             _groupData set ["waypoints", _waypoints];
-            
+
             if (count _waypoints > 0) then {
                 _groupData set ["currentWaypointIndex", _currentIdx min (count _waypoints - 1)];
                 _groupData set ["state", "moving"];
             } else {
                 _groupData set ["state", "idle"];
                 _groupData set ["currentWaypointIndex", 0];
+
+                // Clear reinforcing/mission flags when destination reached
+                if (_groupData getOrDefault ["isReinforcing", false]) then {
+                    _groupData set ["isReinforcing", false];
+                    _groupData set ["onMission", false];
+                    ["VIRTUALIZATION", 3, format["Group %1 reached destination - clearing reinforcement flags", _groupId]] call FLO_fnc_log;
+                };
             };
         };
     };

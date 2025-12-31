@@ -73,6 +73,8 @@ if (count _realWaypoints > 1) then {
     // Only update if we got valid waypoints
     if (count _savedWaypoints > 0) then {
         _groupData set ["waypoints", _savedWaypoints];
+        // Reset waypoint index since these are new remaining waypoints starting from 0
+        _groupData set ["currentWaypointIndex", 0];
         ["VIRTUALIZATION", 4, format["Saved %1 waypoints from real group %2", count _savedWaypoints, _groupId]] call FLO_fnc_log;
     };
     // If no valid waypoints from real group, keep existing virtual waypoints

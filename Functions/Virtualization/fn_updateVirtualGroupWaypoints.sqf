@@ -51,12 +51,18 @@ private _currentPos = _groupData get "position";
 private _groupType = _groupData get "groupType";
 private _isNavalGroup = _groupType in ["boat", "naval", "submarine"];
 
-// Sanitize waypoints - ensure non-naval groups don't have waypoints in water
+// Sanitize waypoints - ensure valid positions and non-naval groups don't have waypoints in water
 private _sanitizedWaypoints = [];
-if (!_isNavalGroup) then {
-    {
-        private _wpPos = _x select 0;
+{
+    private _wpPos = _x select 0;
 
+    // Skip waypoints with invalid positions (near origin [0,0,0])
+    if !(_wpPos isEqualType [] && {count _wpPos >= 2} && {((_wpPos select 0) > 100) || ((_wpPos select 1) > 100)}) then {
+        ["VIRTUALIZATION", 2, format["Skipping invalid waypoint position %1 for group %2", _wpPos, _groupId]] call FLO_fnc_log;
+        continue;
+    };
+
+    if (!_isNavalGroup) then {
         // Check if waypoint is on water
         if (surfaceIsWater _wpPos) then {
             // Find safe land position
@@ -67,10 +73,10 @@ if (!_isNavalGroup) then {
         } else {
             _sanitizedWaypoints pushBack _x;
         };
-    } forEach _waypoints;
-} else {
-    _sanitizedWaypoints = _waypoints;
-};
+    } else {
+        _sanitizedWaypoints pushBack _x;
+    };
+} forEach _waypoints;
 
 // If no waypoints or using direct assignment (no pathfinding)
 if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
