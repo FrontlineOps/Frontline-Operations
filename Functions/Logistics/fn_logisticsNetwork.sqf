@@ -202,9 +202,29 @@ if (isNil "FLO_Logistics_Network") then {
 
             if (isNil "FLO_virtualGroups") exitWith { "" };
 
+            // Validate spawn position
+            if !(_spawnPos isEqualType [] && {count _spawnPos >= 2} && {((_spawnPos select 0) > 100) || ((_spawnPos select 1) > 100)}) exitWith {
+                ["LOGISTICS", 1, format["Invalid spawn position %1 for %2 reinforcement", _spawnPos, _groupType]] call FLO_fnc_log;
+                ""
+            };
+
+            // Get and validate target position
             private _targetPos = if (_targetObjId != "" && !isNil "FLO_Objectives") then {
-                (FLO_Objectives getOrDefault [_targetObjId, createHashMap]) getOrDefault ["position", _spawnPos]
+                private _objData = FLO_Objectives getOrDefault [_targetObjId, createHashMap];
+                // Double-check that objective is still OPFOR-owned
+                private _owner = _objData getOrDefault ["owner", east];
+                if !(_owner isEqualTo east) exitWith {
+                    ["LOGISTICS", 2, format["Target objective %1 no longer OPFOR-owned", _targetObjId]] call FLO_fnc_log;
+                    [0,0,0]
+                };
+                _objData getOrDefault ["position", _spawnPos]
             } else { _spawnPos };
+
+            // Validate target position
+            if !(_targetPos isEqualType [] && {count _targetPos >= 2} && {((_targetPos select 0) > 100) || ((_targetPos select 1) > 100)}) exitWith {
+                ["LOGISTICS", 1, format["Invalid target position %1 for %2 reinforcement to %3", _targetPos, _groupType, _targetObjId]] call FLO_fnc_log;
+                ""
+            };
 
             // Build waypoints
             private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
@@ -311,21 +331,37 @@ if (isNil "FLO_Logistics_Network") then {
             // Check if we have resources
             if (isNil "FLO_OPFOR_Resources") exitWith {};
 
-            // Find reinforcement targets
+            // Find reinforcement targets - only OPFOR-held objectives under BLUFOR pressure
             private _targets = _self call ["_findReinforcementTargets", []];
             if (count _targets == 0) then {
-                // No objectives under pressure, skip this cycle
-                ["LOGISTICS", 3, format["Need %1 replacements but no objectives under pressure", count _needed]] call FLO_fnc_log;
-                // Still allow replacement to random OPFOR objective
+                // No objectives under pressure - find OPFOR objectives NOT near any player
+                // This allows reinforcing rear objectives to maintain strength
+                ["LOGISTICS", 3, format["Need %1 replacements but no objectives under pressure - checking rear objectives", count _needed]] call FLO_fnc_log;
+
                 private _opforObjs = (keys FLO_Objectives) select {
-                    ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo east
+                    private _objData = FLO_Objectives get _x;
+                    private _owner = _objData getOrDefault ["owner", east];
+                    private _pos = _objData getOrDefault ["position", [0,0,0]];
+
+                    // Must be OPFOR-owned and have valid position
+                    _owner isEqualTo east &&
+                    {(_pos select 0) > 100 || (_pos select 1) > 100} &&
+                    {
+                        // Not near any player (rear objectives only)
+                        private _nearPlayer = false;
+                        { if (_x distance2D _pos < 3000) exitWith { _nearPlayer = true }; } forEach allPlayers;
+                        !_nearPlayer
+                    }
                 };
+
                 if (count _opforObjs > 0) then {
                     _targets = [selectRandom _opforObjs];
                 };
             };
 
-            if (count _targets == 0) exitWith {};
+            if (count _targets == 0) exitWith {
+                ["LOGISTICS", 3, "No valid OPFOR objectives to reinforce"] call FLO_fnc_log;
+            };
 
             // Process replacements
             private _replaced = 0;
