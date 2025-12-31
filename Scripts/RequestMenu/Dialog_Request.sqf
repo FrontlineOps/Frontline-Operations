@@ -631,17 +631,6 @@ FLO_fnc_placeVehicleWithCrew = {
     
     {_x moveInAny _vehicle} forEach units _group;
     
-    // Disable Vcom AI for helicopters
-    private _isHeli = false;
-    {
-        private _heliName = missionNamespace getVariable _x;
-        if (typeOf _vehicle == _heliName) exitWith {_isHeli = true};
-    } forEach ["F_Heli_01", "F_Heli_02", "F_Heli_03", "F_Heli_04", "F_Heli_05"];
-    
-    if (_isHeli) then {
-        _group setVariable ["Vcm_Disable", true];
-    };
-    
     // Add to high command
     TheCommander hcSetGroup [_group];
 };
