@@ -52,14 +52,18 @@ private _template = createHashMapFromArray [
         private _data = _instance get "data";
         
         // Find barracks-type building
-        private _barracks = nearestObjects [_position, [
+        private _barracksSearch = nearestObjects [_position, [
             "Land_i_Barracks_V1_F", "Land_u_Barracks_V2_F", "Land_i_Barracks_V2_F",
             "Land_Barracks_01_grey_F", "Land_Barracks_01_dilapidated_F", "HOUSE"
-        ], 400] select 0;
-        
-        if (isNull _barracks) then { _barracks = ([_position] call FLO_fnc_findMissionHouse); };
-        if (isNull _barracks) exitWith {};
-        
+        ], 400];
+
+        private _barracks = if (count _barracksSearch > 0) then { _barracksSearch select 0 } else { objNull };
+
+        if (isNull _barracks) then { _barracks = [_position] call FLO_fnc_findMissionHouse; };
+        if (isNull _barracks) exitWith {
+            ["SIDEMISSION", 1, format["POW Rescue %1: No suitable building found at %2", _missionId, _position]] call FLO_fnc_log;
+        };
+
         private _buildingPos = _barracks buildingPos -1;
         if (count _buildingPos == 0) then { _buildingPos = [getPos _barracks]; };
         

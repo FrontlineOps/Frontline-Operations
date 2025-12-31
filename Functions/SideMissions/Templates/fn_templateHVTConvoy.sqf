@@ -82,12 +82,28 @@ private _template = createHashMapFromArray [
             _startPos getPos [3000, _startPos getDir player]
         };
         
-        private _startRoad = ((_startPos nearRoads 100) + (_startPos nearRoads 500)) select 0;
-        private _endRoad = ((_endPos nearRoads 100) + (_endPos nearRoads 500)) select 0;
-        
-        if (isNull _startRoad) then { _startRoad = (_startPos nearRoads 1000) select 0; };
-        if (isNull _endRoad) then { _endRoad = (_endPos nearRoads 1000) select 0; };
-        
+        // Find roads near start and end positions
+        private _startRoads = (_startPos nearRoads 100) + (_startPos nearRoads 500);
+        private _startRoad = if (count _startRoads > 0) then { _startRoads select 0 } else { objNull };
+
+        private _endRoads = (_endPos nearRoads 100) + (_endPos nearRoads 500);
+        private _endRoad = if (count _endRoads > 0) then { _endRoads select 0 } else { objNull };
+
+        // Expand search if no roads found
+        if (isNull _startRoad) then {
+            private _farRoads = _startPos nearRoads 1000;
+            if (count _farRoads > 0) then { _startRoad = _farRoads select 0; };
+        };
+        if (isNull _endRoad) then {
+            private _farRoads = _endPos nearRoads 1000;
+            if (count _farRoads > 0) then { _endRoad = _farRoads select 0; };
+        };
+
+        // Abort if no roads found
+        if (isNull _startRoad || isNull _endRoad) exitWith {
+            ["SIDEMISSION", 1, format["HVT Convoy %1: No roads found near start/end positions", _missionId]] call FLO_fnc_log;
+        };
+
         _startPos = getPosATL _startRoad;
         _endPos = getPosATL _endRoad;
         
