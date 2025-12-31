@@ -166,15 +166,18 @@ while {true} do {
 
         // State change detection
         if (_currentObjId != _previousObjId) then {
+            // Get owner ID for CBA_fnc_ownerEvent - more reliable on dedicated servers
+            private _ownerId = owner _player;
+
             if (_currentObjId != "") then {
                 // Player entered an objective - fire SHOW event
                 private _objName = _currentObjData getOrDefault ["name", _currentObjId];
-                ["FLO_CaptureUI_Show", [_objName, _currentObjId], _player] call CBA_fnc_targetEvent;
-                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Show fired to %1 for %2", name _player, _objName]] call FLO_fnc_log;
+                ["FLO_CaptureUI_Show", [_objName, _currentObjId], _ownerId] call CBA_fnc_ownerEvent;
+                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Show fired to %1 (owner %2) for %3", name _player, _ownerId, _objName]] call FLO_fnc_log;
             } else {
                 // Player left all objectives - fire HIDE event
-                ["FLO_CaptureUI_Hide", [], _player] call CBA_fnc_targetEvent;
-                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Hide fired to %1", name _player]] call FLO_fnc_log;
+                ["FLO_CaptureUI_Hide", [], _ownerId] call CBA_fnc_ownerEvent;
+                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Hide fired to %1 (owner %2)", name _player, _ownerId]] call FLO_fnc_log;
             };
 
             // Update state
@@ -188,7 +191,7 @@ while {true} do {
             private _totalCount = _bluforCount + _opforCount;
             private _ratio = if (_totalCount > 0) then { _bluforCount / _totalCount } else { 0.5 };
 
-            ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount], _player] call CBA_fnc_targetEvent;
+            ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount], owner _player] call CBA_fnc_ownerEvent;
         };
 
     } forEach allPlayers;
