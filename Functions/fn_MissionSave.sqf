@@ -94,7 +94,7 @@ try {
 
 try {
     private _markerHash = createHashMap;
-    private _exclude = createHashMapFromArray [["b_unknown", true], ["Empty", true], ["mil_dot", true]];
+    private _exclude = createHashMapFromArray [["b_unknown", true], ["Empty", true], ["mil_dot", true], ["hd_start", true]];
     private _markers = allMapMarkers select { !(_exclude getOrDefault [markerType _x, false]) && markerAlpha _x > 0.01 };
     {
         _markerHash set [_x, createHashMapFromArray [
