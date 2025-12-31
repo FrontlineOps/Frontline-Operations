@@ -99,18 +99,22 @@ if (!_isActive) then {
             private _lastMove = _groupData getOrDefault ["lastMoveTime", _now];
             private _timeDelta = _now - _lastMove;
             private _distToWp = _position distance2D _wpPos;
-            
-            if (_wpType in ["MOVE", "LOITER", "SAD", "SENTRY", "CYCLE"] && _distToWp > 10) then {
+
+            // Get completion radius from waypoint data (index 6), default 100m
+            // Waypoint format: [position, type, behavior, speed, formation, combat mode, completion radius]
+            private _completionRadius = _wp param [6, 100];
+
+            if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD"] && _distToWp > _completionRadius) then {
                 // Calculate movement
                 private _moveDistance = (_virtualSpeed * _timeDelta) min _distToWp;
                 private _dir = _position getDir _wpPos;
                 private _newPos = _position getPos [_moveDistance, _dir];
-                
+
                 _groupData set ["position", _newPos];
                 _groupData set ["lastMoveTime", _now];
                 _groupData set ["state", "moving"];
             } else {
-                if (_distToWp <= 10) then {
+                if (_distToWp <= _completionRadius) then {
                     // Waypoint reached - advance
                     [_groupId, _groupData, _currentWpIdx, _waypoints] call FLO_fnc_virtualizationAdvanceWaypoint;
                 };

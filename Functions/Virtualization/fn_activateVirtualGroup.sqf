@@ -475,6 +475,7 @@ if (count _waypoints > 0) then {
             private _wpSpeed = _x select 3;
             private _wpFormation = _x select 4;
             private _wpMode = _x select 5;
+            private _wpCompletionRadius = _x param [6, 100]; // Default 100m if not specified
 
             private _wp = _realGroup addWaypoint [_wpPos, 0];
             _wp setWaypointType _wpType;
@@ -482,6 +483,7 @@ if (count _waypoints > 0) then {
             _wp setWaypointSpeed _wpSpeed;
             _wp setWaypointFormation _wpFormation;
             _wp setWaypointCombatMode _wpMode;
+            _wp setWaypointCompletionRadius _wpCompletionRadius;
         } forEach _waypoints;
     };
 };
