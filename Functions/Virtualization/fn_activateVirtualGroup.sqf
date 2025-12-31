@@ -35,9 +35,21 @@ private _position = _groupData get "position";
 private _groupType = _groupData get "groupType";
 private _side = _groupData get "side";
 private _groupCfg = _groupData getOrDefault ["groupCfg", objNull];
-private _waypoints = _groupData getOrDefault ["waypoints", []];
+private _allWaypoints = _groupData getOrDefault ["waypoints", []];
+private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
 private _comp = _groupData getOrDefault ["comp", []];
 private _realGroup = grpNull;
+
+// Only use remaining waypoints from currentWaypointIndex onwards
+// This ensures groups that traveled virtually don't re-get completed waypoints
+private _waypoints = if (_currentWpIdx > 0 && _currentWpIdx < count _allWaypoints) then {
+    _allWaypoints select [_currentWpIdx, count _allWaypoints - _currentWpIdx]
+} else {
+    _allWaypoints
+};
+
+// Reset currentWaypointIndex since we're now using real waypoints
+_groupData set ["currentWaypointIndex", 0];
 
 // Check if this is a transport with attached groups
 private _isTransport = _groupData getOrDefault ["isTransport", false];
