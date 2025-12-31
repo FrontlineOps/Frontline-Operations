@@ -60,31 +60,48 @@ class FLO {
 
     class Virtualization {
         file = "Functions\Virtualization";
-        
+
         class initVirtualization              {};
-        class createVirtualGroupMarker        {};
-        class createVirtualWaypointMarkers    {};
-        class virtualGroupsUpdateLoop         {};
         class activateVirtualGroup            {};
         class deactivateVirtualGroup          {};
         class createVirtualGroup              {};
         class updateVirtualGroupWaypoints     {};
         class initializeObjectiveGroups       {};
-        class toggleVirtualizationDebug       {};
         class distributeVirtualGroups         {};
         class activateSavedVirtualGroup       {};
         class createVirtualCivilianPopulation {};
         class virtualTransport                {};
     };
 
+    // Virtualization Core - PFH-based update system
+    class VirtualizationCore {
+        file = "Functions\Virtualization\Core";
+
+        class virtualizationUpdatePFH       {};
+        class virtualizationProcessGroup    {};
+        class virtualizationAdvanceWaypoint {};
+        class virtualizationSpatialIndex    {};
+        class virtualizationEvents          {};
+    };
+
+    // Virtualization Debug - Async debug visualization
+    class VirtualizationDebug {
+        file = "Functions\Virtualization\Debug";
+
+        class virtualizationDebugManager      {};
+        class virtualizationDebugUpdateMarker {};
+        class testVirtualizationSystem        {};
+    };
+
     class VirtualizationUtilities {
         file = "Functions\Virtualization\Utilities";
 
-        class filterNonCivGroups     {};
-        class getGroupTypeCount      {};
-        class getRoadParkingPos      {};
-        class getSafeLandPos         {};
-        class getSafeUnvirtualizePos {};
+        class filterNonCivGroups      {};
+        class getGroupTypeCount       {};
+        class getRoadParkingPos       {};
+        class getSafeLandPos          {};
+        class getSafeUnvirtualizePos  {};
+        class validateGroupPosition   {};
     };
 
     class Objective {

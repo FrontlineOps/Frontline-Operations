@@ -443,10 +443,8 @@ if (count _waypoints > 0) then {
     };
 };
 
-// Update debug marker if needed
-if (FLO_virtualGroups get "_debugMode") then {
-    [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
-};
+// Fire activation event for GTN/AI Commander integration
+["FLO_Virtualization_GroupActivated", [_groupId, _groupData, _realGroup]] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 3, format["Activated virtual group: %1 with %2 units", _groupId, count units _realGroup]] call FLO_fnc_log;
 

@@ -33,6 +33,7 @@ if ((_civl getUnitTrait "engineer" == true) && (_ChanceN > 1)) then {
             if (_Money >= _Cost) then {
                 private _NewMoney = _Money - _Cost;
                 FLO_MoneyHandle set ["value", _NewMoney];
+                publicVariable "FLO_MoneyHandle";
                 [] call FLO_fnc_civilianIntel;
                 private _complMessage = selectRandom [
                     "Sure, Let me Show you the way!",
@@ -60,6 +61,7 @@ if ((_civl getUnitTrait "engineer" == true) && (_ChanceN > 1)) then {
             if (_Money >= _Cost) then {
                 private _NewMoney = _Money - _Cost;
                 FLO_MoneyHandle set ["value", _NewMoney];
+                publicVariable "FLO_MoneyHandle";
                 [] call FLO_fnc_civilianIntel;
                 private _complMessage = selectRandom [
                     "Sure, Let me Show you the way!",

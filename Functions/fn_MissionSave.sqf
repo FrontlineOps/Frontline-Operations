@@ -144,26 +144,44 @@ try {
 try {
     private _objHash = createHashMap;
     private _savedObjIds = createHashMap;
+
+    // Exclude crates that are handled elsewhere
     private _excludeCrates = createHashMapFromArray [
         ["Box_NATO_WpsSpecial_F", true], ["Box_NATO_AmmoOrd_F", true],
         ["Box_NATO_Ammo_F", true], ["Box_NATO_Wps_F", true], ["VirtualReammoBox_small_F", true]
     ];
 
+    // Exclude FOB/OP container types - they are saved as part of FOB/OP data
+    private _excludeContainers = createHashMap;
+    if (!isNil "F_HQ_C_01") then { _excludeContainers set [F_HQ_C_01, true]; };
+    if (!isNil "F_OP_C_01") then { _excludeContainers set [F_OP_C_01, true]; };
+    // Also exclude common fallback container types
+    _excludeContainers set ["Land_TripodScreen_01_large_sand_F", true];
+    _excludeContainers set ["Land_Cargo20_military_green_F", true];
+    _excludeContainers set ["Land_Cargo10_military_green_F", true];
+
     {
         private _nearObjs = (getMarkerPos _x) nearEntities [["Static", "Thing", "ReammoBox_F"], _saveRadius];
         {
             private _obj = _x;
-            if (alive _obj && { !(_excludeCrates getOrDefault [typeOf _obj, false]) } &&
-                { !(_obj getVariable ["FLO_save_crate", false]) } && { !(_obj getVariable ["FLO_temp_object", false]) }) then {
+            private _objType = typeOf _obj;
+
+            // Skip if: not alive, in exclusion lists, marked as crate, temp object, or IDS placed entity
+            if (alive _obj &&
+                { !(_excludeCrates getOrDefault [_objType, false]) } &&
+                { !(_excludeContainers getOrDefault [_objType, false]) } &&
+                { !(_obj getVariable ["FLO_save_crate", false]) } &&
+                { !(_obj getVariable ["FLO_temp_object", false]) } &&
+                { !(_obj getVariable ["IDS_Logistics_isPlacedEntity", false]) }) then {
+
                 private _existingId = _obj getVariable ["FLO_SaveID", ""];
                 if (_existingId == "" || !(_savedObjIds getOrDefault [_existingId, false])) then {
                     private _id = if (_existingId != "") then { _existingId } else { [] call FLO_fnc_createUUID };
                     _obj setVariable ["FLO_SaveID", _id, true];
                     _savedObjIds set [_id, true];
                     _objHash set [_id, createHashMapFromArray [
-                        ["type", typeOf _obj], ["posASL", getPosASL _obj],
+                        ["type", _objType], ["posASL", getPosASL _obj],
                         ["vectorDirAndUp", [vectorDir _obj, vectorUp _obj]],
-                        ["isPlacedEntity", _obj getVariable ["IDS_Logistics_isPlacedEntity", false]],
                         ["damage", damage _obj]
                     ]];
                 };
@@ -402,6 +420,29 @@ try {
     };
     ["SAVE", 3, "Objectives and GTN Resource Manager saved"] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
+
+// ============================================================================
+// SAVE: IDS LOGISTICS PLACED ENTITIES
+// ============================================================================
+
+try {
+    if (!isNil "IDS_Logistics_PlacedEntities" && {count IDS_Logistics_PlacedEntities > 0}) then {
+        private _idsEntities = [];
+        {
+            if (!isNull _x && alive _x) then {
+                _idsEntities pushBack createHashMapFromArray [
+                    ["class", typeOf _x],
+                    ["posASL", getPosASL _x],
+                    ["direction", getDir _x],
+                    ["vectorUp", vectorUp _x],
+                    ["damage", damage _x]
+                ];
+            };
+        } forEach IDS_Logistics_PlacedEntities;
+        _data set ["idsLogisticsEntities", _idsEntities];
+        ["SAVE", 3, format ["IDS Logistics: %1 placed entities", count _idsEntities]] call FLO_fnc_log;
+    };
+} catch { ["SAVE", 1, format ["IDS Logistics failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // FINALIZATION

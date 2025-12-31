@@ -109,11 +109,6 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
 
         _groupData set ["virtualSpeed", _speedMPS * _speedMultiplier];
 
-        // Create or update waypoint visualization in debug mode
-        if (FLO_virtualGroups get "_debugMode") then {
-            [_groupId, _sanitizedWaypoints, 0] call FLO_fnc_createVirtualWaypointMarkers;
-        };
-
         ["VIRTUALIZATION", 3, format["Set up virtual movement for group %1 (Speed: %2 m/s)",
             _groupId, _speedMPS * _speedMultiplier]] call FLO_fnc_log;
     };
@@ -145,11 +140,6 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
                 _wp setWaypointCombatMode _wpMode;
                 _wp setWaypointCompletionRadius _wpCompletionRadius;
             } forEach _sanitizedWaypoints;
-
-            // Update marker if debug mode is on
-            if (FLO_virtualGroups get "_debugMode") then {
-                [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
-            };
         };
     };
 } else {
@@ -232,14 +222,9 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             };
             
             _groupData set ["virtualSpeed", _speedMPS * _speedMultiplier];
-            
-            // Create or update waypoint visualization in debug mode
-            if (FLO_virtualGroups get "_debugMode") then {
-                [_groupId, _newWaypoints, 0] call FLO_fnc_createVirtualWaypointMarkers;
-            };
-            
+
             ["VIRTUALIZATION", 3, format["Pathfinding completed for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
-            
+
             // If the group is active, update its real waypoints too
             if (_groupData getOrDefault ["isActive", false]) then {
                 private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
@@ -248,11 +233,11 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
                     while {count waypoints _realGroup > 0} do {
                         deleteWaypoint [_realGroup, 0];
                     };
-                    
+
                     // Add new waypoints
                     {
                         private _wpPos = _x select 0;
-                        
+
                         private _wp = _realGroup addWaypoint [_wpPos, 0];
                         _wp setWaypointType _wpType;
                         _wp setWaypointBehaviour _wpBehavior;
@@ -261,11 +246,6 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
                         _wp setWaypointCombatMode _wpMode;
                         _wp setWaypointCompletionRadius _wpCompletionRadius;
                     } forEach _newWaypoints;
-                    
-                    // Update marker if debug mode is on
-                    if (FLO_virtualGroups get "_debugMode") then {
-                        [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
-                    };
                 };
             };
         };

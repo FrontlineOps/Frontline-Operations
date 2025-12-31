@@ -144,12 +144,10 @@ _groupData set ["realGroup", grpNull];
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 
-// Update debug marker if needed
-if (FLO_virtualGroups get "_debugMode") then {
-    [_groupId, _groupData] call FLO_fnc_createVirtualGroupMarker;
-};
+// Fire deactivation event for GTN/AI Commander integration
+["FLO_Virtualization_GroupDeactivated", [_groupId, _groupData]] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 3, format["Deactivated virtual group: %1", _groupId]] call FLO_fnc_log;
 
 // Return success
-true 
+true

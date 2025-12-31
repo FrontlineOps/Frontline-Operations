@@ -147,17 +147,28 @@ diag_log "[FLO_INIT_P4] Creating objective groups...";
 private _initResult = [] call FLO_fnc_initializeObjectiveGroups;
 
 // Verify groups were created
-if (isNil "FLO_VirtualGroups" || {count keys FLO_VirtualGroups == 0}) then {
+if (isNil "FLO_virtualGroups") then {
     diag_log "[FLO_INIT_P4] WARNING: No virtual groups created - map may have no OPFOR spawn points";
+} else {
+    private _groups = FLO_virtualGroups get "_groups";
+    if (isNil "_groups" || {count keys _groups == 0}) then {
+        diag_log "[FLO_INIT_P4] WARNING: Virtual groups HashMap empty - map may have no OPFOR spawn points";
+    };
 };
 
 // Log statistics
-private _groupCount = if (!isNil "FLO_VirtualGroups") then { count keys FLO_VirtualGroups } else { 0 };
+private _groupCount = if (!isNil "FLO_virtualGroups") then {
+    count keys (FLO_virtualGroups get "_groups")
+} else { 0 };
 diag_log format ["[FLO_INIT_P4] Created %1 virtual groups", _groupCount];
 
-// Start the virtual groups update loop
-diag_log "[FLO_INIT_P4] Starting virtual groups update loop...";
-[] spawn FLO_fnc_virtualGroupsUpdateLoop;
+// Ensure PFH update loop is running (started by initVirtualization, but verify)
+if (isNil "FLO_VirtUpdate" || {!(FLO_VirtUpdate get "running")}) then {
+    diag_log "[FLO_INIT_P4] Starting virtualization PFH...";
+    ["start"] call FLO_fnc_virtualizationUpdatePFH;
+} else {
+    diag_log "[FLO_INIT_P4] Virtualization PFH already running";
+};
 
 // Initialize virtual transport system
 diag_log "[FLO_INIT_P4] Initializing virtual transport system...";

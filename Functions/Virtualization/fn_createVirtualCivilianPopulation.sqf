@@ -1,157 +1,225 @@
 /*
  * Function: FLO_fnc_createVirtualCivilianPopulation
- * Description: Populates all city/village locations with civilian groups, cars, and building occupants using cluster expansion.
+ * Author: Frontline Operations Development Group
+ * Description:
+ *   Populates cities/villages with realistic civilian activity.
+ *   - Pedestrians walk along roads and between buildings
+ *   - Some stand/idle at realistic locations
+ *   - Cars drive on road network between locations
+ *   - Building occupants placed inside structures
+ *   - Density scales by location type (capital > city > village)
+ *
  * Arguments: None
- * Returns: Number of civilians placed (optional)
+ * Returns: Number of civilians placed
  */
 
+// Configuration - density multipliers by location type
+private _densityConfig = createHashMapFromArray [
+    ["NameCityCapital", [8, 12, 4, 6]],  // [minPedestrians, maxPedestrians, minCars, maxCars]
+    ["NameCity", [4, 8, 2, 4]],
+    ["NameVillage", [1, 3, 0, 2]]
+];
+
+// Gather all populated locations
 private _civLocationTypes = ["NameCity", "NameCityCapital", "NameVillage"];
 private _allLocations = [];
 {
-    _allLocations append (nearestLocations [[worldSize/2, worldSize/2, 0], [_x], worldSize]);
+    private _type = _x;
+    private _locs = nearestLocations [[worldSize/2, worldSize/2, 0], [_type], worldSize];
+    { _allLocations pushBack [_x, _type]; } forEach _locs;
 } forEach _civLocationTypes;
+
 private _totalCivsPlaced = 0;
-{
-    private _loc = _x;
-    private _pos = locationPosition _loc;
-    // Create a civilian group at this location (patrolling/outdoors)
-    private _groupId = [_pos, "civilian", nil, "civ_location", -1, civilian] call FLO_fnc_createVirtualGroup;
-    // Assign patrol or stationary waypoints
-    private _pattern = selectRandom ["circle", "square", "stationary"];
-    private _size = 50 + random 100; // 50-150m area
+
+// Helper: Get road waypoints within a location for pedestrian walking
+private _fnc_getRoadWaypoints = {
+    params ["_centerPos", "_radius", "_count"];
+    private _roads = _centerPos nearRoads _radius;
     private _waypoints = [];
-    switch (_pattern) do {
-        case "circle": {
-            for "_i" from 0 to 5 do {
-                private _angle = _i * 60;
-                private _rawPos = [(_pos select 0) + (sin _angle * _size), (_pos select 1) + (cos _angle * _size), 0];
-                private _wpPos = [_rawPos, _size] call FLO_fnc_getSafeLandPos;
-                _waypoints pushBack [_wpPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5];
-            };
-        };
-        case "square": {
-            private _p1 = [[(_pos select 0) + _size, (_pos select 1) + _size, 0], _size] call FLO_fnc_getSafeLandPos;
-            private _p2 = [[(_pos select 0) - _size, (_pos select 1) + _size, 0], _size] call FLO_fnc_getSafeLandPos;
-            private _p3 = [[(_pos select 0) - _size, (_pos select 1) - _size, 0], _size] call FLO_fnc_getSafeLandPos;
-            private _p4 = [[(_pos select 0) + _size, (_pos select 1) - _size, 0], _size] call FLO_fnc_getSafeLandPos;
-            _waypoints = [
-                [_p1, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
-                [_p2, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
-                [_p3, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5],
-                [_p4, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5]
-            ];
-        };
-        case "stationary": {
-            _waypoints = [[[_pos select 0, _pos select 1, 0], "SENTRY", "SAFE", "LIMITED", "COLUMN", "YELLOW", 5]];
-        };
-    };
-    [_groupId, _waypoints] call FLO_fnc_updateVirtualGroupWaypoints;
-    // Spawn civilian cars (parked and patrolling)
-    private _numCars = 1 + floor random 3; // 1-3 cars per location
-    for "_i" from 1 to _numCars do {
-        private _carType = selectRandom CivVehArray;
-        // Try to place parked cars on roads
-        private _carPos = [(_pos select 0) + (random 40 - 20), (_pos select 1) + (random 40 - 20), 0];
-        private _carGroupId = [_carPos, "civilianVehicle", nil, "civ_car", 1, civilian] call FLO_fnc_createVirtualGroup;
-        // 50% parked, 50% simple patrol
-        if (random 1 < 0.5) then {
-            // Parked: place on road if possible, no waypoints
-            private _roads = _carPos nearRoads 300;
-            if (count _roads > 0) then {
-                private _road = selectRandom _roads;
-                private _roadPos = getPos _road;
-                private _connected = roadsConnectedTo _road;
-                private _roadDir = if (count _connected > 0) then {
-                    _road getDir (_connected select 0)
-                } else {
-                    random 360
-                };
-                private _offset = 3 + random 1; // 3-4 meters
-                private _sideSign = if (random 1 < 0.5) then {1} else {-1};
-                private _sideDir = _roadDir + (90 * _sideSign);
-                private _sidePos = [
-                    (_roadPos select 0) + (sin _sideDir) * _offset,
-                    (_roadPos select 1) + (cos _sideDir) * _offset,
-                    _roadPos select 2
-                ];
-                private _groupData = (FLO_virtualGroups get "_groups") get _carGroupId;
-                if (!isNil "_groupData") then {
-                    _groupData set ["position", _sidePos];
-                };
-            };
-        } else {
-            // Simple patrol - ensure waypoints are on roads or at least on land
-            private _carPatrol = [];
-            for "_j" from 0 to 2 do {
-                private _angle = random 360;
-                private _dist = 1000 + random 200; // 1000-1200m from car position
-                private _rawPos = [(_carPos select 0) + (sin _angle * _dist), (_carPos select 1) + (cos _angle * _dist), 0];
 
-                // Try to find a road position, otherwise use safe land position
-                private _roads = _rawPos nearRoads 200;
-                private _wp = if (count _roads > 0) then {
-                    getPos (selectRandom _roads)
-                } else {
-                    [_rawPos, 300] call FLO_fnc_getSafeLandPos
-                };
+    if (count _roads < 2) exitWith { _waypoints };
 
-                _carPatrol pushBack [_wp, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 3];
-            };
-            [_carGroupId, _carPatrol] call FLO_fnc_updateVirtualGroupWaypoints;
-        };
-    };
-    // --- Place additional civilians in buildings (with cluster expansion) ---
-    private _civCount = CiviliansPerLocationMin + floor random (CiviliansPerLocationMax - CiviliansPerLocationMin + 1);
-    // Initial buildings near the location
-    private _initialBuildings = [];
+    // Select random road points as waypoints
+    private _shuffled = _roads call BIS_fnc_arrayShuffle;
+    private _selected = _shuffled select [0, _count min count _shuffled];
+
     {
-        _initialBuildings append (nearestObjects [_pos, [_x], 200]);
-    } forEach CivBuildingClasses;
-    private _allBuildings = +_initialBuildings;
-    private _checkedBuildings = [];
-    private _expansionRadius = 100;
-    private _maxBuildings = 200;
-    private _maxIterations = 8;
-    private _iteration = 0;
-    while {count _allBuildings < _maxBuildings && _iteration < _maxIterations} do {
-        private _newBuildings = [];
-        {
-            if (!(_x in _checkedBuildings)) then {
-                private _nearby = nearestObjects [_x, CivBuildingClasses, _expansionRadius];
-                {
-                    if (!(_x in _allBuildings)) then {_newBuildings pushBack _x};
-                } forEach _nearby;
-                _checkedBuildings pushBack _x;
-            };
-        } forEach _allBuildings;
-        if (_newBuildings isEqualTo []) exitWith {};
-        _allBuildings append _newBuildings;
-        _iteration = _iteration + 1;
+        private _roadPos = getPos _x;
+        // Offset slightly to sidewalk (2-3m from road center)
+        private _connected = roadsConnectedTo _x;
+        private _dir = if (count _connected > 0) then { _x getDir (_connected select 0) } else { random 360 };
+        private _sidewalkOffset = 2 + random 1;
+        private _sideDir = _dir + (selectRandom [90, -90]);
+        private _wpPos = [
+            (_roadPos select 0) + (sin _sideDir) * _sidewalkOffset,
+            (_roadPos select 1) + (cos _sideDir) * _sidewalkOffset,
+            0
+        ];
+        _waypoints pushBack [_wpPos, "MOVE", "SAFE", "LIMITED", "FILE", "YELLOW", 3];
+    } forEach _selected;
+
+    // Add CYCLE to loop
+    if (count _waypoints > 0) then {
+        _waypoints pushBack [_waypoints select 0 select 0, "CYCLE", "SAFE", "LIMITED", "FILE", "YELLOW", 3];
     };
-    // Gather building positions
+
+    _waypoints
+};
+
+// Process each location
+{
+    _x params ["_loc", "_locType"];
+    private _pos = locationPosition _loc;
+    private _locSize = size _loc;
+    private _radius = ((_locSize select 0) max (_locSize select 1)) max 100;
+
+    // Get density config for this location type
+    private _config = _densityConfig getOrDefault [_locType, [2, 4, 1, 2]];
+    _config params ["_minPeds", "_maxPeds", "_minCars", "_maxCars"];
+
+    // Calculate actual counts
+    private _numPedestrians = _minPeds + floor random (_maxPeds - _minPeds + 1);
+    private _numCars = _minCars + floor random (_maxCars - _minCars + 1);
+
+    // =========================================================================
+    // PEDESTRIANS - Walking along roads/sidewalks
+    // =========================================================================
+    for "_i" from 1 to _numPedestrians do {
+        // Find a starting position on/near a road
+        private _roads = _pos nearRoads _radius;
+        if (count _roads == 0) then { continue };
+
+        private _startRoad = selectRandom _roads;
+        private _startPos = getPos _startRoad;
+
+        // Create the civilian group
+        private _groupId = [_startPos, "civilian", nil, "civ_pedestrian", 1, civilian] call FLO_fnc_createVirtualGroup;
+
+        // Generate road-following waypoints
+        private _waypoints = [_pos, _radius, 4 + floor random 4] call _fnc_getRoadWaypoints;
+
+        if (count _waypoints > 0) then {
+            [_groupId, _waypoints] call FLO_fnc_updateVirtualGroupWaypoints;
+        };
+
+        _totalCivsPlaced = _totalCivsPlaced + 1;
+    };
+    // =========================================================================
+    // CIVILIAN VEHICLES - Parked or driving on roads
+    // =========================================================================
+    for "_i" from 1 to _numCars do {
+        if (isNil "CivVehArray" || {count CivVehArray == 0}) then { continue };
+
+        // Find a road to start from
+        private _roads = _pos nearRoads _radius;
+        if (count _roads == 0) then { continue };
+
+        private _startRoad = selectRandom _roads;
+        private _parkingData = [getPos _startRoad, _radius, 4] call FLO_fnc_getRoadParkingPos;
+        _parkingData params ["_parkPos", "_parkDir"];
+
+        private _carGroupId = [_parkPos, "civilianVehicle", nil, "civ_car", 1, civilian] call FLO_fnc_createVirtualGroup;
+
+        // Store parking direction
+        private _groupData = (FLO_virtualGroups get "_groups") get _carGroupId;
+        if (!isNil "_groupData") then {
+            _groupData set ["direction", _parkDir];
+        };
+
+        // 40% parked, 60% driving
+        if (random 1 < 0.4) then {
+            // Parked - no waypoints needed
+        } else {
+            // Driving - find another location to drive to
+            private _nearbyLocs = nearestLocations [_pos, _civLocationTypes, 3000];
+            _nearbyLocs = _nearbyLocs select { locationPosition _x distance2D _pos > 500 };
+
+            if (count _nearbyLocs > 0) then {
+                private _destLoc = selectRandom _nearbyLocs;
+                private _destPos = locationPosition _destLoc;
+
+                // Find road near destination
+                private _destRoads = _destPos nearRoads 200;
+                if (count _destRoads > 0) then {
+                    private _destRoadPos = getPos (selectRandom _destRoads);
+
+                    // Create waypoints: start -> destination -> back to start (loop)
+                    private _carWaypoints = [
+                        [_destRoadPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 20],
+                        [_parkPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 20],
+                        [_destRoadPos, "CYCLE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 20]
+                    ];
+
+                    [_carGroupId, _carWaypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                };
+            };
+        };
+    };
+    // =========================================================================
+    // BUILDING OCCUPANTS - Civilians inside buildings
+    // =========================================================================
+    if (isNil "CivBuildingClasses" || isNil "CiviliansPerLocationMin") then { continue };
+
+    // Scale building civilian count by location type
+    private _buildingMultiplier = switch (_locType) do {
+        case "NameCityCapital": { 1.5 };
+        case "NameCity": { 1.0 };
+        case "NameVillage": { 0.5 };
+        default { 1.0 };
+    };
+
+    private _baseCivCount = CiviliansPerLocationMin + floor random (CiviliansPerLocationMax - CiviliansPerLocationMin + 1);
+    private _civCount = floor (_baseCivCount * _buildingMultiplier);
+
+    // Find buildings within the location
+    private _buildings = [];
+    { _buildings append (nearestObjects [_pos, [_x], _radius]); } forEach CivBuildingClasses;
+
+    if (count _buildings == 0) then { continue };
+
+    // Gather all valid building positions
     private _buildingPositions = [];
     {
         private _bldg = _x;
-        private _bldgPositions = [];
         private _i = 0;
-        while {true} do {
+        while { true } do {
             private _bldgPos = _bldg buildingPos _i;
             if (_bldgPos isEqualTo [0,0,0]) exitWith {};
-            _bldgPositions pushBack _bldgPos;
+            _buildingPositions pushBack _bldgPos;
             _i = _i + 1;
         };
-        _buildingPositions append _bldgPositions;
-    } forEach _allBuildings;
+    } forEach _buildings;
+
+    if (count _buildingPositions == 0) then { continue };
+
+    // Shuffle and place civilians
     _buildingPositions = _buildingPositions call BIS_fnc_arrayShuffle;
+
     private _placed = 0;
     {
         if (_placed >= _civCount) exitWith {};
+        if (isNil "CivMenArray" || {count CivMenArray == 0}) exitWith {};
+
         private _unitType = selectRandom CivMenArray;
-        private _pos = _x;
-        // Place a single civilian at this building position
-        [_pos, "civilian", 1, "civ_building", -1, civilian, _unitType] call FLO_fnc_createVirtualGroup;
+        private _bldgPos = _x;
+
+        // Create civilian at building position (stationary)
+        private _groupId = [_bldgPos, "civilian", nil, "civ_building", 1, civilian, _unitType] call FLO_fnc_createVirtualGroup;
+
+        // Set as stationary (no waypoints = stays in place)
+        private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
+        if (!isNil "_groupData") then {
+            _groupData set ["state", "idle"];
+            _groupData set ["autoPatrol", true];  // Prevent auto-patrol assignment
+        };
+
         _placed = _placed + 1;
         _totalCivsPlaced = _totalCivsPlaced + 1;
     } forEach _buildingPositions;
+
 } forEach _allLocations;
-_totalCivsPlaced; 
+
+// Log summary
+["VIRTUALIZATION", 2, format["Created %1 virtual civilians across %2 locations", _totalCivsPlaced, count _allLocations]] call FLO_fnc_log;
+
+_totalCivsPlaced

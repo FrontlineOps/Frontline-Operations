@@ -328,6 +328,38 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         };
     };
 
+    // Restore IDS Logistics placed entities
+    if ("idsLogisticsEntities" in _savedData) then {
+        private _idsEntities = _savedData get "idsLogisticsEntities";
+        private _loadedIDS = 0;
+
+        // Initialize the array if needed
+        if (isNil "IDS_Logistics_PlacedEntities") then { IDS_Logistics_PlacedEntities = []; };
+
+        {
+            private _entityData = _x;
+            private _className = _entityData getOrDefault ["class", ""];
+
+            if (_className != "" && {isClass (configFile >> "CfgVehicles" >> _className)}) then {
+                private _entity = createVehicle [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
+
+                if (!isNull _entity) then {
+                    _entity setPosASL (_entityData getOrDefault ["posASL", [0,0,0]]);
+                    _entity setDir (_entityData getOrDefault ["direction", 0]);
+                    _entity setVectorUp (_entityData getOrDefault ["vectorUp", [0,0,1]]);
+                    _entity setDamage (_entityData getOrDefault ["damage", 0]);
+                    _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+
+                    // Add to placed entities array for tracking
+                    IDS_Logistics_PlacedEntities pushBack _entity;
+                    _loadedIDS = _loadedIDS + 1;
+                };
+            };
+        } forEach _idsEntities;
+
+        diag_log format ["[FLO_INIT_P5] Restored %1 IDS Logistics entities", _loadedIDS];
+    };
+
     // Trigger load completion event
     ["flo_mission_load_completed", [true, _savedData]] call CBA_fnc_globalEvent;
 

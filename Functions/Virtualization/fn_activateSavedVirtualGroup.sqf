@@ -51,12 +51,42 @@ switch (true) do {
         deleteGroup _tempGroup;
     };
 
-    // Civilian vehicles
+    // Civilian vehicles - need driver and possibly passengers
     case (_groupType isEqualTo "civilianVehicle"): {
         private _spawnPos = [_position, 5, 100, 8, 0, 0.3, 0] call BIS_fnc_findSafePos;
         private _vehicle = createVehicle [_unitType, _spawnPos, [], 0, "CAN_COLLIDE"];
         _vehicle setPos [_spawnPos select 0, _spawnPos select 1, 0];
         _vehicle setVectorUp [0,0,1];
+        _vehicle setDir (random 360);
+        _vehicle lock 0;
+        _vehicle setFuel 1;
+        _vehicle setDamage 0;
+        _vehicle setVehicleLock "UNLOCKED";
+
+        // Fill driver and optionally passengers
+        private _crewPositions = fullCrew [_vehicle, "", true];
+        private _driverPos = _crewPositions select {(_x select 1) == "driver"};
+        private _cargoPos = _crewPositions select {(_x select 1) == "cargo"};
+
+        // Always fill driver
+        if (count _driverPos > 0 && !isNil "CivMenArray") then {
+            private _driverType = selectRandom CivMenArray;
+            private _driver = _realGroup createUnit [_driverType, [0,0,0], [], 0, "NONE"];
+            _driver moveInDriver _vehicle;
+        };
+
+        // Randomly fill 0-2 passengers if available
+        if (!isNil "CivMenArray") then {
+            private _numPassengers = (count _cargoPos) min (floor random 3);
+            for "_i" from 0 to (_numPassengers - 1) do {
+                if (_i < count _cargoPos) then {
+                    private _passengerType = selectRandom CivMenArray;
+                    private _unit = _realGroup createUnit [_passengerType, [0,0,0], [], 0, "NONE"];
+                    _unit moveInCargo _vehicle;
+                };
+            };
+        };
+
         _createdUnit = _vehicle;
     };
 

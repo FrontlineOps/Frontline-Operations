@@ -7,7 +7,8 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
         // Deduct cost
         private _newMoney = _money - Cost;
         FLO_MoneyHandle set ["value", _newMoney];
-        
+        publicVariable "FLO_MoneyHandle";
+
         // Create FOB container
         private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
         CreatedVEH = createVehicle ["B_Slingload_01_Cargo_F", _pos, [], 0, "NONE"];
@@ -36,8 +37,9 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 deleteVehicle _target;
                 
                 // Refund cost
-                private _newMoney = _money + Cost;
+                private _newMoney = (FLO_MoneyHandle get "value") + Cost;
                 FLO_MoneyHandle set ["value", _newMoney];
+                publicVariable "FLO_MoneyHandle";
             },
             nil,
             3,

@@ -45,7 +45,7 @@ if (isNil "FLO_virtualGroups") then {
 // Generate unique ID for the group
 private _groupId = format["vgroup_%1", floor(random 999999)];
 private _groups = FLO_virtualGroups get "_groups";
-while {(_groups get _groupId) isNotEqualTo objNull} do {
+while {_groupId in _groups} do {
     _groupId = format["vgroup_%1", floor(random 999999)];
 };
 

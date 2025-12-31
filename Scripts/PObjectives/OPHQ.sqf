@@ -3,8 +3,9 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
     private _money = FLO_MoneyHandle get "value";
     
     if (_money >= Cost) then {
-        private _newMoney = _money - Cost; 
+        private _newMoney = _money - Cost;
         FLO_MoneyHandle set ["value", _newMoney];
+        publicVariable "FLO_MoneyHandle";
 
         private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
         private _createdVEH = createVehicle ["B_Slingload_01_Repair_F", _pos, [], 0, "NONE"];
@@ -32,8 +33,9 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 _target enableSimulation true;
                 deleteVehicle _target;
                 
-                private _newMoney = _money + Cost;
+                private _newMoney = (FLO_MoneyHandle get "value") + Cost;
                 FLO_MoneyHandle set ["value", _newMoney];
+                publicVariable "FLO_MoneyHandle";
             },
             nil,
             3,
