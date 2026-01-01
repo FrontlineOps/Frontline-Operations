@@ -22,19 +22,14 @@
 params ["_groupId", "_groupData", "_activationDist", "_now", "_groupUpdateTimes"];
 
 // ============================================================================
-// EXTRACT STATE
+// EXTRACT STATE - use get for data that must exist, getOrDefault only for optional/flags
 // ============================================================================
+private _position = _groupData get "position";
 private _isActive = _groupData getOrDefault ["isActive", false];
-private _position = _groupData getOrDefault ["position", [0,0,0]];
 private _groupType = _groupData getOrDefault ["groupType", "infantry"];
 private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
 private _onMission = _groupData getOrDefault ["onMission", false];
 private _attachedTo = _groupData getOrDefault ["attachedTo", ""];
-
-// Validate position
-if !([_position] call FLO_VirtUpdate_isValidPos) exitWith {
-    ["VIRTUALIZATION", 1, format["Group %1 has invalid position - skipping", _groupId]] call FLO_fnc_log;
-};
 
 // ============================================================================
 // DISTANCE CHECK & TIERED UPDATE
@@ -129,32 +124,18 @@ if (!_isActive) then {
             private _patrolCenter = _position;
             private _objective = _groupData getOrDefault ["objective", ""];
             if (_objective != "" && !isNil "FLO_Objectives") then {
-                private _objData = FLO_Objectives getOrDefault [_objective, nil];
+                private _objData = FLO_Objectives get _objective;
                 if (!isNil "_objData") then {
-                    private _objPos = _objData getOrDefault ["position", nil];
-                    if (!isNil "_objPos" && {_objPos isEqualType [] && {count _objPos >= 2}}) then {
-                        _patrolCenter = _objPos;
-                    };
+                    _patrolCenter = _objData get "position";
                 };
             };
 
-            // Validate patrol center - must be a valid position array with numeric values
-            private _validCenter = (_patrolCenter isEqualType []) &&
-                                   {count _patrolCenter >= 2} &&
-                                   {(_patrolCenter select 0) isEqualType 0} &&
-                                   {(_patrolCenter select 1) isEqualType 0};
-
-            if (!_validCenter) then {
-                // Try falling back to _position
+            // Fall back to group position if no objective position
+            if (isNil "_patrolCenter") then {
                 _patrolCenter = _position;
-                _validCenter = (_patrolCenter isEqualType []) &&
-                               {count _patrolCenter >= 2} &&
-                               {(_patrolCenter select 0) isEqualType 0} &&
-                               {(_patrolCenter select 1) isEqualType 0};
             };
 
-            // Only generate patrol if we have a valid center
-            if (_validCenter) then {
+            // Generate patrol (patrolCenter is always valid since it came from get)
                 // Base patrol range by group type (min/max distance from center)
                 private _rangeConfig = switch (_groupType) do {
                     case "infantry": { [100, 400] };
@@ -193,22 +174,17 @@ if (!_isActive) then {
                     };
                 };
 
-                // Add CYCLE waypoint to loop patrol
-                if (count _patrolWaypoints > 0) then {
-                    _patrolWaypoints pushBack [_patrolWaypoints select 0 select 0, "CYCLE", "AWARE", "LIMITED", "STAG COLUMN", "YELLOW", 15];
+            // Add CYCLE waypoint to loop patrol
+            if (count _patrolWaypoints > 0) then {
+                _patrolWaypoints pushBack [_patrolWaypoints select 0 select 0, "CYCLE", "AWARE", "LIMITED", "STAG COLUMN", "YELLOW", 15];
 
-                    // Apply waypoints
-                    [_groupId, _patrolWaypoints] call FLO_fnc_updateVirtualGroupWaypoints;
+                // Apply waypoints
+                [_groupId, _patrolWaypoints] call FLO_fnc_updateVirtualGroupWaypoints;
 
-                    _groupData set ["autoPatrol", true];
-                    _groupData set ["state", "moving"];
-
-                    ["VIRTUALIZATION", 4, format["Assigned auto-patrol to idle group %1 (%2 waypoints, range %3-%4m)", _groupId, count _patrolWaypoints, _minDist, _maxDist]] call FLO_fnc_log;
-                };
-            } else {
-                // Invalid patrol center - mark as autoPatrol to prevent repeated attempts
                 _groupData set ["autoPatrol", true];
-                ["VIRTUALIZATION", 1, format["Group %1 has invalid patrol center - skipping patrol generation", _groupId]] call FLO_fnc_log;
+                _groupData set ["state", "moving"];
+
+                ["VIRTUALIZATION", 4, format["Assigned auto-patrol to idle group %1 (%2 waypoints, range %3-%4m)", _groupId, count _patrolWaypoints, _minDist, _maxDist]] call FLO_fnc_log;
             };
         };
     };

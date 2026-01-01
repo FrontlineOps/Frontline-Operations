@@ -353,9 +353,8 @@ try {
             {
                 private _gData = _y;
                 if (!isNil "_gData" && { _gData isEqualType createHashMap }) then {
-                    // Get position with validation - ensure we save a valid position
-                    private _pos = _gData getOrDefault ["position", [0,0,0]];
-                    if !(_pos isEqualType [] && {count _pos >= 2}) then { _pos = [0,0,0]; };
+                    // Position must exist - let it error if missing so we find the bug
+                    private _pos = _gData get "position";
 
                     // Get garrison position with validation
                     private _garrisonPos = _gData getOrDefault ["garrisonPosition", []];

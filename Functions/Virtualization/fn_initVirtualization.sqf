@@ -74,11 +74,9 @@ FLO_virtualGroups = createHashMapObject [[
         params ["_self", "_groupId", "_groupData"];
         (_self get "_groups") set [_groupId, _groupData];
 
-        // Add to spatial index
-        private _pos = _groupData getOrDefault ["position", [0,0,0]];
-        if ((_pos select 0) > 100 || (_pos select 1) > 100) then {
-            ["add", [_groupId, _pos]] call FLO_fnc_virtualizationSpatialIndex;
-        };
+        // Add to spatial index - position must exist
+        private _pos = _groupData get "position";
+        ["add", [_groupId, _pos]] call FLO_fnc_virtualizationSpatialIndex;
 
         // Fire event for other systems (GTN, AI Commander)
         ["FLO_Virtualization_GroupAdded", [_groupId, _groupData]] call CBA_fnc_localEvent;

@@ -811,9 +811,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             // Virtual group - get from virtualization system
             if (!isNil "FLO_virtualGroups") then {
                 private _groups = FLO_virtualGroups get "_groups";
-                private _gData = _groups getOrDefault [_groupOrId, nil];
+                private _gData = _groups get _groupOrId;
                 if (!isNil "_gData") then {
-                    _analysis set ["position", _gData getOrDefault ["position", [0,0,0]]];
+                    _analysis set ["position", _gData get "position"];
                     private _isActive = _gData getOrDefault ["isActive", false];
                     if (_isActive) then {
                         _realGroup = _gData getOrDefault ["realGroup", grpNull];
@@ -1537,7 +1537,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
         private _analysis = createHashMapFromArray [
             ["objectiveId", _objectiveId],
-            ["position", _obj getOrDefault ["position", [0,0,0]]],
+            ["position", _obj get "position"],
             ["type", _obj getOrDefault ["type", "unknown"]],
             ["subType", _obj getOrDefault ["subType", ""]],
             ["radius", _obj getOrDefault ["radius", 100]],
@@ -1560,7 +1560,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             {
                 private _gId = _x;
                 private _gData = _y;
-                private _gPos = _gData getOrDefault ["position", [0,0,0]];
+                private _gPos = _gData get "position";
 
                 if (_gPos distance2D _pos < _radius * 1.5) then {
                     private _gAnalysis = _self call ["_analyzeGroup", [_gId]];
@@ -1842,7 +1842,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 ["isActive", false],
                 ["onMission", false],
                 ["rounds", 0],
-                ["position", _gData getOrDefault ["position", [0,0,0]]]
+                ["position", _gData get "position"]
             ];
 
             _result set ["totalBatteries", (_result get "totalBatteries") + 1];
@@ -1935,7 +1935,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 ["onMission", false],
                 ["ordnance", 0],
                 ["ammoStatus", 1.0],
-                ["position", _gData getOrDefault ["position", [0,0,0]]]
+                ["position", _gData get "position"]
             ];
 
             private _onMission = _gData getOrDefault ["onMission", false];

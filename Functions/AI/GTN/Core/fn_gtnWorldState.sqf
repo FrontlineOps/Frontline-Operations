@@ -507,10 +507,9 @@ private _worldState = createHashMapObject [[
 
         {
             private _gData = _groups get _x;
-            if (isNil "_gData") then { continue };
             if ((_gData getOrDefault ["side", sideUnknown]) != east) then { continue };
 
-            private _gPos = _gData getOrDefault ["position", [0,0,0]];
+            private _gPos = _gData get "position";
             private _dist = _pos distance2D _gPos;
             if (_dist < _minDist) then { _minDist = _dist };
         } forEach (keys _groups);

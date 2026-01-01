@@ -192,7 +192,7 @@ if (isNil "FLO_OPFOR_Resources") then {
                         if !((_data getOrDefault ["owner", east]) isEqualTo east) then { continue };
 
                         private _subtype = _data getOrDefault ["subtype", "cluster"];
-                        private _pos = _data getOrDefault ["position", [0,0,0]];
+                        private _pos = _data get "position";
                         private _baseVal = _resourceValues getOrDefault [_subtype, 2];
 
                         // Check if contested

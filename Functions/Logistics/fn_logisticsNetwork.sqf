@@ -163,17 +163,17 @@ if (isNil "FLO_Logistics_Network") then {
                 ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo east
             };
 
-            if (count _opforObjs == 0) exitWith { [0,0,0] };
+            if (count _opforObjs == 0) exitWith { [] };
 
             // Sort by distance from players (farthest first)
             private _sorted = [_opforObjs, [], {
-                private _pos = (FLO_Objectives get _x) getOrDefault ["position", [0,0,0]];
+                private _pos = (FLO_Objectives get _x) get "position";
                 private _totalDist = 0;
                 { _totalDist = _totalDist + (_pos distance2D _x); } forEach allPlayers;
                 -_totalDist
             }, "ASCEND"] call BIS_fnc_sortBy;
 
-            (FLO_Objectives get (_sorted select 0)) getOrDefault ["position", [0,0,0]]
+            (FLO_Objectives get (_sorted select 0)) get "position"
         }],
 
         // Find objectives that need reinforcement (under BLUFOR pressure)
@@ -188,7 +188,7 @@ if (isNil "FLO_Logistics_Network") then {
 
             // Filter to objectives with nearby BLUFOR
             _opforObjs select {
-                private _pos = (FLO_Objectives get _x) getOrDefault ["position", [0,0,0]];
+                private _pos = (FLO_Objectives get _x) get "position";
                 private _nearbyBlufor = allPlayers select {
                     side _x == west && {_x distance2D _pos < _detectRange}
                 };
@@ -215,9 +215,9 @@ if (isNil "FLO_Logistics_Network") then {
                 private _owner = _objData getOrDefault ["owner", east];
                 if !(_owner isEqualTo east) exitWith {
                     ["LOGISTICS", 2, format["Target objective %1 no longer OPFOR-owned", _targetObjId]] call FLO_fnc_log;
-                    [0,0,0]
+                    []
                 };
-                _objData getOrDefault ["position", _spawnPos]
+                _objData get "position"
             } else { _spawnPos };
 
             // Validate target position
@@ -341,11 +341,10 @@ if (isNil "FLO_Logistics_Network") then {
                 private _opforObjs = (keys FLO_Objectives) select {
                     private _objData = FLO_Objectives get _x;
                     private _owner = _objData getOrDefault ["owner", east];
-                    private _pos = _objData getOrDefault ["position", [0,0,0]];
+                    private _pos = _objData get "position";
 
-                    // Must be OPFOR-owned and have valid position
+                    // Must be OPFOR-owned
                     _owner isEqualTo east &&
-                    {(_pos select 0) > 100 || (_pos select 1) > 100} &&
                     {
                         // Not near any player (rear objectives only)
                         private _nearPlayer = false;

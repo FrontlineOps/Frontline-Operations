@@ -401,7 +401,7 @@ private _gtnCommander = createHashMapObject [[
         if (count _targetPos >= 2) then {
             _available = [_available, [], {
                 private _gData = _x select 1;
-                private _groupPos = _gData getOrDefault ["position", [0,0,0]];
+                private _groupPos = _gData get "position";
                 _groupPos distance2D _targetPos
             }, "ASCEND"] call BIS_fnc_sortBy;
         };
@@ -417,8 +417,8 @@ private _gtnCommander = createHashMapObject [[
 
         // Log distances for debugging
         {
-            private _gData = (_groups getOrDefault [_x, createHashMap]);
-            private _groupPos = _gData getOrDefault ["position", [0,0,0]];
+            private _gData = _groups get _x;
+            private _groupPos = _gData get "position";
             private _dist = if (count _targetPos >= 2) then { _groupPos distance2D _targetPos } else { -1 };
             ["GTN", 4, format["  Group %1 at %2 (dist: %3m)", _x, _groupPos, round _dist]] call FLO_fnc_log;
         } forEach _result;
@@ -578,10 +578,8 @@ private _gtnCommander = createHashMapObject [[
         private _arrivedCount = 0;
 
         {
-            private _gData = _groups getOrDefault [_x, nil];
-            if (isNil "_gData") then { continue };
-
-            private _groupPos = _gData getOrDefault ["position", [0,0,0]];
+            private _gData = _groups get _x;
+            private _groupPos = _gData get "position";
             if (_groupPos distance2D _pos <= _threshold) then {
                 _arrivedCount = _arrivedCount + 1;
             };
@@ -621,7 +619,7 @@ private _gtnCommander = createHashMapObject [[
         params ["_objId"];
 
         private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-        if (isNil "_objPos") exitWith { [0,0,0] };
+        if (isNil "_objPos") exitWith { nil };
 
         // Find a position 300-500m from objective, preferring roads
         private _offset = 300 + random 200;

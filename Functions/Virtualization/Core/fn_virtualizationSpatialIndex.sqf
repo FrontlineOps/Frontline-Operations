@@ -185,10 +185,8 @@ switch (toLower _mode) do {
         
         private _groups = FLO_virtualGroups get "_groups";
         {
-            private _pos = _y getOrDefault ["position", [0,0,0]];
-            if ((_pos select 0) > 100 || (_pos select 1) > 100) then {
-                ["add", [_x, _pos]] call FLO_fnc_virtualizationSpatialIndex;
-            };
+            private _pos = _y get "position";
+            ["add", [_x, _pos]] call FLO_fnc_virtualizationSpatialIndex;
         } forEach _groups;
         
         ["VIRTUALIZATION", 3, format["Spatial index rebuilt: %1 groups", count keys _groups]] call FLO_fnc_log;

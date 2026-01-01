@@ -195,7 +195,7 @@ private _executor = createHashMapObject [[
             // Use GTN Commander's staging position calculation
             private _stagingPos = _cmdr call ["_getStagingPosition", [_objId]];
 
-            if (_stagingPos isEqualTo [0,0,0]) exitWith {
+            if (isNil "_stagingPos") exitWith {
                 ["GTN", 2, format["Cannot create staging point - no position for %1", _objId]] call FLO_fnc_log;
                 false
             };
@@ -229,10 +229,10 @@ private _executor = createHashMapObject [[
                 false
             };
 
-            // Get staging position from previous task
+            // Get staging position from previous task (must exist if we got here)
             private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            private _stagingPos = _primData getOrDefault ["stagingPosition", [0,0,0]];
+            private _primData = _taskNode get "primitiveData";
+            private _stagingPos = _primData get "stagingPosition";
 
             // Order groups to staging
             {
@@ -252,14 +252,14 @@ private _executor = createHashMapObject [[
             params ["_ctx"];
             private _cmdr = _ctx get "commander";
             private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _primData = _taskNode get "primitiveData";
 
-            // Get staging info from previous tasks
-            private _stagingPos = _primData getOrDefault ["stagingPosition", [0,0,0]];
-            private _groups = _primData getOrDefault ["assignedGroups", []];
+            // Get staging info from previous tasks (must exist)
+            private _stagingPos = _primData get "stagingPosition";
+            private _groups = _primData get "assignedGroups";
 
-            if (count _groups == 0 || _stagingPos isEqualTo [0,0,0]) exitWith {
-                // No groups or position - auto-complete
+            if (count _groups == 0) exitWith {
+                // No groups - auto-complete
                 _ctx set ["status", "SUCCESS"];
                 true
             };

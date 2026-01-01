@@ -424,16 +424,16 @@ FLO_VirtualTransport = createHashMapObject [[
             ["", []]
         };
 
-        // Get target position
+        // Get target position - objective must exist with position
         private _targetPos = if (_targetObjective isEqualType "") then {
             if (!isNil "FLO_Objectives") then {
-                (FLO_Objectives getOrDefault [_targetObjective, createHashMap]) getOrDefault ["position", [0,0,0]]
-            } else { [0,0,0] }
+                (FLO_Objectives get _targetObjective) get "position"
+            } else { nil }
         } else {
             _targetObjective
         };
 
-        if (_targetPos isEqualTo [0,0,0]) exitWith {
+        if (isNil "_targetPos") exitWith {
             ["VIRTUALIZATION", 2, format["Invalid target for edge reinforcement: %1", _targetObjective]] call FLO_fnc_log;
             ["", []]
         };

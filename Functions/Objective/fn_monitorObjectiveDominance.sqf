@@ -85,7 +85,7 @@ while {true} do {
                 private _isActive = _gData getOrDefault ["isActive", false];
 
                 if (_gSide isEqualTo east && {!_isActive}) then {
-                    private _gPos = _gData getOrDefault ["position", [0,0,0]];
+                    private _gPos = _gData get "position";
                     if ([_gPos, _data] call FLO_fnc_isPositionInObjective) then {
                         _opforCount = _opforCount + (_gData getOrDefault ["unitCount", 0]);
                     };
