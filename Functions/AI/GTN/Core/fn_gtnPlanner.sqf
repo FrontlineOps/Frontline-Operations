@@ -156,27 +156,40 @@ private _planner = createHashMapObject [[
             nil
         };
         
-        // Find applicable method
+        // Find best method using scoring system
         private _methods = _goal get "methods";
         private _selectedMethod = nil;
-        
+        private _bestScore = -1;
+
         {
             private _method = _x;
-            private _conditions = _method get "conditions";
-            
-            if ([_ws, _params] call _conditions) exitWith {
+            private _methodId = _method get "id";
+            private _score = 0;
+
+            // Check if method has scoring function, otherwise use conditions
+            private _scoreFunc = _method getOrDefault ["score", nil];
+            if (!isNil "_scoreFunc") then {
+                _score = [_ws, _params, _self] call _scoreFunc;
+            } else {
+                private _conditions = _method get "conditions";
+                _score = if ([_ws, _params] call _conditions) then { 1 } else { -1 };
+            };
+
+            if (_score > _bestScore) then {
+                _bestScore = _score;
                 _selectedMethod = _method;
             };
         } forEach _methods;
 
-        if (isNil "_selectedMethod") exitWith {
-            ["GTN", 2, format["No applicable method for: %1 (checked %2 methods)", _taskId, count _methods]] call FLO_fnc_log;
+        if (isNil "_selectedMethod" || _bestScore < 0) exitWith {
+            ["GTN", 2, format["No viable method for: %1 (best score: %2)", _taskId, _bestScore]] call FLO_fnc_log;
             nil
         };
 
         private _methodId = _selectedMethod get "id";
         _node set ["methodUsed", _methodId];
-        ["GTN", 3, format["Selected method '%1' for goal '%2'", _methodId, _taskId]] call FLO_fnc_log;
+        _node set ["methodScore", _bestScore];
+        ["GTN", 3, format["Selected method '%1' for '%2' (score: %3)", _methodId, _taskId, _bestScore]] call FLO_fnc_log;
 
         // Decompose subtasks
         private _subtasks = _selectedMethod get "subtasks";

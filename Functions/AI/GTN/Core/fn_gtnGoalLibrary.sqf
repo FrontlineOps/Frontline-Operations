@@ -115,38 +115,82 @@ private _goalLibrary = createHashMapObject [[
     // === STRATEGIC GOALS ===
     
     ["_registerStrategicGoals", {
-        // CONTROL_AO - Main mission goal
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "control_ao"],
             ["type", GOAL_STRATEGIC],
             ["description", "Maintain control of the area of operations"],
-            ["preconditions", {
-                params ["_ws", "_params"];
-                true  // Always applicable
-            }],
+            ["preconditions", { true }],
             ["methods", [
-                // Method 1: Offensive - capture enemy objectives
                 createHashMapFromArray [
                     ["id", "offensive_posture"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
                         private _forces = _ws call ["_getForces", []];
                         private _situation = _ws call ["_getTacticalSituation", []];
-                        // Use offensive when we have momentum and available forces
-                        (_situation get "momentum") >= 0 && 
-                        {(_forces get "availableGroups") >= 4}
+                        private _intel = _ws call ["_getEnemyIntel", []];
+                        private _available = _forces get "availableGroups";
+                        private _total = _forces get "totalGroups";
+                        private _underAttack = _ws call ["_getObjectivesUnderAttack", []];
+                        private _attackCount = count (keys _underAttack);
+
+                        if (_available < 3) exitWith { -1 };
+                        if (_attackCount >= 2) exitWith { -1 };
+
+                        private _score = 40;
+
+                        private _momentum = _situation get "momentum";
+                        _score = _score + (_momentum * 0.4);
+
+                        if (_attackCount > 0) then { _score = _score - 35 };
+
+                        private _threatLevel = _intel getOrDefault ["threatLevel", 0];
+                        _score = _score - (_threatLevel * 3);
+
+                        private _reserveRatio = if (_total > 0) then { _available / _total } else { 0 };
+                        if (_reserveRatio < 0.3) then { _score = _score - 20 };
+                        if (_reserveRatio >= 0.5) then { _score = _score + 15 };
+
+                        if (_available >= 6) then { _score = _score + 20 };
+                        if (_available >= 4) then { _score = _score + 10 };
+
+                        if ((_situation get "initiativeHolder") == "OPFOR") then { _score = _score + 15 };
+                        if ((_situation get "initiativeHolder") == "BLUFOR") then { _score = _score - 15 };
+
+                        _score
                     }],
                     ["subtasks", [
                         ["capture_priority_objective", []],
                         ["maintain_force_ratio", []]
                     ]]
                 ],
-                // Method 2: Defensive - protect our objectives
                 createHashMapFromArray [
                     ["id", "defensive_posture"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
-                        true  // Fallback method
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _forces = _ws call ["_getForces", []];
+                        private _situation = _ws call ["_getTacticalSituation", []];
+                        private _intel = _ws call ["_getEnemyIntel", []];
+                        private _available = _forces get "availableGroups";
+                        private _total = _forces get "totalGroups";
+                        private _underAttack = _ws call ["_getObjectivesUnderAttack", []];
+                        private _attackCount = count (keys _underAttack);
+
+                        private _score = 25;
+
+                        private _momentum = _situation get "momentum";
+                        if (_momentum < 0) then { _score = _score + (abs _momentum * 0.5) };
+
+                        _score = _score + (_attackCount * 25);
+
+                        private _threatLevel = _intel getOrDefault ["threatLevel", 0];
+                        _score = _score + (_threatLevel * 2);
+
+                        private _reserveRatio = if (_total > 0) then { _available / _total } else { 0 };
+                        if (_reserveRatio < 0.3) then { _score = _score + 15 };
+
+                        if ((_situation get "initiativeHolder") == "BLUFOR") then { _score = _score + 20 };
+
+                        _score
                     }],
                     ["subtasks", [
                         ["protect_critical_assets", []],
@@ -156,7 +200,6 @@ private _goalLibrary = createHashMapObject [[
             ]]
         ]]];
 
-        // MAINTAIN_FORCE_RATIO - Keep forces balanced
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "maintain_force_ratio"],
             ["type", GOAL_STRATEGIC],
@@ -165,10 +208,11 @@ private _goalLibrary = createHashMapObject [[
             ["methods", [
                 createHashMapFromArray [
                     ["id", "reinforce_weak_sectors"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
                         private _forces = _ws call ["_getForces", []];
-                        (_forces get "availableGroups") > 0
+                        if ((_forces get "availableGroups") < 1) exitWith { -1 };
+                        30
                     }],
                     ["subtasks", [
                         ["reinforce_sector", []]
@@ -177,7 +221,6 @@ private _goalLibrary = createHashMapObject [[
             ]]
         ]]];
 
-        // PROTECT_CRITICAL_ASSETS - Defend our objectives
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "protect_critical_assets"],
             ["type", GOAL_STRATEGIC],
@@ -186,10 +229,11 @@ private _goalLibrary = createHashMapObject [[
             ["methods", [
                 createHashMapFromArray [
                     ["id", "active_defense"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
                         private _underAttack = _ws call ["_getObjectivesUnderAttack", []];
-                        count (keys _underAttack) > 0
+                        if (count (keys _underAttack) == 0) exitWith { -1 };
+                        60
                     }],
                     ["subtasks", [
                         ["defend_objective", ["_HIGHEST_PRIORITY_UNDER_ATTACK"]]
@@ -197,7 +241,7 @@ private _goalLibrary = createHashMapObject [[
                 ],
                 createHashMapFromArray [
                     ["id", "garrison_defense"],
-                    ["conditions", { true }],
+                    ["score", { 25 }],
                     ["subtasks", [
                         ["establish_garrison", []]
                     ]]
@@ -209,54 +253,74 @@ private _goalLibrary = createHashMapObject [[
     // === OPERATIONAL GOALS ===
 
     ["_registerOperationalGoals", {
-        // CAPTURE_PRIORITY_OBJECTIVE - Attack highest priority enemy objective
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "capture_priority_objective"],
             ["type", GOAL_OPERATIONAL],
             ["description", "Capture the highest priority enemy-held objective"],
             ["preconditions", {
                 params ["_ws", "_params"];
-                private _enemyObjs = _ws call ["_getEnemyObjectives", []];
-                count (keys _enemyObjs) > 0
+                count (keys (_ws call ["_getEnemyObjectives", []])) > 0
             }],
             ["methods", [
-                // Method 1: Direct assault with superiority
-                createHashMapFromArray [
-                    ["id", "direct_assault"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
-                        private _forces = _ws call ["_getForces", []];
-                        // Need substantial available forces
-                        (_forces get "availableGroups") >= 6
-                    }],
-                    ["subtasks", [
-                        ["select_objective", []],
-                        ["assault_objective", ["_SELECTED_OBJECTIVE"]]
-                    ]]
-                ],
-                // Method 2: Prepared assault with fire support
                 createHashMapFromArray [
                     ["id", "prepared_assault"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
                         private _forces = _ws call ["_getForces", []];
-                        private _artyAvail = _ws call ["_isAssetAvailable", ["artillery"]];
-                        (_forces get "availableGroups") >= 3 && _artyAvail
+                        private _assets = _ws call ["_getSupportAssets", []];
+                        private _available = _forces get "availableGroups";
+                        if (_available < 3) exitWith { -1 };
+                        if !(_assets get "artilleryAvailable") exitWith { -1 };
+
+                        private _score = 40;
+                        // Scale artillery ammo bonus: +2 per round, capped at +100
+                        private _artyBonus = ((_assets get "artilleryAmmo") * 2) min 100;
+                        _score = _score + _artyBonus;
+                        private _armor = _ws call ["_getArmorGroupCount", []];
+                        if (_armor >= 2) then { _score = _score + 15 };
+                        private _situation = _ws call ["_getTacticalSituation", []];
+                        if ((_situation get "momentum") < 0) then { _score = _score + 10 };
+                        _score
                     }],
                     ["subtasks", [
                         ["select_objective", []],
+                        ["recon_objective", ["_SELECTED_OBJECTIVE"]],
                         ["stage_assault_force", ["_SELECTED_OBJECTIVE"]],
                         ["preparatory_fires", ["_SELECTED_OBJECTIVE"]],
                         ["assault_objective", ["_SELECTED_OBJECTIVE"]]
                     ]]
                 ],
-                // Method 3: Opportunistic attack on vulnerable objective
+                createHashMapFromArray [
+                    ["id", "direct_assault"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _forces = _ws call ["_getForces", []];
+                        private _available = _forces get "availableGroups";
+                        if (_available < 4) exitWith { -1 };
+
+                        private _score = 30;
+                        if (_available >= 8) then { _score = _score + 25 };
+                        if (_available >= 6) then { _score = _score + 15 };
+                        private _situation = _ws call ["_getTacticalSituation", []];
+                        if ((_situation get "momentum") > 20) then { _score = _score + 20 };
+                        private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
+                        if (count (keys _vulnObjs) > 0) then { _score = _score + 15 };
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["select_objective", []],
+                        ["assault_objective", ["_SELECTED_OBJECTIVE"]]
+                    ]]
+                ],
                 createHashMapFromArray [
                     ["id", "opportunistic_attack"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
                         private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
-                        count (keys _vulnObjs) > 0
+                        if (count (keys _vulnObjs) == 0) exitWith { -1 };
+                        private _forces = _ws call ["_getForces", []];
+                        if ((_forces get "availableGroups") < 2) exitWith { -1 };
+                        25
                     }],
                     ["subtasks", [
                         ["prim_attack_vulnerable_objective", []]
@@ -265,7 +329,6 @@ private _goalLibrary = createHashMapObject [[
             ]]
         ]]];
 
-        // DEFEND_OBJECTIVE - Defend a specific objective
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "defend_objective"],
             ["type", GOAL_OPERATIONAL],
@@ -276,48 +339,60 @@ private _goalLibrary = createHashMapObject [[
                 _objId != "" || {count (keys (_ws call ["_getObjectivesUnderAttack", []])) > 0}
             }],
             ["methods", [
-                // Method 1: Immediate reinforcement
-                createHashMapFromArray [
-                    ["id", "immediate_reinforcement"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
-                        private _forces = _ws call ["_getForces", []];
-                        (_forces get "availableGroups") >= 2
-                    }],
-                    ["subtasks", [
-                        ["dispatch_qrf", ["_PARAM_0"]],
-                        ["establish_defense", ["_PARAM_0"]]
-                    ]]
-                ],
-                // Method 2: Defense with fire support
                 createHashMapFromArray [
                     ["id", "defense_with_fires"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
-                        _ws call ["_isAssetAvailable", ["artillery"]]
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _assets = _ws call ["_getSupportAssets", []];
+                        if !(_assets get "artilleryAvailable") exitWith { -1 };
+
+                        private _score = 50;
+                        // Scale artillery ammo bonus: +1.5 per round, capped at +75 for defense
+                        private _artyBonus = ((_assets get "artilleryAmmo") * 1.5) min 75;
+                        _score = _score + _artyBonus;
+                        private _forces = _ws call ["_getForces", []];
+                        if ((_forces get "availableGroups") < 2) then { _score = _score + 20 };
+                        _score
                     }],
                     ["subtasks", [
                         ["prim_call_defensive_fires", ["_PARAM_0"]],
                         ["prim_establish_defense", ["_PARAM_0"]]
                     ]]
+                ],
+                createHashMapFromArray [
+                    ["id", "immediate_reinforcement"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _forces = _ws call ["_getForces", []];
+                        private _available = _forces get "availableGroups";
+                        if (_available < 2) exitWith { -1 };
+
+                        private _score = 40;
+                        if (_available >= 4) then { _score = _score + 20 };
+                        private _armor = _ws call ["_getArmorGroupCount", []];
+                        if (_armor >= 1) then { _score = _score + 15 };
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["dispatch_qrf", ["_PARAM_0"]],
+                        ["establish_defense", ["_PARAM_0"]]
+                    ]]
                 ]
             ]]
         ]]];
 
-        // REINFORCE_SECTOR - Send forces to weak area
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "reinforce_sector"],
             ["type", GOAL_OPERATIONAL],
             ["description", "Reinforce a sector that needs additional forces"],
             ["preconditions", {
                 params ["_ws", "_params"];
-                private _forces = _ws call ["_getForces", []];
-                (_forces get "availableGroups") > 0
+                (_ws call ["_getForces", []] get "availableGroups") > 0
             }],
             ["methods", [
                 createHashMapFromArray [
                     ["id", "send_reinforcements"],
-                    ["conditions", { true }],
+                    ["score", { 30 }],
                     ["subtasks", [
                         ["prim_identify_weak_sector", []],
                         ["prim_move_forces_to_sector", ["_WEAK_SECTOR"]]
@@ -330,7 +405,80 @@ private _goalLibrary = createHashMapObject [[
     // === TACTICAL GOALS ===
 
     ["_registerTacticalGoals", {
-        // STAGE_ASSAULT_FORCE - Gather forces at staging point
+        _self call ["_registerGoal", [createHashMapFromArray [
+            ["id", "recon_objective"],
+            ["type", GOAL_TACTICAL],
+            ["description", "Conduct reconnaissance on an objective"],
+            ["preconditions", {
+                params ["_ws", "_params"];
+                _params params [["_objId", ""]];
+                _objId != ""
+            }],
+            ["methods", [
+                createHashMapFromArray [
+                    ["id", "ground_recon"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _forces = _ws call ["_getForces", []];
+                        if ((_forces get "infantryGroups") < 1) exitWith { -1 };
+                        private _score = 40;
+                        private _objId = _params param [0, ""];
+                        if (_objId != "" && {!(_ws call ["_isIntelFresh", [_objId, 300]])}) then {
+                            _score = _score + 20;
+                        };
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["prim_send_recon_patrol", ["_PARAM_0"]],
+                        ["prim_wait_for_recon", ["_PARAM_0"]]
+                    ]]
+                ],
+                createHashMapFromArray [
+                    ["id", "air_recon"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { -1 };
+
+                        // Air recon is faster and safer than ground patrol
+                        private _score = 55;  // Base higher than ground_recon (40)
+
+                        // Bonus if objective is far from friendly forces
+                        private _objId = _params param [0, ""];
+                        if (_objId != "") then {
+                            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+                            if (!isNil "_objPos") then {
+                                private _friendlyDist = _ws call ["_getNearestFriendlyDistance", [_objPos]];
+                                if (_friendlyDist > 2000) then { _score = _score + 20 };
+                            };
+                        };
+
+                        // Bonus for ordnance availability (aircraft can defend itself if needed)
+                        private _assets = _ws call ["_getSupportAssets", []];
+                        private _ordnance = _assets getOrDefault ["casOrdnance", 0];
+                        if (_ordnance > 4) then { _score = _score + 10 };
+
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["prim_request_air_recon", ["_PARAM_0"]]
+                    ]]
+                ],
+                createHashMapFromArray [
+                    ["id", "skip_recon"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _objId = _params param [0, ""];
+                        if (_objId == "") exitWith { 10 };
+                        if (_ws call ["_isIntelFresh", [_objId, 300]]) exitWith { 50 };
+                        5
+                    }],
+                    ["subtasks", [
+                        ["prim_use_existing_intel", ["_PARAM_0"]]
+                    ]]
+                ]
+            ]]
+        ]]];
+
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "stage_assault_force"],
             ["type", GOAL_TACTICAL],
@@ -343,7 +491,7 @@ private _goalLibrary = createHashMapObject [[
             ["methods", [
                 createHashMapFromArray [
                     ["id", "standard_staging"],
-                    ["conditions", { true }],
+                    ["score", { 30 }],
                     ["subtasks", [
                         ["prim_select_staging_point", ["_PARAM_0"]],
                         ["prim_assign_groups_to_staging", ["_PARAM_0", 4]],
@@ -353,7 +501,6 @@ private _goalLibrary = createHashMapObject [[
             ]]
         ]]];
 
-        // ASSAULT_OBJECTIVE - Execute attack on objective
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "assault_objective"],
             ["type", GOAL_TACTICAL],
@@ -364,22 +511,45 @@ private _goalLibrary = createHashMapObject [[
                 _objId != ""
             }],
             ["methods", [
-                // Combined arms assault
                 createHashMapFromArray [
                     ["id", "combined_arms_assault"],
-                    ["conditions", {
-                        params ["_ws", "_params"];
-                        _ws call ["_isAssetAvailable", ["cas"]]
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { -1 };
+
+                        private _score = 45;
+                        // Add ordnance bonus: +3 per missile/bomb, capped at +60
+                        private _assets = _ws call ["_getSupportAssets", []];
+                        private _ordnance = _assets getOrDefault ["casOrdnance", 0];
+                        private _ordBonus = (_ordnance * 3) min 60;
+                        _score = _score + _ordBonus;
+
+                        private _objId = _params param [0, ""];
+                        if (_objId != "") then {
+                            private _analysis = _ws call ["_getObjectiveAnalysis", [_objId]];
+                            if (!isNil "_analysis") then {
+                                if (_analysis get "hasArmor") then { _score = _score + 25 };
+                                if ((_analysis get "fortificationLevel") >= 2) then { _score = _score + 15 };
+                            };
+                        };
+                        _score
                     }],
                     ["subtasks", [
                         ["prim_call_cas", ["_PARAM_0"]],
                         ["prim_attack_objective", ["_PARAM_0"]]
                     ]]
                 ],
-                // Infantry assault
                 createHashMapFromArray [
                     ["id", "infantry_assault"],
-                    ["conditions", { true }],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _score = 30;
+                        private _forces = _ws call ["_getForces", []];
+                        if ((_forces get "availableGroups") >= 6) then { _score = _score + 20 };
+                        private _armor = _ws call ["_getArmorGroupCount", []];
+                        if (_armor >= 2) then { _score = _score + 15 };
+                        _score
+                    }],
                     ["subtasks", [
                         ["prim_attack_objective", ["_PARAM_0"]]
                     ]]
@@ -638,6 +808,49 @@ private _goalLibrary = createHashMapObject [[
                 params ["_ws", "_taskData"];
                 _taskData getOrDefault ["established", false]
             }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_send_recon_patrol"],
+            ["description", "Send infantry patrol to recon objective"],
+            ["handler", "GTN_sendReconPatrol"],
+            ["timeout", 600],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                _taskData getOrDefault ["patrolDispatched", false]
+            }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_wait_for_recon"],
+            ["description", "Wait for recon patrol to report"],
+            ["handler", "GTN_waitForRecon"],
+            ["timeout", 900],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                private _objId = _taskData getOrDefault ["objectiveId", ""];
+                if (_objId == "") exitWith { false };
+                _ws call ["_isIntelFresh", [_objId, 60]]
+            }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_request_air_recon"],
+            ["description", "Request aerial reconnaissance"],
+            ["handler", "GTN_requestAirRecon"],
+            ["timeout", 300],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                _taskData getOrDefault ["reconComplete", false]
+            }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_use_existing_intel"],
+            ["description", "Use existing intel without new recon"],
+            ["handler", "GTN_useExistingIntel"],
+            ["timeout", 5],
+            ["completionCheck", { true }]
         ]]];
     }]
 ]];

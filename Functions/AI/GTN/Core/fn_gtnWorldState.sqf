@@ -83,30 +83,38 @@ private _worldState = createHashMapObject [[
     // Update objective states from FLO_Objectives
     ["_senseObjectives", {
         private _objectives = createHashMap;
-        
+
         if (isNil "FLO_Objectives") exitWith { _objectives };
-        
+
         private _bluforUnits = allUnits select {side _x == west && alive _x && !(captive _x)};
         private _opforUnits = allUnits select {side _x == east && alive _x};
-        
+        private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
+
         {
             private _id = _x;
             private _data = FLO_Objectives get _id;
             if (isNil "_data") then { continue };
-            
+
             private _pos = _data get "position";
             private _priority = _data getOrDefault ["priority", 50];
             private _owner = _data getOrDefault ["owner", east];
-            
-            // Count units near objective
+
             private _nearBlufor = count (_bluforUnits inAreaArray [_pos, 500, 500]);
             private _nearOpfor = count (_opforUnits inAreaArray [_pos, 500, 500]);
-            
-            // Determine contestation
+
             private _contested = (_nearBlufor > 0) && (_nearOpfor > 0);
             private _underAttack = (_owner == east) && (_nearBlufor > 0);
             private _vulnerable = (_owner == west) && (_nearOpfor == 0) && (_nearBlufor < 3);
-            
+
+            private _cachedIntel = _intelCache getOrDefault [_id, createHashMapFromArray [
+                ["lastReconTime", 0],
+                ["intelQuality", 0],
+                ["confirmedStrength", 0],
+                ["hasArmor", false],
+                ["hasAA", false],
+                ["defensePosture", "UNKNOWN"]
+            ]];
+
             private _objState = createHashMapFromArray [
                 ["position", _pos],
                 ["priority", _priority],
@@ -116,12 +124,13 @@ private _worldState = createHashMapObject [[
                 ["contested", _contested],
                 ["underAttack", _underAttack],
                 ["vulnerable", _vulnerable],
-                ["forceRatio", if (_nearBlufor > 0) then {_nearOpfor / _nearBlufor} else {999}]
+                ["forceRatio", if (_nearBlufor > 0) then {_nearOpfor / _nearBlufor} else {999}],
+                ["intel", _cachedIntel]
             ];
-            
+
             _objectives set [_id, _objState];
         } forEach (keys FLO_Objectives);
-        
+
         _self set ["_objectives", _objectives];
         _objectives
     }],
@@ -169,6 +178,8 @@ private _worldState = createHashMapObject [[
             _counts set [_typeKey, (_counts get _typeKey) + 1];
 
             // Count by status
+            private _onMission = _gData getOrDefault ["onMission", false];
+
             if (_x in _attackGroups) then {
                 _counts set ["attacking", (_counts get "attacking") + 1];
             } else {
@@ -177,6 +188,15 @@ private _worldState = createHashMapObject [[
                 } else {
                     if (_x in _garrisonGroups) then {
                         _counts set ["garrisoned", (_counts get "garrisoned") + 1];
+                    };
+                };
+            };
+
+            // A group is "available" if it's not on an active mission
+            // (garrison groups are available, idle groups are available)
+            if !(_onMission) then {
+                if !(_x in _attackGroups) then {
+                    if !(_x in _defenseGroups) then {
                         _counts set ["available", (_counts get "available") + 1];
                     };
                 };
@@ -207,46 +227,89 @@ private _worldState = createHashMapObject [[
 
         if (isNil "_cmdr") exitWith { _assets };
 
-        // Check artillery - look for artillery groups in virtualization system
+        // Check artillery using Capability Analyzer for accurate ammo counts
         private _artyAvailable = false;
-        if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups get "_groups";
-            if (!isNil "_groups") then {
-                {
-                    private _gData = _groups get _x;
-                    if (!isNil "_gData" && {(_gData getOrDefault ["groupType", ""]) == "artillery"}) exitWith {
-                        _artyAvailable = true;
-                    };
-                } forEach (keys _groups);
-            };
-        };
-        _assets set ["artilleryAvailable", _artyAvailable];
+        private _artyAmmo = 0;
+        private _artyBatteries = 0;
 
-        // Check air assets - look for air groups in virtualization system
+        if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
+            private _artyStatus = FLO_GTN_CapabilityAnalyzer call ["_getArtilleryStatus", []];
+            _artyBatteries = _artyStatus get "availableBatteries";
+            _artyAvailable = _artyBatteries > 0;
+            // Use estimated rounds which combines actual (active) + estimated (virtual)
+            _artyAmmo = _artyStatus get "estimatedRounds";
+
+            ["GTN", 4, format["Artillery sense: batteries=%1/%2, rounds=%3 (active=%4, virtual=%5)",
+                _artyBatteries,
+                _artyStatus get "totalBatteries",
+                _artyAmmo,
+                _artyStatus get "activeRounds",
+                _artyStatus get "totalRounds"]] call FLO_fnc_log;
+        } else {
+            // Fallback if analyzer not initialized
+            if (!isNil "FLO_virtualGroups") then {
+                private _groups = FLO_virtualGroups get "_groups";
+                if (!isNil "_groups") then {
+                    {
+                        private _gData = _groups get _x;
+                        if (!isNil "_gData" && {(_gData getOrDefault ["groupType", ""]) == "artillery"}) exitWith {
+                            _artyAvailable = true;
+                        };
+                    } forEach (keys _groups);
+                };
+            };
+            ["GTN", 4, format["Artillery sense (fallback): available=%1", _artyAvailable]] call FLO_fnc_log;
+        };
+
+        _assets set ["artilleryAvailable", _artyAvailable];
+        _assets set ["artilleryAmmo", _artyAmmo];
+
+        // Check air assets using Capability Analyzer for accurate status
         private _casAvailable = false;
         private _seadAvailable = false;
         private _bombAvailable = false;
-        if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups get "_groups";
-            if (!isNil "_groups") then {
-                {
-                    private _gData = _groups get _x;
-                    if (isNil "_gData") then { continue };
-                    private _gType = _gData getOrDefault ["groupType", ""];
-                    if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
-                        switch (_gType) do {
-                            case "cas": { _casAvailable = true };
-                            case "sead": { _seadAvailable = true };
-                            case "bomber": { _bombAvailable = true };
-                            default { _casAvailable = true }; // Generic air = CAS
+        private _casOrdnance = 0;
+
+        if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
+            private _airStatus = FLO_GTN_CapabilityAnalyzer call ["_getAirAssetStatus", []];
+            _casAvailable = (_airStatus get "casAvailable") > 0 || (_airStatus get "heloAvailable") > 0;
+            _seadAvailable = (_airStatus get "seadAvailable") > 0;
+            _bombAvailable = (_airStatus get "bomberAvailable") > 0;
+            _casOrdnance = _airStatus get "totalOrdnance";
+
+            ["GTN", 4, format["Air sense: CAS=%1/%2, SEAD=%3/%4, Bomber=%5/%6, ordnance=%7",
+                _airStatus get "casAvailable", _airStatus get "casTotal",
+                _airStatus get "seadAvailable", _airStatus get "seadTotal",
+                _airStatus get "bomberAvailable", _airStatus get "bomberTotal",
+                _casOrdnance]] call FLO_fnc_log;
+        } else {
+            // Fallback if analyzer not initialized
+            if (!isNil "FLO_virtualGroups") then {
+                private _groups = FLO_virtualGroups get "_groups";
+                if (!isNil "_groups") then {
+                    {
+                        private _gData = _groups get _x;
+                        if (isNil "_gData") then { continue };
+                        if (_gData getOrDefault ["onMission", false]) then { continue };
+                        private _gType = _gData getOrDefault ["groupType", ""];
+                        if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
+                            switch (_gType) do {
+                                case "cas": { _casAvailable = true };
+                                case "sead": { _seadAvailable = true };
+                                case "bomber": { _bombAvailable = true };
+                                default { _casAvailable = true };
+                            };
                         };
-                    };
-                } forEach (keys _groups);
+                    } forEach (keys _groups);
+                };
             };
+            ["GTN", 4, format["Air sense (fallback): CAS=%1, SEAD=%2, Bomber=%3", _casAvailable, _seadAvailable, _bombAvailable]] call FLO_fnc_log;
         };
+
         _assets set ["casAvailable", _casAvailable];
         _assets set ["seadAvailable", _seadAvailable];
         _assets set ["bombingAvailable", _bombAvailable];
+        _assets set ["casOrdnance", _casOrdnance];
 
         _self set ["_supportAssets", _assets];
         _assets
@@ -433,14 +496,124 @@ private _worldState = createHashMapObject [[
         }
     }],
 
-    // Get tactical situation
+    // Get distance from position to nearest friendly (OPFOR) group
+    ["_getNearestFriendlyDistance", {
+        params ["_pos"];
+
+        if (isNil "FLO_virtualGroups") exitWith { 10000 };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _minDist = 10000;
+
+        {
+            private _gData = _groups get _x;
+            if (isNil "_gData") then { continue };
+            if ((_gData getOrDefault ["side", sideUnknown]) != east) then { continue };
+
+            private _gPos = _gData getOrDefault ["position", [0,0,0]];
+            private _dist = _pos distance2D _gPos;
+            if (_dist < _minDist) then { _minDist = _dist };
+        } forEach (keys _groups);
+
+        _minDist
+    }],
+
     ["_getTacticalSituation", {
         _self get "_tacticalSituation"
     }],
 
-    // Get enemy intel
     ["_getEnemyIntel", {
         _self get "_enemyIntel"
+    }],
+
+    ["_getSupportAssets", {
+        _self get "_supportAssets"
+    }],
+
+    ["_getObjectiveAnalysis", {
+        params ["_objId"];
+        private _cmdr = _self get "_commander";
+        if (isNil "_cmdr") exitWith { nil };
+        private _analyzer = _cmdr getOrDefault ["_capabilityAnalyzer", nil];
+        if (isNil "_analyzer") exitWith { nil };
+        _analyzer call ["_analyzeObjective", [_objId]]
+    }],
+
+    ["_getForceRatioAtObjective", {
+        params ["_objId"];
+        private _objs = _self get "_objectives";
+        private _obj = _objs getOrDefault [_objId, nil];
+        if (isNil "_obj") exitWith { 1 };
+        private _friendly = _obj getOrDefault ["friendlyCount", 0];
+        private _enemy = _obj getOrDefault ["enemyCount", 1] max 1;
+        _friendly / _enemy
+    }],
+
+    ["_getAvailableCombatPower", {
+        private _cmdr = _self get "_commander";
+        if (isNil "_cmdr") exitWith { 0 };
+        private _analyzer = _cmdr getOrDefault ["_capabilityAnalyzer", nil];
+        if (isNil "_analyzer") exitWith { 0 };
+        private _summary = _analyzer call ["_getForcesSummary", [east]];
+        _summary getOrDefault ["totalCombatPower", 0]
+    }],
+
+    ["_getArmorGroupCount", {
+        private _forces = _self get "_ownForces";
+        (_forces get "armorGroups") + (_forces get "mechanizedGroups")
+    }],
+
+    ["_getObjectiveIntel", {
+        params ["_objId"];
+        private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
+        _intelCache getOrDefault [_objId, createHashMapFromArray [
+            ["lastReconTime", 0],
+            ["intelQuality", 0],
+            ["confirmedStrength", 0],
+            ["hasArmor", false],
+            ["hasAA", false],
+            ["defensePosture", "UNKNOWN"]
+        ]]
+    }],
+
+    ["_isIntelFresh", {
+        params ["_objId", ["_maxAge", 300]];
+        private _intel = _self call ["_getObjectiveIntel", [_objId]];
+        private _lastRecon = _intel get "lastReconTime";
+        (diag_tickTime - _lastRecon) < _maxAge
+    }],
+
+    ["_updateObjectiveIntel", {
+        params ["_objId", "_intelData"];
+        private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
+        private _existing = _intelCache getOrDefault [_objId, createHashMap];
+        { _existing set [_x, _intelData get _x]; } forEach (keys _intelData);
+        _existing set ["lastReconTime", diag_tickTime];
+        _intelCache set [_objId, _existing];
+        _self set ["_objectiveIntel", _intelCache];
+    }],
+
+    ["_getObjectivesNeedingRecon", {
+        params [["_maxAge", 300]];
+        private _objectives = _self get "_objectives";
+        private _needsRecon = [];
+        {
+            private _objId = _x;
+            private _obj = _objectives get _objId;
+            if ((_obj get "owner") == west) then {
+                if !(_self call ["_isIntelFresh", [_objId, _maxAge]]) then {
+                    _needsRecon pushBack [_objId, _obj get "priority"];
+                };
+            };
+        } forEach (keys _objectives);
+        _needsRecon sort false;
+        _needsRecon apply { _x select 0 }
+    }],
+
+    ["_getReconGroups", {
+        private _forces = _self get "_ownForces";
+        private _infantry = _forces get "infantryGroups";
+        (_infantry min 2) max 0
     }],
 
     // === MAIN UPDATE ===

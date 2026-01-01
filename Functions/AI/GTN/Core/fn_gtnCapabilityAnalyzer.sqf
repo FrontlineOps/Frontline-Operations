@@ -610,8 +610,51 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             ["crew", []],
             ["passengers", _configTransport],
             ["damageStatus", 1 - (damage _vehicle)],
-            ["fuelStatus", fuel _vehicle]
+            ["fuelStatus", fuel _vehicle],
+            ["ammoStatus", 1.0],  // Will be calculated below
+            ["artilleryAmmo", 0]  // Specific artillery round count
         ];
+
+        // Calculate ammo status - ratio of current ammo to max capacity
+        private _magsAmmo = magazinesAmmo _vehicle;
+        private _totalCurrent = 0;
+        private _totalMax = 0;
+        private _artilleryRounds = 0;
+
+        // Check if vehicle is artillery capable
+        private _isArtillery = _vehicle getVariable ["ace_artillerytables_firedEH", false] ||
+                              (count (getArtilleryAmmo [_vehicle]) > 0) ||
+                              (_type == "SPG");
+
+        {
+            _x params ["_magClass", "_ammoCount"];
+            private _cfgMag = configFile >> "CfgMagazines" >> _magClass;
+            if (isClass _cfgMag) then {
+                private _magSize = getNumber (_cfgMag >> "count");
+                _totalCurrent = _totalCurrent + _ammoCount;
+                _totalMax = _totalMax + _magSize;
+
+                // Count artillery-specific ammo
+                if (_isArtillery) then {
+                    // Check if this magazine is artillery compatible
+                    private _ammoClass = getText (_cfgMag >> "ammo");
+                    private _cfgAmmo = configFile >> "CfgAmmo" >> _ammoClass;
+                    if (isClass _cfgAmmo) then {
+                        private _indirectHit = getNumber (_cfgAmmo >> "indirectHit");
+                        private _indirectRange = getNumber (_cfgAmmo >> "indirectHitRange");
+                        // Artillery ammo typically has high indirect damage
+                        if (_indirectHit > 50 || _indirectRange > 10) then {
+                            _artilleryRounds = _artilleryRounds + _ammoCount;
+                        };
+                    };
+                };
+            };
+        } forEach _magsAmmo;
+
+        if (_totalMax > 0) then {
+            _analysis set ["ammoStatus", _totalCurrent / _totalMax];
+        };
+        _analysis set ["artilleryAmmo", _artilleryRounds];
 
         // Analyze all vehicle weapons using config
         private _allWeapons = _self call ["_getVehicleWeapons", [_typeClass]];
@@ -1444,20 +1487,24 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
             // Check vehicle status
             private _totalFuel = 0;
+            private _totalAmmo = 0;
             private _vehCount = 0;
             {
                 _totalFuel = _totalFuel + (_x get "fuelStatus");
                 _totalDamage = _totalDamage + (_x get "damageStatus");
+                _totalAmmo = _totalAmmo + (_x getOrDefault ["ammoStatus", 1.0]);
                 _vehCount = _vehCount + 1;
             } forEach (_analysis get "vehicles");
 
             if (_vehCount > 0) then {
                 _groupReadiness set ["fuel", _totalFuel / _vehCount];
+                _groupReadiness set ["ammo", _totalAmmo / _vehCount];
             };
 
-            // Calculate combat readiness
+            // Calculate combat readiness (damage * fuel factor * ammo factor)
             private _combatReady = (_groupReadiness get "damage") *
-                                   ((_groupReadiness get "fuel") max 0.5);
+                                   ((_groupReadiness get "fuel") max 0.5) *
+                                   ((_groupReadiness get "ammo") max 0.3);
             _groupReadiness set ["combat", _combatReady];
 
             (_readiness get "groups") set [_gId, _groupReadiness];
@@ -1761,6 +1808,200 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         _summary set ["averageReadiness", _readiness get "overall"];
 
         _summary
+    }],
+
+    // Get artillery status across all artillery groups
+    // Returns: [totalBatteries, availableBatteries, totalRounds, activeRounds]
+    ["_getArtilleryStatus", {
+        private _result = createHashMapFromArray [
+            ["totalBatteries", 0],
+            ["availableBatteries", 0],
+            ["totalRounds", 0],      // Estimated total capacity
+            ["activeRounds", 0],     // Actual ammo from active groups
+            ["estimatedRounds", 0],  // Combined actual + estimated
+            ["batteries", []]
+        ];
+
+        if (isNil "FLO_virtualGroups") exitWith { _result };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _missions = if (!isNil "FLO_GTNArtilleryManager") then {
+            FLO_GTNArtilleryManager get "missions"
+        } else {
+            createHashMap
+        };
+
+        {
+            private _gId = _x;
+            private _gData = _groups get _gId;
+            if (isNil "_gData") then { continue };
+            if ((_gData getOrDefault ["groupType", ""]) != "artillery") then { continue };
+
+            private _batteryInfo = createHashMapFromArray [
+                ["groupId", _gId],
+                ["isActive", false],
+                ["onMission", false],
+                ["rounds", 0],
+                ["position", _gData getOrDefault ["position", [0,0,0]]]
+            ];
+
+            _result set ["totalBatteries", (_result get "totalBatteries") + 1];
+
+            private _onMission = _gId in _missions;
+            _batteryInfo set ["onMission", _onMission];
+
+            if !(_onMission) then {
+                _result set ["availableBatteries", (_result get "availableBatteries") + 1];
+            };
+
+            private _isActive = _gData getOrDefault ["isActive", false];
+            _batteryInfo set ["isActive", _isActive];
+
+            if (_isActive) then {
+                // Get actual ammo count from real group
+                private _realGroup = _gData getOrDefault ["realGroup", grpNull];
+                if (!isNull _realGroup) then {
+                    private _groupRounds = 0;
+                    {
+                        private _veh = vehicle _x;
+                        if (_veh != _x && alive _veh) then {
+                            // Check for artillery ammo directly
+                            private _artyAmmo = getArtilleryAmmo [_veh];
+                            {
+                                private _magClass = _x;
+                                private _magsAmmo = magazinesAmmo _veh;
+                                {
+                                    if ((_x select 0) == _magClass) then {
+                                        _groupRounds = _groupRounds + (_x select 1);
+                                    };
+                                } forEach _magsAmmo;
+                            } forEach _artyAmmo;
+                        };
+                    } forEach (units _realGroup);
+
+                    _batteryInfo set ["rounds", _groupRounds];
+                    _result set ["activeRounds", (_result get "activeRounds") + _groupRounds];
+                };
+            } else {
+                // Virtual group - estimate based on unit count and typical loadout
+                // Typical artillery piece has ~20-30 rounds
+                private _unitCount = _gData getOrDefault ["unitCount", 1];
+                private _estimatedRounds = _unitCount * 24;  // Conservative estimate
+                _batteryInfo set ["rounds", _estimatedRounds];
+                _result set ["totalRounds", (_result get "totalRounds") + _estimatedRounds];
+            };
+
+            (_result get "batteries") pushBack _batteryInfo;
+        } forEach (keys _groups);
+
+        // Combined estimate: actual from active + estimated from virtual
+        _result set ["estimatedRounds", (_result get "activeRounds") + (_result get "totalRounds")];
+
+        _result
+    }],
+
+    // Get air asset status across all air groups
+    // Returns HashMap with CAS, SEAD, bomber availability and ordnance status
+    ["_getAirAssetStatus", {
+        private _result = createHashMapFromArray [
+            ["casTotal", 0],
+            ["casAvailable", 0],
+            ["seadTotal", 0],
+            ["seadAvailable", 0],
+            ["bomberTotal", 0],
+            ["bomberAvailable", 0],
+            ["heloTotal", 0],
+            ["heloAvailable", 0],
+            ["totalOrdnance", 0],  // Weapons load estimate
+            ["assets", []]
+        ];
+
+        if (isNil "FLO_virtualGroups") exitWith { _result };
+
+        private _groups = FLO_virtualGroups get "_groups";
+
+        {
+            private _gId = _x;
+            private _gData = _groups get _gId;
+            if (isNil "_gData") then { continue };
+
+            private _gType = _gData getOrDefault ["groupType", ""];
+            if !(_gType in ["cas", "sead", "bomber", "air", "helicopter", "jet"]) then { continue };
+
+            private _assetInfo = createHashMapFromArray [
+                ["groupId", _gId],
+                ["type", _gType],
+                ["isActive", false],
+                ["onMission", false],
+                ["ordnance", 0],
+                ["ammoStatus", 1.0],
+                ["position", _gData getOrDefault ["position", [0,0,0]]]
+            ];
+
+            private _onMission = _gData getOrDefault ["onMission", false];
+            _assetInfo set ["onMission", _onMission];
+
+            // Categorize and count
+            private _typeKey = switch (_gType) do {
+                case "cas": { "cas" };
+                case "sead": { "sead" };
+                case "bomber": { "bomber" };
+                case "helicopter": { "helo" };
+                default { "cas" };  // Generic air = CAS
+            };
+
+            _result set [_typeKey + "Total", (_result get (_typeKey + "Total")) + 1];
+            if !(_onMission) then {
+                _result set [_typeKey + "Available", (_result get (_typeKey + "Available")) + 1];
+            };
+
+            private _isActive = _gData getOrDefault ["isActive", false];
+            _assetInfo set ["isActive", _isActive];
+
+            if (_isActive) then {
+                // Get actual ordnance count from real group
+                private _realGroup = _gData getOrDefault ["realGroup", grpNull];
+                if (!isNull _realGroup) then {
+                    private _groupOrdnance = 0;
+                    private _groupAmmo = 0;
+                    private _vehCount = 0;
+                    {
+                        private _veh = vehicle _x;
+                        if (_veh != _x && alive _veh) then {
+                            _vehCount = _vehCount + 1;
+                            private _analysis = _self call ["_analyzeVehicle", [_veh]];
+                            if (!isNil "_analysis") then {
+                                _groupAmmo = _groupAmmo + (_analysis getOrDefault ["ammoStatus", 1.0]);
+                                // Ordnance = missile/bomb count (rough estimate from ammo)
+                                private _artyAmmo = _analysis getOrDefault ["artilleryAmmo", 0];
+                                if (_artyAmmo > 0) then {
+                                    _groupOrdnance = _groupOrdnance + _artyAmmo;
+                                } else {
+                                    // Estimate from ammo status - full load = ~8 missiles/bombs
+                                    _groupOrdnance = _groupOrdnance + round((_analysis getOrDefault ["ammoStatus", 1.0]) * 8);
+                                };
+                            };
+                        };
+                    } forEach (units _realGroup);
+
+                    if (_vehCount > 0) then {
+                        _assetInfo set ["ammoStatus", _groupAmmo / _vehCount];
+                    };
+                    _assetInfo set ["ordnance", _groupOrdnance];
+                    _result set ["totalOrdnance", (_result get "totalOrdnance") + _groupOrdnance];
+                };
+            } else {
+                // Virtual group - estimate typical loadout
+                private _unitCount = _gData getOrDefault ["unitCount", 1];
+                private _estimatedOrdnance = _unitCount * 8;  // 8 missiles/bombs per aircraft
+                _assetInfo set ["ordnance", _estimatedOrdnance];
+                _result set ["totalOrdnance", (_result get "totalOrdnance") + _estimatedOrdnance];
+            };
+
+            (_result get "assets") pushBack _assetInfo;
+        } forEach (keys _groups);
+
+        _result
     }],
 
     // Clear analysis cache (for when units/vehicles change significantly)

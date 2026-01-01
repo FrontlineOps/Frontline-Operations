@@ -615,6 +615,215 @@ private _executor = createHashMapObject [[
             _ctx set ["status", "SUCCESS"];
             true
         }]];
+
+        _self call ["_registerHandler", ["prim_send_recon_patrol", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _cmdr = _ctx get "commander";
+            private _gtnCmdr = _self get "_gtnCommander";
+
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith { false };
+
+            private _available = _cmdr call ["_getAvailableGroups", [1]];
+            private _infantry = _available select {
+                private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_x, createHashMap];
+                (_gData getOrDefault ["type", ""]) in ["infantry", "recon"]
+            };
+            if (count _infantry < 1) exitWith { false };
+
+            private _reconGroup = _infantry select 0;
+            private _reconPos = _objPos getPos [300, 45 + (floor(_objId call BIS_fnc_hashCode) mod 4) * 90];
+
+            _cmdr call ["_orderGroupMove", [_reconGroup, _reconPos, "AWARE"]];
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["patrolDispatched", true];
+            _primData set ["reconGroup", _reconGroup];
+            _primData set ["objectiveId", _objId];
+            _taskNode set ["primitiveData", _primData];
+
+            // Use capability analyzer to get REAL intel about the objective
+            [_gtnCmdr, _objId] spawn {
+                params ["_gtnCmdr", "_objId"];
+                // Wait for patrol to reach observation position
+                sleep 120;
+                if (isNil "_gtnCmdr") exitWith {};
+                private _ws = _gtnCmdr getOrDefault ["_worldState", nil];
+                if (isNil "_ws") exitWith {};
+
+                // Use the capability analyzer to get actual objective data
+                private _analyzer = FLO_GTN_CapabilityAnalyzer;
+                if (isNil "_analyzer") exitWith {};
+
+                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+                if (isNil "_objAnalysis") exitWith {};
+
+                // Convert analyzer data to intel format
+                private _garrisonCount = count (_objAnalysis get "garrison");
+                private _totalPower = _objAnalysis get "totalDefensePower";
+                private _posture = switch true do {
+                    case (_totalPower > 500): { "HEAVY" };
+                    case (_totalPower > 200): { "MEDIUM" };
+                    case (_totalPower > 0): { "LIGHT" };
+                    default { "NONE" };
+                };
+
+                private _intel = createHashMapFromArray [
+                    ["intelQuality", 0.9],
+                    ["confirmedStrength", _garrisonCount],
+                    ["totalCombatPower", _totalPower],
+                    ["hasArmor", _objAnalysis get "hasArmor"],
+                    ["hasAA", _objAnalysis get "hasAA"],
+                    ["hasStatic", _objAnalysis get "hasStatic"],
+                    ["defensePosture", _posture],
+                    ["fortificationLevel", _objAnalysis get "fortificationLevel"],
+                    ["recommendedForce", _objAnalysis get "recommendedAttackForce"]
+                ];
+                _ws call ["_updateObjectiveIntel", [_objId, _intel]];
+
+                ["GTN", 3, format["Recon intel gathered for %1: %2 groups, power %3, posture %4",
+                    _objId, _garrisonCount, _totalPower, _posture]] call FLO_fnc_log;
+            };
+
+            true
+        }]];
+
+        _self call ["_registerHandler", ["prim_wait_for_recon", {
+            params ["_ctx"];
+            true
+        }]];
+
+        _self call ["_registerHandler", ["prim_request_air_recon", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _objId = _params param [0, ""];
+            private _cmdr = _ctx get "commander";
+            private _gtnCmdr = _self get "_gtnCommander";
+
+            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") exitWith {
+                ["GTN", 2, format["Air recon failed - no position for %1", _objId]] call FLO_fnc_log;
+                false
+            };
+
+            // Request an actual air asset to fly over
+            private _mgr = call FLO_fnc_gtnAirAssetManager;
+            private _asset = _mgr call ["_requestAirAsset", [_objPos, "RECON"]];
+
+            if (_asset isEqualTo objNull) exitWith {
+                ["GTN", 2, "Air recon failed - no available air assets"] call FLO_fnc_log;
+                false
+            };
+
+            private _aircraft = _asset select 0;
+            private _groupId = _asset select 1;
+            private _grp = group _aircraft;
+
+            ["GTN", 3, format["Air recon dispatched: %1 flying to %2", typeOf _aircraft, _objId]] call FLO_fnc_log;
+
+            // Set aircraft to fly over objective at high altitude
+            _aircraft flyInHeight 400;
+
+            // Clear waypoints and set recon pattern
+            while {count waypoints _grp > 0} do {
+                deleteWaypoint [_grp, 0];
+            };
+
+            _grp setBehaviour "AWARE";
+            _grp setCombatMode "GREEN";  // Don't engage
+            _grp setSpeedMode "NORMAL";
+
+            // Flyover waypoint
+            private _wp1 = _grp addWaypoint [_objPos, 100];
+            _wp1 setWaypointType "MOVE";
+            _wp1 setWaypointBehaviour "AWARE";
+            _wp1 setWaypointCombatMode "GREEN";
+
+            _grp setCurrentWaypoint [_grp, 1];
+
+            // Spawn handler for when aircraft arrives and gathers intel
+            [_gtnCmdr, _objId, _objPos, _groupId, _mgr, _aircraft] spawn {
+                params ["_gtnCmdr", "_objId", "_objPos", "_groupId", "_mgr", "_aircraft"];
+
+                // Wait for aircraft to get close to objective (or timeout)
+                private _startTime = diag_tickTime;
+                private _timeout = 180;  // 3 minutes max
+
+                waitUntil {
+                    sleep 5;
+                    isNull _aircraft ||
+                    !alive _aircraft ||
+                    (_aircraft distance2D _objPos < 500) ||
+                    (diag_tickTime - _startTime > _timeout)
+                };
+
+                if (isNull _aircraft || !alive _aircraft) exitWith {
+                    ["GTN", 2, "Air recon aircraft lost"] call FLO_fnc_log;
+                    _mgr call ["_releaseAirAsset", [_groupId]];
+                };
+
+                ["GTN", 3, format["Air recon aircraft over %1 - gathering intel", _objId]] call FLO_fnc_log;
+
+                // Gather intel now that aircraft is over objective
+                if (isNil "_gtnCmdr") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
+                private _ws = _gtnCmdr getOrDefault ["_worldState", nil];
+                if (isNil "_ws") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
+
+                private _analyzer = FLO_GTN_CapabilityAnalyzer;
+                if (isNil "_analyzer") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
+
+                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+                if (!isNil "_objAnalysis") then {
+                    private _garrisonCount = count (_objAnalysis get "garrison");
+                    private _totalPower = _objAnalysis get "totalDefensePower";
+                    private _posture = switch true do {
+                        case (_totalPower > 500): { "HEAVY" };
+                        case (_totalPower > 200): { "MEDIUM" };
+                        case (_totalPower > 0): { "LIGHT" };
+                        default { "NONE" };
+                    };
+
+                    private _intel = createHashMapFromArray [
+                        ["intelQuality", 0.8],  // Slightly better than ground recon
+                        ["confirmedStrength", _garrisonCount],
+                        ["totalCombatPower", _totalPower],
+                        ["hasArmor", _objAnalysis get "hasArmor"],
+                        ["hasAA", _objAnalysis get "hasAA"],
+                        ["hasStatic", _objAnalysis get "hasStatic"],
+                        ["defensePosture", _posture],
+                        ["reconType", "AIR"]
+                    ];
+                    _ws call ["_updateObjectiveIntel", [_objId, _intel]];
+
+                    ["GTN", 3, format["Air recon intel for %1: %2 groups, power %3",
+                        _objId, _garrisonCount, _totalPower]] call FLO_fnc_log;
+                };
+
+                // Loiter briefly then RTB
+                sleep 30;
+                _mgr call ["_releaseAirAsset", [_groupId]];
+                ["GTN", 3, format["Air recon complete - aircraft RTB"]] call FLO_fnc_log;
+            };
+
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["reconComplete", true];
+            _primData set ["objectiveId", _objId];
+            _primData set ["aircraftGroupId", _groupId];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        _self call ["_registerHandler", ["prim_use_existing_intel", {
+            params ["_ctx"];
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
     }]
 ]];
 

@@ -461,6 +461,10 @@ if (_objective isEqualTo "civ_building") then {
 };
 
 // Apply waypoints if any
+// NOTE: SAD, DESTROY, and GUARD waypoints NEVER complete in Arma's waypoint system
+// (per https://community.bistudio.com/wiki/Waypoints#Waypoint_Types)
+// We convert these to MOVE + aggressive combat settings so groups reach destination
+// and engage naturally without getting stuck in endless search patterns.
 if (count _waypoints > 0) then {
     // Safety check: if first waypoint is CYCLE, that's invalid for Arma
     // This can happen if waypoints got corrupted. Skip CYCLE-only waypoint lists.
@@ -477,13 +481,43 @@ if (count _waypoints > 0) then {
             private _wpMode = _x select 5;
             private _wpCompletionRadius = _x param [6, 100]; // Default 100m if not specified
 
+            // Convert non-completing waypoint types to MOVE with appropriate settings
+            // SAD/DESTROY/GUARD never complete in Arma - they loop/search indefinitely
+            private _effectiveType = switch (_wpType) do {
+                case "SAD": {
+                    // SAD: Use MOVE but ensure aggressive combat behavior
+                    _wpBehavior = "COMBAT";
+                    _wpMode = "RED";
+                    "MOVE"
+                };
+                case "DESTROY": {
+                    // DESTROY: Same treatment - move to position and engage
+                    _wpBehavior = "COMBAT";
+                    _wpMode = "RED";
+                    "MOVE"
+                };
+                case "GUARD": {
+                    // GUARD: Convert to HOLD - stay at position indefinitely
+                    _wpBehavior = "COMBAT";
+                    _wpMode = "RED";
+                    "HOLD"
+                };
+                default { _wpType };
+            };
+
             private _wp = _realGroup addWaypoint [_wpPos, 0];
-            _wp setWaypointType _wpType;
+            _wp setWaypointType _effectiveType;
             _wp setWaypointBehaviour _wpBehavior;
             _wp setWaypointSpeed _wpSpeed;
             _wp setWaypointFormation _wpFormation;
             _wp setWaypointCombatMode _wpMode;
             _wp setWaypointCompletionRadius _wpCompletionRadius;
+
+            // Log conversion for debugging
+            if (_wpType != _effectiveType) then {
+                ["VIRTUALIZATION", 4, format["Group %1: Converted %2 waypoint to %3 (non-completing WP fix)",
+                    _groupId, _wpType, _effectiveType]] call FLO_fnc_log;
+            };
         } forEach _waypoints;
     };
 };
