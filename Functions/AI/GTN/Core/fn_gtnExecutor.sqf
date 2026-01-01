@@ -727,9 +727,9 @@ private _executor = createHashMapObject [[
             // Set aircraft to fly over objective at high altitude
             _aircraft flyInHeight 400;
 
-            // Clear waypoints and set recon pattern
-            while {count waypoints _grp > 0} do {
-                deleteWaypoint [_grp, 0];
+            // Clear waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+            for "_i" from (count waypoints _grp - 1) to 0 step -1 do {
+                deleteWaypoint [_grp, _i];
             };
 
             _grp setBehaviour "AWARE";

@@ -85,9 +85,9 @@ if (isNil "FLO_GTNAirTaskOrder") then {
 
                     ["GTN ATO", 3, format["Setting %1 waypoints for %2 at %3 (duration: %4s)", _waypointType, typeOf _air, _pos, _missionDuration]] call FLO_fnc_log;
 
-                    // Clear existing waypoints
-                    while {count waypoints _grp > 0} do {
-                        deleteWaypoint [_grp, 0];
+                    // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+                    for "_i" from (count waypoints _grp - 1) to 0 step -1 do {
+                        deleteWaypoint [_grp, _i];
                     };
 
                     // Set combat behavior

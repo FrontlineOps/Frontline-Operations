@@ -174,9 +174,9 @@ private _fnc_initConvoyLoop = {
                             {alive _leadVehicle} &&
                             {time - _lastPathUpdate > _pathUpdateCooldown}) then {
 
-                            // Clear existing waypoints safely
-                            while {count (waypoints _convoyGroup) > 0} do {
-                                deleteWaypoint [_convoyGroup, 0];
+                            // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+                            for "_i" from (count waypoints _convoyGroup - 1) to 0 step -1 do {
+                                deleteWaypoint [_convoyGroup, _i];
                             };
 
                             // Calculate path

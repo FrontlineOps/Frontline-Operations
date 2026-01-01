@@ -123,11 +123,11 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
     if (_groupData getOrDefault ["isActive", false]) then {
         private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
         if (!isNull _realGroup) then {
-            // Clear existing waypoints
-            while {count waypoints _realGroup > 0} do {
-                deleteWaypoint [_realGroup, 0];
+            // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+            for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
+                deleteWaypoint [_realGroup, _i];
             };
-            
+
             // Add new waypoints
             {
                 private _wpPos = _x select 0;
@@ -235,9 +235,9 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             if (_groupData getOrDefault ["isActive", false]) then {
                 private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
                 if (!isNull _realGroup) then {
-                    // Clear existing waypoints
-                    while {count waypoints _realGroup > 0} do {
-                        deleteWaypoint [_realGroup, 0];
+                    // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+                    for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
+                        deleteWaypoint [_realGroup, _i];
                     };
 
                     // Add new waypoints
@@ -280,11 +280,11 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             if (_groupData getOrDefault ["isActive", false]) then {
                 private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
                 if (!isNull _realGroup) then {
-                    // Clear existing waypoints
-                    while {count waypoints _realGroup > 0} do {
-                        deleteWaypoint [_realGroup, 0];
+                    // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+                    for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
+                        deleteWaypoint [_realGroup, _i];
                     };
-                    
+
                     // Add direct waypoint
                     private _wpPos = _originalWaypoint select 0;
                     private _wpType = _originalWaypoint select 1;

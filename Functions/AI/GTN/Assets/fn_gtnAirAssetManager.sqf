@@ -62,9 +62,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _realGroup = _gdata get "realGroup";
             if (isNull _realGroup) exitWith {objNull};
 
-            // Clear any existing waypoints
-            while {count waypoints _realGroup > 0} do {
-                deleteWaypoint [_realGroup, 0];
+            // Clear any existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+            for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
+                deleteWaypoint [_realGroup, _i];
             };
             ["GTN Air Asset Manager", 3, format["Cleared existing waypoints for group %1", _gid]] call FLO_fnc_log;
 
@@ -132,8 +132,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             if (_isActive && !isNull _realGroup) then {
                 // Active group - set real waypoints on the actual group
-                while {count waypoints _realGroup > 0} do {
-                    deleteWaypoint [_realGroup, 0];
+                // Clear in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+                for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
+                    deleteWaypoint [_realGroup, _i];
                 };
 
                 _realGroup setBehaviour "SAFE";
