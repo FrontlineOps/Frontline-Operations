@@ -479,7 +479,7 @@ if (count _waypoints > 0) then {
             private _wpSpeed = _x select 3;
             private _wpFormation = _x select 4;
             private _wpMode = _x select 5;
-            private _wpCompletionRadius = _x param [6, 100]; // Default 100m if not specified
+            private _wpCompletionRadius = _x param [6, 20]; // Default 20m if not specified
 
             // Convert non-completing waypoint types to MOVE with appropriate settings
             // SAD/DESTROY/GUARD never complete in Arma - they loop/search indefinitely

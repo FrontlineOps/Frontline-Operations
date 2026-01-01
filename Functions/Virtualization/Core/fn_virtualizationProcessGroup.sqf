@@ -100,9 +100,9 @@ if (!_isActive) then {
             private _timeDelta = _now - _lastMove;
             private _distToWp = _position distance2D _wpPos;
 
-            // Get completion radius from waypoint data (index 6), default 100m
+            // Get completion radius from waypoint data (index 6), default 20m
             // Waypoint format: [position, type, behavior, speed, formation, combat mode, completion radius]
-            private _completionRadius = _wp param [6, 100];
+            private _completionRadius = _wp param [6, 20];
 
             if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD"] && _distToWp > _completionRadius) then {
                 // Calculate movement
