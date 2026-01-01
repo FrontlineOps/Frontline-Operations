@@ -46,9 +46,10 @@ class FLO {
     class GTNAssets {
         file = "Functions\AI\GTN\Assets";
 
-        class gtnAirAssetManager    {};
-        class gtnAirTaskOrder       {};
-        class gtnArtilleryManager   {};
+        class gtnAirAssetManager        {};
+        class gtnAirTaskOrder           {};
+        class gtnArtilleryManager       {};
+        class gtnArtilleryFireMission   {};
     };
     
     class Interactions {
@@ -56,6 +57,12 @@ class FLO {
 
         class civilianRelations {};
         class civilianInvestigate {};
+    };
+
+    class AITasks {
+        file = "Functions\AI\Tasks";
+
+        class taskPatrol {};
     };
 
     class Virtualization {

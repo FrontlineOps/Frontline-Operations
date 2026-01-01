@@ -56,10 +56,10 @@ private _allObjectives = keys FLO_Objectives;
 {
     private _objId = _x;
     private _objData = FLO_Objectives get _objId;
-    private _subtype = _objData getOrDefault ["subtype", ""];
+    private _subtype = _objData get "subtype";
 
     // Check if this subtype is defined in our configuration
-    if (_objectiveGroupConfig getOrDefault [_subtype, []] isNotEqualTo []) then {
+    if (_subtype in _objectiveGroupConfig) then {
         ["VIRTUALIZATION", 3, format["Processing objective: %1 (Subtype: %2)", _objId, _subtype]] call FLO_fnc_log;
 
         // Get group configuration for this objective subtype

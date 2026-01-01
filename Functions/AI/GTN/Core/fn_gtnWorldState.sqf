@@ -159,9 +159,9 @@ private _worldState = createHashMapObject [[
         {
             private _gData = _groups get _x;
             if (isNil "_gData") then { continue };
-            if ((_gData getOrDefault ["side", sideUnknown]) != east) then { continue };
+            if ((_gData get "side") != east) then { continue };
 
-            private _groupType = _gData getOrDefault ["groupType", "infantry"];
+            private _groupType = _gData get "groupType";
 
             // Count total
             _counts set ["total", (_counts get "total") + 1];
@@ -178,7 +178,7 @@ private _worldState = createHashMapObject [[
             _counts set [_typeKey, (_counts get _typeKey) + 1];
 
             // Count by status
-            private _onMission = _gData getOrDefault ["onMission", false];
+            private _onMission = _gData get "onMission";
 
             if (_x in _attackGroups) then {
                 _counts set ["attacking", (_counts get "attacking") + 1];
@@ -247,17 +247,13 @@ private _worldState = createHashMapObject [[
                 _artyStatus get "totalRounds"]] call FLO_fnc_log;
         } else {
             // Fallback if analyzer not initialized
-            if (!isNil "FLO_virtualGroups") then {
-                private _groups = FLO_virtualGroups get "_groups";
-                if (!isNil "_groups") then {
-                    {
-                        private _gData = _groups get _x;
-                        if (!isNil "_gData" && {(_gData getOrDefault ["groupType", ""]) == "artillery"}) exitWith {
-                            _artyAvailable = true;
-                        };
-                    } forEach (keys _groups);
+            private _groups = FLO_virtualGroups get "_groups";
+            {
+                private _gData = _groups get _x;
+                if (_gData get "groupType" == "artillery") exitWith {
+                    _artyAvailable = true;
                 };
-            };
+            } forEach (keys _groups);
             ["GTN", 4, format["Artillery sense (fallback): available=%1", _artyAvailable]] call FLO_fnc_log;
         };
 
@@ -284,25 +280,20 @@ private _worldState = createHashMapObject [[
                 _casOrdnance]] call FLO_fnc_log;
         } else {
             // Fallback if analyzer not initialized
-            if (!isNil "FLO_virtualGroups") then {
-                private _groups = FLO_virtualGroups get "_groups";
-                if (!isNil "_groups") then {
-                    {
-                        private _gData = _groups get _x;
-                        if (isNil "_gData") then { continue };
-                        if (_gData getOrDefault ["onMission", false]) then { continue };
-                        private _gType = _gData getOrDefault ["groupType", ""];
-                        if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
-                            switch (_gType) do {
-                                case "cas": { _casAvailable = true };
-                                case "sead": { _seadAvailable = true };
-                                case "bomber": { _bombAvailable = true };
-                                default { _casAvailable = true };
-                            };
-                        };
-                    } forEach (keys _groups);
+            private _groups = FLO_virtualGroups get "_groups";
+            {
+                private _gData = _groups get _x;
+                if (_gData get "onMission") then { continue };
+                private _gType = _gData get "groupType";
+                if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
+                    switch (_gType) do {
+                        case "cas": { _casAvailable = true };
+                        case "sead": { _seadAvailable = true };
+                        case "bomber": { _bombAvailable = true };
+                        default { _casAvailable = true };
+                    };
                 };
-            };
+            } forEach (keys _groups);
             ["GTN", 4, format["Air sense (fallback): CAS=%1, SEAD=%2, Bomber=%3", _casAvailable, _seadAvailable, _bombAvailable]] call FLO_fnc_log;
         };
 
@@ -515,7 +506,7 @@ private _worldState = createHashMapObject [[
 
         {
             private _gData = _groups get _x;
-            if ((_gData getOrDefault ["side", sideUnknown]) != east) then { continue };
+            if ((_gData get "side") != east) then { continue };
 
             private _gPos = _gData get "position";
             private _dist = _pos distance2D _gPos;
@@ -541,7 +532,7 @@ private _worldState = createHashMapObject [[
         params ["_objId"];
         private _cmdr = _self get "_commander";
         if (isNil "_cmdr") exitWith { nil };
-        private _analyzer = _cmdr getOrDefault ["_capabilityAnalyzer", nil];
+        private _analyzer = _cmdr get "_capabilityAnalyzer";
         if (isNil "_analyzer") exitWith { nil };
         _analyzer call ["_analyzeObjective", [_objId]]
     }],
@@ -549,20 +540,20 @@ private _worldState = createHashMapObject [[
     ["_getForceRatioAtObjective", {
         params ["_objId"];
         private _objs = _self get "_objectives";
-        private _obj = _objs getOrDefault [_objId, nil];
+        private _obj = _objs get _objId;
         if (isNil "_obj") exitWith { 1 };
         private _friendly = _obj getOrDefault ["friendlyCount", 0];
-        private _enemy = _obj getOrDefault ["enemyCount", 1] max 1;
+        private _enemy = (_obj getOrDefault ["enemyCount", 1]) max 1;
         _friendly / _enemy
     }],
 
     ["_getAvailableCombatPower", {
         private _cmdr = _self get "_commander";
         if (isNil "_cmdr") exitWith { 0 };
-        private _analyzer = _cmdr getOrDefault ["_capabilityAnalyzer", nil];
+        private _analyzer = _cmdr get "_capabilityAnalyzer";
         if (isNil "_analyzer") exitWith { 0 };
         private _summary = _analyzer call ["_getForcesSummary", [east]];
-        _summary getOrDefault ["totalCombatPower", 0]
+        _summary get "totalCombatPower"
     }],
 
     ["_getArmorGroupCount", {

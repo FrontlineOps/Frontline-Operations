@@ -65,6 +65,7 @@ if (isNil "_unitCount" || { _unitCount <= 0 || typeName _unitCount != "SCALAR" }
 // Create group data hashmap
 private _groupData = createHashMapFromArray [
     ["position", _position],
+    ["spawnPosition", _position],
     ["groupType", _groupType],
     ["groupCfg", _groupCfg],
     ["objective", _objective],
@@ -75,6 +76,9 @@ private _groupData = createHashMapFromArray [
     ["state", "idle"],
     ["waypoints", []],
     ["comp", []],
+    ["onMission", false],         // Whether this group is on an active mission (prevents virtualization)
+    ["currentOrder", ""],         // Current order type (MOVE, ATTACK, DEFEND, etc.)
+    ["linkedObjectives", []],     // Objectives this group is linked to
     // Transport system fields
     ["attachedTo", ""],           // GroupId of transport this group is riding in
     ["attachedGroups", []],       // Array of groupIds attached to this transport

@@ -460,65 +460,56 @@ if (_objective isEqualTo "civ_building") then {
     } forEach units _realGroup;
 };
 
-// Apply waypoints if any
-// NOTE: SAD, DESTROY, and GUARD waypoints NEVER complete in Arma's waypoint system
-// (per https://community.bistudio.com/wiki/Waypoints#Waypoint_Types)
-// We convert these to MOVE + aggressive combat settings so groups reach destination
-// and engage naturally without getting stuck in endless search patterns.
-if (count _waypoints > 0) then {
-    // Safety check: if first waypoint is CYCLE, that's invalid for Arma
-    // This can happen if waypoints got corrupted. Skip CYCLE-only waypoint lists.
-    private _firstWpType = (_waypoints select 0) select 1;
-    if (_firstWpType == "CYCLE" && count _waypoints == 1) then {
-        ["VIRTUALIZATION", 2, format["Group %1 has only CYCLE waypoint - skipping invalid waypoints", _groupId]] call FLO_fnc_log;
-    } else {
-        {
-            private _wpPos = _x select 0;
-            private _wpType = _x select 1;
-            private _wpBehavior = _x select 2;
-            private _wpSpeed = _x select 3;
-            private _wpFormation = _x select 4;
-            private _wpMode = _x select 5;
-            private _wpCompletionRadius = _x param [6, 20]; // Default 20m if not specified
+// Check if group has patrol config - use taskPatrol instead of CYCLE waypoints
+private _patrolConfig = _groupData getOrDefault ["patrolConfig", []];
+if (_patrolConfig isNotEqualTo []) then {
+    // Use taskPatrol for looping patrols - avoids CYCLE waypoint bugs
+    _patrolConfig params ["_patrolCenter", "_patrolRadius", "_wpCount", "_behavior", "_speed"];
+    [_realGroup, _patrolCenter, _patrolRadius, _wpCount, _behavior, _speed] call FLO_fnc_taskPatrol;
+    ["VIRTUALIZATION", 3, format["Group %1: Applied taskPatrol (center %2, radius %3)", _groupId, _patrolCenter, _patrolRadius]] call FLO_fnc_log;
+} else {
+    // Apply waypoints if any
+    // NOTE: SAD, DESTROY, and GUARD waypoints NEVER complete in Arma's waypoint system
+    // We convert these to MOVE + aggressive combat settings so groups reach destination
+    if (count _waypoints > 0) then {
+        // Safety check: if first waypoint is CYCLE, that's invalid for Arma
+        private _firstWpType = (_waypoints select 0) select 1;
+        if (_firstWpType == "CYCLE" && count _waypoints == 1) then {
+            ["VIRTUALIZATION", 2, format["Group %1 has only CYCLE waypoint - skipping", _groupId]] call FLO_fnc_log;
+        } else {
+            // Filter out CYCLE waypoints - they cause bugs and we use taskPatrol for loops
+            private _filteredWaypoints = _waypoints select { (_x select 1) != "CYCLE" };
 
-            // Convert non-completing waypoint types to MOVE with appropriate settings
-            // SAD/DESTROY/GUARD never complete in Arma - they loop/search indefinitely
-            private _effectiveType = switch (_wpType) do {
-                case "SAD": {
-                    // SAD: Use MOVE but ensure aggressive combat behavior
-                    _wpBehavior = "COMBAT";
-                    _wpMode = "RED";
-                    "MOVE"
-                };
-                case "DESTROY": {
-                    // DESTROY: Same treatment - move to position and engage
-                    _wpBehavior = "COMBAT";
-                    _wpMode = "RED";
-                    "MOVE"
-                };
-                case "GUARD": {
-                    // GUARD: Convert to HOLD - stay at position indefinitely
-                    _wpBehavior = "COMBAT";
-                    _wpMode = "RED";
-                    "HOLD"
-                };
-                default { _wpType };
-            };
+            {
+                private _wpPos = _x select 0;
+                private _wpType = _x select 1;
+                private _wpBehavior = _x select 2;
+                private _wpSpeed = _x select 3;
+                private _wpFormation = _x select 4;
+                private _wpMode = _x select 5;
+                private _wpCompletionRadius = _x param [6, 20];
 
-            private _wp = _realGroup addWaypoint [_wpPos, 0];
-            _wp setWaypointType _effectiveType;
-            _wp setWaypointBehaviour _wpBehavior;
-            _wp setWaypointSpeed _wpSpeed;
-            _wp setWaypointFormation _wpFormation;
-            _wp setWaypointCombatMode _wpMode;
-            _wp setWaypointCompletionRadius _wpCompletionRadius;
+                // Convert non-completing waypoint types to MOVE
+                private _effectiveType = switch (_wpType) do {
+                    case "SAD": { _wpBehavior = "COMBAT"; _wpMode = "RED"; "MOVE" };
+                    case "DESTROY": { _wpBehavior = "COMBAT"; _wpMode = "RED"; "MOVE" };
+                    case "GUARD": { _wpBehavior = "COMBAT"; _wpMode = "RED"; "HOLD" };
+                    default { _wpType };
+                };
 
-            // Log conversion for debugging
-            if (_wpType != _effectiveType) then {
-                ["VIRTUALIZATION", 4, format["Group %1: Converted %2 waypoint to %3 (non-completing WP fix)",
-                    _groupId, _wpType, _effectiveType]] call FLO_fnc_log;
-            };
-        } forEach _waypoints;
+                private _wp = _realGroup addWaypoint [_wpPos, 0];
+                _wp setWaypointType _effectiveType;
+                _wp setWaypointBehaviour _wpBehavior;
+                _wp setWaypointSpeed _wpSpeed;
+                _wp setWaypointFormation _wpFormation;
+                _wp setWaypointCombatMode _wpMode;
+                _wp setWaypointCompletionRadius _wpCompletionRadius;
+
+                if (_wpType != _effectiveType) then {
+                    ["VIRTUALIZATION", 4, format["Group %1: Converted %2 to %3", _groupId, _wpType, _effectiveType]] call FLO_fnc_log;
+                };
+            } forEach _filteredWaypoints;
+        };
     };
 };
 

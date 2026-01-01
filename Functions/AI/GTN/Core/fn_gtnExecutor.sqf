@@ -137,16 +137,29 @@ private _executor = createHashMapObject [[
         _result
     }],
     
-    // Check execution status
+    // Check execution status - re-polls RUNNING tasks by re-calling their handler
     ["_checkExecution", {
         params ["_taskId"];
-        
+
         private _active = _self get "_activeExecutions";
         private _context = _active getOrDefault [_taskId, nil];
-        
+
         if (isNil "_context") exitWith { "UNKNOWN" };
-        
-        _context get "status"
+
+        private _status = _context get "status";
+
+        // If still RUNNING, re-call the handler to poll for completion
+        if (_status == "RUNNING") then {
+            private _handlers = _self get "_handlers";
+            private _handler = _handlers getOrDefault [_taskId, nil];
+
+            if (!isNil "_handler") then {
+                [_context] call _handler;
+                _status = _context get "status";
+            };
+        };
+
+        _status
     }],
     
     // Update execution data
@@ -241,6 +254,9 @@ private _executor = createHashMapObject [[
             _executor call ["_storeTaskData", ["STAGING_GROUPS", _available]];
             _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _available]];
 
+            ["GTN", 3, format["Assigned %1 groups to staging at %2", count _available, _stagingPos]] call FLO_fnc_log;
+
+            _ctx set ["status", "SUCCESS"];
             true
         }]];
 
@@ -293,6 +309,7 @@ private _executor = createHashMapObject [[
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
 
             // Get objective position
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
@@ -301,14 +318,23 @@ private _executor = createHashMapObject [[
                 false
             };
 
-            // Get attack groups (from staging or available) 
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            private _groups = _primData getOrDefault ["assignedGroups", []];
+            // Get attack groups - first check for staged groups from earlier primitive
+            private _completedData = _executor get "_completedTaskData";
+            private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
 
+            // If no staged groups, check primitiveData (for direct assignment)
             if (count _groups < 1) then {
-                // Pass objective position so groups are sorted by proximity
+                private _taskNode = _ctx get "taskNode";
+                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+                _groups = _primData getOrDefault ["assignedGroups", []];
+            };
+
+            // If still no groups, get available ones
+            if (count _groups < 1) then {
                 _groups = _cmdr call ["_getAvailableGroups", [4, _objPos]];
+                ["GTN", 3, format["No staged groups, using %1 available groups", count _groups]] call FLO_fnc_log;
+            } else {
+                ["GTN", 3, format["Using %1 staged groups for attack", count _groups]] call FLO_fnc_log;
             };
 
             ["GTN", 3, format["Attacking %1 at %2 with %3 groups", _objId, _objPos, count _groups]] call FLO_fnc_log;
@@ -318,6 +344,8 @@ private _executor = createHashMapObject [[
                 _cmdr call ["_orderGroupAttack", [_x, _objPos]];
             } forEach _groups;
 
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             _primData set ["objectiveId", _objId];
             _primData set ["attackGroups", _groups];
             _taskNode set ["primitiveData", _primData];
@@ -344,10 +372,10 @@ private _executor = createHashMapObject [[
             // Request fire mission via GTN Commander
             private _result = _cmdr call ["_requestArtillery", [_objPos, _missionType, _rounds]];
 
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            _primData set ["missionFired", _result];
-            _taskNode set ["primitiveData", _primData];
+            if (_result) then {
+                ["GTN", 3, format["Artillery mission fired at %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+            };
 
             _result
         }]];
@@ -370,10 +398,10 @@ private _executor = createHashMapObject [[
             // Request CAS via GTN Commander
             private _result = _cmdr call ["_requestCAS", [_objPos, _missionType]];
 
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            _primData set ["missionComplete", _result];
-            _taskNode set ["primitiveData", _primData];
+            if (_result) then {
+                ["GTN", 3, format["CAS mission dispatched to %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+            };
 
             _result
         }]];
@@ -400,11 +428,8 @@ private _executor = createHashMapObject [[
                 _cmdr call ["_orderGroupDefend", [_x, _objPos]];
             } forEach _available;
 
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            _primData set ["groupsArrived", count _available];
-            _taskNode set ["primitiveData", _primData];
-
+            ["GTN", 3, format["Assigned %1 groups to defend %2", count _available, _objId]] call FLO_fnc_log;
+            _ctx set ["status", "SUCCESS"];
             true
         }]];
 
@@ -622,9 +647,10 @@ private _executor = createHashMapObject [[
             if (isNil "_objPos") exitWith { false };
 
             private _available = _cmdr call ["_getAvailableGroups", [1]];
+            private _groups = FLO_virtualGroups get "_groups";
             private _infantry = _available select {
-                private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_x, createHashMap];
-                (_gData getOrDefault ["type", ""]) in ["infantry", "recon"]
+                private _gData = _groups get _x;
+                (_gData get "groupType") in ["infantry", "recon"]
             };
             if (count _infantry < 1) exitWith { false };
 
@@ -640,13 +666,16 @@ private _executor = createHashMapObject [[
             _primData set ["objectiveId", _objId];
             _taskNode set ["primitiveData", _primData];
 
+            ["GTN", 3, format["Recon patrol dispatched to %1", _objId]] call FLO_fnc_log;
+            _ctx set ["status", "SUCCESS"];
+
             // Use capability analyzer to get REAL intel about the objective
             [_gtnCmdr, _objId] spawn {
                 params ["_gtnCmdr", "_objId"];
                 // Wait for patrol to reach observation position
                 sleep 120;
                 if (isNil "_gtnCmdr") exitWith {};
-                private _ws = _gtnCmdr getOrDefault ["_worldState", nil];
+                private _ws = _gtnCmdr get "_worldState";
                 if (isNil "_ws") exitWith {};
 
                 // Use the capability analyzer to get actual objective data
@@ -688,6 +717,9 @@ private _executor = createHashMapObject [[
 
         _self call ["_registerHandler", ["prim_wait_for_recon", {
             params ["_ctx"];
+            // Recon intel gathering happens async - auto-complete this wait
+            // The intel will be updated when patrol/aircraft arrives
+            _ctx set ["status", "SUCCESS"];
             true
         }]];
 
@@ -764,7 +796,7 @@ private _executor = createHashMapObject [[
 
                 // Gather intel now that aircraft is over objective
                 if (isNil "_gtnCmdr") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
-                private _ws = _gtnCmdr getOrDefault ["_worldState", nil];
+                private _ws = _gtnCmdr get "_worldState";
                 if (isNil "_ws") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
 
                 private _analyzer = FLO_GTN_CapabilityAnalyzer;

@@ -22,13 +22,13 @@
 params ["_groupId", "_groupData", "_activationDist", "_now", "_groupUpdateTimes"];
 
 // ============================================================================
-// EXTRACT STATE - use get for data that must exist, getOrDefault only for optional/flags
+// EXTRACT STATE - use get for data that must exist
 // ============================================================================
 private _position = _groupData get "position";
-private _isActive = _groupData getOrDefault ["isActive", false];
-private _groupType = _groupData getOrDefault ["groupType", "infantry"];
-private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
-private _onMission = _groupData getOrDefault ["onMission", false];
+private _isActive = _groupData get "isActive";
+private _groupType = _groupData get "groupType";
+private _realGroup = _groupData get "realGroup";
+private _onMission = _groupData get "onMission";
 private _attachedTo = _groupData getOrDefault ["attachedTo", ""];
 
 // ============================================================================
@@ -174,13 +174,13 @@ if (!_isActive) then {
                     };
                 };
 
-            // Add CYCLE waypoint to loop patrol
+            // Store patrol config and apply waypoints (NO CYCLE - virtual system loops naturally)
             if (count _patrolWaypoints > 0) then {
-                _patrolWaypoints pushBack [_patrolWaypoints select 0 select 0, "CYCLE", "AWARE", "LIMITED", "STAG COLUMN", "YELLOW", 15];
-
-                // Apply waypoints
+                // Apply waypoints without CYCLE - virtual advancement handles looping
                 [_groupId, _patrolWaypoints] call FLO_fnc_updateVirtualGroupWaypoints;
 
+                // Store patrol config for use when activating
+                _groupData set ["patrolConfig", [_offsetCenter, (_minDist + _maxDist) / 2, count _patrolWaypoints, "AWARE", "LIMITED"]];
                 _groupData set ["autoPatrol", true];
                 _groupData set ["state", "moving"];
 
@@ -249,36 +249,16 @@ if (_isActive && !isNull _realGroup) then {
             private _numWps = 4 + floor random 5;
             private _startAngle = random 360;
 
-            // Generate waypoints spread around the offset center
-            private _wpCount = 0;
-            for "_i" from 0 to (_numWps - 1) do {
-                private _baseAngle = _startAngle + (_i * (360 / _numWps));
-                private _angle = _baseAngle + (random 60 - 30);
-                private _dist = _minDist + random (_maxDist - _minDist);
-                private _wpPos = _offsetCenter getPos [_dist, _angle];
+            // Use taskPatrol for active groups - avoids CYCLE waypoint bugs
+            private _patrolRadius = (_minDist + _maxDist) / 2;
+            [_realGroup, _offsetCenter, _patrolRadius, _numWps, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
 
-                if (!surfaceIsWater _wpPos) then {
-                    private _wp = _realGroup addWaypoint [_wpPos, 0];
-                    _wp setWaypointType "MOVE";
-                    _wp setWaypointBehaviour "AWARE";
-                    _wp setWaypointSpeed "LIMITED";
-                    _wp setWaypointFormation "STAG COLUMN";
-                    _wp setWaypointCombatMode "YELLOW";
-                    _wp setWaypointCompletionRadius 15;
-                    _wpCount = _wpCount + 1;
-                };
-            };
-
-            // Add CYCLE waypoint to loop
-            if (_wpCount > 0) then {
-                private _cycleWp = _realGroup addWaypoint [_offsetCenter, 0];
-                _cycleWp setWaypointType "CYCLE";
-            };
-
+            // Store config in groupData for virtualization
+            _groupData set ["patrolConfig", [_offsetCenter, _patrolRadius, _numWps, "AWARE", "LIMITED"]];
             _groupData set ["autoPatrol", true];
             _groupData set ["state", "moving"];
 
-            ["VIRTUALIZATION", 4, format["Assigned patrol to active group %1 (%2 waypoints, range %3-%4m)", _groupId, _wpCount, _minDist, _maxDist]] call FLO_fnc_log;
+            ["VIRTUALIZATION", 4, format["Assigned taskPatrol to active group %1 (%2 waypoints, radius %3m)", _groupId, _numWps, _patrolRadius]] call FLO_fnc_log;
         };
     };
 

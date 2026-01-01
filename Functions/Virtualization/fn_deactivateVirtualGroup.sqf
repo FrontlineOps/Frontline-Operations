@@ -23,7 +23,7 @@ if (!isServer) exitWith {false};
 ["VIRTUALIZATION", 3, format["Deactivating virtual group %1", _groupId]] call FLO_fnc_log;
 
 // Extract data from group
-private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
+private _realGroup = _groupData get "realGroup";
 
 // If the group is not active or doesn't have a real group, nothing to do
 if (isNull _realGroup) exitWith {

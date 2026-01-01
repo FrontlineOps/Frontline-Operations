@@ -324,6 +324,31 @@ Automatically replaces destroyed OPFOR groups:
 
 ## Server Administration
 
+### Required Server Configuration
+
+#### Capture UI
+
+The Capture UI uses structured text to display objective capture progress. For this to work properly on dedicated servers, you need to enable the following in your server's configuration:
+
+**For `server.cfg` or startup parameters:**
+
+**For Dedicated Servers:**
+
+You may need to enable JavaScript extensions in your Arma 3 server configuration:
+
+1. Open your server's `basic.cfg` or `server.cfg`
+2. Add or modify the following:
+   ```
+   // Allowed file extensions (add if missing)
+   allowedLoadFileExtensions[] = {"hpp","sqs","sqf","fsm","cpp","paa","txt","xml","inc","ext","sqm","ods","fxy","lip","csv","kb","bik","bikb","html","htm","biedi"};
+   allowedPreprocessFileExtensions[] = {"hpp","sqs","sqf","fsm","cpp","paa","txt","xml","inc","ext","sqm","ods","fxy","lip","csv","kb","bik","bikb","html","htm","biedi"};
+   allowedHTMLLoadExtensions[] = {"htm","html","xml","txt"};
+   ```
+
+3. Ensure these extensions are in your `allowedHTMLLoadExtensions` if you want HTML-based UI elements
+
+**Note:** If players report not seeing the Capture UI when near objectives, this is usually a server configuration issue with the above settings.
+
 ### Save System
 
 Saves are stored in the server's profile namespace. Key data includes:

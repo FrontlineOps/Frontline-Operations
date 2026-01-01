@@ -46,7 +46,7 @@ if (isNil "_objData") then {
     _radius = (_size select 0) min (_size select 1);
 } else {
     _position = _objData get "position";
-    _radius = _objData getOrDefault ["radius", 100];
+    _radius = _objData get "radius";
     _markerName = format ["obj_%1", _objective];
 };
 

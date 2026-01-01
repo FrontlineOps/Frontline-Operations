@@ -319,7 +319,10 @@ private _planner = createHashMapObject [[
     }],
 
     // Check if current task is complete
+    // Params: [executor] - executor object to check status from
     ["_checkCurrentTask", {
+        params [["_executor", nil]];
+
         private _plan = _self get "_currentPlan";
         private _idx = _self get "_currentTaskIndex";
 
@@ -329,17 +332,27 @@ private _planner = createHashMapObject [[
         private _taskId = _task get "taskId";
         private _status = _task get "status";
 
+        // If task is already complete from previous cycle, advance
+        if (_status == "SUCCESS") exitWith {
+            _self set ["_currentTaskIndex", _idx + 1];
+            true
+        };
+
+        if (_status == "FAILED") exitWith {
+            true  // Task is complete (failed), let commander handle it
+        };
+
+        // Task must be RUNNING to check executor
         if (_status != "RUNNING") exitWith { false };
 
-        // Get primitive and check completion
-        private _goalLib = _self get "_goalLibrary";
-        private _primDef = _goalLib call ["_getPrimitive", [_taskId]];
-        private _ws = _self get "_worldState";
+        // First check executor's context status (set by handler)
+        private _execStatus = "RUNNING";
+        if (!isNil "_executor") then {
+            _execStatus = _executor call ["_checkExecution", [_taskId]];
+        };
 
-        private _completionCheck = _primDef get "completionCheck";
-        private _taskData = _task getOrDefault ["primitiveData", createHashMap];
-
-        if ([_ws, _taskData] call _completionCheck) then {
+        // If executor says SUCCESS or FAILED, use that
+        if (_execStatus == "SUCCESS") exitWith {
             _task set ["status", "SUCCESS"];
             _task set ["endTime", diag_tickTime];
             _self set ["_currentTaskIndex", _idx + 1];
@@ -347,25 +360,39 @@ private _planner = createHashMapObject [[
             private _stats = _self get "_planningStats";
             _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
 
-            ["GTN", 4, format["Task complete: %1", _taskId]] call FLO_fnc_log;
+            ["GTN", 3, format["Task complete: %1", _taskId]] call FLO_fnc_log;
+            true
+        };
+
+        if (_execStatus == "FAILED") exitWith {
+            _task set ["status", "FAILED"];
+            _task set ["endTime", diag_tickTime];
+
+            private _stats = _self get "_planningStats";
+            _stats set ["tasksFailed", (_stats get "tasksFailed") + 1];
+
+            ["GTN", 2, format["Task failed (executor): %1", _taskId]] call FLO_fnc_log;
+            true
+        };
+
+        // Executor says RUNNING - check timeout
+        private _goalLib = _self get "_goalLibrary";
+        private _primDef = _goalLib call ["_getPrimitive", [_taskId]];
+
+        private _timeout = _primDef get "timeout";
+        private _startTime = _task get "startTime";
+
+        if (diag_tickTime - _startTime > _timeout) then {
+            _task set ["status", "FAILED"];
+            _task set ["endTime", diag_tickTime];
+
+            private _stats = _self get "_planningStats";
+            _stats set ["tasksFailed", (_stats get "tasksFailed") + 1];
+
+            ["GTN", 2, format["Task timeout: %1", _taskId]] call FLO_fnc_log;
             true
         } else {
-            // Check timeout
-            private _timeout = _primDef get "timeout";
-            private _startTime = _task get "startTime";
-
-            if (diag_tickTime - _startTime > _timeout) then {
-                _task set ["status", "FAILED"];
-                _task set ["endTime", diag_tickTime];
-
-                private _stats = _self get "_planningStats";
-                _stats set ["tasksFailed", (_stats get "tasksFailed") + 1];
-
-                ["GTN", 2, format["Task timeout: %1", _taskId]] call FLO_fnc_log;
-                true
-            } else {
-                false
-            };
+            false
         }
     }],
 

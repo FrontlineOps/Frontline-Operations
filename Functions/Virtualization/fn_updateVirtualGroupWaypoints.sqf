@@ -72,6 +72,10 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
     // Store the waypoints and initialize tracking for both virtual and physical movement
     _groupData set ["waypoints", _sanitizedWaypoints];
 
+    // Clear patrol state - Commander is giving new orders, overrides auto-patrol
+    _groupData set ["patrolConfig", []];
+    _groupData set ["autoPatrol", false];
+
     // Add or update virtual waypoint data
     if (count _sanitizedWaypoints > 0) then {
         // Set group state to moving
@@ -109,8 +113,8 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
     };
 
     // If the group is active, update its real waypoints too
-    if (_groupData getOrDefault ["isActive", false]) then {
-        private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
+    if (_groupData get "isActive") then {
+        private _realGroup = _groupData get "realGroup";
         if (!isNull _realGroup) then {
             // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
             for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
@@ -187,10 +191,14 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             // Store the waypoints
             _groupData set ["waypoints", _newWaypoints];
             _groupData set ["tempWaypointCount", count _newWaypoints];
-            
+
+            // Clear patrol state - Commander is giving new orders
+            _groupData set ["patrolConfig", []];
+            _groupData set ["autoPatrol", false];
+
             // Set group state to moving
             _groupData set ["state", "moving"];
-            
+
             // Initialize virtual waypoint tracking
             _groupData set ["currentWaypointIndex", 0];
             _groupData set ["lastMoveTime", diag_tickTime];
@@ -221,8 +229,8 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             ["VIRTUALIZATION", 3, format["Pathfinding completed for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
 
             // If the group is active, update its real waypoints too
-            if (_groupData getOrDefault ["isActive", false]) then {
-                private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
+            if (_groupData get "isActive") then {
+                private _realGroup = _groupData get "realGroup";
                 if (!isNull _realGroup) then {
                     // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
                     for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
@@ -266,8 +274,8 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             _groupData set ["lastMoveTime", diag_tickTime];
             
             // If the group is active, update its real waypoints
-            if (_groupData getOrDefault ["isActive", false]) then {
-                private _realGroup = _groupData getOrDefault ["realGroup", grpNull];
+            if (_groupData get "isActive") then {
+                private _realGroup = _groupData get "realGroup";
                 if (!isNull _realGroup) then {
                     // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
                     for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {

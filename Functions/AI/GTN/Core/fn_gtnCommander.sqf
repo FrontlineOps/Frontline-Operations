@@ -243,8 +243,8 @@ private _gtnCommander = createHashMapObject [[
                         };
                     } else {
                         if (_currentStatus == "RUNNING") then {
-                            // Check if current task is complete
-                            if (_planner call ["_checkCurrentTask", []]) then {
+                            // Check if current task is complete (pass executor for status check)
+                            if (_planner call ["_checkCurrentTask", [_executor]]) then {
                                 // Task complete - execute next
                                 private _currentTask = _planner call ["_getCurrentTask", []];
                                 if (!isNil "_currentTask") then {
@@ -389,11 +389,9 @@ private _gtnCommander = createHashMapObject [[
             private _groupId = _x;
             private _gData = _y;
 
-            if (isNil "_gData") then { continue };
-
-            private _groupType = _gData getOrDefault ["groupType", ""];
-            private _currentOrder = _gData getOrDefault ["currentOrder", ""];
-            private _side = _gData getOrDefault ["side", east];
+            private _groupType = _gData get "groupType";
+            private _currentOrder = _gData get "currentOrder";
+            private _side = _gData get "side";
 
             // Skip non-military or wrong side
             if (_groupType in ["civilian", "ambient"]) then { continue };
@@ -429,9 +427,9 @@ private _gtnCommander = createHashMapObject [[
             _result pushBack _groupId;
 
             // Collect info for logging
-            private _groupType = _gData getOrDefault ["groupType", "unknown"];
+            private _groupType = _gData get "groupType";
             private _vehicleType = _gData getOrDefault ["vehicleType", ""];
-            private _unitCount = _gData getOrDefault ["unitCount", 0];
+            private _unitCount = _gData get "unitCount";
             private _shortId = _groupId select [7, 6]; // Extract numeric part from "vgroup_123456"
             private _typeStr = if (_vehicleType != "") then { _vehicleType } else { _groupType };
             _resultInfo pushBack format["%1[%2](%3)", _shortId, _typeStr, _unitCount];
@@ -515,8 +513,8 @@ private _gtnCommander = createHashMapObject [[
 
         // Create attack waypoints
         private _waypoints = [
-            [_pos, "SAD", "COMBAT", "NORMAL", "WEDGE", "RED", 75],
-            [_pos, "DESTROY", "COMBAT", "NORMAL", "LINE", "RED", 50]
+            [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 75],
+            [_pos, "MOVE", "COMBAT", "NORMAL", "LINE", "RED", 50]
         ];
 
         [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;

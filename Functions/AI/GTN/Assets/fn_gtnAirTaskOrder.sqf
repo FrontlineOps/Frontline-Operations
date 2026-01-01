@@ -118,28 +118,49 @@ if (isNil "FLO_GTNAirTaskOrder") then {
 
                     _grp setCurrentWaypoint [_grp, 1];
 
-                    // Mission timer: release aircraft after mission duration or if destroyed
-                    [_air, _gid, _missionDuration, _mission] spawn {
-                        params ["_a", "_gid", "_duration", "_missionType"];
-                        private _startTime = time;
-                        private _endTime = _startTime + _duration;
+                    // Mission timer: wait for aircraft to reach target, then run mission duration
+                    [_air, _gid, _missionDuration, _mission, _pos] spawn {
+                        params ["_a", "_gid", "_duration", "_missionType", "_targetPos"];
 
-                        ["GTN ATO", 3, format["Mission timer started for %1: %2s duration", _gid, _duration]] call FLO_fnc_log;
+                        private _arrivalRadius = 1000; // Consider "arrived" within 1km
+                        private _maxTravelTime = 600;  // Max 10 min to reach target
+                        private _travelStart = time;
+
+                        // Wait for aircraft to reach target area (or timeout/destroyed)
+                        waitUntil {
+                            sleep 5;
+                            if (!alive _a) exitWith { true };
+                            private _dist = (getPos _a) distance2D _targetPos;
+                            (_dist < _arrivalRadius) || (time - _travelStart > _maxTravelTime)
+                        };
+
+                        if (!alive _a) exitWith {
+                            ["GTN ATO", 3, format["Aircraft %1 destroyed en route", _gid]] call FLO_fnc_log;
+                            if (!isNil "_gid" && {_gid != ""}) then {
+                                (call FLO_fnc_gtnAirAssetManager) call ["_releaseAirAsset", [_gid]];
+                            };
+                        };
+
+                        ["GTN ATO", 3, format["Aircraft %1 on station, mission timer started: %2s", _gid, _duration]] call FLO_fnc_log;
+
+                        // Now run the actual mission duration
+                        private _missionStart = time;
+                        private _missionEnd = _missionStart + _duration;
 
                         waitUntil {
                             sleep 10;
-                            !alive _a || time >= _endTime
+                            !alive _a || time >= _missionEnd
                         };
 
                         private _reason = if (!alive _a) then {
                             "aircraft destroyed"
                         } else {
-                            format["mission duration complete (%1s)", _duration]
+                            format["mission complete (%1s on station)", _duration]
                         };
-                        ["GTN ATO", 3, format["Mission ended for group %1: %2", _gid, _reason]] call FLO_fnc_log;
+                        ["GTN ATO", 3, format["Mission ended for %1: %2", _gid, _reason]] call FLO_fnc_log;
 
                         // Release the air asset
-                        if (!isNil "_gid" && {_gid isNotEqualTo ""}) then {
+                        if (!isNil "_gid" && {_gid != ""}) then {
                             (call FLO_fnc_gtnAirAssetManager) call ["_releaseAirAsset", [_gid]];
                         };
                     };

@@ -814,17 +814,17 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 private _gData = _groups get _groupOrId;
                 if (!isNil "_gData") then {
                     _analysis set ["position", _gData get "position"];
-                    private _isActive = _gData getOrDefault ["isActive", false];
+                    private _isActive = _gData get "isActive";
                     if (_isActive) then {
-                        _realGroup = _gData getOrDefault ["realGroup", grpNull];
+                        _realGroup = _gData get "realGroup";
                         if (!isNull _realGroup) then {
                             _units = units _realGroup;
                         };
                     } else {
                         // Virtual group - calculate power from template using config
-                        private _template = _gData getOrDefault ["template", []];
-                        private _groupType = _gData getOrDefault ["groupType", "infantry"];
-                        private _strength = _gData getOrDefault ["strength", 1.0];
+                        private _template = _gData get "template";
+                        private _groupType = _gData get "groupType";
+                        private _strength = _gData get "strength";
 
                         // Calculate power from template unit classes using config
                         private _estPower = 0;
@@ -1285,7 +1285,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _gId = _x;
             private _gData = _y;
 
-            if ((_gData getOrDefault ["side", east]) != _side) then { continue };
+            if ((_gData get "side") != _side) then { continue };
 
             private _analysis = _self call ["_analyzeGroup", [_gId]];
             if (isNil "_analysis") then { continue };
@@ -1646,9 +1646,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 // Need attack helicopter or CAS jet
                 {
                     private _gData = _y;
-                    private _gType = _gData getOrDefault ["groupType", ""];
+                    private _gType = _gData get "groupType";
                     if (_gType in ["helicopter", "jet"]) then {
-                        if !(_gData getOrDefault ["onMission", false]) then {
+                        if !(_gData get "onMission") then {
                             (_result get "availableAssets") pushBack _x;
                         };
                     };
@@ -1681,9 +1681,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 private _totalPower = 0;
                 {
                     private _gData = _y;
-                    private _gType = _gData getOrDefault ["groupType", ""];
+                    private _gType = _gData get "groupType";
                     if (_gType in ["infantry", "motorized", "mechanized", "armor"]) then {
-                        if !(_gData getOrDefault ["onMission", false]) then {
+                        if !(_gData get "onMission") then {
                             private _analysis = _self call ["_analyzeGroup", [_x]];
                             if (!isNil "_analysis") then {
                                 _totalPower = _totalPower + (_analysis get "totalCombatPower");
@@ -1705,7 +1705,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 // Any available forces can defend
                 {
                     private _gData = _y;
-                    if !(_gData getOrDefault ["onMission", false]) then {
+                    if !(_gData get "onMission") then {
                         (_result get "availableAssets") pushBack _x;
                     };
                 } forEach _groups;
@@ -1721,9 +1721,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 // Need UAV or recon infantry
                 {
                     private _gData = _y;
-                    private _gType = _gData getOrDefault ["groupType", ""];
+                    private _gType = _gData get "groupType";
                     if (_gType in ["uav", "recon"]) then {
-                        if !(_gData getOrDefault ["onMission", false]) then {
+                        if !(_gData get "onMission") then {
                             (_result get "availableAssets") pushBack _x;
                         };
                     };
@@ -1768,20 +1768,20 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _gId = _x;
             private _gData = _y;
 
-            if ((_gData getOrDefault ["side", east]) != _side) then { continue };
+            if ((_gData get "side") != _side) then { continue };
 
             _summary set ["totalGroups", (_summary get "totalGroups") + 1];
             _allGroupIds pushBack _gId;
 
-            private _gType = _gData getOrDefault ["groupType", "unknown"];
+            private _gType = _gData get "groupType";
             private _byType = _summary get "byType";
             _byType set [_gType, (_byType getOrDefault [_gType, 0]) + 1];
 
-            if (_gData getOrDefault ["isActive", false]) then {
+            if (_gData get "isActive") then {
                 _summary set ["activeGroups", (_summary get "activeGroups") + 1];
             };
 
-            if (_gData getOrDefault ["onMission", false]) then {
+            if (_gData get "onMission") then {
                 _summary set ["groupsOnMission", (_summary get "groupsOnMission") + 1];
             } else {
                 _summary set ["groupsAvailable", (_summary get "groupsAvailable") + 1];
@@ -1835,7 +1835,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _gId = _x;
             private _gData = _groups get _gId;
             if (isNil "_gData") then { continue };
-            if ((_gData getOrDefault ["groupType", ""]) != "artillery") then { continue };
+            if ((_gData get "groupType") != "artillery") then { continue };
 
             private _batteryInfo = createHashMapFromArray [
                 ["groupId", _gId],
@@ -1854,12 +1854,12 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 _result set ["availableBatteries", (_result get "availableBatteries") + 1];
             };
 
-            private _isActive = _gData getOrDefault ["isActive", false];
+            private _isActive = _gData get "isActive";
             _batteryInfo set ["isActive", _isActive];
 
             if (_isActive) then {
                 // Get actual ammo count from real group
-                private _realGroup = _gData getOrDefault ["realGroup", grpNull];
+                private _realGroup = _gData get "realGroup";
                 if (!isNull _realGroup) then {
                     private _groupRounds = 0;
                     {
@@ -1885,7 +1885,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             } else {
                 // Virtual group - estimate based on unit count and typical loadout
                 // Typical artillery piece has ~20-30 rounds
-                private _unitCount = _gData getOrDefault ["unitCount", 1];
+                private _unitCount = _gData get "unitCount";
                 private _estimatedRounds = _unitCount * 24;  // Conservative estimate
                 _batteryInfo set ["rounds", _estimatedRounds];
                 _result set ["totalRounds", (_result get "totalRounds") + _estimatedRounds];
@@ -1925,7 +1925,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _gData = _groups get _gId;
             if (isNil "_gData") then { continue };
 
-            private _gType = _gData getOrDefault ["groupType", ""];
+            private _gType = _gData get "groupType";
             if !(_gType in ["cas", "sead", "bomber", "air", "helicopter", "jet"]) then { continue };
 
             private _assetInfo = createHashMapFromArray [
@@ -1938,7 +1938,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 ["position", _gData get "position"]
             ];
 
-            private _onMission = _gData getOrDefault ["onMission", false];
+            private _onMission = _gData get "onMission";
             _assetInfo set ["onMission", _onMission];
 
             // Categorize and count
@@ -1955,12 +1955,12 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 _result set [_typeKey + "Available", (_result get (_typeKey + "Available")) + 1];
             };
 
-            private _isActive = _gData getOrDefault ["isActive", false];
+            private _isActive = _gData get "isActive";
             _assetInfo set ["isActive", _isActive];
 
             if (_isActive) then {
                 // Get actual ordnance count from real group
-                private _realGroup = _gData getOrDefault ["realGroup", grpNull];
+                private _realGroup = _gData get "realGroup";
                 if (!isNull _realGroup) then {
                     private _groupOrdnance = 0;
                     private _groupAmmo = 0;
@@ -1992,7 +1992,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 };
             } else {
                 // Virtual group - estimate typical loadout
-                private _unitCount = _gData getOrDefault ["unitCount", 1];
+                private _unitCount = _gData get "unitCount";
                 private _estimatedOrdnance = _unitCount * 8;  // 8 missiles/bombs per aircraft
                 _assetInfo set ["ordnance", _estimatedOrdnance];
                 _result set ["totalOrdnance", (_result get "totalOrdnance") + _estimatedOrdnance];

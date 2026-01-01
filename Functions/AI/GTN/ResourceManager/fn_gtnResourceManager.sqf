@@ -83,15 +83,12 @@ private _resourceManager = createHashMapObject [[
 
     // Get cached military groups (refreshes every 30 seconds)
     ["_getMilitaryGroups", {
-        // Safety check for virtualization system
-        if (isNil "FLO_virtualGroups") exitWith { createHashMap };
-
         private _cacheTime = _self get "_cachedMilitaryGroupsTime";
         private _cfg = _self get "_config";
-        private _cacheExpiry = _cfg getOrDefault ["groupCacheExpiry", 30];
+        private _cacheExpiry = _cfg get "groupCacheExpiry";
 
         if (diag_tickTime - _cacheTime > _cacheExpiry) then {
-            private _groups = FLO_virtualGroups getOrDefault ["_groups", createHashMap];
+            private _groups = FLO_virtualGroups get "_groups";
             private _filtered = [_groups] call FLO_fnc_filterNonCivGroups;
             _self set ["_cachedMilitaryGroups", _filtered];
             _self set ["_cachedMilitaryGroupsTime", diag_tickTime];
@@ -191,9 +188,9 @@ private _resourceManager = createHashMapObject [[
 
         // Prioritize groups for reserve (armor, mechanized, then motorized)
         private _prioritizedGroups = [_allGroups, [], {
-            private _groupData = _groups getOrDefault [_x, nil];
-            if (isNil "_groupData") exitWith { 0 };
-            private _groupType = _groupData getOrDefault ["groupType", ""];
+            private _groupData = _groups get _x;
+            if (isNil "_groupData") exitWith { 0 };  // Group was deleted
+            private _groupType = _groupData get "groupType";
             if (_groupType in ["civilian", "civilianVehicle"]) exitWith { 0 };
             switch (_groupType) do {
                 case "armor": { 100 };
@@ -263,15 +260,12 @@ private _resourceManager = createHashMapObject [[
             ["GTN Resource Manager", 2, format["Cannot return group %1 - virtualization not initialized", _groupId]] call FLO_fnc_log;
         };
 
-        // Get the group's data with proper nil handling
-        private _groups = FLO_virtualGroups getOrDefault ["_groups", createHashMap];
-        private _groupData = _groups getOrDefault [_groupId, nil];
-        if (isNil "_groupData") exitWith {
-            ["GTN Resource Manager", 3, format["Failed to return group %1 to garrison - group not found", _groupId]] call FLO_fnc_log;
-        };
+        // Get the group's data
+        private _groups = FLO_virtualGroups get "_groups";
+        private _groupData = _groups get _groupId;
 
         // Check if group still has waypoints to complete
-        private _waypoints = _groupData getOrDefault ["waypoints", []];
+        private _waypoints = _groupData get "waypoints";
         if (count _waypoints > 0) exitWith {
             ["GTN Resource Manager", 4, format["Group %1 still has waypoints to complete - keeping on task", _groupId]] call FLO_fnc_log;
         };
@@ -280,8 +274,8 @@ private _resourceManager = createHashMapObject [[
         _groupData deleteAt "operationId";
 
         // Determine garrison position based on assigned objective
-        private _garrisonPos = _groupData getOrDefault ["garrisonPosition", _groupData get "position"];
-        private _objId = _groupData getOrDefault ["garrisonObjective", ""];
+        private _garrisonPos = _groupData get "position";
+        private _objId = _groupData get "objective";
         if (_objId != "" && {!isNil "FLO_Objectives"}) then {
             private _odata = FLO_Objectives get _objId;
             if (!isNil "_odata") then { _garrisonPos = [_objId] call FLO_fnc_getRandomObjectivePos; };
@@ -333,9 +327,8 @@ private _resourceManager = createHashMapObject [[
     ["_orderGroupMove", {
         params ["_groupId", "_targetPos", ["_mode", "AWARE"]];
 
-        private _groups = (FLO_virtualGroups get "_groups");
-        private _gData = _groups getOrDefault [_groupId, nil];
-        if (isNil "_gData") exitWith { false };
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gData = _groups get _groupId;
 
         private _speed = switch (_mode) do {
             case "COMBAT": { "FULL" };
@@ -357,9 +350,8 @@ private _resourceManager = createHashMapObject [[
     ["_orderGroupAttack", {
         params ["_groupId", "_targetPos"];
 
-        private _groups = (FLO_virtualGroups get "_groups");
-        private _gData = _groups getOrDefault [_groupId, nil];
-        if (isNil "_gData") exitWith { false };
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gData = _groups get _groupId;
 
         // Remove from garrison, add to attack
         private _garrisoned = _self get "_garrisonedGroups";
@@ -369,8 +361,8 @@ private _resourceManager = createHashMapObject [[
         if !(_groupId in _attacking) then { _attacking pushBack _groupId };
 
         private _waypoints = [
-            [_targetPos, "SAD", "COMBAT", "FULL", "WEDGE", "RED", 75],
-            [_targetPos, "DESTROY", "COMBAT", "NORMAL", "LINE", "RED", 50]
+            [_targetPos, "MOVE", "COMBAT", "FULL", "WEDGE", "RED", 75],
+            [_targetPos, "MOVE", "COMBAT", "NORMAL", "LINE", "RED", 50]
         ];
 
         [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
@@ -383,9 +375,8 @@ private _resourceManager = createHashMapObject [[
     ["_orderGroupDefend", {
         params ["_groupId", "_targetPos"];
 
-        private _groups = (FLO_virtualGroups get "_groups");
-        private _gData = _groups getOrDefault [_groupId, nil];
-        if (isNil "_gData") exitWith { false };
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gData = _groups get _groupId;
 
         // Remove from garrison, add to defense
         private _garrisoned = _self get "_garrisonedGroups";
@@ -639,16 +630,20 @@ private _resourceManager = createHashMapObject [[
 
         // Clean up any dead groups first
         private _allGroups = (_self get "_activeAttackGroups") + (_self get "_activeDefenseGroups") + (_self get "_garrisonedGroups");
+        private _groups = FLO_virtualGroups get "_groups";
         private _deadGroups = [];
         {
             private _groupId = _x;
-            private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
+            private _groupData = _groups get _groupId;
 
-            if (isNil "_groupData" ||
-                {(_groupData getOrDefault ["isActive", false]) &&
-                 {isNull (_groupData getOrDefault ["realGroup", grpNull])}}) then {
+            // Group deleted from virtualization
+            if (isNil "_groupData") then {
                 _deadGroups pushBack _groupId;
-                ["GTN Resource Manager", 2, format["Group %1 no longer exists or was eliminated, removing from tracking", _groupId]] call FLO_fnc_log;
+            } else {
+                // Group is active but real group destroyed
+                if (_groupData get "isActive" && {isNull (_groupData get "realGroup")}) then {
+                    _deadGroups pushBack _groupId;
+                };
             };
         } forEach _allGroups;
 
@@ -681,14 +676,17 @@ private _resourceManager = createHashMapObject [[
         private _attackReturnDist = _cfg get "attackReturnDistance";
         private _defenseReturnDist = _cfg get "defenseReturnDistance";
 
+        private _vGroups = FLO_virtualGroups get "_groups";
+
         {
             private _groupId = _x;
-            private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+            private _groupData = _vGroups get _groupId;
+            private _realGroup = _groupData get "realGroup";
 
-            if (!isNull (_groupData getOrDefault ["realGroup", grpNull])) then {
-                private _nearestEnemy = leader (_groupData get "realGroup") findNearestEnemy (leader (_groupData get "realGroup"));
+            if (!isNull _realGroup) then {
+                private _nearestEnemy = leader _realGroup findNearestEnemy leader _realGroup;
 
-                if (isNull _nearestEnemy || {_nearestEnemy distance (leader (_groupData get "realGroup")) > _attackReturnDist}) then {
+                if (isNull _nearestEnemy || {_nearestEnemy distance leader _realGroup > _attackReturnDist}) then {
                     _self call ["_returnGroupToGarrison", [_groupId, "ATTACK"]];
                 };
             };
@@ -696,12 +694,13 @@ private _resourceManager = createHashMapObject [[
 
         {
             private _groupId = _x;
-            private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+            private _groupData = _vGroups get _groupId;
+            private _realGroup = _groupData get "realGroup";
 
-            if (!isNull (_groupData getOrDefault ["realGroup", grpNull])) then {
-                private _nearestEnemy = leader (_groupData get "realGroup") findNearestEnemy (leader (_groupData get "realGroup"));
+            if (!isNull _realGroup) then {
+                private _nearestEnemy = leader _realGroup findNearestEnemy leader _realGroup;
 
-                if (isNull _nearestEnemy || {_nearestEnemy distance (leader (_groupData get "realGroup")) > _defenseReturnDist}) then {
+                if (isNull _nearestEnemy || {_nearestEnemy distance leader _realGroup > _defenseReturnDist}) then {
                     _self call ["_returnGroupToGarrison", [_groupId, "DEFEND"]];
                 };
             };

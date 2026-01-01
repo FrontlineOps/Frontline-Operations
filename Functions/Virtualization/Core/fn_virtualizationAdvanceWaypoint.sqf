@@ -39,14 +39,16 @@ if (count _waypoints == 0 || _currentIdx >= count _waypoints) exitWith {
 
 private _currentWp = _waypoints select _currentIdx;
 private _wpType = _currentWp select 1;
+// Patrol detection - check autoPatrol flag or patrolConfig (no longer rely on CYCLE waypoints)
 private _isPatrol = (_groupData getOrDefault ["autoPatrol", false]) ||
-                    ({(_x select 1) == "CYCLE"} count _waypoints > 0);
+                    (_groupData getOrDefault ["patrolConfig", []] isNotEqualTo []);
 
 switch (_wpType) do {
-    // CYCLE - loop back to first waypoint
+    // CYCLE - legacy support, loop back to first waypoint
+    // NOTE: We're phasing out CYCLE in favor of autoPatrol/patrolConfig
     case "CYCLE": {
         _groupData set ["currentWaypointIndex", 0];
-        ["VIRTUALIZATION", 4, format["Group %1 cycling to first waypoint", _groupId]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 4, format["Group %1 cycling to first waypoint (legacy CYCLE)", _groupId]] call FLO_fnc_log;
     };
 
     // SENTRY - hold position (never completes)

@@ -32,7 +32,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _airGroups = [];
             {
                 private _gData = _y;
-                private _gType = _gData getOrDefault ["groupType", ""];
+                private _gType = _gData get "groupType";
                 if (_gType in ["helicopter", "jet", "air"]) then {
                     _airGroups pushBack [_x, _gData];
                 };
@@ -54,7 +54,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
 
-            if !(_gdata getOrDefault ["isActive", false]) then {
+            if !(_gdata get "isActive") then {
                 [_gid, _gdata] call FLO_fnc_activateVirtualGroup;
             };
 
@@ -90,31 +90,21 @@ if (isNil "FLO_GTNAirAssetManager") then {
         ["_releaseAirAsset", {
             params ["_gid"];
             private _missions = _self get "missions";
+
             if (_gid in _missions) then {
                 private _data = (FLO_virtualGroups get "_groups") get _gid;
-                if (!isNil "_data") then {
-                    // Clear mission flag - allows natural virtualization when far from players
-                    _data set ["onMission", false];
-
-                    // Send to RTB instead of forcing immediate deactivation
-                    _self call ["_sendToRTB", [_gid]];
-
-                    ["GTN Air Asset Manager", 3, format["Released air asset %1 - RTB ordered", _gid]] call FLO_fnc_log;
-                };
+                _data set ["onMission", false];
+                _self call ["_sendToRTB", [_gid]];
                 (_self get "missions") deleteAt _gid;
+                ["GTN Air Asset Manager", 3, format["Released air asset %1 - RTB ordered", _gid]] call FLO_fnc_log;
             };
         }],
 
-        // Get RTB position for an aircraft (returns spawn position)
+        // Get RTB position for an aircraft (returns original spawn position)
         ["_getRTBPosition", {
             params ["_groupId"];
-
-            if (isNil "FLO_virtualGroups") exitWith { nil };
-            private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
-            if (isNil "_gData") exitWith { nil };
-
-            // Return the group's original spawn position
-            _gData get "position"
+            private _gData = (FLO_virtualGroups get "_groups") get _groupId;
+            _gData get "spawnPosition"
         }],
 
         // Send aircraft to RTB - works for both active (real) and virtual groups
@@ -122,17 +112,12 @@ if (isNil "FLO_GTNAirAssetManager") then {
             params ["_groupId"];
 
             private _rtbPos = _self call ["_getRTBPosition", [_groupId]];
-            if (isNil "_rtbPos") exitWith { false };
-
-            private _gData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
-            if (isNil "_gData") exitWith { false };
-
-            private _isActive = _gData getOrDefault ["isActive", false];
-            private _realGroup = _gData getOrDefault ["realGroup", grpNull];
+            private _gData = (FLO_virtualGroups get "_groups") get _groupId;
+            private _isActive = _gData get "isActive";
+            private _realGroup = _gData get "realGroup";
 
             if (_isActive && !isNull _realGroup) then {
-                // Active group - set real waypoints on the actual group
-                // Clear in REVERSE order to avoid "Cycle as first waypoint has no sense" error
+                // Active group - set real waypoints
                 for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
                     deleteWaypoint [_realGroup, _i];
                 };
@@ -154,7 +139,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
                 _realGroup setCurrentWaypoint [_realGroup, 1];
 
-                ["GTN Air Asset Manager", 3, format["Set real RTB waypoints for active aircraft %1", _groupId]] call FLO_fnc_log;
+                ["GTN Air Asset Manager", 3, format["RTB waypoints set for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             } else {
                 // Virtual group - use virtual waypoint system
                 private _waypoints = [
@@ -163,7 +148,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 ];
                 [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
 
-                ["GTN Air Asset Manager", 3, format["Set virtual RTB waypoints for group %1", _groupId]] call FLO_fnc_log;
+                ["GTN Air Asset Manager", 3, format["Virtual RTB waypoints for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             };
 
             _gData set ["currentOrder", "RTB"];
@@ -179,7 +164,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             {
                 private _gData = _y;
-                private _gType = _gData getOrDefault ["groupType", ""];
+                private _gType = _gData get "groupType";
                 if (_gType in ["helicopter", "jet", "air"]) then {
                     if !(_x in _missions) then {
                         _available pushBack _x;
