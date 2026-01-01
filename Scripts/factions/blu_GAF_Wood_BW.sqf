@@ -154,8 +154,8 @@ F_Turret_List = [
 ];
 
 F_SAM_List = [
-    ["B_SAM_System_01_F", 35],
-    ["B_SAM_System_02_F", 35],
-    ["B_SAM_System_03_F", 35],
-    ["B_AAA_System_01_F", 35]
+    ["B_SAM_System_01_F", 500],
+    ["B_SAM_System_02_F", 500],
+    ["B_SAM_System_03_F", 500],
+    ["B_AAA_System_01_F", 500]
 ];

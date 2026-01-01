@@ -7,7 +7,7 @@
 // CIVILIAN POPULATION CONFIGURATION
 // ============================================================================
 CiviliansPerLocationMin = 5;
-CiviliansPerLocationMax = 15;
+CiviliansPerLocationMax = 10;
 
 // Building classes considered civilian (for spawning civilians inside)
 CivBuildingClasses = [

@@ -477,7 +477,10 @@ if (_patrolConfig isNotEqualTo []) then {
         if (_firstWpType == "CYCLE" && count _waypoints == 1) then {
             ["VIRTUALIZATION", 2, format["Group %1 has only CYCLE waypoint - skipping", _groupId]] call FLO_fnc_log;
         } else {
-            // Filter out CYCLE waypoints - they cause bugs and we use taskPatrol for loops
+            // Check if original waypoints included a CYCLE (meaning group should loop)
+            private _hadCycle = (_waypoints findIf { (_x select 1) == "CYCLE" }) != -1;
+
+            // Filter out CYCLE waypoints - they cause bugs and we use setCurrentWaypoint for loops
             private _filteredWaypoints = _waypoints select { (_x select 1) != "CYCLE" };
 
             {
@@ -509,6 +512,17 @@ if (_patrolConfig isNotEqualTo []) then {
                     ["VIRTUALIZATION", 4, format["Group %1: Converted %2 to %3", _groupId, _wpType, _effectiveType]] call FLO_fnc_log;
                 };
             } forEach _filteredWaypoints;
+
+            // If we filtered out a CYCLE, make the last waypoint loop back to first
+            // This allows pedestrians/civilians to continuously walk their routes
+            if (_hadCycle && count waypoints _realGroup > 1) then {
+                private _lastWp = [_realGroup, (count waypoints _realGroup) - 1];
+                _lastWp setWaypointStatements [
+                    "true",
+                    format ["(group this) setCurrentWaypoint [(group this), %1];", 1]
+                ];
+                ["VIRTUALIZATION", 4, format["Group %1: Added loop statement to last waypoint (replacing filtered CYCLE)", _groupId]] call FLO_fnc_log;
+            };
         };
     };
 };

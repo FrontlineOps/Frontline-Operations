@@ -1,37 +1,37 @@
 // ============================================================================
-// US WOODLAND FACTION - BLUFOR (CUP/RHS Mods - Vietnam Era)
-// US Forces in woodland camouflage (Vietnam-era equipment)
+// US WOODLAND FACTION - BLUFOR (RHS Mods - Modern Era)
+// US Forces in woodland camouflage/marpat camouflage
 // ============================================================================
 
 // ============================================================================
 // INFANTRY UNITS
 // ============================================================================
-F_Officer = "vn_b_men_army_01";
+F_Officer = "rhsusf_army_ucp_officer";
 
-F_Assault_Eng = "vn_b_men_army_04";
-F_Assault_TL = "vn_b_men_army_15";
-F_Assault_SL = "vn_b_men_army_02";
-F_Assault_Eod = "vn_b_men_army_05";
-F_Assault_Mrk = "vn_b_men_army_10";
-F_Assault_AT = "vn_b_men_army_12";
-F_Assault_Amm = "vn_b_men_army_08";
-F_Assault_Mg = "vn_b_men_army_06";
-F_Assault_Med = "vn_b_men_army_03";
-F_Assault_Uav = "vn_b_men_army_19";
+F_Assault_Eng = "rhsusf_army_ucp_engineer";
+F_Assault_TL = "rhsusf_army_ucp_teamleader";
+F_Assault_SL = "rhsusf_army_ucp_squadleader";
+F_Assault_Eod = "rhsusf_army_ucp_explosives";
+F_Assault_Mrk = "rhsusf_army_ucp_marksman";
+F_Assault_AT = "rhsusf_army_ucp_javelin";
+F_Assault_Amm = "rhsusf_army_ucp_autoriflemana";
+F_Assault_Mg = "rhsusf_army_ucp_machinegunner";
+F_Assault_Med = "rhsusf_army_ucp_medic";
+F_Assault_Uav = "";
 
-F_Recon_Snp = "vn_b_men_sf_21";
-F_Recon_Sct = "vn_b_men_sf_04";
-F_Recon_TL = "vn_b_men_sf_01";
-F_Recon_Mrk = "vn_b_men_sf_13";
-F_Recon_AT = "vn_b_men_sf_08";
-F_Recon_Mg = "vn_b_men_sf_05";
-F_Recon_Eod = "vn_b_men_sf_03";
-F_Recon_Med = "vn_b_men_sf_02";
-F_Recon_Eng = "vn_b_men_army_26";
+F_Recon_Snp = "rhsusf_usmc_recon_marpat_wd_sniper_M107";
+F_Recon_Sct = "rhsusf_usmc_recon_marpat_wd_rifleman";
+F_Recon_TL = "rhsusf_usmc_recon_marpat_wd_teamleader";
+F_Recon_Mrk = "rhsusf_usmc_recon_marpat_wd_marksman";
+F_Recon_AT = "rhsusf_usmc_recon_marpat_wd_rifleman_at";
+F_Recon_Mg = "rhsusf_usmc_recon_marpat_wd_autorifleman";
+F_Recon_Eod = "";
+F_Recon_Med = "";
+F_Recon_Eng = "";
 
-F_Diver_TL = "vn_b_men_seal_32";
-F_Diver_Rfl = "vn_b_men_seal_29";
-F_Diver_Eod = "vn_b_men_seal_36";
+F_Diver_TL = "rhsusf_socom_marsoc_teamleader";
+F_Diver_Rfl = "rhsusf_socom_marsoc_cso";
+F_Diver_Eod = "rhsusf_socom_marsoc_cso_eod";
 
 // ============================================================================
 // SQUAD COMPOSITIONS
@@ -63,87 +63,104 @@ F_Bike_List = [
 ];
 
 F_Car_List = [
-    ["vn_b_wheeled_m151_02_mp", 15],
-    ["vn_b_wheeled_m151_01", 20],
-    ["vn_b_wheeled_m151_mg_04", 40],
-    ["vn_b_wheeled_m151_mg_02", 40],
-    ["vn_b_wheeled_m151_mg_06", 50],
-    ["vn_b_wheeled_m151_mg_05", 50]
+    ["rhsusf_m1043_w_m2", 15],
+    ["rhsusf_m1043_w", 20],
+    ["rhsusf_m1025_w", 25],
+    ["rhsusf_m1043_w_mk19", 40],
+    ["rhsusf_m1151_m2_v2_usarmy_wd", 50],
+    ["rhsusf_m1151_mk19_v2_usarmy_wd", 65]
 ];
 
-F_MRAP_List = [];
+F_MRAP_List = [
+    ["rhsusf_m1240a1_m2crows_usarmy_wd", 70],
+    ["rhsusf_m1240a1_mk19crows_usarmy_wd", 95],
+    ["rhsusf_M1230_M2_usarmy_wd", 110],
+    ["rhsusf_M1237_M2_usarmy_wd", 120],
+    ["rhsusf_M1237_MK19_usarmy_wd", 150]
+];
 
 F_Truck_List = [
-    ["vn_b_wheeled_m54_01_aus_army", 65],
-    ["vn_b_wheeled_m54_03", 65]
+    ["rhsusf_M1078A1P2_WD_fmtv_usarmy", 45],
+    ["rhsusf_M1078A1P2_B_M2_WD_fmtv_usarmy", 65]
 ];
 
 F_Truck_Ammo_List = [
-    ["vn_b_wheeled_m54_ammo", 100]
+    ["rhsusf_M977A4_AMMO_usarmy_wd", 100]
 ];
 
 F_Truck_Construction_List = [
-    ["vn_b_wheeled_m54_repair", 100]
+    ["rhsusf_M1078A1P2_B_WD_CP_fmtv_usarmy", 100]
 ];
 
-F_Truck_Respawn_List = [];
+F_Truck_Respawn_List = [
+    ["rhsusf_M1085A1P2_B_WD_Medical_fmtv_usarmy", 150]
+];
 
 F_APC_List = [
-    ["vn_b_armor_m113_acav_04", 200],
-    ["vn_b_armor_m113_acav_02", 200],
-    ["vn_b_armor_m113_acav_06", 200],
-    ["vn_b_armor_m113_acav_03", 200],
-    ["vn_b_armor_m113_acav_05", 200],
-    ["vn_b_armor_m113_01", 150]
+    ["rhsusf_m113_usarmy", 100],
+    ["rhsusf_stryker_m1126_m2_wd", 150],
+    ["rhsusf_stryker_m1126_mk19_wd", 200],
+    ["RHS_M2A3_BUSKI_wd", 300],
+    ["RHS_M2A3_BUSKIII_wd", 400]
 ];
 
 F_Tank_List = [
-    ["vn_b_armor_m41_01_02", 500],
-    ["vn_b_armor_m41_01_01", 500]
+    ["rhsusf_m1a1aim_tuski_wd", 225],
+    ["rhsusf_m1a2sep1tuskiiwd_usarmy", 350],
+    ["rhsusf_m1a2sep2wd_usarmy", 500]
 ];
 
-F_Artillery_List = [
-    ["vn_b_army_static_m101_02", 75],
-    ["vn_b_army_static_mortar_m29", 50],
-    ["vn_b_army_static_mortar_m2", 50]
+F_Artillery_List = [ 
+    ["rhsusf_m109_usarmy ", 600],
+    ["rhsusf_M142_usarmy_WD", 900]
 ];
 
 F_Heli_List = [
-    ["vn_b_air_oh6a_01", 200],
-    ["vn_b_air_uh1d_02_02", 300],
-    ["vn_b_air_uh1d_01_01", 300],
-    ["vn_b_air_uh1c_02_01", 400]
+    ["RHS_UH1Y_FFAR_wd", 200], 
+    ["RHS_UH1Y_wd", 200], 
+    ["RHS_UH60M_wd", 250],
+    ["RHS_CH_47F_10_wd", 350], 
+    ["RHS_CH53E_USMC", 500]
 ];
 
-F_Heli_Respawn_List = [];
+F_Heli_Respawn_List = [
+    ["RHS_UH60M_MEV_wd", 550]
+];
 
 F_Heli_Gunship_List = [
-    ["vn_b_air_oh6a_05", 400],
-    ["vn_b_air_ah1g_07", 600],
-    ["vn_b_air_ah1g_03", 600]
+    ["RHS_AH1Z_wd", 400], 
+    ["RHS_AH64D_wd", 600]
 ];
 
 F_Plane_List = [
-    ["vn_b_air_f100d_cas", 1200],
-    ["vn_b_air_f4b_navy_cas", 1500]
+    ["RHS_C130J", 1000],
+    ["RHS_A10", 1500],
+    ["rhsusf_f22", 2000]
 ];
 
-F_Boat_List = [
-    ["vn_b_boat_11_01", 100],
-    ["vn_b_boat_12_02", 150],
-    ["vn_b_boat_05_02", 200]
-];
+F_Boat_List = [];
 
 F_UAV_List = [];
 
 F_UGV_List = [];
 
-F_Container_List = [];
-
-F_Turret_List = [
-    ["vn_b_army_static_m1919a4_high", 35],
-    ["vn_b_army_static_mk18", 35],
-    ["vn_b_army_static_tow", 35]
+F_Container_List = [
+    ["B_Slingload_01_Medevac_F", 35],
+    ["B_Slingload_01_Ammo_F", 35],
+    ["B_Slingload_01_Repair_F", 100],
+    ["B_Slingload_01_Fuel_F", 35]
 ];
 
-F_SAM_List = [];
+F_Turret_List = [
+    ["RHS_M2StaticMG_WD", 35],
+    ["RHS_MK19_TriPod_WD", 50],
+    ["RHS_Stinger_AA_pod_WD", 75],
+    ["RHS_TOW_TriPod_WD", 100]
+];
+
+F_SAM_List = [
+    ["B_SAM_System_01_F", 500],
+    ["B_SAM_System_02_F", 500],
+    ["B_SAM_System_03_F", 500],
+    ["B_AAA_System_01_F", 500]
+];

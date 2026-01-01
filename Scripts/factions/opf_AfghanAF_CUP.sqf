@@ -81,15 +81,14 @@ OPFOR_Objective_Groups = [
 
 OPFOR_Group_Counts = [
     ["infantry", 10],
-    ["motorized", 2],
-    ["mechanized", 2],
-    ["armor", 2],
+    ["motorized", 1],
+    ["mechanized", 1],
+    ["armor", 1],
     ["helicopter", 1],
     ["jet", 1],
     ["air", 1],
-    ["artillery", 1]
+    ["artillery", 3]
 ];
-
 // ============================================================================
 // VIRTUALIZATION SETTINGS
 // ============================================================================
