@@ -450,6 +450,14 @@ private _worldState = createHashMapObject [[
         }]]
     }],
 
+    // Get friendly objectives (owned by us - OPFOR)
+    ["_getFriendlyObjectives", {
+        _self call ["_getObjectivesWhere", [{
+            params ["_id", "_obj"];
+            (_obj get "owner") == east
+        }]]
+    }],
+
     // Get our objectives under attack
     ["_getObjectivesUnderAttack", {
         _self call ["_getObjectivesWhere", [{

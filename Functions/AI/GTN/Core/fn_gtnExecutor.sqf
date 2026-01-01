@@ -191,6 +191,7 @@ private _executor = createHashMapObject [[
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
 
             // Use GTN Commander's staging position calculation
             private _stagingPos = _cmdr call ["_getStagingPosition", [_objId]];
@@ -200,12 +201,9 @@ private _executor = createHashMapObject [[
                 false
             };
 
-            // Store in task node for later use
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            _primData set ["stagingPosition", _stagingPos];
-            _primData set ["targetObjective", _objId];
-            _taskNode set ["primitiveData", _primData];
+            // Store in executor's shared data for cross-task access
+            _executor call ["_storeTaskData", ["STAGING_POSITION", _stagingPos]];
+            _executor call ["_storeTaskData", ["STAGING_OBJECTIVE", _objId]];
 
             ["GTN", 3, format["Staging point created at %1 for objective %2", _stagingPos, _objId]] call FLO_fnc_log;
 
@@ -220,29 +218,28 @@ private _executor = createHashMapObject [[
             private _objId = _params param [0, ""];
             private _count = _params param [1, 4];
             private _cmdr = _ctx get "commander";
-            
-            // Get available groups
-            private _available = _cmdr call ["_getAvailableGroups", [_count]];
+            private _executor = _ctx get "executor";
+
+            // Get staging position from executor shared data (set by prim_select_staging_point)
+            private _completedData = _executor get "_completedTaskData";
+            private _stagingPos = _completedData get "STAGING_POSITION";
+
+            // Get available groups near staging position
+            private _available = _cmdr call ["_getAvailableGroups", [_count, _stagingPos]];
 
             if (count _available < 1) exitWith {
                 _ctx set ["status", "FAILED"];
                 false
             };
 
-            // Get staging position from previous task (must exist if we got here)
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode get "primitiveData";
-            private _stagingPos = _primData get "stagingPosition";
-
             // Order groups to staging
             {
                 _cmdr call ["_orderGroupMove", [_x, _stagingPos, "AWARE"]];
             } forEach _available;
 
-            _primData set ["groupsAssigned", count _available];
-            _primData set ["groupsArrived", 0];
-            _primData set ["assignedGroups", _available];
-            _taskNode set ["primitiveData", _primData];
+            // Store assigned groups in executor shared data for wait primitive
+            _executor call ["_storeTaskData", ["STAGING_GROUPS", _available]];
+            _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _available]];
 
             true
         }]];
@@ -251,12 +248,12 @@ private _executor = createHashMapObject [[
         _self call ["_registerHandler", ["prim_wait_for_staging", {
             params ["_ctx"];
             private _cmdr = _ctx get "commander";
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode get "primitiveData";
+            private _executor = _ctx get "executor";
 
-            // Get staging info from previous tasks (must exist)
-            private _stagingPos = _primData get "stagingPosition";
-            private _groups = _primData get "assignedGroups";
+            // Get staging info from executor shared data
+            private _completedData = _executor get "_completedTaskData";
+            private _stagingPos = _completedData get "STAGING_POSITION";
+            private _groups = _completedData get "STAGING_GROUPS";
 
             if (count _groups == 0) exitWith {
                 // No groups - auto-complete
@@ -268,20 +265,18 @@ private _executor = createHashMapObject [[
             private _arrived = _cmdr call ["_checkGroupsArrived", [_groups, _stagingPos, 150]];
 
             if (_arrived) then {
-                _primData set ["groupsArrived", count _groups];
-                _taskNode set ["primitiveData", _primData];
                 _ctx set ["status", "SUCCESS"];
                 ["GTN", 3, format["Groups arrived at staging position"]] call FLO_fnc_log;
             } else {
-                // Still waiting - check timeout
-                private _startTime = _primData getOrDefault ["waitStartTime", diag_tickTime];
-                if (isNil {_primData get "waitStartTime"}) then {
-                    _primData set ["waitStartTime", diag_tickTime];
-                    _taskNode set ["primitiveData", _primData];
+                // Still waiting - check timeout using executor shared data
+                private _waitStart = _completedData getOrDefault ["STAGING_WAIT_START", -1];
+                if (_waitStart < 0) then {
+                    _executor call ["_storeTaskData", ["STAGING_WAIT_START", diag_tickTime]];
+                    _waitStart = diag_tickTime;
                 };
 
                 // Timeout after 5 minutes
-                if (diag_tickTime - _startTime > 300) then {
+                if (diag_tickTime - _waitStart > 300) then {
                     ["GTN", 2, "Staging wait timeout - proceeding anyway"] call FLO_fnc_log;
                     _ctx set ["status", "SUCCESS"];
                 } else {

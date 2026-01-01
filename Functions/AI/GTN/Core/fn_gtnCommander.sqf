@@ -224,11 +224,18 @@ private _gtnCommander = createHashMapObject [[
                         if (!isNil "_currentTask") then {
                             ["GTN", 3, format["Starting execution: %1", _currentTask get "taskId"]] call FLO_fnc_log;
                             private _result = _executor call ["_executePrimitive", [_currentTask]];
-                            _planner call ["_executeNext", []];
 
-                            private _stats = _self get "_stats";
-                            _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
-                            _tasksThisCycle = _tasksThisCycle + 1;
+                            if (!_result) then {
+                                // Primitive failed - abort plan
+                                ["GTN", 2, format["Primitive failed: %1 - aborting plan", _currentTask get "taskId"]] call FLO_fnc_log;
+                                _planner set ["_planStatus", "FAILED"];
+                                _continueLoop = false;
+                            } else {
+                                _planner call ["_executeNext", []];
+                                private _stats = _self get "_stats";
+                                _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
+                                _tasksThisCycle = _tasksThisCycle + 1;
+                            };
                         } else {
                             ["GTN", 2, "No tasks in plan"] call FLO_fnc_log;
                             _planner set ["_planStatus", "SUCCESS"];
@@ -243,11 +250,18 @@ private _gtnCommander = createHashMapObject [[
                                 if (!isNil "_currentTask") then {
                                     ["GTN", 3, format["Executing: %1", _currentTask get "taskId"]] call FLO_fnc_log;
                                     private _result = _executor call ["_executePrimitive", [_currentTask]];
-                                    _planner call ["_executeNext", []];
 
-                                    private _stats = _self get "_stats";
-                                    _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
-                                    _tasksThisCycle = _tasksThisCycle + 1;
+                                    if (!_result) then {
+                                        // Primitive failed - abort plan
+                                        ["GTN", 2, format["Primitive failed: %1 - aborting plan", _currentTask get "taskId"]] call FLO_fnc_log;
+                                        _planner set ["_planStatus", "FAILED"];
+                                        _continueLoop = false;
+                                    } else {
+                                        _planner call ["_executeNext", []];
+                                        private _stats = _self get "_stats";
+                                        _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
+                                        _tasksThisCycle = _tasksThisCycle + 1;
+                                    };
                                 } else {
                                     // No more tasks - plan complete
                                     _continueLoop = false;
@@ -408,12 +422,22 @@ private _gtnCommander = createHashMapObject [[
 
         // Take requested count and extract just group IDs
         private _result = [];
+        private _resultInfo = [];
         {
             if (count _result >= _count) exitWith {};
-            _result pushBack (_x select 0);
+            _x params ["_groupId", "_gData"];
+            _result pushBack _groupId;
+
+            // Collect info for logging
+            private _groupType = _gData getOrDefault ["groupType", "unknown"];
+            private _vehicleType = _gData getOrDefault ["vehicleType", ""];
+            private _unitCount = _gData getOrDefault ["unitCount", 0];
+            private _shortId = _groupId select [7, 6]; // Extract numeric part from "vgroup_123456"
+            private _typeStr = if (_vehicleType != "") then { _vehicleType } else { _groupType };
+            _resultInfo pushBack format["%1[%2](%3)", _shortId, _typeStr, _unitCount];
         } forEach _available;
 
-        ["GTN", 3, format["Found %1 available groups (requested %2), nearest to %3", count _result, _count, _targetPos]] call FLO_fnc_log;
+        ["GTN", 3, format["Found %1 groups (requested %2) near %3: %4", count _result, _count, _targetPos, _resultInfo joinString ", "]] call FLO_fnc_log;
 
         // Log distances for debugging
         {
@@ -576,17 +600,22 @@ private _gtnCommander = createHashMapObject [[
 
         private _groups = FLO_virtualGroups get "_groups";
         private _arrivedCount = 0;
+        private _validCount = 0;
 
         {
             private _gData = _groups get _x;
+            if (isNil "_gData") then { continue };
+            _validCount = _validCount + 1;
+
             private _groupPos = _gData get "position";
             if (_groupPos distance2D _pos <= _threshold) then {
                 _arrivedCount = _arrivedCount + 1;
             };
         } forEach _groupIds;
 
-        // Return true if at least half have arrived
-        _arrivedCount >= (ceil ((count _groupIds) / 2))
+        // All surviving groups must arrive (don't wait for dead/deleted groups)
+        if (_validCount == 0) exitWith { true };
+        _arrivedCount >= _validCount
     }],
 
     // Identify objective with weakest defense (for opportunistic attacks)
@@ -618,20 +647,45 @@ private _gtnCommander = createHashMapObject [[
     ["_getStagingPosition", {
         params ["_objId"];
 
-        private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-        if (isNil "_objPos") exitWith { nil };
+        private _targetPos = [_objId] call FLO_fnc_getObjectivePosition;
+        if (isNil "_targetPos") exitWith { nil };
 
-        // Find a position 300-500m from objective, preferring roads
-        private _offset = 300 + random 200;
-        private _dir = random 360;
+        // Find nearest friendly (OPFOR) objective to stage at
+        private _ws = _self get "_worldState";
+        private _friendlyObjs = _ws call ["_getFriendlyObjectives", []];
 
-        private _stagingPos = _objPos getPos [_offset, _dir];
-
-        // Try to find a nearby road
-        private _roads = _stagingPos nearRoads 100;
-        if (count _roads > 0) then {
-            _stagingPos = getPos (selectRandom _roads);
+        if (count (keys _friendlyObjs) == 0) exitWith {
+            // No friendly objectives - fall back to offset from target
+            ["GTN", 2, "No friendly objectives for staging - using offset position"] call FLO_fnc_log;
+            private _offset = 500 + random 300;
+            private _dir = random 360;
+            _targetPos getPos [_offset, _dir]
         };
+
+        // Find closest friendly objective to the target
+        private _bestObj = "";
+        private _bestDist = 999999;
+
+        {
+            private _objData = _friendlyObjs get _x;
+            private _objPos = [_x] call FLO_fnc_getObjectivePosition;
+            if (isNil "_objPos") then { continue };
+
+            private _dist = _objPos distance2D _targetPos;
+            if (_dist < _bestDist) then {
+                _bestDist = _dist;
+                _bestObj = _x;
+            };
+        } forEach (keys _friendlyObjs);
+
+        if (_bestObj == "") exitWith {
+            ["GTN", 2, "Could not find valid friendly objective for staging"] call FLO_fnc_log;
+            nil
+        };
+
+        private _stagingPos = [_bestObj] call FLO_fnc_getObjectivePosition;
+
+        ["GTN", 3, format["Staging at friendly objective %1 (%2m from target)", _bestObj, round _bestDist]] call FLO_fnc_log;
 
         _stagingPos
     }],
