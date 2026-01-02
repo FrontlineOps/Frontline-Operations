@@ -88,14 +88,15 @@ private _template = createHashMapFromArray [
             selectRandom East_Units, selectRandom East_Units,
             selectRandom East_Units, selectRandom East_Units
         ]] call BIS_fnc_spawnGroup;
-        [_patrolGrp, getPos _house, 300] call BIS_fnc_taskPatrol;
         _patrolGrp deleteGroupWhenEmpty true;
+        [_patrolGrp, getPos _house, 300, 5, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
         ["addGroup", [_missionId, _patrolGrp]] call FLO_fnc_sideMissionEntityTracker;
-        
+
         // Additional enemies based on difficulty
         if (_aggrScore > 5) then {
             private _grp = [_house getPos [100, random 360], East, [selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
-            [_grp, getPos _house, 200] call BIS_fnc_taskPatrol;
+            _grp deleteGroupWhenEmpty true;
+            [_grp, getPos _house, 200, 4, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
         

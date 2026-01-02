@@ -101,8 +101,8 @@ private _template = createHashMapFromArray [
             selectRandom East_Units, selectRandom East_Units, selectRandom East_Units,
             selectRandom East_Units, selectRandom East_Units
         ]] call BIS_fnc_spawnGroup;
-        [_patrolGrp, _position, 70] call BIS_fnc_taskPatrol;
         _patrolGrp deleteGroupWhenEmpty true;
+        [_patrolGrp, _position, 70, 4, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
         ["addGroup", [_missionId, _patrolGrp]] call FLO_fnc_sideMissionEntityTracker;
         
         // Additional positions based on difficulty
@@ -115,21 +115,23 @@ private _template = createHashMapFromArray [
                 private _grp = [_pos2 getPos [20, random 360], East, [
                     selectRandom East_Units, selectRandom East_Units
                 ]] call BIS_fnc_spawnGroup;
-                [_grp, _pos2, 50] call BIS_fnc_taskPatrol;
+                _grp deleteGroupWhenEmpty true;
+                [_grp, _pos2, 50, 4, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
                 ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
             };
         };
-        
+
         if (_aggrScore > 10) then {
             private _mounts = nearestLocations [_position, ["Mount"], 500];
             if (count _mounts > 0) then {
                 private _pos3 = locationPosition (selectRandom _mounts);
                 ["Recon_OPF_2", _pos3, [0,0,0], 0, true] call LARs_fnc_spawnComp;
-                
+
                 private _grp = [_pos3 getPos [20, random 360], East, [
                     selectRandom East_Units, selectRandom East_Units, selectRandom East_Units
                 ]] call BIS_fnc_spawnGroup;
-                [_grp, _pos3, 70] call BIS_fnc_taskPatrol;
+                _grp deleteGroupWhenEmpty true;
+                [_grp, _pos3, 70, 4, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
                 ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
             };
         };

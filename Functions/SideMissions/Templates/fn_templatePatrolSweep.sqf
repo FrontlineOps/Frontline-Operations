@@ -100,14 +100,16 @@ private _template = createHashMapFromArray [
         private _patrolPos = _position getPos [30, random 360];
         private _patrolGrp = [_patrolPos, East, [selectRandom CivMenArray, selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
         { _x setUnitLoadout (selectRandom GuerMenArray); removeHeadgear _x; } forEach units _patrolGrp;
-        [_patrolGrp, _position, 50] call BIS_fnc_taskPatrol;
+        _patrolGrp deleteGroupWhenEmpty true;
+        [_patrolGrp, _position, 50, 4, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
         ["addGroup", [_missionId, _patrolGrp]] call FLO_fnc_sideMissionEntityTracker;
-        
+
         if (_aggrScore > 5) then {
             private _patrolPos2 = _position getPos [50, random 360];
             private _grp2 = [_patrolPos2, East, [selectRandom CivMenArray, selectRandom CivMenArray]] call BIS_fnc_spawnGroup;
             { _x setUnitLoadout (selectRandom GuerMenArray); removeHeadgear _x; } forEach units _grp2;
-            [_grp2, _position, 200] call BIS_fnc_taskPatrol;
+            _grp2 deleteGroupWhenEmpty true;
+            [_grp2, _position, 200, 5, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
             ["addGroup", [_missionId, _grp2]] call FLO_fnc_sideMissionEntityTracker;
         };
         
