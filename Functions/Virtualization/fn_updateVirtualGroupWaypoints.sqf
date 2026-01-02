@@ -116,10 +116,8 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
     if (_groupData get "isActive") then {
         private _realGroup = _groupData get "realGroup";
         if (!isNull _realGroup) then {
-            // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
-            for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
-                deleteWaypoint [_realGroup, _i];
-            };
+            // Clear existing waypoints
+            [_realGroup] call CBA_fnc_clearWaypoints;
 
             // Add new waypoints
             {
@@ -232,10 +230,8 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             if (_groupData get "isActive") then {
                 private _realGroup = _groupData get "realGroup";
                 if (!isNull _realGroup) then {
-                    // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
-                    for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
-                        deleteWaypoint [_realGroup, _i];
-                    };
+                    // Clear existing waypoints
+                    [_realGroup] call CBA_fnc_clearWaypoints;
 
                     // Add new waypoints
                     {
@@ -277,10 +273,8 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             if (_groupData get "isActive") then {
                 private _realGroup = _groupData get "realGroup";
                 if (!isNull _realGroup) then {
-                    // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
-                    for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
-                        deleteWaypoint [_realGroup, _i];
-                    };
+                    // Clear existing waypoints
+                    [_realGroup] call CBA_fnc_clearWaypoints;
 
                     // Add direct waypoint
                     private _wpPos = _originalWaypoint select 0;

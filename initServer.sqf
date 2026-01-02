@@ -173,11 +173,9 @@ private _fnc_initConvoyLoop = {
                         if (!isNull _leadVehicle &&
                             {alive _leadVehicle} &&
                             {time - _lastPathUpdate > _pathUpdateCooldown}) then {
-
-                            // Clear existing waypoints in REVERSE order to avoid "Cycle as first waypoint has no sense" error
-                            for "_i" from (count waypoints _convoyGroup - 1) to 0 step -1 do {
-                                deleteWaypoint [_convoyGroup, _i];
-                            };
+                            
+                            // Clear existing waypoints
+                            [_convoyGroup] call CBA_fnc_clearWaypoints;
 
                             // Calculate path
                             private _destMarker = getMarkerPos "ConvoyDest";

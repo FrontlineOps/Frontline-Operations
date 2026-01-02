@@ -59,9 +59,7 @@ _gdata set ["autoPatrol", false];
 _realGroup setVariable ["FLO_patrolConfig", nil, true];
 
 // Clear existing waypoints
-for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
-    deleteWaypoint [_realGroup, _i];
-};
+[_realGroup] call CBA_fnc_clearWaypoints;
 
 // Clear virtual waypoints
 _gdata set ["waypoints", []];

@@ -33,10 +33,8 @@ params [
 if (isNull _group) exitWith { false };
 if (_pos isEqualTo []) then { _pos = getPos (leader _group); };
 
-// Clear existing waypoints (delete in reverse to avoid CYCLE bug)
-for "_i" from (count waypoints _group - 1) to 0 step -1 do {
-    deleteWaypoint [_group, _i];
-};
+// Clear existing waypoints
+[_group] call CBA_fnc_clearWaypoints;
 
 // Set group behavior
 _group setBehaviour _behavior;
