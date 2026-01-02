@@ -55,12 +55,12 @@ private _fnc_getRoadWaypoints = {
             (_roadPos select 1) + (cos _sideDir) * _sidewalkOffset,
             0
         ];
-        _waypoints pushBack [_wpPos, "MOVE", "SAFE", "LIMITED", "FILE", "YELLOW", 3];
+        _waypoints pushBack [_wpPos, "MOVE", "CARELESS", "LIMITED", "FILE", "WHITE", 3];
     } forEach _selected;
 
     // Add CYCLE to loop
     if (count _waypoints > 0) then {
-        _waypoints pushBack [_waypoints select 0 select 0, "CYCLE", "SAFE", "LIMITED", "FILE", "YELLOW", 3];
+        _waypoints pushBack [_waypoints select 0 select 0, "CYCLE", "CARELESS", "LIMITED", "FILE", "WHITE", 3];
     };
 
     _waypoints
@@ -145,9 +145,9 @@ private _fnc_getRoadWaypoints = {
 
                     // Create waypoints: start -> destination -> back to start (loop)
                     private _carWaypoints = [
-                        [_destRoadPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 20],
-                        [_parkPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 20],
-                        [_destRoadPos, "CYCLE", "SAFE", "LIMITED", "COLUMN", "YELLOW", 20]
+                        [_destRoadPos, "MOVE", "CARELESS", "LIMITED", "COLUMN", "WHITE", 20],
+                        [_parkPos, "MOVE", "CARELESS", "LIMITED", "COLUMN", "WHITE", 20],
+                        [_destRoadPos, "CYCLE", "CARELESS", "LIMITED", "COLUMN", "WHITE", 20]
                     ];
 
                     [_carGroupId, _carWaypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
