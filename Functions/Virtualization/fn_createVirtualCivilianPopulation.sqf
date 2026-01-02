@@ -122,9 +122,7 @@ private _fnc_getRoadWaypoints = {
 
         // Store parking direction
         private _groupData = (FLO_virtualGroups get "_groups") get _carGroupId;
-        if (!isNil "_groupData") then {
-            _groupData set ["direction", _parkDir];
-        };
+        _groupData set ["direction", _parkDir];
 
         // 40% parked, 60% driving
         if (random 1 < 0.4) then {
@@ -207,11 +205,9 @@ private _fnc_getRoadWaypoints = {
         private _groupId = [_bldgPos, "civilian", nil, "civ_building", 1, civilian, _unitType] call FLO_fnc_createVirtualGroup;
 
         // Set as stationary (no waypoints = stays in place)
-        private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
-        if (!isNil "_groupData") then {
-            _groupData set ["state", "idle"];
-            _groupData set ["autoPatrol", true];  // Prevent auto-patrol assignment
-        };
+        private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+        _groupData set ["state", "idle"];
+        _groupData set ["autoPatrol", true];
 
         _placed = _placed + 1;
         _totalCivsPlaced = _totalCivsPlaced + 1;

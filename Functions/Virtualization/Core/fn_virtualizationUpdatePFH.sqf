@@ -35,23 +35,21 @@ params [["_mode", "start", [""]]];
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
-if (isNil "FLO_VirtUpdate") then {
-    FLO_VirtUpdate = createHashMapFromArray [
-        ["pfhId", -1],
-        ["running", false],
-        ["lastUpdateTime", 0],
-        ["lastPlayerCacheTime", 0],
-        ["cachedPlayerPositions", []],
-        ["currentBatchIndex", 0],
-        ["groupUpdateTimes", createHashMap],  // groupId -> lastUpdateTime
-        ["stats", createHashMapFromArray [
-            ["cyclesRun", 0],
-            ["groupsProcessed", 0],
-            ["activationsThisCycle", 0],
-            ["deactivationsThisCycle", 0]
-        ]]
-    ];
-};
+FLO_VirtUpdate = createHashMapFromArray [
+    ["pfhId", -1],
+    ["running", false],
+    ["lastUpdateTime", 0],
+    ["lastPlayerCacheTime", 0],
+    ["cachedPlayerPositions", []],
+    ["currentBatchIndex", 0],
+    ["groupUpdateTimes", createHashMap],  // groupId -> lastUpdateTime
+    ["stats", createHashMapFromArray [
+        ["cyclesRun", 0],
+        ["groupsProcessed", 0],
+        ["activationsThisCycle", 0],
+        ["deactivationsThisCycle", 0]
+    ]]
+];
 
 // ============================================================================
 // HELPER FUNCTIONS (defined as variables for PFH access)
@@ -114,8 +112,7 @@ switch (toLower _mode) do {
 
         private _pfhId = [{
             // Exit early if virtualization not ready
-            if (isNil "FLO_virtualGroups") exitWith {};
-            if !(FLO_virtualGroups getOrDefault ["_enabled", true]) exitWith {};
+            if !(FLO_virtualGroups get "_enabled") exitWith {};
 
             private _now = diag_tickTime;
             
@@ -127,13 +124,9 @@ switch (toLower _mode) do {
 
             // Get groups
             private _groups = FLO_virtualGroups get "_groups";
-            if (isNil "_groups") exitWith {};
-            
             private _groupIds = keys _groups;
             private _totalGroups = count _groupIds;
-            if (_totalGroups == 0) exitWith {};
-
-            private _activationDist = FLO_virtualGroups getOrDefault ["_activationDistance", 2000];
+            private _activationDist = FLO_virtualGroups get "_activationDistance";
             private _groupUpdateTimes = FLO_VirtUpdate get "groupUpdateTimes";
 
             // Process batch of groups
@@ -145,12 +138,9 @@ switch (toLower _mode) do {
                 private _groupId = _groupIds select _i;
                 private _groupData = _groups get _groupId;
                 
-                if (!isNil "_groupData") then {
-                    // Process this group
-                    [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes] 
-                        call FLO_fnc_virtualizationProcessGroup;
-                    _processed = _processed + 1;
-                };
+                [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes] 
+                    call FLO_fnc_virtualizationProcessGroup;
+                _processed = _processed + 1;
             };
 
             // Update batch index

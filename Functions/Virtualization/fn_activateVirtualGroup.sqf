@@ -20,12 +20,10 @@ params ["_groupId", "_groupData"];
 // Ensure we're running on the server
 if (!isServer) exitWith {false};
 
-// Check if this group is attached to a transport - skip activation (transport spawns passengers)
-private _attachedTo = _groupData getOrDefault ["attachedTo", ""];
-if (_attachedTo != "") exitWith {
-    ["VIRTUALIZATION", 3, format["Group %1 is attached to transport %2 - skipping individual activation",
-        _groupId, _attachedTo]] call FLO_fnc_log;
-    false
+// Check if this group is attached to a transport
+private _attachedTo = _groupData get "attachedTo"; 
+if (_attachedTo != "") then {
+    ["VIRTUALIZATION", 2, format["WARNING: Activating group %1 which claims to be attached to %2. This implies logic failure upstream.", _groupId, _attachedTo]] call FLO_fnc_log;
 };
 
 ["VIRTUALIZATION", 3, format["Activating virtual group %1", _groupId]] call FLO_fnc_log;
@@ -34,11 +32,37 @@ if (_attachedTo != "") exitWith {
 private _position = _groupData get "position";
 private _groupType = _groupData get "groupType";
 private _side = _groupData get "side";
-private _groupCfg = _groupData getOrDefault ["groupCfg", objNull];
-private _allWaypoints = _groupData getOrDefault ["waypoints", []];
-private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
-private _comp = _groupData getOrDefault ["comp", []];
+private _groupCfg = _groupData get "groupCfg";
+private _allWaypoints = _groupData get "waypoints";  
+private _currentWpIdx = _groupData get "currentWaypointIndex";
+private _comp = _groupData get "comp";
 private _realGroup = grpNull;
+
+// Check if the group is significantly closer to a later waypoint than the current one.
+// This indicates that waypoints were not deleted properly during virtual movement.
+if (_currentWpIdx == 0 && count _allWaypoints > 1) then {
+    private _nearestDist = 999999;
+    private _nearestIdx = -1;
+    
+    {
+        private _wPos = _x select 0;
+        private _dist = _wPos distance2D _position;
+        if (_dist < _nearestDist) then {
+            _nearestDist = _dist;
+            _nearestIdx = _forEachIndex;
+        };
+    } forEach _allWaypoints;
+
+    // If the unit is closer to a later waypoint (index > 0) and the distance difference is significant (e.g. > 100m closer)
+    // AND the unit is actually somewhat close to that later waypoint (< 500m)
+    if (_nearestIdx > 0) then {
+        private _distToFirst = (_allWaypoints select 0 select 0) distance2D _position;
+        if (_nearestDist < 500 && _distToFirst > (_nearestDist + 200)) then {
+             ["VIRTUALIZATION", 2, format["WARNING: Group %1 activating with potentially stale waypoints! CurrentIdx: 0, NearestIdx: %2 (Dist: %3m vs First: %4m). Root cause: Virtual waypoints likely not deleting.", 
+                _groupId, _nearestIdx, round _nearestDist, round _distToFirst]] call FLO_fnc_log;
+        };
+    };
+};
 
 // Only use remaining waypoints from currentWaypointIndex onwards
 // This ensures groups that traveled virtually don't re-get completed waypoints
@@ -52,20 +76,8 @@ private _waypoints = if (_currentWpIdx > 0 && _currentWpIdx < count _allWaypoint
 _groupData set ["currentWaypointIndex", 0];
 
 // Check if this is a transport with attached groups
-private _isTransport = _groupData getOrDefault ["isTransport", false];
-private _attachedGroups = _groupData getOrDefault ["attachedGroups", []];
-
-// Validate position - skip activation if position is invalid
-if (isNil "_position" || {!(_position isEqualType [])} || {count _position < 2}) exitWith {
-    ["VIRTUALIZATION", 1, format["ERROR: Group %1 has invalid position (nil or wrong type) - skipping activation", _groupId]] call FLO_fnc_log;
-    false
-};
-
-// Check for [0,0,0] or near map origin - this indicates a failed position lookup
-if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {
-    ["VIRTUALIZATION", 1, format["ERROR: Group %1 has position near origin %2 - skipping activation", _groupId, _position]] call FLO_fnc_log;
-    false
-};
+private _isTransport = _groupData get "isTransport";
+private _attachedGroups = _groupData get "attachedGroups";
 
 // Ensure we don't spawn on top of players
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
@@ -73,10 +85,6 @@ _groupData set ["position", _position];
 
 // Get group data
 private _unitCount = _groupData get "unitCount";
-if (isNil "_unitCount") then {
-    diag_log format ["[VIRTUALIZATION] ERROR: Group %1 has UNDEFINED FUCKING UNIT COUNT. FIX IT! Setting to 1.", _groupId];
-    _unitCount = 1;
-};
 
 // Create the actual group based on group type
 switch (true) do {    
@@ -122,7 +130,7 @@ switch (true) do {
     case (_groupType isEqualTo "civilian"): {
         _realGroup = createGroup [civilian, true];
         private _civUnits = [];
-        private _objective = _groupData getOrDefault ["objective", ""];
+        private _objective = _groupData get "objective";     
         if (_objective isEqualTo "civ_building") then {
             // civ_building civilians already have their exact building position stored
             // Spawn directly at the stored position (don't re-search for buildings)
@@ -396,12 +404,12 @@ if (_isTransport && count _attachedGroups > 0) then {
     // Spawn and load each attached infantry group
     {
         private _attachedId = _x;
-        private _attachedData = _groups getOrDefault [_attachedId, nil];
+        private _attachedData = _groups get _attachedId;
 
         if (!isNil "_attachedData") then {
             private _infSide = _attachedData get "side";
-            private _infComp = _attachedData getOrDefault ["comp", []];
-            private _infUnitCount = _attachedData getOrDefault ["unitCount", 4];
+            private _infComp = _attachedData get "comp";
+            private _infUnitCount = _attachedData get "unitCount";
             private _infGroup = createGroup [_infSide, true];
 
             // Create infantry units
@@ -452,7 +460,7 @@ if (_isTransport && count _attachedGroups > 0) then {
 };
 
 // Disable AI pathfinding if objective is civ_building
-private _objective = _groupData getOrDefault ["objective", ""];
+private _objective = _groupData get "objective";
 if (_objective isEqualTo "civ_building") then {
     {
         _x disableAI "PATH";

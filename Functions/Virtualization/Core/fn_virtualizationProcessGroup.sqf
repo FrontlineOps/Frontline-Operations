@@ -29,7 +29,7 @@ private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
 private _realGroup = _groupData get "realGroup";
 private _onMission = _groupData get "onMission";
-private _attachedTo = _groupData getOrDefault ["attachedTo", ""];
+private _attachedTo = _groupData get "attachedTo";
 
 // ============================================================================
 // DISTANCE CHECK & TIERED UPDATE
@@ -59,29 +59,18 @@ _groupUpdateTimes set [_groupId, _now];
 // ============================================================================
 if (_attachedTo != "") exitWith {
     // Attached groups don't process independently
-    // Their position is synced by the transport
     private _groups = FLO_virtualGroups get "_groups";
-    private _transportData = _groups getOrDefault [_attachedTo, nil];
-    
-    if (isNil "_transportData") then {
-        // Transport gone - detach
-        _groupData set ["attachedTo", ""];
-        _groupData set ["attachedType", ""];
-        ["VIRTUALIZATION", 2, format["Group %1 auto-detached - transport gone", _groupId]] call FLO_fnc_log;
-    } else {
-        // Sync position with transport
-        private _tPos = _transportData get "position";
-        if (!isNil "_tPos") then {
-            _groupData set ["position", _tPos];
-        };
-    };
+    private _transportData = _groups get _attachedTo;
+    // Sync position with transport
+    private _tPos = _transportData get "position";
+    _groupData set ["position", _tPos];
 };
 
 // ============================================================================
 // VIRTUAL MOVEMENT (Inactive groups)
 // ============================================================================
 if (!_isActive) then {
-    private _waypoints = _groupData getOrDefault ["waypoints", []];
+    private _waypoints = _groupData get "waypoints";
     private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
     
     if (count _waypoints > 0 && _currentWpIdx < count _waypoints) then {
@@ -89,40 +78,39 @@ if (!_isActive) then {
         private _wpPos = _wp select 0;
         private _wpType = _wp select 1;
         
-        if ([_wpPos] call FLO_VirtUpdate_isValidPos) then {
-            private _virtualSpeed = _groupData getOrDefault ["virtualSpeed", 10];
-            private _lastMove = _groupData getOrDefault ["lastMoveTime", _now];
-            private _timeDelta = _now - _lastMove;
-            private _distToWp = _position distance2D _wpPos;
+        private _virtualSpeed = _groupData getOrDefault ["virtualSpeed", 10];
+        private _lastMove = _groupData getOrDefault ["lastMoveTime", _now];
+        private _timeDelta = _now - _lastMove;
+        private _distToWp = _position distance2D _wpPos;
 
-            // Get completion radius from waypoint data (index 6), default 20m
-            // Waypoint format: [position, type, behavior, speed, formation, combat mode, completion radius]
-            private _completionRadius = _wp param [6, 20];
+        // Get completion radius from waypoint data (index 6), default 20m
+        // Waypoint format: [position, type, behavior, speed, formation, combat mode, completion radius]
+        private _completionRadius = _wp param [6, 20];
 
-            if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD"] && _distToWp > _completionRadius) then {
-                // Calculate movement
-                private _moveDistance = (_virtualSpeed * _timeDelta) min _distToWp;
-                private _dir = _position getDir _wpPos;
-                private _newPos = _position getPos [_moveDistance, _dir];
+        if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD"] && _distToWp > _completionRadius) then {
+            // Calculate movement
+            private _moveDistance = (_virtualSpeed * _timeDelta) min _distToWp;
+            private _dir = _position getDir _wpPos;
+            private _newPos = _position getPos [_moveDistance, _dir];
 
-                _groupData set ["position", _newPos];
-                _groupData set ["lastMoveTime", _now];
-                _groupData set ["state", "moving"];
-            } else {
-                if (_distToWp <= _completionRadius) then {
-                    // Waypoint reached - advance
-                    [_groupId, _groupData, _currentWpIdx, _waypoints] call FLO_fnc_virtualizationAdvanceWaypoint;
-                };
+            _groupData set ["position", _newPos];
+            _groupData set ["lastMoveTime", _now];
+            _groupData set ["state", "moving"];
+        } else {
+            if (_distToWp <= _completionRadius) then {
+                // Waypoint reached - advance
+                [_groupId, _groupData, _currentWpIdx, _waypoints] call FLO_fnc_virtualizationAdvanceWaypoint;
             };
         };
     } else {
         // No waypoints - assign patrol waypoints for idle groups
-        if ((_groupData getOrDefault ["state", ""] == "idle") &&
-            !(_groupData getOrDefault ["autoPatrol", false])) then {
+        if ((_groupData get "state" == "idle") &&
+            !(_groupData getOrDefault ["autoPatrol", false]) &&
+            !(_groupData getOrDefault ["state", ""] == "planning")) then {
 
             // Generate patrol waypoints around current position or objective
             private _patrolCenter = _position;
-            private _objective = _groupData getOrDefault ["objective", ""];
+            private _objective = _groupData get "objective";
             if (_objective != "" && !isNil "FLO_Objectives") then {
                 private _objData = FLO_Objectives get _objective;
                 if (!isNil "_objData") then {
@@ -223,7 +211,7 @@ if (_isActive && !isNull _realGroup) then {
 
         // Check if active group has no waypoints and needs patrol
         private _realWaypoints = waypoints _realGroup;
-        private _state = _groupData getOrDefault ["state", "idle"];
+        private _state = _groupData get "state";
         private _hasAutoPatrol = _groupData getOrDefault ["autoPatrol", false];
 
         if (count _realWaypoints <= 1 && !_hasAutoPatrol && _state == "idle") then {

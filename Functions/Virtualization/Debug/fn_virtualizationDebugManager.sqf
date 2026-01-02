@@ -19,19 +19,17 @@
 
 params [["_mode", "toggle", [""]]];
 
-// Initialize debug state if needed
-if (isNil "FLO_VirtDebug") then {
-    FLO_VirtDebug = createHashMapFromArray [
-        ["enabled", false],                  // Start disabled - must call "enable" to start
-        ["pfhId", -1],
-        ["markerNames", createHashMap],      // groupId -> markerName for O(1) cleanup
-        ["wpMarkerNames", createHashMap],    // groupId -> [markerName1, markerName2, ...]
-        ["updateInterval", 0.5],             // Seconds between marker updates
-        ["lastUpdateTime", 0],
-        ["batchSize", 20],                   // Groups to process per frame
-        ["currentBatchIndex", 0]
-    ];
-};
+// Initialize debug state
+FLO_VirtDebug = createHashMapFromArray [
+    ["enabled", false],                  // Start disabled - must call "enable" to start
+    ["pfhId", -1],
+    ["markerNames", createHashMap],      // groupId -> markerName for O(1) cleanup
+    ["wpMarkerNames", createHashMap],    // groupId -> [markerName1, markerName2, ...]
+    ["updateInterval", 0.5],             // Seconds between marker updates
+    ["lastUpdateTime", 0],
+    ["batchSize", 20],                   // Groups to process per frame
+    ["currentBatchIndex", 0]
+];
 
 // ============================================================================
 // MODE HANDLERS
@@ -74,11 +72,7 @@ switch (toLower _mode) do {
             FLO_VirtDebug set ["lastUpdateTime", _now];
 
             // Get groups to update
-            if (isNil "FLO_virtualGroups") exitWith {};
-
             private _groups = FLO_virtualGroups get "_groups";
-            if (isNil "_groups") exitWith {};
-
             private _groupIds = keys _groups;
             private _totalGroups = count _groupIds;
             if (_totalGroups == 0) exitWith {};
@@ -92,9 +86,7 @@ switch (toLower _mode) do {
                 private _groupId = _groupIds select _i;
                 private _groupData = _groups get _groupId;
 
-                if (!isNil "_groupData") then {
-                    [_groupId, _groupData] call FLO_fnc_virtualizationDebugUpdateMarker;
-                };
+                [_groupId, _groupData] call FLO_fnc_virtualizationDebugUpdateMarker;
             };
 
             // Update batch index for next frame
@@ -174,8 +166,6 @@ switch (toLower _mode) do {
     case "cleanup": {
         // Called with additional param: groupId
         params ["", "_groupId"];
-
-        if (isNil "_groupId") exitWith { false };
 
         private _markerNames = FLO_VirtDebug get "markerNames";
         private _markerName = _markerNames getOrDefault [_groupId, ""];

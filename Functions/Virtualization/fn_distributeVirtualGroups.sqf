@@ -23,37 +23,15 @@ params [
     ["_count", 1, [0]]
 ];
 
-// Determine objective data either from the index or a marker
-private _objData = nil;
-if (!isNil "FLO_Objectives") then {
-    _objData = FLO_Objectives get _objective;
-    if (isNil "_objData" && {(_objective select [0,4]) isEqualTo "obj_"}) then {
-        _objData = FLO_Objectives get (_objective select [4]);
-    };
-};
+private _objData = FLO_Objectives get _objective;
+private _position = _objData get "position";
+private _radius = _objData get "radius";
+private _markerName = format ["obj_%1", _objective];
 
-private _position = [0,0,0];
-private _radius = 100;
-private _markerName = "";
-if (isNil "_objData") then {
-    if (_objective isEqualTo "" || {getMarkerColor _objective isEqualTo ""}) exitWith {
-        ["VIRTUALIZATION", 2, format["Cannot distribute groups - invalid objective: %1", _objective]] call FLO_fnc_log;
-        []
-    };
-    _markerName = _objective;
-    _position = getMarkerPos _objective;
-    private _size = getMarkerSize _objective;
-    _radius = (_size select 0) min (_size select 1);
-} else {
-    _position = _objData get "position";
-    _radius = _objData get "radius";
-    _markerName = format ["obj_%1", _objective];
-};
-
-// Validate position
+// Ensure position is valid
 if (_position isEqualTo [0,0,0]) exitWith {
-    ["VIRTUALIZATION", 2, format ["ERROR: Invalid position [0,0,0] for objective %1 - skipping", _objective]] call FLO_fnc_log;
-    []
+    ["VIRTUALIZATION", 1, format ["ERROR: Invalid position [0,0,0] for objective %1 - skipping", _objective]] call FLO_fnc_log;
+    [];
 };
 
 
@@ -77,7 +55,7 @@ _distributionRadius = _distributionRadius max 30;
 // No longer searching for elevated terrain - placements handled uniformly
 
 // Get group config if infantry
-private _groupCfg = objNull;
+private _groupCfg = configNull;
 if (_groupType isEqualTo "infantry" && {!isNil "East_Groups"} && {count East_Groups > 0}) then {
     _groupCfg = East_Groups;
 };

@@ -16,19 +16,14 @@
  */
 
 params ["_groupId", "_groupData"];
-
-// Ensure we're running on the server
-if (!isServer) exitWith {false};
-
 ["VIRTUALIZATION", 3, format["Deactivating virtual group %1", _groupId]] call FLO_fnc_log;
 
 // Extract data from group
 private _realGroup = _groupData get "realGroup";
 
 // If the group is not active or doesn't have a real group, nothing to do
-if (isNull _realGroup) exitWith {
+if (isNull _realGroup) then {
     ["VIRTUALIZATION", 2, format["Attempted to deactivate virtual group %1 but no real group exists", _groupId]] call FLO_fnc_log;
-    false
 };
 
 // Save the current position before deleting the group
@@ -49,13 +44,10 @@ if (!isNull _leader && {alive _leader}) then {
 // Only overwrite virtual waypoints if the real group has actual waypoints
 private _realWaypoints = waypoints _realGroup;
 if (count _realWaypoints > 1) then {
-    // Real group has waypoints beyond the initial one - save them
     private _savedWaypoints = [];
     {
-        if (_forEachIndex > 0) then { // Skip the first waypoint (which is the current position)
+        if (_forEachIndex > 0) then {
             private _wpPos = waypointPosition _x;
-
-            // Only save if position is valid
             if (_wpPos isEqualType [] && {count _wpPos >= 2} && {(_wpPos select 0) > 100 || (_wpPos select 1) > 100}) then {
                 private _waypointData = [
                     _wpPos,
@@ -73,13 +65,10 @@ if (count _realWaypoints > 1) then {
     // Only update if we got valid waypoints
     if (count _savedWaypoints > 0) then {
         _groupData set ["waypoints", _savedWaypoints];
-        // Reset waypoint index since these are new remaining waypoints starting from 0
         _groupData set ["currentWaypointIndex", 0];
         ["VIRTUALIZATION", 4, format["Saved %1 waypoints from real group %2", count _savedWaypoints, _groupId]] call FLO_fnc_log;
     };
-    // If no valid waypoints from real group, keep existing virtual waypoints
 } else {
-    // Real group has no waypoints - keep the existing virtual waypoints if any
     ["VIRTUALIZATION", 4, format["Keeping existing virtual waypoints for %1 (real group had no waypoints)", _groupId]] call FLO_fnc_log;
 };
 
@@ -146,10 +135,8 @@ _groupData set ["realGroup", grpNull];
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 
-// Fire deactivation event for GTN/AI Commander integration
 ["FLO_Virtualization_GroupDeactivated", [_groupId, _groupData]] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 3, format["Deactivated virtual group: %1", _groupId]] call FLO_fnc_log;
 
-// Return success
 true

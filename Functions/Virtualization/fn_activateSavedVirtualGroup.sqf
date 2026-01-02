@@ -26,12 +26,6 @@ params [
     ["_groupType", "", [""]]
 ];
 
-// Return if invalid parameters
-if (isNull _realGroup || _unitType isEqualTo "") exitWith {
-    ["VIRTUALIZATION", 1, "Invalid parameters for activateSavedVirtualGroup"] call FLO_fnc_log;
-    objNull
-};
-
 private _createdUnit = objNull;
 
 // Determine if this is a vehicle or infantry based on config

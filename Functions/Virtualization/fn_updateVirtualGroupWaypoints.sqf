@@ -28,19 +28,8 @@ params [
     ["_allowTrails", false, [true]]
 ];
 
-// Ensure virtualization system is initialized
-if (isNil "FLO_virtualGroups") exitWith {
-    ["VIRTUALIZATION", 1, "Cannot update waypoints - virtualization system not initialized"] call FLO_fnc_log;
-    false
-};
-
 // Get the group data
 private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-if (_groupData isEqualTo createHashMap) exitWith {
-    ["VIRTUALIZATION", 2, format["Cannot update waypoints - virtual group %1 not found", _groupId]] call FLO_fnc_log;
-    false
-};
-
 // Clear any automatic patrol flag when updating waypoints
 _groupData set ["autoPatrol", false];
 
@@ -149,6 +138,7 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
         // Temporary storage for waypoint settings
         _groupData set ["tempWaypointSettings", _firstWaypoint];
         _groupData set ["tempWaypointCount", 0];
+        _groupData set ["state", "planning"];
         
         // Create a callback function using compileFinal
         private _callbackCode = compileFinal {
@@ -182,10 +172,6 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             
             // Update the virtual group with the new waypoints
             private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-            if (_groupData isEqualTo createHashMap) exitWith {
-                ["VIRTUALIZATION", 2, format["Group %1 not found after pathfinding completed", _groupId]] call FLO_fnc_log;
-            };
-            
             // Store the waypoints
             _groupData set ["waypoints", _newWaypoints];
             _groupData set ["tempWaypointCount", count _newWaypoints];
@@ -258,8 +244,6 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             
             // Get the group data again
             private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-            if (_groupData isEqualTo createHashMap) exitWith {};
-            
             // Create a single direct waypoint
             private _directWaypoints = [_originalWaypoint];
             _groupData set ["waypoints", _directWaypoints];

@@ -14,23 +14,6 @@
  * Example:
  * [] call FLO_fnc_initializeObjectiveGroups;
  */
-
-// Ensure we're running on the server
-if (!isServer) exitWith {false};
-
-// Check if we're already initialized (loading from save)
-if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
-    ["VIRTUALIZATION", 3, "Skipping objective group initialization - loading from save"] call FLO_fnc_log;
-    true
-};
-
-// Ensure virtualization system is initialized
-if (isNil "FLO_virtualGroups") then {
-    [2000] call FLO_fnc_initVirtualization;
-};
-
-// Ensure initializationOG is set to false
-// for Dialog_Faction_Done.sqf to use
 InitializationOG = false;
 publicVariable "InitializationOG";
 
@@ -41,15 +24,6 @@ private _objectiveGroupConfig = createHashMapFromArray OPFOR_Objective_Groups;
 
 // Track all created groups
 private _allCreatedGroups = [];
-
-// Verify objectives exist
-if (isNil "FLO_Objectives") exitWith {
-    ["VIRTUALIZATION", 2, "No objectives found for initialization"] call FLO_fnc_log;
-    InitializationOG = true;
-    publicVariable "InitializationOG";
-    true
-};
-
 private _allObjectives = keys FLO_Objectives;
 
 // Process each indexed objective

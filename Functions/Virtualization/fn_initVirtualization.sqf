@@ -16,28 +16,9 @@
  * [2000] call FLO_fnc_initVirtualization;
  */
 
-if (!isServer) exitWith {
-    ["VIRTUALIZATION", 2, "initVirtualization called on non-server - ignoring"] call FLO_fnc_log;
-    nil
-};
-
 params [["_activationDistance", 2000, [0]]];
 
 ["VIRTUALIZATION", 3, format["Initializing Virtualization System (activation: %1m)", _activationDistance]] call FLO_fnc_log;
-
-// Check if already initialized
-if (!isNil "FLO_virtualGroups") exitWith {
-    ["VIRTUALIZATION", 3, "Virtualization already exists - ensuring PFH running"] call FLO_fnc_log;
-
-    // Ensure update loop is running
-    if (isNil "FLO_VirtUpdate" || {!(FLO_VirtUpdate get "running")}) then {
-        ["start"] call FLO_fnc_virtualizationUpdatePFH;
-    };
-
-    FLO_VirtualizationReady = true;
-    publicVariable "FLO_VirtualizationReady";
-    FLO_virtualGroups
-};
 
 // ============================================================================
 // CREATE MAIN DATA STRUCTURE
