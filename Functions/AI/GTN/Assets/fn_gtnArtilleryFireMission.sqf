@@ -26,36 +26,39 @@
 
 params ["_gid", "_gdata", "_realGroup", "_targetPos", "_rounds", "_accuracy", "_mgr"];
 
-// === PHASE 1: Find artillery vehicle ===
-private _veh = objNull;
+// === PHASE 1: Find ALL artillery vehicles ===
+private _vehicles = [];
 {
-    if (vehicle _x != _x) then {
-        private _v = vehicle _x;
-        if (_v isKindOf "Artillery" || _v isKindOf "MLRS" || _v isKindOf "StaticMortar") then { 
-            _veh = _v; 
+    private _v = vehicle _x;
+    ["GTN Artillery", 3, format["Checking unit %1, vehicle: %2 (Type: %3)", _x, _v, typeOf _v]] call FLO_fnc_log;
+
+    if (_v != _x && {alive _v}) then {
+        private _artyAmmo = getArtilleryAmmo [_v];
+        if (count _artyAmmo > 0 || _v isKindOf "Artillery" || _v isKindOf "MLRS" || _v isKindOf "StaticMortar" || _v isKindOf "Tank_F") then { 
+            if (count _artyAmmo > 0 || count (allTurrets _v) > 0) then {
+              _vehicles pushBackUnique _v; 
+            };
         };
-        if (isNull _veh) then { _veh = _v; };
     };
 } forEach units _realGroup;
-if (isNull _veh) then { _veh = vehicle (leader _realGroup); };
 
-if (isNull _veh || !alive _veh) exitWith {
-    ["GTN Artillery", 1, format["Artillery %1 - no valid vehicle found", _gid]] call FLO_fnc_log;
+if (count _vehicles == 0) exitWith {
+    ["GTN Artillery", 1, format["Artillery %1 - no valid vehicles found in group of %2 units", _gid, count units _realGroup]] call FLO_fnc_log;
     _gdata set ["onMission", false];
     (_mgr get "missions") deleteAt _gid;
 };
 
-["GTN Artillery", 3, format["Artillery %1 - vehicle: %2", _gid, typeOf _veh]] call FLO_fnc_log;
+["GTN Artillery", 3, format["Artillery %1 - found %2 valid guns", _gid, count _vehicles]] call FLO_fnc_log;
 
-// === PHASE 2: Clear patrol and waypoints - artillery is now on fire mission ===
+// === PHASE 2: Clear patrol and waypoints ===
 // Clear patrol config from groupData
 _gdata set ["patrolConfig", []];
 _gdata set ["autoPatrol", false];
 
-// Clear the FLO_patrolConfig variable from real group (stops taskPatrol loop)
+// Clear the FLO_patrolConfig variable from real group
 _realGroup setVariable ["FLO_patrolConfig", nil, true];
 
-// Clear existing waypoints from real group (delete in reverse to avoid CYCLE bug)
+// Clear existing waypoints
 for "_i" from (count waypoints _realGroup - 1) to 0 step -1 do {
     deleteWaypoint [_realGroup, _i];
 };
@@ -67,109 +70,98 @@ _gdata set ["currentWaypointIndex", 0];
 // Stop movement
 { doStop _x; } forEach units _realGroup;
 
-["GTN Artillery", 3, format["Artillery %1 - cleared patrol/waypoints for fire mission", _gid]] call FLO_fnc_log;
+["GTN Artillery", 3, format["Artillery %1 - cleared patrol/waypoints", _gid]] call FLO_fnc_log;
 
-// === PHASE 3: Wait for crew to be ready ===
-private _setupTimeout = diag_tickTime + 30;
+// === PHASE 3: Distribute Rounds ===
+private _gunCount = count _vehicles;
+private _roundsPerGun = ceil (_rounds / _gunCount);
+// Safety clamp - always at least 1 round if requested > 0
+if (_rounds > 0 && _roundsPerGun < 1) then { _roundsPerGun = 1 };
+
+["GTN Artillery", 3, format["Artillery %1 - distributing %2 total rounds: %3 rounds per gun (%4 guns)", 
+    _gid, _rounds, _roundsPerGun, _gunCount]] call FLO_fnc_log;
+
+// === PHASE 4: EXECUTE FIRE MISSIONS (PARALLEL) ===
+private _activeScripts = [];
+
+{
+    private _script = [_x, _targetPos, _roundsPerGun, _accuracy, _gid] spawn {
+        params ["_veh", "_targetPos", "_rounds", "_accuracy", "_gid"];
+        
+        // --- PREPARE ---
+        private _setupTimeout = diag_tickTime + 30;
+        waitUntil {
+            sleep 1;
+            (unitReady (gunner _veh)) || (diag_tickTime > _setupTimeout) || !alive _veh
+        };
+        
+        if (!alive _veh) exitWith {};
+        
+        _veh doWatch _targetPos;
+        sleep 2;
+        
+        // --- CHECK AMMO/RANGE ---
+        private _ammo = (getArtilleryAmmo [_veh]) param [0, ""];
+        if (_ammo isEqualTo "") exitWith {
+            ["GTN Artillery", 2, format["Artillery %1 (Unit %2) - no ammo", _gid, _veh]] call FLO_fnc_log;
+        };
+        
+        if !(_targetPos inRangeOfArtillery [[_veh], _ammo]) exitWith {
+            ["GTN Artillery", 2, format["Artillery %1 (Unit %2) - target out of range", _gid, _veh]] call FLO_fnc_log;
+        };
+        
+        // --- CALC PARAMETERS ---
+        private _direction = _veh getDir _targetPos;
+        private _center = _targetPos getPos [_accuracy * 0.33, -_direction];
+        private _offset = 0;
+        private _salvo = 1;
+        private _isMLRS = false;
+        private _isMortar = _veh isKindOf "StaticMortar";
+
+        if (_veh isKindOf "MLRS" || {getText (configOf _veh >> "simulation") == "airplanex"}) then {
+            _isMLRS = true;
+            private _gunnerAmmo = (gunner _veh) ammo (currentMuzzle (gunner _veh));
+            if (_gunnerAmmo >= 6) then {
+                _salvo = 3 + floor random 4; 
+                _rounds = ceil (_rounds / _salvo);
+            };
+            _accuracy = _accuracy * 1.5;
+        };
+        
+        // --- FIRE LOOP ---
+        for "_i" from 1 to _rounds do {
+            if (!alive _veh) exitWith {};
+            
+            _ammo = (getArtilleryAmmo [_veh]) param [0, ""];
+            if (_ammo isEqualTo "") exitWith {};
+            
+            private _target = _center getPos [_offset + random _accuracy, _direction + 45 - random 90];
+            _offset = _offset + (_accuracy * 0.33);
+            
+            if (_target inRangeOfArtillery [[_veh], _ammo]) then {
+                _veh commandArtilleryFire [_target, _ammo, _salvo];
+                if (_isMLRS) then { sleep 1.5; };
+                
+                private _waitStart = diag_tickTime;
+                waitUntil {
+                    sleep 0.5;
+                    (unitReady _veh) || !alive _veh || (diag_tickTime - _waitStart > 60)
+                };
+            };
+        };
+    };
+    _activeScripts pushBack _script;
+} forEach _vehicles;
+
+// === PHASE 5: Wait for completion ===
 waitUntil {
     sleep 1;
-    (unitReady (gunner _veh)) || (diag_tickTime > _setupTimeout) || !alive _veh
+    { !scriptDone _x } count _activeScripts == 0
 };
 
-if (!alive _veh) exitWith {
-    _gdata set ["onMission", false];
-    (_mgr get "missions") deleteAt _gid;
-};
+["GTN Artillery", 3, format["Artillery %1 fire mission complete (all units)", _gid]] call FLO_fnc_log;
 
-// === PHASE 4: Prepare and aim ===
-// Just doWatch and let commandArtilleryFire handle the rest
-// Do NOT set combat mode to BLUE - that prevents firing!
-_veh doWatch _targetPos;
-sleep 2;  // Brief pause to let gun orient
-
-// === PHASE 5: Get ammo and check range ===
-private _ammo = (getArtilleryAmmo [_veh]) param [0, ""];
-if (_ammo isEqualTo "") exitWith {
-    ["GTN Artillery", 1, format["Artillery %1 - no artillery ammo found", _gid]] call FLO_fnc_log;
-    _mgr call ["_cleanupMission", [_gid, _veh]];
-};
-
-if !(_targetPos inRangeOfArtillery [[_veh], _ammo]) exitWith {
-    ["GTN Artillery", 2, format["Artillery %1 - target out of range", _gid]] call FLO_fnc_log;
-    _mgr call ["_cleanupMission", [_gid, _veh]];
-};
-
-// === PHASE 6: Calculate firing parameters ===
-private _direction = _veh getDir _targetPos;
-private _center = _targetPos getPos [_accuracy * 0.33, -_direction];  // Start point of beaten zone
-private _offset = 0;
-private _salvo = 1;
-private _isMLRS = false;
-private _isMortar = _veh isKindOf "StaticMortar";
-
-// Detect MLRS - fires salvos
-if (_veh isKindOf "MLRS" || {getText (configOf _veh >> "simulation") == "airplanex"}) then {
-    _isMLRS = true;
-    private _gunnerAmmo = (gunner _veh) ammo (currentMuzzle (gunner _veh));
-    
-    // MLRS fires in salvos of 3-6 rockets
-    if (_gunnerAmmo >= 6) then {
-        _salvo = 3 + floor random 4;  // 3-6 rockets per salvo
-        _rounds = ceil (_rounds / _salvo);
-    };
-    _accuracy = _accuracy * 1.5;  // MLRS is less accurate
-    
-    ["GTN Artillery", 3, format["Artillery %1 - MLRS mode, %2 salvos of %3", _gid, _rounds, _salvo]] call FLO_fnc_log;
-};
-
-// Heavier artillery (SPGs, not mortars) fires more rounds, more accurately
-if (!_isMortar && !_isMLRS) then {
-    _rounds = _rounds * 2;
-    _accuracy = _accuracy * 0.5;
-};
-
-["GTN Artillery", 3, format["Artillery %1 - firing %2 rounds (salvo %3) at %4m accuracy", 
-    _gid, _rounds, _salvo, round _accuracy]] call FLO_fnc_log;
-
-// === PHASE 7: Fire mission - round by round ===
-private _roundsFired = 0;
-
-for "_i" from 1 to _rounds do {
-    if (!alive _veh) exitWith {};
-    
-    // Refresh ammo type each round (in case it changes)
-    _ammo = (getArtilleryAmmo [_veh]) param [0, ""];
-    if (_ammo isEqualTo "") exitWith {
-        ["GTN Artillery", 2, format["Artillery %1 - out of ammo after %2 rounds", _gid, _roundsFired]] call FLO_fnc_log;
-    };
-    
-    // Calculate target point in beaten zone cone
-    // Offset increases with each round (walking fire towards target)
-    private _target = _center getPos [_offset + random _accuracy, _direction + 45 - random 90];
-    _offset = _offset + (_accuracy * 0.33);
-    
-    // Check if this specific target is in range
-    if (_target inRangeOfArtillery [[_veh], _ammo]) then {
-        // Fire!
-        _veh commandArtilleryFire [_target, _ammo, _salvo];
-        _roundsFired = _roundsFired + _salvo;
-        
-        // MLRS needs a small delay between salvos
-        if (_isMLRS) then { sleep 1.5; };
-        
-        // Wait for gun to be ready for next round
-        private _waitStart = diag_tickTime;
-        waitUntil {
-            sleep 0.5;
-            (unitReady _veh) || !alive _veh || (diag_tickTime - _waitStart > 60)
-        };
-    } else {
-        ["GTN Artillery", 2, format["Artillery %1 - target point out of range, skipping", _gid]] call FLO_fnc_log;
-    };
-};
-
-["GTN Artillery", 3, format["Artillery %1 fire mission complete - %2 rounds fired", _gid, _roundsFired]] call FLO_fnc_log;
-
-// === PHASE 8: Cleanup and shoot-and-scoot ===
-_mgr call ["_cleanupMission", [_gid, _veh]];
+// === PHASE 6: Cleanup ===
+// Pass objNull as vehicle since we handled multiple. Cleanup will use leader for scoot origin.
+_mgr call ["_cleanupMission", [_gid, objNull]];
 
