@@ -171,9 +171,51 @@ private _fnc_addActions = {
     [_type, 3, format["Added %1 actions to %2", count _actions, _type]] call FLO_fnc_log;
 };
 
+// Add container/screen actions (similar to FOB)
+private _fnc_addContainerActions = {
+    params ["_building", "_config"];
+
+    private _type = _config get "type";
+    private _containerType = if (!isNil "F_OP_C_01") then { F_OP_C_01 } else { "Land_TripodScreen_01_dual_v2_sand_F" };
+
+    // Find nearby OP container/screen
+    private _containers = nearestObjects [_building, [_containerType], 10];
+    if (count _containers == 0) exitWith {
+        [_type, 2, "No OP container found nearby for actions"] call FLO_fnc_log;
+    };
+
+    private _container = _containers select 0;
+
+    // Container actions for OP (REQUEST MENU is primary for OPs)
+    private _containerActions = [
+        // Request Menu on container as well
+        [
+            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>REQUEST MENU",
+            (_config get "requestScript"), nil, 99999, true, true, "", "", 40, false, "", ""
+        ],
+        // Build Mode
+        [
+            "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
+            { [player] call IDS_Logistics_fnc_initBuildCamera; },
+            nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
+        ]
+    ];
+
+    {
+        try {
+            [_container, _x] remoteExec ["addAction", 0, true];
+        } catch {
+            [_type, 1, format["Failed to add container action %1: %2", _forEachIndex, _exception]] call FLO_fnc_log;
+        };
+    } forEach _containerActions;
+
+    [_type, 3, format["Added %1 actions to OP container", count _containerActions]] call FLO_fnc_log;
+};
+
 // Execute setup functions
 [_opBuilding, _config] call _fnc_setupArsenal;
 [_opBuilding, _config] call _fnc_addActions;
+[_opBuilding, _config] call _fnc_addContainerActions;
 
 // ============================================================================
 // TRIGGER SETUP

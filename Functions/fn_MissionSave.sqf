@@ -273,7 +273,7 @@ try {
                 // Find the container that's near this OP
                 private _nearContainer = objNull;
                 {
-                    if (_x distance _building < 6) exitWith { _nearContainer = _x; };
+                    if (_x distance _building < 15) exitWith { _nearContainer = _x; };
                 } forEach _allOpContainers;
 
                 // Save full OP data

@@ -52,6 +52,18 @@ FLO_fnc_addListBoxItem = {
     _index
 };
 
+// Helper function to check prerequisites and add item
+FLO_fnc_addConditionalItem = {
+    params [
+        ["_condition", true, [true]],
+        ["_params", [], [[]]]
+    ];
+
+    if (_condition) then {
+        _params call FLO_fnc_addListBoxItem;
+    };
+};
+
 // Helper to add vehicles from a list where each entry can be a classname or
 // [classname, cost].
 

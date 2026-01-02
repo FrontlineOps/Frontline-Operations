@@ -73,15 +73,21 @@ private _fobCount = 0;
 private _opBuildings = allMissionObjects F_OP_01;
 private _allOpContainers = allMissionObjects F_OP_C_01;
 
+["STARTUP", 4, format ["Found %1 OP buildings (type %2) and %3 OP containers (type %4)",
+    count _opBuildings, F_OP_01, count _allOpContainers, F_OP_C_01]] call FLO_fnc_log;
+
 private _opCount = 0;
 {
     private _building = _x;
-    private _hasContainer = (_allOpContainers findIf { _x distance _building < 6 }) > -1;
+    private _hasContainer = (_allOpContainers findIf { _x distance _building < 15 }) > -1;
+
     if (_hasContainer) then {
         // Check if this OP was restored from save (preserve marker)
         private _isRestored = _building getVariable ["FLO_OP_MarkersRestored", false];
         [_building, _isRestored] call FLO_fnc_initializeOP;
         _opCount = _opCount + 1;
+    } else {
+        ["STARTUP", 2, format ["OP at %1 has no container within 15m - skipping initialization", getPos _building]] call FLO_fnc_log;
     };
 } forEach _opBuildings;
 
