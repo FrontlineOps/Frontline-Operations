@@ -22,11 +22,11 @@ params [
 
 // Debug Level Control: 0 = Off, 1 = Errors only, 2 = Warnings only, 3 = Info only, 4 = Debug only, 5 = All levels
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 3;  // Default to show all levels
+    FLO_Debug_Level = 2;  // Default to show all levels
 };
 
-// Only log if the level matches exactly (or if level 5 is selected to show all)
-if (_level == FLO_Debug_Level || FLO_Debug_Level == 5) then {
+// Only log if level is 1 (Error) or 2 (Warn), OR fits the specific debug level, OR level 5 (All) is active
+if (_level <= 2 || _level == FLO_Debug_Level || FLO_Debug_Level == 5) then {
     private _prefix = switch (_level) do {
         case 0: {"OFF"};
         case 1: {"ERROR"};
