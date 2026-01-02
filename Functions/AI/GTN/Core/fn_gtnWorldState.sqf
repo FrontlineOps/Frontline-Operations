@@ -56,6 +56,7 @@ private _worldState = createHashMapObject [[
     // Enemy intel
     ["_enemyIntel", createHashMapFromArray [
         ["knownPositions", []],
+        ["contactReports", []],    // [Pos, Time, Strength, Type, Confidence]
         ["estimatedStrength", 0],
         ["lastContactTime", 0],
         ["threatLevel", 0],
@@ -86,8 +87,13 @@ private _worldState = createHashMapObject [[
 
         if (isNil "FLO_Objectives") exitWith { _objectives };
 
-        private _bluforUnits = allUnits select {side _x == west && alive _x && !(captive _x)};
+        // OPFOR (Friendlies) - we know where our own units are
         private _opforUnits = allUnits select {side _x == east && alive _x};
+        
+        // BLUFOR (Enemies) - rely on Intel Reports
+        private _intel = _self get "_enemyIntel";
+        private _contacts = _intel get "contactReports";
+        
         private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
 
         {
@@ -96,11 +102,19 @@ private _worldState = createHashMapObject [[
             if (isNil "_data") then { continue };
 
             private _pos = _data get "position";
-            private _priority = _data getOrDefault ["priority", 50];
-            private _owner = _data getOrDefault ["owner", east];
+            private _priority = _data get "priority";
+            private _owner = _data get "owner";
 
-            private _nearBlufor = count (_bluforUnits inAreaArray [_pos, 500, 500]);
             private _nearOpfor = count (_opforUnits inAreaArray [_pos, 500, 500]);
+            
+            // Count Enemies
+            // _contacts format: [Pos, Time, Strength, Type, Confidence]
+            private _nearBlufor = 0;
+            {
+                if ((_x select 0) distance2D _pos < 500) then {
+                    _nearBlufor = _nearBlufor + (_x select 2);
+                };
+            } forEach _contacts;
 
             private _contested = (_nearBlufor > 0) && (_nearOpfor > 0);
             private _underAttack = (_owner == east) && (_nearBlufor > 0);
@@ -306,46 +320,106 @@ private _worldState = createHashMapObject [[
         _assets
     }],
 
-    // Sense enemy intel from known contacts
+    // Sense enemy intel from known contacts via actual reports
     ["_senseEnemyIntel", {
         private _intel = _self get "_enemyIntel";
-
-        private _bluforUnits = allUnits select {side _x == west && alive _x && !(captive _x)};
-        private _knownPositions = [];
-        private _concentrations = [];
-
-        // Find enemy concentrations (groups of 3+ within 100m)
-        private _processedUnits = [];
+        private _contacts = _intel get "contactReports";
+        private _newContacts = [];
+        
+        // Remove old contacts
+        private _cutoffTime = diag_tickTime - 900;
+        _contacts = _contacts select { (_x select 1) > _cutoffTime };
+        
+        // Iterate ALL active OPFOR groups (Virtual or Editor-placed)
         {
-            if (_x in _processedUnits) then { continue };
-
-            private _pos = getPos _x;
-            private _nearby = _bluforUnits inAreaArray [_pos, 100, 100];
-
-            if (count _nearby >= 3) then {
+            if (side _x == east) then {
+                private _leader = leader _x;
+                if (alive _leader) then {
+                     // nearTargets returns [pos, type, side, subjectiveCost, object, accuracy]
+                     private _targets = _leader nearTargets 2000;
+                     
+                     {
+                         _x params ["_pos", "_type", "_side", "_cost", "_obj", "_acc"];
+                         
+                         // Only report enemies (West or Indep if hostile)
+                         if (_side == west || _side == resistance) then {
+                             // Check if we already have a recent report for this location (within 50m, 60s)
+                             private _isNew = true;
+                             {
+                                 _x params ["_cPos", "_cTime"];
+                                 if (_cPos distance2D _pos < 50 && (diag_tickTime - _cTime) < 60) exitWith {
+                                     _isNew = false; 
+                                 };
+                             } forEach _contacts;
+                             
+                             if (_isNew) then {
+                                 // Create contact report: [Pos, Time, Strength(1), Type, Confidence]
+                                 _contacts pushBack [_pos, diag_tickTime, 1, _type, _acc];
+                                 _newContacts pushBack [_pos, _type];
+                             };
+                         };
+                     } forEach _targets;
+                };
+            };
+        } forEach allGroups;
+        
+        // Cluster contacts into concentrations (Potential Targets)
+        // Groups of 3+ reports within 150m
+        private _concentrations = [];
+        private _processedReports = [];
+        
+        {
+            if (_forEachIndex in _processedReports) then { continue };
+            
+            private _baseReport = _x;
+            _baseReport params ["_pos", "_time", "_strength"];
+            
+            private _cluster = [_baseReport];
+            _processedReports pushBack _forEachIndex;
+            
+            // Find neighbors
+            {
+                if !(_forEachIndex in _processedReports) then {
+                     private _nPos = _x select 0;
+                     if (_pos distance2D _nPos < 150) then {
+                         _cluster pushBack _x;
+                         _processedReports pushBack _forEachIndex;
+                     };
+                };
+            } forEach _contacts;
+            
+            if (count _cluster >= 3) then {
+                // Calculate centroid
                 private _centerPos = [0,0,0];
-                { _centerPos = _centerPos vectorAdd (getPos _x); } forEach _nearby;
-                _centerPos = _centerPos vectorMultiply (1 / count _nearby);
-
+                private _clusStrength = 0;
+                {
+                    _centerPos = _centerPos vectorAdd (_x select 0);
+                    _clusStrength = _clusStrength + (_x select 2);
+                } forEach _cluster;
+                _centerPos = _centerPos vectorMultiply (1 / count _cluster);
+                
                 _concentrations pushBack createHashMapFromArray [
                     ["position", _centerPos],
-                    ["strength", count _nearby],
-                    ["lastSeen", diag_tickTime]
+                    ["strength", _clusStrength],
+                    ["lastSeen", _time] // Use base time approx
                 ];
-
-                _processedUnits append _nearby;
             };
+        } forEach _contacts;
 
-            _knownPositions pushBack [getPos _x, diag_tickTime];
-        } forEach _bluforUnits;
+        // Log significant new contacts
+        if (count _newContacts > 0) then {
+             ["GTN", 3, format["New enemy contacts reported: %1", count _newContacts]] call FLO_fnc_log;
+        };
 
-        _intel set ["knownPositions", _knownPositions];
+        _intel set ["contactReports", _contacts];
         _intel set ["concentrations", _concentrations];
-        _intel set ["estimatedStrength", count _bluforUnits];
-        _intel set ["lastContactTime", diag_tickTime];
-
-        // Calculate threat level (0-10)
-        private _threatLevel = ((count _bluforUnits) / 10) min 10;
+        
+        // Estimate strength based on active reports
+        _intel set ["estimatedStrength", count _contacts]; // Rough estimate
+        _intel set ["lastContactTime", if (count _contacts > 0) then {diag_tickTime} else { _intel get "lastContactTime" }];
+        
+        // Threat level (0-10)
+        private _threatLevel = ((count _contacts) / 5) min 10;
         _intel set ["threatLevel", _threatLevel];
 
         _self set ["_enemyIntel", _intel];
@@ -626,11 +700,11 @@ private _worldState = createHashMapObject [[
         if (_now - _lastUpdate < _interval) exitWith {};
 
         // Run all sensors
-        _self call ["_senseObjectives", []];
+        _self call ["_senseEnemyIntel", []];   // Gather intel first!
+        _self call ["_senseObjectives", []];   // Use intel to assess objectives
         _self call ["_senseForces", []];
         _self call ["_senseSupportAssets", []];
-        _self call ["_senseEnemyIntel", []];
-        _self call ["_senseTacticalSituation", []];
+        _self call ["_senseTacticalSituation", []]; // Use everything for final assessment
 
         _self set ["_lastUpdate", _now];
 

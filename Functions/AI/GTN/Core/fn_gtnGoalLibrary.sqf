@@ -400,6 +400,80 @@ private _goalLibrary = createHashMapObject [[
                 ]
             ]]
         ]]];
+        
+        _self call ["_registerGoal", [createHashMapFromArray [
+            ["id", "interdict_enemy_forces"],
+            ["type", GOAL_OPERATIONAL],
+            ["description", "Interdict known enemy concentrations"],
+            ["preconditions", {
+                params ["_ws", "_params"];
+                private _intel = _ws call ["_getEnemyIntel", []];
+                count (_intel getOrDefault ["concentrations", []]) > 0
+            }],
+            ["methods", [
+                createHashMapFromArray [
+                    ["id", "cas_interdiction"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { -1 };
+                        
+                        private _score = 55;
+                         // Bonus for high threat level
+                        private _intel = _ws call ["_getEnemyIntel", []];
+                        private _threat = _intel getOrDefault ["threatLevel", 0];
+                        if (_threat > 5) then { _score = _score + 10 };
+                        
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["prim_select_target_concentration", []],
+                        ["prim_call_cas_coord", ["_SELECTED_CONCENTRATION"]]
+                    ]]
+                ],
+                createHashMapFromArray [
+                    ["id", "infantry_assault"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _forces = _ws call ["_getForces", []];
+                        private _available = _forces get "availableGroups";
+                        
+                        if (_available < 3) exitWith { -1 };
+                        
+                        private _score = 40;
+                        if (_available >= 5) then { _score = _score + 15 };
+                        
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["prim_select_target_concentration", []],
+                        ["prim_assault_coord", ["_SELECTED_CONCENTRATION"]]
+                    ]]
+                ],
+                createHashMapFromArray [
+                    ["id", "artillery_interdiction"],
+                    ["score", {
+                        params ["_ws", "_params", "_planner"];
+                        private _assets = _ws call ["_getSupportAssets", []];
+                        if !(_assets get "artilleryAvailable") exitWith { -1 };
+                        
+                        private _score = 45;
+                        // Bonus for high threat level
+                        private _intel = _ws call ["_getEnemyIntel", []];
+                        private _threat = _intel getOrDefault ["threatLevel", 0];
+                        if (_threat > 5) then { _score = _score + 15 };
+                        
+                        // Penalty if friendly forces are very close to enemy (danger close)
+                        // This logic should be in the primitive selection really, but score drop helps
+                        
+                        _score
+                    }],
+                    ["subtasks", [
+                        ["prim_select_target_concentration", []],
+                        ["prim_call_artillery_coord", ["_SELECTED_CONCENTRATION"]]
+                    ]]
+                ]
+            ]]
+        ]]];
     }],
 
     // === TACTICAL GOALS ===
@@ -449,6 +523,14 @@ private _goalLibrary = createHashMapObject [[
                             if (!isNil "_objPos") then {
                                 private _friendlyDist = _ws call ["_getNearestFriendlyDistance", [_objPos]];
                                 if (_friendlyDist > 2000) then { _score = _score + 20 };
+                                
+                                // CHECK FOR AA THREAT
+                                private _intel = _ws call ["_getObjectiveIntel", [_objId]];
+                                if (_intel get "hasAA") then {
+                                    // Heavy penalty if AA is known
+                                    _score = _score - 30;
+                                    ["GTN", 3, format["Air recon score penalty for %1 due to known AA", _objId]] call FLO_fnc_log;
+                                };
                             };
                         };
 
@@ -788,6 +870,47 @@ private _goalLibrary = createHashMapObject [[
             }]
         ]]];
 
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_select_target_concentration"],
+            ["description", "Select highest threat enemy concentration"],
+            ["handler", "GTN_selectTargetConcentration"],
+            ["timeout", 5],
+            ["completionCheck", { true }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_call_artillery_coord"],
+            ["description", "Call artillery on specific coordinate"],
+            ["handler", "GTN_callArtilleryCoord"],
+            ["timeout", 120],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                _taskData getOrDefault ["missionFired", false]
+            }]
+        ]]];
+        
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_call_cas_coord"],
+            ["description", "Call CAS on specific coordinate"],
+            ["handler", "GTN_callCASCoord"],
+            ["timeout", 300],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                _taskData getOrDefault ["missionComplete", false]
+            }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_assault_coord"],
+            ["description", "Assault specific coordinate"],
+            ["handler", "GTN_assaultCoord"],
+            ["timeout", 900],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                _taskData getOrDefault ["arrived", false]
+            }]
+        ]]];
+        
         _self call ["_registerPrimitive", [createHashMapFromArray [
             ["id", "prim_call_defensive_fires"],
             ["description", "Call defensive artillery fire"],
