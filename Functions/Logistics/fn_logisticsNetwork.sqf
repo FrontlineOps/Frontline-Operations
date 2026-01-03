@@ -66,7 +66,6 @@ if (isNil "FLO_Logistics_Network") then {
         ["_lastUpdate", 0],
         ["_stats", nil],  // Track replacements made
         ["_enabled", true],
-        ["_lastReinforcementTarget", ""],
 
         // ========================================
         // CONSTRUCTOR
@@ -86,7 +85,6 @@ if (isNil "FLO_Logistics_Network") then {
                     ["resourcesSpent", 0],
                     ["byType", createHashMap]
                 ]]];
-                _self set ["_lastReinforcementTarget", _savedState getOrDefault ["lastReinforcementTarget", ""]];
                 _self set ["_lastUpdate", time];
 
                 ["LOGISTICS", 3, format["Restored from save: %1 total replacements",
@@ -98,7 +96,6 @@ if (isNil "FLO_Logistics_Network") then {
                     ["resourcesSpent", 0],
                     ["byType", createHashMap]
                 ]];
-                _self set ["_lastReinforcementTarget", ""];
                 _self set ["_lastUpdate", time];
             };
 
@@ -149,45 +146,7 @@ if (isNil "FLO_Logistics_Network") then {
             _composition
         }],
 
-        // Pick best target using priority and variety logic
-        ["_pickBestTarget", {
-            params ["_candidates"];
-            if (count _candidates == 0) exitWith { "" };
-            
-            // Variety Filter: Avoid last target if possible
-            private _lastTarget = _self get "_lastReinforcementTarget";
-            private _available = +_candidates;
-            
-            if (count _available > 1 && {_lastTarget in _available}) then {
-                _available = _available - [_lastTarget];
-            };
-            
-            //Priority Sorting using FLO_Objectives priority field
-            private _bestScore = -1;
-            private _bestCandidates = [];
-            
-            {
-                private _objId = _x;
-                private _score = 0;
-                
-                if (!isNil "FLO_Objectives") then {
-                    _score = (FLO_Objectives get _objId) get "priority";
-                };
-                
-                if (_score > _bestScore) then {
-                    _bestScore = _score;
-                    _bestCandidates = [_objId];
-                } else {
-                    if (_score == _bestScore) then {
-                        _bestCandidates pushBack _objId;
-                    };
-                };
-            } forEach _available;
-            
-            selectRandom _bestCandidates
-        }],
-
-        // Select best spawn position (map edge or rear objective)
+        // Find best spawn position (map edge or rear objective)
         ["_findSpawnPosition", {
             params [["_useMapEdge", true]];
 
@@ -418,13 +377,7 @@ if (isNil "FLO_Logistics_Network") then {
                 private _spawnPos = _self call ["_findSpawnPosition", [true]];
                 if (_spawnPos isEqualTo [0,0,0]) then { continue };
 
-                // Select target with priority logic
-                private _targetObj = _self call ["_pickBestTarget", [_targets]];
-                
-                // Update last target to ensure variety for next selection
-                if (_targetObj != "") then {
-                     _self set ["_lastReinforcementTarget", _targetObj];
-                };
+                private _targetObj = selectRandom _targets;
 
                 // Try to spend resources
                 if (FLO_OPFOR_Resources call ["spendResources", [_cost, "reinforcement"]]) then {
@@ -476,8 +429,7 @@ if (isNil "FLO_Logistics_Network") then {
         ["serialize", {
             createHashMapFromArray [
                 ["initialComposition", _self get "_initialComposition"],
-                ["stats", _self get "_stats"],
-                ["lastReinforcementTarget", _self get "_lastReinforcementTarget"]
+                ["stats", _self get "_stats"]
             ]
         }]
     ];
