@@ -797,35 +797,46 @@ private _executor = createHashMapObject [[
                 private _ws = _gtnCmdr get "_worldState";
                 if (isNil "_ws") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
 
-                private _analyzer = FLO_GTN_CapabilityAnalyzer;
-                if (isNil "_analyzer") exitWith { _mgr call ["_releaseAirAsset", [_groupId]]; };
-
-                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
-                if (!isNil "_objAnalysis") then {
-                    private _garrisonCount = count (_objAnalysis get "garrison");
-                    private _totalPower = _objAnalysis get "totalDefensePower";
-                    private _posture = switch true do {
-                        case (_totalPower > 500): { "HEAVY" };
-                        case (_totalPower > 200): { "MEDIUM" };
-                        case (_totalPower > 0): { "LIGHT" };
-                        default { "NONE" };
-                    };
-
-                    private _intel = createHashMapFromArray [
-                        ["intelQuality", 0.8],  // Slightly better than ground recon
-                        ["confirmedStrength", _garrisonCount],
-                        ["totalCombatPower", _totalPower],
-                        ["hasArmor", _objAnalysis get "hasArmor"],
-                        ["hasAA", _objAnalysis get "hasAA"],
-                        ["hasStatic", _objAnalysis get "hasStatic"],
-                        ["defensePosture", _posture],
-                        ["reconType", "AIR"]
-                    ];
-                    _ws call ["_updateObjectiveIntel", [_objId, _intel]];
-
-                    ["GTN", 3, format["Air recon intel for %1: %2 groups, power %3",
-                        _objId, _garrisonCount, _totalPower]] call FLO_fnc_log;
+                private _detectedUnits = [];
+                private _scanDuration = 15;
+                private _scanEnd = diag_tickTime + _scanDuration;
+                
+                while {diag_tickTime < _scanEnd && alive _aircraft} do {
+                    // Aircraft sees what it sees (visual + sensors)
+                    // nearTargets returns: [[pos, type, side, subjectiveCost, object, positionAccuracy], ...]
+                    private _targets = _aircraft nearTargets 2000;
+                    
+                    {
+                        _x params ["_pos", "_type", "_side", "_cost", "_obj", "_accuracy"];
+                        
+                        // We only care about West (BLUFOR) targets that are actually units
+                        if (_side == west || (side _obj) == west) then {
+                            if (_obj isKindOf "AllVehicles" || _obj isKindOf "Man") then {
+                                _detectedUnits pushBackUnique _obj;
+                            };
+                        };
+                    } forEach _targets;
+                    
+                    sleep 2;
                 };
+
+                // Analyze what we found using Capability Analyzer
+                private _analysis = FLO_GTN_CapabilityAnalyzer call ["_analyzeObservedForces", [_detectedUnits]];
+                
+                // Add intel quality (Air recon is good but misses indoor units)
+                _analysis set ["intelQuality", 0.7];
+                _analysis set ["fortificationLevel", 0]; 
+                _analysis set ["recommendedForce", 0]; 
+
+                _ws call ["_updateObjectiveIntel", [_objId, _analysis]];
+
+                ["GTN", 3, format["Air Recon for %1: Saw %2 units. Power: %3. AA: %4. Posture: %5", 
+                     _objId, 
+                     count _detectedUnits, 
+                     _analysis get "totalCombatPower", 
+                     _analysis get "hasAA",
+                     _analysis get "defensePosture"
+                 ]] call FLO_fnc_log;
 
                 // Loiter briefly then RTB
                 sleep 30;
@@ -846,6 +857,135 @@ private _executor = createHashMapObject [[
 
         _self call ["_registerHandler", ["prim_use_existing_intel", {
             params ["_ctx"];
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_select_target_concentration
+        _self call ["_registerHandler", ["prim_select_target_concentration", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
+            private _ws = _cmdr get "_worldState";
+            
+            private _intel = _ws call ["_getEnemyIntel", []];
+            private _concentrations = _intel getOrDefault ["concentrations", []];
+            
+            if (count _concentrations == 0) exitWith {
+                ["GTN", 3, "No enemy concentrations found for interdiction"] call FLO_fnc_log;
+                false
+            };
+            
+            // Find highest strength concentration not recently engaged and not too close to friendlies?
+            // For now, just highest strength.
+            private _bestTarget = [];
+            private _maxStrength = -1;
+            
+            {
+                private _str = _x get "strength";
+                private _pos = _x get "position";
+                
+                // Check safety distance from friendlies (300m)
+                private _nearestFriendly = _ws call ["_getNearestFriendlyDistance", [_pos]];
+                
+                if (_nearestFriendly > 300) then {
+                     if (_str > _maxStrength) then {
+                         _maxStrength = _str;
+                         _bestTarget = _pos;
+                     };
+                };
+            } forEach _concentrations;
+            
+            if (count _bestTarget == 0) exitWith {
+                ["GTN", 3, "No valid targets found (all too close to friendlies or empty)"] call FLO_fnc_log;
+                false
+            };
+            
+            ["GTN", 3, format["Selected interdiction target at %1 (Strength: %2)", _bestTarget, _maxStrength]] call FLO_fnc_log;
+            
+            // Store coordinate
+            _executor call ["_storeTaskData", ["SELECTED_CONCENTRATION", _bestTarget]];
+            
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+        
+        // prim_call_artillery_coord
+        _self call ["_registerHandler", ["prim_call_artillery_coord", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _targetPos = _params param [0, [0,0,0]];
+            
+            if (_targetPos isEqualTo [0,0,0]) exitWith { false };
+            
+            // 4 rounds, standard accuracy
+            private _result = FLO_GTNArtilleryManager call ["_requestFireMission", [_targetPos, 4, 100]];
+            
+            if (_result) then {
+                ["GTN", 3, format["Artillery interdiction fired at %1", _targetPos]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                
+                // Mark success in primitive data
+                private _taskNode = _ctx get "taskNode";
+                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+                _primData set ["missionFired", true];
+                _taskNode set ["primitiveData", _primData];
+            };
+            
+            _result
+        }]];
+
+        // prim_call_cas_coord
+        _self call ["_registerHandler", ["prim_call_cas_coord", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _targetPos = _params param [0, [0,0,0]];
+            private _cmdr = _ctx get "commander";
+            
+            if (_targetPos isEqualTo [0,0,0]) exitWith { false };
+
+            // Request CAS via GTN Commander
+            private _result = _cmdr call ["_requestCAS", [_targetPos, "CAS"]];
+
+            if (_result) then {
+                ["GTN", 3, format["CAS interdiction mission dispatched to %1", _targetPos]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                
+                private _taskNode = _ctx get "taskNode";
+                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+                _primData set ["missionComplete", true];
+                _taskNode set ["primitiveData", _primData];
+            };
+
+            _result
+        }]];
+
+        // prim_assault_coord
+        _self call ["_registerHandler", ["prim_assault_coord", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _targetPos = _params param [0, [0,0,0]];
+            private _cmdr = _ctx get "commander";
+            
+            if (_targetPos isEqualTo [0,0,0]) exitWith { false };
+            
+            private _available = _cmdr call ["_getAvailableGroups", [3, _targetPos]]; // Get 3 groups near target if possible
+            if (count _available < 1) exitWith { 
+                ["GTN", 3, "Assault cancelled - no forces available"] call FLO_fnc_log;
+                false 
+            };
+            
+            {
+                _cmdr call ["_orderGroupAttack", [_x, _targetPos]];
+            } forEach _available;
+            
+            ["GTN", 3, format["Assault ordered on coordinate %1 with %2 groups", _targetPos, count _available]] call FLO_fnc_log;
+            
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["arrived", true];
+            _taskNode set ["primitiveData", _primData];
+            
             _ctx set ["status", "SUCCESS"];
             true
         }]];

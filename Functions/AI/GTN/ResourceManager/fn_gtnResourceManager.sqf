@@ -445,7 +445,7 @@ private _resourceManager = createHashMapObject [[
 
     // === END GTN HELPER METHODS ===
 
-    // Enhanced artillery support with preparatory fires and mission tracking
+    // Artillery support with preparatory fires and mission tracking
     ["_callArtillerySupport", {
         params ["_self", "_targetPos", ["_rounds", 6], ["_missionType", "IMMEDIATE"], ["_priority", 1]];
 
