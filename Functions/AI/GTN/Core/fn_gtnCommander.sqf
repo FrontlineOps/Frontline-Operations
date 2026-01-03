@@ -785,7 +785,7 @@ private _gtnCommander = createHashMapObject [[
                              // For now, we simulate success by healing existing units.
                              // Full respawn happens when revirtualized and activated again.
                              private _realGroup = _gData get "realGroup";
-                             { setDamage [_x, 0]; } forEach units _realGroup; 
+                             { _x setDamage 0; } forEach units _realGroup; 
                         };
 
                         if (_newCount >= _originalCount) then {
