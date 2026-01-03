@@ -153,6 +153,7 @@ class FLO {
         class opforResources        {};
         class intelSystem           {};
         class logisticsNetwork      {};
+        class vehicleMarket         {};
     };
 
     class Intelligence {

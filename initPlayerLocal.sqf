@@ -301,6 +301,43 @@ private _fnc_initClientFeatures = {
 call _fnc_initClientFeatures;
 
 // ============================================================================
+// VEHICLE SCRAPYARD ACTION
+// ============================================================================
+
+FLO_fnc_addHoldAction_Client = {
+    params ["_veh"];
+
+    [
+        _veh,                                          // Target
+        "Scrap Vehicle",                               // Title
+        "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_unloadDevice_ca.paa", // Idle Icon
+        "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_unloadDevice_ca.paa", // Progress Icon
+        "alive _target && _this distance _target < 15 && count (crew _target) == 0", // Condition Show
+        "true",                                        // Condition Progress
+        {},                                            // Code Start
+        {},                                            // Code Progress
+        { 
+            params ["_target", "_caller", "_actionId", "_arguments"];
+            [_target, "open_menu"] call FLO_fnc_vehicleMarket; 
+        }, // Code Completed
+        {},                                            // Code Interrupted
+        [],                                            // Arguments
+        1,                                             // Duration
+        10,                                            // Priority
+        false,                                         // Remove Completed
+        false                                          // Show Unconscious
+    ] call BIS_fnc_holdActionAdd;
+    
+    _veh setVariable ["FLO_ScrapActionAdded_Hold", true];
+    // systemChat format ["DEBUG: Hold Action Init: %1", typeOf _veh];
+};
+
+// Register for classes using the Global Function
+["LandVehicle", "init", { params ["_veh"]; [_veh] call FLO_fnc_addHoldAction_Client }, true, [], true] call CBA_fnc_addClassEventHandler;
+["Air", "init", { params ["_veh"]; [_veh] call FLO_fnc_addHoldAction_Client }, true, [], true] call CBA_fnc_addClassEventHandler;
+["Ship", "init", { params ["_veh"]; [_veh] call FLO_fnc_addHoldAction_Client }, true, [], true] call CBA_fnc_addClassEventHandler;
+
+// ============================================================================
 // FINAL CLIENT INITIALIZATION
 // ============================================================================
 
