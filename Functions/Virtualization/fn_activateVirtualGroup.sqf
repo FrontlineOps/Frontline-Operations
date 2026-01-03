@@ -112,17 +112,13 @@ switch (true) do {
             if (!isNull _realGroup) then { deleteGroup _realGroup; };
 
             _realGroup = createGroup [_side, true];
-            private _tempGroup = createGroup [_side, true];
             private _spawnCount = if (_unitCount > 0) then { _unitCount } else { 6 };
 
             for "_i" from 1 to _spawnCount do {
                 private _unitType = selectRandom East_Units;
                 private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-                _tempGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
             };
-
-            { [_x] joinSilent _realGroup; } forEach units _tempGroup;
-            deleteGroup _tempGroup;
         };
     };
     
@@ -189,21 +185,26 @@ switch (true) do {
                 ["VIRTUALIZATION", 2, format["Vehicle spawn fallback used for group %1 - findSafePos failed", _groupId]] call FLO_fnc_log;
             };
 
-            // Create vehicle and crew
-            private _veh = [_spawnPos, random 360, _vehicleType, _side] call BIS_fnc_spawnVehicle;
-            private _vehicle = _veh select 0;
-            private _crew = _veh select 1;
-            private _vehGroup = _veh select 2;
-
+            // Create vehicle
+            private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "NONE"];
+            
             // Ensure vehicle is grounded properly
             _vehicle setPos [getPos _vehicle select 0, getPos _vehicle select 1, 0];
             _vehicle setVectorUp [0,0,1];
+            
+            // Create crew manually to avoid redundant group creation/deletion (fixes 112/116 errors)
+            private _crewType = getText (configFile >> "CfgVehicles" >> _vehicleType >> "crew");
+            if (_crewType == "") then { _crewType = selectRandom East_Units; };
 
-            // Transfer crew to our group and delete empty group
+            // Driver
+            private _driver = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+            _driver moveInDriver _vehicle;
+            
+            // Turrets (Gunner, Commander, etc - excluding FFV)
             {
-                [_x] joinSilent _realGroup;
-            } forEach units _vehGroup;
-            deleteGroup _vehGroup;
+               private _gunner = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+               _gunner moveInTurret [_vehicle, _x];
+            } forEach (allTurrets [_vehicle, false]);
         };
     };
     
@@ -230,17 +231,22 @@ switch (true) do {
             private _spreadDistance = 50 * _i;
             private _spawnPos = [(_position select 0) + _spreadDistance, (_position select 1), _spawnHeight];
             
-            // Create vehicle and crew
-            private _veh = [_spawnPos, random 360, _aircraftType, _side] call BIS_fnc_spawnVehicle;
-            private _vehicle = _veh select 0;
-            private _crew = _veh select 1;
-            private _vehGroup = _veh select 2;
+            // Direct Spawn (No Temp Group)
+            private _vehicle = createVehicle [_aircraftType, _spawnPos, [], 0, "FLY"];
             
-            // Transfer crew to our group and delete empty group
+            // Create crew manually
+            private _crewType = getText (configFile >> "CfgVehicles" >> _aircraftType >> "crew");
+            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+
+            // Driver/Pilot
+            private _driver = _realGroup createUnit [_crewType, [0,0,0], [], 0, "NONE"];
+            _driver moveInDriver _vehicle;
+            
+            // Turrets
             {
-                [_x] joinSilent _realGroup;
-            } forEach units _vehGroup;
-            deleteGroup _vehGroup;
+               private _gunner = _realGroup createUnit [_crewType, [0,0,0], [], 0, "NONE"];
+               _gunner moveInTurret [_vehicle, _x];
+            } forEach (allTurrets [_vehicle, false]);
         };
     };
     
@@ -271,21 +277,26 @@ switch (true) do {
                 ["VIRTUALIZATION", 2, format["Artillery spawn fallback used for group %1", _groupId]] call FLO_fnc_log;
             };
 
-            // Create vehicle and crew
-            private _veh = [_spawnPos, random 360, _artilleryType, _side] call BIS_fnc_spawnVehicle;
-            private _vehicle = _veh select 0;
-            private _crew = _veh select 1;
-            private _vehGroup = _veh select 2;
+            // Create vehicle
+            private _vehicle = createVehicle [_artilleryType, _spawnPos, [], 0, "NONE"];
 
             // Ensure artillery is grounded properly
             _vehicle setPos [getPos _vehicle select 0, getPos _vehicle select 1, 0];
             _vehicle setVectorUp [0,0,1];
+            
+            // Create crew manually
+            private _crewType = getText (configFile >> "CfgVehicles" >> _artilleryType >> "crew");
+            if (_crewType == "") then { _crewType = selectRandom East_Units; };
 
-            // Transfer crew to our group and delete empty group
+            // Driver
+            private _driver = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+            _driver moveInDriver _vehicle;
+            
+            // Turrets
             {
-                [_x] joinSilent _realGroup;
-            } forEach units _vehGroup;
-            deleteGroup _vehGroup;
+               private _gunner = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+               _gunner moveInTurret [_vehicle, _x];
+            } forEach (allTurrets [_vehicle, false]);
         };
     };
     

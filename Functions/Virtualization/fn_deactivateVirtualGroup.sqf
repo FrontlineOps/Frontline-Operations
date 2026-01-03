@@ -18,125 +18,143 @@
 params ["_groupId", "_groupData"];
 ["VIRTUALIZATION", 3, format["Deactivating virtual group %1", _groupId]] call FLO_fnc_log;
 
-// Extract data from group
 private _realGroup = _groupData get "realGroup";
-
-// If the group is not active or doesn't have a real group, nothing to do
-if (isNull _realGroup) then {
+if (isNull _realGroup) exitWith {
     ["VIRTUALIZATION", 2, format["Attempted to deactivate virtual group %1 but no real group exists", _groupId]] call FLO_fnc_log;
+    false
 };
 
-// Save the current position before deleting the group
-// Only save if we get a valid position from a living leader
+// ==========================================================================================
+// SAVE PERSISTENT DATA
+// ==========================================================================================
+
+// --- SAVE POSITION ---
 private _leader = leader _realGroup;
 if (!isNull _leader && {alive _leader}) then {
     private _currentPos = getPos _leader;
-    // Validate position - only save if it's not near origin
     if ((_currentPos select 0) > 100 || (_currentPos select 1) > 100) then {
         _groupData set ["position", _currentPos];
         ["VIRTUALIZATION", 4, format["Saved position %1 for group %2", _currentPos, _groupId]] call FLO_fnc_log;
     } else {
-        ["VIRTUALIZATION", 2, format["WARNING: Not saving invalid position %1 for group %2 - keeping original", _currentPos, _groupId]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 2, format["WARNING: Invalid position %1 for group %2 - keeping original", _currentPos, _groupId]] call FLO_fnc_log;
     };
 };
 
-// Save any current waypoints before deleting
-// Only overwrite virtual waypoints if the real group has actual waypoints
+// --- SAVE WAYPOINTS ---
 private _realWaypoints = waypoints _realGroup;
-if (count _realWaypoints > 1) then {
-    private _savedWaypoints = [];
-    {
-        if (_forEachIndex > 0) then {
-            private _wpPos = waypointPosition _x;
-            if (_wpPos isEqualType [] && {count _wpPos >= 2} && {(_wpPos select 0) > 100 || (_wpPos select 1) > 100}) then {
-                private _waypointData = [
-                    _wpPos,
-                    waypointType _x,
-                    waypointBehaviour _x,
-                    waypointSpeed _x,
-                    waypointFormation _x,
-                    waypointCombatMode _x
-                ];
-                _savedWaypoints pushBack _waypointData;
-            };
-        };
-    } forEach _realWaypoints;
+private _currentWpIndex = currentWaypoint _realGroup;
+private _savedWaypoints = [];
 
-    // Only update if we got valid waypoints
-    if (count _savedWaypoints > 0) then {
-        _groupData set ["waypoints", _savedWaypoints];
-        _groupData set ["currentWaypointIndex", 0];
-        ["VIRTUALIZATION", 4, format["Saved %1 waypoints from real group %2", count _savedWaypoints, _groupId]] call FLO_fnc_log;
+if (count _realWaypoints > 0 && _currentWpIndex < count _realWaypoints) then {
+    for "_i" from _currentWpIndex to (count _realWaypoints - 1) do {
+        private _wp = _realWaypoints select _i;
+        private _wpPos = waypointPosition _wp;
+        
+        if (_wpPos isEqualType [] && {count _wpPos >= 2} && {(_wpPos select 0) > 100 || (_wpPos select 1) > 100}) then {
+            _savedWaypoints pushBack [
+                _wpPos,
+                waypointType _wp,
+                waypointBehaviour _wp,
+                waypointSpeed _wp,
+                waypointFormation _wp,
+                waypointCombatMode _wp
+            ];
+        };
     };
-} else {
-    ["VIRTUALIZATION", 4, format["Keeping existing virtual waypoints for %1 (real group had no waypoints)", _groupId]] call FLO_fnc_log;
 };
 
-// Save the current state/behavior before deleting
+if (count _savedWaypoints > 0) then {
+    _groupData set ["waypoints", _savedWaypoints];
+    _groupData set ["currentWaypointIndex", 0];
+    ["VIRTUALIZATION", 4, format["Saved %1 remaining waypoints from real group %2", count _savedWaypoints, _groupId]] call FLO_fnc_log;
+} else {
+    // If completed all real waypoints, clear virtual waypoints. 
+    // If real group had no waypoints (e.g. static), keep existing virtual ones (don't overwrite with empty).
+    if (count _realWaypoints > 0 && _currentWpIndex >= count _realWaypoints) then {
+         _groupData set ["waypoints", []];
+         _groupData set ["currentWaypointIndex", 0];
+         ["VIRTUALIZATION", 4, format["Group %1 completed all waypoints - clearing virtual waypoints", _groupId]] call FLO_fnc_log;
+    };
+};
+
+// --- SAVE STATE ---
 private _state = "idle";
-if (behaviour (leader _realGroup) isEqualTo "COMBAT") then {
+private _leaderBehavior = behaviour (leader _realGroup);
+private _leaderCommand = currentCommand (leader _realGroup);
+
+if (_leaderBehavior isEqualTo "COMBAT") then {
     _state = "attacking";
 } else {
-    if (currentCommand (leader _realGroup) isEqualTo "MOVE") then {
+    if (_leaderCommand isEqualTo "MOVE") then {
         _state = "moving";
     };
 };
 _groupData set ["state", _state];
 
-// Save the composition of the group for persistence - only include living units
-// The ProcessedVehicles array is used to prevent duplicate vehicles from being added to the composition
-// This is a bit of a hack, but it works. I want to find a better way to do this, @Crashdome
+// --- SAVE COMPOSITION ---
 private _comp = [];
-private _processedVehicles = []; // Track vehicles we've already processed
+private _processedVehicles = [];
 
 {
-    // Only include alive units in the composition
     if (alive _x) then {
-        private _unit = _x;
-        private _unitType = "";
+        private _vehicle = vehicle _x;
         
-        if (vehicle _unit != _unit) then {
+        if (_vehicle != _x) then {
             // Unit is in a vehicle
-            private _vehicle = vehicle _unit;
-            private _vehicleType = typeOf _vehicle;
-            
-            // Check if we've already processed this vehicle
-            if (!(_vehicle in _processedVehicles)) then {
-                // Add vehicle to processed list
+            private _vehType = typeOf _vehicle;
+            if !(_vehicle in _processedVehicles) then {
                 _processedVehicles pushBack _vehicle;
-                
-                // Store the vehicle type
-                _unitType = _vehicleType;
-                _comp pushBack _unitType;
-                
-                ["VIRTUALIZATION", 3, format["Saving vehicle %1 to composition", _vehicleType]] call FLO_fnc_log;
+                _comp pushBack _vehType;
+                ["VIRTUALIZATION", 3, format["Saved vehicle %1 to composition", _vehType]] call FLO_fnc_log;
             };
         } else {
-            // Unit is on foot - store as normal
-            _unitType = typeOf _unit;
-            _comp pushBack _unitType;
+            // Unit is on foot
+            _comp pushBack (typeOf _x);
         };
     };
 } forEach units _realGroup;
 
-// Update the composition in the group data
 _groupData set ["comp", _comp];
 
-// Delete all units in the group
-{
-    deleteVehicle _x;
-} forEach (units _realGroup + (vehicles select {_x in (units _realGroup apply {vehicle _x})}));
 
-// Delete the group
+// ==========================================================================================
+// CLEANUP & DELETION
+// ==========================================================================================
+
+// Identify unique vehicles to delete
+private _vehiclesToDelete = [];
+{
+    private _veh = vehicle _x;
+    if (!isNull _veh && {_veh != _x}) then {
+        _vehiclesToDelete pushBackUnique _veh;
+    };
+} forEach units _realGroup;
+
+// Delete vehicles and their crews
+{
+    private _veh = _x;
+    _veh hideObjectGlobal true;
+    { 
+        _x hideObjectGlobal true;
+        _veh deleteVehicleCrew _x;
+    } forEach (crew _veh); 
+    deleteVehicle _veh; 
+} forEach _vehiclesToDelete;
+
+// Delete remaining units (dismounts)
+{
+    _x hideObjectGlobal true;
+    deleteVehicle _x;
+} forEach units _realGroup;
+
 deleteGroup _realGroup;
 
-// Update group data
+// Update virtualization state
 _groupData set ["realGroup", grpNull];
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 
 ["FLO_Virtualization_GroupDeactivated", [_groupId, _groupData]] call CBA_fnc_localEvent;
-
 ["VIRTUALIZATION", 3, format["Deactivated virtual group: %1", _groupId]] call FLO_fnc_log;
 
 true
