@@ -397,8 +397,8 @@ private _gtnCommander = createHashMapObject [[
             if (_groupType in ["civilian", "ambient"]) then { continue };
             if (_side != east) then { continue };
 
-            // Skip air assets (handled separately by ATO)
-            if (_groupType in ["helicopter", "jet", "air"]) then { continue };
+            // Skip air and artillery assets
+            if (_groupType in ["helicopter", "jet", "air", "artillery"]) then { continue };
 
             // Skip already tasked groups
             if (_groupId in _gtnTasked) then { continue };

@@ -43,11 +43,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
             private _groups = FLO_virtualGroups get "_groups";
             private _artGroups = [];
             {
-                private _gData = _y;
+                private _gid = _x;
+                private _gData = _groups get _gid;
                 if (_gData get "groupType" == "artillery") then {
-                    _artGroups pushBack [_x, _gData];
+                    _artGroups pushBack [_gid, _gData];
                 };
-            } forEach _groups;
+            } forEach (keys _groups);
 
             ["GTN Artillery", 3, format["Found %1 artillery groups", count _artGroups]] call FLO_fnc_log;
 
@@ -60,7 +61,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 !(_id in _missions)
             };
 
-            ["GTN Artillery", 3, format["Available (not on mission): %1", count _artGroups]] call FLO_fnc_log;
+            ["GTN Artillery", 3, format["Available (not on mission): %1. Missions map: %2", count _artGroups, _missions]] call FLO_fnc_log;
 
             if (count _artGroups == 0) exitWith { false };
 
