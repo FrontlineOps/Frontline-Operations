@@ -41,7 +41,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 ["_pos", [0,0,0], [[]], [3]],
                 ["_missionType", "CAS", [""]],
                 ["_aircraftType", "", [""]],
-                ["_altitude", 150, [0]]
+                ["_altitude", 50, [0]]
             ];
             private _queue = _self get "_taskQueue";
             _queue pushBack [_pos, _missionType, _aircraftType, _altitude];
