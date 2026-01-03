@@ -150,6 +150,9 @@ private _gtnCommander = createHashMapObject [[
 
         // Execute current plan
         _self call ["_executePlan", []];
+
+        // Manage force preservation (Retreats & Replenishment)
+        _self call ["_manageForcePreservation", []];
     }],
     
     // === PLANNING ===
@@ -375,8 +378,6 @@ private _gtnCommander = createHashMapObject [[
     ["_getAvailableGroups", {
         params [["_count", 4], ["_targetPos", []]];
 
-        if (isNil "FLO_virtualGroups") exitWith { [] };
-
         private _groups = FLO_virtualGroups get "_groups";
         private _gtnTasked = _self get "_gtnTaskedGroups";
         private _available = [];
@@ -468,8 +469,6 @@ private _gtnCommander = createHashMapObject [[
     ["_orderGroupMove", {
         params ["_groupId", "_pos", ["_mode", "AWARE"]];
 
-        if (isNil "FLO_virtualGroups") exitWith { false };
-
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
         if (isNil "_gData") exitWith {
@@ -502,8 +501,6 @@ private _gtnCommander = createHashMapObject [[
     ["_orderGroupAttack", {
         params ["_groupId", "_pos"];
 
-        if (isNil "FLO_virtualGroups") exitWith { false };
-
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
         if (isNil "_gData") exitWith {
@@ -530,8 +527,6 @@ private _gtnCommander = createHashMapObject [[
     // Order group to defend using virtualization waypoints
     ["_orderGroupDefend", {
         params ["_groupId", "_pos"];
-
-        if (isNil "FLO_virtualGroups") exitWith { false };
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
@@ -594,8 +589,6 @@ private _gtnCommander = createHashMapObject [[
     ["_checkGroupsArrived", {
         params ["_groupIds", "_pos", ["_threshold", 100]];
 
-        if (isNil "FLO_virtualGroups") exitWith { false };
-
         private _groups = FLO_virtualGroups get "_groups";
         private _arrivedCount = 0;
         private _validCount = 0;
@@ -639,6 +632,179 @@ private _gtnCommander = createHashMapObject [[
         } forEach (keys _enemyObjs);
 
         _weakest
+    }],
+
+    // Force Preservation Management
+    // Handles retreating damaged groups, ordering dismounted pilots RTB, and replenishing forces.
+    ["_manageForcePreservation", {
+        private _groups = FLO_virtualGroups get "_groups";
+        private _replenishInterval = 300; // 5 minutes for replenishment tick
+
+        {
+            private _gId = _x;
+            private _gData = _y;            
+            private _currentOrder = _gData get "currentOrder";
+            private _state = _gData getOrDefault ["preservationState", "ACTIVE"]; // ACTIVE, RETREATING, REPLENISHING
+            private _groupType = _gData get "groupType";
+
+            // === CHECK FOR RETREAT CRITERIA ===
+            if (_state == "ACTIVE") then {
+                // Dismounted Pilot
+                // If group type was air but unit count > 0 and vehicle count == 0 (or all vehicles dead), treat as dismounted
+                private _isPilot = false;
+                if (_groupType in ["helicopter", "jet", "air", "cas", "sead"]) then {
+                     // Check if they are on foot
+                    private _realGroup = _gData get "realGroup";
+                    if (!isNull _realGroup) then {
+                        private _hasAirVehicle = false;
+                        {
+                            if (vehicle _x isKindOf "Air" && alive vehicle _x) then { _hasAirVehicle = true; };
+                        } forEach units _realGroup;
+                         
+                        if (!_hasAirVehicle && {count units _realGroup > 0}) then {
+                            _isPilot = true;
+                        };
+                    };
+                };
+
+                // Significant Damage (< 50% strength)
+                private _unitCount = _gData get "unitCount";
+                private _template = _gData getOrDefault ["template", []];
+                private _originalCount = count _template;
+                
+                // If template missing, assume current is original (fallback)
+                if (_originalCount == 0) then { _originalCount = _unitCount max 1; };
+
+                private _isDamaged = (_unitCount / _originalCount) < 0.5;
+
+                if (_isPilot || _isDamaged) then {
+                    ["GTN", 3, format["Force Preservation: Group %1 (%2) retreating. Pilot: %3, Damage: %4/%5", 
+                        _gId, _groupType, _isPilot, _unitCount, _originalCount]] call FLO_fnc_log;
+                    
+                    _gData set ["preservationState", "RETREATING"];
+                    _gData set ["onMission", true]; // Prevent tasking
+                    
+                    // Find nearest friendly objective
+                    private _ws = _self get "_worldState";
+                    private _friendlyObjs = _ws call ["_getFriendlyObjectives", []];
+                    private _gPos = _gData get "position";
+                    private _retreatObj = "";
+                    private _bestDist = 999999;
+                    
+                    {
+                        private _objPos = [_x] call FLO_fnc_getObjectivePosition;
+                        private _dist = _gPos distance2D _objPos;
+                        
+                        // Prioritize objectives > 5km away
+                        // If we find one > 5km, track the *nearest* of those deep objectives
+                        if (_dist > 5000) then {
+                            if (_dist < _bestDist) then {
+                                _bestDist = _dist;
+                                _retreatObj = _x;
+                            };
+                        };
+                    } forEach (keys _friendlyObjs);
+
+                    // Fallback: If no deep objective found, just go to the furthest one available (or nearest if map is small)
+                    // Actually, let's just go to the nearest friendly if no >5km option exists, to ensure safety
+                    if (_retreatObj == "") then {
+                         _bestDist = 999999;
+                         {
+                            private _objPos = [_x] call FLO_fnc_getObjectivePosition;
+                            private _dist = _gPos distance2D _objPos;
+                            if (_dist < _bestDist) then {
+                                _bestDist = _dist;
+                                _retreatObj = _x;
+                            };
+                        } forEach (keys _friendlyObjs);
+                    };
+
+                    if (_retreatObj != "") then {
+                        private _retreatPos = [_retreatObj] call FLO_fnc_getObjectivePosition;
+                        _gData set ["retreatPos", _retreatPos];
+                         
+                        // Break Contact Order: Careless (ignore threats), Hold Fire (don't stop to shoot)
+                        private _wps = [[_retreatPos, "MOVE", "CARELESS", "FULL", "FILE", "BLUE", 0]];
+                        [_gId, _wps, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                    };
+                };
+            };
+            
+            // === HANDLE RETREATING MOVEMENT ===
+            if (_state == "RETREATING") then {
+                private _retreatPos = _gData getOrDefault ["retreatPos", []];
+                if (count _retreatPos == 0) exitWith { _gData set ["preservationState", "ACTIVE"]; };
+                
+                private _gPos = _gData get "position";
+                if (_gPos distance2D _retreatPos < 150) then {
+                    ["GTN", 3, format["Group %1 arrived at safe haven. Beginning replenishment.", _gId]] call FLO_fnc_log;
+                    _gData set ["preservationState", "REPLENISHING"];
+                    _gData set ["lastReplenishTime", diag_tickTime];
+                };
+            };
+
+            // === HANDLE REPLENISHMENT ===
+            if (_state == "REPLENISHING") then {
+                private _lastRep = _gData getOrDefault ["lastReplenishTime", 0];
+                
+                if (diag_tickTime - _lastRep >= _replenishInterval) then {
+                    // Check resources before replenishing
+                    // Cost: 5 resources per tick
+                    private _cost = 5;
+                    private _canAfford = true;
+                    
+                    if !(FLO_OPFOR_Resources call ["canAfford", [_cost, "reinforcement"]]) then {
+                        _canAfford = false;
+                        ["GTN", 3, format["Group %1 replenishment paused - insufficient resources", _gId]] call FLO_fnc_log;
+                    };
+                    
+                    if (_canAfford) then {
+                        // Dedect cost
+                        FLO_OPFOR_Resources call ["spendResources", [_cost, "reinforcement"]];
+                    
+                        // Trickle replenishment
+                        private _unitCount = _gData get "unitCount";
+                        private _template = _gData getOrDefault ["template", []];
+                        private _originalCount = count _template;
+                        
+                        if (_originalCount == 0) then { _originalCount = _unitCount max 1; }; // Fallback
+                        
+                        // Add 10% or 1 man, whichever is greater
+                        private _increase = ceil(_originalCount * 0.1) max 1;
+                        private _newCount = (_unitCount + _increase) min _originalCount;
+                        
+                        _gData set ["unitCount", _newCount];
+                        _gData set ["strength", _newCount / _originalCount]; // Update strength multiplier
+                        _gData set ["lastReplenishTime", diag_tickTime];
+                        
+                        ["GTN", 3, format["Group %1 replenish tick: %2 -> %3 (Target: %4)", _gId, _unitCount, _newCount, _originalCount]] call FLO_fnc_log;
+                        
+                        // Apply to real group if active
+                        if (_gData get "isActive") then {
+                             // Note: Spawning units into live group is complex (loadouts etc). 
+                             // For now, we simulate success by healing existing units.
+                             // Full respawn happens when revirtualized and activated again.
+                             private _realGroup = _gData get "realGroup";
+                             { setDamage [_x, 0]; } forEach units _realGroup; 
+                        };
+
+                        if (_newCount >= _originalCount) then {
+                            ["GTN", 3, format["Group %1 fully replenished. Returning to duty.", _gId]] call FLO_fnc_log;
+                            _gData set ["preservationState", "ACTIVE"];
+                            _gData set ["onMission", false];
+                            _gData set ["currentOrder", ""]; // Reset order to allow tasking
+                            // Also reset their behavior/combat mode if active
+                            if (_gData get "isActive") then {
+                                 private _realGroup = _gData get "realGroup";
+                                 _realGroup setBehaviour "AWARE";
+                                 _realGroup setCombatMode "YELLOW";
+                            };
+                        };
+                    };
+                };
+            };
+            
+        } forEach (keys _groups);
     }],
 
     // Get staging position for an objective (offset from target)
