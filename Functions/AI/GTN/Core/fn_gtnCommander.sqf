@@ -403,8 +403,8 @@ private _gtnCommander = createHashMapObject [[
             // Skip already tasked groups
             if (_groupId in _gtnTasked) then { continue };
 
-            // Skip groups with active orders (unless patrolling)
-            if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", ""])}) then { continue };
+            // Skip groups with active orders (unless patrolling or defending)
+            if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", "DEFEND", ""])}) then { continue };
 
             _available pushBack [_groupId, _gData];
         } forEach _groups;
