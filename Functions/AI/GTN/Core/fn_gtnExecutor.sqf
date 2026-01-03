@@ -801,6 +801,21 @@ private _executor = createHashMapObject [[
                 private _scanDuration = 15;
                 private _scanEnd = diag_tickTime + _scanDuration;
                 
+                // Full Reveal to simulate advanced sensors (Radar/Thermal)
+                // This overcomes AI blindness by forcing knowledge of nearby enemy units
+                // We set it to 4 for incoming CAS Aircraft to allow them to see targets. This is a very specific behavior.
+                // Aircraft do not attack targets that are not revealed to them at the knowsAbout Level of 1.5.
+                // This is a problem because 4 is very rare for most AI. Most AI will never have a level of knowsAbout 4.
+                // This is why we use a nearEntities call to reveal targets to the aircraft.
+                private _nearEntities = _objPos nearEntities [["Man", "AllVehicles"], 1500];
+                {
+                    if (side _x == west) then {
+                        _aircraft reveal [_x, 4];
+                    };
+                } forEach _nearEntities;
+
+                ["GTN", 3, format["Air Sensors revealed %1 potential targets to %2", count _nearEntities, _groupId]] call FLO_fnc_log;
+                
                 while {diag_tickTime < _scanEnd && alive _aircraft} do {
                     // Aircraft sees what it sees (visual + sensors)
                     // nearTargets returns: [[pos, type, side, subjectiveCost, object, positionAccuracy], ...]
