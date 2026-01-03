@@ -429,6 +429,17 @@ if (!isNil "FLO_fnc_sideMissionManager") then {
 };
 
 // ============================================
+// Civilian Mission System
+// ============================================
+diag_log "[FLO_INIT_P5] Initializing civilian mission system...";
+if (!isNil "FLO_fnc_civilianMissionManager") then {
+    ["INIT"] call FLO_fnc_civilianMissionManager;
+    diag_log "[FLO_INIT_P5] Civilian mission manager initialized";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_civilianMissionManager not found";
+};
+
+// ============================================
 // Intel System
 // ============================================
 diag_log "[FLO_INIT_P5] Starting intel system...";

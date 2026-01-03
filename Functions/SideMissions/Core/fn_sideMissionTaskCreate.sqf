@@ -77,17 +77,6 @@ private _parent = _options getOrDefault ["parent", ""];
 // Get priority
 private _priority = _options getOrDefault ["priority", 1];
 
-// Create task marker at mission position
-private _marker = createMarker [_markerName, _position];
-_marker setMarkerType "mil_objective";
-_marker setMarkerColor (if (!isNil "_template") then { _template getOrDefault ["color", "colorOPFOR"] } else { "colorOPFOR" });
-_marker setMarkerSize [0.8, 0.8];
-_marker setMarkerAlpha 0.8;
-
-// Track marker
-["addMarker", [_missionId, _markerName]] call FLO_fnc_sideMissionEntityTracker;
-
-// Create the BIS task
 // [owner, taskID, description, destination, state, priority, showNotification, type, visibleIn3D]
 [
     true,                    // All players

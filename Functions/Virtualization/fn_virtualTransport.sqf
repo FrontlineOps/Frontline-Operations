@@ -22,7 +22,7 @@ if (!isServer) exitWith {};
 
 if (!isNil "FLO_VirtualTransport") exitWith { FLO_VirtualTransport };
 
-["VIRTUALIZATION", 2, "Initializing Virtual Transport System"] call FLO_fnc_log;
+["VIRTUALIZATION", 3, "Initializing Virtual Transport System"] call FLO_fnc_log;
 
 FLO_VirtualTransport = createHashMapObject [[
     // Transport speed multipliers (m/s base speed ~5 for infantry)
@@ -550,7 +550,7 @@ FLO_VirtualTransport = createHashMapObject [[
     }]
 ]];
 
-["VIRTUALIZATION", 2, "Virtual Transport System initialized"] call FLO_fnc_log;
+["VIRTUALIZATION", 3, "Virtual Transport System initialized"] call FLO_fnc_log;
 
 FLO_VirtualTransport
 

@@ -112,19 +112,6 @@ private _template = createHashMapFromArray [
         _data set ["endPos", _endPos];
         _data set ["vehicles", []];
         
-        // Create markers
-        private _startMrkr = createMarker [format ["SM_HVTStart_%1", _missionId], _startPos];
-        _startMrkr setMarkerType "mil_warning";
-        _startMrkr setMarkerColor "colorOPFOR";
-        _startMrkr setMarkerText "HVT Convoy";
-        ["addMarker", [_missionId, _startMrkr]] call FLO_fnc_sideMissionEntityTracker;
-        
-        private _endMrkr = createMarker [format ["SM_HVTEnd_%1", _missionId], _endPos];
-        _endMrkr setMarkerType "mil_marker_noShadow";
-        _endMrkr setMarkerColor "colorOPFOR";
-        _endMrkr setMarkerText "HVT Destination";
-        ["addMarker", [_missionId, _endMrkr]] call FLO_fnc_sideMissionEntityTracker;
-        
         // Create convoy group
         private _convoyGrp = createGroup East;
         _convoyGrp deleteGroupWhenEmpty true;

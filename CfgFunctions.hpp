@@ -57,6 +57,18 @@ class FLO {
 
         class civilianRelations {};
         class civilianInvestigate {};
+        class civilianRequestMission {};
+        class civilianMissionManager {};
+        class civilianAddDetainActions {};
+    };
+
+    class InteractionMissions {
+        file = "Functions\AI\Interactions\Missions";
+
+        class civMission1 {};
+        class civMission2 {};
+        class civMission3 {};
+        class civMission4 {};
     };
 
     class AITasks {

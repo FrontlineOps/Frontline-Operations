@@ -46,12 +46,6 @@ private _doCleanup = {
         [_taskId] call BIS_fnc_deleteTask;
         diag_log format ["[FLO_SM] Deleted task: %1", _taskId];
     };
-    
-    // Remove task marker
-    private _markerName = format ["SM_TaskMrk_%1", _missionId];
-    if (getMarkerType _markerName != "") then {
-        deleteMarker _markerName;
-    };
 };
 
 if (_immediate) then {
