@@ -642,7 +642,7 @@ private _gtnCommander = createHashMapObject [[
 
         {
             private _gId = _x;
-            private _gData = _y;            
+            private _gData = _groups get _gId;   
             private _currentOrder = _gData get "currentOrder";
             private _state = _gData getOrDefault ["preservationState", "ACTIVE"]; // ACTIVE, RETREATING, REPLENISHING
             private _groupType = _gData get "groupType";
