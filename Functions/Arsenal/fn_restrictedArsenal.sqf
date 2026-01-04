@@ -60,7 +60,21 @@ FLO_arsenal_allowedItems append _toolItems;
 
 // Dynamically harvest gear from player faction units
 private _harvestedItems = [] call FLO_fnc_harvestFactionGear;
-FLO_arsenal_allowedItems append _harvestedItems;
+
+// Separate Heavy Weapons for the Crate System
+FLO_arsenal_heavyItems = [];
+private _regularItems = [];
+
+{
+    if ([_x] call FLO_fnc_isHeavyWeapon) then {
+        FLO_arsenal_heavyItems pushBackUnique _x;
+    } else {
+        _regularItems pushBackUnique _x;
+    };
+} forEach _harvestedItems;
+
+// Add only regular items to the personal arsenal
+FLO_arsenal_allowedItems append _regularItems;
 
 // Deduplicate list
 FLO_arsenal_allowedItems = FLO_arsenal_allowedItems arrayIntersect FLO_arsenal_allowedItems;

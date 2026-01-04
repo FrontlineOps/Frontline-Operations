@@ -79,6 +79,60 @@ if (_action == "calc_price") exitWith {
     
     _scrapValue = _scrapValue * _demandMultiplier;
     
+    // =================================================================================
+    // FACTION PRICE CAP
+    // =================================================================================
+    // To prevent economic exploits, we cap the sell price at the original buy price
+    // if the vehicle is available in the player's faction menu.
+    
+    // Collect all faction lists
+    private _factionPriceLists = [
+        missionNamespace getVariable ["F_Bike_List", []],
+        missionNamespace getVariable ["F_Car_List", []],
+        missionNamespace getVariable ["F_MRAP_List", []],
+        missionNamespace getVariable ["F_Truck_List", []],
+        missionNamespace getVariable ["F_Truck_Construction_List", []],
+        missionNamespace getVariable ["F_Truck_Ammo_List", []],
+        missionNamespace getVariable ["F_Truck_Respawn_List", []],
+        missionNamespace getVariable ["F_APC_List", []],
+        missionNamespace getVariable ["F_Tank_List", []],
+        missionNamespace getVariable ["F_Artillery_List", []],
+        missionNamespace getVariable ["F_Heli_List", []],
+        missionNamespace getVariable ["F_Heli_Respawn_List", []],
+        missionNamespace getVariable ["F_Heli_Gunship_List", []],
+        missionNamespace getVariable ["F_Plane_List", []],
+        missionNamespace getVariable ["F_Boat_List", []],
+        missionNamespace getVariable ["F_UAV_List", []],
+        missionNamespace getVariable ["F_UGV_List", []],
+        missionNamespace getVariable ["F_Container_List", []],
+        missionNamespace getVariable ["F_Turret_List", []],
+        missionNamespace getVariable ["F_SAM_List", []]
+    ];
+
+    private _buyPrice = -1;
+
+    // Search for vehicle in lists
+    {
+        private _list = _x;
+        {
+            _x params ["_class", "_price"];
+            if (_class == _type) exitWith {
+                _buyPrice = _price;
+            };
+        } forEach _list;
+        
+        if (_buyPrice > -1) exitWith {};
+    } forEach _factionPriceLists;
+
+    // Apply Cap if vehicle is purchasable
+    if (_buyPrice > -1) then {
+        // If calculated value exceeds buy price, cap it
+        if (_scrapValue > _buyPrice) then {
+            _scrapValue = _buyPrice;
+            ["MARKET", 3, format ["Price capped for %1: Calc $%2 -> Cap $%3", _type, _scrapValue, _buyPrice]] call FLO_fnc_log;
+        };
+    };
+
     // Round to nearest 5
     round(_scrapValue / 5) * 5
 };

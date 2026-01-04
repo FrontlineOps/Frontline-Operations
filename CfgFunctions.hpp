@@ -169,6 +169,7 @@ class FLO {
         file = "Functions\Arsenal";
 
         class harvestFactionGear        {};
+        class isHeavyWeapon             {};
         class restrictedArsenal         {};
         class addCratePurchaseActions   {};
         class cancelCrate               {};
