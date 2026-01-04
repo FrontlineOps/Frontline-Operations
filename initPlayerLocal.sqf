@@ -312,7 +312,7 @@ FLO_fnc_addHoldAction_Client = {
         "Scrap Vehicle",                               // Title
         "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_unloadDevice_ca.paa", // Idle Icon
         "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_unloadDevice_ca.paa", // Progress Icon
-        "alive _target && _this distance _target < 15 && count (crew _target) == 0", // Condition Show
+        "alive _target && _this distance _target < 15 && count (crew _target) == 0 && {(nearestObjects [_target, ['Land_Cargo_HQ_V1_F', 'Land_Cargo_HQ_V2_F', 'Land_Cargo_HQ_V3_F'], 100]) isNotEqualTo []}", // Condition Show: Near FOB (100m)
         "true",                                        // Condition Progress
         {},                                            // Code Start
         {},                                            // Code Progress
