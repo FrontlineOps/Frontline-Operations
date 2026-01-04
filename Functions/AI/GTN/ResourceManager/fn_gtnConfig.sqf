@@ -22,7 +22,7 @@ FLO_GTNConfig = createHashMapFromArray [
     // TIMING CONFIGURATION
     // ===========================================
     ["updateInterval", 60],              // Main loop interval (seconds)
-    ["strategyInterval", 300],           // Strategic reassessment interval (5 min)
+    ["strategyInterval", 240],           // Strategic reassessment interval (4 min)
     ["artilleryMissionExpiry", 600],     // Artillery mission tracking expiry (10 min)
     ["airMissionExpiry", 900],           // Air mission tracking expiry (15 min)
     ["prepFiresExpiry", 300],            // Preparatory fires expiry (5 min)
