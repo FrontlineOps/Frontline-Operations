@@ -11,9 +11,6 @@
     Returns:
         None
 */
-
-if (!isServer) exitWith {};
-
 params ["_target", "_caller", "_crateInfo"];
 _crateInfo params ["_id", "_name", "_cost", "_boxType", "_items", "_description"];
 

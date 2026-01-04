@@ -168,6 +168,7 @@ class FLO {
     class Arsenal {
         file = "Functions\Arsenal";
 
+        class harvestFactionGear        {};
         class restrictedArsenal         {};
         class addCratePurchaseActions   {};
         class cancelCrate               {};

@@ -9,9 +9,6 @@
     Returns:
         Number - New funds balance after update
 */
-
-if (!isServer) exitWith {0};
-
 params ["_amount"];
 
 private _Money = 0;

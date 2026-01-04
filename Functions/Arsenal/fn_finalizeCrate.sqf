@@ -12,9 +12,6 @@
     Returns:
         None
 */
-
-if (!isServer) exitWith {};
-
 params ["_crate", "_pos", "_dir", "_items"];
 
 // Make crate visible
