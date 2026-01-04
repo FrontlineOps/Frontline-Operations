@@ -301,21 +301,6 @@ private _fnc_initAutoSave = {
 call _fnc_initAutoSave;
 
 // ============================================================================
-// CONDITIONAL SYSTEMS
-// ============================================================================
-
-// Initialize purchase crate system if arsenal is unrestricted
-private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
-if (_restrictedArsenal isEqualTo 0) then {
-    try {
-        [] call FLO_fnc_purchaseCrate;
-        ["INIT", 3, "Purchase crate system initialized (unrestricted arsenal)"] call FLO_fnc_log;
-    } catch {
-        ["INIT", 1, format ["Failed to initialize purchase crate system: %1", _exception]] call FLO_fnc_log;
-    };
-};
-
-// ============================================================================
 // PERFORMANCE OPTIMIZATION SYSTEMS
 // ============================================================================
 

@@ -462,6 +462,36 @@ if (isNil "FLO_ConfigCache") then {
 };
 
 // ============================================
+// Arsenal & Logistics Data
+// ============================================
+diag_log "[FLO_INIT_P5] Initializing Arsenal & Logistics Data...";
+
+// Harvest Faction Gear (Requires Phase 2 Factions to be ready)
+private _harvestedItems = [] call FLO_fnc_harvestFactionGear;
+
+// Segregate Heavy Weapons (Server Side Calculation)
+FLO_arsenal_heavyItems = [];
+private _regularItems = [];
+
+{
+    if ([_x] call FLO_fnc_isHeavyWeapon) then {
+        FLO_arsenal_heavyItems pushBackUnique _x;
+    } else {
+        _regularItems pushBackUnique _x;
+    };
+} forEach _harvestedItems;
+
+// Broadcast heavy items list so clients (and crate logic) can use it
+publicVariable "FLO_arsenal_heavyItems";
+diag_log format ["[FLO_INIT_P5] Harvested %1 heavy weapons for logistics crates", count FLO_arsenal_heavyItems];
+
+// Initialize Logistics Crate Table (FLO_availableCrates)
+[] call FLO_fnc_purchaseCrate;
+publicVariable "FLO_availableCrates";
+diag_log "[FLO_INIT_P5] Logistics crates initialized and broadcast";
+
+
+// ============================================
 // Pathfinding System
 // ============================================
 diag_log "[FLO_INIT_P5] Initializing pathfinding...";

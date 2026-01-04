@@ -79,6 +79,8 @@ FLO_arsenal_allowedItems append _regularItems;
 // Deduplicate list
 FLO_arsenal_allowedItems = FLO_arsenal_allowedItems arrayIntersect FLO_arsenal_allowedItems;
 
+["ARSENAL", 3, format ["Gear Harvested. Heavy/Restricted Items found: %1", count FLO_arsenal_heavyItems]] call FLO_fnc_log;
+
 // Function to restrict an arsenal box
 FLO_fnc_restrictArsenalBox = {
     params ["_box"];
