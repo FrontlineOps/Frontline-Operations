@@ -652,7 +652,7 @@ private _gtnCommander = createHashMapObject [[
                 // Dismounted Pilot
                 // If group type was air but unit count > 0 and vehicle count == 0 (or all vehicles dead), treat as dismounted
                 private _isPilot = false;
-                if (_groupType in ["helicopter", "jet", "air", "cas", "sead"]) then {
+                if (_groupType in ["helicopter", "jet", "air"]) then {
                      // Check if they are on foot
                     private _realGroup = _gData get "realGroup";
                     if (!isNull _realGroup) then {
@@ -680,6 +680,11 @@ private _gtnCommander = createHashMapObject [[
                 if (_isPilot || _isDamaged) then {
                     ["GTN", 3, format["Force Preservation: Group %1 (%2) retreating. Pilot: %3, Damage: %4/%5", 
                         _gId, _groupType, _isPilot, _unitCount, _originalCount]] call FLO_fnc_log;
+                    
+                    // Release from Air Manager so it doesn't crash if this group dies/deletes
+                    if (!isNil "FLO_GTNAirAssetManager") then {
+                         FLO_GTNAirAssetManager call ["_releaseAirAsset", [_gId]];
+                    };
                     
                     _gData set ["preservationState", "RETREATING"];
                     _gData set ["onMission", true]; // Prevent tasking
@@ -781,23 +786,43 @@ private _gtnCommander = createHashMapObject [[
                         
                         // Apply to real group if active
                         if (_gData get "isActive") then {
-                             // Note: Spawning units into live group is complex (loadouts etc). 
-                             // For now, we simulate success by healing existing units.
-                             // Full respawn happens when revirtualized and activated again.
-                             private _realGroup = _gData get "realGroup";
-                             { _x setDamage 0; } forEach units _realGroup; 
+                            // Note: Spawning units into live group is complex (loadouts etc). 
+                            // For now, we simulate success by healing existing units.
+                            // Full respawn happens when revirtualized and activated again.
+                            private _realGroup = _gData get "realGroup";
+                            { _x setDamage 0; } forEach units _realGroup; 
                         };
 
                         if (_newCount >= _originalCount) then {
-                            ["GTN", 3, format["Group %1 fully replenished. Returning to duty.", _gId]] call FLO_fnc_log;
-                            _gData set ["preservationState", "ACTIVE"];
-                            _gData set ["onMission", false];
-                            _gData set ["currentOrder", ""]; // Reset order to allow tasking
-                            // Also reset their behavior/combat mode if active
-                            if (_gData get "isActive") then {
-                                 private _realGroup = _gData get "realGroup";
-                                 _realGroup setBehaviour "AWARE";
-                                 _realGroup setCombatMode "YELLOW";
+                            // Check if we need to respawn vehicle (Air groups without vehicles)
+                            private _needsRespawn = false;
+                            if (_groupType in ["helicopter", "jet", "air"]) then {
+                                private _realGroup = _gData get "realGroup";
+                                if (!isNull _realGroup) then {
+                                    // Re-use logic: check if purely infantry
+                                    private _hasAirVehicle = false;
+                                    { if (vehicle _x isKindOf "Air") then { _hasAirVehicle = true; }; } forEach units _realGroup;
+                                    if (!_hasAirVehicle) then { _needsRespawn = true; };
+                                };
+                            };
+
+                            if (_needsRespawn) then {
+                                ["GTN", 3, format["Group %1 fully replenished but needs vehicle. Deactivating to respawn.", _gId]] call FLO_fnc_log;
+                                [_gId] call FLO_fnc_deactivateVirtualGroup;
+                                _gData set ["preservationState", "ACTIVE"]; 
+                                _gData set ["onMission", false];
+                                _gData set ["currentOrder", ""];
+                            } else {
+                                ["GTN", 3, format["Group %1 fully replenished. Returning to duty.", _gId]] call FLO_fnc_log;
+                                _gData set ["preservationState", "ACTIVE"];
+                                _gData set ["onMission", false];
+                                _gData set ["currentOrder", ""]; // Reset order to allow tasking
+                                // Also reset their behavior/combat mode if active
+                                if (_gData get "isActive") then {
+                                    private _realGroup = _gData get "realGroup";
+                                    _realGroup setBehaviour "AWARE";
+                                    _realGroup setCombatMode "YELLOW";
+                                };
                             };
                         };
                     };
