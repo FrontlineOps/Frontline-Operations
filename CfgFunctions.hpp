@@ -181,21 +181,37 @@ class FLO {
         class updateFunds               {};
     };
 
-    class Utilities {
-        file = "Functions\Utilities";
-
+    class UtilitiesDebug {
+        file = "Functions\Utilities\Debug";
         class log                       {};
-        class addReward                 {};
-        class getRandomMagazine         {};
+    };
+
+    class UtilitiesSystem {
+        file = "Functions\Utilities\System";
+        class createUUID                {};
         class heartbeat                 {};
+    };
+
+    class UtilitiesUI {
+        file = "Functions\Utilities\UI";
         class showDynamicText           {};
-        class addIntelServer            {};
         class sendRewardNotification    {};
         class sendNotification          {};
         class displayNotification       {};
+    };
+
+    class UtilitiesGame {
+        file = "Functions\Utilities\Game";
+        class addReward                 {};
+        class getRandomMagazine         {};
+        class addIntelServer            {};
         class adjustAggression          {};
         class adjustReputation          {};
-        class createUUID                {};
+    };
+
+    class UtilitiesVehicle {
+        file = "Functions\Utilities\Vehicle";
+        class placeVehicleWithCrew      {};
     };
 
     // === SIDE MISSIONS - CORE SYSTEM ===
