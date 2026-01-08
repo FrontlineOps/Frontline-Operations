@@ -822,9 +822,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                         };
                     } else {
                         // Virtual group - calculate power from template using config
-                        private _template = _gData get "template";
+                        private _template = _gData getOrDefault ["template", []];
+                        private _strength = _gData getOrDefault ["strength", 1];
                         private _groupType = _gData get "groupType";
-                        private _strength = _gData get "strength";
 
                         // Calculate power from template unit classes using config
                         private _estPower = 0;
@@ -1624,30 +1624,52 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         private _pos = _analysis get "position";
         private _radius = _analysis get "radius";
 
-        // Find garrison groups
+        // === FIRST: Check world state intel from recon ===
+        // This contains actual observed enemy (BLUFOR) data from air/ground recon
+        private _hasReconIntel = false;
+        if (!isNil "FLO_GTN_WorldState") then {
+            private _ws = FLO_GTN_WorldState;
+            private _intel = _ws call ["_getObjectiveIntel", [_objectiveId]];
+            if (!isNil "_intel") then {
+                private _quality = _intel getOrDefault ["intelQuality", 0];
+                if (_quality > 0.5) then {
+                    // Good intel - use it
+                    _hasReconIntel = true;
+                    _analysis set ["totalDefensePower", _intel getOrDefault ["totalCombatPower", 0]];
+                    _analysis set ["hasArmor", _intel getOrDefault ["hasArmor", false]];
+                    _analysis set ["hasAA", _intel getOrDefault ["hasAA", false]];
+                    _analysis set ["hasStatic", _intel getOrDefault ["hasStatic", false]];
+                    _analysis set ["fortificationLevel", _intel getOrDefault ["fortificationLevel", 0]];
+                    
+                    // Use recommended force from intel if available
+                    private _reconRecommended = _intel getOrDefault ["recommendedForce", 0];
+                    if (_reconRecommended > 0) then {
+                        _analysis set ["recommendedAttackForce", _reconRecommended];
+                    };
+                    
+                    ["GTN", 4, format["Objective %1: Using recon intel (power=%2, AA=%3)", 
+                        _objectiveId, _analysis get "totalDefensePower", _analysis get "hasAA"]] call FLO_fnc_log;
+                };
+            };
+        };
+
+        // === SECOND: Also check virtual groups (garrison) ===
+        // This adds our own OPFOR defenders to the picture
         if (!isNil "FLO_virtualGroups") then {
             private _groups = FLO_virtualGroups get "_groups";
             {
                 private _gId = _x;
                 private _gData = _y;
                 private _gPos = _gData get "position";
+                private _gSide = _gData get "side";
 
-                if (_gPos distance2D _pos < _radius * 1.5) then {
+                // Only include OPFOR garrison (our defenders), not enemy
+                if (_gPos distance2D _pos < _radius * 1.5 && _gSide == east) then {
                     private _gAnalysis = _self call ["_analyzeGroup", [_gId]];
                     if (!isNil "_gAnalysis") then {
                         (_analysis get "garrison") pushBack [_gId, _gAnalysis];
-                        _analysis set ["totalDefensePower",
-                            (_analysis get "totalDefensePower") + (_gAnalysis get "totalCombatPower")];
-
-                        if (_gAnalysis get "canEngageArmor") then {
-                            _analysis set ["hasArmor", true];
-                        };
-                        if (_gAnalysis get "canEngageAir") then {
-                            _analysis set ["hasAA", true];
-                        };
-                        if ((_gAnalysis get "vehicleCount") > 0) then {
-                            _analysis set ["hasStatic", true];
-                        };
+                        // Don't add garrison power to defense power for attack calc
+                        // Garrison is OUR forces, not the enemy we're attacking
                     };
                 };
             } forEach _groups;
@@ -1658,32 +1680,47 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         switch (_objType) do {
             case "capital": {
                 _analysis set ["approachDifficulty", "HARD"];
-                _analysis set ["fortificationLevel", 3];
+                if (_analysis get "fortificationLevel" < 3) then {
+                    _analysis set ["fortificationLevel", 3];
+                };
             };
             case "city": {
                 _analysis set ["approachDifficulty", "HARD"];
-                _analysis set ["fortificationLevel", 2];
+                if (_analysis get "fortificationLevel" < 2) then {
+                    _analysis set ["fortificationLevel", 2];
+                };
             };
             case "village": {
                 _analysis set ["approachDifficulty", "NORMAL"];
-                _analysis set ["fortificationLevel", 1];
+                if (_analysis get "fortificationLevel" < 1) then {
+                    _analysis set ["fortificationLevel", 1];
+                };
             };
             case "fob": {
                 _analysis set ["approachDifficulty", "HARD"];
-                _analysis set ["fortificationLevel", 3];
+                if (_analysis get "fortificationLevel" < 3) then {
+                    _analysis set ["fortificationLevel", 3];
+                };
             };
         };
 
-        // Calculate recommended attack force
-        private _basePower = _analysis get "totalDefensePower";
-        private _fortMult = 1 + ((_analysis get "fortificationLevel") * 0.25);
-        private _terrainMult = switch (_analysis get "approachDifficulty") do {
-            case "HARD": { 1.5 };
-            case "NORMAL": { 1.2 };
-            default { 1.0 };
+        // Calculate recommended attack force if not already set from recon
+        if (_analysis get "recommendedAttackForce" == 0) then {
+            private _basePower = _analysis get "totalDefensePower";
+            private _fortMult = 1 + ((_analysis get "fortificationLevel") * 0.25);
+            private _terrainMult = switch (_analysis get "approachDifficulty") do {
+                case "HARD": { 1.5 };
+                case "NORMAL": { 1.2 };
+                default { 1.0 };
+            };
+
+            _analysis set ["recommendedAttackForce", _basePower * 3 * _fortMult * _terrainMult];
         };
 
-        _analysis set ["recommendedAttackForce", _basePower * 3 * _fortMult * _terrainMult];
+        // MINIMUM attack force - even undefended objectives need some force
+        if (_analysis get "recommendedAttackForce" < 100) then {
+            _analysis set ["recommendedAttackForce", 100];
+        };
 
         _analysis
     }],
@@ -2142,6 +2179,89 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             ["GTN Capability Analyzer", 4, format["  Weapon: %1 | Cal: %2 (%3) | Hit: %4 | Range: %5",
                 _x, _caliber, _penClass, _hit, _range]] call FLO_fnc_log;
         } forEach _weapons;
+    }],
+
+    // ========================================================================
+    // INTEL-BASED REVEAL UTILITY
+    // ========================================================================
+    // Reveal enemies at a position to units (for CAS/attack/recon missions)
+    // This ensures AI units can engage targets they have intel about
+    // Uses knowsAbout 4 (max) so AI will engage immediately
+    //
+    // Parameters:
+    // 0: Position <ARRAY> - Location to scan for enemies
+    // 1: Radius <NUMBER> - Search radius (default 1500m)
+    // 2: Units/Group <ARRAY or GROUP> - Units to reveal enemies to
+    // 3: Enemy Side <SIDE> - Side of enemies to reveal (default: west for OPFOR commander)
+    //
+    // Returns: Number of enemies revealed
+    ["_revealIntelToUnits", {
+        params [
+            "_position",
+            ["_radius", 1500],
+            "_unitsOrGroup",
+            ["_enemySide", west]
+        ];
+
+        if (isNil "_position" || _position isEqualTo [0,0,0]) exitWith {
+            ["GTN", 2, "RevealIntel: Invalid position"] call FLO_fnc_log;
+            0
+        };
+
+        // Get units to reveal to
+        private _revealTo = [];
+        if (_unitsOrGroup isEqualType grpNull) then {
+            _revealTo = units _unitsOrGroup;
+        } else {
+            if (_unitsOrGroup isEqualType objNull) then {
+                _revealTo = [_unitsOrGroup];
+            } else {
+                _revealTo = _unitsOrGroup;
+            };
+        };
+
+        if (count _revealTo == 0) exitWith {
+            ["GTN", 2, "RevealIntel: No units to reveal to"] call FLO_fnc_log;
+            0
+        };
+
+        // Find enemies at position
+        private _nearEntities = _position nearEntities [["Man", "AllVehicles"], _radius];
+        private _enemies = _nearEntities select {
+            alive _x &&
+            (side _x == _enemySide || side group _x == _enemySide)
+        };
+
+        if (count _enemies == 0) exitWith {
+            ["GTN", 4, format["RevealIntel: No enemies found at position within %1m", _radius]] call FLO_fnc_log;
+            0
+        };
+
+        // Reveal each enemy to all receiving units
+        {
+            private _enemy = _x;
+            {
+                _x reveal [_enemy, 4];
+            } forEach _revealTo;
+        } forEach _enemies;
+
+        ["GTN", 3, format["RevealIntel: Revealed %1 enemies to %2 units at %3",
+            count _enemies, count _revealTo, _position]] call FLO_fnc_log;
+
+        count _enemies
+    }],
+
+    // Variant that takes an objective ID and retrieves position from FLO_Objectives
+    ["_revealObjectiveIntelToUnits", {
+        params ["_objId", "_unitsOrGroup", ["_enemySide", west]];
+
+        private _position = [_objId] call FLO_fnc_getObjectivePosition;
+        if (isNil "_position") exitWith {
+            ["GTN", 2, format["RevealIntel: Unknown objective %1", _objId]] call FLO_fnc_log;
+            0
+        };
+
+        _self call ["_revealIntelToUnits", [_position, 1500, _unitsOrGroup, _enemySide]]
     }]
 ]];
 

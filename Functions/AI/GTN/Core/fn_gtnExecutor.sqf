@@ -199,6 +199,7 @@ private _executor = createHashMapObject [[
         private _cmdr = _self get "_commander";
         
         // prim_select_staging_point
+        // Analyzes objective and stores capability requirements for staging flow
         _self call ["_registerHandler", ["prim_select_staging_point", {
             params ["_ctx"];
             private _params = _ctx get "params";
@@ -211,12 +212,35 @@ private _executor = createHashMapObject [[
 
             if (isNil "_stagingPos") exitWith {
                 ["GTN", 2, format["Cannot create staging point - no position for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
                 false
+            };
+
+            // === ANALYZE OBJECTIVE FOR CAPABILITY REQUIREMENTS ===
+            private _analyzer = FLO_GTN_CapabilityAnalyzer;
+            private _requiredPower = 100;
+            private _requiresAT = false;
+            private _requiresAA = false;
+
+            if (!isNil "_analyzer") then {
+                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+                if (!isNil "_objAnalysis") then {
+                    _requiredPower = _objAnalysis get "recommendedAttackForce";
+                    _requiresAT = _objAnalysis get "hasArmor";
+                    _requiresAA = _objAnalysis get "hasAA";
+
+                    ["GTN", 3, format["Staging analysis for %1: Required Power=%2, NeedsAT=%3, NeedsAA=%4",
+                        _objId, round _requiredPower, _requiresAT, _requiresAA]] call FLO_fnc_log;
+                };
             };
 
             // Store in executor's shared data for cross-task access
             _executor call ["_storeTaskData", ["STAGING_POSITION", _stagingPos]];
             _executor call ["_storeTaskData", ["STAGING_OBJECTIVE", _objId]];
+            _executor call ["_storeTaskData", ["STAGING_REQUIRED_POWER", _requiredPower]];
+            _executor call ["_storeTaskData", ["STAGING_REQUIRES_AT", _requiresAT]];
+            _executor call ["_storeTaskData", ["STAGING_REQUIRES_AA", _requiresAA]];
+            _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", 0]];
 
             ["GTN", 3, format["Staging point created at %1 for objective %2", _stagingPos, _objId]] call FLO_fnc_log;
 
@@ -225,42 +249,127 @@ private _executor = createHashMapObject [[
         }]];
         
         // prim_assign_groups_to_staging
+        // Capability-aware group assignment - prioritizes groups with required capabilities
         _self call ["_registerHandler", ["prim_assign_groups_to_staging", {
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
-            private _count = _params param [1, 4];
+            private _maxGroups = _params param [1, 8]; // Max groups to ever assign
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
 
-            // Get staging position from executor shared data (set by prim_select_staging_point)
+            // Get staging data from executor shared data
             private _completedData = _executor get "_completedTaskData";
             private _stagingPos = _completedData get "STAGING_POSITION";
+            private _requiredPower = _completedData getOrDefault ["STAGING_REQUIRED_POWER", 100];
+            private _requiresAT = _completedData getOrDefault ["STAGING_REQUIRES_AT", false];
+            private _requiresAA = _completedData getOrDefault ["STAGING_REQUIRES_AA", false];
+            private _currentGroups = _completedData getOrDefault ["STAGING_GROUPS", []];
+            private _accumulatedPower = _completedData getOrDefault ["STAGING_ACCUMULATED_POWER", 0];
 
-            // Get available groups near staging position
-            private _available = _cmdr call ["_getAvailableGroups", [_count, _stagingPos]];
-
-            if (count _available < 1) exitWith {
+            // === GET CAPABILITY ANALYZER ===
+            private _analyzer = FLO_GTN_CapabilityAnalyzer;
+            if (isNil "_analyzer") exitWith {
+                ["GTN", 2, "Staging failed - Capability Analyzer not available"] call FLO_fnc_log;
                 _ctx set ["status", "FAILED"];
                 false
             };
 
-            // Order groups to staging
+            // === CHECK IF WE ALREADY HAVE ENOUGH POWER ===
+            if (_accumulatedPower >= _requiredPower && count _currentGroups > 0) exitWith {
+                ["GTN", 3, format["Staging complete: Have %1/%2 power with %3 groups",
+                    round _accumulatedPower, round _requiredPower, count _currentGroups]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            // === FIND MORE GROUPS TO ASSIGN ===
+            // Get all available ground forces
+            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _stagingPos, _requiredPower]];
+            private _availableAssets = _feasibility get "availableAssets";
+
+            // Filter out already assigned groups
+            _availableAssets = _availableAssets - _currentGroups;
+
+            if (count _availableAssets == 0) exitWith {
+                if (count _currentGroups > 0) then {
+                    ["GTN", 3, format["No more groups available - proceeding with %1 groups (%2/%3 power)",
+                        count _currentGroups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                    _ctx set ["status", "SUCCESS"];
+                } else {
+                    ["GTN", 2, "Staging failed - no groups available"] call FLO_fnc_log;
+                    _ctx set ["status", "FAILED"];
+                };
+                count _currentGroups > 0
+            };
+
+            // === SCORE AND SELECT GROUPS ===
+            private _scoredGroups = [];
+            {
+                private _gId = _x;
+                private _gAnalysis = _analyzer call ["_analyzeGroup", [_gId]];
+                if (isNil "_gAnalysis") then { continue };
+
+                private _power = _gAnalysis get "totalCombatPower";
+                private _score = _power;
+
+                // Bonus for required capabilities
+                if (_requiresAT && (_gAnalysis get "canEngageArmor")) then {
+                    _score = _score * 1.5;
+                };
+                if (_requiresAA && (_gAnalysis get "canEngageAir")) then {
+                    _score = _score * 1.5;
+                };
+
+                _scoredGroups pushBack [_gId, _score, _power];
+            } forEach _availableAssets;
+
+            // Sort by score descending
+            _scoredGroups = [_scoredGroups, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+
+            // Select groups until we meet power requirement or hit limit
+            private _newGroups = [];
+            private _newPower = _accumulatedPower;
+            {
+                if (count _currentGroups + count _newGroups >= _maxGroups) exitWith {};
+                if (_newPower >= _requiredPower) exitWith {};
+
+                _x params ["_gId", "_score", "_power"];
+                _newGroups pushBack _gId;
+                _newPower = _newPower + _power;
+            } forEach _scoredGroups;
+
+            if (count _newGroups == 0) exitWith {
+                ["GTN", 3, format["No suitable groups found for staging (have %1/%2 power)",
+                    round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                if (count _currentGroups > 0) then {
+                    _ctx set ["status", "SUCCESS"];
+                } else {
+                    _ctx set ["status", "FAILED"];
+                };
+                count _currentGroups > 0
+            };
+
+            // Order new groups to staging
             {
                 _cmdr call ["_orderGroupMove", [_x, _stagingPos, "AWARE"]];
-            } forEach _available;
+            } forEach _newGroups;
 
-            // Store assigned groups in executor shared data for wait primitive
-            _executor call ["_storeTaskData", ["STAGING_GROUPS", _available]];
-            _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _available]];
+            // Update accumulated groups and power
+            private _allGroups = _currentGroups + _newGroups;
+            _executor call ["_storeTaskData", ["STAGING_GROUPS", _allGroups]];
+            _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _newPower]];
+            _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _allGroups]];
 
-            ["GTN", 3, format["Assigned %1 groups to staging at %2", count _available, _stagingPos]] call FLO_fnc_log;
+            ["GTN", 3, format["Assigned %1 new groups to staging (total: %2 groups, %3/%4 power)",
+                count _newGroups, count _allGroups, round _newPower, round _requiredPower]] call FLO_fnc_log;
 
             _ctx set ["status", "SUCCESS"];
             true
         }]];
 
         // prim_wait_for_staging
+        // Waits for groups to arrive and validates power requirements are met
         _self call ["_registerHandler", ["prim_wait_for_staging", {
             params ["_ctx"];
             private _cmdr = _ctx get "commander";
@@ -269,33 +378,57 @@ private _executor = createHashMapObject [[
             // Get staging info from executor shared data
             private _completedData = _executor get "_completedTaskData";
             private _stagingPos = _completedData get "STAGING_POSITION";
-            private _groups = _completedData get "STAGING_GROUPS";
+            private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
+            private _requiredPower = _completedData getOrDefault ["STAGING_REQUIRED_POWER", 100];
+            private _accumulatedPower = _completedData getOrDefault ["STAGING_ACCUMULATED_POWER", 0];
 
             if (count _groups == 0) exitWith {
-                // No groups - auto-complete
-                _ctx set ["status", "SUCCESS"];
-                true
+                // No groups - fail
+                ["GTN", 2, "Staging wait failed - no groups assigned"] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
             };
 
             // Check if groups have arrived
             private _arrived = _cmdr call ["_checkGroupsArrived", [_groups, _stagingPos, 150]];
 
-            if (_arrived) then {
-                _ctx set ["status", "SUCCESS"];
-                ["GTN", 3, format["Groups arrived at staging position"]] call FLO_fnc_log;
-            } else {
-                // Still waiting - check timeout using executor shared data
-                private _waitStart = _completedData getOrDefault ["STAGING_WAIT_START", -1];
-                if (_waitStart < 0) then {
-                    _executor call ["_storeTaskData", ["STAGING_WAIT_START", diag_tickTime]];
-                    _waitStart = diag_tickTime;
-                };
+            // Check timeout
+            private _waitStart = _completedData getOrDefault ["STAGING_WAIT_START", -1];
+            if (_waitStart < 0) then {
+                _executor call ["_storeTaskData", ["STAGING_WAIT_START", diag_tickTime]];
+                _waitStart = diag_tickTime;
+            };
+            private _waitedTime = diag_tickTime - _waitStart;
+            private _timedOut = _waitedTime > 300; // 5 minutes
 
-                // Timeout after 5 minutes
-                if (diag_tickTime - _waitStart > 300) then {
-                    ["GTN", 2, "Staging wait timeout - proceeding anyway"] call FLO_fnc_log;
+            if (_arrived) then {
+                // Groups arrived - check if we have enough power
+                if (_accumulatedPower >= _requiredPower) then {
+                    ["GTN", 3, format["Staging complete: %1 groups arrived with %2/%3 power",
+                        count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
                     _ctx set ["status", "SUCCESS"];
                 } else {
+                    if (_timedOut) then {
+                        // Timeout - proceed with what we have
+                        ["GTN", 2, format["Staging timeout - proceeding with %1/%2 power",
+                            round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                        _ctx set ["status", "SUCCESS"];
+                    } else {
+                        // Not enough power yet - keep waiting for more groups to be assigned
+                        ["GTN", 3, format["Staging: %1 groups arrived but only %2/%3 power - waiting for reinforcements",
+                            count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                        _ctx set ["status", "RUNNING"];
+                    };
+                };
+            } else {
+                // Groups still moving
+                if (_timedOut) then {
+                    ["GTN", 2, format["Staging wait timeout - proceeding with %1 groups (%2/%3 power)",
+                        count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                    _ctx set ["status", "SUCCESS"];
+                } else {
+                    ["GTN", 3, format["Waiting for staging: %1s/%2s (%3/%4 power)",
+                        round _waitedTime, 300, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
                     _ctx set ["status", "RUNNING"];
                 };
             };
@@ -304,6 +437,7 @@ private _executor = createHashMapObject [[
         }]];
 
         // prim_attack_objective
+        // Capability-aware attack that blocks for force buildup until recommended power is met
         _self call ["_registerHandler", ["prim_attack_objective", {
             params ["_ctx"];
             private _params = _ctx get "params";
@@ -315,11 +449,71 @@ private _executor = createHashMapObject [[
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith {
                 ["GTN", 2, format["Attack failed - no position for objective: %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
                 false
             };
 
-            // Get attack groups - first check for staged groups from earlier primitive
+            // === USE CAPABILITY ANALYZER TO ASSESS OBJECTIVE ===
+            private _analyzer = FLO_GTN_CapabilityAnalyzer;
+            if (isNil "_analyzer") exitWith {
+                ["GTN", 2, "Attack failed - Capability Analyzer not available"] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
+            private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+            private _requiredPower = if (!isNil "_objAnalysis") then {
+                _objAnalysis get "recommendedAttackForce"
+            } else { 100 }; // Fallback if analysis fails
+
+            private _requiresAT = if (!isNil "_objAnalysis") then { _objAnalysis get "hasArmor" } else { false };
+            private _requiresAA = if (!isNil "_objAnalysis") then { _objAnalysis get "hasAA" } else { false };
+
+            ["GTN", 3, format["Objective %1 analysis: Required Power=%2, NeedsAT=%3, NeedsAA=%4",
+                _objId, round _requiredPower, _requiresAT, _requiresAA]] call FLO_fnc_log;
+
+            // === CHECK IF ASSAULT IS FEASIBLE ===
+            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _objPos, _requiredPower]];
+            private _availablePower = _feasibility get "powerAvailable";
+            private _isFeasible = _feasibility get "feasible";
+
+            // === FORCE BUILDUP LOGIC ===
             private _completedData = _executor get "_completedTaskData";
+            private _buildupStart = _completedData getOrDefault ["ATTACK_BUILDUP_START", -1];
+            private _buildupTimeout = 300; // 5 minutes max wait
+
+            if (!_isFeasible) then {
+                // Not enough power - check if we should wait or timeout
+                if (_buildupStart < 0) then {
+                    // First time - start buildup timer
+                    _executor call ["_storeTaskData", ["ATTACK_BUILDUP_START", diag_tickTime]];
+                    _buildupStart = diag_tickTime;
+                    ["GTN", 3, format["Attack on %1 waiting for force buildup: Have %2/%3 power",
+                        _objId, round _availablePower, round _requiredPower]] call FLO_fnc_log;
+                };
+
+                private _waitedTime = diag_tickTime - _buildupStart;
+                if (_waitedTime < _buildupTimeout) then {
+                    // Still waiting for buildup
+                    ["GTN", 4, format["Force buildup: %1s/%2s - Power %3/%4",
+                        round _waitedTime, _buildupTimeout, round _availablePower, round _requiredPower]] call FLO_fnc_log;
+                    _ctx set ["status", "RUNNING"];
+                } else {
+                    // Timeout - proceed anyway with what we have
+                    ["GTN", 2, format["Attack on %1 proceeding after timeout with %2/%3 power",
+                        _objId, round _availablePower, round _requiredPower]] call FLO_fnc_log;
+                    _isFeasible = true; // Force proceed
+                };
+            };
+
+            // If still not feasible (and not timed out), keep waiting
+            if (!_isFeasible) exitWith { true };
+
+            // === SELECT GROUPS USING CAPABILITY REQUIREMENTS ===
+            // Clear buildup timer
+            _executor call ["_storeTaskData", ["ATTACK_BUILDUP_START", -1]];
+
+            // Get attack groups - first check for staged groups from earlier primitive
             private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
 
             // If no staged groups, check primitiveData (for direct assignment)
@@ -329,15 +523,72 @@ private _executor = createHashMapObject [[
                 _groups = _primData getOrDefault ["assignedGroups", []];
             };
 
-            // If still no groups, get available ones
+            // If still no groups, use capability-aware selection
             if (count _groups < 1) then {
-                _groups = _cmdr call ["_getAvailableGroups", [4, _objPos]];
-                ["GTN", 3, format["No staged groups, using %1 available groups", count _groups]] call FLO_fnc_log;
+                private _availableAssets = _feasibility get "availableAssets";
+
+                // Score and sort groups by how well they match requirements
+                private _scoredGroups = [];
+                {
+                    private _gId = _x;
+                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gId]];
+                    if (isNil "_gAnalysis") then { continue };
+
+                    private _power = _gAnalysis get "totalCombatPower";
+                    private _score = _power;
+
+                    // Bonus for required capabilities
+                    if (_requiresAT && (_gAnalysis get "canEngageArmor")) then {
+                        _score = _score * 1.5;
+                    };
+                    if (_requiresAA && (_gAnalysis get "canEngageAir")) then {
+                        _score = _score * 1.5;
+                    };
+
+                    _scoredGroups pushBack [_gId, _score, _power];
+                } forEach _availableAssets;
+
+                // Sort by score descending
+                _scoredGroups = [_scoredGroups, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+
+                // Select groups until we meet power requirement or hit limit
+                private _selectedPower = 0;
+                private _maxGroups = 8;
+                {
+                    if (count _groups >= _maxGroups) exitWith {};
+                    if (_selectedPower >= _requiredPower) exitWith {};
+
+                    _x params ["_gId", "_score", "_power"];
+                    _groups pushBack _gId;
+                    _selectedPower = _selectedPower + _power;
+                } forEach _scoredGroups;
+
+                ["GTN", 3, format["Selected %1 groups with %2 power for attack on %3",
+                    count _groups, round _selectedPower, _objId]] call FLO_fnc_log;
             } else {
-                ["GTN", 3, format["Using %1 staged groups for attack", count _groups]] call FLO_fnc_log;
+                ["GTN", 3, format["Using %1 pre-staged groups for attack", count _groups]] call FLO_fnc_log;
+            };
+
+            if (count _groups < 1) exitWith {
+                ["GTN", 2, format["Attack on %1 aborted - no groups available", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
             };
 
             ["GTN", 3, format["Attacking %1 at %2 with %3 groups", _objId, _objPos, count _groups]] call FLO_fnc_log;
+
+            // Reveal intel to attacking groups so they can engage enemies
+            {
+                private _gId = _x;
+                private _groups = FLO_virtualGroups get "_groups";
+                private _gData = _groups get _gId;
+                if (!isNil "_gData") then {
+                    private _realGroup = _gData get "realGroup";
+                    if (!isNull _realGroup) then {
+                        _analyzer call ["_revealObjectiveIntelToUnits", [_objId, _realGroup]];
+                    };
+                };
+            } forEach _groups;
 
             // Order attack
             {
@@ -348,8 +599,11 @@ private _executor = createHashMapObject [[
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             _primData set ["objectiveId", _objId];
             _primData set ["attackGroups", _groups];
+            _primData set ["requiredPower", _requiredPower];
+            _primData set ["actualPower", _availablePower];
             _taskNode set ["primitiveData", _primData];
 
+            _ctx set ["status", "SUCCESS"];
             true
         }]];
 
@@ -808,25 +1062,32 @@ private _executor = createHashMapObject [[
                 // This is a problem because 4 is very rare for most AI. Most AI will never have a level of knowsAbout 4.
                 // This is why we use a nearEntities call to reveal targets to the aircraft.
                 private _nearEntities = _objPos nearEntities [["Man", "AllVehicles"], 1500];
+                private _enemySide = west; // OPFOR commander scouting BLUFOR positions
+                private _enemyEntities = _nearEntities select { side _x == _enemySide || side group _x == _enemySide };
+                
+                // Reveal enemies to aircraft CREW so nearTargets can detect them
+                // nearTargets returns what the CREW sees, not the vehicle itself
+                private _crew = crew _aircraft;
                 {
-                    if (side _x == west) then {
-                        _aircraft reveal [_x, 4];
-                    };
-                } forEach _nearEntities;
+                    private _enemy = _x;
+                    {
+                        _x reveal [_enemy, 4];
+                    } forEach _crew;
+                } forEach _enemyEntities;
 
-                ["GTN", 3, format["Air Sensors revealed %1 potential targets to %2", count _nearEntities, _groupId]] call FLO_fnc_log;
+                ["GTN", 3, format["Air Sensors revealed %1 BLUFOR targets to %2 crew members", count _enemyEntities, count _crew]] call FLO_fnc_log;
                 
                 while {diag_tickTime < _scanEnd && alive _aircraft} do {
-                    // Aircraft sees what it sees (visual + sensors)
-                    // nearTargets returns: [[pos, type, side, subjectiveCost, object, positionAccuracy], ...]
+                    // nearTargets returns what CREW sees, not vehicle
+                    // [[pos, type, side, subjectiveCost, object, positionAccuracy], ...]
                     private _targets = _aircraft nearTargets 2000;
                     
                     {
                         _x params ["_pos", "_type", "_side", "_cost", "_obj", "_accuracy"];
                         
-                        // We only care about West (BLUFOR) targets that are actually units
-                        if (_side == west || (side _obj) == west) then {
-                            if (_obj isKindOf "AllVehicles" || _obj isKindOf "Man") then {
+                        // Detect enemy targets that are actual units
+                        if (!isNull _obj && {_obj isKindOf "AllVehicles" || _obj isKindOf "Man"}) then {
+                            if (side _obj == _enemySide || side group _obj == _enemySide) then {
                                 _detectedUnits pushBackUnique _obj;
                             };
                         };

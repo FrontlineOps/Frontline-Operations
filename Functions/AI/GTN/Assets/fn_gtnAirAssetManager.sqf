@@ -59,6 +59,11 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
 
             _gdata = _groups get _gid; // refresh after activation
+            
+            // Mark group as on mission to prevent deactivation
+            _gdata set ["onMission", true];
+            ["GTN Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
+            
             private _realGroup = _gdata get "realGroup";
             if (isNull _realGroup) exitWith {objNull};
 
@@ -78,10 +83,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
             if (isNull _veh) exitWith {objNull};
 
             (_self get "missions") set [_gid, _veh];
-
-            // Mark group as on mission so virtualization system won't deactivate it
-            _gdata set ["onMission", true];
-            ["GTN Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
 
             [_veh, _gid]
         }],
