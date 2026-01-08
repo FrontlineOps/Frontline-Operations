@@ -1,0 +1,257 @@
+name: Build Mission PBO
+
+on:
+  push:
+    branches:
+      - main
+      - Develop
+    tags:
+      - "v*"
+      - "V*"
+  pull_request:
+    branches:
+      - main
+      - Develop
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: "Version bump type"
+        required: false
+        default: "none"
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+env:
+  # Change these for your mission
+  MISSION_NAME: FLOPS_FLO
+  MISSION_MAP: Altis
+  NEW_VERSION: "0.0.0" # Placeholder for linter; overwritten dynamically
+  PBO_PATH: ""         # Placeholder for linter; overwritten dynamically
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # If we are building from a tag (v1.2.3), set NEW_VERSION from the tag.
+      - name: Set version from tag
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag
+          if ($ver.StartsWith("v") -or $ver.StartsWith("V")) { $ver = $ver.Substring(1) }
+
+          "NEW_VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "TAG_NAME=$tag" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Tag build: $tag -> NEW_VERSION=$ver"
+
+      - name: Get current version (from README)
+        if: github.ref_type != 'tag'
+        id: get_version
+        shell: pwsh
+        run: |
+          $readmePath = "README.md"
+          $version = "1.0.0"
+
+          if (Test-Path $readmePath) {
+            $readmeContent = Get-Content $readmePath -Raw
+            if ($readmeContent -match '\*\*Current Version\*\*:\s*([\d\.]+)(?:\s*-\s*(.+))?') {
+              $version = $matches[1]
+              Write-Host "Current version from README: $version"
+            } else {
+              Write-Host "No version pattern found in README. Using default: $version"
+            }
+          } else {
+            Write-Host "README.md not found. Using default: $version"
+          }
+
+          # Split version
+          $parts = $version.Split(".")
+          $major = [int]$parts[0]
+          $minor = [int]$parts[1]
+          $patch = [int]$parts[2]
+
+          "CURRENT_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION_MAJOR=$major" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION_MINOR=$minor" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION_PATCH=$patch" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          # Default NEW_VERSION to current unless bumped later
+          "NEW_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Bump version (manual dispatch only)
+        if: github.ref_type != 'tag' && github.event_name == 'workflow_dispatch' && github.event.inputs.version_bump != 'none'
+        id: bump_version
+        shell: pwsh
+        run: |
+          $major = [int]$env:VERSION_MAJOR
+          $minor = [int]$env:VERSION_MINOR
+          $patch = [int]$env:VERSION_PATCH
+          $bump = "${{ github.event.inputs.version_bump }}"
+
+          if ($bump -eq "major") {
+            $major += 1; $minor = 0; $patch = 0
+          } elseif ($bump -eq "minor") {
+            $minor += 1; $patch = 0
+          } elseif ($bump -eq "patch") {
+            $patch += 1
+          }
+
+          $newVersion = "$major.$minor.$patch"
+          "NEW_VERSION=$newVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Bumped version -> $newVersion"
+
+      - name: Update version in README (manual dispatch only)
+        if: github.ref_type != 'tag' && github.event_name == 'workflow_dispatch' && github.event.inputs.version_bump != 'none'
+        shell: pwsh
+        run: |
+          $readmePath = "README.md"
+          if (-not (Test-Path $readmePath)) {
+            Write-Host "README.md not found; skipping update."
+            exit 0
+          }
+
+          $content = Get-Content $readmePath -Raw
+          $newVersion = $env:NEW_VERSION
+
+          if ($content -match '\*\*Current Version\*\*:\s*([\d\.]+)(?:\s*-\s*(.+))?') {
+            $updated = [regex]::Replace(
+              $content,
+              '\*\*Current Version\*\*:\s*([\d\.]+)(?:\s*-\s*(.+))?',
+              "**Current Version**: $newVersion"
+            )
+            Set-Content -Path $readmePath -Value $updated -NoNewline
+            Write-Host "Updated README version to $newVersion"
+          } else {
+            Write-Host "README version pattern not found; skipping update."
+          }
+
+      - name: Prepare Mission Folder (exclude .vscode/.github/.gitignore)
+        shell: pwsh
+        run: |
+          $missionFolder = "${{ env.MISSION_NAME }}.${{ env.MISSION_MAP }}"
+          $src = (Resolve-Path ".").Path
+          $dst = Join-Path $src $missionFolder
+
+          # Clean mission folder if it exists
+          if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
+
+          New-Item -ItemType Directory -Force -Path $dst | Out-Null
+
+          # Use robocopy for reliable excludes
+          # /E  : copy subdirs incl empty
+          # /XD : exclude directories
+          # /XF : exclude files
+          # /NFL /NDL /NJH /NJS /NP : reduce log noise
+          $excludeDirs = @(".git", ".github", ".vscode", "dist", $missionFolder)
+          $excludeFiles = @(".gitignore")
+
+          $xdArgs = @()
+          foreach ($d in $excludeDirs) { $xdArgs += @("/XD", (Join-Path $src $d)) }
+
+          $xfArgs = @()
+          foreach ($f in $excludeFiles) { $xfArgs += @("/XF", (Join-Path $src $f)) }
+
+          $cmd = @(
+            "robocopy",
+            $src,
+            $dst,
+            "/E",
+            "/COPY:DAT",
+            "/R:2",
+            "/W:1",
+            "/NFL","/NDL","/NJH","/NJS","/NP"
+          ) + $xdArgs + $xfArgs
+
+          Write-Host ("Running: " + ($cmd -join " "))
+          & $cmd[0] $cmd[1..($cmd.Count-1)]
+          $rc = $LASTEXITCODE
+
+          # robocopy returns codes >= 8 for failures
+          if ($rc -ge 8) { throw "robocopy failed with exit code $rc" }
+
+          "MISSION_FOLDER=$missionFolder" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Prepared mission folder: $missionFolder"
+
+          exit 0
+
+      - name: Install Mikero Tools
+        uses: arma-actions/mikero-tools@latest
+
+      - name: Build PBO (MakePbo)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+
+          $missionFolder = $env:MISSION_FOLDER
+          $outPbo = Join-Path "dist" "$missionFolder.pbo"
+
+          "" | MakePbo -$ -P -X="none" "$missionFolder" "$outPbo"
+
+          if (-not (Test-Path $outPbo)) {
+            throw "PBO not created: $outPbo"
+          }
+
+          "PBO_PATH=$((Resolve-Path $outPbo).Path)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PBO_NAME=$([IO.Path]::GetFileName($outPbo))" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Locate PBO
+        shell: pwsh
+        run: |
+          $pbo = Get-ChildItem -Path dist -Filter *.pbo -Recurse | Select-Object -First 1
+          if (-not $pbo) { throw "No .pbo found under dist. Build step may have failed." }
+
+          "PBO_PATH=$($pbo.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PBO_NAME=$($pbo.Name)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Found PBO: $($pbo.FullName)"
+
+      - name: Commit version update (manual dispatch only)
+        if: github.ref_type != 'tag' && github.event_name == 'workflow_dispatch' && github.event.inputs.version_bump != 'none'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add README.md
+          if (git diff --cached --quiet) {
+            Write-Host "No version changes to commit."
+            exit 0
+          }
+
+          git commit -m "chore: bump version to $env:NEW_VERSION"
+          git push
+
+      - name: Create Release (tag push OR manual bump)
+        if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && github.event.inputs.version_bump != 'none')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', env.NEW_VERSION) }}
+          name: ${{ github.ref_type == 'tag' && format('Release {0}', github.ref_name) || format('Release v{0}', env.NEW_VERSION) }}
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(env.NEW_VERSION, '-') }}
+          files: |
+            dist/*.pbo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload PBO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mission-pbo-${{ github.ref_type == 'tag' && github.ref_name || env.NEW_VERSION }}
+          path: |
+            dist/*.pbo
+          retention-days: 30
