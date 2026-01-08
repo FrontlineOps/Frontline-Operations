@@ -15,7 +15,7 @@ if (!hasInterface) exitWith {};
 
 // Initialize loading screen with fade effect
 titleText ["Frontline Operations Group Presents...", "BLACK IN", 9999];
-5 fadeSound 0;
+// 5 fadeSound 0; I spy with my little eye... what do we have here, sound fix?
 
 sleep 1;
 
