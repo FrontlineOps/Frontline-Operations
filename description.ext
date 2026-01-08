@@ -63,7 +63,7 @@ class CfgRemoteExec
 	};	
 };
 
-#include "compositions\compositions.cfg"
+#include "compositions\compositions.hpp"
 #include "Scripts\MissionSetupMenu\Dialog_Faction.hpp"
 #include "Scripts\RequestMenu\Dialog_Request.hpp"
 
