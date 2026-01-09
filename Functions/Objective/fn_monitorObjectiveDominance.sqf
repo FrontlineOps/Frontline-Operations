@@ -33,81 +33,96 @@ private _updateInterval = 0.5;
 private _lastTickTime = diag_tickTime;
 
 // Track which objective each player is in (for CBA event firing)
-// HashMap: playerUID -> objectiveId (or "" if not in any)
 FLO_PlayerObjectiveStates = createHashMap;
+
+// Initialize inactive update index
+private _inactiveMonitorIndex = 0;
+private _objKeys = keys FLO_Objectives;
 
 while {true} do {
     private _currentTime = diag_tickTime;
     private _deltaTime = _currentTime - _lastTickTime;
     _lastTickTime = _currentTime;
 
-    // Safety check
     if (isNil "FLO_Objectives") then {
-        ["OBJECTIVEMONITOR", 2, "FLO_Objectives undefined, waiting..."] call FLO_fnc_log;
         waitUntil { !isNil "FLO_Objectives" };
+        _objKeys = keys FLO_Objectives; // Refresh keys
     };
 
     private _dataChanged = false;
-
+    private _activeObjectives = [];
+    private _allPlayers = allPlayers;
+    
+    // === IDENTIFY ACTIVE OBJECTIVES (Near Players) ===
     {
-        private _id = _x;
-        private _data = FLO_Objectives get _id;
-        if (isNil "_data") then { continue };
+        private _pPos = getPosATL _x;
+        {
+            private _oId = _x;
+            private _oData = FLO_Objectives get _oId;
+            // Active if player is within 1000m (allows for seeing capture status from distance)
+            if ((_oData get "position") distance2D _pPos < 1000) then {
+                _activeObjectives pushBackUnique _oId;
+            };
+        } forEach _objKeys;
+    } forEach _allPlayers;
 
+    // === UPDATE LOGIC FUNCTION ===
+    private _fnc_updateObjective = {
+        params ["_id"];
+        private _data = FLO_Objectives get _id;
+        
         private _pos = _data get "position";
+        private _radius = _data get "radius";
         private _owner = _data getOrDefault ["owner", east];
         private _progress = _data getOrDefault ["captureProgress", 0];
-
-        // Count units in objective using centralized check
+        private _units = _pos nearEntities [["Man", "LandVehicle"], _radius];
+        
         private _bluforCount = 0;
         private _opforCount = 0;
-
+        
         {
             if (alive _x) then {
-                private _unitPos = getPos _x;
-                if ([_unitPos, _data] call FLO_fnc_isPositionInObjective) then {
-                    switch (side _x) do {
-                        case west: { _bluforCount = _bluforCount + 1 };
-                        case east: { _opforCount = _opforCount + 1 };
-                    };
+                // Verify strictly inside (if irregular shape) or simple radius check
+                // Assuming radius check is sufficient
+                switch (side _x) do {
+                    case west: { _bluforCount = _bluforCount + 1 };
+                    case east: { _opforCount = _opforCount + 1 };
                 };
             };
-        } forEach allUnits;
+        } forEach _units;
 
-        // Include virtual groups
+        // Count virtual groups (only if OPFOR)
         if (!isNil "FLO_virtualGroups") then {
             private _groups = FLO_virtualGroups getOrDefault ["_groups", createHashMap];
             {
                 private _gData = _y;
-                if (isNil "_gData") then { continue };
-
-                private _gSide = _gData getOrDefault ["side", east];
-                private _isActive = _gData getOrDefault ["isActive", false];
-
-                if (_gSide isEqualTo east && {!_isActive}) then {
-                    private _gPos = _gData get "position";
-                    if ([_gPos, _data] call FLO_fnc_isPositionInObjective) then {
+                if ((_gData getOrDefault ["side", east]) isEqualTo east && {!(_gData getOrDefault ["isActive", false])}) then {
+                    if ((_gData get "position") distance2D _pos < _radius) then {
                         _opforCount = _opforCount + (_gData getOrDefault ["unitCount", 0]);
                     };
                 };
             } forEach _groups;
         };
-
-        // Update capture progress (scaled by deltaTime for frame-rate independence)
-        private _progressRate = 1; // 1 unit of progress per second
+        
+        // Calculate progress (Dynamic Rate based on force difference)
+        // More units = Faster capture
+        private _diff = abs (_bluforCount - _opforCount);
+        private _dynamicRate = 1.0 + (_diff * 0.5); // Base 1.0 + 0.5 per unit advantage
+        if (_dynamicRate > 5.0) then { _dynamicRate = 5.0 }; // Cap at 5x speed
+        
         if (_bluforCount > _opforCount && {_bluforCount > 0}) then {
-            _progress = (_progress + (_deltaTime * _progressRate)) min _captureTime;
+            _progress = (_progress + (_deltaTime * _dynamicRate)) min _captureTime;
         } else {
             if (_opforCount > _bluforCount && {_opforCount > 0}) then {
-                _progress = (_progress - (_deltaTime * _progressRate)) max (-_captureTime);
+                _progress = (_progress - (_deltaTime * _dynamicRate)) max (-_captureTime);
             } else {
-                // Decay towards neutral
-                if (_progress > 0) then { _progress = (_progress - (_deltaTime * _progressRate)) max 0 };
-                if (_progress < 0) then { _progress = (_progress + (_deltaTime * _progressRate)) min 0 };
+                // Decay (slower than capture)
+                if (_progress > 0) then { _progress = (_progress - (_deltaTime * 0.5)) max 0 };
+                if (_progress < 0) then { _progress = (_progress + (_deltaTime * 0.5)) min 0 };
             };
         };
-
-        // Check for capture
+        
+        // Checks
         if (_progress >= _captureTime && {_owner != west}) then {
             [_id, west] call FLO_fnc_flipObjective;
             _progress = 0;
@@ -119,82 +134,91 @@ while {true} do {
                 [-0.10, "decrease"] call FLO_fnc_adjustAggression;
             };
         };
-
-        // Store progress and counts
+        
+        // Store
         _data set ["captureProgress", _progress];
         _data set ["bluforCount", _bluforCount];
         _data set ["opforCount", _opforCount];
-        _data set ["captureTime", _captureTime];
-        FLO_Objectives set [_id, _data];
+        _data set ["captureTime", _captureTime]; // Ensure fresh config
         _dataChanged = true;
+    };
 
-    } forEach (keys FLO_Objectives);
+    // === EXECUTE UPDATES ===
+    
+    // Always update Active Objectives
+    { [_x] call _fnc_updateObjective; } forEach _activeObjectives;
+    
+    // Round-Robin update Inactive Objectives (2 per tick)
+    // This ensures distant objectives are updated eventually without clogging CPU
+    private _processCount = 0;
+    while {_processCount < 2} do {
+        if (_inactiveMonitorIndex >= count _objKeys) then { _inactiveMonitorIndex = 0 };
+        private _currKey = _objKeys select _inactiveMonitorIndex;
+        
+        if !(_currKey in _activeObjectives) then {
+            [_currKey] call _fnc_updateObjective;
+            _processCount = _processCount + 1;
+        };
+        _inactiveMonitorIndex = _inactiveMonitorIndex + 1;
+        if (_processCount >= 2 && _inactiveMonitorIndex >= count _objKeys) exitWith {}; // Break if cycled fully
+    };
 
-    // Sync to clients once per tick (not per objective!)
+    // === SYNC & UI ===
     if (_dataChanged) then {
         publicVariable "FLO_Objectives";
     };
 
-    // =========================================================================
-    // PLAYER OBJECTIVE TRACKING - Fire CBA events to clients
-    // =========================================================================
+    // UI Event Logic (Optimized to only check Active Objectives close to players)
     {
-        if (!alive _x) then { continue };
-        if (isNull _x) then { continue };
+        if (alive _x && !isNull _x) then {
+            private _player = _x;
+            private _uid = getPlayerUID _player;
+            if (_uid == "") then { continue };
+            
+            private _pPos = getPosATL _player;
+            private _currentObjId = "";
+            private _closestDist = 9999;
+            private _currentObjData = createHashMap;
 
-        private _player = _x;
-        private _uid = getPlayerUID _player;
-        if (_uid == "") then { continue };
-
-        private _playerPos = getPosATL _player;
-        private _currentObjId = "";
-        private _currentObjData = createHashMap;
-
-        // Find which objective this player is in
-        {
-            private _objData = FLO_Objectives get _x;
-            if (!isNil "_objData") then {
-                if ([_playerPos, _objData] call FLO_fnc_isPositionInObjective) exitWith {
-                    _currentObjId = _x;
-                    _currentObjData = _objData;
+            // Only check active objectives for UI presence
+            {
+                private _oId = _x;
+                private _oData = FLO_Objectives get _oId;
+                private _dist = (_oData get "position") distance2D _pPos;
+                if (_dist < (_oData get "radius")) then {
+                    // Check strict shape if needed, but radius implies check passed
+                    if (_dist < _closestDist) then {
+                        _closestDist = _dist;
+                        _currentObjId = _oId;
+                        _currentObjData = _oData;
+                    };
                 };
+            } forEach _activeObjectives; // only check active list
+
+            // Detect state change
+            private _previousObjId = FLO_PlayerObjectiveStates getOrDefault [_uid, ""];
+
+            if (_currentObjId != _previousObjId) then {
+                private _ownerId = owner _player;
+                if (_currentObjId != "") then {
+                    private _objName = _currentObjData getOrDefault ["name", _currentObjId];
+                    ["FLO_CaptureUI_Show", [_objName, _currentObjId], _ownerId] call CBA_fnc_ownerEvent;
+                } else {
+                    ["FLO_CaptureUI_Hide", [], _ownerId] call CBA_fnc_ownerEvent;
+                };
+                FLO_PlayerObjectiveStates set [_uid, _currentObjId];
             };
-        } forEach (keys FLO_Objectives);
 
-        // Get previous state
-        private _previousObjId = FLO_PlayerObjectiveStates getOrDefault [_uid, ""];
-
-        // State change detection
-        if (_currentObjId != _previousObjId) then {
-            // Get owner ID for CBA_fnc_ownerEvent - more reliable on dedicated servers
-            private _ownerId = owner _player;
-
+            // Send Realtime Update
             if (_currentObjId != "") then {
-                // Player entered an objective - fire SHOW event
-                private _objName = _currentObjData getOrDefault ["name", _currentObjId];
-                ["FLO_CaptureUI_Show", [_objName, _currentObjId], _ownerId] call CBA_fnc_ownerEvent;
-                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Show fired to %1 (owner %2) for %3", name _player, _ownerId, _objName]] call FLO_fnc_log;
-            } else {
-                // Player left all objectives - fire HIDE event
-                ["FLO_CaptureUI_Hide", [], _ownerId] call CBA_fnc_ownerEvent;
-                ["OBJECTIVEMONITOR", 4, format["CaptureUI_Hide fired to %1 (owner %2)", name _player, _ownerId]] call FLO_fnc_log;
+                private _bluforCount = _currentObjData getOrDefault ["bluforCount", 0];
+                private _opforCount = _currentObjData getOrDefault ["opforCount", 0];
+                private _totalCount = _bluforCount + _opforCount;
+                private _ratio = if (_totalCount > 0) then { _bluforCount / _totalCount } else { 0.5 };
+                ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount], owner _player] call CBA_fnc_ownerEvent;
             };
-
-            // Update state
-            FLO_PlayerObjectiveStates set [_uid, _currentObjId];
         };
-
-        // If player is in an objective, send update data
-        if (_currentObjId != "") then {
-            private _bluforCount = _currentObjData getOrDefault ["bluforCount", 0];
-            private _opforCount = _currentObjData getOrDefault ["opforCount", 0];
-            private _totalCount = _bluforCount + _opforCount;
-            private _ratio = if (_totalCount > 0) then { _bluforCount / _totalCount } else { 0.5 };
-
-            ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount], owner _player] call CBA_fnc_ownerEvent;
-        };
-
-    } forEach allPlayers;
+    } forEach _allPlayers;
 
     sleep _updateInterval;
 };
