@@ -70,6 +70,13 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     _grp = group _air;
                     _air flyInHeight _alt;
                     ["GTN ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
+                    
+                    // Reveal intel to aircraft crew so they can engage targets
+                    // Uses knowsAbout 4 for immediate engagement capability
+                    if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
+                        private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_pos, 1500, crew _air, west]];
+                        ["GTN ATO", 3, format["Revealed %1 targets to CAS aircraft crew", _revealed]] call FLO_fnc_log;
+                    };
                 } else {
                     ["GTN ATO", 2, "No available virtual air asset for task - skipping"] call FLO_fnc_log;
                 };
@@ -140,6 +147,13 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         };
 
                         ["GTN ATO", 3, format["Aircraft %1 on station, mission timer started: %2s", _gid, _duration]] call FLO_fnc_log;
+
+                        // Refresh intel reveal now that aircraft is on station
+                        // Targets may have moved since initial reveal
+                        if (!isNil "FLO_GTN_CapabilityAnalyzer" && alive _a) then {
+                            private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_targetPos, 1500, crew _a, west]];
+                            ["GTN ATO", 4, format["Refreshed intel on station: %1 targets revealed", _revealed]] call FLO_fnc_log;
+                        };
 
                         // Now run the actual mission duration
                         private _missionStart = time;

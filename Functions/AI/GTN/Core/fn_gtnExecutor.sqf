@@ -200,12 +200,55 @@ private _executor = createHashMapObject [[
         
         // prim_select_staging_point
         // Analyzes objective and stores capability requirements for staging flow
+        // WAITS for recon intel before proceeding to ensure accurate force sizing
         _self call ["_registerHandler", ["prim_select_staging_point", {
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
+            private _gtnCmdr = _self get "_gtnCommander";
+
+            // === CHECK IF RECON INTEL IS AVAILABLE ===
+            // Wait for recon to complete before staging so we know what force we need
+            private _hasGoodIntel = false;
+            private _intelWaitStart = (_executor get "_completedTaskData") getOrDefault ["STAGING_INTEL_WAIT_START", -1];
+            private _intelTimeout = 300; // 5 minutes max wait for recon
+
+            if (!isNil "FLO_GTN_WorldState") then {
+                private _ws = FLO_GTN_WorldState;
+                private _intel = _ws call ["_getObjectiveIntel", [_objId]];
+                if (!isNil "_intel") then {
+                    private _quality = _intel getOrDefault ["intelQuality", 0];
+                    if (_quality > 0.5) then {
+                        _hasGoodIntel = true;
+                    };
+                };
+            };
+
+            if (!_hasGoodIntel) then {
+                if (_intelWaitStart < 0) then {
+                    // First time - start waiting
+                    _executor call ["_storeTaskData", ["STAGING_INTEL_WAIT_START", diag_tickTime]];
+                    _intelWaitStart = diag_tickTime;
+                    ["GTN", 3, format["Staging for %1: Waiting for recon intel before staging", _objId]] call FLO_fnc_log;
+                };
+
+                private _waitedTime = diag_tickTime - _intelWaitStart;
+                if (_waitedTime < _intelTimeout) then {
+                    // Still waiting for intel
+                    ["GTN", 4, format["Staging for %1: Waiting for recon (%1s/%2s)", 
+                        round _waitedTime, _intelTimeout]] call FLO_fnc_log;
+                    _ctx set ["status", "RUNNING"];
+                } else {
+                    // Timeout - proceed without full intel
+                    ["GTN", 2, format["Staging for %1: Recon timeout - proceeding with limited intel", _objId]] call FLO_fnc_log;
+                    _hasGoodIntel = true; // Force proceed
+                };
+            };
+
+            // Exit if still waiting for intel
+            if !(_hasGoodIntel) exitWith { true };
 
             // Use GTN Commander's staging position calculation
             private _stagingPos = _cmdr call ["_getStagingPosition", [_objId]];
@@ -242,7 +285,8 @@ private _executor = createHashMapObject [[
             _executor call ["_storeTaskData", ["STAGING_REQUIRES_AA", _requiresAA]];
             _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", 0]];
 
-            ["GTN", 3, format["Staging point created at %1 for objective %2", _stagingPos, _objId]] call FLO_fnc_log;
+            ["GTN", 3, format["Staging point created at %1 for objective %2 (power needed: %3)", 
+                _stagingPos, _objId, round _requiredPower]] call FLO_fnc_log;
 
             _ctx set ["status", "SUCCESS"];
             true
@@ -1001,27 +1045,45 @@ private _executor = createHashMapObject [[
 
             private _aircraft = _asset select 0;
             private _groupId = _asset select 1;
-            private _grp = group _aircraft;
+            
+            // Get the real group from group data
+            private _groups = FLO_virtualGroups get "_groups";
+            private _gData = _groups get _groupId;
+            private _grp = _gData get "realGroup";
 
             ["GTN", 3, format["Air recon dispatched: %1 flying to %2", typeOf _aircraft, _objId]] call FLO_fnc_log;
 
             // Set aircraft to fly over objective at high altitude
             _aircraft flyInHeight 400;
 
-            // Clear waypoints
-            [_grp] call CBA_fnc_clearWaypoints;
+            // Wait a frame for spawn to fully complete before setting waypoints
+            // This ensures crew is in vehicle and group is properly initialized
+            [_grp, _objPos, _gtnCmdr, _objId, _groupId, _mgr, _aircraft] spawn {
+                params ["_grp", "_objPos", "_gtnCmdr", "_objId", "_groupId", "_mgr", "_aircraft"];
+                
+                sleep 1; // Allow spawn to complete
+                
+                if (isNull _grp) exitWith {
+                    ["GTN", 2, "Air recon failed - group is null after spawn delay"] call FLO_fnc_log;
+                };
 
-            _grp setBehaviour "AWARE";
-            _grp setCombatMode "GREEN";  // Don't engage
-            _grp setSpeedMode "NORMAL";
+                // Clear waypoints
+                [_grp] call CBA_fnc_clearWaypoints;
 
-            // Flyover waypoint
-            private _wp1 = _grp addWaypoint [_objPos, 100];
-            _wp1 setWaypointType "MOVE";
-            _wp1 setWaypointBehaviour "AWARE";
-            _wp1 setWaypointCombatMode "GREEN";
+                _grp setBehaviour "AWARE";
+                _grp setCombatMode "GREEN";  // Don't engage
+                _grp setSpeedMode "NORMAL";
 
-            _grp setCurrentWaypoint [_grp, 1];
+                // Flyover waypoint
+                private _wp1 = _grp addWaypoint [_objPos, 100];
+                _wp1 setWaypointType "MOVE";
+                _wp1 setWaypointBehaviour "AWARE";
+                _wp1 setWaypointCombatMode "GREEN";
+
+                _grp setCurrentWaypoint [_grp, 1];
+                
+                ["GTN", 3, format["Air recon waypoint set for group %1 to position %2", _groupId, _objPos]] call FLO_fnc_log;
+            };
 
             // Spawn handler for when aircraft arrives and gathers intel
             [_gtnCmdr, _objId, _objPos, _groupId, _mgr, _aircraft] spawn {
