@@ -482,6 +482,8 @@ private _executor = createHashMapObject [[
                             
                             if (count _availableGroupIds > 0) then {
                                 _groups = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUPS", []]; // Refresh local groups list
+                                private _analyzer = FLO_GTN_CapabilityAnalyzer;
+                                
                                 {
                                     private _gid = _x;
                                     // Assign new group
