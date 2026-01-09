@@ -437,7 +437,21 @@ private _resourceManager = createHashMapObject [[
 
         if (!isNil "_gtn") then {
             _gtn call ["_start", []];
-            ["GTN Resource Manager", 2, "GTN Commander initialized and started"] call FLO_fnc_log;
+            
+            // Spawn independent loop for GTN using configured interval
+            [_gtn] spawn {
+                params ["_commander"];
+                
+                private _interval = (call FLO_fnc_gtnConfig) get "gtnUpdateInterval";
+                ["GTN", 3, format["Starting independent execution loop (%1s interval)", _interval]] call FLO_fnc_log;
+                
+                while {(_commander get "_isRunning") == 1} do {
+                    _commander call ["_update", []];
+                    sleep _interval;
+                };
+            };
+            
+            ["GTN Resource Manager", 2, "GTN Commander initialized and started on independent loop"] call FLO_fnc_log;
         } else {
             ["GTN Resource Manager", 1, "Failed to initialize GTN Commander"] call FLO_fnc_log;
         };
@@ -663,12 +677,6 @@ private _resourceManager = createHashMapObject [[
 
             _self call ["_updateMetric", ["groupsLost", count _deadGroups, "ADD"]];
             ["GTN Resource Manager", 3, format["Removed %1 dead groups from tracking", count _deadGroups]] call FLO_fnc_log;
-        };
-
-        // GTN Mode: Goal-driven planning
-        private _gtn = _self get "_gtnCommander";
-        if (!isNil "_gtn") then {
-            _gtn call ["_update", []];
         };
 
         // Check if any active groups should return to garrison

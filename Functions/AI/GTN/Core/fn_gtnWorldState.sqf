@@ -595,7 +595,7 @@ private _worldState = createHashMapObject [[
         if (isNil "_cmdr") exitWith { nil };
         private _analyzer = _cmdr get "_capabilityAnalyzer";
         if (isNil "_analyzer") exitWith { nil };
-        _analyzer call ["_analyzeObjective", [_objId]]
+        _analyzer call ["_analyzeObjective", [_objId, _self]]
     }],
 
     ["_getForceRatioAtObjective", {

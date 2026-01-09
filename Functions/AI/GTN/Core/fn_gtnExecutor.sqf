@@ -215,31 +215,44 @@ private _executor = createHashMapObject [[
             private _intelWaitStart = (_executor get "_completedTaskData") getOrDefault ["STAGING_INTEL_WAIT_START", -1];
             private _intelTimeout = 300; // 5 minutes max wait for recon
 
-            if (!isNil "FLO_GTN_WorldState") then {
-                private _ws = FLO_GTN_WorldState;
-                private _intel = _ws call ["_getObjectiveIntel", [_objId]];
-                if (!isNil "_intel") then {
-                    private _quality = _intel getOrDefault ["intelQuality", 0];
-                    if (_quality > 0.5) then {
-                        _hasGoodIntel = true;
-                    };
+            // Access World State via GTN Commander (Global doesn't exist)
+            private _ws = _gtnCmdr call ["_getWorldState", []];
+            private _intel = _ws call ["_getObjectiveIntel", [_objId]];
+            if (!isNil "_intel") then {
+                private _quality = _intel getOrDefault ["intelQuality", 0];
+                if (_quality > 0.5) then {
+                    _hasGoodIntel = true;
                 };
             };
 
             if (!_hasGoodIntel) then {
+                // Force ID to string for consistent HashMap keys
+                private _intelKey = str _objId;
+
                 if (_intelWaitStart < 0) then {
                     // First time - start waiting
                     _executor call ["_storeTaskData", ["STAGING_INTEL_WAIT_START", diag_tickTime]];
                     _intelWaitStart = diag_tickTime;
-                    ["GTN", 3, format["Staging for %1: Waiting for recon intel before staging", _objId]] call FLO_fnc_log;
+                    ["GTN", 3, format["Staging for %1: Waiting for recon intel before staging", _intelKey]] call FLO_fnc_log;
                 };
 
                 private _waitedTime = diag_tickTime - _intelWaitStart;
                 if (_waitedTime < _intelTimeout) then {
                     // Still waiting for intel
                     ["GTN", 4, format["Staging for %1: Waiting for recon (%1s/%2s)", 
-                        round _waitedTime, _intelTimeout]] call FLO_fnc_log;
-                    _ctx set ["status", "RUNNING"];
+                        _intelKey, round _waitedTime, _intelTimeout]] call FLO_fnc_log;
+                    
+                    if (_waitedTime mod 10 < 1) then {
+                        private _debugIntel = _ws call ["_getObjectiveIntel", [_intelKey]];
+                        ["GTN", 3, format["[DEBUG] Staging Read Result Key(%1): %2", _intelKey, _debugIntel]] call FLO_fnc_log;
+                    };
+                    
+                    if (_ws call ["_isIntelFresh", [_intelKey, _intelTimeout]]) then {
+                        ["GTN", 3, format["Staging for %1: Fresh intel found, proceeding", _intelKey]] call FLO_fnc_log;
+                        _ctx set ["status", "SUCCESS"];
+                        // Clear wait time so next run doesn't wait
+                        _executor call ["_storeTaskData", ["STAGING_INTEL_WAIT_START", -1]];
+                    };
                 } else {
                     // Timeout - proceed without full intel
                     ["GTN", 2, format["Staging for %1: Recon timeout - proceeding with limited intel", _objId]] call FLO_fnc_log;
@@ -266,7 +279,8 @@ private _executor = createHashMapObject [[
             private _requiresAA = false;
 
             if (!isNil "_analyzer") then {
-                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+                private _ws = _gtnCmdr get "_worldState";
+                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId, _ws]];
                 if (!isNil "_objAnalysis") then {
                     _requiredPower = _objAnalysis get "recommendedAttackForce";
                     _requiresAT = _objAnalysis get "hasArmor";
@@ -458,7 +472,36 @@ private _executor = createHashMapObject [[
                             round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
                         _ctx set ["status", "SUCCESS"];
                     } else {
-                        // Not enough power yet - keep waiting for more groups to be assigned
+                        // Not enough power yet - CHECK FOR REINFORCEMENTS
+                        private _lastReinfCheck = _completedData getOrDefault ["STAGING_LAST_REINF_CHECK", -1];
+                        if (diag_tickTime - _lastReinfCheck > 30) then {
+                            _executor call ["_storeTaskData", ["STAGING_LAST_REINF_CHECK", diag_tickTime]];
+                            
+                            // Ask Commander for available groups (Safety: This respects GTN tasking locks)
+                            private _availableGroupIds = _cmdr call ["_getAvailableGroups", [3, _stagingPos]]; // Ask for up to 3 groups nearest staging
+                            
+                            if (count _availableGroupIds > 0) then {
+                                _groups = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUPS", []]; // Refresh local groups list
+                                {
+                                    private _gid = _x;
+                                    // Assign new group
+                                    _cmdr call ["_orderGroupMove", [_gid, _stagingPos, "AWARE"]];
+                                    _groups pushBackUnique _gid;
+                                    
+                                    // Add its power
+                                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gid]];
+                                    if (!isNil "_gAnalysis") then {
+                                        _accumulatedPower = _accumulatedPower + (_gAnalysis get "totalCombatPower");
+                                    };
+                                    ["GTN", 3, format["Staging Reinforcement: Commander assigned group %1", _gid]] call FLO_fnc_log;
+                                } forEach _availableGroupIds;
+                                
+                                // Update shared data
+                                _executor call ["_storeTaskData", ["STAGING_GROUPS", _groups]];
+                                _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _accumulatedPower]];
+                            };
+                        };
+
                         ["GTN", 3, format["Staging: %1 groups arrived but only %2/%3 power - waiting for reinforcements",
                             count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
                         _ctx set ["status", "RUNNING"];
@@ -505,7 +548,8 @@ private _executor = createHashMapObject [[
                 false
             };
 
-            private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+            private _ws = _cmdr get "_worldState";
+            private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId, _ws]];
             private _requiredPower = if (!isNil "_objAnalysis") then {
                 _objAnalysis get "recommendedAttackForce"
             } else { 100 }; // Fallback if analysis fails
@@ -980,7 +1024,7 @@ private _executor = createHashMapObject [[
                 private _analyzer = FLO_GTN_CapabilityAnalyzer;
                 if (isNil "_analyzer") exitWith {};
 
-                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId]];
+                private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId, _ws]];
                 if (isNil "_objAnalysis") exitWith {};
 
                 // Convert analyzer data to intel format
@@ -1028,9 +1072,28 @@ private _executor = createHashMapObject [[
             private _cmdr = _ctx get "commander";
             private _gtnCmdr = _self get "_gtnCommander";
 
+            // Check if we've already dispatched and are waiting for intel
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _dispatched = _primData getOrDefault ["dispatched", false];
+            private _reconComplete = _primData getOrDefault ["reconComplete", false];
+
+            // Phase 2: Already dispatched, check if intel is ready
+            if (_dispatched) exitWith {
+                if (_reconComplete) then {
+                    ["GTN", 3, format["Air recon for %1 complete - intel gathered", _objId]] call FLO_fnc_log;
+                    _ctx set ["status", "SUCCESS"];
+                } else {
+                    _ctx set ["status", "RUNNING"];
+                };
+                true
+            };
+
+            // Phase 1: Dispatch aircraft
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith {
                 ["GTN", 2, format["Air recon failed - no position for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
                 false
             };
 
@@ -1053,13 +1116,20 @@ private _executor = createHashMapObject [[
 
             ["GTN", 3, format["Air recon dispatched: %1 flying to %2", typeOf _aircraft, _objId]] call FLO_fnc_log;
 
+            // Mark as dispatched immediately
+            _primData set ["dispatched", true];
+            _primData set ["reconComplete", false];
+            _primData set ["objectiveId", _objId];
+            _primData set ["aircraftGroupId", _groupId];
+            _taskNode set ["primitiveData", _primData];
+
             // Set aircraft to fly over objective at high altitude
             _aircraft flyInHeight 400;
 
             // Wait a frame for spawn to fully complete before setting waypoints
             // This ensures crew is in vehicle and group is properly initialized
-            [_grp, _objPos, _gtnCmdr, _objId, _groupId, _mgr, _aircraft] spawn {
-                params ["_grp", "_objPos", "_gtnCmdr", "_objId", "_groupId", "_mgr", "_aircraft"];
+            [_grp, _objPos, _gtnCmdr, _objId, _groupId, _mgr, _aircraft, _taskNode] spawn {
+                params ["_grp", "_objPos", "_gtnCmdr", "_objId", "_groupId", "_mgr", "_aircraft", "_taskNode"];
                 
                 sleep 1; // Allow spawn to complete
                 
@@ -1077,17 +1147,19 @@ private _executor = createHashMapObject [[
                 // Flyover waypoint
                 private _wp1 = _grp addWaypoint [_objPos, 100];
                 _wp1 setWaypointType "MOVE";
-                _wp1 setWaypointBehaviour "AWARE";
+                _wp1 setWaypointSpeed "FULL";
                 _wp1 setWaypointCombatMode "GREEN";
-
-                _grp setCurrentWaypoint [_grp, 1];
+                // _grp setCurrentWaypoint [_grp, 1];
                 
-                ["GTN", 3, format["Air recon waypoint set for group %1 to position %2", _groupId, _objPos]] call FLO_fnc_log;
+                ["GTN", 3, format["Air recon waypoint set for %1", _groupId]] call FLO_fnc_log;
+                
+                // Track update time
+                _taskNode set ["lastUpdate", diag_tickTime];
             };
 
             // Spawn handler for when aircraft arrives and gathers intel
-            [_gtnCmdr, _objId, _objPos, _groupId, _mgr, _aircraft] spawn {
-                params ["_gtnCmdr", "_objId", "_objPos", "_groupId", "_mgr", "_aircraft"];
+            [_gtnCmdr, _objId, _objPos, _groupId, _mgr, _aircraft, _taskNode] spawn {
+                params ["_gtnCmdr", "_objId", "_objPos", "_groupId", "_mgr", "_aircraft", "_taskNode"];
 
                 // Wait for aircraft to get close to objective (or timeout)
                 private _startTime = diag_tickTime;
@@ -1176,20 +1248,20 @@ private _executor = createHashMapObject [[
                      _analysis get "defensePosture"
                  ]] call FLO_fnc_log;
 
+                // Mark recon as complete AFTER intel is gathered
+                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+                _primData set ["reconComplete", true];
+                _taskNode set ["primitiveData", _primData];
+                ["GTN", 3, "Air recon intel gathering complete - reconComplete flag set"] call FLO_fnc_log;
+
                 // Loiter briefly then RTB
                 sleep 30;
                 _mgr call ["_releaseAirAsset", [_groupId]];
                 ["GTN", 3, format["Air recon complete - aircraft RTB"]] call FLO_fnc_log;
             };
 
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            _primData set ["reconComplete", true];
-            _primData set ["objectiveId", _objId];
-            _primData set ["aircraftGroupId", _groupId];
-            _taskNode set ["primitiveData", _primData];
-
-            _ctx set ["status", "SUCCESS"];
+            // Return RUNNING - the spawn block will set reconComplete when done
+            _ctx set ["status", "RUNNING"];
             true
         }]];
 

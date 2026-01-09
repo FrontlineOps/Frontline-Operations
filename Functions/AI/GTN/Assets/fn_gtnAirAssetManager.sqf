@@ -151,7 +151,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 _loiterWp setWaypointLoiterType "CIRCLE";
                 _loiterWp setWaypointLoiterRadius 500;
 
-                _realGroup setCurrentWaypoint [_realGroup, 1];
+                // _realGroup setCurrentWaypoint [_realGroup, 1];
 
                 ["GTN Air Asset Manager", 3, format["RTB waypoints set for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             } else {

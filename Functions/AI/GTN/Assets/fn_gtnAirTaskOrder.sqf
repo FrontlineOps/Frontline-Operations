@@ -88,40 +88,68 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     // Determine waypoint pattern based on mission type
                     private _waypointType = if (toUpper _mission == "CAP") then { "MOVE" } else { "SAD" };
                     private _patrolRadius = if (toUpper _mission == "CAP") then { 2000 } else { 500 };
-                    private _waypointCount = if (toUpper _mission == "CAP") then { 4 } else { 3 };
 
-                    ["GTN ATO", 3, format["Setting %1 waypoints for %2 at %3 (duration: %4s)", _waypointType, typeOf _air, _pos, _missionDuration]] call FLO_fnc_log;
+                    ["GTN ATO", 3, format["Setting %1 waypoint for %2 at %3 (duration: %4s)", _waypointType, typeOf _air, _pos, _missionDuration]] call FLO_fnc_log;
 
-                    // Clear existing waypoints
-                    [_grp] call CBA_fnc_clearWaypoints;
+                    // Delay waypoint setup to ensure crew is fully in vehicle after unvirtualization
+                    [{
+                        params ["_args"];
+                        _args params ["_gid", "_air", "_pos", "_mission", "_patrolRadius"];
+                        
+                        // Get group from virtualGroups data
+                        private _groups = FLO_virtualGroups get "_groups";
+                        private _gData = _groups get _gid;
+                        if (isNil "_gData") exitWith {
+                            ["GTN ATO", 2, format["ATO waypoint setup failed - group %1 not found in virtualGroups", _gid]] call FLO_fnc_log;
+                        };
+                        
+                        private _grp = _gData get "realGroup";
+                        if (isNull _grp) exitWith {
+                            ["GTN ATO", 2, format["ATO waypoint setup failed - realGroup is null for %1", _gid]] call FLO_fnc_log;
+                        };
+                        
+                        ["GTN ATO", 3, format["ATO Setup: Group=%1, Local=%2, Units=%3", _gid, local _grp, count units _grp]] call FLO_fnc_log;
+                        
+                        // Clear existing waypoints
+                        [_grp] call CBA_fnc_clearWaypoints;
 
-                    // Set combat behavior
-                    _grp setBehaviour "COMBAT";
-                    _grp setCombatMode "RED";
-                    _grp setSpeedMode "FULL";
+                        // Set combat behavior
+                        _grp setBehaviour "COMBAT";
+                        _grp setCombatMode "RED";
+                        _grp setSpeedMode "FULL";
 
-                    // Create waypoints in a pattern around the target
-                    private _angleStep = 360 / _waypointCount;
-                    for "_i" from 0 to (_waypointCount - 1) do {
-                        private _angle = _i * _angleStep;
-                        private _wpPos = _pos getPos [_patrolRadius, _angle];
-                        private _wp = _grp addWaypoint [_wpPos, 100];
-                        _wp setWaypointType _waypointType;
-                        _wp setWaypointBehaviour "COMBAT";
-                        _wp setWaypointCombatMode "RED";
-                        _wp setWaypointSpeed "FULL";
-                        if (_waypointType == "MOVE") then {
-                            _wp setWaypointTimeout [60, 90, 120];
+                        if (toUpper _mission == "CAP") then {
+                            // CAP: Multiple patrol waypoints in a pattern
+                            private _waypointCount = 4;
+                            private _angleStep = 360 / _waypointCount;
+                            for "_i" from 0 to (_waypointCount - 1) do {
+                                private _angle = _i * _angleStep;
+                                private _wpPos = _pos getPos [_patrolRadius, _angle];
+                                private _wp = _grp addWaypoint [_wpPos, 100];
+                                _wp setWaypointType "MOVE";
+                                _wp setWaypointBehaviour "COMBAT";
+                                _wp setWaypointCombatMode "RED";
+                                _wp setWaypointSpeed "FULL";
+                                _wp setWaypointTimeout [60, 90, 120];
+                            };
+
+                            // Add a CYCLE waypoint to loop back
+                            private _cycleWp = _grp addWaypoint [_pos, 100];
+                            _cycleWp setWaypointType "CYCLE";
                         } else {
+                            // CAS/SAD: Single seek and destroy waypoint on target
+                            private _wp = _grp addWaypoint [_pos, 100];
+                            _wp setWaypointType "SAD";
+                            _wp setWaypointBehaviour "COMBAT";
+                            _wp setWaypointCombatMode "RED";
+                            _wp setWaypointSpeed "FULL";
                             _wp setWaypointTimeout [30, 45, 60];
                         };
-                    };
 
-                    // Add a CYCLE waypoint to loop back
-                    private _cycleWp = _grp addWaypoint [_pos, 100];
-                    _cycleWp setWaypointType "CYCLE";
-
-                    _grp setCurrentWaypoint [_grp, 1];
+                        // _grp setCurrentWaypoint [_grp, 1];
+                        
+                        ["GTN ATO", 3, format["Waypoints set for aircraft group %1", _gid]] call FLO_fnc_log;
+                    }, [[_gid, _air, _pos, _mission, _patrolRadius]], 1] call CBA_fnc_waitAndExecute;
 
                     // Mission timer: wait for aircraft to reach target, then run mission duration
                     [_air, _gid, _missionDuration, _mission, _pos] spawn {

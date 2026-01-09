@@ -80,7 +80,7 @@ FLO_GTNConfig = createHashMapFromArray [
     // ===========================================
     // GTN (Goal Task Network) CONFIGURATION
     // ===========================================
-    ["gtnUpdateInterval", 5],            // GTN update cycle interval (seconds)
+    ["gtnUpdateInterval", 10],           // GTN update cycle interval (seconds)
     ["gtnReplanInterval", 60],           // Minimum time between replans (seconds)
     ["gtnCasualtyThreshold", 0.2],       // Force loss ratio to trigger replan (0-1)
     ["gtnAggressiveness", 0.5],          // Offensive vs defensive posture (0-1)

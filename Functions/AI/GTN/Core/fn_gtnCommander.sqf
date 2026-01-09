@@ -50,7 +50,7 @@ private _gtnCommander = createHashMapObject [[
     
     // State (using 0/1 for booleans to avoid parsing issues)
     ["_isRunning", 0],
-    ["_updateInterval", 5],  // Seconds between GTN cycles
+    ["_updateInterval", (call FLO_fnc_gtnConfig) get "gtnUpdateInterval"],
     ["_lastUpdate", 0],
     
     // Current operation
@@ -109,11 +109,6 @@ private _gtnCommander = createHashMapObject [[
         if ((_self get "_isRunning") isEqualTo 0) exitWith {};
         
         private _now = diag_tickTime;
-        private _lastUpdate = _self get "_lastUpdate";
-        private _interval = _self get "_updateInterval";
-        
-        if (_now - _lastUpdate < _interval) exitWith {};
-        
         _self set ["_lastUpdate", _now];
         
         private _stats = _self get "_stats";
@@ -225,12 +220,13 @@ private _gtnCommander = createHashMapObject [[
                         // First task - just execute and mark as running
                         private _currentTask = _planner call ["_getCurrentTask", []];
                         if (!isNil "_currentTask") then {
-                            ["GTN", 3, format["Starting execution: %1", _currentTask get "taskId"]] call FLO_fnc_log;
+                            private _taskId = _currentTask get "taskId";
+                            ["GTN", 3, format["Starting execution: %1", _taskId]] call FLO_fnc_log;
                             private _result = _executor call ["_executePrimitive", [_currentTask]];
 
                             if (!_result) then {
                                 // Primitive failed - abort plan
-                                ["GTN", 2, format["Primitive failed: %1 - aborting plan", _currentTask get "taskId"]] call FLO_fnc_log;
+                                ["GTN", 2, format["Primitive failed: %1 - aborting plan", _taskId]] call FLO_fnc_log;
                                 _planner set ["_planStatus", "FAILED"];
                                 _continueLoop = false;
                             } else {
@@ -238,6 +234,13 @@ private _gtnCommander = createHashMapObject [[
                                 private _stats = _self get "_stats";
                                 _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
                                 _tasksThisCycle = _tasksThisCycle + 1;
+                                
+                                // Check if task completed synchronously - if so, advance and reset to PENDING
+                                // This allows the loop to treat the next task as a fresh start in the same cycle
+                                if (_planner call ["_checkCurrentTask", [_executor]]) then {
+                                    ["GTN", 4, format["Task %1 completed synchronously - chaining to next task", _taskId]] call FLO_fnc_log;
+                                    _planner set ["_planStatus", "PENDING"];
+                                };
                             };
                         } else {
                             ["GTN", 2, "No tasks in plan"] call FLO_fnc_log;

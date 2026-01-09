@@ -1598,7 +1598,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
     // Analyze an objective's defensive strength
     ["_analyzeObjective", {
-        params ["_objectiveId"];
+        params ["_objectiveId", ["_worldState", nil]];
 
         if (isNil "FLO_Objectives") exitWith { nil };
 
@@ -1627,9 +1627,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         // === FIRST: Check world state intel from recon ===
         // This contains actual observed enemy (BLUFOR) data from air/ground recon
         private _hasReconIntel = false;
-        if (!isNil "FLO_GTN_WorldState") then {
-            private _ws = FLO_GTN_WorldState;
-            private _intel = _ws call ["_getObjectiveIntel", [_objectiveId]];
+        
+        if (!isNil "_worldState") then {
+            private _intel = _worldState call ["_getObjectiveIntel", [_objectiveId]];
             if (!isNil "_intel") then {
                 private _quality = _intel getOrDefault ["intelQuality", 0];
                 if (_quality > 0.5) then {
@@ -1640,7 +1640,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                     _analysis set ["hasAA", _intel getOrDefault ["hasAA", false]];
                     _analysis set ["hasStatic", _intel getOrDefault ["hasStatic", false]];
                     _analysis set ["fortificationLevel", _intel getOrDefault ["fortificationLevel", 0]];
-                    
+                
                     // Use recommended force from intel if available
                     private _reconRecommended = _intel getOrDefault ["recommendedForce", 0];
                     if (_reconRecommended > 0) then {
@@ -1648,7 +1648,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                     };
                     
                     ["GTN", 4, format["Objective %1: Using recon intel (power=%2, AA=%3)", 
-                        _objectiveId, _analysis get "totalDefensePower", _analysis get "hasAA"]] call FLO_fnc_log;
+                    _objectiveId, _analysis get "totalDefensePower", _analysis get "hasAA"]] call FLO_fnc_log;
                 };
             };
         };
