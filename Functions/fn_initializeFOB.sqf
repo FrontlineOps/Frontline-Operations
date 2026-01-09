@@ -131,24 +131,14 @@ private _fnc_addActions = {
     params ["_building", "_config"];
 
     private _type = _config get "type";
+    private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+    
     private _actions = [
         // Build Mode Action
         [
             "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
             { [player] call IDS_Logistics_fnc_initBuildCamera; },
             nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-        ],
-        // Arsenal Action
-        [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil, 1, true, true, "", "_this distance _target < 10"
         ],
         // Pack Action (FOB-specific with commander check)
         [
@@ -162,6 +152,20 @@ private _fnc_addActions = {
             "Scripts\RequestMenu\Dialog_Request.sqf", nil, 99999, true, true, "", "", 40, false, "", ""
         ]
     ];
+    
+    if (_restrictedArsenal != 0) then {
+        _actions pushBack [
+            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+            {
+                if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                    [player, player, true] call ace_arsenal_fnc_openBox;
+                } else {
+                    ["Open", true] spawn BIS_fnc_arsenal;
+                };
+            },
+            nil, 1, true, true, "", "_this distance _target < 10"
+        ];
+    };
 
     // Add all actions with error handling
     {
