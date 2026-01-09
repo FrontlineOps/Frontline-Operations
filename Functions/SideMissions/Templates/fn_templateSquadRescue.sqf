@@ -73,6 +73,49 @@ private _template = createHashMapFromArray [
             _unit playMoveNow (selectRandom ["Acts_AidlPsitMstpSsurWnonDnon01", "Acts_AidlPsitMstpSsurWnonDnon02"]);
             _squadUnits pushBack _unit;
             ["addEntity", [_missionId, _unit]] call FLO_fnc_sideMissionEntityTracker;
+            
+            // Add rescue action
+            [
+                _unit,
+                "Rescue Squad Member",
+                "\a3\ui_f\data\IGUI\Cfg\HoldActions\holdAction_unbind_ca.paa",
+                "\a3\ui_f\data\IGUI\Cfg\HoldActions\holdAction_unbind_ca.paa",
+                "_this distance _target < 2",
+                "_caller distance _target < 2",
+                {},
+                {},
+                {
+                    params ["_target", "_caller", "_actionId", "_arguments"];
+                    _arguments params ["_missionId"];
+                    
+                    // Join group LOCALLY (Group Owner is Client)
+                    [_target] join (group _caller);
+                    
+                    // Release unit REMOTELY (Unit Owner is Server)
+                    [
+                        _target,
+                        {
+                            if (!alive _this) exitWith {};
+                            _this setCaptive false;
+                            _this enableAI "PATH";
+                            _this enableAI "MOVE";
+                            _this enableAI "ANIM";
+                            _this switchMove "";
+                        }
+                    ] remoteExec ["call", owner _target];
+                    
+                    // Remove action locally and globally
+                    [_target, _actionId] remoteExec ["BIS_fnc_holdActionRemove", 0];
+                    
+                    hint "Soldier Rescued!";
+                },
+                {},
+                [_missionId],
+                3,
+                0,
+                true,
+                false
+            ] remoteExec ["BIS_fnc_holdActionAdd", 0, _unit];
         };
         
         // Store squad reference

@@ -246,10 +246,15 @@ switch (toLower _operation) do {
             [_taskId, _taskState] call BIS_fnc_taskSetState;
         };
 
-        // Schedule registry cleanup
+        // Schedule registry and task cleanup
         [_missionId] spawn {
             params ["_id"];
             sleep 60;
+            
+            // Remove the BIS Task from UI (immediate deletion)
+            [_id, 0, true] call FLO_fnc_sideMissionTaskCleanup;
+            
+            // Remove data from registry
             ["delete", [_id]] call FLO_fnc_sideMissionRegistry;
         };
 

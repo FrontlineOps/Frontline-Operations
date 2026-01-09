@@ -79,7 +79,7 @@ private _template = createHashMapFromArray [
         // Spawn recon composition
         ["Recon_OPF_1", _position, [0,0,0], 0, true] call LARs_fnc_spawnComp;
         
-        // Find map board after composition spawns
+        // Find map board after composition spawns and add intel collection action
         [_position, _data, _missionId] spawn {
             params ["_position", "_data", "_missionId"];
             sleep 3;
@@ -87,6 +87,57 @@ private _template = createHashMapFromArray [
             if (!isNull _mapBoard) then {
                 _data set ["mapBoard", _mapBoard];
                 ["addEntity", [_missionId, _mapBoard]] call FLO_fnc_sideMissionEntityTracker;
+                
+                // Add our mission-integrated hold action
+                [
+                    _mapBoard,
+                    "Collect Intel Documents",
+                    "\a3\ui_f\data\IGUI\Cfg\HoldActions\holdAction_search_ca.paa",
+                    "\a3\ui_f\data\IGUI\Cfg\HoldActions\holdAction_search_ca.paa",
+                    "_this distance _target < 5",
+                    "_caller distance _target < 5",
+                    {},
+                    {},
+                    {
+                        params ["_target", "_caller", "_actionId", "_arguments"];
+                        _arguments params ["_missionData", "_missionId"];
+                        
+                        // Mark intel as collected (Network Engineer in Arma :dedmanfix:)
+                        _missionData set ["intelCollected", true];
+                        
+                        [
+                            [_missionId],
+                            {
+                                params ["_mid"];
+                                private _inst = ["get", [_mid]] call FLO_fnc_sideMissionRegistry;
+                                if (!isNil "_inst") then {
+                                    private _d = _inst get "data";
+                                    _d set ["intelCollected", true];
+                                    ["SIDE_MISSION", 3, format["Intel collected for mission %1 (synced)", _mid]] call FLO_fnc_log;
+                                };
+                            }
+                        ] remoteExec ["call", 2];
+                        
+                        // Provide intel reward - reveal enemy groups
+                        [player, 3000, "STR_FLO_INTEL_MIL"] call FLO_fnc_revealRandomEnemyGroup;
+                        [player, 3000, "STR_FLO_INTEL_MIL"] call FLO_fnc_revealRandomEnemyGroup;
+                        
+                        // Success notification
+                        ["STR_FLO_INTEL_TITLE", "STR_FLO_INTEL_FOUND", "success"] call FLO_fnc_sendNotification;
+                        hint "Intel documents collected! Enemy positions revealed.";
+                        
+                        // Remove the action
+                        [_target, _actionId] remoteExec ["BIS_fnc_holdActionRemove", 0];
+                        
+                        ["SIDE_MISSION", 3, format["Intel collected for mission %1", _missionId]] call FLO_fnc_log;
+                    },
+                    {},
+                    [_data, _missionId],
+                    8,
+                    0,
+                    true,
+                    false
+                ] remoteExec ["BIS_fnc_holdActionAdd", 0, _mapBoard];
             };
         };
         
