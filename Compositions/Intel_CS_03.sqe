@@ -95,11 +95,6 @@ class items
 								};
 								side="Empty";
 								flags=4;
-								class Attributes
-								{
-									init="call{[  " \n " this,             " \n " ""Gather Intel"",            " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",   " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",   " \n " ""_this distance _target < 3"",        " \n " ""_caller distance _target < 3"",        " \n " {},              " \n " {},               " \n " {   " \n "     objtIntl = _this select 0 ; " \n "     publicVariable ""objtIntl""; " \n " " \n "     objtIntlid = _this select 2 ; " \n "     publicVariable ""objtIntlid""; " \n "  " \n "        [ objtIntl, objtIntlid ] remoteExec [""BIS_fnc_holdActionRemove"", 0, true];  " \n "[(_this select 0)] execVM ""Scripts\Mission_Pilot_Seq.sqf"";  " \n "" \n " },     " \n " {},               " \n " [],              " \n " 3,             " \n " 0,              " \n " true,              " \n " false              " \n "] remoteExec [""BIS_fnc_holdActionAdd"", 0, this]; }";
-									disableSimulation=1;
-								};
 								id=48;
 								type="Land_Map_Malden_F";
 								atlOffset=0.00040245056;

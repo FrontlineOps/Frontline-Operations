@@ -137,10 +137,6 @@ class items
 							position[]={0.12939453,0.97538185,0.037109375};
 						};
 						side="Empty";
-						class Attributes
-						{
-							init="call{[  " \n " this,             " \n " ""Gather Intel"",            " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",   " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_search_ca.paa"",   " \n " ""_this distance _target < 3"",        " \n " ""_caller distance _target < 3"",        " \n " {},              " \n " {},               " \n " {   " \n "     objtIntl = _this select 0 ; " \n "     publicVariable ""objtIntl""; " \n " " \n "     objtIntlid = _this select 2 ; " \n "     publicVariable ""objtIntlid""; " \n "  " \n "        [ objtIntl, objtIntlid ] remoteExec [""BIS_fnc_holdActionRemove"", 0, true];  " \n "[(_this select 0)] execVM ""Scripts\Mission_Squad_Seq.sqf"";  " \n "" \n " },     " \n " {},               " \n " [],              " \n " 3,             " \n " 0,              " \n " true,              " \n " false              " \n "] remoteExec [""BIS_fnc_holdActionAdd"", 0, this]; }";
-						};
 						id=65;
 						type="Land_File2_F";
 						atlOffset=0.071827888;
