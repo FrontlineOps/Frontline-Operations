@@ -90,19 +90,31 @@ if (isNil "FLO_GTNAirAssetManager") then {
             params ["_gid"];
             private _missions = _self get "missions";
 
+            ["GTN Air Asset Manager", 4, format["_releaseAirAsset called for: '%1'", _gid]] call FLO_fnc_log;
+
             if (_gid in _missions) then {
-                private _data = (FLO_virtualGroups get "_groups") get _gid;
-                _data set ["onMission", false];
-                _self call ["_sendToRTB", [_gid]];
+                private _groups = FLO_virtualGroups get "_groups";
+                if (_gid in _groups) then {
+                    private _data = _groups get _gid;
+                    _data set ["onMission", false];
+                    _self call ["_sendToRTB", [_gid]];
+                } else {
+                    ["GTN Air Asset Manager", 2, format["Group %1 not found in virtualGroups - may have been destroyed", _gid]] call FLO_fnc_log;
+                };
                 (_self get "missions") deleteAt _gid;
-                ["GTN Air Asset Manager", 3, format["Released air asset %1 - RTB ordered", _gid]] call FLO_fnc_log;
+                ["GTN Air Asset Manager", 3, format["Released air asset %1", _gid]] call FLO_fnc_log;
             };
         }],
 
         // Get RTB position for an aircraft (returns original spawn position)
         ["_getRTBPosition", {
             params ["_groupId"];
-            private _gData = (FLO_virtualGroups get "_groups") get _groupId;
+            private _groups = FLO_virtualGroups get "_groups";
+            if !(_groupId in _groups) exitWith {
+                ["GTN Air Asset Manager", 2, format["_getRTBPosition: Group %1 not in virtualGroups", _groupId]] call FLO_fnc_log;
+                [0,0,0]
+            };
+            private _gData = _groups get _groupId;
             _gData get "spawnPosition"
         }],
 
@@ -110,8 +122,13 @@ if (isNil "FLO_GTNAirAssetManager") then {
         ["_sendToRTB", {
             params ["_groupId"];
 
+            private _groups = FLO_virtualGroups get "_groups";
+            if !(_groupId in _groups) exitWith {
+                ["GTN Air Asset Manager", 2, format["_sendToRTB: Group %1 not in virtualGroups", _groupId]] call FLO_fnc_log;
+            };
+
             private _rtbPos = _self call ["_getRTBPosition", [_groupId]];
-            private _gData = (FLO_virtualGroups get "_groups") get _groupId;
+            private _gData = _groups get _groupId;
             private _isActive = _gData get "isActive";
             private _realGroup = _gData get "realGroup";
 
