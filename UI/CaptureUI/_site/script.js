@@ -36,19 +36,33 @@ class CaptureUI {
         }
     }
 
-    update(ratio, bluforCount, opforCount) {
+    update(ratio, bluforCount, opforCount, owner) {
         this.targetRatio = Math.max(0, Math.min(1, ratio));
         
         // Update status text based on situation
         const total = bluforCount + opforCount;
-        if (total === 0) {
-            this.setStatus('UNCONTESTED', '');
-        } else if (Math.abs(bluforCount - opforCount) <= 1) {
-            this.setStatus('CONTESTED', 'contested');
-        } else if (bluforCount > opforCount) {
-            this.setStatus('CAPTURING', 'capturing');
+        
+        // Default owner to EAST if not provided (safety)
+        const currentOwner = owner || "EAST";
+        
+        if (currentOwner === "WEST") {
+            // WE OWN IT
+            if (opforCount === 0) {
+                this.setStatus('CAPTURED', 'captured-blue');
+            } else if (opforCount > bluforCount) {
+                this.setStatus('LOSING GROUND', 'losing');
+            } else {
+                this.setStatus('DEFENDING', 'contested');
+            }
         } else {
-            this.setStatus('LOSING GROUND', 'losing');
+            // ENEMY OWNS IT (EAST/GUER)
+            if (bluforCount === 0) {
+                this.setStatus('ENEMY HELD', 'captured-red');
+            } else if (bluforCount > opforCount) {
+                this.setStatus('CAPTURING', 'capturing');
+            } else {
+                this.setStatus('CONTESTED', 'contested');
+            }
         }
         
         // Update glow effect
@@ -117,8 +131,8 @@ function hideCaptureUI() {
     if (captureUI) captureUI.hide();
 }
 
-function updateCaptureUI(ratio, bluforCount, opforCount) {
-    if (captureUI) captureUI.update(ratio, bluforCount, opforCount);
+function updateCaptureUI(ratio, bluforCount, opforCount, owner) {
+    if (captureUI) captureUI.update(ratio, bluforCount, opforCount, owner);
 }
 
 // Auto-initialize

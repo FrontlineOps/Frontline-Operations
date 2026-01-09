@@ -128,6 +128,18 @@ body {
     animation: pulse 0.5s ease-in-out infinite;
 }
 
+.status-text.captured-blue {
+    color: #42a5f5;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(66, 165, 245, 0.5);
+}
+
+.status-text.captured-red {
+    color: #ef5350;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(239, 83, 80, 0.5);
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }

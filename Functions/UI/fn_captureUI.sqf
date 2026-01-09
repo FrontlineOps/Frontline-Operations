@@ -35,7 +35,8 @@ switch (toLower _operation) do {
 
         // Also spawn the polling loop as fallback for local/hosted
         // The two systems work together - events for dedicated, polling for local
-        [] spawn FLO_fnc_captureUIUpdate;
+        // DISABLED: Polling loop conflicts with CBA events causing flicker (missing owner param)
+        // [] spawn FLO_fnc_captureUIUpdate;
 
         ["UI", 3, "Capture UI initialized (CBA events + polling fallback)"] call FLO_fnc_log;
         _result = true;

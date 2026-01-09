@@ -123,7 +123,7 @@ FLO_CaptureUI_CurrentObj = "";
 // Called by server with current capture status
 // ============================================================================
 ["FLO_CaptureUI_Update", {
-    params [["_ratio", 0.5], ["_bluforCount", 0], ["_opforCount", 0]];
+    params [["_ratio", 0.5], ["_bluforCount", 0], ["_opforCount", 0], ["_owner", "EAST"]];
 
     if (!FLO_CaptureUI_DisplayOpen || !FLO_CaptureUI_HTMLReady) exitWith {};
 
@@ -131,7 +131,7 @@ FLO_CaptureUI_CurrentObj = "";
     if (!isNull _display) then {
         private _ctrl = _display displayCtrl 1101;
         if (!isNull _ctrl) then {
-            _ctrl ctrlWebBrowserAction ["ExecJS", format ["updateCaptureUI(%1, %2, %3)", _ratio, _bluforCount, _opforCount]];
+            _ctrl ctrlWebBrowserAction ["ExecJS", format ["updateCaptureUI(%1, %2, %3, '%4')", _ratio, _bluforCount, _opforCount, _owner]];
         };
     };
 }] call CBA_fnc_addEventHandler;

@@ -213,9 +213,12 @@ while {true} do {
             if (_currentObjId != "") then {
                 private _bluforCount = _currentObjData getOrDefault ["bluforCount", 0];
                 private _opforCount = _currentObjData getOrDefault ["opforCount", 0];
+                private _owner = _currentObjData getOrDefault ["owner", east];
+                
                 private _totalCount = _bluforCount + _opforCount;
                 private _ratio = if (_totalCount > 0) then { _bluforCount / _totalCount } else { 0.5 };
-                ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount], owner _player] call CBA_fnc_ownerEvent;
+                
+                ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount, str _owner], owner _player] call CBA_fnc_ownerEvent;
             };
         };
     } forEach _allPlayers;
