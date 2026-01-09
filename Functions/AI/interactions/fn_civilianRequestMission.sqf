@@ -24,10 +24,10 @@ if (_isEngineer && (random 1 > 0.33)) then {
     ["Civilian", selectRandom _hostileLines] remoteExec ["BIS_fnc_showSubtitle"];
 } else {
     // Attempt to start a mission
-    private _missionId = ["NEXT_MISSION"] call FLO_fnc_civilianMissionManager;
+    private _missionId = [["NEXT_MISSION"] call FLO_fnc_civilianMissionManager] param [0, 0];
     
     // If mission initiated successfully
-    if (_missionId > 0) then {
+    if (!isNil "_missionId" && {_missionId > 0}) then {
         // Show context-specific dialogue
         private _line = switch (_missionId) do {
             case 1: { "Ive heard some of you are Engineers, One of Locals Troubled his Vehicle somewhere Along the Road, Think You can Help?" };

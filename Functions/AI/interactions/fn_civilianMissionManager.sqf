@@ -20,6 +20,7 @@ switch (toUpper _mode) do {
     };
 
     case "NEXT_MISSION": {
+        if (isNil "FLO_CivilianMission_Active") then { FLO_CivilianMission_Active = false; };
         if (FLO_CivilianMission_Active) exitWith {
             ["CIV_MISSION", 3, "Mission already active, skipping valid request"] call FLO_fnc_log;
         };
