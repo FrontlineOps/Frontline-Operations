@@ -151,6 +151,30 @@ switch (toLower _operation) do {
         } forEach (keys FLO_SM_Templates);
         _result = _spawnable;
     };
+
+    // Spawn a mission instance
+    case "spawn": {
+        _args params [["_typeName", ""], ["_missionArgs", []]];
+        
+        private _template = FLO_SM_Templates getOrDefault [_typeName, nil];
+        if (isNil "_template") exitWith { 
+            diag_log format ["[FLO_SM] Spawn failed: Unknown template %1", _typeName];
+            _result = nil; 
+        };
+        
+        // Setup/Validate
+        private _fncSetup = _template get "fnc_setup";
+        private _canSpawn = [_typeName] call _fncSetup;
+        
+        if (!_canSpawn) exitWith { 
+            diag_log format ["[FLO_SM] Spawn failed: Setup check returned false for %1", _typeName];
+            _result = nil; 
+        };
+        
+        // Spawn
+        private _fncSpawn = _template get "fnc_spawn";
+        _result = [_typeName, _missionArgs] call _fncSpawn;
+    };
     
     default {
         diag_log format ["[FLO_SM] Template: Unknown operation: %1", _operation];
