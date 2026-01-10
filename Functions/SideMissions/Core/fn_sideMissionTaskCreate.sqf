@@ -60,9 +60,10 @@ if (_desc == "") then {
     };
 };
 
-// Build description array [title, description, marker]
+// Build description array [description, title, marker]
+// Note: BIS_fnc_taskCreate expects [description, title, marker]
 private _markerName = format ["SM_TaskMrk_%1", _missionId];
-private _descArray = [_title, _desc, _markerName];
+private _descArray = [_desc, _title, _markerName];
 
 // Get task type/icon
 private _taskType = _options getOrDefault ["type", ""];
@@ -81,7 +82,7 @@ private _priority = _options getOrDefault ["priority", 1];
 [
     true,                    // All players
     _taskId,                 // Task ID
-    _descArray,              // [title, desc, marker]
+    _descArray,              // [description, title, marker]
     _position,               // Destination
     "CREATED",               // Initial state
     _priority,               // Priority
