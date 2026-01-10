@@ -999,9 +999,10 @@ private _executor = createHashMapObject [[
             if (count _infantry < 1) exitWith { false };
 
             private _reconGroup = _infantry select 0;
-            private _reconPos = _objPos getPos [300, 45 + (floor(_objId call BIS_fnc_hashCode) mod 4) * 90];
+            // Use random direction and safer distance (800m+)
+            private _reconPos = _objPos getPos [500, random 90];
 
-            _cmdr call ["_orderGroupMove", [_reconGroup, _reconPos, "AWARE"]];
+            _cmdr call ["_orderGroupMove", [_reconGroup, _reconPos, "STEALTH"]];
 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
@@ -1010,14 +1011,32 @@ private _executor = createHashMapObject [[
             _primData set ["objectiveId", _objId];
             _taskNode set ["primitiveData", _primData];
 
-            ["GTN", 3, format["Recon patrol dispatched to %1", _objId]] call FLO_fnc_log;
+            ["GTN", 3, format["Recon patrol dispatched to %1 (Dist: 500m)", _objId]] call FLO_fnc_log;
             _ctx set ["status", "SUCCESS"];
 
             // Use capability analyzer to get REAL intel about the objective
-            [_gtnCmdr, _objId] spawn {
-                params ["_gtnCmdr", "_objId"];
-                // Wait for patrol to reach observation position
+            [_gtnCmdr, _objId, _reconGroup, _reconPos] spawn {
+                params ["_gtnCmdr", "_objId", "_reconGroup", "_reconPos"];
+                
+                // Simple wait for travel time (approx 2 mins for 500m)
                 sleep 120;
+                
+                if (isNil "_gtnCmdr") exitWith {};
+                
+                // Reveal objective units to the recon group
+                private _gData = FLO_virtualGroups getOrDefault ["_groups", createHashMap] getOrDefault [_reconGroup, createHashMap];
+                private _realGroup = _gData getOrDefault ["group", grpNull]; // Try to get real group if spawned
+                
+                if (!isNull _realGroup) then {
+                    private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
+                    private _targets = _objPos nearEntities [["Man", "LandVehicle", "Tank"], 1000];
+                    {
+                        if (side _x != west) then {
+                            _realGroup reveal [_x, 4];
+                        };
+                    } forEach _targets;
+                    ["GTN", 3, format["Recon Group %1 revealed %2 targets at %3", _reconGroup, count _targets, _objId]] call FLO_fnc_log;
+                };
                 if (isNil "_gtnCmdr") exitWith {};
                 private _ws = _gtnCmdr get "_worldState";
                 if (isNil "_ws") exitWith {};
