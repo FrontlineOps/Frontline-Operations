@@ -265,7 +265,6 @@ class FLO {
         class factionDialogPopulate   {};
         class factionDialogStart      {};
         class captureUI               {};
-        class captureUIUpdate         {};
         class initCaptureUIEvents     {};
     };
 

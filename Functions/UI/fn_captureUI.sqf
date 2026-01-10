@@ -33,12 +33,7 @@ switch (toLower _operation) do {
         // This is the primary method for dedicated servers
         [] call FLO_fnc_initCaptureUIEvents;
 
-        // Also spawn the polling loop as fallback for local/hosted
-        // The two systems work together - events for dedicated, polling for local
-        // DISABLED: Polling loop conflicts with CBA events causing flicker (missing owner param)
-        // [] spawn FLO_fnc_captureUIUpdate;
-
-        ["UI", 3, "Capture UI initialized (CBA events + polling fallback)"] call FLO_fnc_log;
+        ["UI", 3, "Capture UI initialized (CBA events)"] call FLO_fnc_log;
         _result = true;
     };
 
