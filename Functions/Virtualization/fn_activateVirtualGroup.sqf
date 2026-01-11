@@ -300,6 +300,90 @@ switch (true) do {
         };
     };
     
+    // Mobile AA groups
+    case (_groupType isEqualTo "mobile_aa"): {
+        _realGroup = createGroup [_side, true];
+        
+        for "_i" from 1 to _unitCount do {
+            private _aaType = selectRandom East_Mobile_AA;
+            
+            private _minDist = 10 + (20 * _i);
+            private _spawnPos = [_position, _minDist, 100, 8, 0, 0.2, 0] call BIS_fnc_findSafePos;
+            
+            if (_spawnPos distance2D _position > 150) then {
+                _spawnPos = _position getPos [_minDist, random 360];
+            };
+            
+            private _vehicle = createVehicle [_aaType, _spawnPos, [], 0, "NONE"];
+            _vehicle setPos [getPos _vehicle select 0, getPos _vehicle select 1, 0];
+            _vehicle setVectorUp [0,0,1];
+            
+            private _crewType = getText (configFile >> "CfgVehicles" >> _aaType >> "crew");
+            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            
+            private _driver = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+            _driver moveInDriver _vehicle;
+            
+            {
+               private _gunner = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+               _gunner moveInTurret [_vehicle, _x];
+            } forEach (allTurrets [_vehicle, false]);
+        };
+    };
+    
+    // Static AA groups
+    case (_groupType isEqualTo "static_aa"): {
+        _realGroup = createGroup [_side, true];
+        
+        // Find safe open position (avoid buildings)
+        private _safePos = [_position, 20, 100, 15, 0, 0.1, 0] call BIS_fnc_findSafePos;
+        if (_safePos distance2D _position > 150) then { _safePos = _position; };
+        
+        // Spawn Radar if available
+        if (count East_Radar > 0) then {
+            private _radarType = selectRandom East_Radar;
+            private _radarPos = _safePos getPos [15, random 360];
+            private _radar = createVehicle [_radarType, _radarPos, [], 0, "NONE"];
+            _radar setPos [getPos _radar select 0, getPos _radar select 1, 0];
+            
+            // Enable data link: Radar reports targets to side center
+            _radar setVehicleReportRemoteTargets true;
+            _radar setVehicleRadar 1; // Active radar
+            
+            // Radar operator (required for data link to function)
+            private _crewType = getText (configFile >> "CfgVehicles" >> _radarType >> "crew");
+            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            private _operator = _realGroup createUnit [_crewType, _radarPos, [], 0, "NONE"];
+            _operator moveInAny _radar;
+        };
+        
+        // Spawn SAM Launchers
+        for "_i" from 1 to _unitCount do {
+            private _samType = selectRandom East_Static_AA;
+            
+            private _offset = 25 + (15 * _i);
+            private _angle = (360 / _unitCount) * _i;
+            private _spawnPos = _safePos getPos [_offset, _angle];
+            
+            private _launcher = createVehicle [_samType, _spawnPos, [], 0, "NONE"];
+            _launcher setPos [getPos _launcher select 0, getPos _launcher select 1, 0];
+            _launcher setDir (_angle + 180); // Face outward
+            
+            // Enable data link: SAM receives targets from radar
+            _launcher setVehicleReceiveRemoteTargets true;
+            
+            // Crew for manned launchers
+            private _crewType = getText (configFile >> "CfgVehicles" >> _samType >> "crew");
+            if (_crewType != "") then {
+                private _gunner = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
+                _gunner moveInGunner _launcher;
+            };
+        };
+        
+        // Mark as static defense - no waypoints, no commander movement
+        _groupData set ["noWaypoints", true];
+    };
+    
     // Civilian vehicle group
     case (_groupType isEqualTo "civilianVehicle"): {
         _realGroup = createGroup [civilian, true];
@@ -365,6 +449,15 @@ switch (true) do {
         private _unitType = selectRandom East_Units;
         private _unit = _realGroup createUnit [_unitType, _position, [], 0, "NONE"];
     };
+};
+
+// ========================================================================
+// SIDE FIX - Ensure all units are on the correct side
+// This handles cases where mission makers use BLUFOR classnames as OPFOR enemies
+// The units' classname side doesn't matter - their group side determines allegiance
+// ========================================================================
+if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civilian}) then {
+    _realGroup = [_realGroup, _side] call FLO_fnc_setSide;
 };
 
 // Distribute intel items to non-civilian groups
@@ -490,7 +583,9 @@ if (_patrolConfig isNotEqualTo []) then {
     // Apply waypoints if any
     // NOTE: SAD, DESTROY, and GUARD waypoints NEVER complete in Arma's waypoint system
     // We convert these to MOVE + aggressive combat settings so groups reach destination
-    if (count _waypoints > 0) then {
+    // Skip if group is marked as static defense (noWaypoints)
+    private _noWaypoints = _groupData getOrDefault ["noWaypoints", false];
+    if (!_noWaypoints && {count _waypoints > 0}) then {
         // Safety check: if first waypoint is CYCLE, that's invalid for Arma
         private _firstWpType = (_waypoints select 0) select 1;
         if (_firstWpType == "CYCLE" && count _waypoints == 1) then {

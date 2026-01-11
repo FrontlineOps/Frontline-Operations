@@ -61,6 +61,7 @@ private _groupData = createHashMapFromArray [
     ["realGroup", grpNull],
     ["state", "idle"],
     ["waypoints", []],
+    ["currentWaypointIndex", 0],
     ["comp", []],
     ["onMission", false],         // Whether this group is on an active mission (prevents virtualization)
     ["currentOrder", ""],         // Current order type (MOVE, ATTACK, DEFEND, etc.)

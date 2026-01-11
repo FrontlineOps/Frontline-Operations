@@ -164,6 +164,10 @@ if (isNil "FLO_VirtUpdate" || {!(FLO_VirtUpdate get "running")}) then {
 diag_log "[FLO_INIT_P4] Initializing virtual transport system...";
 [] call FLO_fnc_virtualTransport;
 
+// Start radar data link system (for AA target sharing)
+diag_log "[FLO_INIT_P4] Starting radar data link system...";
+[] spawn FLO_fnc_gtnRadarDataLink;
+
 // Mark initialization complete
 InitializationOG = true;
 publicVariable "InitializationOG";

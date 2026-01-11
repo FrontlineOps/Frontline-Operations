@@ -189,8 +189,9 @@ if (_nearestDist <= _activationDist && !_isActive) then {
 } else {
     if (_nearestDist > _activationDist && _isActive) then {
         // DEACTIVATE - player moved away
-        if (_onMission) then {
-            // Skip deactivation for groups on mission
+        private _alwaysActive = _groupData getOrDefault ["alwaysActive", false];
+        if (_onMission || _alwaysActive) then {
+            // Skip deactivation for groups on mission OR always-active (Static AA)
         } else {
             ["VIRTUALIZATION", 3, format["Deactivating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
             [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;

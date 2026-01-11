@@ -44,6 +44,8 @@ private _baseFactor = switch (_groupType) do {
     case "motorized"; case "mechanized"; case "armor": {0.7};
     case "helicopter"; case "jet"; case "air": {0.8};
     case "artillery": {0.6};
+    case "mobile_aa": {0.6};
+    case "static_aa": {0.9};
     default {0.5};
 };
 private _distributionRadius = _radius * _baseFactor;

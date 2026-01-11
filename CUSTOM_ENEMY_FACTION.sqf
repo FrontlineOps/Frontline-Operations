@@ -37,6 +37,12 @@ East_Air_Jet = ["I_Plane_Fighter_04_F", "I_Plane_Fighter_03_dynamicLoadout_F"];
 East_Ground_Artillery = ["O_MBT_02_arty_F"]; 
 // Drone Units
 East_Air_Drone = ["I_UAV_01_F"]; 
+// Mobile AA - Tracked/Wheeled AA vehicles
+East_Mobile_AA = ["I_LT_01_AA_F"];
+// Static AA - Emplaced SAM launchers
+East_Static_AA = ["O_SAM_System_04_F"];
+// Radar Systems
+East_Radar = ["O_Radar_System_02_F"];
 // Individual Infantry Units
 East_Units = [
     // Regular infantry (high frequency)
@@ -78,7 +84,9 @@ OPFOR_Objective_Groups = [
         ["mechanized", 1],
         ["air", 1],
         ["armor", 1],
-        ["artillery", 1]
+        ["artillery", 1],
+        ["static_aa", 1],
+        ["mobile_aa", 1]
     ]],
 
     // Major cities
@@ -97,7 +105,8 @@ OPFOR_Objective_Groups = [
     ["local", [
         ["infantry", 6],
         ["motorized", 2],
-        ["mechanized", 1]
+        ["mechanized", 1],
+        ["mobile_aa", 1]
     ]],
 
     // Coastal or marine facilities
@@ -124,7 +133,9 @@ OPFOR_Group_Counts = [
     ["helicopter", 1],        // Number of helicopters
     ["jet", 1],               // Number of jets
     ["air", 1],               // Number of aircraft
-    ["artillery", 1]         // Number of artillery pieces (Probably always keep this at 1)
+    ["artillery", 3],         // Number of artillery pieces
+    ["mobile_aa", 1],         // Number of mobile AA vehicles
+    ["static_aa", 1]          // Number of static SAM launchers
 ];
 
 /*

@@ -52,6 +52,17 @@ private _allObjectives = keys FLO_Objectives;
         // Add all created groups to tracking array
         _allCreatedGroups append _objectiveGroups;
 
+        // === STATIC AA: Always spawn immediately (bypass virtualization distance) ===
+        {
+            private _groupId = _x;
+            private _groupData = (FLO_virtualGroups get "_groups") getOrDefault [_groupId, nil];
+            if (!isNil "_groupData" && {(_groupData get "groupType") == "static_aa"}) then {
+                [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;
+                _groupData set ["alwaysActive", true]; // Prevent deactivation
+                ["VIRTUALIZATION", 3, format["Static AA %1 activated immediately (always-on)", _groupId]] call FLO_fnc_log;
+            };
+        } forEach _objectiveGroups;
+
         ["VIRTUALIZATION", 3, format["Created %1 virtual groups at objective %2", count _objectiveGroups, _objId]] call FLO_fnc_log;
     };
 } forEach _allObjectives;

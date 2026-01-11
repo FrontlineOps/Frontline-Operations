@@ -50,6 +50,7 @@ class FLO {
         class gtnAirTaskOrder           {};
         class gtnArtilleryManager       {};
         class gtnArtilleryFireMission   {};
+        class gtnRadarDataLink          {};
     };
     
     class Interactions {
@@ -121,6 +122,7 @@ class FLO {
         class getSafeLandPos          {};
         class getSafeUnvirtualizePos  {};
         class validateGroupPosition   {};
+        class setSide                 {};
     };
 
     class Objective {

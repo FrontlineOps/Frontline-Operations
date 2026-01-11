@@ -59,14 +59,20 @@ East_Air_Jet = ["rhs_mig29sm_vvsc", "RHS_Su25SM_vvsc"];
 
 East_Air_Drone = ["O_UAV_01_F"];
 
+East_Mobile_AA = ["rhs_zsu234_aa"];
+
+East_Static_AA = ["rhs_S300_launcher_radar_F"];
+
+East_Radar = ["rhs_S300_launcher_radar_F"];
+
 // ============================================================================
 // GARRISON CONFIGURATION
 // ============================================================================
 OPFOR_Objective_Groups = [
-    ["capital", [["infantry", 12], ["motorized", 2], ["mechanized", 1], ["air", 1], ["armor", 1], ["artillery", 1]]],
+    ["capital", [["infantry", 12], ["motorized", 2], ["mechanized", 1], ["air", 1], ["armor", 1], ["artillery", 1], ["mobile_aa", 1], ["static_aa", 1]]],
     ["city", [["infantry", 7], ["motorized", 2]]],
     ["village", [["infantry", 3]]],
-    ["local", [["infantry", 6], ["motorized", 2], ["mechanized", 1]]],
+    ["local", [["infantry", 6], ["motorized", 2], ["mechanized", 1], ["mobile_aa", 1]]],
     ["marine", [["infantry", 3], ["motorized", 1]]],
     ["cluster", [["infantry", 2]]]
 ];
@@ -79,7 +85,9 @@ OPFOR_Group_Counts = [
     ["helicopter", 1],
     ["jet", 1],
     ["air", 1],
-    ["artillery", 3]
+    ["artillery", 3],
+    ["mobile_aa", 1],
+    ["static_aa", 1]
 ];
 
 // ============================================================================
