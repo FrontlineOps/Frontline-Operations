@@ -53,9 +53,25 @@ private _gtnCommander = createHashMapObject [[
     ["_updateInterval", (call FLO_fnc_gtnConfig) get "gtnUpdateInterval"],
     ["_lastUpdate", 0],
     
-    // Current operation
-    ["_currentGoal", "control_ao"],
-    ["_currentPlan", []],
+    // Dual track execution - two parallel goals with 50/50 resource split
+    ["_tracks", [
+        createHashMapFromArray [
+            ["id", "TRACK_1"],
+            ["goal", "capture_priority_objective"],
+            ["resourceShare", 0.5],
+            ["planner", nil],
+            ["status", "IDLE"],
+            ["groupPool", []]
+        ],
+        createHashMapFromArray [
+            ["id", "TRACK_2"],
+            ["goal", "protect_critical_assets"],
+            ["resourceShare", 0.5],
+            ["planner", nil],
+            ["status", "IDLE"],
+            ["groupPool", []]
+        ]
+    ]],
     
     // Configuration
     ["_config", createHashMapFromArray [
@@ -88,14 +104,10 @@ private _gtnCommander = createHashMapObject [[
         private _stats = _self get "_stats";
         _stats set ["startTime", diag_tickTime];
 
-        // Set initial goal
-        private _monitor = _self get "_monitor";
-        _monitor call ["_setCurrentGoal", [_self get "_currentGoal", []]];
+        // Initialize track system
+        _self call ["_initializeTracks", []];
 
-        // Create initial plan
-        _self call ["_createPlan", []];
-
-        ["GTN", 2, "GTN Commander started"] call FLO_fnc_log;
+        ["GTN", 2, "GTN Commander started with multi-track execution"] call FLO_fnc_log;
     }],
 
     // Stop the GTN commander
@@ -114,7 +126,6 @@ private _gtnCommander = createHashMapObject [[
         private _stats = _self get "_stats";
         _stats set ["cyclesRun", (_stats get "cyclesRun") + 1];
         
-        private _config = _self get "_config";
         ["GTN", 3, format["GTN Cycle %1 starting", _stats get "cyclesRun"]] call FLO_fnc_log;
 
         // Update world state
@@ -131,168 +142,218 @@ private _gtnCommander = createHashMapObject [[
             count (keys _enemyObjs)
         ]] call FLO_fnc_log;
 
-        // Check for replan triggers
-        private _monitor = _self get "_monitor";
-        if (_monitor call ["_checkReplanTriggers", []]) then {
-            _self call ["_handleReplan", []];
-        };
-
-        // Log current plan status
-        private _planner = _self get "_planner";
-        private _planStatus = _planner call ["_getPlanStatus", []];
-        private _currentPlan = _planner call ["_getCurrentPlan", []];
-        ["GTN", 3, format["Plan Status: %1, Tasks: %2", _planStatus, count _currentPlan]] call FLO_fnc_log;
-
-        // Execute current plan
-        _self call ["_executePlan", []];
+        // Allocate groups to tracks (refreshes each cycle)
+        _self call ["_allocateGroupsToTracks", []];
+        
+        // Execute all tracks in parallel
+        _self call ["_executeAllTracks", []];
 
         // Manage force preservation (Retreats & Replenishment)
         _self call ["_manageForcePreservation", []];
     }],
     
-    // === PLANNING ===
+    // === TRACK SYSTEM ===
     
-    // Create a new plan for current goal
-    ["_createPlan", {
-        private _planner = _self get "_planner";
-        private _goal = _self get "_currentGoal";
-
-        ["GTN", 3, format["Creating plan for goal: %1", _goal]] call FLO_fnc_log;
-
-        private _planResult = _planner call ["_plan", [_goal, []]];
-
-        // Ensure we have a valid plan array, not nil
-        private _plan = if (isNil "_planResult") then { [] } else { _planResult };
-
-        if (count _plan > 0) then {
-            _self set ["_currentPlan", _plan];
-
-            private _stats = _self get "_stats";
-            _stats set ["plansCreated", (_stats get "plansCreated") + 1];
-
-            ["GTN", 3, format["Plan created with %1 tasks", count _plan]] call FLO_fnc_log;
-        } else {
-            _self set ["_currentPlan", []];
-            ["GTN", 2, "Failed to create plan - no tasks generated"] call FLO_fnc_log;
+    // Initialize track planners
+    ["_initializeTracks", {
+        private _goalLib = _self get "_goalLibrary";
+        private _ws = _self get "_worldState";
+        private _tracks = _self get "_tracks";
+        
+        {
+            private _track = _x;
+            private _trackId = _track get "id";
+            
+            // Each track gets its own planner instance
+            private _planner = [_goalLib, _ws] call FLO_fnc_gtnPlanner;
+            _track set ["planner", _planner];
+            
+            ["GTN", 3, format["Track %1 initialized with goal: %2", _trackId, _track get "goal"]] call FLO_fnc_log;
+        } forEach _tracks;
+    }],
+    
+    // Allocate available groups to tracks (50/50 round-robin)
+    ["_allocateGroupsToTracks", {
+        private _tracks = _self get "_tracks";
+        
+        // Get all available groups (not currently tasked)
+        private _totalGroups = count (keys (FLO_virtualGroups get "_groups"));
+        private _allAvailable = _self call ["_getAvailableGroups", [_totalGroups]];
+        private _totalCount = count _allAvailable;
+        
+        // Clear existing pools
+        { _x set ["groupPool", []]; } forEach _tracks;
+        
+        if (_totalCount == 0) exitWith {
+            ["GTN", 2, "No available groups to allocate to tracks"] call FLO_fnc_log;
         };
-
-        _plan
+        
+        // Round-robin allocation to tracks
+        private _trackCount = count _tracks;
+        {
+            private _trackIdx = _forEachIndex mod _trackCount;
+            private _track = _tracks select _trackIdx;
+            private _pool = _track get "groupPool";
+            _pool pushBack _x;
+            _track set ["groupPool", _pool];
+        } forEach _allAvailable;
+        
+        // Log allocation
+        {
+            private _track = _x;
+            ["GTN", 3, format["Track %1 (%2) allocated %3 groups", 
+                _track get "id", 
+                _track get "goal",
+                count (_track get "groupPool")
+            ]] call FLO_fnc_log;
+        } forEach _tracks;
     }],
     
-    // Handle replan trigger
-    ["_handleReplan", {
-        private _monitor = _self get "_monitor";
-        
-        ["GTN", 3, "Handling replan trigger"] call FLO_fnc_log;
-        
-        private _stats = _self get "_stats";
-        _stats set ["replans", (_stats get "replans") + 1];
-        
-        // Trigger replan through monitor (handles throttling)
-        _monitor call ["_triggerReplan", []];
-        
-        // Update our plan reference
-        private _planner = _self get "_planner";
-        _self set ["_currentPlan", _planner call ["_getCurrentPlan", []]];
-    }],
-
-    // === PLAN EXECUTION ===
-
-    // Execute current plan step
-    ["_executePlan", {
-        private _planner = _self get "_planner";
+    // Execute all tracks in parallel
+    ["_executeAllTracks", {
+        private _tracks = _self get "_tracks";
         private _executor = _self get "_executor";
-
-        private _status = _planner call ["_getPlanStatus", []];
-
-        switch (_status) do {
-            case "PENDING";
-            case "RUNNING": {
-                // Unified execution loop for both PENDING and RUNNING states
-                private _maxTasksPerCycle = 10;
-                private _tasksThisCycle = 0;
-                private _continueLoop = true;
-
-                while {_continueLoop && {_tasksThisCycle < _maxTasksPerCycle}} do {
-                    private _currentStatus = _planner call ["_getPlanStatus", []];
-
-                    if (_currentStatus == "PENDING") then {
-                        // First task - just execute and mark as running
-                        private _currentTask = _planner call ["_getCurrentTask", []];
-                        if (!isNil "_currentTask") then {
-                            private _taskId = _currentTask get "taskId";
-                            ["GTN", 3, format["Starting execution: %1", _taskId]] call FLO_fnc_log;
-                            private _result = _executor call ["_executePrimitive", [_currentTask]];
-
-                            if (!_result) then {
-                                // Primitive failed - abort plan
-                                ["GTN", 2, format["Primitive failed: %1 - aborting plan", _taskId]] call FLO_fnc_log;
-                                _planner set ["_planStatus", "FAILED"];
-                                _continueLoop = false;
-                            } else {
-                                _planner call ["_executeNext", []];
-                                private _stats = _self get "_stats";
-                                _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
-                                _tasksThisCycle = _tasksThisCycle + 1;
-                                
-                                // Check if task completed synchronously - if so, advance and reset to PENDING
-                                // This allows the loop to treat the next task as a fresh start in the same cycle
-                                if (_planner call ["_checkCurrentTask", [_executor]]) then {
-                                    ["GTN", 4, format["Task %1 completed synchronously - chaining to next task", _taskId]] call FLO_fnc_log;
-                                    _planner set ["_planStatus", "PENDING"];
-                                };
-                            };
-                        } else {
-                            ["GTN", 2, "No tasks in plan"] call FLO_fnc_log;
-                            _planner set ["_planStatus", "SUCCESS"];
-                            _continueLoop = false;
-                        };
+        
+        {
+            private _track = _x;
+            private _trackId = _track get "id";
+            private _planner = _track get "planner";
+            private _status = _track get "status";
+            private _goal = _track get "goal";
+            
+            switch (_status) do {
+                case "IDLE": {
+                    // Check if track has resources to work with
+                    private _pool = _track get "groupPool";
+                    if (count _pool == 0) exitWith {
+                        ["GTN", 2, format["Track %1 has no groups, skipping", _trackId]] call FLO_fnc_log;
+                    };
+                    
+                    // Create plan for this track's goal
+                    private _planResult = _planner call ["_plan", [_goal, []]];
+                    private _plan = if (isNil "_planResult") then { [] } else { _planResult };
+                    if (count _plan > 0) then {
+                        _track set ["status", "RUNNING"];
+                        ["GTN", 3, format["Track %1: Started plan for %2 (%3 tasks)", 
+                            _trackId, _goal, count _plan]] call FLO_fnc_log;
                     } else {
-                        if (_currentStatus == "RUNNING") then {
-                            // Check if current task is complete (pass executor for status check)
-                            if (_planner call ["_checkCurrentTask", [_executor]]) then {
-                                // Task complete - execute next
-                                private _currentTask = _planner call ["_getCurrentTask", []];
-                                if (!isNil "_currentTask") then {
-                                    ["GTN", 3, format["Executing: %1", _currentTask get "taskId"]] call FLO_fnc_log;
-                                    private _result = _executor call ["_executePrimitive", [_currentTask]];
-
-                                    if (!_result) then {
-                                        // Primitive failed - abort plan
-                                        ["GTN", 2, format["Primitive failed: %1 - aborting plan", _currentTask get "taskId"]] call FLO_fnc_log;
-                                        _planner set ["_planStatus", "FAILED"];
-                                        _continueLoop = false;
+                        ["GTN", 3, format["Track %1: No plan for %2 (preconditions not met)", 
+                            _trackId, _goal]] call FLO_fnc_log;
+                    };
+                };
+                
+                case "RUNNING": {
+                    private _planStatus = _planner call ["_getPlanStatus", []];
+                    
+                    switch (_planStatus) do {
+                        case "PENDING";
+                        case "RUNNING": {
+                            // Execute current task with loop for synchronous completion chaining
+                            private _maxTasksPerCycle = 10;
+                            private _tasksThisCycle = 0;
+                            private _continueLoop = true;
+                            
+                            while {_continueLoop && {_tasksThisCycle < _maxTasksPerCycle}} do {
+                                private _currentStatus = _planner call ["_getPlanStatus", []];
+                                
+                                if (_currentStatus in ["PENDING", "RUNNING"]) then {
+                                    private _currentTask = _planner call ["_getCurrentTask", []];
+                                    
+                                    if (!isNil "_currentTask") then {
+                                        // Store track reference for primitives
+                                        _currentTask set ["_trackRef", _track];
+                                        
+                                        if (_currentStatus == "PENDING") then {
+                                            private _taskId = _currentTask get "taskId";
+                                            ["GTN", 3, format["Track %1: Executing %2", _trackId, _taskId]] call FLO_fnc_log;
+                                            
+                                            private _result = _executor call ["_executePrimitive", [_currentTask]];
+                                            if (_result) then {
+                                                _planner call ["_executeNext", []];
+                                                private _stats = _self get "_stats";
+                                                _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
+                                                _tasksThisCycle = _tasksThisCycle + 1;
+                                                
+                                                // Check for synchronous completion
+                                                if (_planner call ["_checkCurrentTask", [_executor]]) then {
+                                                    ["GTN", 4, format["Track %1: Task %2 completed synchronously", _trackId, _taskId]] call FLO_fnc_log;
+                                                    _planner set ["_planStatus", "PENDING"];
+                                                } else {
+                                                    _continueLoop = false;
+                                                };
+                                            } else {
+                                                ["GTN", 2, format["Track %1: Primitive %2 failed", _trackId, _taskId]] call FLO_fnc_log;
+                                                _planner set ["_planStatus", "FAILED"];
+                                                _continueLoop = false;
+                                            };
+                                        } else {
+                                            // RUNNING - check if async task completed
+                                            if (_planner call ["_checkCurrentTask", [_executor]]) then {
+                                                _planner set ["_planStatus", "PENDING"];
+                                            } else {
+                                                _continueLoop = false;
+                                            };
+                                        };
                                     } else {
-                                        _planner call ["_executeNext", []];
-                                        private _stats = _self get "_stats";
-                                        _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
-                                        _tasksThisCycle = _tasksThisCycle + 1;
+                                        _continueLoop = false;
                                     };
                                 } else {
-                                    // No more tasks - plan complete
                                     _continueLoop = false;
                                 };
-                            } else {
-                                // Current task not complete yet
-                                _continueLoop = false;
                             };
-                        } else {
-                            // Plan ended (SUCCESS or FAILED)
-                            _continueLoop = false;
+                        };
+                        
+                        case "SUCCESS": {
+                            ["GTN", 3, format["Track %1: Plan completed successfully", _trackId]] call FLO_fnc_log;
+                            _track set ["status", "IDLE"];
+                        };
+                        
+                        case "FAILED": {
+                            ["GTN", 2, format["Track %1: Plan failed, will retry next cycle", _trackId]] call FLO_fnc_log;
+                            _track set ["status", "IDLE"];
                         };
                     };
                 };
             };
-            case "SUCCESS": {
-                // Plan complete - create new plan
-                ["GTN", 3, "Plan completed successfully, creating new plan"] call FLO_fnc_log;
-                _self call ["_createPlan", []];
+        } forEach _tracks;
+    }],
+    
+    // Get groups from a track's pool
+    ["_getGroupsFromTrack", {
+        params ["_track", "_count"];
+        
+        private _pool = _track get "groupPool";
+        private _result = [];
+        
+        {
+            if (count _result >= _count) exitWith {};
+            _result pushBack _x;
+        } forEach _pool;
+        
+        // Remove consumed groups from pool
+        {
+            _pool deleteAt (_pool find _x);
+        } forEach _result;
+        _track set ["groupPool", _pool];
+        
+        ["GTN", 3, format["Track %1: Consumed %2 groups (requested %3, %4 remaining in pool)", 
+            _track get "id", count _result, _count, count _pool]] call FLO_fnc_log;
+        
+        _result
+    }],
+    
+    // Set a track's goal dynamically
+    ["_setTrackGoal", {
+        params ["_trackId", "_newGoal"];
+        
+        private _tracks = _self get "_tracks";
+        {
+            if ((_x get "id") == _trackId) exitWith {
+                _x set ["goal", _newGoal];
+                _x set ["status", "IDLE"];  // Force replan
+                ["GTN", 2, format["Track %1 goal changed to: %2", _trackId, _newGoal]] call FLO_fnc_log;
             };
-            case "FAILED": {
-                // Plan failed - will be handled by replan trigger
-                ["GTN", 2, "Plan failed, awaiting replan"] call FLO_fnc_log;
-            };
-        };
+        } forEach _tracks;
     }],
 
     // === GOAL MANAGEMENT ===

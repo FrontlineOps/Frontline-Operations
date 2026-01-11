@@ -477,8 +477,43 @@ private _executor = createHashMapObject [[
                         if (diag_tickTime - _lastReinfCheck > 30) then {
                             _executor call ["_storeTaskData", ["STAGING_LAST_REINF_CHECK", diag_tickTime]];
                             
-                            // Ask Commander for available groups (Safety: This respects GTN tasking locks)
-                            private _availableGroupIds = _cmdr call ["_getAvailableGroups", [3, _stagingPos]]; // Ask for up to 3 groups nearest staging
+                            // Calculate how many groups we need based on power deficit
+                            private _powerDeficit = _requiredPower - _accumulatedPower;
+                            
+                            // Get track pool and calculate average power using capability analyzer
+                            private _taskNode = _ctx get "taskNode";
+                            private _track = _taskNode get "_trackRef";
+                            private _poolSize = if (!isNil "_track") then { count (_track get "groupPool") } else { 20 };
+                            
+                            private _avgPowerPerGroup = 800; // Default fallback
+                            if (!isNil "_track" && _poolSize > 0) then {
+                                private _analyzer = FLO_GTN_CapabilityAnalyzer;
+                                private _pool = _track get "groupPool";
+                                private _totalPower = 0;
+                                private _sampleSize = _poolSize min 5; // Sample up to 5 groups
+                                for "_i" from 0 to (_sampleSize - 1) do {
+                                    private _gid = _pool select _i;
+                                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gid]];
+                                    if (!isNil "_gAnalysis") then {
+                                        _totalPower = _totalPower + (_gAnalysis get "totalCombatPower");
+                                    };
+                                };
+                                if (_sampleSize > 0 && _totalPower > 0) then {
+                                    _avgPowerPerGroup = _totalPower / _sampleSize;
+                                };
+                            };
+                            
+                            private _groupsNeeded = ceil(_powerDeficit / _avgPowerPerGroup) max 1;
+                            private _requestCount = _groupsNeeded min _poolSize; // Request what we need up to pool size
+                            
+                            ["GTN", 3, format["Staging reinforcement: Need %1 power, pool has %2 groups (avg %3 power/group), requesting %4", 
+                                round _powerDeficit, _poolSize, round _avgPowerPerGroup, _requestCount]] call FLO_fnc_log;
+                            
+                            private _availableGroupIds = if (!isNil "_track") then {
+                                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount]]
+                            } else {
+                                _cmdr call ["_getAvailableGroups", [_requestCount, _stagingPos]]
+                            };
                             
                             if (count _availableGroupIds > 0) then {
                                 _groups = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUPS", []]; // Refresh local groups list
@@ -501,6 +536,11 @@ private _executor = createHashMapObject [[
                                 // Update shared data
                                 _executor call ["_storeTaskData", ["STAGING_GROUPS", _groups]];
                                 _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _accumulatedPower]];
+                                
+                                ["GTN", 3, format["Staging: Added %1 groups, now at %2/%3 power", 
+                                    count _availableGroupIds, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                            } else {
+                                ["GTN", 2, "Staging: No more groups available in track pool for reinforcement"] call FLO_fnc_log;
                             };
                         };
 
@@ -762,8 +802,14 @@ private _executor = createHashMapObject [[
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
 
-            // Get available groups
-            private _available = _cmdr call ["_getAvailableGroups", [_count]];
+            // Get groups from track pool
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, _count]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [_count]]
+            };
 
             if (count _available < 1) exitWith { false };
 
@@ -797,8 +843,14 @@ private _executor = createHashMapObject [[
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
 
-            // Get available groups
-            private _available = _cmdr call ["_getAvailableGroups", [2]];
+            // Get groups from track pool
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, 2]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [2]]
+            };
 
             if (count _available < 1) exitWith { false };
 
@@ -890,7 +942,13 @@ private _executor = createHashMapObject [[
             private _objPos = [_sectorId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
 
-            private _available = _cmdr call ["_getAvailableGroups", [2]];
+            // Get groups from track pool
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, 2]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [2]]
+            };
             if (count _available < 1) exitWith { false };
 
             {
@@ -917,7 +975,14 @@ private _executor = createHashMapObject [[
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
 
-            private _available = _cmdr call ["_getAvailableGroups", [4]];
+            // Get groups from track pool
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, 4]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [4]]
+            };
             if (count _available < 2) exitWith { false };
 
             {
@@ -964,7 +1029,14 @@ private _executor = createHashMapObject [[
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
 
-            private _available = _cmdr call ["_getAvailableGroups", [2]];
+            // Get groups from track pool
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, 2]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [2]]
+            };
             if (count _available < 1) exitWith { false };
 
             {
@@ -1400,7 +1472,14 @@ private _executor = createHashMapObject [[
             
             if (_targetPos isEqualTo [0,0,0]) exitWith { false };
             
-            private _available = _cmdr call ["_getAvailableGroups", [3, _targetPos]]; // Get 3 groups near target if possible
+            // Get groups from track pool
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, 3]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [3, _targetPos]]
+            };
             if (count _available < 1) exitWith { 
                 ["GTN", 3, "Assault cancelled - no forces available"] call FLO_fnc_log;
                 false 
