@@ -25,7 +25,7 @@ params [
     "_groupId",
     "_waypoints",
     ["_usePathfinding", false, [true]],
-    ["_allowTrails", false, [true]]
+    ["_allowTrails", true, [true]]
 ];
 
 // Get the group data

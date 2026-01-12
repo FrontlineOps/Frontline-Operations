@@ -576,6 +576,27 @@ private _goalLibrary = createHashMapObject [[
         ]]];
 
         _self call ["_registerGoal", [createHashMapFromArray [
+            ["id", "establish_garrison"],
+            ["type", GOAL_TACTICAL],
+            ["description", "Establish defensive garrison at owned objectives"],
+            ["preconditions", {
+                params ["_ws", "_params"];
+                private _forces = _ws call ["_getForces", []];
+                (_forces get "availableGroups") > 0
+            }],
+            ["methods", [
+                createHashMapFromArray [
+                    ["id", "garrison_friendly_objective"],
+                    ["score", { 25 }],
+                    ["subtasks", [
+                        ["prim_select_garrison_objective", []],
+                        ["prim_assign_garrison_groups", ["_GARRISON_OBJECTIVE"]]
+                    ]]
+                ]
+            ]]
+        ]]];
+
+        _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "assault_objective"],
             ["type", GOAL_TACTICAL],
             ["description", "Execute assault on an objective"],
@@ -966,6 +987,25 @@ private _goalLibrary = createHashMapObject [[
             ["handler", "GTN_useExistingIntel"],
             ["timeout", 5],
             ["completionCheck", { true }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_select_garrison_objective"],
+            ["description", "Select a friendly objective to garrison"],
+            ["handler", "GTN_selectGarrisonObjective"],
+            ["timeout", 5],
+            ["completionCheck", { true }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_assign_garrison_groups"],
+            ["description", "Assign groups to garrison an objective"],
+            ["handler", "GTN_assignGarrisonGroups"],
+            ["timeout", 60],
+            ["completionCheck", {
+                params ["_ws", "_taskData"];
+                _taskData getOrDefault ["garrisonAssigned", false]
+            }]
         ]]];
     }]
 ]];

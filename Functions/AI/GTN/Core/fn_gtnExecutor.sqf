@@ -448,7 +448,7 @@ private _executor = createHashMapObject [[
             };
 
             // Check if groups have arrived
-            private _arrived = _cmdr call ["_checkGroupsArrived", [_groups, _stagingPos, 150]];
+            private _arrived = _cmdr call ["_checkGroupsArrived", [_groups, _stagingPos, 300]];
 
             // Check timeout
             private _waitStart = _completedData getOrDefault ["STAGING_WAIT_START", -1];
@@ -1005,10 +1005,18 @@ private _executor = createHashMapObject [[
             private _cmdr = _ctx get "commander";
 
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") exitWith { false };
+            if (isNil "_objPos") exitWith {
+                ["GTN", 2, format["Defensive fires failed - no position for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // Call for defensive artillery
             private _result = _cmdr call ["_requestArtillery", [_objPos, "DEFENSIVE", 6]];
+            
+            if (!_result) then {
+                ["GTN", 2, format["Defensive fires failed - artillery unavailable for %1", _objId]] call FLO_fnc_log;
+            };
 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
@@ -1495,6 +1503,130 @@ private _executor = createHashMapObject [[
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             _primData set ["arrived", true];
             _taskNode set ["primitiveData", _primData];
+            
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_select_garrison_objective
+        // Selects garrison objective using World State analysis:
+        // - Exposed flanks (adjacent to enemy objectives)
+        // - Recent attack history
+        // - Current force ratio at objective
+        // - Strategic value in the objective graph
+        _self call ["_registerHandler", ["prim_select_garrison_objective", {
+            params ["_ctx"];
+            private _executor = _ctx get "executor";
+            private _gtnCmdr = _self get "_gtnCommander";
+            private _ws = _gtnCmdr get "_worldState";
+            
+            // Get our objectives from World State
+            private _friendlyObjs = _ws call ["_getFriendlyObjectives", []];
+            if (count (keys _friendlyObjs) == 0) exitWith {
+                _ctx set ["status", "FAILED"];
+                false
+            };
+            
+            // Analyze each objective for garrison priority
+            private _scoredObjs = [];
+            {
+                private _objId = _x;
+                private _objData = _friendlyObjs get _objId;
+                private _pos = _objData get "position";
+                
+                // Get threat analysis from capability analyzer
+                private _analysis = FLO_GTN_CapabilityAnalyzer call ["_analyzeObjective", [_objId, _ws]];
+                private _threatLevel = _analysis get "threatLevel";
+                
+                // Check exposed flanks (linked to enemy objectives)
+                private _linkedObjs = _objData get "linkedObjectives";
+                private _exposedFlanks = { (FLO_Objectives get _x get "owner") == west } count _linkedObjs;
+                
+                // Force ratio from World State
+                private _friendlyCount = _objData get "friendlyCount";
+                private _enemyCount = _objData get "enemyCount";
+                private _forceDeficit = (_enemyCount * 1.5) - _friendlyCount;
+                
+                // Score: threat + flanks + deficit + priority
+                private _basePriority = _objData get "priority";
+                private _score = (_threatLevel * 10) + (_exposedFlanks * 30) + (_forceDeficit max 0) * 10 + (_basePriority / 2);
+                
+                _scoredObjs pushBack [_objId, _pos, _score, _exposedFlanks, _threatLevel];
+                
+            } forEach (keys _friendlyObjs);
+            
+            // Select highest need
+            _scoredObjs = [_scoredObjs, [], {_x select 2}, "DESCEND"] call BIS_fnc_sortBy;
+            private _selected = _scoredObjs select 0;
+            _selected params ["_objId", "_objPos", "_score", "_flanks", "_threat"];
+            
+            _executor call ["_storeTaskData", ["_GARRISON_OBJECTIVE", _objId]];
+            _executor call ["_storeTaskData", ["GARRISON_POSITION", _objPos]];
+            _executor call ["_storeTaskData", ["GARRISON_ENEMY_DIST", 1500]]; // Assume frontline if flanks exposed
+            
+            ["GTN", 3, format["Garrison select: %1 (score:%2 flanks:%3 threat:%4)", 
+                _objId, round _score, _flanks, _threat]] call FLO_fnc_log;
+            
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_assign_garrison_groups
+        // Assigns groups to garrison based on threat analysis
+        _self call ["_registerHandler", ["prim_assign_garrison_groups", {
+            params ["_ctx"];
+            private _params = _ctx get "params";
+            private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
+            private _gtnCmdr = _self get "_gtnCommander";
+            
+            // Get objective ID from stored task data
+            private _objId = _executor call ["_getTaskData", ["_GARRISON_OBJECTIVE"]];
+            private _objData = FLO_Objectives get _objId;
+            private _targetPos = _objData get "position";
+            private _enemyDist = _executor call ["_getTaskData", ["GARRISON_ENEMY_DIST"]];
+            
+            // Analyze threat using capability analyzer
+            private _ws = _gtnCmdr get "_worldState";
+            private _analysis = FLO_GTN_CapabilityAnalyzer call ["_analyzeObjective", [_objId, _ws]];
+            
+            private _requiresAT = _analysis get "requiresAT";
+            private _requiresAA = _analysis get "requiresAA";
+            private _threatLevel = _analysis get "threatLevel";
+            private _groupsNeeded = (ceil (_threatLevel / 2)) max 1 min 4;
+            
+            // Frontline objectives get more garrison
+            if (_enemyDist < 1500) then { _groupsNeeded = _groupsNeeded + 1 };
+            
+            // Get available groups
+            private _available = _cmdr call ["_getAvailableGroups", [_groupsNeeded * 2, _targetPos]];
+            if (count _available == 0) exitWith {
+                ["GTN", 3, "No groups available for garrison"] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
+            
+            // Prioritize by type based on threat
+            private _toAssign = [];
+            
+            if (_requiresAT) then {
+                private _atGroups = _available select {
+                    (_cmdr call ["_getGroupType", [_x]]) in ["mechanized", "armor"]
+                };
+                { _toAssign pushBackUnique _x } forEach (_atGroups select [0, 1]);
+            };
+            
+            // Fill remaining slots
+            {
+                if (count _toAssign >= _groupsNeeded) then { break };
+                _toAssign pushBackUnique _x;
+            } forEach _available;
+            
+            // Order groups to defend
+            { _cmdr call ["_orderGroupDefend", [_x, _targetPos]] } forEach _toAssign;
+            
+            ["GTN", 3, format["Garrison: %1 groups to %2 (AT:%3 AA:%4)", 
+                count _toAssign, _objId, _requiresAT, _requiresAA]] call FLO_fnc_log;
             
             _ctx set ["status", "SUCCESS"];
             true
