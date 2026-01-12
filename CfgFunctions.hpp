@@ -129,8 +129,8 @@ class FLO {
         file = "Functions\Objective";
 
         class objectiveConfig           {};
-        class indexObjectives           {};
-        class indexVirtualObjectives    {};
+        class objectiveIndexer          {};
+        class dbscanCluster             {};
         class buildObjectiveGraph       {};
         class flipObjective             {};
         class monitorObjectiveDominance {};

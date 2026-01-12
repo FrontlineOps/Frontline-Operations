@@ -29,19 +29,6 @@ _respawnMarker setMarkerAlpha 1;
 ["INIT_MARKERS", 3, format["Created respawn marker at %1", mapGridPosition player]] call FLO_fnc_log;
 
 // ============================================================================
-// OBJECTIVE SYSTEM INITIALIZATION (SERVER)
-// ============================================================================
-
-// Index all objectives on the map
-[] remoteExec ["FLO_fnc_indexObjectives", 2];
-
-// Build road network connections between objectives
-[false] remoteExec ["FLO_fnc_startObjectiveGraph", 2];
-
-// Start monitoring objective dominance/control
-[] remoteExec ["FLO_fnc_monitorObjectiveDominance", 2];
-
-// ============================================================================
 // FINALIZATION
 // ============================================================================
 

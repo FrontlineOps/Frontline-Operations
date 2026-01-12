@@ -31,13 +31,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 if (!isNil "FLO_Objectives" && {count FLO_Objectives > 0}) exitWith {
     diag_log format ["[FLO_INIT_P3] Using saved objectives: %1 total", count FLO_Objectives];
 
-    // Verify we have virtual objectives too
-    if (isNil "FLO_VirtualObjectives") then {
-        diag_log "[FLO_INIT_P3] Indexing virtual objectives from existing FLO_Objectives";
-        [] call FLO_fnc_indexVirtualObjectives;
-    };
-
-    // Build/rebuild objective graph (road connections may have changed)
+    // Build/rebuild objective graph
     diag_log "[FLO_INIT_P3] Rebuilding objective graph for saved game...";
     [false] call FLO_fnc_buildObjectiveGraph;
 
@@ -52,10 +46,9 @@ if (!isNil "FLO_Objectives" && {count FLO_Objectives > 0}) exitWith {
 FLO_Objectives = createHashMap;
 publicVariable "FLO_Objectives";
 
-// Run the objective indexer directly on server
-diag_log "[FLO_INIT_P3] Calling FLO_fnc_indexObjectives...";
-
-private _indexResult = [] call FLO_fnc_indexObjectives;
+// Use objective indexer
+diag_log "[FLO_INIT_P3] Calling FLO_fnc_objectiveIndexer...";
+[] call FLO_fnc_objectiveIndexer;
 
 // Verify objectives were indexed
 if (isNil "FLO_Objectives") exitWith {
@@ -78,20 +71,7 @@ if (count keys FLO_Objectives == 0) exitWith {
     diag_log format ["[FLO_INIT_P3] ERROR: %1", FLO_InitError];
     false
 };
-
-diag_log format ["[FLO_INIT_P3] Indexed %1 objectives", count keys FLO_Objectives];
-
-// Index virtual objectives
-diag_log "[FLO_INIT_P3] Calling FLO_fnc_indexVirtualObjectives...";
-[] call FLO_fnc_indexVirtualObjectives;
-
-if (isNil "FLO_VirtualObjectives") then {
-    diag_log "[FLO_INIT_P3] WARNING: No virtual objectives created";
-    FLO_VirtualObjectives = [];
-    publicVariable "FLO_VirtualObjectives";
-};
-
-diag_log format ["[FLO_INIT_P3] Created %1 virtual objectives", count FLO_VirtualObjectives];
+diag_log format ["[FLO_INIT_P3] Objective indexer created %1 objectives", count keys FLO_Objectives];
 
 // Build objective graph
 diag_log "[FLO_INIT_P3] Building objective graph...";
@@ -105,10 +85,7 @@ diag_log "[FLO_INIT_P3] Starting objective graph...";
 diag_log "[FLO_INIT_P3] Starting objective dominance monitoring...";
 [] spawn FLO_fnc_monitorObjectiveDominance;
 
-diag_log format ["[FLO_INIT_P3] Objectives phase complete: %1 objectives, %2 virtual objectives",
-    count keys FLO_Objectives,
-    count FLO_VirtualObjectives
-];
+diag_log format ["[FLO_INIT_P3] Objectives phase complete: %1 objectives", count keys FLO_Objectives];
 
 true
 
