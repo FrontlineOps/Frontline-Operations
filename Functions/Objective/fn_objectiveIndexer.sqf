@@ -49,6 +49,34 @@ private _allLocations = [];
 
 diag_log format ["[ADV_INDEX] Found %1 map locations", count _allLocations];
 
+// === PHASE 1.5: Density-Based Resizing (Fix for maps with massive overlapping locations) ===
+// If locations are defined with huge radii (e.g. 1km) but are clustered close together,
+// we shrink them to fit their neighborhood density.
+{
+    private _idx = _forEachIndex;
+    private _pos = _x select 0;
+    private _radius = _x select 6;
+    
+    // Find distance to nearest OTHER location
+    private _nearestDist = 99999;
+    {
+        if (_forEachIndex != _idx) then {
+            private _d = _pos distance2D (_x select 0);
+            if (_d < _nearestDist) then { _nearestDist = _d };
+        };
+    } forEach _allLocations;
+
+    // If nearest neighbor is closer than the radius (plus buffer), clamp the radius
+    // We want radius to be at most ~70% of the distance to the neighbor to reduce overlap
+    // But we preserve a minimum sensible size (150m) so tiny villages don't vanish
+    private _densityCap = (_nearestDist * 0.7) max 150;
+    
+    if (_radius > _densityCap) then {
+        _x set [6, _densityCap]; // Update radius in-place
+        // diag_log format ["[ADV_INDEX] Clamped %1 radius from %2m to %3m (Nearest neighbor: %4m)", _x select 1, round _radius, round _densityCap, round _nearestDist];
+    };
+} forEach _allLocations;
+
 // === PHASE 2: Merge overlapping locations (single pass) ===
 private _mergedObjectives = [];
 private _used = createHashMap;
