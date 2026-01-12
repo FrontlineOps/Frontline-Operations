@@ -76,13 +76,34 @@ private _template = createHashMapFromArray [
         private _data = _instance get "data";
         _data set ["intelCollected", false];
         
-        // Spawn recon composition
-        ["Recon_OPF_1", _position, [0,0,0], 0, true] call LARs_fnc_spawnComp;
+        // Check if we are spawning at a house
+        private _house = nearestBuilding _position;
+        private _isHouse = (!isNull _house && {_house distance2D _position < 10});
         
-        // Find map board after composition spawns and add intel collection action
+        if (_isHouse) then {
+            // INDOOR MODE: Do not spawn composition. Place intel inside.
+            private _buildingPos = _house buildingPos -1;
+            if (count _buildingPos == 0) then { _buildingPos = [getPos _house]; };
+            
+            // Spawn MapBoard inside
+            private _mapBoardPos = selectRandom _buildingPos;
+            createVehicle ["MapBoard_altis_F", _mapBoardPos, [], 0, "CAN_COLLIDE"];
+            
+            // Move position to match house for patrol/units logic
+            _position = getPos _house;
+        } else {
+            // OUTDOOR MODE: Find flat position for composition
+            private _flatPos = [_position, 0, 50, 5, 0, 0.25, 0] call BIS_fnc_findSafePos;
+            _position = _flatPos;
+            
+            ["Recon_OPF_1", _position, [0,0,0], 0, true] call LARs_fnc_spawnComp;
+        };
+        
+        // Find map board after spawning and add intel collection action
         [_position, _data, _missionId] spawn {
             params ["_position", "_data", "_missionId"];
             sleep 3;
+            // Search for map board (either from composition or manually placed)
             private _mapBoard = nearestObjects [_position, ["MapBoard_altis_F"], 50] select 0;
             if (!isNull _mapBoard) then {
                 _data set ["mapBoard", _mapBoard];

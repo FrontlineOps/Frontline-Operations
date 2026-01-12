@@ -59,7 +59,7 @@ private _template = createHashMapFromArray [
 
         private _barracks = if (count _barracksSearch > 0) then { _barracksSearch select 0 } else { objNull };
 
-        if (isNull _barracks) then { _barracks = [_position] call FLO_fnc_findMissionHouse; };
+        if (isNull _barracks) then { _barracks = nearestBuilding _position; };
         if (isNull _barracks) exitWith {
             ["SIDEMISSION", 1, format["POW Rescue %1: No suitable building found at %2", _missionId, _position]] call FLO_fnc_log;
         };

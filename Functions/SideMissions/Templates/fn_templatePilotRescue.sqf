@@ -53,7 +53,7 @@ private _template = createHashMapFromArray [
         private _aggrScore = FLO_DifficultyHandle getOrDefault ["value", 5];
         
         // Find house at position
-        private _house = ([_position] call FLO_fnc_findMissionHouse);
+        private _house = nearestBuilding _position;
         if (isNull _house) exitWith {};
         
         private _buildingPos = _house buildingPos -1;
