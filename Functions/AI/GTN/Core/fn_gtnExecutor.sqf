@@ -66,6 +66,13 @@ private _executor = createHashMapObject [[
         _self set ["_completedTaskData", _data];
     }],
 
+    // Get stored task data
+    ["_getTaskData", {
+        params ["_key"];
+        private _data = _self get "_completedTaskData";
+        _data getOrDefault [_key, nil]
+    }],
+
     // Resolve dynamic parameter references
     ["_resolveRuntimeParams", {
         params ["_params"];

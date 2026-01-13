@@ -126,6 +126,7 @@ private _worldState = createHashMapObject [[
                 ["underAttack", _underAttack],
                 ["vulnerable", _vulnerable],
                 ["forceRatio", if (_nearBlufor > 0) then {_nearOpfor / _nearBlufor} else {999}],
+                ["linkedObjectives", _data getOrDefault ["linkedObjectives", []]],
                 ["intel", _cachedIntel]
             ];
 

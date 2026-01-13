@@ -21,8 +21,8 @@ private _locationConfigs = [
     ["NameCityCapital", "civilian", "capital", 100, 1.5],  // Size multiplier
     ["NameCity", "civilian", "city", 75, 1.3],
     ["NameVillage", "civilian", "village", 50, 1.2],
-    ["Airport", "military", "airfield", 95, 1.5],
-    ["Strategic", "military", "strategic", 85, 1.2]
+    ["Airport", "military", "local", 95, 1.5],
+    ["Strategic", "military", "local", 85, 1.2]
 ];
 
 private _allLocations = [];
@@ -225,7 +225,7 @@ if (count _uncoveredBuildings > 10) then {
         private _objId = format ["cluster_%1", _objectiveIndex];
         private _objData = createHashMapFromArray [
             ["type", "military"],
-            ["subtype", "compound"],
+            ["subtype", "cluster"],
             ["position", _clusterPos],
             ["priority", 40],
             ["radius", _clusterRadius],

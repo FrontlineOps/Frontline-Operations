@@ -1722,6 +1722,16 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             _analysis set ["recommendedAttackForce", 100];
         };
 
+        // Calculate threat level (0-10 scale based on power)
+        // 500 power ~ level 1 (Light resistance)
+        // 2500 power ~ level 5 (Heavy resistance/Tank)
+        private _power = _analysis get "totalDefensePower";
+        _analysis set ["threatLevel", (_power / 500) min 10];
+        
+        // Capabilities required
+        _analysis set ["requiresAT", (_analysis get "hasArmor") || _power > 200];
+        _analysis set ["requiresAA", (_analysis get "hasAA") || (_analysis getOrDefault ["threatVsAir", 0]) > 0.3];
+
         _analysis
     }],
 
