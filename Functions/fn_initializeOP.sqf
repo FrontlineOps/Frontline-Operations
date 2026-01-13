@@ -112,13 +112,29 @@ private _fnc_setupArsenal = {
     params ["_building", "_config"];
 
     private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
-    if (_restrictedArsenal isEqualTo 0) then {
+    
+    // Check if we should restrict the arsenal (Param == 1)
+    if (_restrictedArsenal == 1) then {
         try {
             [_building] call FLO_fnc_restrictArsenalBox;
-            [_building] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, true];
             [_config get "type", 3, "Arsenal restrictions applied"] call FLO_fnc_log;
         } catch {
-            [_config get "type", 1, format["Failed to setup arsenal: %1", _exception]] call FLO_fnc_log;
+            [_config get "type", 1, format["Failed to setup restricted arsenal: %1", _exception]] call FLO_fnc_log;
+        };
+    } else {
+        // Unrestricted - initialize full arsenal
+        try {
+            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                [_building, true] call ace_arsenal_fnc_initBox;
+                [_building, true] call ace_arsenal_fnc_addVirtualItems;
+            } else {
+                ["AmmoboxInit", [_building, true]] call BIS_fnc_arsenal;
+            };
+            
+            [_building] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, true];
+            [_config get "type", 3, "Arsenal unrestricted initialized"] call FLO_fnc_log;
+        } catch {
+            [_config get "type", 1, format["Failed to setup unrestricted arsenal: %1", _exception]] call FLO_fnc_log;
         };
     };
 };
@@ -148,20 +164,19 @@ private _fnc_addActions = {
             (_config get "requestScript"), nil, 99999, true, true, "", "", 40, false, "", ""
         ]
     ];
-
-    if (_restrictedArsenal != 0) then {
-        _actions pushBack [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil, 1, true, true, "", "_this distance _target < 10"
-        ];
-    };
+    
+    // Always add Arsenal action
+    _actions pushBack [
+        "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+        {
+            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                [player, player, true] call ace_arsenal_fnc_openBox;
+            } else {
+                ["Open", true] spawn BIS_fnc_arsenal;
+            };
+        },
+        nil, 1, true, true, "", "_this distance _target < 10"
+    ];
 
     // Add all actions with error handling
     {
