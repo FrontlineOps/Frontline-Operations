@@ -151,8 +151,9 @@ private _gtnCommander = createHashMapObject [[
         // Manage force preservation (Retreats & Replenishment)
         _self call ["_manageForcePreservation", []];
         
-        // Log decision summary for debugging (single line per cycle)
+        // Log decision summary for debugging
         _self call ["_logDecisionSummary", []];
+        _self call ["_dumpStatus", []];
     }],
     
     // === TRACK SYSTEM ===
@@ -1058,7 +1059,7 @@ private _gtnCommander = createHashMapObject [[
         _stats
     }],
     
-    // List all groups with their current orders (for diagnosing order lifecycle issues)
+    // List all groups with their current orders
     ["_debugListOrders", {
         private _groups = FLO_virtualGroups get "_groups";
         private _gtnTasked = _self get "_gtnTaskedGroups";
@@ -1107,13 +1108,13 @@ private _gtnCommander = createHashMapObject [[
         ]
     }],
 
-    // Full status dump for debugging - enhanced with group availability
+    // Full status dump for debugging
     ["_dumpStatus", {
-        ["GTN", 1, "========== GTN COMMANDER DEBUG DUMP =========="] call FLO_fnc_log;
+        ["GTN", 3, "========== GTN COMMANDER DEBUG DUMP =========="] call FLO_fnc_log;
         
         // Core stats
         private _debug = _self call ["_debugPrint", []];
-        ["GTN", 1, _debug] call FLO_fnc_log;
+        ["GTN", 3, _debug] call FLO_fnc_log;
         
         // Group availability analysis
         _self call ["_debugGroupAvailability", []];
@@ -1129,6 +1130,9 @@ private _gtnCommander = createHashMapObject [[
                 count (_track get "groupPool")
             ]] call FLO_fnc_log;
         } forEach _tracks;
+        
+        // List all group orders
+        _self call ["_debugListOrders", []];
         
         ["GTN", 3, "========== END DEBUG DUMP =========="] call FLO_fnc_log;
         

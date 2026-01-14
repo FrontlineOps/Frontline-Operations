@@ -47,9 +47,10 @@ private _resourceManager = createHashMapObject [[
     }]
 ]];
 
-// Wait for objective groups then start GTN
-[] spawn {
-    FLO_GTN_ResourceManager call ["_initializeGTN", []];
+// Start GTN immediately
+[_resourceManager] spawn {
+    params ["_mgr"];
+    _mgr call ["_initializeGTN", []];
 };
 
 _resourceManager
