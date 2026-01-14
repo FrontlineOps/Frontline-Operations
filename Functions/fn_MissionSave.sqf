@@ -403,21 +403,10 @@ try {
     if (!isNil "FLO_Objectives") then { _data set ["objectives", FLO_Objectives]; };
     if (!isNil "FLO_GTN_ResourceManager") then {
         _data set ["aiCommander", createHashMapFromArray [
-            // Core state
-            ["threatLevel", FLO_GTN_ResourceManager get "_threatLevel"],
-            ["lastUpdate", FLO_GTN_ResourceManager get "_lastUpdate"],
-
-            // Group tracking
-            ["activeAttackGroups", FLO_GTN_ResourceManager get "_activeAttackGroups"],
-            ["activeDefenseGroups", FLO_GTN_ResourceManager get "_activeDefenseGroups"],
-            ["garrisonedGroups", FLO_GTN_ResourceManager get "_garrisonedGroups"],
-            ["strategicReserve", FLO_GTN_ResourceManager get "_strategicReserve"],
-
-            // GTN state
             ["gtnEnabled", !isNil {FLO_GTN_ResourceManager get "_gtnCommander"}]
         ]];
     };
-    ["SAVE", 3, "Objectives and GTN Resource Manager saved"] call FLO_fnc_log;
+    ["SAVE", 3, "Objectives and GTN state saved"] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================

@@ -300,7 +300,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         diag_log format ["[FLO_INIT_P5] Restored %1 supply crates", _loadedCrates];
     };
 
-    // Restore GTN Resource Manager state
+    // Restore GTN state
     if ("aiCommander" in _savedData) then {
         if (isNil "FLO_GTN_ResourceManager") then {
             FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
@@ -308,23 +308,11 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         private _cmd = _savedData get "aiCommander";
         if (!isNil "_cmd" && {_cmd isEqualType createHashMap}) then {
-            // Core state
-            FLO_GTN_ResourceManager set ["_threatLevel", _cmd getOrDefault ["threatLevel", 0]];
-            FLO_GTN_ResourceManager set ["_lastUpdate", _cmd getOrDefault ["lastUpdate", time]];
-
-            // Group tracking
-            FLO_GTN_ResourceManager set ["_activeAttackGroups", _cmd getOrDefault ["activeAttackGroups", []]];
-            FLO_GTN_ResourceManager set ["_activeDefenseGroups", _cmd getOrDefault ["activeDefenseGroups", []]];
-            FLO_GTN_ResourceManager set ["_garrisonedGroups", _cmd getOrDefault ["garrisonedGroups", []]];
-            FLO_GTN_ResourceManager set ["_strategicReserve", _cmd getOrDefault ["strategicReserve", []]];
-
-            // GTN state - restore if it was initialized
             private _gtnWasEnabled = _cmd getOrDefault ["gtnEnabled", false];
             if (_gtnWasEnabled && {isNil {FLO_GTN_ResourceManager get "_gtnCommander"}}) then {
                 FLO_GTN_ResourceManager call ["_initializeGTN", []];
             };
-
-            diag_log "[FLO_INIT_P5] GTN Resource Manager state restored";
+            diag_log "[FLO_INIT_P5] GTN state restored";
         };
     };
 

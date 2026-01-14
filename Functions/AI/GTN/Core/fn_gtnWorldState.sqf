@@ -152,12 +152,6 @@ private _worldState = createHashMapObject [[
             ["infantry", 0], ["armor", 0], ["mechanized", 0], ["motorized", 0], ["artillery", 0], ["air", 0]
         ];
 
-        // Get commander reference for status checks
-        private _cmdr = _self get "_commander";
-        private _attackGroups = if (!isNil "_cmdr") then { _cmdr get "_activeAttackGroups" } else { [] };
-        private _defenseGroups = if (!isNil "_cmdr") then { _cmdr get "_activeDefenseGroups" } else { [] };
-        private _garrisonGroups = if (!isNil "_cmdr") then { _cmdr get "_garrisonedGroups" } else { [] };
-
         {
             private _gData = _groups get _x;
             if (isNil "_gData") then { continue };
@@ -179,28 +173,21 @@ private _worldState = createHashMapObject [[
             };
             _counts set [_typeKey, (_counts get _typeKey) + 1];
 
-            // Count by status
-            private _onMission = _gData get "onMission";
+            // Count by status using currentOrder
+            private _currentOrder = _gData getOrDefault ["currentOrder", ""];
+            private _onMission = _gData getOrDefault ["onMission", false];
 
-            if (_x in _attackGroups) then {
-                _counts set ["attacking", (_counts get "attacking") + 1];
-            } else {
-                if (_x in _defenseGroups) then {
-                    _counts set ["defending", (_counts get "defending") + 1];
-                } else {
-                    if (_x in _garrisonGroups) then {
-                        _counts set ["garrisoned", (_counts get "garrisoned") + 1];
-                    };
-                };
+            switch (_currentOrder) do {
+                case "ATTACK": { _counts set ["attacking", (_counts get "attacking") + 1]; };
+                case "DEFEND": { _counts set ["defending", (_counts get "defending") + 1]; };
+                case "GARRISON": { _counts set ["garrisoned", (_counts get "garrisoned") + 1]; };
+                default { _counts set ["garrisoned", (_counts get "garrisoned") + 1]; };
             };
 
             // A group is "available" if it's not on an active mission
-            // (garrison groups are available, idle groups are available)
             if !(_onMission) then {
-                if !(_x in _attackGroups) then {
-                    if !(_x in _defenseGroups) then {
-                        _counts set ["available", (_counts get "available") + 1];
-                    };
+                if !(_currentOrder in ["ATTACK", "DEFEND", "MOVE"]) then {
+                    _counts set ["available", (_counts get "available") + 1];
                 };
             };
         } forEach _allGroupIds;

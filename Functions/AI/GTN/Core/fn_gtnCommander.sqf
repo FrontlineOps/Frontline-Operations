@@ -150,6 +150,9 @@ private _gtnCommander = createHashMapObject [[
 
         // Manage force preservation (Retreats & Replenishment)
         _self call ["_manageForcePreservation", []];
+        
+        // Log decision summary for debugging (single line per cycle)
+        _self call ["_logDecisionSummary", []];
     }],
     
     // === TRACK SYSTEM ===
@@ -521,11 +524,24 @@ private _gtnCommander = createHashMapObject [[
         _self set ["_gtnTaskedGroups", _tasked];
     }],
 
-    // Release groups from GTN tasking
+    // Release groups from GTN tasking and clear their orders
     ["_releaseGroups", {
-        params ["_groupIds"];
+        params [["_groupIds", []], ["_newOrder", ""]];
         private _tasked = _self get "_gtnTaskedGroups";
-        { _tasked = _tasked - [_x]; } forEach _groupIds;
+        private _groups = FLO_virtualGroups get "_groups";
+        
+        {
+            private _groupId = _x;
+            _tasked = _tasked - [_groupId];
+            
+            // Clear the group's currentOrder so it becomes available again
+            private _gData = _groups get _groupId;
+            if (!isNil "_gData") then {
+                _gData set ["currentOrder", _newOrder];
+                ["GTN", 3, format["Released group %1, order reset to '%2'", _groupId, _newOrder]] call FLO_fnc_log;
+            };
+        } forEach _groupIds;
+        
         _self set ["_gtnTaskedGroups", _tasked];
     }],
 
@@ -944,6 +960,129 @@ private _gtnCommander = createHashMapObject [[
     }],
 
     // === DEBUG ===
+    
+    // Per-cycle decision summary - single line showing all track states
+    ["_logDecisionSummary", {
+        private _tracks = _self get "_tracks";
+        private _tasked = _self get "_gtnTaskedGroups";
+        private _summary = [];
+        
+        {
+            private _track = _x;
+            private _trackId = _track get "id";
+            private _goal = _track get "goal";
+            private _status = _track get "status";
+            private _pool = count (_track get "groupPool");
+            private _planner = _track get "planner";
+            
+            private _planStatus = if (!isNil "_planner") then {
+                _planner call ["_getPlanStatus", []]
+            } else { "NO_PLAN" };
+            
+            private _taskInfo = if (!isNil "_planner") then {
+                private _task = _planner call ["_getCurrentTask", []];
+                if (!isNil "_task") then {
+                    _task get "taskId"
+                } else { "-" }
+            } else { "-" };
+            
+            // Short format: TRACK_1(capture):RUNNING|p=3|t=prim_attack
+            private _shortGoal = _goal select [0, 12]; // First 12 chars
+            _summary pushBack format["%1(%2):%3|p=%4|t=%5", 
+                _trackId, _shortGoal, _planStatus, _pool, _taskInfo];
+        } forEach _tracks;
+        
+        ["GTN", 3, format["DECISION[tasked=%1]: %2", count _tasked, _summary joinString " | "]] call FLO_fnc_log;
+    }],
+    
+    // Debug why groups aren't available - call this when commander seems stuck
+    ["_debugGroupAvailability", {
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gtnTasked = _self get "_gtnTaskedGroups";
+        
+        private _stats = createHashMapFromArray [
+            ["total", 0],
+            ["wrongSide", 0],
+            ["wrongType", 0],
+            ["airArtillery", 0],
+            ["gtnTasked", 0],
+            ["busyOrder", 0],
+            ["available", 0]
+        ];
+        
+        private _orderBreakdown = createHashMap;
+        
+        {
+            private _groupId = _x;
+            private _gData = _y;
+            
+            _stats set ["total", (_stats get "total") + 1];
+            
+            private _groupType = _gData get "groupType";
+            private _currentOrder = _gData get "currentOrder";
+            private _side = _gData get "side";
+            
+            // Track order distribution
+            private _orderKey = if (_currentOrder == "") then { "IDLE" } else { _currentOrder };
+            _orderBreakdown set [_orderKey, (_orderBreakdown getOrDefault [_orderKey, 0]) + 1];
+            
+            // Check filters
+            if (_side != east) exitWith { _stats set ["wrongSide", (_stats get "wrongSide") + 1] };
+            if (_groupType in ["civilian", "ambient"]) exitWith { _stats set ["wrongType", (_stats get "wrongType") + 1] };
+            if (_groupType in ["helicopter", "jet", "air", "artillery"]) exitWith { _stats set ["airArtillery", (_stats get "airArtillery") + 1] };
+            if (_groupId in _gtnTasked) exitWith { _stats set ["gtnTasked", (_stats get "gtnTasked") + 1] };
+            if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", "DEFEND", ""])}) exitWith { 
+                _stats set ["busyOrder", (_stats get "busyOrder") + 1] 
+            };
+            
+            _stats set ["available", (_stats get "available") + 1];
+        } forEach _groups;
+        
+        // Build order breakdown string
+        private _orderStr = [];
+        { _orderStr pushBack format["%1=%2", _x, _y]; } forEach _orderBreakdown;
+        
+        ["GTN", 3, format["GROUP AVAILABILITY: total=%1—wrongSide=%2,wrongType=%3,air/arty=%4,gtnTasked=%5,busyOrder=%6—AVAILABLE=%7",
+            _stats get "total",
+            _stats get "wrongSide",
+            _stats get "wrongType",
+            _stats get "airArtillery",
+            _stats get "gtnTasked",
+            _stats get "busyOrder",
+            _stats get "available"
+        ]] call FLO_fnc_log;
+        
+        ["GTN", 3, format["ORDER BREAKDOWN: %1", _orderStr joinString ", "]] call FLO_fnc_log;
+        
+        // Return stats for programmatic use
+        _stats
+    }],
+    
+    // List all groups with their current orders (for diagnosing order lifecycle issues)
+    ["_debugListOrders", {
+        private _groups = FLO_virtualGroups get "_groups";
+        private _gtnTasked = _self get "_gtnTaskedGroups";
+        
+        ["GTN", 3, "=== GROUP ORDER LISTING ==="] call FLO_fnc_log;
+        
+        {
+            private _groupId = _x;
+            private _gData = _y;
+            
+            private _side = _gData get "side";
+            if (_side != east) then { continue };
+            
+            private _groupType = _gData get "groupType";
+            private _currentOrder = _gData getOrDefault ["currentOrder", ""];
+            private _unitCount = _gData get "unitCount";
+            private _isTasked = _groupId in _gtnTasked;
+            
+            private _shortId = _groupId select [7, 8];
+            ["GTN", 3, format["  %1: type=%2, order=%3, units=%4, gtnTasked=%5",
+                _shortId, _groupType, _currentOrder, _unitCount, _isTasked
+            ]] call FLO_fnc_log;
+        } forEach _groups;
+    }],
 
     ["_debugPrint", {
         private _stats = _self get "_stats";
@@ -968,10 +1107,31 @@ private _gtnCommander = createHashMapObject [[
         ]
     }],
 
-    // Full status dump for debugging
+    // Full status dump for debugging - enhanced with group availability
     ["_dumpStatus", {
+        ["GTN", 1, "========== GTN COMMANDER DEBUG DUMP =========="] call FLO_fnc_log;
+        
+        // Core stats
         private _debug = _self call ["_debugPrint", []];
-        ["GTN", 2, _debug] call FLO_fnc_log;
+        ["GTN", 1, _debug] call FLO_fnc_log;
+        
+        // Group availability analysis
+        _self call ["_debugGroupAvailability", []];
+        
+        // Track details
+        private _tracks = _self get "_tracks";
+        {
+            private _track = _x;
+            ["GTN", 3, format["TRACK %1: goal=%2, status=%3, poolSize=%4",
+                _track get "id",
+                _track get "goal",
+                _track get "status",
+                count (_track get "groupPool")
+            ]] call FLO_fnc_log;
+        } forEach _tracks;
+        
+        ["GTN", 3, "========== END DEBUG DUMP =========="] call FLO_fnc_log;
+        
         _debug
     }]
 ]];
