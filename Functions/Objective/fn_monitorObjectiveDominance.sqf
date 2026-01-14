@@ -110,10 +110,14 @@ while {true} do {
         private _dynamicRate = 1.0 + (_diff * 0.5); // Base 1.0 + 0.5 per unit advantage
         if (_dynamicRate > 5.0) then { _dynamicRate = 5.0 }; // Cap at 5x speed
         
+        // Minimum OPFOR requirement for capture (prevents lone stragglers from capturing)
+        private _minOpforToCapture = 3;
+        
         if (_bluforCount > _opforCount && {_bluforCount > 0}) then {
             _progress = (_progress + (_deltaTime * _dynamicRate)) min _captureTime;
         } else {
-            if (_opforCount > _bluforCount && {_opforCount > 0}) then {
+            // OPFOR can only capture if they meet minimum threshold
+            if (_opforCount > _bluforCount && {_opforCount >= _minOpforToCapture}) then {
                 _progress = (_progress - (_deltaTime * _dynamicRate)) max (-_captureTime);
             } else {
                 // Decay (slower than capture)
@@ -128,7 +132,8 @@ while {true} do {
             _progress = 0;
             [0.20, "increase"] call FLO_fnc_adjustAggression;
         } else {
-            if (_progress <= -_captureTime && {_owner != east}) then {
+            // OPFOR capture also requires meeting minimum threshold
+            if (_progress <= -_captureTime && {_owner != east} && {_opforCount >= _minOpforToCapture}) then {
                 [_id, east] call FLO_fnc_flipObjective;
                 _progress = 0;
                 [-0.10, "decrease"] call FLO_fnc_adjustAggression;
