@@ -24,7 +24,7 @@ if (!isServer) exitWith {};
         if (_roll < 0.5) then {
             // Start a random side mission via intel system
             [] call FLO_fnc_militaryIntel;
-            ["STR_FLO_INTEL_TITLE", ["Background mission opportunity"], "intel"] call FLO_fnc_sendNotification;
+            ["Background mission opportunity", "intel"] call FLO_fnc_sendNotification;
         } else {
             // Reveal a nearby enemy group for any player - ONLY if intel allows
             private _players = allPlayers select {alive _x};
@@ -39,7 +39,7 @@ if (!isServer) exitWith {};
 
             if (!isNull _center && _intelOK) then {
                 [_center] call FLO_fnc_revealRandomEnemyGroup;
-                ["STR_FLO_INTEL_TITLE", ["Enemy activity detected nearby"], "intel"] call FLO_fnc_sendNotification;
+                ["Enemy activity detected nearby", "intel"] call FLO_fnc_sendNotification;
             };
         };
 

@@ -18,7 +18,6 @@ _newScore = _newScore max 0 min 34;
 FLO_DifficultyHandle set ["value", _newScore];
 publicVariable "FLO_DifficultyHandle";
 
-// Notification
-private _title = "STR_FLO_AGGRESSION_TITLE";
+// Notification - just pass the message
 private _msg = if (_type isEqualTo "increase") then {"STR_FLO_REP_AGG_INC"} else {"STR_FLO_REP_AGG_DEC"};
-[ _title, _msg, "warning" ] call FLO_fnc_sendNotification; 
+[_msg, "warning"] call FLO_fnc_sendNotification; 

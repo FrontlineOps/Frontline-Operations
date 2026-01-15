@@ -30,7 +30,7 @@ private _taskId = format ["CivMission_Deliver_%1", floor random 9999];
 [true, _taskId, ["Deliver the supplies to the designated location.", "Deliver Resources", ""], _deliveryPos, "CREATED", 1, true, "container", true] call BIS_fnc_taskCreate;
 
 // Notification skipping custom
-["STR_FLO_MISSIONCIV_TITLE", "STR_FLO_MISSIONCIV_DELIVER", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+["STR_FLO_MISSIONCIV_DELIVER", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
 // Spawn Ambush (if Low Rep) - At delivery location
 private _repScore = FLO_ReputationHandle getOrDefault ["value", 0];

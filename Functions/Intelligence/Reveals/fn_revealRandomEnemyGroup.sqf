@@ -31,7 +31,7 @@ private _nearGroups = [];
 } forEach _groupsMap;
 
 if (count _nearGroups isEqualTo 0) exitWith {
-    ["STR_FLO_INTEL_TITLE", "STR_FLO_INTEL_NONE", "info"] call FLO_fnc_sendNotification;
+    ["STR_FLO_INTEL_NONE", "info"] call FLO_fnc_sendNotification;
 };
 
 private _chosen = selectRandom _nearGroups;
@@ -70,5 +70,5 @@ private _wpts = _gdata getOrDefault ["waypoints", []];
 };
 
 private _grid = mapGridPosition _gpos;
-["STR_FLO_INTEL_TITLE", [_msg, _grid], "info"] call FLO_fnc_sendNotification;
+[[_msg, _grid], "info"] call FLO_fnc_sendNotification;
 _grid

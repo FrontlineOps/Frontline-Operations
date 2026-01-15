@@ -175,7 +175,7 @@ if (isNil "FLO_Intel_System") then {
                     [] call FLO_fnc_revealArtilleryBattery;
                     _revealed = true;
                     
-                    ["STR_FLO_INTEL_TITLE", "Major enemy force disposition acquired!", "success"] remoteExec ["FLO_fnc_sendNotification", 0];
+                    ["Major enemy force disposition acquired!", "success"] remoteExec ["FLO_fnc_sendNotification", 0];
                 };
                 
                 case "RARE": {
@@ -216,7 +216,7 @@ if (isNil "FLO_Intel_System") then {
             _self set ["_pendingReveal", true];
             
             // Broadcast processing notification
-            ["STR_FLO_INTEL_TITLE", "Processing intelligence...", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+            ["Processing intelligence...", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
             
             // Radio chatter sound (if available)
             // playSound "radio_static"; // Uncomment if sound exists
@@ -259,7 +259,7 @@ if (isNil "FLO_Intel_System") then {
                     // Only at HIGH tier
                     if (_tier == "HIGH") then {
                         private _msg = selectRandom _intercepts;
-                        ["STR_FLO_INTEL_TITLE", format ["Radio intercept: '%1'", _msg], "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+                        [format ["Radio intercept: '%1'", _msg], "info"] remoteExec ["FLO_fnc_sendNotification", 0];
                         
                         ["INTEL", 3, format["Radio intercept: %1", _msg]] call FLO_fnc_log;
                     };

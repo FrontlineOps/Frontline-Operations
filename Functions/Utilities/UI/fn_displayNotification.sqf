@@ -4,11 +4,9 @@
  * Description:
  * Displays notifications using Antistasi-style temporary BIS tasks.
  * Creates a task that appears in the task bar, then auto-deletes after a duration.
- * Much cleaner than hint or TextTiles - integrates with task UI.
  *
  * Parameters:
- * _title : STRING - Notification title
- * _msg : STRING or ARRAY - Message (array for format)
+ * _title : STRING or ARRAY - Message to display (array for format)
  * _type : STRING - "info", "success", "warning", "error"
  * _playMusic - BOOL - play music for rewards
  *
@@ -16,49 +14,44 @@
  * Nothing
  *
  * Examples:
- * ["Intel", "Enemy position revealed", "info"] call FLO_fnc_displayNotification;
- * ["Mission", "Objective captured!", "success"] call FLO_fnc_displayNotification;
+ * ["Enemy position revealed", "info"] call FLO_fnc_displayNotification;
+ * ["Objective captured!", "success", true] call FLO_fnc_displayNotification;
  */
 
 if !(isServer) exitWith {
-    // Redirect to server
     _this remoteExec ["FLO_fnc_displayNotification", 2];
 };
 
 params [
-    ["_title", "", [""]],
-    ["_msg", "", ["", []]], 
+    ["_title", "", ["", []]], 
     ["_type", "info", [""]],
     ["_playMusic", false, [true]]
 ];
 
-// Localize message
-if (_msg isEqualType []) then {
-    for "_i" from 0 to (count _msg - 1) do {
-        private _arg = _msg#_i;
+// Localize and format title
+if (_title isEqualType []) then {
+    for "_i" from 0 to (count _title - 1) do {
+        private _arg = _title#_i;
         if (_arg isEqualType "" && {_arg find "STR_" != -1}) then {
-            _msg set [_i, localize _arg];
+            _title set [_i, localize _arg];
         };
     };
-    _msg = format _msg;
+    _title = format _title;
 } else {
-    if (_msg find "STR_" != -1) then {
-        _msg = localize _msg;
+    if (_title find "STR_" != -1) then {
+        _title = localize _title;
     };
 };
-
-// Localize title
-private _titleText = if (_title find "STR_" != -1) then { localize _title } else { _title };
 
 // Generate unique task ID
 private _taskId = format ["FLO_notify_%1", floor random 999999];
 
 // Get task icon based on type
 private _taskType = switch (toLower _type) do {
-    case "success": { "Defend" };      // Green shield icon
-    case "warning": { "Target" };       // Target icon  
-    case "error": { "Destroy" };        // Red X icon
-    default { "intel" };                // Intel icon for info
+    case "success": { "Defend" };
+    case "warning": { "Target" };
+    case "error": { "Destroy" };
+    default { "intel" };
 };
 
 // Duration based on type
@@ -69,18 +62,17 @@ private _duration = switch (toLower _type) do {
     default { 6 };
 };
 
-// Create temporary task for all players
-// BIS_fnc_taskCreate: [sides, taskID, [description, title, marker], destination, state, priority, showNotification, type, visibleIn3D]
+// Create temporary task - title IS the message
 [
-    west,                                           // Side(s) to show to
-    _taskId,                                        // Unique task ID
-    [_msg, _titleText, ""],                         // [Description, Title, Marker]
-    objNull,                                        // No destination  
-    "CREATED",                                      // State
-    -1,                                             // Priority (low so it doesn't interfere)
-    true,                                           // Show notification popup
-    _taskType,                                      // Task type for icon
-    false                                           // Not visible in 3D
+    west,
+    _taskId,
+    ["", _title, ""],  // [Description, Title, Marker]
+    objNull,
+    "CREATED",
+    -1,
+    true,
+    _taskType,
+    false
 ] call BIS_fnc_taskCreate;
 
 // Delete task after duration

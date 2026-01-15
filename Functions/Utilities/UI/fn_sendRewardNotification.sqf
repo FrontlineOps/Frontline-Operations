@@ -23,4 +23,4 @@ params [
 ];
 
 // Display notification to all players
-["STR_FLO_REWARD_TITLE", ["STR_FLO_REWARD_SECURED", _objectiveStr, _reward], "success", true] call FLO_fnc_sendNotification; 
+[["STR_FLO_REWARD_SECURED", _objectiveStr, _reward], "success", true] call FLO_fnc_sendNotification; 

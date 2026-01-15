@@ -16,7 +16,7 @@
 params [["_center", getPos player], ["_radius", 5000]];
 
 if (isNil "FLO_virtualGroups") exitWith { 
-    ["STR_FLO_INTEL_TITLE", "Intelligence systems offline", "warning"] call FLO_fnc_sendNotification;
+    ["Intelligence systems offline", "warning"] call FLO_fnc_sendNotification;
     false 
 };
 
@@ -39,7 +39,7 @@ private _artilleryGroups = [];
 } forEach (FLO_virtualGroups get "_groups");
 
 if (count _artilleryGroups == 0) exitWith { 
-    ["STR_FLO_INTEL_TITLE", "No artillery batteries detected in range", "info"] call FLO_fnc_sendNotification;
+    ["No artillery batteries detected in range", "info"] call FLO_fnc_sendNotification;
     false 
 };
 
@@ -81,7 +81,7 @@ _mrkRange setMarkerBrush "DiagGrid";
 };
 
 private _grid = mapGridPosition _revealPos;
-["STR_FLO_INTEL_TITLE", format ["Artillery battery located at grid %1", _grid], "warning"] call FLO_fnc_sendNotification;
+[format ["Artillery battery located at grid %1", _grid], "warning"] call FLO_fnc_sendNotification;
 ["INTEL", 3, format["Revealed artillery at %1", _grid]] call FLO_fnc_log;
 
 true

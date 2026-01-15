@@ -26,7 +26,7 @@ private _typeText = switch (toLower _aircraftType) do {
 private _grid = mapGridPosition _targetPos;
 private _etaText = if (_eta > 0) then { format [" - ETA %1 seconds", _eta] } else { "" };
 
-["STR_FLO_INTEL_TITLE", format ["INCOMING %1 heading toward grid %2%3", _typeText, _grid, _etaText], "warning"] call FLO_fnc_sendNotification;
+[format ["INCOMING %1 heading toward grid %2%3", _typeText, _grid, _etaText], "warning"] call FLO_fnc_sendNotification;
 
 // Create brief warning marker
 private _mrkId = format ["airWarning_%1", floor random 99999];

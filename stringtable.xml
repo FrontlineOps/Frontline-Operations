@@ -92,13 +92,13 @@
         </Container>
         <Container name="REP_AGG">
             <Key ID="STR_FLO_REP_AGG_INCBRIBE">
-                <English>Increased + + + (Bribe Successful)</English>
+                <English>Local contacts confirm bribe successful. Guerilla activity decreased.</English>
             </Key>
             <Key ID="STR_FLO_REP_AGG_INC">
-                <English>Increased + + +</English>
+                <English>OPFOR command reporting heightened activity in the region.</English>
             </Key>
             <Key ID="STR_FLO_REP_AGG_DEC">
-                <English>Decreased - - -</English>
+                <English>Enemy forces withdrawing assets. Reduced threat level expected.</English>
             </Key>
         </Container>
         <Container name="MISSIONCIV">

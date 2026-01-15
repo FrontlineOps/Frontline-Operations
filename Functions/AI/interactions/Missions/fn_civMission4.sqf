@@ -24,7 +24,7 @@ private _taskId = format ["CivMission_Check_%1", floor random 9999];
 [true, _taskId, ["Build a checkpoint including 1x Observation Post and 2x Sandbag Bunkers.", "Create Checkpoint", ""], _pos, "CREATED", 1, true, "defend", true] call BIS_fnc_taskCreate;
 
 // Notification skipping custom
-["STR_FLO_MISSIONCIV_TITLE", "STR_FLO_MISSIONCIV_CHECKPOINT", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+["STR_FLO_MISSIONCIV_CHECKPOINT", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
 // Display requirements
 [

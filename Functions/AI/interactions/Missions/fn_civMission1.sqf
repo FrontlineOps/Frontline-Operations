@@ -24,7 +24,7 @@ private _taskId = format ["CivMission_Repair_%1", floor random 9999];
 [true, _taskId, ["Find and repair the civilian vehicle.", "Repair Vehicle", ""], _pos, "CREATED", 1, true, "repair", true] call BIS_fnc_taskCreate;
 
 // Notification
-["STR_FLO_MISSIONCIV_TITLE", "STR_FLO_MISSIONCIV_REPAIR", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+["STR_FLO_MISSIONCIV_REPAIR", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
 private _vehType = selectRandom CivVehArray;
 if (isNil "CivVehArray") then { _vehType = "C_Offroad_01_F"; };

@@ -144,7 +144,7 @@ private _template = createHashMapFromArray [
                         [player, 3000, "STR_FLO_INTEL_MIL"] call FLO_fnc_revealRandomEnemyGroup;
                         
                         // Success notification
-                        ["STR_FLO_INTEL_TITLE", "STR_FLO_INTEL_FOUND", "success"] call FLO_fnc_sendNotification;
+                        ["STR_FLO_INTEL_FOUND", "success"] call FLO_fnc_sendNotification;
                         hint "Intel documents collected! Enemy positions revealed.";
                         
                         // Remove the action

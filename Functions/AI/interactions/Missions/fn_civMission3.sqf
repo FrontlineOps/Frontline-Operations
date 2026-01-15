@@ -25,7 +25,7 @@ private _taskId = format ["CivMission_Mine_%1", floor random 9999];
 [true, _taskId, ["Clear the minefield near the road.", "Clear Minefield", ""], _pos, "CREATED", 1, true, "mine", true] call BIS_fnc_taskCreate;
 
 // Notification
-["STR_FLO_MISSIONCIV_TITLE", "STR_FLO_MISSIONCIV_MINE", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+["STR_FLO_MISSIONCIV_MINE", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
 // Spawn Decor Vehicle
 private _vehType = selectRandom CivVehArray;

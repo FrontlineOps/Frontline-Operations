@@ -202,7 +202,7 @@ switch (toLower _operation) do {
 
         // Send notification
         private _name = _template getOrDefault ["name", _typeName];
-        ["STR_FLO_INTEL_TITLE", format ["Mission Available: %1", _name], "intel"] call FLO_fnc_sendNotification;
+        [format ["Mission Available: %1", _name], "intel"] call FLO_fnc_sendNotification;
 
         diag_log format ["[FLO_SM] Spawned mission: %1 (%2)", _missionId, _typeName];
         _result = true;

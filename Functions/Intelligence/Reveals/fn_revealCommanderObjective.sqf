@@ -13,32 +13,32 @@
 
 // Check intel tier
 if (!isNil "FLO_Intel_Tier" && {FLO_Intel_Tier != "HIGH"}) exitWith {
-    ["STR_FLO_INTEL_TITLE", "Insufficient intelligence level for strategic intel", "info"] call FLO_fnc_sendNotification;
+    ["Insufficient intelligence level for strategic intel", "info"] call FLO_fnc_sendNotification;
     false
 };
 
 if (isNil "FLO_GTN_ResourceManager") exitWith { 
-    ["STR_FLO_INTEL_TITLE", "Enemy command analysis unavailable", "warning"] call FLO_fnc_sendNotification;
+    ["Enemy command analysis unavailable", "warning"] call FLO_fnc_sendNotification;
     false 
 };
 
 private _commander = FLO_GTN_ResourceManager get "_gtnCommander";
 if (isNil "_commander") exitWith { 
-    ["STR_FLO_INTEL_TITLE", "Enemy command analysis unavailable", "warning"] call FLO_fnc_sendNotification;
+    ["Enemy command analysis unavailable", "warning"] call FLO_fnc_sendNotification;
     false 
 };
 
 // Get active tracks and their targets
 private _tracks = _commander get "_tracks";
 if (isNil "_tracks" || {count _tracks == 0}) exitWith {
-    ["STR_FLO_INTEL_TITLE", "No active enemy operations detected", "info"] call FLO_fnc_sendNotification;
+    ["No active enemy operations detected", "info"] call FLO_fnc_sendNotification;
     false
 };
 
 private _attackTracks = _tracks select { (_x get "goal") == "attack" };
 
 if (count _attackTracks == 0) exitWith { 
-    ["STR_FLO_INTEL_TITLE", "No enemy offensive operations detected", "info"] call FLO_fnc_sendNotification;
+    ["No enemy offensive operations detected", "info"] call FLO_fnc_sendNotification;
     false 
 };
 
@@ -46,7 +46,7 @@ private _track = selectRandom _attackTracks;
 private _target = _track get "target";
 
 if (isNil "_target") exitWith {
-    ["STR_FLO_INTEL_TITLE", "Enemy objectives unclear", "info"] call FLO_fnc_sendNotification;
+    ["Enemy objectives unclear", "info"] call FLO_fnc_sendNotification;
     false
 };
 
@@ -59,7 +59,7 @@ private _targetPos = if (typeName _target == "STRING" && {!isNil "FLO_Objectives
 };
 
 if (isNil "_targetPos") exitWith {
-    ["STR_FLO_INTEL_TITLE", "Enemy objectives unclear", "info"] call FLO_fnc_sendNotification;
+    ["Enemy objectives unclear", "info"] call FLO_fnc_sendNotification;
     false
 };
 
@@ -84,7 +84,7 @@ _mrk setMarkerAlpha 1;
 };
 
 private _grid = mapGridPosition _targetPos;
-["STR_FLO_INTEL_TITLE", format ["Enemy commander focusing on grid %1", _grid], "success"] call FLO_fnc_sendNotification;
+[format ["Enemy commander focusing on grid %1", _grid], "success"] call FLO_fnc_sendNotification;
 ["INTEL", 3, format["Revealed commander objective at %1", _grid]] call FLO_fnc_log;
 
 true
