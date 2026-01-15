@@ -98,11 +98,6 @@ private _template = createHashMapFromArray [
         _data set ["startPos", _startPos];
         _data set ["endPos", _endPos];
         _data set ["vehicles", []];
-        
-        // Create convoy group
-        private _convoyGrp = createGroup East;
-        _convoyGrp deleteGroupWhenEmpty true;
-        _convoyGrp setFormation "COLUMN";
 
         // Calculate spawn direction
         private _connectedRoads = roadsConnectedTo _startRoad;
@@ -112,9 +107,9 @@ private _template = createHashMapFromArray [
             _startPos getDir _endPos
         };
         
-        // Spawn vehicles
+        // Spawn vehicles (each with own crew group via createVehicleCrew)
         private _vehicles = [];
-        private _spacing = 15;
+        private _spacing = 20;
         
         private _vehTypes = [
             selectRandom East_Ground_Vehicles_Light,
@@ -134,47 +129,39 @@ private _template = createHashMapFromArray [
             private _veh = createVehicle [_x, _spawnPos, [], 5, "NONE"];
             _veh setDir _spawnDir;
             
-            private _crewGrp = createVehicleCrew _veh;
-            { [_x] join _convoyGrp; } forEach units _crewGrp;
+            // Create crew - stays in its own group (NOT joined to convoy group)
+            createVehicleCrew _veh;
             
             _vehicles pushBack _veh;
             ["addEntity", [_missionId, _veh]] call FLO_fnc_sideMissionEntityTracker;
+            ["addGroup", [_missionId, group driver _veh]] call FLO_fnc_sideMissionEntityTracker;
         } forEach _vehTypes;
         
         _data set ["vehicles", _vehicles];
-        _data set ["convoyGroup", _convoyGrp];
-        ["addGroup", [_missionId, _convoyGrp]] call FLO_fnc_sideMissionEntityTracker;
 
-        // Use pathfinder for convoy route
+        // Use convoy controller for proper per-vehicle management
         private _convoyPathCallback = {
             params ["_status", "_posArray", "_args"];
-            _args params ["_grp", "_finalPos", "_behavior", "_speed"];
+            _args params ["_vehs", "_finalPos", "_missionData"];
 
-            if (!_status || count _posArray == 0) exitWith {
-                // Fallback to direct waypoint
-                private _wp = _grp addWaypoint [_finalPos, 50];
-                _wp setWaypointType "MOVE";
-                _wp setWaypointBehaviour _behavior;
-                _wp setWaypointSpeed _speed;
-            };
-
-            // Add intermediate waypoints from pathfinder
-            {
-                private _wp = _grp addWaypoint [_x, 30];
-                _wp setWaypointType "MOVE";
-                _wp setWaypointBehaviour _behavior;
-                _wp setWaypointSpeed _speed;
-                _wp setWaypointCompletionRadius 50;
-            } forEach _posArray;
-
-            // Final destination waypoint
-            private _wp = _grp addWaypoint [_finalPos, 30];
-            _wp setWaypointType "MOVE";
-            _wp setWaypointBehaviour _behavior;
-            _wp setWaypointSpeed _speed;
+            // Start convoy controller with route
+            private _route = if (_status && count _posArray > 0) then { _posArray } else { [] };
+            
+            private _controller = [
+                _vehs,
+                _route,
+                _finalPos,
+                createHashMapFromArray [
+                    ["speed", "LIMITED"],
+                    ["behavior", "SAFE"],
+                    ["stuckTimeout", 45]
+                ]
+            ] call FLO_fnc_convoyController;
+            
+            _missionData set ["convoyController", _controller];
         };
 
-        [_startPos, _endPos, _convoyPathCallback, [_convoyGrp, _endPos, "SAFE", "LIMITED"], false] call FLO_fnc_findRoadPath;
+        [_startPos, _endPos, _convoyPathCallback, [_vehicles, _endPos, _data], false] call FLO_fnc_findRoadPath;
 
         [_missionId] call FLO_fnc_sideMissionTaskCreate;
     }],

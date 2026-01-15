@@ -25,8 +25,8 @@ params [["_operation", ""], ["_args", []]];
 FLO_SM_MaxActive = 2;                               // Max concurrent missions
 FLO_SM_TickInterval = 30;                           // Check interval
 FLO_SM_SpawnInterval = 60 + random 1740;            // 1-30 min between spawns
-FLO_SM_Running = FLO_SM_Running isEqualTo true;     // Preserve running state
-FLO_SM_LastSpawnCheck = FLO_SM_LastSpawnCheck max 0;
+if (isNil "FLO_SM_Running") then { FLO_SM_Running = false; };
+if (isNil "FLO_SM_LastSpawnCheck") then { FLO_SM_LastSpawnCheck = 0; };
 
 private _result = nil;
 

@@ -262,8 +262,9 @@ class FLO {
     class SideMissionUtilities {
         file = "Functions\SideMissions\Utilities";
 
-        class addIntelItems    {};
-        class findMissionHouse {};
+        class addIntelItems      {};
+        class findMissionHouse   {};
+        class convoyController   {};
     };
     
     class Misc {
