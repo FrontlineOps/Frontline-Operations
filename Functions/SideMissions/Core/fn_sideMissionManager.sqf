@@ -21,12 +21,12 @@
 
 params [["_operation", ""], ["_args", []]];
 
-// Auto-initialize globals on first call
-if (isNil "FLO_SM_MaxActive") then { FLO_SM_MaxActive = 3; };
-if (isNil "FLO_SM_TickInterval") then { FLO_SM_TickInterval = 30; };
-if (isNil "FLO_SM_SpawnInterval") then { FLO_SM_SpawnInterval = 120; };
-if (isNil "FLO_SM_Running") then { FLO_SM_Running = false; };
-if (isNil "FLO_SM_LastSpawnCheck") then { FLO_SM_LastSpawnCheck = 0; };
+// Config
+FLO_SM_MaxActive = 2;                               // Max concurrent missions
+FLO_SM_TickInterval = 30;                           // Check interval
+FLO_SM_SpawnInterval = 60 + random 1740;            // 1-30 min between spawns
+FLO_SM_Running = FLO_SM_Running isEqualTo true;     // Preserve running state
+FLO_SM_LastSpawnCheck = FLO_SM_LastSpawnCheck max 0;
 
 private _result = nil;
 
@@ -228,6 +228,16 @@ switch (toLower _operation) do {
             [_reward] call FLO_fnc_addReward;
             private _name = if (!isNil "_template") then { _template getOrDefault ["name", _type] } else { _type };
             [_reward, format ["Mission Complete: %1", _name]] call FLO_fnc_sendRewardNotification;
+            
+            // Intel reward based on mission type
+            private _intelReward = switch (true) do {
+                case (_type in ["templateIntelGathering"]): { 25 };  // Intel missions give more
+                case (_type in ["templateHVTConvoy", "templateConvoyInterdiction"]): { 20 };
+                case (_type in ["templatePOWRescue", "templatePilotRescue", "templateSquadRescue"]): { 18 };
+                default { 15 };
+            };
+            FLO_Intel_System call ["addIntel", [_intelReward, "mission_complete"]];
+            ["INTEL", 3, format["Mission %1 complete: +%2 intel", _type, _intelReward]] call FLO_fnc_log;
         };
 
         // Run cleanup function

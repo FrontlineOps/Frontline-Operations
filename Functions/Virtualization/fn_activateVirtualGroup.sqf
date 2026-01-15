@@ -468,7 +468,7 @@ if !(_groupType in ["civilian", "civilianVehicle"]) then {
         private _selectedUnits = _units call BIS_fnc_arrayShuffle;
         _selectedUnits resize (floor (count _selectedUnits / 2) max 1);
         {
-            if (random 1 < 0.2) then { // 20% chance per selected unit
+            if (random 1 < 0.3) then { // 30% chance per selected unit
                 _x addItem selectRandom _intelItems;
             };
         } forEach _selectedUnits;

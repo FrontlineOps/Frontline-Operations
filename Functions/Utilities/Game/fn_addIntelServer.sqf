@@ -17,5 +17,5 @@ params ["_gridPos"];
 
 if !(isServer) exitwith {};
 
-FLO_Intel_System call ["addIntel", [0, "intel_item"]];
+FLO_Intel_System call ["addIntel", [5, "intel_item"]];
 ["STR_FLO_INTEL_TITLE", ["STR_FLO_INTEL_MIL", _gridPos], "info"] call FLO_fnc_sendNotification;

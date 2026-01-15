@@ -27,7 +27,7 @@ private _template = createHashMapFromArray [
         private _canSpawn = false;
         
         // Find OPFOR-controlled objective only
-        private _objId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
+        private _objId = [1500, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
         if (_objId != "") then {
             _position = [_objId] call FLO_fnc_getRandomObjectivePos;
             _canSpawn = true;

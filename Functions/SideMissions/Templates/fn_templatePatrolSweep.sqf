@@ -26,7 +26,15 @@ private _template = createHashMapFromArray [
         private _position = [0,0,0];
         private _canSpawn = false;
         
-        private _house = [getPos player] call FLO_fnc_findMissionHouse;
+        // Find near enemy objective or use player position
+        private _objId = [1500, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
+        private _searchPos = if (_objId != "") then { 
+            [_objId] call FLO_fnc_getRandomObjectivePos 
+        } else { 
+            getPos player 
+        };
+        
+        private _house = [_searchPos] call FLO_fnc_findMissionHouse;
         if (!isNull _house) then {
             _position = getPos _house;
             _canSpawn = true;
@@ -123,9 +131,18 @@ private _template = createHashMapFromArray [
         !isNull _stash && {!alive _stash}
     }],
     
-    // Fail - timeout only (handled by manager)
+    // Fail - officer escapes (moves too far from stash)
     ["fnc_checkFail", {
         params ["_missionId", "_instance"];
+        private _data = _instance get "data";
+        private _officer = _data getOrDefault ["officer", objNull];
+        private _stash = _data getOrDefault ["stash", objNull];
+        
+        // Fail if officer is alive and moved >500m from stash
+        if (!isNull _officer && {alive _officer} && {!isNull _stash}) then {
+            if (_officer distance2D _stash > 500) exitWith { true };
+        };
+        
         false
     }],
     

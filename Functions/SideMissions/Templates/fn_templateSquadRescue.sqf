@@ -28,11 +28,11 @@ private _template = createHashMapFromArray [
         private _canSpawn = false;
         
         // Find OPFOR-controlled objective only
-        private _objId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
+        private _objId = [1500, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
         if (_objId != "") then {
             _position = [_objId] call FLO_fnc_getRandomObjectivePos;
         } else {
-            _position = player getPos [1500 + random 2000, random 360];
+            _position = player getPos [500 + random 500, random 360];
         };
         
         private _house = [_position] call FLO_fnc_findMissionHouse;

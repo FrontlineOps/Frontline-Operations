@@ -30,40 +30,24 @@
 
 params [["_operation", ""], ["_args", []]];
 
-// State constants (for documentation - use numeric values in code)
-// MISSION_STATE_QUEUED     = 0
-// MISSION_STATE_PENDING    = 1
-// MISSION_STATE_ACTIVE     = 2
-// MISSION_STATE_SUCCESS    = 3
-// MISSION_STATE_FAILED     = 4
-// MISSION_STATE_CANCELLED  = 5
-
-// Auto-initialize globals on first call
-if (isNil "FLO_SM_States") then { FLO_SM_States = createHashMap; };
+// Initialize globals
+if (isNil "FLO_SM_States") then { FLO_SM_States = createHashMap };
 if (isNil "FLO_SM_ValidTransitions") then {
     FLO_SM_ValidTransitions = createHashMapFromArray [
         [0, [1, 5]],        // QUEUED -> PENDING, CANCELLED
         [1, [2, 5]],        // PENDING -> ACTIVE, CANCELLED
         [2, [3, 4, 5]],     // ACTIVE -> SUCCESS, FAILED, CANCELLED
-        [3, []],            // SUCCESS -> (terminal)
-        [4, []],            // FAILED -> (terminal)
-        [5, []]             // CANCELLED -> (terminal)
+        [3, []], [4, []], [5, []]  // Terminal states
+    ];
+};
+if (isNil "FLO_SM_StateNames") then {
+    FLO_SM_StateNames = createHashMapFromArray [
+        [0, "QUEUED"], [1, "PENDING"], [2, "ACTIVE"],
+        [3, "SUCCESS"], [4, "FAILED"], [5, "CANCELLED"]
     ];
 };
 
 private _result = nil;
-
-// Also auto-init state names
-if (isNil "FLO_SM_StateNames") then {
-    FLO_SM_StateNames = createHashMapFromArray [
-        [0, "QUEUED"],
-        [1, "PENDING"],
-        [2, "ACTIVE"],
-        [3, "SUCCESS"],
-        [4, "FAILED"],
-        [5, "CANCELLED"]
-    ];
-};
 
 switch (toLower _operation) do {
     // Initialize the state system

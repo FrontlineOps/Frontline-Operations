@@ -28,7 +28,7 @@
 
 params [["_operation", ""], ["_args", []]];
 
-// Auto-initialize globals on first call
+// Initialize globals
 if (isNil "FLO_SM_Registry") then { FLO_SM_Registry = createHashMap; };
 if (isNil "FLO_SM_MissionCounter") then { FLO_SM_MissionCounter = 0; };
 

@@ -2,60 +2,95 @@
  * Function: FLO_fnc_displayNotification
  * 
  * Description:
- * Displays a notification sent from the server
+ * Displays notifications using Antistasi-style temporary BIS tasks.
+ * Creates a task that appears in the task bar, then auto-deletes after a duration.
+ * Much cleaner than hint or TextTiles - integrates with task UI.
  *
  * Parameters:
- * _titleType : STRING - from string table
- * _msg : STRING or ARRAY - from string table if string or -OR- an array for format command where first index is string table key
- * _color : STRING - in format #RRGGBB
- * _playMusic - BOOL - play a musical sound (mostly for rewards)
+ * _title : STRING - Notification title
+ * _msg : STRING or ARRAY - Message (array for format)
+ * _type : STRING - "info", "success", "warning", "error"
+ * _playMusic - BOOL - play music for rewards
  *
  * Returns:
  * Nothing
  *
  * Examples:
- * ["STR_FLO_WARNING_TITLE","STR_FLO_WARNING_EAIR", "#FF1111"] call FLO_fnc_displayNotification;
- * ["STR_FLO_WARNING_TITLE", ["STR_FLO_WARNING_EATTACKOBJ", str _objective], "#FF1111"] call FLO_fnc_displayNotification;
+ * ["Intel", "Enemy position revealed", "info"] call FLO_fnc_displayNotification;
+ * ["Mission", "Objective captured!", "success"] call FLO_fnc_displayNotification;
  */
 
-//Only display on clients/servers with user interface
-if !(hasInterface) exitwith {};
+if !(isServer) exitWith {
+    // Redirect to server
+    _this remoteExec ["FLO_fnc_displayNotification", 2];
+};
 
- params [
-    ["_title","",[""]],
-    ["_msg","",["",[]]],
-    ["_color","#FFFFFF",[""]],
-    ["_playMusic", false , [true]]
+params [
+    ["_title", "", [""]],
+    ["_msg", "", ["", []]], 
+    ["_type", "info", [""]],
+    ["_playMusic", false, [true]]
 ];
 
+// Localize message
 if (_msg isEqualType []) then {
-    //localize any strings in format array
-    for "_i" from 0 to (count _msg-1) do {
+    for "_i" from 0 to (count _msg - 1) do {
         private _arg = _msg#_i;
-        if (_arg isEqualType "" && {_arg find ["STR_",0] isNotEqualTo -1}) then {
-            _msg set [_i, localize (_arg)];
+        if (_arg isEqualType "" && {_arg find "STR_" != -1}) then {
+            _msg set [_i, localize _arg];
         };
     };
     _msg = format _msg;
 } else {
-    // else localize the msg
-    _msg = localize _msg;
+    if (_msg find "STR_" != -1) then {
+        _msg = localize _msg;
+    };
 };
 
-// TODO:
-// 1. Create RscTitles class in description.ext for HUD notification element
-// 2. Implement ctrWebBrowser control for HTML/CSS based notifications
-// 3. Add BIS or CBA Event System for notification requests
-// 4. Create notification types/templates (info, warning, error, reward)
-// 5. Add queue system for multiple notifications
-// Format and display notification
-private _formattedMsg = format [
-    "<t color='%1' font='PuristaBold' align='right' shadow='1' size='2'>%2</t><br/><t align='right' shadow='1' size='1'>%3</t>",
-    _color,
-    localize _title,
-    _msg
-];
+// Localize title
+private _titleText = if (_title find "STR_" != -1) then { localize _title } else { _title };
 
-// Play music for all players
-if (_playMusic) then {playMusic "EventTrack01_F_Curator";};
-[parseText _formattedMsg, [0, 0.5, 1, 1], [10,10], 5, 1.7, 0] call BIS_fnc_TextTiles;
+// Generate unique task ID
+private _taskId = format ["FLO_notify_%1", floor random 999999];
+
+// Get task icon based on type
+private _taskType = switch (toLower _type) do {
+    case "success": { "Defend" };      // Green shield icon
+    case "warning": { "Target" };       // Target icon  
+    case "error": { "Destroy" };        // Red X icon
+    default { "intel" };                // Intel icon for info
+};
+
+// Duration based on type
+private _duration = switch (toLower _type) do {
+    case "success": { 9 };
+    case "warning": { 12 };
+    case "error": { 15 };
+    default { 6 };
+};
+
+// Create temporary task for all players
+// BIS_fnc_taskCreate: [sides, taskID, [description, title, marker], destination, state, priority, showNotification, type, visibleIn3D]
+[
+    west,                                           // Side(s) to show to
+    _taskId,                                        // Unique task ID
+    [_msg, _titleText, ""],                         // [Description, Title, Marker]
+    objNull,                                        // No destination  
+    "CREATED",                                      // State
+    -1,                                             // Priority (low so it doesn't interfere)
+    true,                                           // Show notification popup
+    _taskType,                                      // Task type for icon
+    false                                           // Not visible in 3D
+] call BIS_fnc_taskCreate;
+
+// Delete task after duration
+[_taskId, _duration] spawn {
+    params ["_id", "_d"];
+    sleep _d;
+    [_id] call BIS_fnc_deleteTask;
+};
+
+// Play music for rewards if requested
+if (_playMusic) then {
+    playMusic "EventTrack01_F_Curator";
+};

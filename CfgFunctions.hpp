@@ -153,17 +153,31 @@ class FLO {
         file = "Functions\Logistics";
 
         class opforResources        {};
-        class intelSystem           {};
         class logisticsNetwork      {};
         class vehicleMarket         {};
     };
 
-    class Intelligence {
-        file = "Functions\Logistics\Intelligence";
+    // === INTELLIGENCE SYSTEM ===
+    class IntelCore {
+        file = "Functions\Intelligence\Core";
 
-        class militaryIntel {};
-        class civilianIntel {};
-        class revealRandomEnemyGroup {};
+        class intelSystem {};
+    };
+
+    class IntelReveals {
+        file = "Functions\Intelligence\Reveals";
+
+        class revealRandomEnemyGroup    {};
+        class revealArtilleryBattery    {};
+        class revealCommanderObjective  {};
+        class incomingAircraftAlert     {};
+    };
+
+    class IntelSources {
+        file = "Functions\Intelligence\Sources";
+
+        class militaryIntel    {};
+        class civilianIntel    {};
         class backgroundEvents {};
     };
 

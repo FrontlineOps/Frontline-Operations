@@ -231,6 +231,15 @@ private _template = createHashMapFromArray [
     
     ["fnc_checkFail", {
         params ["_missionId", "_instance"];
+        private _data = _instance get "data";
+        private _mapBoard = _data getOrDefault ["mapBoard", objNull];
+        private _intelCollected = _data getOrDefault ["intelCollected", false];
+        
+        // Fail if the intel source is destroyed before collection
+        if (!_intelCollected && {!isNull _mapBoard} && {!alive _mapBoard}) exitWith { 
+            true 
+        };
+        
         false
     }],
     

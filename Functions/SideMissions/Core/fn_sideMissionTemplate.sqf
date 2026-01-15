@@ -32,7 +32,7 @@
 
 params [["_operation", ""], ["_args", []]];
 
-// Auto-initialize globals on first call
+// Initialize globals
 if (isNil "FLO_SM_Templates") then { FLO_SM_Templates = createHashMap; };
 if (isNil "FLO_SM_Cooldowns") then { FLO_SM_Cooldowns = createHashMap; };
 

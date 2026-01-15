@@ -2,8 +2,8 @@
     Function: FLO_fnc_intelSystem
 
     Description:
-    OOP-based BLUFOR intelligence system. Integrates with FLO_Objectives
-    for dynamic intel generation based on controlled territory.
+    BLUFOR intelligence system with engagement-focused mechanics.
+    Provides tiered intel reveals with anticipation delays and variable rewards.
 
     Intel Generation (per 5-minute cycle):
     - Capital: 15 intel (major comms infrastructure)
@@ -22,6 +22,12 @@
     - LIMITED (25-49): Frontline info only, vague garrison data
     - MINIMAL (0-24): Minimal intel, OPFOR has surprise advantage
 
+    Reveal Tiers (Variable Rewards):
+    - COMMON (60%): Single enemy group
+    - UNCOMMON (25%): Artillery battery or waypoints
+    - RARE (12%): Commander objective
+    - EPIC (3%): Multiple reveals
+
     Parameter(s):
         None (self-initializing)
 
@@ -32,6 +38,7 @@
         getIntelLevel: Returns current intel level (0-100)
         getIntelTier: Returns tier string (HIGH/MODERATE/LIMITED/MINIMAL)
         addIntel: [amount, source, duration] - Add intel
+        triggerReveal: [source] - Trigger intel reveal with briefing
         serialize: Returns HashMap for saving
 */
 
@@ -45,27 +52,38 @@ if (isNil "FLO_Intel_System") then {
         // CLASS CONSTANTS
         // ========================================
         ["INTEL_VALUES", createHashMapFromArray [
-            ["capital", 15],
-            ["city", 10],
-            ["marine", 8],
-            ["local", 6],
-            ["village", 3],
-            ["cluster", 1]
+            ["capital", 6],
+            ["city", 4],
+            ["marine", 3],
+            ["local", 2],
+            ["village", 1],
+            ["cluster", 0]
         ]],
 
-        ["BASE_DECAY", 5],
+        ["BASE_DECAY", 3],
         ["MAX_LEVEL", 100],
         ["MIN_LEVEL", 0],
         ["UPDATE_INTERVAL", 300],
+        ["REVEAL_COOLDOWN", 60],
+
+        // Reveal tier weights (total 100)
+        ["REVEAL_WEIGHTS", createHashMapFromArray [
+            ["COMMON", 60],
+            ["UNCOMMON", 25],
+            ["RARE", 12],
+            ["EPIC", 3]
+        ]],
 
         // ========================================
         // STATE PROPERTIES
         // ========================================
         ["_intelLevel", 25],
         ["_lastUpdate", 0],
+        ["_lastReveal", 0],
         ["_bluforObjectives", 0],
         ["_tempBonus", 0],
         ["_tempBonusExpiry", 0],
+        ["_pendingReveal", false],
 
         // ========================================
         // CONSTRUCTOR
@@ -97,6 +115,9 @@ if (isNil "FLO_Intel_System") then {
 
             // Start update loop
             _self call ["_startUpdateLoop", []];
+            
+            // Start radio intercept loop (ambient intel at HIGH tier)
+            _self call ["_startRadioInterceptLoop", []];
         }],
 
         // ========================================
@@ -121,6 +142,132 @@ if (isNil "FLO_Intel_System") then {
 
             _self set ["_bluforObjectives", _bluforCount];
             _totalIntel
+        }],
+
+        // Roll for reveal tier based on weights
+        ["_rollRevealTier", {
+            private _weights = _self get "REVEAL_WEIGHTS";
+            private _roll = floor random 100;
+            private _cumulative = 0;
+            private _result = "COMMON";
+            
+            {
+                _cumulative = _cumulative + _y;
+                if (_roll < _cumulative) exitWith {
+                    _result = _x;
+                };
+            } forEach _weights;
+            
+            _result
+        }],
+
+        // Execute reveal based on tier
+        ["_executeReveal", {
+            params ["_tier"];
+            
+            private _revealed = false;
+            
+            switch (_tier) do {
+                case "EPIC": {
+                    // Multiple reveals + audio warning
+                    [] call FLO_fnc_revealRandomEnemyGroup;
+                    [] call FLO_fnc_revealRandomEnemyGroup;
+                    [] call FLO_fnc_revealArtilleryBattery;
+                    _revealed = true;
+                    
+                    ["STR_FLO_INTEL_TITLE", "Major enemy force disposition acquired!", "success"] remoteExec ["FLO_fnc_sendNotification", 0];
+                };
+                
+                case "RARE": {
+                    // Commander objective
+                    _revealed = [] call FLO_fnc_revealCommanderObjective;
+                    if (!_revealed) then {
+                        // Fallback to artillery
+                        _revealed = [] call FLO_fnc_revealArtilleryBattery;
+                    };
+                };
+                
+                case "UNCOMMON": {
+                    // Artillery or multiple groups
+                    if (random 1 > 0.5) then {
+                        _revealed = [] call FLO_fnc_revealArtilleryBattery;
+                    } else {
+                        [] call FLO_fnc_revealRandomEnemyGroup;
+                        [] call FLO_fnc_revealRandomEnemyGroup;
+                        _revealed = true;
+                    };
+                };
+                
+                default {
+                    // COMMON: Single group
+                    [] call FLO_fnc_revealRandomEnemyGroup;
+                    _revealed = true;
+                };
+            };
+            
+            ["INTEL", 3, format["Intel reveal: %1 tier, success=%2", _tier, _revealed]] call FLO_fnc_log;
+            _revealed
+        }],
+
+        // Intel briefing with anticipation delay
+        ["_showBriefing", {
+            params ["_source", "_callback"];
+            
+            _self set ["_pendingReveal", true];
+            
+            // Broadcast processing notification
+            ["STR_FLO_INTEL_TITLE", "Processing intelligence...", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+            
+            // Radio chatter sound (if available)
+            // playSound "radio_static"; // Uncomment if sound exists
+            
+            // Delay for anticipation (2-4 seconds)
+            private _delay = 2 + random 2;
+            
+            [_self, _callback, _delay] spawn {
+                params ["_system", "_cb", "_d"];
+                sleep _d;
+                
+                // Roll tier and execute
+                private _tier = _system call ["_rollRevealTier", []];
+                _system call ["_executeReveal", [_tier]];
+                
+                _system set ["_pendingReveal", false];
+                _system set ["_lastReveal", time];
+            };
+        }],
+
+        // Start radio intercept loop (ambient intel at HIGH tier)
+        ["_startRadioInterceptLoop", {
+            [] spawn {
+                waitUntil { sleep 5; !isNil "FLO_Intel_System" };
+                
+                private _intercepts = [
+                    "Enemy commander requesting reinforcements",
+                    "Artillery battery ordered to relocate",
+                    "Patrol route changes detected",
+                    "Enemy logistics convoy scheduled",
+                    "Air assets on standby alert",
+                    "Enemy forces consolidating at forward positions"
+                ];
+                
+                while {true} do {
+                    if (isNil "FLO_Intel_System") exitWith {};
+                    
+                    private _tier = FLO_Intel_System call ["getIntelTier", []];
+                    
+                    // Only at HIGH tier
+                    if (_tier == "HIGH") then {
+                        private _msg = selectRandom _intercepts;
+                        ["STR_FLO_INTEL_TITLE", format ["Radio intercept: '%1'", _msg], "info"] remoteExec ["FLO_fnc_sendNotification", 0];
+                        
+                        ["INTEL", 3, format["Radio intercept: %1", _msg]] call FLO_fnc_log;
+                    };
+                    
+                    // Random interval 3-6 minutes
+                    sleep (180 + random 180);
+                };
+            };
         }],
 
         // Start the background update loop
@@ -190,6 +337,24 @@ if (isNil "FLO_Intel_System") then {
             }
         }],
 
+        // Trigger intel reveal with briefing and tiered rewards
+        ["triggerReveal", {
+            params [["_source", "unknown"]];
+            
+            private _lastReveal = _self get "_lastReveal";
+            private _cooldown = _self get "REVEAL_COOLDOWN";
+            private _pending = _self get "_pendingReveal";
+            
+            // Check cooldown
+            if (_pending || {(time - _lastReveal) < _cooldown}) exitWith {
+                ["INTEL", 3, "Reveal on cooldown or pending"] call FLO_fnc_log;
+                false
+            };
+            
+            _self call ["_showBriefing", [_source, nil]];
+            true
+        }],
+
         // Add intel from items or other sources
         ["addIntel", {
             params ["_amount", ["_source", "unknown"], ["_duration", 0]];
@@ -204,6 +369,9 @@ if (isNil "FLO_Intel_System") then {
                 _self set ["_tempBonusExpiry", time + (if (_duration > 0) then {_duration} else {600})];
 
                 ["INTEL", 3, format["Intel item: +%1 temp bonus", _amount]] call FLO_fnc_log;
+                
+                // Trigger a reveal for the action
+                _self call ["triggerReveal", [_source]];
             } else {
                 // Direct addition
                 private _current = _self get "_intelLevel";
@@ -229,5 +397,5 @@ if (isNil "FLO_Intel_System") then {
     ];
 
     FLO_Intel_System = createHashMapObject [_intelClass];
-    ["INTEL", 2, "Intel System initialized"] call FLO_fnc_log;
+    ["INTEL", 2, "Intel System initialized with engagement features"] call FLO_fnc_log;
 };
