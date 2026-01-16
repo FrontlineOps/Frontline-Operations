@@ -1,16 +1,25 @@
 /*
- * Function: FLO_fnc_civilianRelations
- * Description: Handles all civilian interaction logic (actions, detain, reputation, etc) for the mission.
+ * Function: FLO_fnc_civilianActions
+ * Author: Frontline Operations Development Group
+ * Description:
+ *   Unified civilian interaction handler. Merges logic from:
+ *   - fn_civilianRelations (actions setup)
+ *   - fn_civilianInvestigate (intel interaction)
+ *   - fn_civilianAddDetainActions (detain actions)
+ *
  * Arguments:
- *   0: Array of units <ARRAY> - The civilians to apply interaction logic to
+ *   0: Array of civilian units <ARRAY>
+ *
  * Returns: Nothing
- * Usage: [units _group] call FLO_fnc_civilianRelations;
  */
 
 params ["_civUnits"];
 
-// --- Helper Functions (Private) ---
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
+// Detain actions (for captured civilians)
 private _fnc_addDetainActions = {
     params ["_unit"];
     
@@ -40,12 +49,11 @@ private _fnc_addDetainActions = {
                 private _vh = _nearVehicles select 0;
                 _target moveInCargo _vh;
                 
-                // Add Unmount Action to Vehicle
+                // Add Unmount Action
                 [_vh, [
                     "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>UnMount",
                     {
-                        params ["_target", "_caller", "_actionId", "_arguments"];
-                        // Find captive civilian in crew
+                        params ["_target", "_caller", "_actionId"];
                         private _pows = crew _target select {side _x == civilian && captive _x && alive _x};
                         if (count _pows > 0) then {
                             private _pow = _pows select 0;
@@ -64,6 +72,72 @@ private _fnc_addDetainActions = {
     ]] remoteExec ["addAction", 0, true];
 };
 
+// Investigate action handler
+private _fnc_investigate = {
+    params ["_civilian", "_caller"];
+    
+    // Hostile Engineer Check
+    private _isEngineer = _civilian getUnitTrait "engineer";
+    if (_isEngineer && (random 1 > 0.33)) exitWith {
+        private _complMessage = selectRandom [
+            "DEATH TO OUTSIDERS, DEATH TO OUTSIDERS !!!",
+            "Walk Away Bastards. . .You Just Bring Chaos and Destruction !!!",
+            "You will Pay for what you have done to our Country, I dont tell you shit !!!",
+            "May GOD Save us from Your Wicked chains you Devils, May GOD Dawn you all !!!",
+            "Your Men Caused my Innocent brothers and sisters Suffer and Die, FUCK YOU ALL !!!"
+        ];
+        ["Civilian", _complMessage] remoteExec ["BIS_fnc_showSubtitle"];
+    };
+
+    // Resource Check
+    private _money = FLO_MoneyHandle getOrDefault ["value", 0];
+    if (_money < 5) exitWith {
+        hint "Not enough Resources (Required: 5)";
+    };
+
+    // Get intel chance from Civilian Manager
+    private _chance = 0.3;
+    if (!isNil "FLO_CivilianManager") then {
+        private _nearestObj = "";
+        private _nearestDist = 99999;
+        if (!isNil "FLO_Objectives") then {
+            {
+                private _objPos = [_x] call FLO_fnc_getObjectivePosition;
+                private _dist = _civilian distance2D _objPos;
+                if (_dist < _nearestDist) then {
+                    _nearestDist = _dist;
+                    _nearestObj = _x;
+                };
+            } forEach (keys FLO_Objectives);
+        };
+        _chance = FLO_CivilianManager call ["getIntelChance", [_nearestObj]];
+    };
+
+    // Attempt Interaction
+    if (random 1 < _chance) then {
+        FLO_MoneyHandle set ["value", _money - 5];
+        publicVariable "FLO_MoneyHandle";
+        
+        [] call FLO_fnc_civilianIntel;
+        
+        private _okLines = [
+            "Sure, Let me Show you the way!",
+            "We appericiate your Efforts for our Homeland, let me Help you!",
+            "Yes, Come, I know Some !"
+        ];
+        ["Civilian", selectRandom _okLines] remoteExec ["BIS_fnc_showSubtitle"];
+    } else {
+        private _refuseLines = [
+            "We Dont talk to Strangers!",
+            "I don't know much about this Region!",
+            "Sorry but I dont Trust you Outsiders!",
+            "Maybe that Man there can Help you, He has been with the Army years ago !"
+        ];
+        ["Civilian", selectRandom _refuseLines] remoteExec ["BIS_fnc_showSubtitle"];
+    };
+};
+
+// Setup civilian actions
 private _fnc_setupCivilianActions = {
     params ["_unit"];
     
@@ -72,7 +146,7 @@ private _fnc_setupCivilianActions = {
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Investigate",
         {
             params ["_target", "_caller", "_actionId"];
-            [_target] call FLO_fnc_civilianInvestigate;
+            [_target, _caller] call FLO_fnc_civilianInvestigateAction;
             
             _target disableAI "PATH";
             _target disableAI "MOVE";
@@ -105,17 +179,15 @@ private _fnc_setupCivilianActions = {
         {
             params ["_target", "_caller", "_actionId"];
             
-            // Sounds
             playSound3D [getMissionPath (selectRandom ["Sounds\GoProne_1.ogg", "Sounds\Halt.ogg", "Sounds\Stop.ogg", "Sounds\VehStop_2.ogg"]), _caller];
             
             _target removeAction _actionId;
             _target removeAllEventHandlers "FiredNear";
             
-            // Logic: 0,1,2,3 -> if < 2 (0,1) -> 50%
-            private _chance = floor random 4; 
+            private _chance = floor random 4;
             private _isEngineer = _target getUnitTrait "engineer";
             
-            // If NOT engineer, always surrender
+            // Non-engineers always surrender
             if (!_isEngineer) then {
                 [_target, ""] remoteExec ["playMove", _target];
                 [_target, "ApanPercMstpSnonWnonDnon_ApanPpneMstpSnonWnonDnon"] remoteExec ["playMove", _target];
@@ -129,13 +201,12 @@ private _fnc_setupCivilianActions = {
                 removeBackpack _target;
                 removeAllActions _target;
                 
-                [_target] call FLO_fnc_civilianAddDetainActions;
+                [_target] call FLO_fnc_civilianDetainActions;
             };
             
-            // Engineer logic
+            // Engineers may fight back
             if (_isEngineer) then {
-                 if (_chance < 2) then {
-                    // Surrender (Same as above)
+                if (_chance < 2) then {
                     [_target, ""] remoteExec ["playMove", _target];
                     [_target, "ApanPercMstpSnonWnonDnon_ApanPpneMstpSnonWnonDnon"] remoteExec ["playMove", _target];
                     _target disableAI "PATH";
@@ -146,9 +217,8 @@ private _fnc_setupCivilianActions = {
                     removeAllWeapons _target;
                     removeBackpack _target;
                     removeAllActions _target;
-                    [_target] call FLO_fnc_civilianAddDetainActions;
-                 } else {
-                    // Fight back!
+                    [_target] call FLO_fnc_civilianDetainActions;
+                } else {
                     [_target, ""] remoteExec ["playMove", _target];
                     private _wpn = selectRandom ["hgun_PDW2000_Holo_snds_F", "hgun_Rook40_snds_F", "hgun_P07_blk_F", "hgun_P07_khk_F", "hgun_Rook40_F"];
                     [_target, _wpn, 4] call BIS_fnc_addWeapon;
@@ -159,36 +229,52 @@ private _fnc_setupCivilianActions = {
                     [_target] join _grp;
                     _target doTarget _caller;
                     _target doFire _caller;
-                 };
+                };
             };
         },
         nil, 0, true, true, "", "true", 5, false, "", ""
     ]] remoteExec ["addAction", 0, true];
 };
 
-// --- Main Logic ---
+// ============================================================================
+// MAIN LOGIC
+// ============================================================================
 
-// Clear old
+// Clear old handlers
 {
     _x removeAllEventHandlers "Killed";
     removeAllActions _x;
 } forEach _civUnits;
 
-// Add new
+// Apply new logic
 {
     private _unit = _x;
     
-    // Killed EH - Penalty
-    _unit addEventHandler ["Killed", {
-        params ["_unit", "_killer"];
-        if (side _killer == west) then {
-            [west, "HQ"] commandChat "WATCH for CIVILIAN CASUALTY!";
-            removeAllActions _unit;
-            [-0.35, 'decrease'] call FLO_fnc_adjustReputation;
-        };
-    }];
+    // Check for flee behavior from Civilian Manager
+    private _shouldFlee = false;
+    if (!isNil "FLO_CivilianManager") then {
+        _shouldFlee = FLO_CivilianManager call ["shouldFlee", [getPosATL _unit]];
+    };
     
-    // Actions
-    [_unit] call _fnc_setupCivilianActions;
+    if (_shouldFlee) then {
+        // Flee from players
+        _unit setBehaviour "CARELESS";
+        _unit setSpeedMode "FULL";
+        private _fleeDir = (getPosATL _unit) getDir (getPos player);
+        private _fleePos = (getPosATL _unit) getPos [100 + random 50, _fleeDir + 180];
+        _unit doMove _fleePos;
+    } else {
+        // Normal behavior
+        _unit addEventHandler ["Killed", {
+            params ["_unit", "_killer"];
+            if (side _killer == west) then {
+                [west, "HQ"] commandChat "WATCH for CIVILIAN CASUALTY!";
+                removeAllActions _unit;
+                [-0.35, 'decrease'] call FLO_fnc_adjustReputation;
+            };
+        }];
+        
+        [_unit] call _fnc_setupCivilianActions;
+    };
     
 } forEach _civUnits;

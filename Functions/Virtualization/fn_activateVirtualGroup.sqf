@@ -122,29 +122,9 @@ switch (true) do {
         };
     };
     
-    // Civilian group
-    case (_groupType isEqualTo "civilian"): {
-        _realGroup = createGroup [civilian, true];
-        private _civUnits = [];
-        private _objective = _groupData get "objective";     
-        if (_objective isEqualTo "civ_building") then {
-            // civ_building civilians already have their exact building position stored
-            // Spawn directly at the stored position (don't re-search for buildings)
-            for "_i" from 1 to _unitCount do {
-                private _unitType = selectRandom CivMenArray;
-                private _unit = _realGroup createUnit [_unitType, _position, [], 0, "NONE"];
-                _civUnits pushBack _unit;
-            };
-        } else {
-            for "_i" from 1 to _unitCount do {
-                private _unitType = selectRandom CivMenArray;
-                private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-                private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
-                _civUnits pushBack _unit;
-            };
-        };
-        // Apply civilian interaction logic to these units
-        [_civUnits] call FLO_fnc_civilianRelations;
+    // Civilian group - delegate to Civilian module
+    case (_groupType in ["civilian", "civ_pedestrian", "civ_building"]): {
+        _realGroup = [_groupId, _groupData, _position] call FLO_fnc_activateCivilian;
     };
     
     // Vehicle groups
@@ -384,62 +364,9 @@ switch (true) do {
         _groupData set ["noWaypoints", true];
     };
     
-    // Civilian vehicle group
-    case (_groupType isEqualTo "civilianVehicle"): {
-        _realGroup = createGroup [civilian, true];
-        private _vehicleType = selectRandom CivVehArray;
-
-        // Find a safe position for the vehicle - check roads first, then open terrain
-        private _spawnPos = _position;
-        private _roads = _position nearRoads 100;
-        if (count _roads > 0) then {
-            // Try to spawn on a road
-            private _road = selectRandom _roads;
-            _spawnPos = getPos _road;
-        } else {
-            // Find safe position on open terrain (larger search radius, vehicle-safe)
-            _spawnPos = [_position, 5, 100, 8, 0, 0.3, 0] call BIS_fnc_findSafePos;
-        };
-
-        // Validate spawn position
-        private _spawnValid = (_spawnPos isEqualType []) && {count _spawnPos >= 2} &&
-            {_spawnPos distance2D _position <= 150} &&
-            {(_spawnPos select 0) > 100 || (_spawnPos select 1) > 100};
-        if (!_spawnValid) then {
-            _spawnPos = _position;
-        };
-
-        // Create vehicle with "CAN_COLLIDE" first, then set position properly
-        private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "CAN_COLLIDE"];
-        _vehicle setPos [_spawnPos select 0, _spawnPos select 1, 0];
-        _vehicle setVectorUp [0,0,1]; // Ensure vehicle is upright
-        _vehicle setDir (random 360);
-        _vehicle lock 0;
-        _vehicle setFuel 1;
-        _vehicle setDamage 0;
-        _vehicle setVehicleLock "UNLOCKED";
-
-        // Fill only the driver and sometimes passengers
-        private _crewPositions = fullCrew [_vehicle, "", true];
-        private _driverPos = _crewPositions select {(_x select 1) == "driver"};
-        private _cargoPos = _crewPositions select {(_x select 1) == "cargo"};
-
-        // Always fill driver
-        if (count _driverPos > 0) then {
-            private _unitType = selectRandom CivMenArray;
-            private _unit = _realGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
-            _unit moveInDriver _vehicle;
-        };
-
-        // Randomly fill 0-2 passengers if available
-        private _numPassengers = (count _cargoPos) min (floor random 3);
-        for "_i" from 0 to (_numPassengers - 1) do {
-            if (_i < count _cargoPos) then {
-                private _unitType = selectRandom CivMenArray;
-                private _unit = _realGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
-                _unit moveInCargo _vehicle;
-            };
-        };
+    // Civilian vehicle group - delegate to Civilian module
+    case (_groupType in ["civilianVehicle", "civ_car"]): {
+        _realGroup = [_groupId, _groupData, _position] call FLO_fnc_activateCivilian;
     };
     
     // Default case if we don't recognize the group type

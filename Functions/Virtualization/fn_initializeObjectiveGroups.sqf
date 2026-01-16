@@ -68,7 +68,7 @@ private _allObjectives = keys FLO_Objectives;
 } forEach _allObjectives;
 
 // After processing objectives, add civilian population to locations
-[] call FLO_fnc_createVirtualCivilianPopulation;
+[] call FLO_fnc_spawnCivilians;
 
 ["VIRTUALIZATION", 3, format["Finished initializing objective groups - %1 total groups created", count _allCreatedGroups]] call FLO_fnc_log;
 

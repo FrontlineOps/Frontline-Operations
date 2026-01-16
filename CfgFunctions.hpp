@@ -53,18 +53,39 @@ class FLO {
         class gtnRadarDataLink          {};
     };
     
-    class Interactions {
-        file = "Functions\AI\Interactions";
+    // === CIVILIAN SYSTEM ===
+    class CivilianCore {
+        file = "Functions\Civilian\Core";
 
-        class civilianRelations {};
-        class civilianInvestigate {};
-        class civilianRequestMission {};
-        class civilianMissionManager {};
-        class civilianAddDetainActions {};
+        class civilianManager {};
+        class civilianConfig {};
     };
 
-    class InteractionMissions {
-        file = "Functions\AI\Interactions\Missions";
+    class CivilianSpawning {
+        file = "Functions\Civilian\Spawning";
+
+        class spawnCivilians {};
+        class activateCivilian {};
+    };
+
+    class CivilianBehavior {
+        file = "Functions\Civilian\Behavior";
+
+        class civilianActions {};
+        class civilianInvestigateAction {};
+        class civilianDetainActions {};
+        class civilianProtest {};
+    };
+
+    class CivilianMissions {
+        file = "Functions\Civilian\Missions";
+
+        class civilianMissionManager {};
+        class civilianRequestMission {};
+    };
+
+    class CivilianMissionTemplates {
+        file = "Functions\Civilian\Missions\Templates";
 
         class civMission1 {};
         class civMission2 {};
@@ -89,7 +110,6 @@ class FLO {
         class initializeObjectiveGroups       {};
         class distributeVirtualGroups         {};
         class activateSavedVirtualGroup       {};
-        class createVirtualCivilianPopulation {};
         class virtualTransport                {};
     };
 
@@ -186,7 +206,7 @@ class FLO {
 
         class harvestFactionGear        {};
         class isHeavyWeapon             {};
-        class restrictedArsenal         {};
+        class restrictedArsenal         {preInit = 1;};
         class addCratePurchaseActions   {};
         class cancelCrate               {};
         class checkCratePurchase        {};

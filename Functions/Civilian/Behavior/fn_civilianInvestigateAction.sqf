@@ -1,14 +1,8 @@
 /*
- * Function: FLO_fnc_civilianInvestigate
- * Description:
- *   Handles civilian investigation interaction logic (dialogue, reputation, resource cost, etc).
- * Arguments:
- *   0: Civilian unit <OBJECT>
- * Returns: Nothing
- * Usage: [unit] call FLO_fnc_civilianInvestigate;
+ * Function: FLO_fnc_civilianInvestigateAction
+ * Description: Wrapper called by action - handles investigate interaction.
  */
-
-params ["_civilian"];
+params ["_civilian", "_caller"];
 
 // Hostile Engineer Check
 private _isEngineer = _civilian getUnitTrait "engineer";
@@ -29,9 +23,23 @@ if (_money < 5) exitWith {
     hint "Not enough Resources (Required: 5)";
 };
 
-// Cooperation Chance Calculation
-private _repScore = FLO_ReputationHandle getOrDefault ["value", 0];
-private _chance = if (_repScore > 10) then { 0.6 } else { 0.3 };
+// Get intel chance from Civilian Manager
+private _chance = 0.3;
+if (!isNil "FLO_CivilianManager") then {
+    private _nearestObj = "";
+    private _nearestDist = 99999;
+    if (!isNil "FLO_Objectives") then {
+        {
+            private _objPos = [_x] call FLO_fnc_getObjectivePosition;
+            private _dist = _civilian distance2D _objPos;
+            if (_dist < _nearestDist) then {
+                _nearestDist = _dist;
+                _nearestObj = _x;
+            };
+        } forEach (keys FLO_Objectives);
+    };
+    _chance = FLO_CivilianManager call ["getIntelChance", [_nearestObj]];
+};
 
 // Attempt Interaction
 if (random 1 < _chance) then {
@@ -46,7 +54,6 @@ if (random 1 < _chance) then {
         "Yes, Come, I know Some !"
     ];
     ["Civilian", selectRandom _okLines] remoteExec ["BIS_fnc_showSubtitle"];
-
 } else {
     private _refuseLines = [
         "We Dont talk to Strangers!",

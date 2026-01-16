@@ -417,6 +417,21 @@ if (!isNil "FLO_fnc_sideMissionManager") then {
 };
 
 // ============================================
+// Civilian System (Config + Manager)
+// ============================================
+diag_log "[FLO_INIT_P5] Initializing civilian system...";
+if (!isNil "FLO_fnc_civilianConfig") then {
+    [] call FLO_fnc_civilianConfig;
+    diag_log "[FLO_INIT_P5] Civilian config loaded";
+};
+if (!isNil "FLO_fnc_civilianManager") then {
+    [] call FLO_fnc_civilianManager;
+    diag_log "[FLO_INIT_P5] Civilian manager initialized";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_civilianManager not found";
+};
+
+// ============================================
 // Civilian Mission System
 // ============================================
 diag_log "[FLO_INIT_P5] Initializing civilian mission system...";
