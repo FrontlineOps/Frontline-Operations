@@ -50,22 +50,22 @@ if (isNil "FLO_OPFOR_Resources") then {
 
         // Resource generation values by objective subtype
         ["RESOURCE_VALUES", createHashMapFromArray [
-            ["capital", 20],
-            ["city", 12],
-            ["marine", 10],
-            ["local", 8],
-            ["village", 4],
-            ["cluster", 2]
+            ["capital", 10],
+            ["city", 6],
+            ["marine", 5],
+            ["local", 4],
+            ["village", 2],
+            ["cluster", 1]
         ]],
 
         // Starting resource values by subtype (one-time calculation)
         ["STARTING_VALUES", createHashMapFromArray [
-            ["capital", 100],
-            ["city", 60],
-            ["marine", 50],
-            ["local", 40],
-            ["village", 20],
-            ["cluster", 10]
+            ["capital", 50],
+            ["city", 30],
+            ["marine", 25],
+            ["local", 20],
+            ["village", 10],
+            ["cluster", 5]
         ]],
 
         // Spending type configuration: [multiplier, threshold, efficiencyLoss]

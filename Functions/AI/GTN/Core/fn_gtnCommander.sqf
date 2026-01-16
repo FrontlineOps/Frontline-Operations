@@ -835,8 +835,7 @@ private _gtnCommander = createHashMapObject [[
                 
                 if (diag_tickTime - _lastRep >= _replenishInterval) then {
                     // Check resources before replenishing
-                    // Cost: 5 resources per tick
-                    private _cost = 5;
+                    private _cost = 15;
                     private _canAfford = true;
                     
                     if !(FLO_OPFOR_Resources call ["canAfford", [_cost, "reinforcement"]]) then {
