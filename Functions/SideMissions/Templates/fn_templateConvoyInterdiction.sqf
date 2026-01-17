@@ -164,6 +164,39 @@ private _template = createHashMapFromArray [
         [_startPos, _endPos, _convoyPathCallback, [_vehicles, _endPos, _data], false] call FLO_fnc_findRoadPath;
 
         [_missionId] call FLO_fnc_sideMissionTaskCreate;
+        
+        // Create tracking marker attached to convoy lead
+        private _leadVeh = _vehicles select 0;
+        private _trackMarkerName = format ["SM_ConvoyTrack_%1", _missionId];
+        private _trackMarker = createMarkerLocal [_trackMarkerName, getPos _leadVeh];
+        _trackMarkerName setMarkerTypeLocal "o_mech_inf";
+        _trackMarkerName setMarkerColorLocal "colorOPFOR";
+        _trackMarkerName setMarkerTextLocal "Convoy";
+        _trackMarkerName setMarkerSizeLocal [0.8, 0.8];
+        
+        _data set ["trackMarker", _trackMarkerName];
+        
+        // Start tracking PFH
+        private _pfhHandle = [{
+            params ["_args", "_handle"];
+            _args params ["_vehicles", "_markerName", "_missionId"];
+            
+            // Find lead alive vehicle
+            private _leadVeh = objNull;
+            { if (alive _x) exitWith { _leadVeh = _x; }; } forEach _vehicles;
+            
+            if (isNull _leadVeh) exitWith {
+                // All vehicles destroyed - cleanup
+                deleteMarker _markerName;
+                [_handle] call CBA_fnc_removePerFrameHandler;
+            };
+            
+            // Update marker position
+            _markerName setMarkerPosLocal (getPos _leadVeh);
+            
+        }, 2, [_vehicles, _trackMarkerName, _missionId]] call CBA_fnc_addPerFrameHandler;
+        
+        _data set ["trackPFH", _pfhHandle];
     }],
     
     ["fnc_checkSuccess", {
@@ -185,6 +218,14 @@ private _template = createHashMapFromArray [
     ["fnc_cleanup", {
         params ["_missionId", "_instance"];
         ConVLocc = 0;
+        
+        // Cleanup tracking marker and PFH
+        private _data = _instance get "data";
+        private _trackMarker = _data getOrDefault ["trackMarker", ""];
+        private _trackPFH = _data getOrDefault ["trackPFH", -1];
+        
+        if (_trackMarker != "") then { deleteMarker _trackMarker; };
+        if (_trackPFH >= 0) then { [_trackPFH] call CBA_fnc_removePerFrameHandler; };
     }]
 ];
 
