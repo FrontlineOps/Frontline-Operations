@@ -275,7 +275,7 @@ _controller set ["vehicleGroups", _vehicleGroups];
         if (_allDone || !_anyAlive) then {
             _ctrl set ["active", false];
             
-            private _arrivedCount = { (_y get "status") == "ARRIVED" } count _states;
+            private _arrivedCount = { (_x get "status") == "ARRIVED" } count (values _states);
             if (_arrivedCount > 0) then {
                 [_ctrl] call _onComp;
             } else {
