@@ -66,7 +66,7 @@ private _protesters = [];
 // Protest animations - valid Arma 3 animations
 private _protestAnims = [
     "Acts_Excited_Loop",              // Excited/agitated stance
-    "Acts_listeningToRadio_Loop",     // Standing idle
+    "Acts_CivilListening_1",          // Standing idle
     "Acts_CivilTalking_1",            // Talking/gesturing
     "Acts_CivilTalking_2",            // Talking/gesturing
     "Acts_Ambient_Aggressive",        // Waving arms

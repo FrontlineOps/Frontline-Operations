@@ -204,8 +204,8 @@ FLO_CivilianManager = createHashMapFromArray [
                 // Check if in a populated location
                 private _nearLocs = nearestLocations [_playerPos, ["NameCity", "NameCityCapital", "NameVillage"], 300];
                 if (count _nearLocs > 0) then {
-                    // 20% chance per check to spawn protesters
-                    if (random 1 < 0.2) then {
+                    // 50% chance per check to spawn protesters
+                    if (random 1 < 0.5) then {
                         [_player] spawn FLO_fnc_civilianProtest;
                     };
                 };
