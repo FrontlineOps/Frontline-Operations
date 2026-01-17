@@ -293,11 +293,14 @@ XPS_PF_typ_RoadGraphSearch = [
 		{
 			private _pos = _x get "PosASL";
 			if ((_x get "Intersection" && {_posA distance2D _pos > 1000}) || {_posA distance2D _pos > 1000}) then {
-				_path pushBack _pos;
+				// Convert to ATL (ground level)
+				_path pushBack [_pos select 0, _pos select 1, 0];
 				_posA = _pos;
 			};
 		} foreach (_self get "Path");
-		_path pushBack (_self get "_workingEndKey");
+		// Also normalize the end position
+		private _endPos = _self get "_workingEndKey";
+		_path pushBack [_endPos select 0, _endPos select 1, 0];
 		_path;
 	}]
 ];
