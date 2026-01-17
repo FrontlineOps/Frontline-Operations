@@ -59,8 +59,6 @@ _spawnPositions = _spawnPositions select [0, _count min count _spawnPositions];
 
 if (count _spawnPositions == 0) exitWith { [] };
 
-// Create protester group
-private _protestGroup = createGroup [civilian, true];
 private _protesters = [];
 
 // Protest animations - valid Arma 3 animations
@@ -85,6 +83,9 @@ private _throwables = [
     private _spawnPos = _x;
     private _unitType = selectRandom CivMenArray;
     
+    // Create separate group for each protester
+    private _protestGroup = createGroup [civilian, true];
+    
     private _protester = _protestGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
     _protester setBehaviour "CARELESS";
     _protester setSpeedMode "NORMAL";
@@ -92,24 +93,21 @@ private _throwables = [
     // Mark as protester
     _protester setVariable ["FLO_isProtester", true, true];
     
-    // Move toward player
-    private _gatherPos = _playerPos getPos [10 + random 15, random 360];
-    _protester doMove _gatherPos;
-    
-    // Once close, start protesting
+    // Protester behavior - walk toward player continuously, then protest
     [_protester, _targetPlayer, _protestAnims, _throwables] spawn {
         params ["_protester", "_target", "_anims", "_throwables"];
         
-        // Wait until close to target
-        waitUntil { 
-            sleep 1; 
-            !alive _protester || isNull _target || 
-            _protester distance2D _target < 20 
+        // Keep walking toward player until close
+        while {alive _protester && !isNull _target && _protester distance2D _target > 10} do {
+            // Update destination to follow player
+            private _gatherPos = getPosATL _target getPos [5 + random 10, random 360];
+            _protester doMove _gatherPos;
+            sleep 2;
         };
         
         if (!alive _protester || isNull _target) exitWith {};
         
-        // Start protesting
+        // Stop and start protesting
         _protester disableAI "PATH";
         _protester setDir (_protester getDir _target);
         
