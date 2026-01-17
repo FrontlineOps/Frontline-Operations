@@ -19,6 +19,6 @@ _newScore = _newScore max 0 min 16;
 FLO_ReputationHandle set ["value", _newScore];
 publicVariable "FLO_ReputationHandle";
 
-// Notification - just pass the message
-private _msg = if (_type isEqualTo "increase") then {"STR_FLO_REP_AGG_INC"} else {"STR_FLO_REP_AGG_DEC"};
+// Notification
+private _msg = if (_type isEqualTo "increase") then {"STR_FLO_REP_INC"} else {"STR_FLO_REP_DEC"};
 [_msg, "success"] call FLO_fnc_sendNotification; 

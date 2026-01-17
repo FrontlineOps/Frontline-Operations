@@ -90,6 +90,14 @@
                 <English>%1 SECURED - %2$</English>
             </Key>
         </Container>
+        <Container name="REPUTATION">
+            <Key ID="STR_FLO_REP_INC">
+                <English>Local trust improving, civilians more willing to cooperate</English>
+            </Key>
+            <Key ID="STR_FLO_REP_DEC">
+                <English>Civilian trust diminishing, expect less cooperation</English>
+            </Key>
+        </Container>
         <Container name="REP_AGG">
             <Key ID="STR_FLO_REP_AGG_INCBRIBE">
                 <English>Local contacts confirm bribe successful. Guerilla activity decreased.</English>
