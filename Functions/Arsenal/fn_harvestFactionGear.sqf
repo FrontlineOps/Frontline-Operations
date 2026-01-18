@@ -48,8 +48,39 @@ private _fnc_processContainer = {
     // TransportWeapons
     private _transportWeapons = "true" configClasses (_cfgContent >> "TransportWeapons");
     {
-        _harvestedGear pushBack (getText (_x >> "weapon"));
+        private _wep = getText (_x >> "weapon");
+        if (_wep != "") then {
+            [_wep] call _fnc_processWeapon;
+        };
     } forEach _transportWeapons;
+
+    // TransportBackpacks (Nested backpacks - rare but possible)
+    private _transportBackpacks = "true" configClasses (_cfgContent >> "TransportBackpacks");
+    {
+        private _bag = getText (_x >> "backpack");
+        if (_bag != "") then {
+            _harvestedGear pushBack _bag;
+            [_bag] call _fnc_processContainer;
+        };
+    } forEach _transportBackpacks;
+};
+
+// Helper to harvest a weapon and its linked items (attachments)
+private _fnc_processWeapon = {
+    params ["_weaponClass"];
+    
+    if (_weaponClass == "") exitWith {};
+    _harvestedGear pushBack _weaponClass;
+    
+    private _cfgWeapon = configFile >> "CfgWeapons" >> _weaponClass;
+    if (isClass _cfgWeapon) then {
+        // Harvest LinkedItems (Optics, Pointers, Muzzles)
+        private _linkedItems = "true" configClasses (_cfgWeapon >> "LinkedItems");
+        {
+            private _item = getText (_x >> "item");
+            if (_item != "") then { _harvestedGear pushBack _item; };
+        } forEach _linkedItems;
+    };
 };
 
 {
@@ -67,7 +98,7 @@ private _fnc_processContainer = {
                 // --- Weapons ---
                 private _weapons = getArray (_cfg >> "weapons");
                 {
-                    if (_x != "") then { _harvestedGear pushBack _x; };
+                    [_x] call _fnc_processWeapon;
                 } forEach _weapons;
                 
                 // --- Magazines ---
