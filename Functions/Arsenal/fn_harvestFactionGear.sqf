@@ -136,10 +136,30 @@ private _fnc_processWeapon = {
     };
 } forEach _unitVars;
 
+// --- Mod Integration: KAT & ACM ---
+// we directly scan valid configuration tables for items matching the prefixes.
+private _scanPrefixes = ["kat_", "ACM_"];
+private _configRoots = ["CfgWeapons", "CfgMagazines", "CfgVehicles", "CfgGlasses"];
+
+{
+    private _root = _x;
+    private _allConfigs = "true" configClasses (configFile >> _root);
+    
+    {
+        private _item = configName _x;
+        // Check if item starts with any of our prefixes
+        {
+            if ((_item find _x) != -1) exitWith {
+                _harvestedGear pushBack _item;
+            };
+        } forEach _scanPrefixes;
+    } forEach _allConfigs;
+} forEach _configRoots;
+
 // Remove duplicates and empty strings
 _harvestedGear = _harvestedGear select {_x != ""};
 _harvestedGear = _harvestedGear arrayIntersect _harvestedGear;
 
-["ARSENAL", 3, format ["Harvested Gear: %1", _harvestedGear]] call FLO_fnc_log;
+["ARSENAL", 3, format ["Harvested %1 unique items (Faction + Mods)", count _harvestedGear]] call FLO_fnc_log;
 
 _harvestedGear
