@@ -110,7 +110,22 @@ class FLO {
         class initializeObjectiveGroups       {};
         class distributeVirtualGroups         {};
         class activateSavedVirtualGroup       {};
-        class virtualTransport                {};
+    };
+
+    // Virtualization Transport
+    class VirtualizationTransport {
+        file = "Functions\Virtualization\Transport";
+
+        class transportConfig       {};
+        class transportGetCapacity  {};
+        class transportGetSpeed     {};
+        class transportPool         {};
+        class transportAttach       {};
+        class transportDetach       {};
+        class transportDetachAll    {};
+        class transportRequest      {};
+        class transportDismount     {};
+        class transportMapEdge      {};
     };
 
     // Virtualization Core - PFH-based update system

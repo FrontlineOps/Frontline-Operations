@@ -177,6 +177,11 @@ FLO_virtualGroups = createHashMapObject [[
 // Initialize debug manager
 ["init"] call FLO_fnc_virtualizationDebugManager;
 
+// Initialize Transport System
+call FLO_fnc_transportConfig;
+call FLO_fnc_transportPool;
+call FLO_fnc_transportMapEdge;
+
 // Set ready flag
 FLO_VirtualizationReady = true;
 publicVariable "FLO_VirtualizationReady";

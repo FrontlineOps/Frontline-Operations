@@ -189,9 +189,9 @@ if (isNil "FLO_Logistics_Network") then {
         ["_findSpawnPosition", {
             params [["_useMapEdge", true]];
 
-            // Try map edge first
-            if (_useMapEdge && !isNil "FLO_VirtualTransport") then {
-                private _edgePos = FLO_VirtualTransport call ["_getBestEdgeSpawnPos", []];
+            // Try map edge first using transport system
+            if (_useMapEdge) then {
+                private _edgePos = [] call FLO_fnc_transportGetBestEdgeSpawnPos;
                 if !(_edgePos isEqualTo [0,0,0]) exitWith { _edgePos };
             };
 

@@ -162,7 +162,8 @@ if (isNil "FLO_VirtUpdate" || {!(FLO_VirtUpdate get "running")}) then {
 
 // Initialize virtual transport system
 diag_log "[FLO_INIT_P4] Initializing virtual transport system...";
-[] call FLO_fnc_virtualTransport;
+[] call FLO_fnc_transportConfig;
+[] call FLO_fnc_transportPool;
 
 // Start radar data link system (for AA target sharing)
 diag_log "[FLO_INIT_P4] Starting radar data link system...";

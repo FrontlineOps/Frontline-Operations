@@ -32,6 +32,9 @@
 
 params ["_groupId", "_groupData", "_currentIdx", "_waypoints"];
 
+// Check for transport dismount at this waypoint
+[_groupId] call FLO_fnc_transportDismount;
+
 if (count _waypoints == 0 || _currentIdx >= count _waypoints) exitWith {
     _groupData set ["state", "idle"];
     _groupData set ["currentWaypointIndex", 0];

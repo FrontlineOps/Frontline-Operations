@@ -152,8 +152,8 @@ private _gtnCommander = createHashMapObject [[
         _self call ["_manageForcePreservation", []];
         
         // Log decision summary for debugging
-        _self call ["_logDecisionSummary", []];
-        _self call ["_dumpStatus", []];
+        //_self call ["_logDecisionSummary", []];
+        //_self call ["_dumpStatus", []];
     }],
     
     // === TRACK SYSTEM ===
