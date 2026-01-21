@@ -221,7 +221,7 @@ class FLO {
 
         class harvestFactionGear        {};
         class isHeavyWeapon             {};
-        class restrictedArsenal         {preInit = 1;};
+        class restrictedArsenal         {};
         class addCratePurchaseActions   {};
         class cancelCrate               {};
         class checkCratePurchase        {};
