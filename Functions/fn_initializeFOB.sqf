@@ -117,8 +117,8 @@ private _fnc_setupArsenal = {
 
     private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
     
-    // Check if we should restrict the arsenal (Param == 1)
-    if (_restrictedArsenal == 1) then {
+    // Check if we should restrict the arsenal
+    if (_restrictedArsenal == 0) then {
         try {
             [_building] call FLO_fnc_restrictArsenalBox;
             [_config get "type", 3, "Arsenal restrictions applied"] call FLO_fnc_log;
