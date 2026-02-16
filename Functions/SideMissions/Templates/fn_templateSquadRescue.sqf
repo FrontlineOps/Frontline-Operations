@@ -9,11 +9,15 @@
  *   HASHMAP - Mission template configuration
  */
 
+private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+if !(_activeSide in [east, west]) then { _activeSide = west };
+private _friendlyColor = if (_activeSide isEqualTo east) then { "colorOPFOR" } else { "colorBLUFOR" };
+
 private _template = createHashMapFromArray [
     ["name", "Rescue Missing Squad"],
     ["description", "Intel suggests the whereabouts of a friendly squad we lost contact with. Track them down and rescue them."],
     ["icon", "mil_pickup"],
-    ["color", "colorBLUFOR"],
+    ["color", _friendlyColor],
     ["cooldown", 900],
     ["timeout", 3600],
     ["maxActive", 1],
@@ -23,17 +27,21 @@ private _template = createHashMapFromArray [
     // Setup function
     ["fnc_setup", {
         params ["_typeName"];
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_activeSide in [east, west]) then { _activeSide = west };
+        private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
         
         private _position = [0,0,0];
         private _canSpawn = false;
         
-        // Find OPFOR-controlled objective only
-        private _objId = [1500, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
-        if (_objId != "") then {
-            _position = [_objId] call FLO_fnc_getRandomObjectivePos;
-        } else {
-            _position = player getPos [500 + random 500, random 360];
+        // Find enemy-controlled objective only
+        private _objId = [1500, getPos player, _enemySide] call FLO_fnc_getObjectiveNearPlayer;
+        if (_objId == "") exitWith {
+            [false, [0,0,0]]
         };
+
+        _position = [_objId] call FLO_fnc_getRandomObjectivePos;
         
         private _house = [_position] call FLO_fnc_findMissionHouse;
         if (!isNull _house) then {
@@ -47,6 +55,18 @@ private _template = createHashMapFromArray [
     // Spawn function
     ["fnc_spawn", {
         params ["_missionId"];
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_activeSide in [east, west]) then { _activeSide = west };
+        private _friendlySide = _activeSide;
+        private _enemySide = if (_friendlySide isEqualTo east) then { west } else { east };
+        private _friendlyKey = if (_friendlySide isEqualTo east) then { "EAST" } else { "WEST" };
+        private _enemyKey = if (_enemySide isEqualTo east) then { "EAST" } else { "WEST" };
+        private _factionCatalog = missionNamespace getVariable ["FLO_FactionCatalog", createHashMap];
+        private _friendlyCatalog = _factionCatalog getOrDefault [_friendlyKey, createHashMap];
+        private _enemyCatalog = _factionCatalog getOrDefault [_enemyKey, createHashMap];
+        private _friendlyUnits = _friendlyCatalog getOrDefault ["units", ["B_Soldier_F", "B_Soldier_GL_F", "B_medic_F"]];
+        private _enemyUnits = _enemyCatalog getOrDefault ["units", if (!isNil "East_Units") then { East_Units } else { ["O_Soldier_F"] }];
         
         private _instance = ["get", [_missionId]] call FLO_fnc_sideMissionRegistry;
         private _position = _instance get "position";
@@ -56,7 +76,7 @@ private _template = createHashMapFromArray [
         if (isNull _house) exitWith {};
         
         private _buildingPos = _house buildingPos -1;
-        if (count _buildingPos == 0) then { _buildingPos = [getPos _house]; };
+        if ((count _buildingPos) == 0) then { _buildingPos = [getPos _house]; };
         
         // Spawn intel composition
         ["Intel_MIS_01", selectRandom _buildingPos, [0,0,0], 0, false, false, true] call LARs_fnc_spawnComp;
@@ -65,8 +85,8 @@ private _template = createHashMapFromArray [
         private _squadUnits = [];
         private _squadCount = 3 + floor random 2;
         for "_i" from 1 to _squadCount do {
-            private _unitType = selectRandom ["B_Soldier_F", "B_Soldier_lite_F", "B_Soldier_GL_F", "B_medic_F"];
-            private _grp = [selectRandom _buildingPos, West, [_unitType]] call BIS_fnc_spawnGroup;
+            private _unitType = selectRandom _friendlyUnits;
+            private _grp = [selectRandom _buildingPos, _friendlySide, [_unitType]] call BIS_fnc_spawnGroup;
             private _unit = (units _grp) select 0;
             _unit setCaptive true;
             _unit disableAI "PATH";
@@ -126,16 +146,16 @@ private _template = createHashMapFromArray [
         
         // Spawn garrison guards
         for "_i" from 1 to 4 do {
-            private _grp = [selectRandom _buildingPos, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
+            private _grp = [selectRandom _buildingPos, _enemySide, [selectRandom _enemyUnits]] call BIS_fnc_spawnGroup;
             if (_i <= 2) then { ((units _grp) select 0) disableAI "PATH"; };
             _grp deleteGroupWhenEmpty true;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
         
         // Spawn patrol
-        private _patrolGrp = [getPos _house, East, [
-            selectRandom East_Units, selectRandom East_Units,
-            selectRandom East_Units, selectRandom East_Units
+        private _patrolGrp = [getPos _house, _enemySide, [
+            selectRandom _enemyUnits, selectRandom _enemyUnits,
+            selectRandom _enemyUnits, selectRandom _enemyUnits
         ]] call BIS_fnc_spawnGroup;
         _patrolGrp deleteGroupWhenEmpty true;
         [_patrolGrp, getPos _house, 200, 5, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
@@ -145,13 +165,13 @@ private _template = createHashMapFromArray [
         private _guardCount = 2 + (if (_aggrScore > 5) then {1} else {0}) + (if (_aggrScore > 10) then {1} else {0});
         for "_i" from 1 to _guardCount do {
             private _pos = _house getPos [20 + random 200, random 360];
-            private _grp = [_pos, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
+            private _grp = [_pos, _enemySide, [selectRandom _enemyUnits]] call BIS_fnc_spawnGroup;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
         
         if (_aggrScore > 10) then {
             private _patrolPos = _house getPos [100 + random 700, random 360];
-            private _grp = [_patrolPos, East, [selectRandom East_Units, selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
+            private _grp = [_patrolPos, _enemySide, [selectRandom _enemyUnits, selectRandom _enemyUnits, selectRandom _enemyUnits]] call BIS_fnc_spawnGroup;
             [_grp, getPos _house, 1000] call BIS_fnc_taskPatrol;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
@@ -163,18 +183,21 @@ private _template = createHashMapFromArray [
     // Success - at least half the squad rescued
     ["fnc_checkSuccess", {
         params ["_missionId", "_instance"];
+        private _friendlySide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_friendlySide in [east, west]) then { _friendlySide = west };
         private _data = _instance get "data";
         private _squad = _data getOrDefault ["squad", []];
         private _initialCount = _data getOrDefault ["initialCount", 1];
         
-        if (count _squad == 0) exitWith { false };
+        if ((count _squad) == 0) exitWith { false };
         
         // Count rescued (alive, not captive, near friendly)
         private _rescued = 0;
         {
-            if (alive _x && {!captive _x}) then {
-                private _nearFriendly = (allPlayers findIf { _forEachIndex distance _x < 50 }) >= 0;
-                if (_nearFriendly || {vehicle _x != _x && {side vehicle _x == West}}) then {
+            private _unit = _x;
+            if (alive _unit && {!captive _unit}) then {
+                private _nearFriendly = (allPlayers findIf { _x distance _unit < 50 }) >= 0;
+                if (_nearFriendly || {vehicle _unit != _unit && {side vehicle _unit == _friendlySide}}) then {
                     _rescued = _rescued + 1;
                 };
             };
@@ -189,7 +212,7 @@ private _template = createHashMapFromArray [
         private _data = _instance get "data";
         private _squad = _data getOrDefault ["squad", []];
         
-        if (count _squad == 0) exitWith { false };
+        if ((count _squad) == 0) exitWith { false };
         
         ({ alive _x } count _squad) == 0
     }],
@@ -200,4 +223,3 @@ private _template = createHashMapFromArray [
 ];
 
 _template
-

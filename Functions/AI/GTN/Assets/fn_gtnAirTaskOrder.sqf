@@ -13,7 +13,7 @@
 
     Returns:
     HashMap - ATO object with methods:
-        _addTask - Add a mission to the queue [position, missionType, aircraftType, altitude]
+        _addTask - Add a mission to the queue [position, missionType, aircraftType, altitude, requestSide]
         _processTasks - Assign aircraft for queued tasks
 */
 
@@ -41,10 +41,11 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 ["_pos", [0,0,0], [[]], [3]],
                 ["_missionType", "CAS", [""]],
                 ["_aircraftType", "", [""]],
-                ["_altitude", 50, [0]]
+                ["_altitude", 50, [0]],
+                ["_requestSide", sideUnknown]
             ];
             private _queue = _self get "_taskQueue";
-            _queue pushBack [_pos, _missionType, _aircraftType, _altitude];
+            _queue pushBack [_pos, _missionType, _aircraftType, _altitude, _requestSide];
             _self set ["_taskQueue", _queue];
         }],
 
@@ -55,10 +56,10 @@ if (isNil "FLO_GTNAirTaskOrder") then {
             ["GTN ATO", 3, format["Processing %1 queued air tasks", count _queue]] call FLO_fnc_log;
 
             {
-                _x params ["_pos", "_mission", "_airType", "_alt"];
+                _x params ["_pos", "_mission", "_airType", "_alt", "_requestSide"];
                 ["GTN ATO", 3, format["Task %1: %2 mission at %3, alt %4m", _forEachIndex + 1, _mission, _pos, _alt]] call FLO_fnc_log;
 
-                private _asset = _mgr call ["_requestAirAsset", [_pos, _mission]];
+                private _asset = _mgr call ["_requestAirAsset", [_pos, _mission, _requestSide]];
                 private _air = objNull;
                 private _gid = "";
                 private _grp = grpNull;
@@ -74,7 +75,8 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     // Reveal intel to aircraft crew so they can engage targets
                     // Uses knowsAbout 4 for immediate engagement capability
                     if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
-                        private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_pos, 1500, crew _air, west]];
+                        private _enemySide = if (_requestSide isEqualTo east) then { west } else { east };
+                        private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_pos, 1500, crew _air, _enemySide]];
                         ["GTN ATO", 3, format["Revealed %1 targets to CAS aircraft crew", _revealed]] call FLO_fnc_log;
                     };
                 } else {
@@ -179,7 +181,10 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         // Refresh intel reveal now that aircraft is on station
                         // Targets may have moved since initial reveal
                         if (!isNil "FLO_GTN_CapabilityAnalyzer" && alive _a) then {
-                            private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_targetPos, 1500, crew _a, west]];
+                            private _gData = (FLO_virtualGroups get "_groups") get _gid;
+                            private _airSide = _gData get "side";
+                            private _enemySide = if (_airSide isEqualTo east) then { west } else { east };
+                            private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_targetPos, 1500, crew _a, _enemySide]];
                             ["GTN ATO", 4, format["Refreshed intel on station: %1 targets revealed", _revealed]] call FLO_fnc_log;
                         };
 
@@ -212,4 +217,3 @@ if (isNil "FLO_GTNAirTaskOrder") then {
 };
 
 FLO_GTNAirTaskOrder
-

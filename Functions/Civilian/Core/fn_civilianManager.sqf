@@ -155,20 +155,19 @@ FLO_CivilianManager = createHashMapFromArray [
         
         {
             private _objId = _x;
-            private _objData = FLO_Objectives get _objId;
-            private _owner = _objData getOrDefault ["owner", east];
-            private _captureTime = _objData getOrDefault ["lastCaptureTime", 0];
+            private _currentOwner = (FLO_Objectives get _objId) getOrDefault ["owner", east];
+            private _captureTime = (FLO_Objectives get _objId) getOrDefault ["lastCaptureTime", 0];
             private _timeSinceCapture = diag_tickTime - _captureTime;
             
             private _newDisp = switch (true) do {
                 // OPFOR held = fearful
-                case (_owner == east): { "WARY" };
+                case (_currentOwner == east): { "WARY" };
                 
                 // Recently captured = uncertain
-                case (_owner == west && _timeSinceCapture < 600): { "NEUTRAL" };
+                case (_currentOwner == west && _timeSinceCapture < 600): { "NEUTRAL" };
                 
                 // Long BLUFOR held = follows global rep
-                case (_owner == west): { _globalTier };
+                case (_currentOwner == west): { _globalTier };
                 
                 default { "NEUTRAL" };
             };

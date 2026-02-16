@@ -15,7 +15,7 @@ if ((typeOf player == _officerType) || (typeOf player == "B_G_officer_F")) then 
 
         sleep 12;
 
-        ["STR_FLO_REPUTATION_TITLE", "STR_FLO_REP_AGG_INCBRIBE", "success"] call FLO_fnc_sendNotification;
+        [["%1: %2", "STR_FLO_REPUTATION_TITLE", "STR_FLO_REP_AGG_INCBRIBE"], "success"] call FLO_fnc_sendNotification;
     } else {
         hint "Not enough Resources";
     };

@@ -8,16 +8,26 @@
  * Sensors update the state, conditions query it, actions modify it.
  *
  * Arguments:
- * None
+ * 0: Side Context <HASHMAP> - Normalized own/enemy side context
  *
  * Return Value:
  * World State HashMap Object <HASHMAP>
  *
  * Example:
- * private _worldState = call FLO_fnc_gtnWorldState;
+ * private _worldState = [[east] call FLO_fnc_gtnSideContext] call FLO_fnc_gtnWorldState;
  * _worldState call ["_update", []];
  * private _objectives = _worldState call ["_getObjectives", []];
  */
+
+params [["_sideContext", createHashMap]];
+
+if (isNil "_sideContext" || {!(_sideContext isEqualType createHashMap)} || {count _sideContext == 0}) then {
+    _sideContext = [east] call FLO_fnc_gtnSideContext;
+};
+
+private _ownSide = _sideContext get "ownSide";
+private _enemySide = _sideContext get "enemySide";
+private _sideKey = _sideContext get "sideKey";
 
 ["GTN", 3, "Initializing GTN World State System"] call FLO_fnc_log;
 
@@ -75,6 +85,10 @@ private _worldState = createHashMapObject [[
     // State metadata
     ["_lastUpdate", 0],
     ["_updateInterval", 10],      // Seconds between full updates
+    ["_sideContext", _sideContext],
+    ["_ownSide", _ownSide],
+    ["_enemySide", _enemySide],
+    ["_sideKey", _sideKey],
     
     // Reference to AI Commander for integration
     ["_commander", nil],
@@ -87,8 +101,10 @@ private _worldState = createHashMapObject [[
 
         if (isNil "FLO_Objectives") exitWith { _objectives };
 
-        private _bluforUnits = allUnits select {side _x == west && alive _x && !(captive _x)};
-        private _opforUnits = allUnits select {side _x == east && alive _x};
+        private _ownSide = _self get "_ownSide";
+        private _enemySide = _self get "_enemySide";
+        private _friendlyUnits = allUnits select {side _x == _ownSide && alive _x && !(captive _x)};
+        private _enemyUnits = allUnits select {side _x == _enemySide && alive _x};
         private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
 
         {
@@ -98,14 +114,19 @@ private _worldState = createHashMapObject [[
 
             private _pos = _data get "position";
             private _priority = _data getOrDefault ["priority", 50];
-            private _owner = _data getOrDefault ["owner", east];
+            private _owner = _data getOrDefault ["owner", _enemySide];
+            if (_owner isEqualType "") then {
+                private _ownerKey = toUpper _owner;
+                if (_ownerKey isEqualTo "EAST") then { _owner = east; };
+                if (_ownerKey isEqualTo "WEST") then { _owner = west; };
+            };
 
-            private _nearBlufor = count (_bluforUnits inAreaArray [_pos, 500, 500]);
-            private _nearOpfor = count (_opforUnits inAreaArray [_pos, 500, 500]);
+            private _nearFriendly = count (_friendlyUnits inAreaArray [_pos, 500, 500]);
+            private _nearEnemy = count (_enemyUnits inAreaArray [_pos, 500, 500]);
 
-            private _contested = (_nearBlufor > 0) && (_nearOpfor > 0);
-            private _underAttack = (_owner == east) && (_nearBlufor > 0);
-            private _vulnerable = (_owner == west) && (_nearOpfor == 0) && (_nearBlufor < 3);
+            private _contested = (_nearEnemy > 0) && (_nearFriendly > 0);
+            private _underAttack = (_owner == _ownSide) && (_nearEnemy > 0);
+            private _vulnerable = (_owner == _enemySide) && (_nearEnemy == 0) && (_nearFriendly < 3);
 
             private _cachedIntel = _intelCache getOrDefault [_id, createHashMapFromArray [
                 ["lastReconTime", 0],
@@ -120,12 +141,12 @@ private _worldState = createHashMapObject [[
                 ["position", _pos],
                 ["priority", _priority],
                 ["owner", _owner],
-                ["enemyCount", if (_owner == east) then {_nearBlufor} else {_nearOpfor}],
-                ["friendlyCount", if (_owner == east) then {_nearOpfor} else {_nearBlufor}],
+                ["enemyCount", if (_owner == _ownSide) then {_nearEnemy} else {_nearFriendly}],
+                ["friendlyCount", if (_owner == _ownSide) then {_nearFriendly} else {_nearEnemy}],
                 ["contested", _contested],
                 ["underAttack", _underAttack],
                 ["vulnerable", _vulnerable],
-                ["forceRatio", if (_nearBlufor > 0) then {_nearOpfor / _nearBlufor} else {999}],
+                ["forceRatio", if (_nearEnemy > 0) then {_nearFriendly / _nearEnemy} else {999}],
                 ["linkedObjectives", _data getOrDefault ["linkedObjectives", []]],
                 ["intel", _cachedIntel]
             ];
@@ -152,10 +173,12 @@ private _worldState = createHashMapObject [[
             ["infantry", 0], ["armor", 0], ["mechanized", 0], ["motorized", 0], ["artillery", 0], ["air", 0]
         ];
 
+        private _ownSide = _self get "_ownSide";
+
         {
             private _gData = _groups get _x;
             if (isNil "_gData") then { continue };
-            if ((_gData get "side") != east) then { continue };
+            if ((_gData get "side") != _ownSide) then { continue };
 
             private _groupType = _gData get "groupType";
 
@@ -213,6 +236,7 @@ private _worldState = createHashMapObject [[
     ["_senseSupportAssets", {
         private _assets = _self get "_supportAssets";
         private _cmdr = _self get "_commander";
+        private _ownSide = _self get "_ownSide";
 
         if (isNil "_cmdr") exitWith { _assets };
 
@@ -222,7 +246,7 @@ private _worldState = createHashMapObject [[
         private _artyBatteries = 0;
 
         if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
-            private _artyStatus = FLO_GTN_CapabilityAnalyzer call ["_getArtilleryStatus", []];
+            private _artyStatus = FLO_GTN_CapabilityAnalyzer call ["_getArtilleryStatus", [_ownSide]];
             _artyBatteries = _artyStatus get "availableBatteries";
             _artyAvailable = _artyBatteries > 0;
             // Use estimated rounds which combines actual (active) + estimated (virtual)
@@ -239,6 +263,7 @@ private _worldState = createHashMapObject [[
             private _groups = FLO_virtualGroups get "_groups";
             {
                 private _gData = _groups get _x;
+                if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
                 if (_gData get "groupType" == "artillery") exitWith {
                     _artyAvailable = true;
                 };
@@ -256,7 +281,7 @@ private _worldState = createHashMapObject [[
         private _casOrdnance = 0;
 
         if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
-            private _airStatus = FLO_GTN_CapabilityAnalyzer call ["_getAirAssetStatus", []];
+            private _airStatus = FLO_GTN_CapabilityAnalyzer call ["_getAirAssetStatus", [_ownSide]];
             _casAvailable = (_airStatus get "casAvailable") > 0 || (_airStatus get "heloAvailable") > 0;
             _seadAvailable = (_airStatus get "seadAvailable") > 0;
             _bombAvailable = (_airStatus get "bomberAvailable") > 0;
@@ -272,6 +297,7 @@ private _worldState = createHashMapObject [[
             private _groups = FLO_virtualGroups get "_groups";
             {
                 private _gData = _groups get _x;
+                if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
                 if (_gData get "onMission") then { continue };
                 private _gType = _gData get "groupType";
                 if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
@@ -305,9 +331,12 @@ private _worldState = createHashMapObject [[
         private _cutoffTime = diag_tickTime - 900;
         _contacts = _contacts select { (_x select 1) > _cutoffTime };
         
-        // Iterate ALL active OPFOR groups (Virtual or Editor-placed)
+        private _ownSide = _self get "_ownSide";
+        private _enemySide = _self get "_enemySide";
+
+        // Iterate all active groups on this commander's side
         {
-            if (side _x == east) then {
+            if (side _x == _ownSide) then {
                 private _leader = leader _x;
                 if (alive _leader) then {
                      // nearTargets returns [pos, type, side, subjectiveCost, object, accuracy]
@@ -316,8 +345,8 @@ private _worldState = createHashMapObject [[
                      {
                          _x params ["_pos", "_type", "_side", "_cost", "_obj", "_acc"];
                          
-                         // Only report enemies (West or Indep if hostile)
-                         if (_side == west || _side == resistance) then {
+                         // Only report enemies for this side context.
+                         if (_side == _enemySide) then {
                              // Check if we already have a recent report for this location (within 50m, 60s)
                              private _isNew = true;
                              {
@@ -407,6 +436,8 @@ private _worldState = createHashMapObject [[
         private _objectives = _self get "_objectives";
         private _forces = _self get "_ownForces";
         private _intel = _self get "_enemyIntel";
+        private _ownSide = _self get "_ownSide";
+        private _enemySide = _self get "_enemySide";
 
         // Time of day
         private _hour = daytime;
@@ -438,8 +469,8 @@ private _worldState = createHashMapObject [[
         private _contested = 0;
         {
             private _obj = _objectives get _x;
-            if ((_obj get "owner") == east) then { _ownedByUs = _ownedByUs + 1 };
-            if ((_obj get "owner") == west) then { _ownedByEnemy = _ownedByEnemy + 1 };
+            if ((_obj get "owner") == _ownSide) then { _ownedByUs = _ownedByUs + 1 };
+            if ((_obj get "owner") == _enemySide) then { _ownedByEnemy = _ownedByEnemy + 1 };
             if (_obj get "contested") then { _contested = _contested + 1 };
         } forEach (keys _objectives);
 
@@ -449,8 +480,8 @@ private _worldState = createHashMapObject [[
 
         // Initiative holder
         private _initiative = switch (true) do {
-            case (_momentum > 30): { "OPFOR" };
-            case (_momentum < -30): { "BLUFOR" };
+            case (_momentum > 30): { "OWN" };
+            case (_momentum < -30): { "ENEMY" };
             default { "NEUTRAL" };
         };
         _situation set ["initiativeHolder", _initiative];
@@ -486,15 +517,102 @@ private _worldState = createHashMapObject [[
     ["_getEnemyObjectives", {
         _self call ["_getObjectivesWhere", [{
             params ["_id", "_obj"];
-            (_obj get "owner") != east
+            (_obj get "owner") == (_self get "_enemySide")
         }]]
+    }],
+
+    // True when an enemy objective touches at least one friendly-held linked objective.
+    ["_isFrontlineEnemyObjective", {
+        params ["_objectiveId"];
+        private _objectives = _self get "_objectives";
+        private _obj = _objectives get _objectiveId;
+        private _links = _obj get "linkedObjectives";
+        private _ownSide = _self get "_ownSide";
+
+        ({((_objectives get _x) get "owner") isEqualTo _ownSide} count _links) > 0
+    }],
+
+    // Enemy objectives currently on the front line (adjacent to friendly ownership).
+    ["_getFrontlineEnemyObjectives", {
+        _self call ["_getObjectivesWhere", [{
+            params ["_id", "_obj"];
+            (_obj get "owner") == (_self get "_enemySide")
+            && { _self call ["_isFrontlineEnemyObjective", [_id]] }
+        }]]
+    }],
+
+    ["_segmentCrossesWater", {
+        params ["_fromPos", "_toPos"];
+        private _dist = _fromPos distance2D _toPos;
+        private _steps = ceil (_dist / 150);
+        if (_steps < 1) then { _steps = 1 };
+
+        private _crosses = false;
+        for "_i" from 0 to _steps do {
+            private _t = _i / _steps;
+            private _samplePos = [
+                (_fromPos select 0) + (((_toPos select 0) - (_fromPos select 0)) * _t),
+                (_fromPos select 1) + (((_toPos select 1) - (_fromPos select 1)) * _t),
+                0
+            ];
+            if (surfaceIsWater _samplePos) exitWith {
+                _crosses = true;
+            };
+        };
+
+        _crosses
+    }],
+
+    ["_getObjectiveLinkRouteInfo", {
+        params ["_fromObjectiveId", "_toObjectiveId"];
+
+        private _pair = [_fromObjectiveId, _toObjectiveId];
+        _pair sort true;
+        private _linkKey = format ["%1_%2", _pair select 0, _pair select 1];
+        private _linkData = FLO_ObjectiveLinks get _linkKey;
+
+        private _routeDistance = _linkData get "routeDistance";
+        private _crossesWater = _linkData get "crossesWater";
+
+        if (isNil "_routeDistance") then {
+            private _fromPos = ((FLO_Objectives get _fromObjectiveId) get "position");
+            private _toPos = ((FLO_Objectives get _toObjectiveId) get "position");
+            private _path = [_fromObjectiveId, _toObjectiveId] call FLO_fnc_getObjectivePath;
+
+            private _nodes = [_fromPos];
+            { _nodes pushBack _x; } forEach _path;
+            if (((_nodes select ((count _nodes) - 1)) distance2D _toPos) > 5) then {
+                _nodes pushBack _toPos;
+            };
+
+            _routeDistance = 0;
+            _crossesWater = false;
+
+            for "_i" from 0 to ((count _nodes) - 2) do {
+                private _a = _nodes select _i;
+                private _b = _nodes select (_i + 1);
+                _routeDistance = _routeDistance + (_a distance2D _b);
+                if (_self call ["_segmentCrossesWater", [_a, _b]]) then {
+                    _crossesWater = true;
+                };
+            };
+
+            _linkData set ["routeDistance", _routeDistance];
+            _linkData set ["crossesWater", _crossesWater];
+            FLO_ObjectiveLinks set [_linkKey, _linkData];
+        };
+
+        createHashMapFromArray [
+            ["distance", _routeDistance],
+            ["crossesWater", _crossesWater]
+        ]
     }],
 
     // Get friendly objectives (owned by us - OPFOR)
     ["_getFriendlyObjectives", {
         _self call ["_getObjectivesWhere", [{
             params ["_id", "_obj"];
-            (_obj get "owner") == east
+            (_obj get "owner") == (_self get "_ownSide")
         }]]
     }],
 
@@ -502,7 +620,7 @@ private _worldState = createHashMapObject [[
     ["_getObjectivesUnderAttack", {
         _self call ["_getObjectivesWhere", [{
             params ["_id", "_obj"];
-            (_obj get "owner") == east && {_obj get "underAttack"}
+            (_obj get "owner") == (_self get "_ownSide") && {_obj get "underAttack"}
         }]]
     }],
 
@@ -510,7 +628,7 @@ private _worldState = createHashMapObject [[
     ["_getVulnerableObjectives", {
         _self call ["_getObjectivesWhere", [{
             params ["_id", "_obj"];
-            (_obj get "owner") != east && {_obj get "vulnerable"}
+            (_obj get "owner") == (_self get "_enemySide") && {_obj get "vulnerable"}
         }]]
     }],
 
@@ -549,13 +667,14 @@ private _worldState = createHashMapObject [[
         params ["_pos"];
 
         if (isNil "FLO_virtualGroups") exitWith { 10000 };
+        private _ownSide = _self get "_ownSide";
 
         private _groups = FLO_virtualGroups get "_groups";
         private _minDist = 10000;
 
         {
             private _gData = _groups get _x;
-            if ((_gData get "side") != east) then { continue };
+            if ((_gData get "side") != _ownSide) then { continue };
 
             private _gPos = _gData get "position";
             private _dist = _pos distance2D _gPos;
@@ -601,7 +720,7 @@ private _worldState = createHashMapObject [[
         if (isNil "_cmdr") exitWith { 0 };
         private _analyzer = _cmdr get "_capabilityAnalyzer";
         if (isNil "_analyzer") exitWith { 0 };
-        private _summary = _analyzer call ["_getForcesSummary", [east]];
+        private _summary = _analyzer call ["_getForcesSummary", [_self get "_ownSide"]];
         _summary get "totalCombatPower"
     }],
 
@@ -643,11 +762,12 @@ private _worldState = createHashMapObject [[
     ["_getObjectivesNeedingRecon", {
         params [["_maxAge", 300]];
         private _objectives = _self get "_objectives";
+        private _enemySide = _self get "_enemySide";
         private _needsRecon = [];
         {
             private _objId = _x;
             private _obj = _objectives get _objId;
-            if ((_obj get "owner") == west) then {
+            if ((_obj get "owner") == _enemySide) then {
                 if !(_self call ["_isIntelFresh", [_objId, _maxAge]]) then {
                     _needsRecon pushBack [_objId, _obj get "priority"];
                 };

@@ -9,6 +9,7 @@
  * _title : STRING or ARRAY - Message to display (array for format)
  * _type : STRING - "info", "success", "warning", "error"
  * _playMusic - BOOL - play music for rewards
+ * _taskOwnerFilter - SIDE/OBJECT/GROUP/OWNER ID (optional)
  *
  * Returns:
  * Nothing
@@ -23,10 +24,27 @@ if !(isServer) exitWith {
 };
 
 params [
-    ["_title", "", ["", []]], 
+    ["_title", "", ["", []]],
     ["_type", "info", [""]],
-    ["_playMusic", false, [true]]
+    ["_playMusic", false, [true]],
+    ["_taskOwnerFilter", nil]
 ];
+
+private _taskOwner = _taskOwnerFilter;
+if (isNil "_taskOwner") then {
+    _taskOwner = FLO_ActivePlayerSide;
+    if !(_taskOwner in [east, west]) then { _taskOwner = west };
+};
+
+if (_taskOwner isEqualType 0) then {
+    private _targetPlayers = allPlayers select { owner _x == _taskOwner };
+    if (count _targetPlayers > 0) then {
+        _taskOwner = _targetPlayers;
+    } else {
+        _taskOwner = FLO_ActivePlayerSide;
+        if !(_taskOwner in [east, west]) then { _taskOwner = west };
+    };
+};
 
 // Localize and format title
 if (_title isEqualType []) then {
@@ -64,7 +82,7 @@ private _duration = switch (toLower _type) do {
 
 // Create temporary task - title IS the message
 [
-    west,
+    _taskOwner,
     _taskId,
     ["", _title, ""],  // [Description, Title, Marker]
     objNull,

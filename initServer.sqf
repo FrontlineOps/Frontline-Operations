@@ -29,7 +29,24 @@ private _globalVars = createHashMapFromArray [
     ["StartingLocationDone", false],
     ["F_Init", false],
     ["InitializationOG", false],
-    ["FLO_MissionReady", false]
+    ["FLO_MissionReady", false],
+    ["FLO_SideResources", createHashMap],
+    ["FLO_SideResourceState", createHashMap],
+    ["FLO_ActivePlayerSide", sideUnknown],
+    ["FLO_MissionSides", [east, west]],
+    ["FLO_FactionCatalog", createHashMap],
+    ["FLO_GTN_CommandersBySide", createHashMap],
+    ["FLO_GTN_CommandersBySideState", createHashMap],
+    ["FLO_GTN_EnablePlayerTaskBridge", false],
+    ["FLO_GTN_CommanderDebugEnabled", true],
+    ["FLO_GTN_CommanderDebugRunning", false],
+    ["FLO_GTN_CommanderDebugMarkers", createHashMap],
+    ["FLO_GTN_CombatDebugEnabled", true],
+    ["FLO_GTN_CombatEvents", []],
+    ["FLO_GTN_CombatLastByObjective", createHashMap],
+    ["FLO_GTN_AttackHandle", createHashMapFromArray [["value", 4], ["name", "Conservative"]]],
+    ["FLO_GTN_DefenseHandle", createHashMapFromArray [["value", 4], ["name", "Minimal Coverage"]]],
+    ["FLO_GTN_TempoHandle", createHashMapFromArray [["value", 10], ["name", "10s"]]]
 ];
 
 // Set and publish global variables
@@ -123,7 +140,8 @@ private _fnc_initResourceLoop = {
 
                 {
                     private _objData = FLO_Objectives get _x;
-                    if (!isNil "_objData" && {(_objData get "owner") isEqualTo west}) then {
+                    private _activeSide = FLO_ActivePlayerSide;
+                    if ((_objData get "owner") isEqualTo _activeSide) then {
                         _bluforCount = _bluforCount + 1;
                     };
                 } forEach _objectiveKeys;

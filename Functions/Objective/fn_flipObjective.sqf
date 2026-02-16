@@ -36,6 +36,7 @@ FLO_Objectives set [_objectiveId, _obj];
 
 // Update marker using centralized function
 [_objectiveId, _obj] call FLO_fnc_createObjectiveMarker;
+[] call FLO_fnc_refreshRespawnMarkersByTerritory;
 
 // Broadcast change
 publicVariable "FLO_Objectives";

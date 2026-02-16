@@ -106,9 +106,20 @@ class FLO_FactionSelectDialog
 		class SectionTitle: FLO_RscText_Title
 		{
 			idc = FLO_IDC_NONE;
-			text = "SELECT FACTIONS";
+			text = "FACTION SELECTION";
 			x = FACTION_COL1_X;
 			y = FACTION_CONTENT_Y;
+			w = FACTION_DIALOG_W - 4 * GUI_GRID_W;
+			h = FACTION_LABEL_H;
+			colorText[] = FLO_COLOR_PRIMARY;
+		};
+
+		class SectionTitleCommander: FLO_RscText_Title
+		{
+			idc = FLO_IDC_NONE;
+			text = "COMMANDER & CAMPAIGN SETTINGS";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 3.6 * GUI_GRID_H;
 			w = FACTION_DIALOG_W - 4 * GUI_GRID_W;
 			h = FACTION_LABEL_H;
 			colorText[] = FLO_COLOR_PRIMARY;
@@ -124,7 +135,7 @@ class FLO_FactionSelectDialog
 			idc = FLO_IDC_NONE;
 			text = "Player Faction";
 			x = FACTION_COL1_X;
-			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP;
+			y = FACTION_CONTENT_Y + 1.0 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
@@ -133,7 +144,7 @@ class FLO_FactionSelectDialog
 		{
 			idc = FLO_IDC_FACTION_COMBO_PLAYER;
 			x = FACTION_COL1_X;
-			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP + FACTION_LABEL_H;
+			y = FACTION_CONTENT_Y + 1.8 * GUI_GRID_H;
 			tooltip = "Select the player faction";
 		};
 
@@ -143,7 +154,7 @@ class FLO_FactionSelectDialog
 			idc = FLO_IDC_NONE;
 			text = "Enemy Faction";
 			x = FACTION_COL2_X;
-			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP;
+			y = FACTION_CONTENT_Y + 1.0 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
@@ -152,7 +163,7 @@ class FLO_FactionSelectDialog
 		{
 			idc = FLO_IDC_FACTION_COMBO_ENEMY;
 			x = FACTION_COL2_X;
-			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP + FACTION_LABEL_H;
+			y = FACTION_CONTENT_Y + 1.8 * GUI_GRID_H;
 			tooltip = "Select the enemy faction";
 		};
 
@@ -162,7 +173,7 @@ class FLO_FactionSelectDialog
 			idc = FLO_IDC_NONE;
 			text = "Civilian Faction";
 			x = FACTION_COL3_X;
-			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP;
+			y = FACTION_CONTENT_Y + 1.0 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
@@ -171,21 +182,21 @@ class FLO_FactionSelectDialog
 		{
 			idc = FLO_IDC_FACTION_COMBO_CIVILIAN;
 			x = FACTION_COL3_X;
-			y = FACTION_CONTENT_Y + FACTION_LABEL_H + FACTION_ROW_GAP + FACTION_LABEL_H;
+			y = FACTION_CONTENT_Y + 1.8 * GUI_GRID_H;
 			tooltip = "Select the civilian faction";
 		};
 
 		// ====================================================================
-		// ROW 2: STARTING CONDITIONS (Zones, Resources, Difficulty)
+		// ROW 2: COMMANDER SETTINGS (Attack Ops, Defense Ops, Aggression)
 		// ====================================================================
 
-		// Starting Zones (Enemy Presence)
+		// AI Commander Attack Operations
 		class LabelStartingZones: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Starting Zones";
+			text = "AI Commander Attack Ops";
 			x = FACTION_COL1_X;
-			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H;
+			y = FACTION_CONTENT_Y + 4.5 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
@@ -194,36 +205,35 @@ class FLO_FactionSelectDialog
 		{
 			idc = FLO_IDC_FACTION_COMBO_PRESENCE;
 			x = FACTION_COL1_X;
-			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H + FACTION_LABEL_H;
-			tooltip = "Select enemy presence level";
+			y = FACTION_CONTENT_Y + 5.3 * GUI_GRID_H;
+			tooltip = "Set how many concurrent offensive plans each AI commander can run";
 		};
 
-		// Starting Resources
-		class LabelStartingResources: FLO_RscText_Label
+		class LabelGTNDefenseOps: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Starting Resources";
+			text = "AI Commander Defense Ops";
 			x = FACTION_COL2_X;
-			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H;
+			y = FACTION_CONTENT_Y + 4.5 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboStartingResources: FLO_FactionCombo
+		class ComboGTNDefenseOps: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_RESOURCES;
+			idc = FLO_IDC_FACTION_COMBO_GTN_DEFENSE;
 			x = FACTION_COL2_X;
-			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H + FACTION_LABEL_H;
-			tooltip = "Select starting resource level";
+			y = FACTION_CONTENT_Y + 5.3 * GUI_GRID_H;
+			tooltip = "Set how many concurrent defensive plans each AI commander can run";
 		};
 
-		// Starting Difficulty
+		// AI Commander Aggression
 		class LabelStartingDifficulty: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Starting Difficulty";
+			text = "AI Commander Aggression";
 			x = FACTION_COL3_X;
-			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H;
+			y = FACTION_CONTENT_Y + 4.5 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
@@ -232,20 +242,57 @@ class FLO_FactionSelectDialog
 		{
 			idc = FLO_IDC_FACTION_COMBO_DIFFICULTY;
 			x = FACTION_COL3_X;
-			y = FACTION_CONTENT_Y + 3.5 * GUI_GRID_H + FACTION_LABEL_H;
-			tooltip = "Select mission difficulty";
+			y = FACTION_CONTENT_Y + 5.3 * GUI_GRID_H;
+			tooltip = "Set commander willingness to launch attacks with partial force";
 		};
 
 		// ====================================================================
-		// ROW 3: REPUTATION
+		// ROW 3: CAMPAIGN SETTINGS (Tempo, Resources, Civilian Standing)
 		// ====================================================================
+
+		class LabelGTNTempo: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "AI Commander Tempo";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 6.9 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboGTNTempo: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_GTN_TEMPO;
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 7.7 * GUI_GRID_H;
+			tooltip = "Set how often commanders run decision cycles (mission speed)";
+		};
+
+		// Starting Resources
+		class LabelStartingResources: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Starting Resources";
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + 6.9 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboStartingResources: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_RESOURCES;
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + 7.7 * GUI_GRID_H;
+			tooltip = "Select starting resource level";
+		};
 
 		class LabelReputation: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Starting Reputation";
-			x = FACTION_COL1_X;
-			y = FACTION_CONTENT_Y + 6 * GUI_GRID_H;
+			text = "Civilian Standing";
+			x = FACTION_COL3_X;
+			y = FACTION_CONTENT_Y + 6.9 * GUI_GRID_H;
 			w = FACTION_COL_W;
 			h = FACTION_LABEL_H;
 		};
@@ -253,9 +300,9 @@ class FLO_FactionSelectDialog
 		class ComboReputation: FLO_FactionCombo
 		{
 			idc = FLO_IDC_FACTION_COMBO_REPUTATION;
-			x = FACTION_COL1_X;
-			y = FACTION_CONTENT_Y + 6 * GUI_GRID_H + FACTION_LABEL_H;
-			tooltip = "Select starting reputation with civilians";
+			x = FACTION_COL3_X;
+			y = FACTION_CONTENT_Y + 7.7 * GUI_GRID_H;
+			tooltip = "Set how friendly civilians are to players at mission start";
 		};
 
 		// ====================================================================

@@ -79,8 +79,10 @@ private _fnc_createMarker = {
         [_type, 3, format["Using restored %1 marker %2", _type, _markerName]] call FLO_fnc_log;
     } else {
         // Create a new marker
+        private _activeSide = FLO_ActivePlayerSide;
+        private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
         private _relpos = _building getRelPos [12, 0];
-        _markerName = "respawn_west" + (str (getPos _building));
+        _markerName = format ["respawn_%1_%2", _respawnKey, str (getPosATL _building)];
         _building setVariable [_markerVariable, _markerName, true];
 
         // Check if marker already exists
@@ -107,6 +109,7 @@ private _fnc_createMarker = {
 // ============================================================================
 
 private _markerName = [_fobBuilding, _config, _preserveMarker] call _fnc_createMarker;
+[] call FLO_fnc_refreshRespawnMarkersByTerritory;
 
 // ============================================================================
 // ARSENAL AND ACTIONS SETUP

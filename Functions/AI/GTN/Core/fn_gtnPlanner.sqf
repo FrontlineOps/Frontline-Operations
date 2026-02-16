@@ -348,7 +348,7 @@ private _planner = createHashMapObject [[
         // First check executor's context status (set by handler)
         private _execStatus = "RUNNING";
         if (!isNil "_executor") then {
-            _execStatus = _executor call ["_checkExecution", [_taskId]];
+            _execStatus = _executor call ["_checkExecution", [_task]];
         };
 
         // If executor says SUCCESS or FAILED, use that

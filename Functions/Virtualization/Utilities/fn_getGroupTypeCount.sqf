@@ -7,6 +7,7 @@
  *
  * Arguments:
  * 0: Group Type <STRING>
+ * 1: Side <SIDE> - Optional side for side-scoped group count catalog
  *
  * Return Value:
  * Count <NUMBER>
@@ -15,12 +16,25 @@
  * ["helicopter"] call FLO_fnc_getGroupTypeCount;
  */
 
-params ["_groupType"];
-private _groupCounts = OPFOR_Group_Counts;
+params [
+    ["_groupType", "infantry", [""]],
+    ["_side", east]
+];
+
+private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
+private _sideKey = _sideCtx get "sideKey";
+
+private _groupCounts = if (!isNil "FLO_FactionCatalog") then {
+    private _catalog = FLO_FactionCatalog getOrDefault [_sideKey, createHashMap];
+    _catalog getOrDefault ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
+} else {
+    if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }
+};
+
 private _entry = _groupCounts select { _x select 0 isEqualTo _groupType };
 if (count _entry > 0) then {
     (_entry select 0) select 1
 } else {
-    diag_log format ["[VIRTUALIZATION] ERROR: No unit count defined for group type %1, using default of 1", _groupType];
+    diag_log format ["[VIRTUALIZATION] ERROR: No unit count defined for group type %1 (%2), using default 1", _groupType, _sideKey];
     1
 }; 

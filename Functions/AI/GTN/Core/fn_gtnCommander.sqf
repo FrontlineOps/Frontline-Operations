@@ -8,39 +8,89 @@
  * Provides the main update loop that drives goal-driven behavior.
  *
  * Arguments:
- * 0: Commander Reference <HASHMAP> - The existing OPFOR commander object
+ * 0: Commander Host <HASHMAP> - Host object for GTN integration
+ * 1: Side Context <HASHMAP> - Normalized own/enemy side context
  *
  * Return Value:
  * GTN Commander HashMap Object <HASHMAP>
  *
  * Example:
- * private _gtnCmdr = [_opforCommander] call FLO_fnc_gtnCommander;
+ * private _gtnCmdr = [_host, [east] call FLO_fnc_gtnSideContext] call FLO_fnc_gtnCommander;
  * _gtnCmdr call ["_start", []];
  */
 
-params [["_commander", nil]];
+params [
+    ["_commander", nil],
+    ["_sideContext", createHashMap]
+];
 
 if (isNil "_commander") exitWith {
     ["GTN", 1, "GTN Commander requires commander reference"] call FLO_fnc_log;
     nil
 };
 
-["GTN", 2, "Initializing GTN Commander System"] call FLO_fnc_log;
+if (isNil "_sideContext" || {!(_sideContext isEqualType createHashMap)} || {count _sideContext == 0}) then {
+    _sideContext = [east] call FLO_fnc_gtnSideContext;
+};
+
+private _ownSide = _sideContext get "ownSide";
+private _enemySide = _sideContext get "enemySide";
+private _sideKey = _sideContext get "sideKey";
+
+["GTN", 2, format["Initializing GTN Commander System (%1)", _sideKey]] call FLO_fnc_log;
 
 // Create all subsystems
-private _worldState = call FLO_fnc_gtnWorldState;
+private _worldState = [_sideContext] call FLO_fnc_gtnWorldState;
 private _goalLibrary = call FLO_fnc_gtnGoalLibrary;
 private _planner = [_goalLibrary, _worldState] call FLO_fnc_gtnPlanner;
-private _executor = [_commander] call FLO_fnc_gtnExecutor;
+private _executor = [_commander, _sideContext] call FLO_fnc_gtnExecutor;
 private _monitor = [_planner, _worldState] call FLO_fnc_gtnMonitor;
 private _capabilityAnalyzer = call FLO_fnc_gtnCapabilityAnalyzer;
 
 // Link world state to commander
 _worldState call ["_setCommander", [_commander]];
 
+private _attackTrackCount = FLO_GTN_AttackHandle get "value";
+private _defenseTrackCount = FLO_GTN_DefenseHandle get "value";
+private _tempoInterval = FLO_GTN_TempoHandle get "value";
+private _difficultyValue = FLO_DifficultyHandle get "value";
+private _aggressionValue = _difficultyValue / 1.5;
+
+private _trackTotal = _attackTrackCount + _defenseTrackCount;
+private _resourceShare = 1 / _trackTotal;
+private _tracks = [];
+
+for "_i" from 1 to _attackTrackCount do {
+    _tracks pushBack (createHashMapFromArray [
+        ["id", format["ATK_%1", _i]],
+        ["goal", "capture_priority_objective"],
+        ["resourceShare", _resourceShare],
+        ["planner", nil],
+        ["status", "IDLE"],
+        ["groupPool", []]
+    ]);
+};
+
+for "_i" from 1 to _defenseTrackCount do {
+    _tracks pushBack (createHashMapFromArray [
+        ["id", format["DEF_%1", _i]],
+        ["goal", "protect_critical_assets"],
+        ["resourceShare", _resourceShare],
+        ["planner", nil],
+        ["status", "IDLE"],
+        ["groupPool", []]
+    ]);
+};
+
+_worldState set ["_updateInterval", _tempoInterval];
+
 private _gtnCommander = createHashMapObject [[
     // Subsystem references
     ["_commander", _commander],
+    ["_sideContext", _sideContext],
+    ["_ownSide", _ownSide],
+    ["_enemySide", _enemySide],
+    ["_sideKey", _sideKey],
     ["_worldState", _worldState],
     ["_goalLibrary", _goalLibrary],
     ["_planner", _planner],
@@ -50,33 +100,15 @@ private _gtnCommander = createHashMapObject [[
     
     // State (using 0/1 for booleans to avoid parsing issues)
     ["_isRunning", 0],
-    ["_updateInterval", (call FLO_fnc_gtnConfig) get "gtnUpdateInterval"],
+    ["_updateInterval", _tempoInterval],
     ["_lastUpdate", 0],
     
-    // Dual track execution - two parallel goals with 50/50 resource split
-    ["_tracks", [
-        createHashMapFromArray [
-            ["id", "TRACK_1"],
-            ["goal", "capture_priority_objective"],
-            ["resourceShare", 0.5],
-            ["planner", nil],
-            ["status", "IDLE"],
-            ["groupPool", []]
-        ],
-        createHashMapFromArray [
-            ["id", "TRACK_2"],
-            ["goal", "protect_critical_assets"],
-            ["resourceShare", 0.5],
-            ["planner", nil],
-            ["status", "IDLE"],
-            ["groupPool", []]
-        ]
-    ]],
+    ["_tracks", _tracks],
     
     // Configuration
     ["_config", createHashMapFromArray [
-        ["aggressiveness", 0.5],      // 0-1, affects offensive vs defensive posture
-        ["riskTolerance", 0.5],       // 0-1, affects willingness to attack with lower ratios
+        ["aggressiveness", _aggressionValue],      // 0-1, affects offensive vs defensive posture
+        ["riskTolerance", _aggressionValue],       // 0-1, affects willingness to attack with lower ratios
         ["replanInterval", 60],       // Minimum seconds between replans
         ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
         ["debugMode", false]          // Enable verbose logging
@@ -107,7 +139,15 @@ private _gtnCommander = createHashMapObject [[
         // Initialize track system
         _self call ["_initializeTracks", []];
 
-        ["GTN", 2, "GTN Commander started with multi-track execution"] call FLO_fnc_log;
+        private _tracks = _self get "_tracks";
+        private _attackTracks = { (_x get "goal") == "capture_priority_objective" } count _tracks;
+        private _defenseTracks = { (_x get "goal") == "protect_critical_assets" } count _tracks;
+        ["GTN", 2, format[
+            "GTN Commander started (attack tracks: %1, defense tracks: %2, tempo: %3s)",
+            _attackTracks,
+            _defenseTracks,
+            _self get "_updateInterval"
+        ]] call FLO_fnc_log;
     }],
 
     // Stop the GTN commander
@@ -269,6 +309,7 @@ private _gtnCommander = createHashMapObject [[
                                         
                                         if (_currentStatus == "PENDING") then {
                                             private _taskId = _currentTask get "taskId";
+                                            _executor call ["_setActiveTrack", [_currentTask]];
                                             ["GTN", 3, format["Track %1: Executing %2", _trackId, _taskId]] call FLO_fnc_log;
                                             
                                             private _result = _executor call ["_executePrimitive", [_currentTask]];
@@ -280,8 +321,16 @@ private _gtnCommander = createHashMapObject [[
                                                 
                                                 // Check for synchronous completion
                                                 if (_planner call ["_checkCurrentTask", [_executor]]) then {
-                                                    ["GTN", 4, format["Track %1: Task %2 completed synchronously", _trackId, _taskId]] call FLO_fnc_log;
-                                                    _planner set ["_planStatus", "PENDING"];
+                                                    private _taskStatus = _currentTask get "status";
+                                                    if (_taskStatus == "SUCCESS") then {
+                                                        ["GTN", 4, format["Track %1: Task %2 completed synchronously", _trackId, _taskId]] call FLO_fnc_log;
+                                                        private _nextTask = _planner call ["_getCurrentTask", []];
+                                                        _planner set ["_planStatus", if (isNil "_nextTask") then { "SUCCESS" } else { "PENDING" }];
+                                                    } else {
+                                                        ["GTN", 2, format["Track %1: Task %2 failed during sync check", _trackId, _taskId]] call FLO_fnc_log;
+                                                        _planner set ["_planStatus", "FAILED"];
+                                                        _continueLoop = false;
+                                                    };
                                                 } else {
                                                     _continueLoop = false;
                                                 };
@@ -292,8 +341,16 @@ private _gtnCommander = createHashMapObject [[
                                             };
                                         } else {
                                             // RUNNING - check if async task completed
+                                            _executor call ["_setActiveTrack", [_currentTask]];
                                             if (_planner call ["_checkCurrentTask", [_executor]]) then {
-                                                _planner set ["_planStatus", "PENDING"];
+                                                private _taskStatus = _currentTask get "status";
+                                                if (_taskStatus == "SUCCESS") then {
+                                                    private _nextTask = _planner call ["_getCurrentTask", []];
+                                                    _planner set ["_planStatus", if (isNil "_nextTask") then { "SUCCESS" } else { "PENDING" }];
+                                                } else {
+                                                    _planner set ["_planStatus", "FAILED"];
+                                                    _continueLoop = false;
+                                                };
                                             } else {
                                                 _continueLoop = false;
                                             };
@@ -414,27 +471,94 @@ private _gtnCommander = createHashMapObject [[
         _self get "_isRunning"
     }],
 
+    ["_getSideContext", {
+        _self get "_sideContext"
+    }],
+
+    ["_getOwnSide", {
+        _self get "_ownSide"
+    }],
+
+    ["_getEnemySide", {
+        _self get "_enemySide"
+    }],
+
+    ["_getResourceObject", {
+        private _sideKey = _self get "_sideKey";
+        FLO_SideResources get _sideKey
+    }],
+
     // === TACTICAL METHODS (used by executor handlers) ===
 
     // Select highest priority enemy objective
     ["_selectPriorityObjective", {
         private _ws = _self get "_worldState";
-        private _enemyObjs = _ws call ["_getEnemyObjectives", []];
+        private _ownSide = _self get "_ownSide";
+        private _allObjectives = _ws call ["_getObjectives", []];
+        private _objectives = _ws call ["_getFrontlineEnemyObjectives", []];
 
-        if (count (keys _enemyObjs) == 0) exitWith { "" };
+        if (count (keys _objectives) == 0) exitWith { "" };
 
-        // Find highest priority
-        private _bestObj = "";
-        private _bestPriority = -1;
+        private _landCandidates = [];
+        private _allCandidates = [];
 
         {
-            private _obj = _enemyObjs get _x;
-            private _priority = _obj getOrDefault ["priority", 50];
-            if (_priority > _bestPriority) then {
-                _bestPriority = _priority;
-                _bestObj = _x;
+            private _objId = _x;
+            private _obj = _objectives get _objId;
+            private _links = _obj get "linkedObjectives";
+            private _priority = _obj get "priority";
+
+            private _bestAnyDist = 1e12;
+            private _bestLandDist = 1e12;
+
+            {
+                private _linkedObj = _allObjectives get _x;
+                if ((_linkedObj get "owner") != _ownSide) then { continue };
+
+                private _route = _ws call ["_getObjectiveLinkRouteInfo", [_x, _objId]];
+                private _routeDist = _route get "distance";
+                private _crossesWater = _route get "crossesWater";
+
+                if (_routeDist < _bestAnyDist) then {
+                    _bestAnyDist = _routeDist;
+                };
+                if (!_crossesWater && {_routeDist < _bestLandDist}) then {
+                    _bestLandDist = _routeDist;
+                };
+            } forEach _links;
+
+            _allCandidates pushBack [_objId, _priority, _bestAnyDist];
+            if (_bestLandDist < 1e12) then {
+                _landCandidates pushBack [_objId, _priority, _bestLandDist];
             };
-        } forEach (keys _enemyObjs);
+        } forEach (keys _objectives);
+
+        private _selectionPool = if (count _landCandidates > 0) then {
+            _landCandidates
+        } else {
+            _allCandidates
+        };
+
+        if (count _landCandidates == 0) then {
+            ["GTN", 3, format["Priority selection fallback: no land-connected frontline objectives, using %1 cross-water candidates", count _allCandidates]] call FLO_fnc_log;
+        };
+
+        // Find highest priority, then shortest route distance as tie-break
+        private _bestObj = "";
+        private _bestPriority = -1;
+        private _bestDist = 1e12;
+
+        {
+            _x params ["_objId", "_priority", "_routeDist"];
+            if (
+                _priority > _bestPriority
+                || { _priority == _bestPriority && { _routeDist < _bestDist } }
+            ) then {
+                _bestPriority = _priority;
+                _bestDist = _routeDist;
+                _bestObj = _objId;
+            };
+        } forEach _selectionPool;
 
         _bestObj
     }],
@@ -448,6 +572,7 @@ private _gtnCommander = createHashMapObject [[
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gtnTasked = _self get "_gtnTaskedGroups";
+        private _ownSide = _self get "_ownSide";
         private _available = [];
 
         // Find groups that are:
@@ -464,7 +589,7 @@ private _gtnCommander = createHashMapObject [[
 
             // Skip non-military or wrong side
             if (_groupType in ["civilian", "ambient"]) then { continue };
-            if (_side != east) then { continue };
+            if (_side != _ownSide) then { continue };
 
             // Skip air and artillery assets
             if (_groupType in ["helicopter", "jet", "air", "artillery"]) then { continue };
@@ -651,12 +776,13 @@ private _gtnCommander = createHashMapObject [[
     // Request CAS using the GTN air support system
     ["_requestCAS", {
         params ["_pos", ["_missionType", "CAS"]];
+        private _ownSide = _self get "_ownSide";
 
         // Use the Air Tasking Order system
         private _ato = call FLO_fnc_gtnAirTaskOrder;
         private _altitude = if (_missionType in ["BOMB", "LASER"]) then { 300 } else { 150 };
 
-        _ato call ["_addTask", [_pos, _missionType, "", _altitude]];
+        _ato call ["_addTask", [_pos, _missionType, "", _altitude, _ownSide]];
 
         ["GTN", 3, format["CAS mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
 
@@ -837,15 +963,20 @@ private _gtnCommander = createHashMapObject [[
                     // Check resources before replenishing
                     private _cost = 15;
                     private _canAfford = true;
+                    private _resources = _self call ["_getResourceObject", []];
                     
-                    if !(FLO_OPFOR_Resources call ["canAfford", [_cost, "reinforcement"]]) then {
+                    if (isNil "_resources") then {
                         _canAfford = false;
-                        ["GTN", 3, format["Group %1 replenishment paused - insufficient resources", _gId]] call FLO_fnc_log;
+                    } else {
+                        if !(_resources call ["canAfford", [_cost, "reinforcement"]]) then {
+                            _canAfford = false;
+                            ["GTN", 3, format["Group %1 replenishment paused - insufficient resources", _gId]] call FLO_fnc_log;
+                        };
                     };
-                    
+
                     if (_canAfford) then {
                         // Dedect cost
-                        FLO_OPFOR_Resources call ["spendResources", [_cost, "reinforcement"]];
+                        _resources call ["spendResources", [_cost, "reinforcement"]];
                     
                         // Trickle replenishment
                         private _unitCount = _gData get "unitCount";
@@ -999,6 +1130,7 @@ private _gtnCommander = createHashMapObject [[
     ["_debugGroupAvailability", {
         private _groups = FLO_virtualGroups get "_groups";
         private _gtnTasked = _self get "_gtnTaskedGroups";
+        private _ownSide = _self get "_ownSide";
         
         private _stats = createHashMapFromArray [
             ["total", 0],
@@ -1027,7 +1159,7 @@ private _gtnCommander = createHashMapObject [[
             _orderBreakdown set [_orderKey, (_orderBreakdown getOrDefault [_orderKey, 0]) + 1];
             
             // Check filters
-            if (_side != east) exitWith { _stats set ["wrongSide", (_stats get "wrongSide") + 1] };
+            if (_side != _ownSide) exitWith { _stats set ["wrongSide", (_stats get "wrongSide") + 1] };
             if (_groupType in ["civilian", "ambient"]) exitWith { _stats set ["wrongType", (_stats get "wrongType") + 1] };
             if (_groupType in ["helicopter", "jet", "air", "artillery"]) exitWith { _stats set ["airArtillery", (_stats get "airArtillery") + 1] };
             if (_groupId in _gtnTasked) exitWith { _stats set ["gtnTasked", (_stats get "gtnTasked") + 1] };
@@ -1062,6 +1194,7 @@ private _gtnCommander = createHashMapObject [[
     ["_debugListOrders", {
         private _groups = FLO_virtualGroups get "_groups";
         private _gtnTasked = _self get "_gtnTaskedGroups";
+        private _ownSide = _self get "_ownSide";
         
         ["GTN", 3, "=== GROUP ORDER LISTING ==="] call FLO_fnc_log;
         
@@ -1070,7 +1203,7 @@ private _gtnCommander = createHashMapObject [[
             private _gData = _y;
             
             private _side = _gData get "side";
-            if (_side != east) then { continue };
+            if (_side != _ownSide) then { continue };
             
             private _groupType = _gData get "groupType";
             private _currentOrder = _gData getOrDefault ["currentOrder", ""];

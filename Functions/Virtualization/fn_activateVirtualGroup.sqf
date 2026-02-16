@@ -38,6 +38,34 @@ private _currentWpIdx = _groupData get "currentWaypointIndex";
 private _comp = _groupData get "comp";
 private _realGroup = grpNull;
 
+private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
+private _sideKey = _sideCtx get "sideKey";
+private _catalog = if (!isNil "FLO_FactionCatalog") then {
+    FLO_FactionCatalog getOrDefault [_sideKey, createHashMap]
+} else {
+    createHashMap
+};
+
+private _poolGroups = _catalog getOrDefault ["groups", if (!isNil "East_Groups") then { East_Groups } else { [] }];
+private _poolUnits = _catalog getOrDefault ["units", if (!isNil "East_Units") then { East_Units } else { [] }];
+private _poolGroundLight = _catalog getOrDefault ["groundLight", if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { [] }];
+private _poolGroundHeavy = _catalog getOrDefault ["groundHeavy", if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] }];
+private _poolArty = _catalog getOrDefault ["groundArtillery", if (!isNil "East_Ground_Artillery") then { East_Ground_Artillery } else { [] }];
+private _poolHeli = _catalog getOrDefault ["airHeli", if (!isNil "East_Air_Heli") then { East_Air_Heli } else { [] }];
+private _poolJet = _catalog getOrDefault ["airJet", if (!isNil "East_Air_Jet") then { East_Air_Jet } else { [] }];
+private _poolMobileAA = _catalog getOrDefault ["mobileAA", if (!isNil "East_Mobile_AA") then { East_Mobile_AA } else { [] }];
+private _poolStaticAA = _catalog getOrDefault ["staticAA", if (!isNil "East_Static_AA") then { East_Static_AA } else { [] }];
+private _poolRadar = _catalog getOrDefault ["radar", if (!isNil "East_Radar") then { East_Radar } else { [] }];
+
+if (count _poolUnits == 0) then { _poolUnits = ["O_Soldier_F"] };
+if (count _poolGroundLight == 0) then { _poolGroundLight = ["B_MRAP_01_F"] };
+if (count _poolGroundHeavy == 0) then { _poolGroundHeavy = +_poolGroundLight };
+if (count _poolArty == 0) then { _poolArty = +_poolGroundHeavy };
+if (count _poolHeli == 0) then { _poolHeli = ["B_Heli_Light_01_F"] };
+if (count _poolJet == 0) then { _poolJet = +_poolHeli };
+if (count _poolMobileAA == 0) then { _poolMobileAA = +_poolGroundHeavy };
+if (count _poolStaticAA == 0) then { _poolStaticAA = +_poolMobileAA };
+
 // Check if the group is significantly closer to a later waypoint than the current one.
 // This indicates that waypoints were not deleted properly during virtual movement.
 if (_currentWpIdx == 0 && count _allWaypoints > 1) then {
@@ -97,7 +125,7 @@ switch (true) do {
         } forEach _comp;
     };
 
-    // Infantry - try group configs first, fallback to East_Units
+    // Infantry - try group configs first, fallback to side unit pool
     case (_groupType isEqualTo "infantry"): {
         // Try group configs if available and valid
         if (_groupCfg isEqualType [] && {count _groupCfg > 0}) then {
@@ -107,7 +135,7 @@ switch (true) do {
             };
         };
 
-        // Fallback to East_Units if no group spawned
+        // Fallback to side unit pool if no group spawned
         if (isNull _realGroup || {count units _realGroup == 0}) then {
             if (!isNull _realGroup) then { deleteGroup _realGroup; };
 
@@ -115,7 +143,7 @@ switch (true) do {
             private _spawnCount = if (_unitCount > 0) then { _unitCount } else { 6 };
 
             for "_i" from 1 to _spawnCount do {
-                private _unitType = selectRandom East_Units;
+                private _unitType = selectRandom _poolUnits;
                 private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
                 private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
             };
@@ -136,10 +164,10 @@ switch (true) do {
 
             // Select appropriate vehicle type
             switch (_groupType) do {
-                case "motorized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
-                case "mechanized": { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
-                case "armor": { _vehicleType = selectRandom East_Ground_Vehicles_Heavy; };
-                default { _vehicleType = selectRandom East_Ground_Vehicles_Light; };
+                case "motorized": { _vehicleType = selectRandom _poolGroundLight; };
+                case "mechanized": { _vehicleType = selectRandom _poolGroundLight; };
+                case "armor": { _vehicleType = selectRandom _poolGroundHeavy; };
+                default { _vehicleType = selectRandom _poolGroundLight; };
             };
 
             // Find safe position for vehicle with larger radius and vehicle-appropriate spacing
@@ -174,7 +202,7 @@ switch (true) do {
             
             // Create crew manually to avoid redundant group creation/deletion (fixes 112/116 errors)
             private _crewType = getText (configFile >> "CfgVehicles" >> _vehicleType >> "crew");
-            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            if (_crewType == "") then { _crewType = selectRandom _poolUnits; };
 
             // Driver
             private _driver = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
@@ -197,10 +225,10 @@ switch (true) do {
             
             // Select appropriate aircraft type
             switch (_groupType) do {
-                case "helicopter": { _aircraftType = selectRandom East_Air_Heli; };
-                case "jet": { _aircraftType = selectRandom East_Air_Jet; };
-                case "air": { _aircraftType = selectRandom (East_Air_Heli + East_Air_Jet); };
-                default { _aircraftType = selectRandom East_Air_Heli; };
+                case "helicopter": { _aircraftType = selectRandom _poolHeli; };
+                case "jet": { _aircraftType = selectRandom _poolJet; };
+                case "air": { _aircraftType = selectRandom (_poolHeli + _poolJet); };
+                default { _aircraftType = selectRandom _poolHeli; };
             };
             
             // Find appropriate spawn height for air vehicles
@@ -216,7 +244,7 @@ switch (true) do {
             
             // Create crew manually
             private _crewType = getText (configFile >> "CfgVehicles" >> _aircraftType >> "crew");
-            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            if (_crewType == "") then { _crewType = selectRandom _poolUnits; };
 
             // Driver/Pilot
             private _driver = _realGroup createUnit [_crewType, [0,0,0], [], 0, "NONE"];
@@ -235,7 +263,7 @@ switch (true) do {
         _realGroup = createGroup [_side, true];
 
         for "_i" from 1 to _unitCount do {
-            private _artilleryType = selectRandom East_Ground_Artillery;
+            private _artilleryType = selectRandom _poolArty;
 
             // Find safe position for artillery with larger spacing (artillery needs more room)
             private _minDist = 15 + (25 * _i);
@@ -266,7 +294,7 @@ switch (true) do {
             
             // Create crew manually
             private _crewType = getText (configFile >> "CfgVehicles" >> _artilleryType >> "crew");
-            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            if (_crewType == "") then { _crewType = selectRandom _poolUnits; };
 
             // Driver
             private _driver = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
@@ -285,7 +313,7 @@ switch (true) do {
         _realGroup = createGroup [_side, true];
         
         for "_i" from 1 to _unitCount do {
-            private _aaType = selectRandom East_Mobile_AA;
+            private _aaType = selectRandom _poolMobileAA;
             
             private _minDist = 10 + (20 * _i);
             private _spawnPos = [_position, _minDist, 100, 8, 0, 0.2, 0] call BIS_fnc_findSafePos;
@@ -299,7 +327,7 @@ switch (true) do {
             _vehicle setVectorUp [0,0,1];
             
             private _crewType = getText (configFile >> "CfgVehicles" >> _aaType >> "crew");
-            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            if (_crewType == "") then { _crewType = selectRandom _poolUnits; };
             
             private _driver = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
             _driver moveInDriver _vehicle;
@@ -320,8 +348,8 @@ switch (true) do {
         if (_safePos distance2D _position > 150) then { _safePos = _position; };
         
         // Spawn Radar if available
-        if (count East_Radar > 0) then {
-            private _radarType = selectRandom East_Radar;
+        if (count _poolRadar > 0) then {
+            private _radarType = selectRandom _poolRadar;
             private _radarPos = _safePos getPos [15, random 360];
             private _radar = createVehicle [_radarType, _radarPos, [], 0, "NONE"];
             _radar setPos [getPos _radar select 0, getPos _radar select 1, 0];
@@ -332,14 +360,14 @@ switch (true) do {
             
             // Radar operator (required for data link to function)
             private _crewType = getText (configFile >> "CfgVehicles" >> _radarType >> "crew");
-            if (_crewType == "") then { _crewType = selectRandom East_Units; };
+            if (_crewType == "") then { _crewType = selectRandom _poolUnits; };
             private _operator = _realGroup createUnit [_crewType, _radarPos, [], 0, "NONE"];
             _operator moveInAny _radar;
         };
         
         // Spawn SAM Launchers
         for "_i" from 1 to _unitCount do {
-            private _samType = selectRandom East_Static_AA;
+            private _samType = selectRandom _poolStaticAA;
             
             private _offset = 25 + (15 * _i);
             private _angle = (360 / _unitCount) * _i;
@@ -373,7 +401,7 @@ switch (true) do {
     default {
         ["VIRTUALIZATION", 2, format["Unknown group type %1 for virtual group %2", _groupType, _groupId]] call FLO_fnc_log;
         _realGroup = createGroup [_side, true];
-        private _unitType = selectRandom East_Units;
+        private _unitType = selectRandom _poolUnits;
         private _unit = _realGroup createUnit [_unitType, _position, [], 0, "NONE"];
     };
 };
@@ -451,7 +479,7 @@ if (_isTransport && count _attachedGroups > 0) then {
                 } forEach _infComp;
             } else {
                 for "_i" from 1 to _infUnitCount do {
-                    private _unitType = selectRandom East_Units;
+                    private _unitType = selectRandom _poolUnits;
                     private _unit = _infGroup createUnit [_unitType, _position, [], 0, "NONE"];
                 };
             };

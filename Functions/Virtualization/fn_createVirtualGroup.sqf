@@ -43,7 +43,7 @@ if (_unitCount <= 0) then {
         if (_groupType isEqualTo "civilianVehicle") then {
             _unitCount = 1;
         } else {
-            _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
+            _unitCount = [_groupType, _side] call FLO_fnc_getGroupTypeCount;
         };
     };
 };

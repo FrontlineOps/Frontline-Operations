@@ -30,6 +30,58 @@ if (isNil "InitializationOG" || {!InitializationOG}) exitWith {
 };
 
 // ============================================
+// HUMAN SIDE LOCK (first connected EAST/WEST side is authoritative)
+// ============================================
+if (isNil "FLO_ActivePlayerSide") then {
+    FLO_ActivePlayerSide = sideUnknown;
+    publicVariable "FLO_ActivePlayerSide";
+};
+
+[] spawn {
+    while {true} do {
+        private _players = allPlayers select { side group _x in [east, west] };
+
+        if (!(FLO_ActivePlayerSide in [east, west]) && {count _players > 0}) then {
+            FLO_ActivePlayerSide = side group (_players select 0);
+            publicVariable "FLO_ActivePlayerSide";
+            diag_log format ["[FLO_INIT_P5] Active player side locked to %1", FLO_ActivePlayerSide];
+        };
+
+        if (FLO_ActivePlayerSide in [east, west]) then {
+            {
+                private _pSide = side group _x;
+                if (_pSide in [east, west] && {_pSide != FLO_ActivePlayerSide}) then {
+                    if !(_x getVariable ["FLO_SideLockWarned", false]) then {
+                        ["Mission side is locked to the other faction. You are being moved to spectator."] remoteExec ["hint", owner _x];
+                        _x setVariable ["FLO_SideLockWarned", true, false];
+                    };
+
+                    if !(_x getVariable ["FLO_SideLockedSpectator", false]) then {
+                        [true] remoteExec ["BIS_fnc_EGSpectator", owner _x];
+                        _x allowDamage false;
+                        _x setCaptive true;
+                        _x setVariable ["FLO_SideLockedSpectator", true, false];
+                    };
+                };
+            } forEach _players;
+        };
+
+        sleep 5;
+    };
+};
+
+private _fnc_sideResourcesUninitialized = {
+    if (isNil "FLO_SideResources") exitWith { true };
+    if !(FLO_SideResources isEqualType createHashMap) exitWith { true };
+    (count (keys FLO_SideResources)) == 0
+};
+
+// Initialize side resources early so restored/started systems can consume them.
+if ((call _fnc_sideResourcesUninitialized) && {!isNil "FLO_fnc_sideResources"}) then {
+    [] call FLO_fnc_sideResources;
+};
+
+// ============================================
 // RESTORE FOBs AND OPs FROM SAVE
 // ============================================
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
@@ -300,19 +352,27 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         diag_log format ["[FLO_INIT_P5] Restored %1 supply crates", _loadedCrates];
     };
 
-    // Restore GTN state
-    if ("aiCommander" in _savedData) then {
+    // Restore GTN state (dual schema only)
+    if ("aiCommanders" in _savedData) then {
         if (isNil "FLO_GTN_ResourceManager") then {
             FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
         };
 
-        private _cmd = _savedData get "aiCommander";
+        private _cmd = _savedData get "aiCommanders";
         if (!isNil "_cmd" && {_cmd isEqualType createHashMap}) then {
-            private _gtnWasEnabled = _cmd getOrDefault ["gtnEnabled", false];
-            if (_gtnWasEnabled && {isNil {FLO_GTN_ResourceManager get "_gtnCommander"}}) then {
+            private _eastState = _cmd getOrDefault ["EAST", createHashMap];
+            private _westState = _cmd getOrDefault ["WEST", createHashMap];
+            private _gtnWasEnabled = (_eastState getOrDefault ["gtnEnabled", false]) || (_westState getOrDefault ["gtnEnabled", false]);
+
+            if (_gtnWasEnabled) then {
                 FLO_GTN_ResourceManager call ["_initializeGTN", []];
             };
-            diag_log "[FLO_INIT_P5] GTN state restored";
+
+            diag_log "[FLO_INIT_P5] Dual GTN state restored";
+        };
+    } else {
+        if ("aiCommander" in _savedData) then {
+            diag_log "[FLO_INIT_P5] Legacy GTN save payload detected (aiCommander) - intentionally ignored";
         };
     };
 
@@ -355,14 +415,16 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 };
 
 // ============================================
-// OPFOR Resource System
+// Side Resource System
 // ============================================
-diag_log "[FLO_INIT_P5] Starting OPFOR resource system...";
-if (!isNil "FLO_fnc_opforResources") then {
-    [] spawn FLO_fnc_opforResources;
-    diag_log "[FLO_INIT_P5] OPFOR resources started";
+diag_log "[FLO_INIT_P5] Starting side resource system...";
+if (!isNil "FLO_fnc_sideResources") then {
+    if (call _fnc_sideResourcesUninitialized) then {
+        [] call FLO_fnc_sideResources;
+    };
+    diag_log "[FLO_INIT_P5] Side resources started";
 } else {
-    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_opforResources not found";
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_sideResources not found";
 };
 
 // ============================================
@@ -381,10 +443,55 @@ if (!isNil "FLO_fnc_logisticsNetwork") then {
 // ============================================
 diag_log "[FLO_INIT_P5] Starting GTN Resource Manager...";
 if (!isNil "FLO_fnc_gtnResourceManager") then {
-    [] spawn FLO_fnc_gtnResourceManager;
+    if (isNil "FLO_GTN_ResourceManager") then {
+        FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
+    } else {
+        FLO_GTN_ResourceManager call ["_initializeGTN", []];
+    };
     diag_log "[FLO_INIT_P5] GTN Resource Manager started";
 } else {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_gtnResourceManager not found";
+};
+
+// ============================================
+// GTN Virtual Combat Resolver
+// ============================================
+diag_log "[FLO_INIT_P5] Starting GTN virtual combat resolver...";
+if (!isNil "FLO_fnc_gtnVirtualCombatResolver") then {
+    [] spawn FLO_fnc_gtnVirtualCombatResolver;
+    diag_log "[FLO_INIT_P5] GTN virtual combat resolver started";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_gtnVirtualCombatResolver not found";
+};
+
+// ============================================
+// GTN Player Task Bridge
+// ============================================
+diag_log "[FLO_INIT_P5] Evaluating GTN player task bridge...";
+if (!isNil "FLO_fnc_gtnPlayerTaskBridge" && {FLO_GTN_EnablePlayerTaskBridge}) then {
+    [] spawn FLO_fnc_gtnPlayerTaskBridge;
+    diag_log "[FLO_INIT_P5] GTN player task bridge started (enabled)";
+} else {
+    if (!FLO_GTN_EnablePlayerTaskBridge) then {
+        diag_log "[FLO_INIT_P5] GTN player task bridge disabled (FLO_GTN_EnablePlayerTaskBridge=false)";
+    } else {
+        diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_gtnPlayerTaskBridge not found";
+    };
+};
+
+// ============================================
+// GTN Commander Visual Debug
+// ============================================
+diag_log "[FLO_INIT_P5] Evaluating GTN commander visual debug...";
+if (!isNil "FLO_fnc_gtnCommanderVisualDebug" && {FLO_GTN_CommanderDebugEnabled}) then {
+    [] spawn FLO_fnc_gtnCommanderVisualDebug;
+    diag_log "[FLO_INIT_P5] GTN commander visual debug started";
+} else {
+    if (!FLO_GTN_CommanderDebugEnabled) then {
+        diag_log "[FLO_INIT_P5] GTN commander visual debug disabled (FLO_GTN_CommanderDebugEnabled=false)";
+    } else {
+        diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_gtnCommanderVisualDebug not found";
+    };
 };
 
 // ============================================
@@ -510,4 +617,3 @@ if (!isNil "FLO_fnc_initPFScheduler") then {
 
 diag_log "[FLO_INIT_P5] Mission systems phase complete";
 true
-

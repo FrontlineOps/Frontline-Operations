@@ -33,7 +33,12 @@ private _minDist = 1e9;
 
     // Filter by side if specified
     if (!isNil "_filterSide") then {
-        private _owner = _data getOrDefault ["owner", east];
+        private _owner = _data get "owner";
+        if (_owner isEqualType "") then {
+            private _ownerKey = toUpper _owner;
+            if (_ownerKey isEqualTo "EAST") then { _owner = east; };
+            if (_ownerKey isEqualTo "WEST") then { _owner = west; };
+        };
         if !(_owner isEqualTo _filterSide) then { continue };
     };
 

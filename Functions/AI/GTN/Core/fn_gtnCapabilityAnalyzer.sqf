@@ -1624,8 +1624,14 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         private _pos = _analysis get "position";
         private _radius = _analysis get "radius";
 
+        private _ownSide = if (!isNil "_worldState") then {
+            _worldState getOrDefault ["_ownSide", east]
+        } else {
+            east
+        };
+
         // === FIRST: Check world state intel from recon ===
-        // This contains actual observed enemy (BLUFOR) data from air/ground recon
+        // This contains observed enemy data from air/ground recon.
         private _hasReconIntel = false;
         
         if (!isNil "_worldState") then {
@@ -1653,8 +1659,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             };
         };
 
-        // === SECOND: Also check virtual groups (garrison) ===
-        // This adds our own OPFOR defenders to the picture
+        // === SECOND: Also check virtual groups (friendly garrison) ===
         if (!isNil "FLO_virtualGroups") then {
             private _groups = FLO_virtualGroups get "_groups";
             {
@@ -1663,8 +1668,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 private _gPos = _gData get "position";
                 private _gSide = _gData get "side";
 
-                // Only include OPFOR garrison (our defenders), not enemy
-                if (_gPos distance2D _pos < _radius * 1.5 && _gSide == east) then {
+                // Only include our side garrison defenders.
+                if (_gPos distance2D _pos < _radius * 1.5 && _gSide == _ownSide) then {
                     private _gAnalysis = _self call ["_analyzeGroup", [_gId]];
                     if (!isNil "_gAnalysis") then {
                         (_analysis get "garrison") pushBack [_gId, _gAnalysis];
@@ -1741,7 +1746,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
     // Check if a mission type is feasible with available assets
     ["_canExecuteMission", {
-        params ["_missionType", ["_targetPos", [0,0,0]], ["_requiredPower", 0]];
+        params ["_missionType", ["_targetPos", [0,0,0]], ["_requiredPower", 0], ["_side", east]];
 
         private _result = createHashMapFromArray [
             ["feasible", false],
@@ -1763,6 +1768,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 // Need attack helicopter or CAS jet
                 {
                     private _gData = _y;
+                    if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["helicopter", "jet"]) then {
                         if !(_gData get "onMission") then {
@@ -1779,17 +1785,19 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             };
 
             case "ARTILLERY": {
-                // Check artillery asset manager
-                if (!isNil "FLO_GTNArtilleryManager") then {
-                    private _batteries = FLO_GTNArtilleryManager call ["_getAvailableBatteries", []];
-                    if (count _batteries > 0) then {
-                        _result set ["feasible", true];
-                        _result set ["availableAssets", _batteries];
-                    } else {
-                        _result set ["reason", "No artillery batteries available"];
+                // Side-filtered artillery availability.
+                {
+                    private _gData = _y;
+                    if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
+                    if ((_gData get "groupType") == "artillery" && {!(_gData getOrDefault ["onMission", false])}) then {
+                        (_result get "availableAssets") pushBack _x;
                     };
+                } forEach _groups;
+
+                if (count (_result get "availableAssets") > 0) then {
+                    _result set ["feasible", true];
                 } else {
-                    _result set ["reason", "Artillery system not initialized"];
+                    _result set ["reason", "No artillery batteries available"];
                 };
             };
 
@@ -1798,6 +1806,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 private _totalPower = 0;
                 {
                     private _gData = _y;
+                    if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["infantry", "motorized", "mechanized", "armor"]) then {
                         if !(_gData get "onMission") then {
@@ -1822,6 +1831,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 // Any available forces can defend
                 {
                     private _gData = _y;
+                    if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     if !(_gData get "onMission") then {
                         (_result get "availableAssets") pushBack _x;
                     };
@@ -1838,6 +1848,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 // Need UAV or recon infantry
                 {
                     private _gData = _y;
+                    if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["uav", "recon"]) then {
                         if !(_gData get "onMission") then {
@@ -1930,6 +1941,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
     // Get artillery status across all artillery groups
     // Returns: [totalBatteries, availableBatteries, totalRounds, activeRounds]
     ["_getArtilleryStatus", {
+        params [["_side", east]];
+
         private _result = createHashMapFromArray [
             ["totalBatteries", 0],
             ["availableBatteries", 0],
@@ -1952,6 +1965,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _gId = _x;
             private _gData = _groups get _gId;
             if (isNil "_gData") then { continue };
+            if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
             if ((_gData get "groupType") != "artillery") then { continue };
 
             private _batteryInfo = createHashMapFromArray [
@@ -2020,6 +2034,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
     // Get air asset status across all air groups
     // Returns HashMap with CAS, SEAD, bomber availability and ordnance status
     ["_getAirAssetStatus", {
+        params [["_side", east]];
+
         private _result = createHashMapFromArray [
             ["casTotal", 0],
             ["casAvailable", 0],
@@ -2041,6 +2057,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _gId = _x;
             private _gData = _groups get _gId;
             if (isNil "_gData") then { continue };
+            if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
 
             private _gType = _gData get "groupType";
             if !(_gType in ["cas", "sead", "bomber", "air", "helicopter", "jet"]) then { continue };

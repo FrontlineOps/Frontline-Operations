@@ -120,9 +120,9 @@ if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) exitWith {
     false
 };
 
-// Verify faction arrays exist
-if (isNil "East_Units" || isNil "East_Ground_Vehicles_Light") exitWith {
-    FLO_InitError = "Cannot initialize virtualization - faction arrays not loaded";
+// Verify faction catalog exists
+if (isNil "FLO_FactionCatalog") exitWith {
+    FLO_InitError = "Cannot initialize virtualization - faction catalog not loaded";
     publicVariable "FLO_InitError";
     diag_log format ["[FLO_INIT_P4] ERROR: %1", FLO_InitError];
     false
@@ -132,9 +132,12 @@ if (isNil "East_Units" || isNil "East_Ground_Vehicles_Light") exitWith {
 diag_log "[FLO_INIT_P4] Calling FLO_fnc_initVirtualization...";
 [] call FLO_fnc_initVirtualization;
 
-// Initialize objective groups (OPFOR garrison creation)
-diag_log "[FLO_INIT_P4] Creating objective groups...";
-private _initResult = [] call FLO_fnc_initializeObjectiveGroups;
+// Initialize objective groups for both sides
+diag_log "[FLO_INIT_P4] Creating objective groups for EAST/WEST...";
+private _sides = missionNamespace getVariable ["FLO_MissionSides", [east, west]];
+{
+    [_x] call FLO_fnc_initializeObjectiveGroups;
+} forEach _sides;
 
 // Verify groups were created
 if (isNil "FLO_virtualGroups") then {

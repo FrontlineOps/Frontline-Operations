@@ -25,7 +25,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
     FLO_GTNAirAssetManager = createHashMapObject [[
         ["missions", createHashMap],
         ["_requestAirAsset", {
-            params ["_targetPos", ["_missionType", "CAS"]];
+            params ["_targetPos", ["_missionType", "CAS"], ["_requestSide", sideUnknown]];
 
             if (isNil "FLO_virtualGroups") exitWith {objNull};
             private _groups = FLO_virtualGroups get "_groups";
@@ -34,6 +34,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _gData = _y;
                 private _gType = _gData get "groupType";
                 if (_gType in ["helicopter", "jet", "air"]) then {
+                    if (_requestSide in [east, west] && {(_gData get "side") != _requestSide}) then {
+                        continue;
+                    };
                     _airGroups pushBack [_x, _gData];
                 };
             } forEach _groups;

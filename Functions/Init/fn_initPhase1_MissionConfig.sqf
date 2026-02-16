@@ -47,6 +47,18 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
             FLO_DifficultyHandle = _configData get "difficultyHandle";
             publicVariable "FLO_DifficultyHandle";
         };
+        if ("gtnAttackHandle" in _configData) then {
+            FLO_GTN_AttackHandle = _configData get "gtnAttackHandle";
+            publicVariable "FLO_GTN_AttackHandle";
+        };
+        if ("gtnDefenseHandle" in _configData) then {
+            FLO_GTN_DefenseHandle = _configData get "gtnDefenseHandle";
+            publicVariable "FLO_GTN_DefenseHandle";
+        };
+        if ("gtnTempoHandle" in _configData) then {
+            FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
+            publicVariable "FLO_GTN_TempoHandle";
+        };
         if ("moneyHandle" in _configData) then {
             FLO_MoneyHandle = _configData get "moneyHandle";
             publicVariable "FLO_MoneyHandle";
@@ -132,6 +144,21 @@ if ("difficultyHandle" in FLO_MissionConfig) then {
     publicVariable "FLO_DifficultyHandle";
 };
 
+if ("gtnAttackHandle" in FLO_MissionConfig) then {
+    FLO_GTN_AttackHandle = FLO_MissionConfig get "gtnAttackHandle";
+    publicVariable "FLO_GTN_AttackHandle";
+};
+
+if ("gtnDefenseHandle" in FLO_MissionConfig) then {
+    FLO_GTN_DefenseHandle = FLO_MissionConfig get "gtnDefenseHandle";
+    publicVariable "FLO_GTN_DefenseHandle";
+};
+
+if ("gtnTempoHandle" in FLO_MissionConfig) then {
+    FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
+    publicVariable "FLO_GTN_TempoHandle";
+};
+
 if ("moneyHandle" in FLO_MissionConfig) then {
     FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
     publicVariable "FLO_MoneyHandle";
@@ -153,4 +180,3 @@ diag_log format ["[FLO_INIT_P1] Mission config received: Friendly=%1, Enemy=%2, 
 ];
 
 true
-

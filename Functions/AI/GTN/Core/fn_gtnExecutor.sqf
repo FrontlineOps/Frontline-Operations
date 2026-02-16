@@ -8,33 +8,49 @@
  * Handles action completion monitoring and failure recovery.
  *
  * Arguments:
- * 0: Commander Reference <HASHMAP> - The OPFOR commander object
+ * 0: Commander Host <HASHMAP> - Commander host object
+ * 1: Side Context <HASHMAP> - Normalized own/enemy side context
  *
  * Return Value:
  * Executor HashMap Object <HASHMAP>
  *
  * Example:
- * private _executor = [_commander] call FLO_fnc_gtnExecutor;
+ * private _executor = [_commander, [east] call FLO_fnc_gtnSideContext] call FLO_fnc_gtnExecutor;
  * _executor call ["_executePrimitive", [_taskNode]];
  */
 
-params [["_commander", nil]];
+params [
+    ["_commander", nil],
+    ["_sideContext", createHashMap]
+];
 
 if (isNil "_commander") exitWith {
     ["GTN", 1, "Executor requires commander reference"] call FLO_fnc_log;
     nil
 };
 
-["GTN", 3, "Initializing GTN Executor"] call FLO_fnc_log;
+if (isNil "_sideContext" || {!(_sideContext isEqualType createHashMap)} || {count _sideContext == 0}) then {
+    _sideContext = [east] call FLO_fnc_gtnSideContext;
+};
+
+private _ownSide = _sideContext get "ownSide";
+private _enemySide = _sideContext get "enemySide";
+private _sideKey = _sideContext get "sideKey";
+
+["GTN", 3, format["Initializing GTN Executor (%1)", _sideKey]] call FLO_fnc_log;
 
 private _executor = createHashMapObject [[
     // AI Commander reference (passed in)
     ["_aiCommander", _commander],
+    ["_sideContext", _sideContext],
+    ["_ownSide", _ownSide],
+    ["_enemySide", _enemySide],
+    ["_sideKey", _sideKey],
 
     // GTN Commander reference (set after creation)
     ["_gtnCommander", nil],
 
-    // Active executions (taskId -> execution data)
+    // Active executions (trackId::taskId -> execution data)
     ["_activeExecutions", createHashMap],
 
     // Execution handlers (primitive id -> handler function)
@@ -55,15 +71,61 @@ private _executor = createHashMapObject [[
         _self set ["_handlers", _handlers];
     }],
     
-    // Completed task data for param resolution
+    // Per-track task data used for runtime parameter resolution and primitive state handoff.
+    ["_activeTrackId", "GLOBAL"],
+    ["_completedTaskDataByTrack", createHashMap],
     ["_completedTaskData", createHashMap],
+
+    ["_resolveTrackId", {
+        params [["_taskNode", nil]];
+
+        if (isNil "_taskNode") exitWith { _self get "_activeTrackId" };
+        if !(_taskNode isEqualType createHashMap) exitWith { _self get "_activeTrackId" };
+
+        private _track = _taskNode getOrDefault ["_trackRef", nil];
+        if (isNil "_track") exitWith { _self get "_activeTrackId" };
+        if !(_track isEqualType createHashMap) exitWith { _self get "_activeTrackId" };
+
+        _track getOrDefault ["id", _self get "_activeTrackId"]
+    }],
+
+    ["_setActiveTrack", {
+        params [["_taskNode", nil]];
+
+        private _trackId = _self call ["_resolveTrackId", [_taskNode]];
+        private _byTrack = _self get "_completedTaskDataByTrack";
+        private _trackData = _byTrack getOrDefault [_trackId, nil];
+
+        if (isNil "_trackData") then {
+            _trackData = createHashMap;
+            _byTrack set [_trackId, _trackData];
+        };
+
+        _self set ["_activeTrackId", _trackId];
+        _self set ["_completedTaskData", _trackData];
+
+        _trackId
+    }],
+
+    ["_getExecutionKey", {
+        params ["_taskRef"];
+
+        private _taskNode = if (_taskRef isEqualType createHashMap) then { _taskRef } else { nil };
+        private _taskId = if (!isNil "_taskNode") then { _taskNode get "taskId" } else { _taskRef };
+        private _trackId = if (!isNil "_taskNode") then {
+            _self call ["_resolveTrackId", [_taskNode]]
+        } else {
+            _self get "_activeTrackId"
+        };
+
+        format ["%1::%2", _trackId, _taskId]
+    }],
 
     // Store completed task data for later reference
     ["_storeTaskData", {
         params ["_key", "_value"];
         private _data = _self get "_completedTaskData";
         _data set [_key, _value];
-        _self set ["_completedTaskData", _data];
     }],
 
     // Get stored task data
@@ -71,6 +133,21 @@ private _executor = createHashMapObject [[
         params ["_key"];
         private _data = _self get "_completedTaskData";
         _data getOrDefault [_key, nil]
+    }],
+
+    ["_isEnemyObjective", {
+        params ["_objId"];
+        private _objData = FLO_Objectives get _objId;
+        if (isNil "_objData") exitWith { false };
+
+        private _owner = _objData get "owner";
+        if (_owner isEqualType "") then {
+            private _ownerKey = toUpper _owner;
+            if (_ownerKey isEqualTo "EAST") then { _owner = east; };
+            if (_ownerKey isEqualTo "WEST") then { _owner = west; };
+        };
+
+        _owner isEqualTo (_self get "_enemySide")
     }],
 
     // Resolve dynamic parameter references
@@ -107,8 +184,10 @@ private _executor = createHashMapObject [[
     ["_executePrimitive", {
         params ["_taskNode"];
 
+        private _trackId = _self call ["_setActiveTrack", [_taskNode]];
         private _taskId = _taskNode get "taskId";
         private _rawParams = _taskNode get "params";
+        private _executionKey = format ["%1::%2", _trackId, _taskId];
 
         // Resolve any dynamic parameter references
         private _params = _self call ["_resolveRuntimeParams", [_rawParams]];
@@ -129,6 +208,8 @@ private _executor = createHashMapObject [[
             ["aiCommander", _self get "_aiCommander"],
             ["executor", _self],
             ["taskNode", _taskNode],
+            ["trackId", _trackId],
+            ["executionKey", _executionKey],
             ["params", _params],
             ["startTime", diag_tickTime],
             ["status", "RUNNING"]
@@ -139,17 +220,26 @@ private _executor = createHashMapObject [[
         
         // Store active execution
         private _active = _self get "_activeExecutions";
-        _active set [_taskId, _context];
+        _active set [_executionKey, _context];
         
         _result
     }],
     
     // Check execution status - re-polls RUNNING tasks by re-calling their handler
     ["_checkExecution", {
-        params ["_taskId"];
+        params ["_taskRef"];
+
+        private _taskNode = if (_taskRef isEqualType createHashMap) then { _taskRef } else { nil };
+        private _taskId = if (!isNil "_taskNode") then { _taskNode get "taskId" } else { _taskRef };
+
+        if (!isNil "_taskNode") then {
+            _self call ["_setActiveTrack", [_taskNode]];
+        };
+
+        private _executionKey = _self call ["_getExecutionKey", [_taskRef]];
 
         private _active = _self get "_activeExecutions";
-        private _context = _active getOrDefault [_taskId, nil];
+        private _context = _active getOrDefault [_executionKey, nil];
 
         if (isNil "_context") exitWith { "UNKNOWN" };
 
@@ -171,10 +261,11 @@ private _executor = createHashMapObject [[
     
     // Update execution data
     ["_updateExecution", {
-        params ["_taskId", "_key", "_value"];
+        params ["_taskRef", "_key", "_value"];
+        private _executionKey = _self call ["_getExecutionKey", [_taskRef]];
         
         private _active = _self get "_activeExecutions";
-        private _context = _active getOrDefault [_taskId, nil];
+        private _context = _active getOrDefault [_executionKey, nil];
         
         if (!isNil "_context") then {
             _context set [_key, _value];
@@ -183,10 +274,11 @@ private _executor = createHashMapObject [[
     
     // Complete an execution
     ["_completeExecution", {
-        params ["_taskId", ["_success", true]];
+        params ["_taskRef", ["_success", true]];
+        private _executionKey = _self call ["_getExecutionKey", [_taskRef]];
         
         private _active = _self get "_activeExecutions";
-        private _context = _active getOrDefault [_taskId, nil];
+        private _context = _active getOrDefault [_executionKey, nil];
         
         if (!isNil "_context") then {
             _context set ["status", if (_success) then { "SUCCESS" } else { "FAILED" }];
@@ -214,7 +306,14 @@ private _executor = createHashMapObject [[
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
+            private _enemySide = _cmdr get "_enemySide";
             private _gtnCmdr = _self get "_gtnCommander";
+
+            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
+                ["GTN", 2, format["Staging aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // === CHECK IF RECON INTEL IS AVAILABLE ===
             // Wait for recon to complete before staging so we know what force we need
@@ -350,7 +449,8 @@ private _executor = createHashMapObject [[
 
             // === FIND MORE GROUPS TO ASSIGN ===
             // Get all available ground forces
-            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _stagingPos, _requiredPower]];
+            private _ownSide = _cmdr get "_ownSide";
+            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _stagingPos, _requiredPower, _ownSide]];
             private _availableAssets = _feasibility get "availableAssets";
 
             // Filter out already assigned groups
@@ -581,6 +681,12 @@ private _executor = createHashMapObject [[
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
 
+            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
+                ["GTN", 2, format["Attack aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
             // Get objective position
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith {
@@ -610,14 +716,16 @@ private _executor = createHashMapObject [[
                 _objId, round _requiredPower, _requiresAT, _requiresAA]] call FLO_fnc_log;
 
             // === CHECK IF ASSAULT IS FEASIBLE ===
-            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _objPos, _requiredPower]];
+            private _ownSide = _cmdr get "_ownSide";
+            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _objPos, _requiredPower, _ownSide]];
             private _availablePower = _feasibility get "powerAvailable";
             private _isFeasible = _feasibility get "feasible";
 
             // === FORCE BUILDUP LOGIC ===
             private _completedData = _executor get "_completedTaskData";
             private _buildupStart = _completedData getOrDefault ["ATTACK_BUILDUP_START", -1];
-            private _buildupTimeout = 300; // 5 minutes max wait
+            private _aggressionSetting = FLO_DifficultyHandle get "value";
+            private _buildupTimeout = round (420 - (120 * _aggressionSetting));
 
             if (!_isFeasible) then {
                 // Not enough power - check if we should wait or timeout
@@ -690,7 +798,7 @@ private _executor = createHashMapObject [[
 
                 // Select groups until we meet power requirement or hit limit
                 private _selectedPower = 0;
-                private _maxGroups = 8;
+                private _maxGroups = round (6 + (2 * _aggressionSetting));
                 {
                     if (count _groups >= _maxGroups) exitWith {};
                     if (_selectedPower >= _requiredPower) exitWith {};
@@ -722,7 +830,7 @@ private _executor = createHashMapObject [[
                 if (!isNil "_gData") then {
                     private _realGroup = _gData get "realGroup";
                     if (!isNull _realGroup) then {
-                        _analyzer call ["_revealObjectiveIntelToUnits", [_objId, _realGroup]];
+                        _analyzer call ["_revealObjectiveIntelToUnits", [_objId, _realGroup, _enemySide]];
                     };
                 };
             } forEach _groups;
@@ -752,6 +860,13 @@ private _executor = createHashMapObject [[
             private _missionType = _params param [1, "PREPARATORY"];
             private _rounds = _params param [2, 8];
             private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
+
+            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
+                ["GTN", 2, format["Artillery mission aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // Get objective position
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
@@ -778,6 +893,13 @@ private _executor = createHashMapObject [[
             private _objId = _params param [0, ""];
             private _missionType = _params param [1, "CAS"];
             private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
+
+            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
+                ["GTN", 2, format["CAS mission aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // Get objective position
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
@@ -904,6 +1026,7 @@ private _executor = createHashMapObject [[
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
             private _ws = _cmdr get "_worldState";
+            private _ownSide = _self get "_ownSide";
 
             // Find sector with lowest friendly force count
             private _objectives = _ws call ["_getObjectives", []];
@@ -912,7 +1035,7 @@ private _executor = createHashMapObject [[
 
             {
                 private _obj = _objectives get _x;
-                if ((_obj get "owner") == east) then {
+                if ((_obj get "owner") == _ownSide) then {
                     private _friendly = _obj get "friendlyCount";
                     if (_friendly < _lowestCount) then {
                         _lowestCount = _friendly;
@@ -976,9 +1099,67 @@ private _executor = createHashMapObject [[
             // Get vulnerable objectives
             private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
             if (count (keys _vulnObjs) == 0) exitWith { false };
+            private _frontlineEnemyObjs = _ws call ["_getFrontlineEnemyObjectives", []];
+            private _frontlineVulnIds = (keys _vulnObjs) select { _x in (keys _frontlineEnemyObjs) };
+            if (count _frontlineVulnIds == 0) exitWith { false };
+            private _ownSide = _cmdr get "_ownSide";
+            private _allObjectives = _ws call ["_getObjectives", []];
+            private _landCandidates = [];
+            private _allCandidates = [];
 
-            // Select first vulnerable objective
-            private _objId = (keys _vulnObjs) select 0;
+            {
+                private _objId = _x;
+                private _obj = _vulnObjs get _objId;
+                private _priority = _obj get "priority";
+
+                private _links = _obj get "linkedObjectives";
+                private _bestAnyDist = 1e12;
+                private _bestLandDist = 1e12;
+
+                {
+                    private _linkedObj = _allObjectives get _x;
+                    if ((_linkedObj get "owner") != _ownSide) then { continue };
+
+                    private _route = _ws call ["_getObjectiveLinkRouteInfo", [_x, _objId]];
+                    private _routeDist = _route get "distance";
+                    private _crossesWater = _route get "crossesWater";
+
+                    if (_routeDist < _bestAnyDist) then {
+                        _bestAnyDist = _routeDist;
+                    };
+                    if (!_crossesWater && {_routeDist < _bestLandDist}) then {
+                        _bestLandDist = _routeDist;
+                    };
+                } forEach _links;
+
+                _allCandidates pushBack [_objId, _priority, _bestAnyDist];
+                if (_bestLandDist < 1e12) then {
+                    _landCandidates pushBack [_objId, _priority, _bestLandDist];
+                };
+            } forEach _frontlineVulnIds;
+
+            private _selectionPool = if (count _landCandidates > 0) then {
+                _landCandidates
+            } else {
+                _allCandidates
+            };
+
+            // Select highest priority, then shortest route distance
+            private _objId = "";
+            private _bestPriority = -1;
+            private _bestDist = 1e12;
+            {
+                _x params ["_candidateId", "_priority", "_routeDist"];
+                if (
+                    _priority > _bestPriority
+                    || { _priority == _bestPriority && { _routeDist < _bestDist } }
+                ) then {
+                    _bestPriority = _priority;
+                    _bestDist = _routeDist;
+                    _objId = _candidateId;
+                };
+            } forEach _selectionPool;
+
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
 
@@ -1072,7 +1253,14 @@ private _executor = createHashMapObject [[
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
             private _gtnCmdr = _self get "_gtnCommander";
+
+            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
+                ["GTN", 2, format["Recon patrol aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith { false };
@@ -1104,6 +1292,7 @@ private _executor = createHashMapObject [[
             // Use capability analyzer to get REAL intel about the objective
             [_gtnCmdr, _objId, _reconGroup, _reconPos] spawn {
                 params ["_gtnCmdr", "_objId", "_reconGroup", "_reconPos"];
+                private _enemySide = _gtnCmdr get "_enemySide";
                 
                 // Simple wait for travel time (approx 2 mins for 500m)
                 sleep 120;
@@ -1112,13 +1301,13 @@ private _executor = createHashMapObject [[
                 
                 // Reveal objective units to the recon group
                 private _gData = FLO_virtualGroups getOrDefault ["_groups", createHashMap] getOrDefault [_reconGroup, createHashMap];
-                private _realGroup = _gData getOrDefault ["group", grpNull]; // Try to get real group if spawned
+                private _realGroup = _gData getOrDefault ["realGroup", grpNull]; // Try to get real group if spawned
                 
                 if (!isNull _realGroup) then {
                     private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
                     private _targets = _objPos nearEntities [["Man", "LandVehicle", "Tank"], 1000];
                     {
-                        if (side _x != west) then {
+                        if (side _x == _enemySide) then {
                             _realGroup reveal [_x, 4];
                         };
                     } forEach _targets;
@@ -1178,7 +1367,14 @@ private _executor = createHashMapObject [[
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
+            private _executor = _ctx get "executor";
             private _gtnCmdr = _self get "_gtnCommander";
+
+            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
+                ["GTN", 2, format["Air recon aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // Check if we've already dispatched and are waiting for intel
             private _taskNode = _ctx get "taskNode";
@@ -1207,7 +1403,7 @@ private _executor = createHashMapObject [[
 
             // Request an actual air asset to fly over
             private _mgr = call FLO_fnc_gtnAirAssetManager;
-            private _asset = _mgr call ["_requestAirAsset", [_objPos, "RECON"]];
+            private _asset = _mgr call ["_requestAirAsset", [_objPos, "RECON", _self get "_ownSide"]];
 
             if (_asset isEqualTo objNull) exitWith {
                 ["GTN", 2, "Air recon failed - no available air assets"] call FLO_fnc_log;
@@ -1220,6 +1416,14 @@ private _executor = createHashMapObject [[
             // Get the real group from group data
             private _groups = FLO_virtualGroups get "_groups";
             private _gData = _groups get _groupId;
+            private _assetSide = _gData get "side";
+            private _ownSide = _self get "_ownSide";
+            if !(_assetSide isEqualTo _ownSide) exitWith {
+                ["GTN", 1, format["Air recon side mismatch: requested %1 but got group %2 (%3)", _ownSide, _groupId, _assetSide]] call FLO_fnc_log;
+                _mgr call ["_releaseAirAsset", [_groupId]];
+                _ctx set ["status", "FAILED"];
+                false
+            };
             private _grp = _gData get "realGroup";
 
             ["GTN", 3, format["Air recon dispatched: %1 flying to %2", typeOf _aircraft, _objId]] call FLO_fnc_log;
@@ -1268,6 +1472,7 @@ private _executor = createHashMapObject [[
             // Spawn handler for when aircraft arrives and gathers intel
             [_gtnCmdr, _objId, _objPos, _groupId, _mgr, _aircraft, _taskNode] spawn {
                 params ["_gtnCmdr", "_objId", "_objPos", "_groupId", "_mgr", "_aircraft", "_taskNode"];
+                private _enemySide = _gtnCmdr get "_enemySide";
 
                 // Wait for aircraft to get close to objective (or timeout)
                 private _startTime = diag_tickTime;
@@ -1304,7 +1509,6 @@ private _executor = createHashMapObject [[
                 // This is a problem because 4 is very rare for most AI. Most AI will never have a level of knowsAbout 4.
                 // This is why we use a nearEntities call to reveal targets to the aircraft.
                 private _nearEntities = _objPos nearEntities [["Man", "AllVehicles"], 1500];
-                private _enemySide = west; // OPFOR commander scouting BLUFOR positions
                 private _enemyEntities = _nearEntities select { side _x == _enemySide || side group _x == _enemySide };
                 
                 // Reveal enemies to aircraft CREW so nearTargets can detect them
@@ -1317,7 +1521,7 @@ private _executor = createHashMapObject [[
                     } forEach _crew;
                 } forEach _enemyEntities;
 
-                ["GTN", 3, format["Air Sensors revealed %1 BLUFOR targets to %2 crew members", count _enemyEntities, count _crew]] call FLO_fnc_log;
+                ["GTN", 3, format["Air Sensors revealed %1 enemy targets to %2 crew members", count _enemyEntities, count _crew]] call FLO_fnc_log;
                 
                 while {diag_tickTime < _scanEnd && alive _aircraft} do {
                     // nearTargets returns what CREW sees, not vehicle
@@ -1526,6 +1730,7 @@ private _executor = createHashMapObject [[
             private _executor = _ctx get "executor";
             private _gtnCmdr = _self get "_gtnCommander";
             private _ws = _gtnCmdr get "_worldState";
+            private _enemySide = _self get "_enemySide";
             
             // Get our objectives from World State
             private _friendlyObjs = _ws call ["_getFriendlyObjectives", []];
@@ -1547,7 +1752,7 @@ private _executor = createHashMapObject [[
                 
                 // Check exposed flanks (linked to enemy objectives)
                 private _linkedObjs = _objData get "linkedObjectives";
-                private _exposedFlanks = { (FLO_Objectives get _x get "owner") == west } count _linkedObjs;
+                private _exposedFlanks = { (FLO_Objectives get _x get "owner") == _enemySide } count _linkedObjs;
                 
                 // Force ratio from World State
                 private _friendlyCount = _objData get "friendlyCount";

@@ -355,7 +355,9 @@ INF_REQUEST = {
         NEWUNIT addItem 'optic_Hamr';
     } else {
         // Squad request
-        GRPReq = [_pos, west, _SQDName] call BIS_fnc_spawnGroup;
+        private _requestSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+        if !(_requestSide in [east, west]) then { _requestSide = side player };
+        GRPReq = [_pos, _requestSide, _SQDName] call BIS_fnc_spawnGroup;
         
         // Process all units in squad
         {
@@ -372,7 +374,7 @@ INF_REQUEST = {
         private _headlessClients = entities "HeadlessClient_F";
         private _humanPlayers = allPlayers - _headlessClients;
         hcRemoveAllGroups player;
-        {player hcRemoveGroup _x;} forEach (allGroups select {side _x == west});
+        {player hcRemoveGroup _x;} forEach (allGroups select {side _x == _requestSide});
         private _GRPs = (allGroups select {(side _x == (side player)) && !(((units _x) select 0) in switchableUnits)});
         
         if (count _humanPlayers == 1) then {

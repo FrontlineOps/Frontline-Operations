@@ -58,9 +58,9 @@ while {true} do {
         private _pPos = getPosATL _x;
         {
             private _oId = _x;
-            private _oData = FLO_Objectives get _oId;
+            private _objData = FLO_Objectives get _oId;
             // Active if player is within 1000m (allows for seeing capture status from distance)
-            if ((_oData get "position") distance2D _pPos < 1000) then {
+            if ((_objData get "position") distance2D _pPos < 1000) then {
                 _activeObjectives pushBackUnique _oId;
             };
         } forEach _objKeys;
@@ -69,12 +69,17 @@ while {true} do {
     // === UPDATE LOGIC FUNCTION ===
     private _fnc_updateObjective = {
         params ["_id"];
-        private _data = FLO_Objectives get _id;
+        private _objRecord = FLO_Objectives get _id;
+
+        if (isNil {_objRecord get "owner"}) then { _objRecord set ["owner", east]; };
+        if (isNil {_objRecord get "captureProgress"}) then { _objRecord set ["captureProgress", 0]; };
+        if (isNil {_objRecord get "bluforCount"}) then { _objRecord set ["bluforCount", 0]; };
+        if (isNil {_objRecord get "opforCount"}) then { _objRecord set ["opforCount", 0]; };
         
-        private _pos = _data get "position";
-        private _radius = _data get "radius";
-        private _owner = _data getOrDefault ["owner", east];
-        private _progress = _data getOrDefault ["captureProgress", 0];
+        private _pos = _objRecord get "position";
+        private _radius = _objRecord get "radius";
+        private _owner = _objRecord get "owner";
+        private _progress = _objRecord get "captureProgress";
         private _units = _pos nearEntities [["Man", "LandVehicle"], _radius];
         
         private _bluforCount = 0;
@@ -91,17 +96,20 @@ while {true} do {
             };
         } forEach _units;
 
-        // Count virtual groups (only if OPFOR)
+        // Count virtual groups for both EAST and WEST (inactive only)
         if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups getOrDefault ["_groups", createHashMap];
+            private _groups = FLO_virtualGroups get "_groups";
             {
-                private _gData = _y;
-                if ((_gData getOrDefault ["side", east]) isEqualTo east && {!(_gData getOrDefault ["isActive", false])}) then {
-                    if ((_gData get "position") distance2D _pos < _radius) then {
-                        _opforCount = _opforCount + (_gData getOrDefault ["unitCount", 0]);
-                    };
-                };
-            } forEach _groups;
+                private _groupId = _x;
+                private _gData = _groups get _groupId;
+                if (_gData get "isActive") then { continue };
+                if ((_gData get "position") distance2D _pos >= _radius) then { continue };
+
+                private _gSide = _gData get "side";
+                private _vCount = _gData get "unitCount";
+                if (_gSide isEqualTo east) then { _opforCount = _opforCount + _vCount };
+                if (_gSide isEqualTo west) then { _bluforCount = _bluforCount + _vCount };
+            } forEach (keys _groups);
         };
         
         // Calculate progress (Dynamic Rate based on force difference)
@@ -110,14 +118,13 @@ while {true} do {
         private _dynamicRate = 1.0 + (_diff * 0.5); // Base 1.0 + 0.5 per unit advantage
         if (_dynamicRate > 5.0) then { _dynamicRate = 5.0 }; // Cap at 5x speed
         
-        // Minimum OPFOR requirement for capture (prevents lone stragglers from capturing)
-        private _minOpforToCapture = 3;
+        // Minimum unit requirement to complete capture
+        private _minUnitsToCapture = 3;
         
-        if (_bluforCount > _opforCount && {_bluforCount > 0}) then {
+        if (_bluforCount > _opforCount && {_bluforCount >= _minUnitsToCapture}) then {
             _progress = (_progress + (_deltaTime * _dynamicRate)) min _captureTime;
         } else {
-            // OPFOR can only capture if they meet minimum threshold
-            if (_opforCount > _bluforCount && {_opforCount >= _minOpforToCapture}) then {
+            if (_opforCount > _bluforCount && {_opforCount >= _minUnitsToCapture}) then {
                 _progress = (_progress - (_deltaTime * _dynamicRate)) max (-_captureTime);
             } else {
                 // Decay (slower than capture)
@@ -127,24 +134,33 @@ while {true} do {
         };
         
         // Checks
+        private _activeSide = FLO_ActivePlayerSide;
+
         if (_progress >= _captureTime && {_owner != west}) then {
             [_id, west] call FLO_fnc_flipObjective;
             _progress = 0;
-            [0.20, "increase"] call FLO_fnc_adjustAggression;
+            if (_activeSide isEqualTo west) then {
+                [0.20, "increase"] call FLO_fnc_adjustAggression;
+            } else {
+                [-0.10, "decrease"] call FLO_fnc_adjustAggression;
+            };
         } else {
-            // OPFOR capture also requires meeting minimum threshold
-            if (_progress <= -_captureTime && {_owner != east} && {_opforCount >= _minOpforToCapture}) then {
+            if (_progress <= -_captureTime && {_owner != east} && {_opforCount >= _minUnitsToCapture}) then {
                 [_id, east] call FLO_fnc_flipObjective;
                 _progress = 0;
-                [-0.10, "decrease"] call FLO_fnc_adjustAggression;
+                if (_activeSide isEqualTo east) then {
+                    [0.20, "increase"] call FLO_fnc_adjustAggression;
+                } else {
+                    [-0.10, "decrease"] call FLO_fnc_adjustAggression;
+                };
             };
         };
         
         // Store
-        _data set ["captureProgress", _progress];
-        _data set ["bluforCount", _bluforCount];
-        _data set ["opforCount", _opforCount];
-        _data set ["captureTime", _captureTime]; // Ensure fresh config
+        _objRecord set ["captureProgress", _progress];
+        _objRecord set ["bluforCount", _bluforCount];
+        _objRecord set ["opforCount", _opforCount];
+        _objRecord set ["captureTime", _captureTime]; // Ensure fresh config
         _dataChanged = true;
     };
 
@@ -201,12 +217,13 @@ while {true} do {
             } forEach _activeObjectives; // only check active list
 
             // Detect state change
-            private _previousObjId = FLO_PlayerObjectiveStates getOrDefault [_uid, ""];
+            private _previousObjId = FLO_PlayerObjectiveStates get _uid;
+            if (isNil "_previousObjId") then { _previousObjId = ""; };
 
             if (_currentObjId != _previousObjId) then {
                 private _ownerId = owner _player;
                 if (_currentObjId != "") then {
-                    private _objName = _currentObjData getOrDefault ["name", _currentObjId];
+                    private _objName = _currentObjData get "name";
                     ["FLO_CaptureUI_Show", [_objName, _currentObjId], _ownerId] call CBA_fnc_ownerEvent;
                 } else {
                     ["FLO_CaptureUI_Hide", [], _ownerId] call CBA_fnc_ownerEvent;
@@ -216,14 +233,17 @@ while {true} do {
 
             // Send Realtime Update
             if (_currentObjId != "") then {
-                private _bluforCount = _currentObjData getOrDefault ["bluforCount", 0];
-                private _opforCount = _currentObjData getOrDefault ["opforCount", 0];
-                private _owner = _currentObjData getOrDefault ["owner", east];
+                private _bluforCount = _currentObjData get "bluforCount";
+                private _opforCount = _currentObjData get "opforCount";
+                private _owner = _currentObjData get "owner";
                 
-                private _totalCount = _bluforCount + _opforCount;
-                private _ratio = if (_totalCount > 0) then { _bluforCount / _totalCount } else { 0.5 };
+                private _playerSide = side group _player;
+                private _friendlyCount = if (_playerSide isEqualTo east) then { _opforCount } else { _bluforCount };
+                private _enemyCount = if (_playerSide isEqualTo east) then { _bluforCount } else { _opforCount };
+                private _totalCount = _friendlyCount + _enemyCount;
+                private _ratio = if (_totalCount > 0) then { _friendlyCount / _totalCount } else { 0.5 };
                 
-                ["FLO_CaptureUI_Update", [_ratio, _bluforCount, _opforCount, str _owner], owner _player] call CBA_fnc_ownerEvent;
+                ["FLO_CaptureUI_Update", [_ratio, _friendlyCount, _enemyCount, str _owner], owner _player] call CBA_fnc_ownerEvent;
             };
         };
     } forEach _allPlayers;

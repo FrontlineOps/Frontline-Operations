@@ -9,11 +9,25 @@
  *   HASHMAP - Mission template configuration
  */
 
+private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+if !(_activeSide in [east, west]) then { _activeSide = west };
+private _friendlySide = _activeSide;
+private _enemySide = if (_friendlySide isEqualTo east) then { west } else { east };
+private _friendlyKey = if (_friendlySide isEqualTo east) then { "EAST" } else { "WEST" };
+private _enemyKey = if (_enemySide isEqualTo east) then { "EAST" } else { "WEST" };
+private _factionCatalog = missionNamespace getVariable ["FLO_FactionCatalog", createHashMap];
+private _friendlyCatalog = _factionCatalog getOrDefault [_friendlyKey, createHashMap];
+private _enemyCatalog = _factionCatalog getOrDefault [_enemyKey, createHashMap];
+private _friendlyUnits = _friendlyCatalog getOrDefault ["units", ["B_Soldier_F"]];
+private _enemyUnits = _enemyCatalog getOrDefault ["units", if (!isNil "East_Units") then { East_Units } else { ["O_Soldier_F"] }];
+private _friendlyColor = if (_friendlySide isEqualTo east) then { "colorOPFOR" } else { "colorBLUFOR" };
+private _friendlyPilotClass = if (_friendlySide isEqualTo east) then { selectRandom _friendlyUnits } else { "B_Pilot_F" };
+
 private _template = createHashMapFromArray [
     ["name", "Rescue Downed Pilot"],
     ["description", "Intel indicates a friendly aircraft crash site. Track down and rescue the pilot, then destroy the wreck."],
     ["icon", "mil_pickup"],
-    ["color", "colorBLUFOR"],
+    ["color", _friendlyColor],
     ["cooldown", 900],
     ["timeout", 3600],
     ["maxActive", 1],
@@ -23,17 +37,21 @@ private _template = createHashMapFromArray [
     // Setup function - finds position and validates spawn
     ["fnc_setup", {
         params ["_typeName"];
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_activeSide in [east, west]) then { _activeSide = west };
+        private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
         
         private _position = [0,0,0];
         private _canSpawn = false;
         
-        // Find a suitable house near an OPFOR-controlled objective
-        private _objId = [1500, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
-        if (_objId != "") then {
-            _position = [_objId] call FLO_fnc_getRandomObjectivePos;
-        } else {
-            _position = player getPos [500 + random 500, random 360];
+        // Find a suitable house near an enemy-controlled objective
+        private _objId = [1500, getPos player, _enemySide] call FLO_fnc_getObjectiveNearPlayer;
+        if (_objId == "") exitWith {
+            [false, [0,0,0]]
         };
+
+        _position = [_objId] call FLO_fnc_getRandomObjectivePos;
         
         private _house = [_position] call FLO_fnc_findMissionHouse;
         if (!isNull _house) then {
@@ -47,6 +65,19 @@ private _template = createHashMapFromArray [
     // Spawn function - creates mission entities
     ["fnc_spawn", {
         params ["_missionId"];
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_activeSide in [east, west]) then { _activeSide = west };
+        private _friendlySide = _activeSide;
+        private _enemySide = if (_friendlySide isEqualTo east) then { west } else { east };
+        private _friendlyKey = if (_friendlySide isEqualTo east) then { "EAST" } else { "WEST" };
+        private _enemyKey = if (_enemySide isEqualTo east) then { "EAST" } else { "WEST" };
+        private _factionCatalog = missionNamespace getVariable ["FLO_FactionCatalog", createHashMap];
+        private _friendlyCatalog = _factionCatalog getOrDefault [_friendlyKey, createHashMap];
+        private _enemyCatalog = _factionCatalog getOrDefault [_enemyKey, createHashMap];
+        private _friendlyUnits = _friendlyCatalog getOrDefault ["units", ["B_Soldier_F"]];
+        private _enemyUnits = _enemyCatalog getOrDefault ["units", if (!isNil "East_Units") then { East_Units } else { ["O_Soldier_F"] }];
+        private _friendlyPilotClass = if (_friendlySide isEqualTo east) then { selectRandom _friendlyUnits } else { "B_Pilot_F" };
         
         private _instance = ["get", [_missionId]] call FLO_fnc_sideMissionRegistry;
         private _position = _instance get "position";
@@ -57,13 +88,13 @@ private _template = createHashMapFromArray [
         if (isNull _house) exitWith {};
         
         private _buildingPos = _house buildingPos -1;
-        if (count _buildingPos == 0) then { _buildingPos = [getPos _house]; };
+        if ((count _buildingPos) == 0) then { _buildingPos = [getPos _house]; };
         
         // Spawn crash site composition
         ["Intel_CS_01", selectRandom _buildingPos, [0,0,0], getDirVisual _house, false, false, true] call LARs_fnc_spawnComp;
         
         // Spawn pilot (captive)
-        private _pilotGroup = [selectRandom _buildingPos, West, ["B_Pilot_F"]] call BIS_fnc_spawnGroup;
+        private _pilotGroup = [selectRandom _buildingPos, _friendlySide, [_friendlyPilotClass]] call BIS_fnc_spawnGroup;
         private _pilot = (units _pilotGroup) select 0;
         _pilot setCaptive true;
         _pilot disableAI "PATH";
@@ -120,16 +151,16 @@ private _template = createHashMapFromArray [
         
         // Spawn garrison guards
         for "_i" from 1 to 4 do {
-            private _grp = [selectRandom _buildingPos, East, [selectRandom East_Units]] call BIS_fnc_spawnGroup;
+            private _grp = [selectRandom _buildingPos, _enemySide, [selectRandom _enemyUnits]] call BIS_fnc_spawnGroup;
             if (_i <= 2) then { ((units _grp) select 0) disableAI "PATH"; };
             _grp deleteGroupWhenEmpty true;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
         
         // Spawn patrol
-        private _patrolGrp = [getPos _house, East, [
-            selectRandom East_Units, selectRandom East_Units,
-            selectRandom East_Units, selectRandom East_Units
+        private _patrolGrp = [getPos _house, _enemySide, [
+            selectRandom _enemyUnits, selectRandom _enemyUnits,
+            selectRandom _enemyUnits, selectRandom _enemyUnits
         ]] call BIS_fnc_spawnGroup;
         _patrolGrp deleteGroupWhenEmpty true;
         [_patrolGrp, getPos _house, 300, 5, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
@@ -137,14 +168,14 @@ private _template = createHashMapFromArray [
 
         // Additional enemies based on difficulty
         if (_aggrScore > 5) then {
-            private _grp = [_house getPos [100, random 360], East, [selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
+            private _grp = [_house getPos [100, random 360], _enemySide, [selectRandom _enemyUnits, selectRandom _enemyUnits]] call BIS_fnc_spawnGroup;
             _grp deleteGroupWhenEmpty true;
             [_grp, getPos _house, 200, 4, "AWARE", "LIMITED"] call FLO_fnc_taskPatrol;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
         
         if (_aggrScore > 10) then {
-            private _grp = [_house getPos [200, random 360], East, [selectRandom East_Units, selectRandom East_Units]] call BIS_fnc_spawnGroup;
+            private _grp = [_house getPos [200, random 360], _enemySide, [selectRandom _enemyUnits, selectRandom _enemyUnits]] call BIS_fnc_spawnGroup;
             [_grp, getPos _house, 500] call BIS_fnc_taskPatrol;
             ["addGroup", [_missionId, _grp]] call FLO_fnc_sideMissionEntityTracker;
         };
@@ -156,6 +187,8 @@ private _template = createHashMapFromArray [
     // Success condition - pilot rescued (in friendly vehicle or at base)
     ["fnc_checkSuccess", {
         params ["_missionId", "_instance"];
+        private _friendlySide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_friendlySide in [east, west]) then { _friendlySide = west };
         private _data = _instance get "data";
         private _pilot = _data getOrDefault ["pilot", objNull];
         
@@ -163,7 +196,7 @@ private _template = createHashMapFromArray [
         
         // Check if pilot is in a friendly vehicle
         private _veh = vehicle _pilot;
-        if (_veh != _pilot && {side _veh == West}) exitWith { true };
+        if (_veh != _pilot && {side _veh == _friendlySide}) exitWith { true };
         
         // Check if pilot is near any player and not captive
         if (!captive _pilot) then {
@@ -191,4 +224,3 @@ private _template = createHashMapFromArray [
 ];
 
 _template
-

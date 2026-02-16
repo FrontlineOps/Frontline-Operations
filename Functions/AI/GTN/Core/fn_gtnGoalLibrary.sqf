@@ -153,8 +153,8 @@ private _goalLibrary = createHashMapObject [[
                         if (_available >= 6) then { _score = _score + 20 };
                         if (_available >= 4) then { _score = _score + 10 };
 
-                        if ((_situation get "initiativeHolder") == "OPFOR") then { _score = _score + 15 };
-                        if ((_situation get "initiativeHolder") == "BLUFOR") then { _score = _score - 15 };
+                        if ((_situation get "initiativeHolder") == "OWN") then { _score = _score + 15 };
+                        if ((_situation get "initiativeHolder") == "ENEMY") then { _score = _score - 15 };
 
                         _score
                     }],
@@ -188,7 +188,7 @@ private _goalLibrary = createHashMapObject [[
                         private _reserveRatio = if (_total > 0) then { _available / _total } else { 0 };
                         if (_reserveRatio < 0.3) then { _score = _score + 15 };
 
-                        if ((_situation get "initiativeHolder") == "BLUFOR") then { _score = _score + 20 };
+                        if ((_situation get "initiativeHolder") == "ENEMY") then { _score = _score + 20 };
 
                         _score
                     }],
@@ -781,7 +781,8 @@ private _goalLibrary = createHashMapObject [[
                 private _objectives = _ws call ["_getObjectives", []];
                 private _obj = _objectives getOrDefault [_objId, nil];
                 if (isNil "_obj") exitWith { false };
-                (_obj get "owner") == east  // Objective captured
+                private _ownSide = _ws getOrDefault ["_ownSide", east];
+                (_obj getOrDefault ["owner", sideUnknown]) isEqualTo _ownSide  // Objective captured
             }]
         ]]];
 
@@ -879,7 +880,8 @@ private _goalLibrary = createHashMapObject [[
                 private _objectives = _ws call ["_getObjectives", []];
                 private _obj = _objectives getOrDefault [_objId, nil];
                 if (isNil "_obj") exitWith { false };
-                (_obj get "owner") == east
+                private _ownSide = _ws getOrDefault ["_ownSide", east];
+                (_obj getOrDefault ["owner", sideUnknown]) isEqualTo _ownSide
             }]
         ]]];
 

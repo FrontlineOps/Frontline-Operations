@@ -22,6 +22,8 @@
  * FLO_IDC_FACTION_COMBO_RESOURCES  = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
  * FLO_IDC_FACTION_COMBO_DIFFICULTY = 1961
+ * FLO_IDC_FACTION_COMBO_GTN_DEFENSE = 1962
+ * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
  */
 
 disableSerialization;
@@ -116,19 +118,18 @@ private _civilianFactions = [
 [_civilianCombo, _civilianFactions, 0] call _fnc_addItems;
 
 // ============================================================================
-// STARTING ZONES / Enemy Presence (IDC 1958)
+// AI COMMANDER ATTACK OPS (IDC 1958)
 // ============================================================================
 
 private _presenceCombo = _display displayCtrl 1958;
 private _presenceOptions = [
-	"10% _ Small Operation",
-	"30% _ Short Campaign",
-	"50% _ Medium Campaign",
-	"75% _ Long Campaign",
-	"100% _ Dedi Servers with HCs"
+	"Conservative",
+	"Balanced",
+	"Aggressive",
+	"Relentless"
 ];
 
-[_presenceCombo, _presenceOptions, 4] call _fnc_addItems;
+[_presenceCombo, _presenceOptions, 0] call _fnc_addItems;
 
 // ============================================================================
 // STARTING RESOURCES (IDC 1959)
@@ -140,30 +141,58 @@ private _resourceOptions = ["50", "250", "500", "1000"];
 [_resourcesCombo, _resourceOptions, 1] call _fnc_addItems;
 
 // ============================================================================
-// STARTING REPUTATION (IDC 1960)
+// CIVILIAN STANDING (IDC 1960)
 // ============================================================================
 
 private _reputationCombo = _display displayCtrl 1960;
 private _reputationOptions = [
-	"LOW_Enemy to Guerillas",
-	"MEDIUM_Neutral to Guerillas",
-	"HIGH_Friendly to Guerillas"
+	"Hostile _ Civilians Distrust Players",
+	"Neutral _ Civilians Tolerate Players",
+	"Friendly _ Civilians Support Players"
 ];
 
 [_reputationCombo, _reputationOptions, 1] call _fnc_addItems;
 
 // ============================================================================
-// STARTING DIFFICULTY (IDC 1961)
+// AI COMMANDER AGGRESSION (IDC 1961)
 // ============================================================================
 
 private _difficultyCombo = _display displayCtrl 1961;
 private _difficultyOptions = [
-	"EASY _ Low Enemy Presence _ progressive",
-	"NORMAL _ Half Enemy Presence _ progressive",
-	"HARD _ Full Enemy Presence _ progressive"
+	"LOW _ Cautious Commander",
+	"MEDIUM _ Balanced Commander",
+	"HIGH _ Aggressive Commander"
 ];
 
 [_difficultyCombo, _difficultyOptions, 1] call _fnc_addItems;
+
+// ============================================================================
+// AI COMMANDER DEFENSE OPS (IDC 1962)
+// ============================================================================
+
+private _defenseOpsCombo = _display displayCtrl 1962;
+private _defenseOpsOptions = [
+	"Minimal Coverage",
+	"Balanced Coverage",
+	"Layered Coverage",
+	"Maximum Coverage"
+];
+
+[_defenseOpsCombo, _defenseOpsOptions, 0] call _fnc_addItems;
+
+// ============================================================================
+// AI COMMANDER TEMPO (IDC 1963)
+// ============================================================================
+
+private _tempoCombo = _display displayCtrl 1963;
+private _tempoOptions = [
+	"12s",
+	"10s",
+	"7s",
+	"5s"
+];
+
+[_tempoCombo, _tempoOptions, 1] call _fnc_addItems;
 
 ["UI", 3, "Faction dialog dropdowns populated"] call FLO_fnc_log;
 

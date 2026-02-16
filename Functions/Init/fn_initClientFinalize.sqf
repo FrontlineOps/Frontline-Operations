@@ -25,14 +25,74 @@ waitUntil { !isNull player };
 waitUntil { player == player };
 
 // Create respawn marker if needed
-private _respawnPos = getMarkerPos "respawn_west";
+private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
+private _respawnMarkerName = format ["respawn_%1", _respawnKey];
+private _respawnPos = getMarkerPos _respawnMarkerName;
 if (_respawnPos isEqualTo [0,0,0]) then {
     if (!isNil "FLO_MissionConfig") then {
         private _startPos = FLO_MissionConfig getOrDefault ["startPosition", getPos player];
-        private _respawnMarker = createMarkerLocal ["respawn_west", _startPos];
+        private _respawnMarker = createMarkerLocal [_respawnMarkerName, _startPos];
         _respawnMarker setMarkerTypeLocal "hd_start";
         _respawnMarker setMarkerTextLocal "Respawn";
         diag_log format ["[FLO_INIT_CLIENT] Created respawn marker at %1", _startPos];
+    };
+};
+
+private _baseRespawnPos = getMarkerPos _respawnMarkerName;
+if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
+    _baseRespawnPos = FLO_MissionConfig get "startPosition";
+};
+
+[_respawnMarkerName, _baseRespawnPos] spawn {
+    params ["_markerName", "_basePos"];
+
+    waitUntil {
+        sleep 0.5;
+        !isNil "FLO_Objectives"
+    };
+
+    while {true} do {
+        if (_basePos isEqualTo [0,0,0]) then {
+            sleep 5;
+            continue;
+        };
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+        if !(_activeSide in [east, west]) then {
+            sleep 5;
+            continue;
+        };
+
+        private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
+        private _owner = sideUnknown;
+
+        {
+            private _objData = FLO_Objectives get _x;
+            if ([_basePos, _objData] call FLO_fnc_isPositionInObjective) exitWith {
+                _owner = _objData get "owner";
+            };
+        } forEach (keys FLO_Objectives);
+
+        if (_owner isEqualType "") then {
+            private _ownerKey = toUpper _owner;
+            if (_ownerKey isEqualTo "EAST") then { _owner = east; };
+            if (_ownerKey isEqualTo "WEST") then { _owner = west; };
+        };
+
+        if (_owner isEqualTo _enemySide) then {
+            if (_markerName in allMapMarkers) then {
+                deleteMarker _markerName;
+            };
+        } else {
+            if !(_markerName in allMapMarkers) then {
+                private _m = createMarkerLocal [_markerName, _basePos];
+                _m setMarkerTypeLocal "hd_start";
+                _m setMarkerTextLocal "Respawn";
+            };
+        };
+
+        sleep 5;
     };
 };
 
@@ -70,4 +130,3 @@ private _msg = "<t size='1.2' color='#00ff00'>Mission Initialized</t><br/><t siz
 [_msg, 0, 0.3, 3, 0] spawn BIS_fnc_dynamicText;
 
 diag_log "[FLO_INIT_CLIENT] Client finalization complete";
-

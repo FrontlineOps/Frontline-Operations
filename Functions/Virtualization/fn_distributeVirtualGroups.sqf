@@ -9,6 +9,7 @@
  * 0: Objective ID or Marker <STRING> - Objective identifier from the index or a marker name
  * 1: Group Type <STRING> - Type of group to distribute
  * 2: Count <NUMBER> - Number of groups to distribute
+ * 3: Side <SIDE> - Side that owns/spawns these groups
  *
  * Return Value:
  * Array of created group IDs <ARRAY>
@@ -20,13 +21,19 @@
 params [
     ["_objective", "", [""]],
     ["_groupType", "infantry", [""]],
-    ["_count", 1, [0]]
+    ["_count", 1, [0]],
+    ["_side", east]
 ];
 
 private _objData = FLO_Objectives get _objective;
+if (isNil "_objData") exitWith { [] };
+
 private _position = _objData get "position";
 private _radius = _objData get "radius";
 private _markerName = format ["obj_%1", _objective];
+
+private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
+private _sideKey = _sideCtx get "sideKey";
 
 // Ensure position is valid
 if (_position isEqualTo [0,0,0]) exitWith {
@@ -58,8 +65,17 @@ _distributionRadius = _distributionRadius max 30;
 
 // Get group config if infantry
 private _groupCfg = configNull;
-if (_groupType isEqualTo "infantry" && {!isNil "East_Groups"} && {count East_Groups > 0}) then {
-    _groupCfg = East_Groups;
+if (_groupType isEqualTo "infantry") then {
+    private _catalog = if (!isNil "FLO_FactionCatalog") then {
+        FLO_FactionCatalog getOrDefault [_sideKey, createHashMap]
+    } else {
+        createHashMap
+    };
+
+    private _groupsPool = _catalog getOrDefault ["groups", if (!isNil "East_Groups") then { East_Groups } else { [] }];
+    if (_groupsPool isEqualType [] && {count _groupsPool > 0}) then {
+        _groupCfg = _groupsPool;
+    };
 };
 
 // Create and distribute the groups
@@ -105,7 +121,7 @@ for "_i" from 1 to _remainingGroups do {
     private _safePos = [_groupPos, 0, 30, 3, 0, 0.5, 0] call BIS_fnc_findSafePos;
 
     // Create the virtual group
-    private _groupId = [_safePos, _groupType, _groupCfg, _objective] call FLO_fnc_createVirtualGroup;
+    private _groupId = [_safePos, _groupType, _groupCfg, _objective, -1, _side] call FLO_fnc_createVirtualGroup;
     _createdGroups pushBack _groupId;
 
     // Log creation

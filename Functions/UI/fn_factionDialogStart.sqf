@@ -23,6 +23,8 @@
  * FLO_IDC_FACTION_COMBO_RESOURCES  = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
  * FLO_IDC_FACTION_COMBO_DIFFICULTY = 1961
+ * FLO_IDC_FACTION_COMBO_GTN_DEFENSE = 1962
+ * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -48,19 +50,23 @@ private _fnc_getSelection = {
 private _playerFaction = [1955] call _fnc_getSelection;
 private _enemyFaction = [1956] call _fnc_getSelection;
 private _civilianFaction = [1957] call _fnc_getSelection;
-private _presence = [1958] call _fnc_getSelection;
+private _attackOps = [1958] call _fnc_getSelection;
 private _resources = [1959] call _fnc_getSelection;
 private _reputation = [1960] call _fnc_getSelection;
 private _difficulty = [1961] call _fnc_getSelection;
+private _defenseOps = [1962] call _fnc_getSelection;
+private _tempo = [1963] call _fnc_getSelection;
 
 // Validate selections
 if (_playerFaction isEqualTo "" || 
     _enemyFaction isEqualTo "" || 
     _civilianFaction isEqualTo "" || 
-    _presence isEqualTo "" || 
+    _attackOps isEqualTo "" || 
     _resources isEqualTo "" || 
     _reputation isEqualTo "" || 
-    _difficulty isEqualTo "") exitWith {
+    _difficulty isEqualTo "" ||
+    _defenseOps isEqualTo "" ||
+    _tempo isEqualTo "") exitWith {
 	
 	["UI", 2, "Faction dialog validation failed - empty selections"] call FLO_fnc_log;
 	hint "Please select all options before starting the mission.";
@@ -75,8 +81,8 @@ _display closeDisplay 1;
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _presence, _resources, _reputation, _difficulty] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_presence", "_resources", "_reputation", "_difficulty"];
+[_playerFaction, _enemyFaction, _civilianFaction, _attackOps, _resources, _reputation, _difficulty, _defenseOps, _tempo] spawn {
+	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackOps", "_resources", "_reputation", "_difficulty", "_defenseOps", "_tempo"];
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -85,32 +91,51 @@ _display closeDisplay 1;
 
 	// Process reputation
 	private _reputationValue = switch (_reputation) do {
-		case "LOW_Enemy to Guerillas": {2};
-		case "MEDIUM_Neutral to Guerillas": {9};
-		case "HIGH_Friendly to Guerillas": {16};
+		case "Hostile _ Civilians Distrust Players": {2};
+		case "Neutral _ Civilians Tolerate Players": {9};
+		case "Friendly _ Civilians Support Players": {16};
 		default {9};
 	};
 
-	// Process difficulty
+	// Process commander aggression
 	private _difficultyValue = switch (_difficulty) do {
-		case "EASY _ Low Enemy Presence _ progressive": {0.5};
-		case "NORMAL _ Half Enemy Presence _ progressive": {1};
-		case "HARD _ Full Enemy Presence _ progressive": {1.5};
+		case "LOW _ Cautious Commander": {0.5};
+		case "MEDIUM _ Balanced Commander": {1};
+		case "HIGH _ Aggressive Commander": {1.5};
 		default {1};
 	};
 
 	// Process resources
 	private _resourceValue = parseNumber _resources;
 
-	// Process enemy presence
-	private _enemyPresence = switch (_presence) do {
-		case "10% _ Small Operation": {7};
-		case "30% _ Short Campaign": {3};
-		case "50% _ Medium Campaign": {2};
-		case "75% _ Long Campaign": {1.5};
-		case "100% _ Dedi Servers with HCs": {1};
-		default {2};
+	// Process concurrent GTN attack/defense plan limits
+	private _attackOpsValue = switch (_attackOps) do {
+		case "Conservative": {4};
+		case "Balanced": {8};
+		case "Aggressive": {10};
+		case "Relentless": {12};
+		default {4};
 	};
+
+	private _defenseOpsValue = switch (_defenseOps) do {
+		case "Minimal Coverage": {4};
+		case "Balanced Coverage": {8};
+		case "Layered Coverage": {10};
+		case "Maximum Coverage": {12};
+		default {4};
+	};
+
+	// Process GTN commander update tempo (seconds)
+	private _tempoValue = switch (_tempo) do {
+		case "12s": {12};
+		case "10s": {10};
+		case "7s": {7};
+		case "5s": {5};
+		default {10};
+	};
+
+	// Legacy compatibility value (not consumed by current systems)
+	private _enemyPresence = 2;
 
 	// Fade to black and prompt for starting location
 	titleText ["", "BLACK IN", 7, true, true];
@@ -160,6 +185,9 @@ _display closeDisplay 1;
 		["civilianHandle", createHashMapFromArray [["name", _civilianFaction]]],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["difficultyHandle", createHashMapFromArray [["value", _difficultyValue], ["name", _difficulty]]],
+		["gtnAttackHandle", createHashMapFromArray [["value", _attackOpsValue], ["name", _attackOps]]],
+		["gtnDefenseHandle", createHashMapFromArray [["value", _defenseOpsValue], ["name", _defenseOps]]],
+		["gtnTempoHandle", createHashMapFromArray [["value", _tempoValue], ["name", _tempo]]],
 		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
 		["enemyPresence", _enemyPresence],
 		["startPosition", _startPos]
@@ -206,7 +234,9 @@ _display closeDisplay 1;
 		["UI", 3, "Mission initialization complete - ready to play"] call FLO_fnc_log;
 
 		// Create local respawn marker
-		private _respawnMarker = createMarkerLocal ["respawn_west", _startPos];
+		private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+		private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
+		private _respawnMarker = createMarkerLocal [format ["respawn_%1", _respawnKey], _startPos];
 		_respawnMarker setMarkerTypeLocal "hd_start";
 		_respawnMarker setMarkerTextLocal "Respawn";
 

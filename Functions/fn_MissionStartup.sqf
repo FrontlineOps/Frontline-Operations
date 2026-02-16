@@ -92,6 +92,14 @@ private _opCount = 0;
 } forEach _opBuildings;
 
 ["STARTUP", 3, format ["Initialized %1 OPs", _opCount]] call FLO_fnc_log;
+[] call FLO_fnc_refreshRespawnMarkersByTerritory;
+
+[] spawn {
+    while {true} do {
+        [] call FLO_fnc_refreshRespawnMarkersByTerritory;
+        sleep 5;
+    };
+};
 
 
 // ============================================================================
@@ -163,13 +171,32 @@ FLO_RespawnVehicleTypeSet = createHashMapFromArray (_respawnVehicleTypes apply {
 
             // Find alive respawn vehicles and create markers
             private _respawnVehs = vehicles select { alive _x && { (FLO_RespawnVehicleTypeSet getOrDefault [typeOf _x, false]) } };
+            private _activeSide = FLO_ActivePlayerSide;
+            private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
+            private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
+
             {
-                private _markerName = format ["respawn_west_%1", _counter];
+                private _vehPos = getPosATL _x;
+                private _owner = sideUnknown;
+                {
+                    private _objData = FLO_Objectives get _x;
+                    if ([_vehPos, _objData] call FLO_fnc_isPositionInObjective) exitWith {
+                        _owner = _objData get "owner";
+                    };
+                } forEach (keys FLO_Objectives);
+                if (_owner isEqualType "") then {
+                    private _ownerKey = toUpper _owner;
+                    if (_ownerKey isEqualTo "EAST") then { _owner = east; };
+                    if (_ownerKey isEqualTo "WEST") then { _owner = west; };
+                };
+                if (_owner isEqualTo _enemySide) then { continue };
+
+                private _markerName = format ["respawn_%1_%2", _respawnKey, _counter];
                 _counter = _counter + 1;
-                private _marker = createMarkerLocal [_markerName, getPos _x];
-                _marker setMarkerTypeLocal "b_unknown";
-                _marker setMarkerColorLocal "ColorYellow";
-                _marker setMarkerSizeLocal [1, 1];
+                private _marker = createMarker [_markerName, _vehPos];
+                _marker setMarkerType "b_unknown";
+                _marker setMarkerColor "ColorYellow";
+                _marker setMarkerSize [1, 1];
                 _marker setMarkerAlpha 0.7;
             } forEach _respawnVehs;
         } catch {

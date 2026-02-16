@@ -21,6 +21,26 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
     // Check if objectives exist in save
     if ("objectives" in _savedData) then {
         FLO_Objectives = _savedData get "objectives";
+
+        private _captureTimeCfg = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
+        {
+            private _objId = _x;
+            private _objData = FLO_Objectives get _objId;
+            if (isNil {_objData get "owner"}) then { _objData set ["owner", east]; };
+            private _owner = _objData get "owner";
+            if (_owner isEqualType "") then {
+                private _ownerKey = toUpper _owner;
+                if (_ownerKey isEqualTo "EAST") then { _objData set ["owner", east]; };
+                if (_ownerKey isEqualTo "WEST") then { _objData set ["owner", west]; };
+            };
+            if (isNil {_objData get "priority"}) then { _objData set ["priority", 0]; };
+            if (isNil {_objData get "captureProgress"}) then { _objData set ["captureProgress", 0]; };
+            if (isNil {_objData get "bluforCount"}) then { _objData set ["bluforCount", 0]; };
+            if (isNil {_objData get "opforCount"}) then { _objData set ["opforCount", 0]; };
+            if (isNil {_objData get "captureTime"}) then { _objData set ["captureTime", _captureTimeCfg]; };
+            FLO_Objectives set [_objId, _objData];
+        } forEach (keys FLO_Objectives);
+
         publicVariable "FLO_Objectives";
 
         diag_log format ["[FLO_INIT_P3] Restored %1 objectives from save", count FLO_Objectives];
@@ -73,6 +93,10 @@ if (count keys FLO_Objectives == 0) exitWith {
 };
 diag_log format ["[FLO_INIT_P3] Objective indexer created %1 objectives", count keys FLO_Objectives];
 
+// Seed initial EAST/WEST ownership for new runs.
+diag_log "[FLO_INIT_P3] Seeding initial objective ownership...";
+[] call FLO_fnc_seedObjectiveOwnership;
+
 // Build objective graph
 diag_log "[FLO_INIT_P3] Building objective graph...";
 [] call FLO_fnc_buildObjectiveGraph;
@@ -88,4 +112,3 @@ diag_log "[FLO_INIT_P3] Starting objective dominance monitoring...";
 diag_log format ["[FLO_INIT_P3] Objectives phase complete: %1 objectives", count keys FLO_Objectives];
 
 true
-

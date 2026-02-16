@@ -17,7 +17,9 @@
 // ============================================================================
 
 private _playerPos = position player;
-private _respawnMarkerName = format ["respawn_west_%1", str _playerPos];
+private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
+private _respawnMarkerName = format ["respawn_%1_%2", _respawnKey, str _playerPos];
 
 // Create respawn marker at player's starting location
 private _respawnMarker = createMarker [_respawnMarkerName, _playerPos];

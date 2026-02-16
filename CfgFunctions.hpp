@@ -27,6 +27,7 @@ class FLO {
     class GTNCore {
         file = "Functions\AI\GTN\Core";
 
+        class gtnSideContext        {};
         class gtnWorldState         {};
         class gtnGoalLibrary        {};
         class gtnPlanner            {};
@@ -36,11 +37,29 @@ class FLO {
         class gtnCapabilityAnalyzer {};
     };
 
+    class GTNCombat {
+        file = "Functions\AI\GTN\Combat";
+
+        class gtnVirtualCombatResolver {};
+    };
+
+    class GTNTasks {
+        file = "Functions\AI\GTN\Tasks";
+
+        class gtnPlayerTaskBridge {};
+    };
+
     class GTNResourceManager {
         file = "Functions\AI\GTN\ResourceManager";
 
         class gtnResourceManager    {};
         class gtnConfig             {};
+    };
+
+    class GTNDebug {
+        file = "Functions\AI\GTN\Debug";
+
+        class gtnCommanderVisualDebug {};
     };
 
     class GTNAssets {
@@ -168,6 +187,7 @@ class FLO {
         class dbscanCluster             {};
         class buildObjectiveGraph       {};
         class flipObjective             {};
+        class seedObjectiveOwnership    {};
         class monitorObjectiveDominance {};
         class startObjectiveGraph       {};
     };
@@ -182,11 +202,13 @@ class FLO {
         class getObjectivePosition    {};
         class isPositionInObjective   {};
         class createObjectiveMarker   {};
+        class refreshRespawnMarkersByTerritory {};
     };
 
     class Logistics {
         file = "Functions\Logistics";
 
+        class sideResources         {};
         class opforResources        {};
         class logisticsNetwork      {};
         class vehicleMarket         {};

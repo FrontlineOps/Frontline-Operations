@@ -74,6 +74,9 @@ private _handleKeys = [
     ["enemyHandle", "FLO_EnemyHandle"],
     ["civilianHandle", "FLO_CivilianHandle"],
     ["difficultyHandle", "FLO_DifficultyHandle"],
+    ["gtnAttackHandle", "FLO_GTN_AttackHandle"],
+    ["gtnDefenseHandle", "FLO_GTN_DefenseHandle"],
+    ["gtnTempoHandle", "FLO_GTN_TempoHandle"],
     ["moneyHandle", "FLO_MoneyHandle"],
     ["reputationHandle", "FLO_ReputationHandle"]
 ];
@@ -118,4 +121,3 @@ private _missionConfig = createHashMapFromArray [
 ["SAVE_DETECT", 5, format ["Loaded config: %1", _missionConfig]] call FLO_fnc_log;
 
 [true, _missionConfig]
-

@@ -130,17 +130,21 @@ if (isNil "FLO_Intel_System") then {
 
             private _intelValues = _self get "INTEL_VALUES";
             private _totalIntel = 0;
-            private _bluforCount = 0;
+            private _friendlyCount = 0;
+            private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+            if !(_activeSide in [east, west]) then { _activeSide = west };
 
             {
-                if ((_y getOrDefault ["owner", east]) isEqualTo west) then {
-                    private _subtype = _y getOrDefault ["subtype", "cluster"];
+                private _objId = _x;
+                private _objData = FLO_Objectives get _objId;
+                if ((_objData getOrDefault ["owner", east]) isEqualTo _activeSide) then {
+                    private _subtype = _objData getOrDefault ["subtype", "cluster"];
                     _totalIntel = _totalIntel + (_intelValues getOrDefault [_subtype, 1]);
-                    _bluforCount = _bluforCount + 1;
+                    _friendlyCount = _friendlyCount + 1;
                 };
-            } forEach FLO_Objectives;
+            } forEach (keys FLO_Objectives);
 
-            _self set ["_bluforObjectives", _bluforCount];
+            _self set ["_bluforObjectives", _friendlyCount];
             _totalIntel
         }],
 
@@ -152,11 +156,13 @@ if (isNil "FLO_Intel_System") then {
             private _result = "COMMON";
             
             {
-                _cumulative = _cumulative + _y;
+                private _tier = _x;
+                private _weight = _weights get _tier;
+                _cumulative = _cumulative + _weight;
                 if (_roll < _cumulative) exitWith {
-                    _result = _x;
+                    _result = _tier;
                 };
-            } forEach _weights;
+            } forEach (keys _weights);
             
             _result
         }],

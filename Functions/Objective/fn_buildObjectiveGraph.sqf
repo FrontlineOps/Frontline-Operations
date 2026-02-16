@@ -45,9 +45,9 @@ if (_debug) then {
 private _ids = keys FLO_Objectives;
 {
     private _id = _x;
-    private _data = FLO_Objectives get _id;
-    private _pos = _data get "position";
-    private _links = _data getOrDefault ["linkedObjectives", []];
+    private _objData = FLO_Objectives get _id;
+    private _pos = _objData get "position";
+    private _links = _objData getOrDefault ["linkedObjectives", []];
     {
         private _other = _x;
         if (_ids find _other == -1) then { continue; };

@@ -2,27 +2,36 @@
  * Function: FLO_fnc_initializeObjectiveGroups
  * Author: Frontline Operations Development Group
  * Description:
- * Creates virtual groups for all objectives based on their type.
- * Spawns appropriate units for each objective according to CUSTOM_ENEMY_FACTION.sqf settings.
+ * Creates side-owned virtual groups for objectives based on subtype templates.
  *
  * Arguments:
- * None
+ * 0: Side <SIDE> - side to initialize (east or west)
  *
  * Return Value:
  * Success <BOOLEAN>
  *
  * Example:
- * [] call FLO_fnc_initializeObjectiveGroups;
+ * [east] call FLO_fnc_initializeObjectiveGroups;
  */
-InitializationOG = false;
-publicVariable "InitializationOG";
+params [["_side", east]];
 
-["VIRTUALIZATION", 3, "Initializing objective groups"] call FLO_fnc_log;
+if !(_side in [east, west]) exitWith { false };
+if (isNil "FLO_Objectives") exitWith { false };
 
-// Load objective group configuration directly from the faction settings
-private _objectiveGroupConfig = createHashMapFromArray OPFOR_Objective_Groups;
+private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
+private _sideKey = _sideCtx get "sideKey";
 
-// Track all created groups
+private _catalog = if (!isNil "FLO_FactionCatalog") then {
+    FLO_FactionCatalog getOrDefault [_sideKey, createHashMap]
+} else {
+    createHashMap
+};
+
+private _objectiveTemplatesRaw = _catalog getOrDefault ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }];
+private _objectiveGroupConfig = createHashMapFromArray _objectiveTemplatesRaw;
+
+["VIRTUALIZATION", 3, format["Initializing objective groups for %1", _sideKey]] call FLO_fnc_log;
+
 private _allCreatedGroups = [];
 private _allObjectives = keys FLO_Objectives;
 
@@ -30,11 +39,14 @@ private _allObjectives = keys FLO_Objectives;
 {
     private _objId = _x;
     private _objData = FLO_Objectives get _objId;
+    if (isNil "_objData") then { continue };
+    if ((_objData getOrDefault ["owner", east]) != _side) then { continue };
+
     private _subtype = _objData get "subtype";
 
     // Check if this subtype is defined in our configuration
     if (_subtype in _objectiveGroupConfig) then {
-        ["VIRTUALIZATION", 3, format["Processing objective: %1 (Subtype: %2)", _objId, _subtype]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 3, format["Processing %1 objective: %2 (Subtype: %3)", _sideKey, _objId, _subtype]] call FLO_fnc_log;
 
         // Get group configuration for this objective subtype
         private _groupsToCreate = _objectiveGroupConfig get _subtype;
@@ -45,7 +57,7 @@ private _allObjectives = keys FLO_Objectives;
             _x params ["_groupType", "_count"];
 
             // Distribute the groups around the objective
-            private _createdGroups = [_objId, _groupType, _count] call FLO_fnc_distributeVirtualGroups;
+            private _createdGroups = [_objId, _groupType, _count, _side] call FLO_fnc_distributeVirtualGroups;
             _objectiveGroups append _createdGroups;
         } forEach _groupsToCreate;
 
@@ -63,14 +75,17 @@ private _allObjectives = keys FLO_Objectives;
             };
         } forEach _objectiveGroups;
 
-        ["VIRTUALIZATION", 3, format["Created %1 virtual groups at objective %2", count _objectiveGroups, _objId]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 3, format["Created %1 %2 virtual groups at objective %3", count _objectiveGroups, _sideKey, _objId]] call FLO_fnc_log;
     };
 } forEach _allObjectives;
 
-// After processing objectives, add civilian population to locations
-[] call FLO_fnc_spawnCivilians;
+// Spawn civilians once after first side pass.
+if (isNil "FLO_CiviliansInitialized" || {!FLO_CiviliansInitialized}) then {
+    [] call FLO_fnc_spawnCivilians;
+    FLO_CiviliansInitialized = true;
+    publicVariable "FLO_CiviliansInitialized";
+};
 
-["VIRTUALIZATION", 3, format["Finished initializing objective groups - %1 total groups created", count _allCreatedGroups]] call FLO_fnc_log;
+["VIRTUALIZATION", 3, format["Finished initializing %1 objective groups - %2 groups created", _sideKey, count _allCreatedGroups]] call FLO_fnc_log;
 
-InitializationOG = true;
-publicVariable "InitializationOG";
+true

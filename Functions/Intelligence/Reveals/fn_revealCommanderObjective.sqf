@@ -22,41 +22,30 @@ if (isNil "FLO_GTN_ResourceManager") exitWith {
     false 
 };
 
-private _commander = FLO_GTN_ResourceManager get "_gtnCommander";
+private _activeSide = FLO_ActivePlayerSide;
+if !(_activeSide in [east, west]) then { _activeSide = west };
+private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
+
+private _commander = nil;
+if (!isNil {FLO_GTN_ResourceManager get "_getCommanderBySide"}) then {
+    _commander = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_enemySide]];
+} else {
+    _commander = FLO_GTN_ResourceManager get "_gtnCommander";
+};
+
 if (isNil "_commander") exitWith { 
     ["Enemy command analysis unavailable", "warning"] call FLO_fnc_sendNotification;
     false 
 };
 
-// Get active tracks and their targets
-private _tracks = _commander get "_tracks";
-if (isNil "_tracks" || {count _tracks == 0}) exitWith {
+private _targetObjId = _commander call ["_selectPriorityObjective", []];
+if (_targetObjId == "") exitWith {
     ["No active enemy operations detected", "info"] call FLO_fnc_sendNotification;
     false
 };
 
-private _attackTracks = _tracks select { (_x get "goal") == "attack" };
-
-if (count _attackTracks == 0) exitWith { 
-    ["No enemy offensive operations detected", "info"] call FLO_fnc_sendNotification;
-    false 
-};
-
-private _track = selectRandom _attackTracks;
-private _target = _track get "target";
-
-if (isNil "_target") exitWith {
-    ["Enemy objectives unclear", "info"] call FLO_fnc_sendNotification;
-    false
-};
-
 // Get objective position
-private _targetPos = if (typeName _target == "STRING" && {!isNil "FLO_Objectives"}) then {
-    private _objData = FLO_Objectives getOrDefault [_target, nil];
-    if (!isNil "_objData") then { _objData get "position" } else { nil }
-} else {
-    _target
-};
+private _targetPos = [_targetObjId] call FLO_fnc_getObjectivePosition;
 
 if (isNil "_targetPos") exitWith {
     ["Enemy objectives unclear", "info"] call FLO_fnc_sendNotification;
@@ -67,7 +56,7 @@ if (isNil "_targetPos") exitWith {
 private _mrkId = format ["cmdFocus_%1", floor random 99999];
 private _mrk = createMarkerLocal [_mrkId, _targetPos];
 _mrk setMarkerTypeLocal "mil_objective";
-_mrk setMarkerColorLocal "colorOPFOR";
+_mrk setMarkerColorLocal (if (_enemySide isEqualTo east) then { "colorOPFOR" } else { "colorBLUFOR" });
 _mrk setMarkerText "Enemy Focus";
 _mrk setMarkerAlpha 1;
 

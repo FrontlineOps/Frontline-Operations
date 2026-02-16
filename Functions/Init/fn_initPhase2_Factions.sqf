@@ -187,10 +187,120 @@ private _publishedCount = 0;
 
 diag_log format ["[FLO_INIT_P2] Broadcast %1 faction variables to clients", _publishedCount];
 
+// ============================================================================
+// SIDE CONTEXT AND FACTION CATALOG
+// ============================================================================
+
+FLO_MissionSides = [east, west];
+publicVariable "FLO_MissionSides";
+
+if (isNil "FLO_ActivePlayerSide") then {
+    FLO_ActivePlayerSide = sideUnknown;
+    publicVariable "FLO_ActivePlayerSide";
+};
+
+private _fnc_extractVehicleClasses = {
+    params [["_list", []]];
+    private _result = [];
+    {
+        if (_x isEqualType []) then {
+            if (count _x > 0) then {
+                private _cls = _x select 0;
+                if (_cls isEqualType "") then {
+                    _result pushBackUnique _cls;
+                };
+            };
+        } else {
+            if (_x isEqualType "") then {
+                _result pushBackUnique _x;
+            };
+        };
+    } forEach _list;
+    _result
+};
+
+private _westUnits = [];
+{
+    if (!isNil _x) then {
+        private _u = missionNamespace getVariable [_x, ""];
+        if (_u isEqualType "" && {_u != ""}) then {
+            _westUnits pushBackUnique _u;
+        };
+    };
+} forEach [
+    "F_Officer", "F_Assault_Eng", "F_Assault_TL", "F_Assault_SL", "F_Assault_Eod",
+    "F_Assault_Mrk", "F_Assault_AT", "F_Assault_Amm", "F_Assault_Mg", "F_Assault_Med",
+    "F_Assault_Uav", "F_Recon_Snp", "F_Recon_Sct", "F_Recon_TL", "F_Recon_Mrk",
+    "F_Recon_AT", "F_Recon_Mg", "F_Recon_Eod", "F_Recon_Med", "F_Recon_Eng",
+    "F_Diver_TL", "F_Diver_Eod", "F_Diver_Rfl"
+];
+
+private _fCarList = missionNamespace getVariable ["F_Car_List", []];
+private _fMrapList = missionNamespace getVariable ["F_MRAP_List", []];
+private _fTruckList = missionNamespace getVariable ["F_Truck_List", []];
+private _fApcList = missionNamespace getVariable ["F_APC_List", []];
+private _fTankList = missionNamespace getVariable ["F_Tank_List", []];
+private _fArtyList = missionNamespace getVariable ["F_Artillery_List", []];
+private _fHeliList = missionNamespace getVariable ["F_Heli_List", []];
+private _fHeliGunList = missionNamespace getVariable ["F_Heli_Gunship_List", []];
+private _fPlaneList = missionNamespace getVariable ["F_Plane_List", []];
+private _fSamList = missionNamespace getVariable ["F_SAM_List", []];
+private _fTurretList = missionNamespace getVariable ["F_Turret_List", []];
+
+private _westGroundLight = ([] + _fCarList + _fMrapList + _fTruckList) call _fnc_extractVehicleClasses;
+private _westGroundHeavy = ([] + _fApcList + _fTankList) call _fnc_extractVehicleClasses;
+private _westGroundTransport = ([] + _fTruckList + _fCarList) call _fnc_extractVehicleClasses;
+private _westArtillery = ([] + _fArtyList) call _fnc_extractVehicleClasses;
+private _westHeli = ([] + _fHeliList + _fHeliGunList) call _fnc_extractVehicleClasses;
+private _westJets = ([] + _fPlaneList) call _fnc_extractVehicleClasses;
+private _westMobileAA = ([] + _fApcList + _fTankList) call _fnc_extractVehicleClasses;
+private _westStaticAA = ([] + _fSamList + _fTurretList) call _fnc_extractVehicleClasses;
+private _westRadar = if (!isNil "F_RADAR" && {F_RADAR isEqualType ""}) then { [F_RADAR] } else { [] };
+
+private _eastCatalog = createHashMapFromArray [
+    ["groups", if (!isNil "East_Groups") then { East_Groups } else { [] }],
+    ["units", if (!isNil "East_Units") then { East_Units } else { [] }],
+    ["officers", if (!isNil "East_Units_Officers") then { East_Units_Officers } else { if (!isNil "East_Units") then { East_Units } else { [] } }],
+    ["groundLight", if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { [] }],
+    ["groundHeavy", if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] }],
+    ["groundTransport", if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { [] }],
+    ["groundArtillery", if (!isNil "East_Ground_Artillery") then { East_Ground_Artillery } else { [] }],
+    ["airHeli", if (!isNil "East_Air_Heli") then { East_Air_Heli } else { [] }],
+    ["airJet", if (!isNil "East_Air_Jet") then { East_Air_Jet } else { [] }],
+    ["mobileAA", if (!isNil "East_Mobile_AA") then { East_Mobile_AA } else { [] }],
+    ["staticAA", if (!isNil "East_Static_AA") then { East_Static_AA } else { [] }],
+    ["radar", if (!isNil "East_Radar") then { East_Radar } else { [] }],
+    ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }],
+    ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
+];
+
+private _westCatalog = createHashMapFromArray [
+    ["groups", []],
+    ["units", _westUnits],
+    ["officers", if (!isNil "F_Officer") then { [F_Officer] } else { _westUnits }],
+    ["groundLight", _westGroundLight],
+    ["groundHeavy", _westGroundHeavy],
+    ["groundTransport", _westGroundTransport],
+    ["groundArtillery", _westArtillery],
+    ["airHeli", _westHeli],
+    ["airJet", _westJets],
+    ["mobileAA", _westMobileAA],
+    ["staticAA", _westStaticAA],
+    ["radar", _westRadar],
+    // Reuse objective composition and group counts for parity in this milestone.
+    ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }],
+    ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
+];
+
+FLO_FactionCatalog = createHashMapFromArray [
+    ["EAST", _eastCatalog],
+    ["WEST", _westCatalog]
+];
+publicVariable "FLO_FactionCatalog";
+
 // Mark factions as loaded
 F_Init = true;
 publicVariable "F_Init";
 
 diag_log format ["[FLO_INIT_P2] Factions loaded successfully: BLU=%1, OPF=%2, CIV=%3", _bluFaction, _opfFaction, _civFaction];
 true
-

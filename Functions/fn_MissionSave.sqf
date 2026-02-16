@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 2;
+private _saveVersion = 3;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -79,6 +79,9 @@ try {
     if (!isNil "FLO_MoneyHandle") then { _cfg set ["moneyHandle", FLO_MoneyHandle]; };
     if (!isNil "FLO_DifficultyHandle") then { _cfg set ["difficultyHandle", FLO_DifficultyHandle]; };
     if (!isNil "FLO_ReputationHandle") then { _cfg set ["reputationHandle", FLO_ReputationHandle]; };
+    if (!isNil "FLO_GTN_AttackHandle") then { _cfg set ["gtnAttackHandle", FLO_GTN_AttackHandle]; };
+    if (!isNil "FLO_GTN_DefenseHandle") then { _cfg set ["gtnDefenseHandle", FLO_GTN_DefenseHandle]; };
+    if (!isNil "FLO_GTN_TempoHandle") then { _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle]; };
     if (!isNil "EnemyPrec") then { _cfg set ["enemyPrec", EnemyPrec]; };
     if (!isNil "F_HQ_01") then { _cfg set ["fobType", F_HQ_01]; };
     if (!isNil "F_HQ_C_01") then { _cfg set ["fobContainerType", F_HQ_C_01]; };
@@ -305,14 +308,26 @@ try {
 } catch { ["SAVE", 1, format ["Structures failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
-// SAVE: OPFOR RESOURCES
+// SAVE: SIDE RESOURCES
 // ============================================================================
 
 try {
-    if (!isNil "FLO_OPFOR_Resources") then {
-        private _resData = FLO_OPFOR_Resources call ["serialize", []];
-        _data set ["opforResources", _resData];
-        ["SAVE", 3, format ["OPFOR Resources: %1", _resData getOrDefault ["resources", 0]]] call FLO_fnc_log;
+    if (!isNil "FLO_SideResources") then {
+        private _sideResData = createHashMap;
+        {
+            private _obj = FLO_SideResources get _x;
+            if (!isNil "_obj") then {
+                _sideResData set [_x, _obj call ["serialize", []]];
+            };
+        } forEach (keys FLO_SideResources);
+        _data set ["sideResources", _sideResData];
+        ["SAVE", 3, format ["Side resources saved for %1 sides", count (keys _sideResData)]] call FLO_fnc_log;
+    } else {
+        if (!isNil "FLO_OPFOR_Resources") then {
+            // Legacy compatibility payload for non-dual systems.
+            private _resData = FLO_OPFOR_Resources call ["serialize", []];
+            _data set ["opforResources", _resData];
+        };
     };
 } catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };
 
@@ -396,17 +411,22 @@ try {
 } catch { ["SAVE", 1, format ["Virtual Groups failed: %1", _exception]] call FLO_fnc_log; _data set ["virtualGroups", createHashMap]; };
 
 // ============================================================================
-// SAVE: OBJECTIVES AND AI COMMANDER
+// SAVE: OBJECTIVES AND AI COMMANDERS
 // ============================================================================
 
 try {
     if (!isNil "FLO_Objectives") then { _data set ["objectives", FLO_Objectives]; };
     if (!isNil "FLO_GTN_ResourceManager") then {
-        _data set ["aiCommander", createHashMapFromArray [
-            ["gtnEnabled", !isNil {FLO_GTN_ResourceManager get "_gtnCommander"}]
-        ]];
+        private _allCommanders = FLO_GTN_ResourceManager call ["_getAllCommanders", []];
+        private _eastEnabled = !isNil {_allCommanders getOrDefault ["EAST", nil]};
+        private _westEnabled = !isNil {_allCommanders getOrDefault ["WEST", nil]};
+        private _aiCommanders = createHashMapFromArray [
+            ["EAST", createHashMapFromArray [["gtnEnabled", _eastEnabled]]],
+            ["WEST", createHashMapFromArray [["gtnEnabled", _westEnabled]]]
+        ];
+        _data set ["aiCommanders", _aiCommanders];
     };
-    ["SAVE", 3, "Objectives and GTN state saved"] call FLO_fnc_log;
+    ["SAVE", 3, "Objectives and dual GTN state saved"] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================

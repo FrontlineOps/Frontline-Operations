@@ -9,11 +9,20 @@
  *   HASHMAP - Mission template configuration
  */
 
+private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+if !(_activeSide in [east, west]) then { _activeSide = west };
+private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
+private _enemyKey = if (_enemySide isEqualTo east) then { "EAST" } else { "WEST" };
+private _enemyCatalog = missionNamespace getVariable ["FLO_FactionCatalog", createHashMap] getOrDefault [_enemyKey, createHashMap];
+private _enemyLight = _enemyCatalog getOrDefault ["groundLight", if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { ["O_MRAP_02_F"] }];
+private _enemyTransport = _enemyCatalog getOrDefault ["groundTransport", if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { _enemyLight }];
+private _enemyColor = if (_enemySide isEqualTo east) then { "colorOPFOR" } else { "colorBLUFOR" };
+
 private _template = createHashMapFromArray [
     ["name", "Intercept Enemy Convoy"],
     ["description", "Intel suggests an enemy support convoy heading toward the frontlines. Intercept and destroy it."],
     ["icon", "mil_destroy"],
-    ["color", "colorOPFOR"],
+    ["color", _enemyColor],
     ["cooldown", 1200],
     ["timeout", 2400],
     ["maxActive", 1],
@@ -23,38 +32,47 @@ private _template = createHashMapFromArray [
     // Setup - find road positions
     ["fnc_setup", {
         params ["_typeName"];
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_activeSide in [east, west]) then { _activeSide = west };
+        private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
         
         if (!isNil "ConVLocc" && {ConVLocc > 0}) exitWith { [false, [0,0,0]] };
         
         private _canSpawn = false;
         private _startPos = [0,0,0];
         
-        // Find start and end objectives - OPFOR controlled only
-        if (!isNil "FLO_Objectives" && {count (keys FLO_Objectives) > 0}) then {
-            private _destObjId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
+        // Find start and end objectives - enemy controlled only
+        if (!isNil "FLO_Objectives" && {(count (keys FLO_Objectives)) > 0}) then {
+            private _destObjId = [4000, getPos player, _enemySide] call FLO_fnc_getObjectiveNearPlayer;
             if (_destObjId != "") then {
                 private _destPos = [_destObjId] call FLO_fnc_getRandomObjectivePos;
 
-                // Find far OPFOR objective for start
+                // Find far enemy objective for start
                 private _startCandidates = (keys FLO_Objectives) select {
                     _x != _destObjId && {
                         private _data = FLO_Objectives get _x;
-                        private _owner = _data getOrDefault ["owner", east];
-                        _owner isEqualTo east && {
+                        private _owner = _data get "owner";
+                        if (_owner isEqualType "") then {
+                            private _ownerKey = toUpper _owner;
+                            if (_ownerKey isEqualTo "EAST") then { _owner = east; };
+                            if (_ownerKey isEqualTo "WEST") then { _owner = west; };
+                        };
+                        _owner isEqualTo _enemySide && {
                             private _p = _data get "position";
                             (_p distance2D _destPos) >= 6000
                         }
                     }
                 };
 
-                if (count _startCandidates > 0) then {
+                if ((count _startCandidates) > 0) then {
                     private _startObjId = selectRandom _startCandidates;
                     _startPos = [_startObjId] call FLO_fnc_getRandomObjectivePos;
 
                     // Verify road access
                     private _startRoads = _startPos nearRoads 800;
                     private _destRoads = _destPos nearRoads 800;
-                    if (count _startRoads > 0 && count _destRoads > 0) then {
+                    if ((count _startRoads) > 0 && {(count _destRoads) > 0}) then {
                         _startPos = getPosATL (selectRandom _startRoads);
                         _canSpawn = true;
                     };
@@ -68,6 +86,15 @@ private _template = createHashMapFromArray [
     // Spawn function
     ["fnc_spawn", {
         params ["_missionId"];
+
+        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_activeSide in [east, west]) then { _activeSide = west };
+        private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
+        private _enemyKey = if (_enemySide isEqualTo east) then { "EAST" } else { "WEST" };
+        private _enemyCatalog = missionNamespace getVariable ["FLO_FactionCatalog", createHashMap] getOrDefault [_enemyKey, createHashMap];
+        private _enemyLight = _enemyCatalog getOrDefault ["groundLight", if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { ["O_MRAP_02_F"] }];
+        private _enemyTransport = _enemyCatalog getOrDefault ["groundTransport", if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { _enemyLight }];
+        private _enemyColor = if (_enemySide isEqualTo east) then { "colorOPFOR" } else { "colorBLUFOR" };
         
         private _instance = ["get", [_missionId]] call FLO_fnc_sideMissionRegistry;
         private _startPos = _instance get "position";
@@ -75,20 +102,35 @@ private _template = createHashMapFromArray [
         
         ConVLocc = 1;
         
-        // Find destination (OPFOR controlled)
-        private _destObjId = [4000, getPos player, east] call FLO_fnc_getObjectiveNearPlayer;
-        private _endPos = if (_destObjId != "") then {
-            [_destObjId] call FLO_fnc_getRandomObjectivePos
-        } else {
-            _startPos getPos [3000, _startPos getDir player]
+        // Find destination (enemy controlled)
+        private _destObjId = [4000, getPos player, _enemySide] call FLO_fnc_getObjectiveNearPlayer;
+        if (_destObjId == "") then {
+            _destObjId = [_startPos, _enemySide] call FLO_fnc_getNearestObjective;
         };
+        if (_destObjId == "") exitWith {
+            ConVLocc = 0;
+            ["SIDEMISSION", 1, format["Convoy Interdiction %1: No enemy objective available for destination", _missionId]] call FLO_fnc_log;
+        };
+        private _endPos = [_destObjId] call FLO_fnc_getRandomObjectivePos;
         
         // Find roads
-        private _startRoad = ((_startPos nearRoads 100) + (_startPos nearRoads 500)) select 0;
-        private _endRoad = ((_endPos nearRoads 100) + (_endPos nearRoads 500)) select 0;
-        
-        if (isNull _startRoad) then { _startRoad = (_startPos nearRoads 1000) select 0; };
-        if (isNull _endRoad) then { _endRoad = (_endPos nearRoads 1000) select 0; };
+        private _startRoads = (_startPos nearRoads 100) + (_startPos nearRoads 500);
+        private _endRoads = (_endPos nearRoads 100) + (_endPos nearRoads 500);
+        private _startRoad = if ((count _startRoads) > 0) then { _startRoads select 0 } else { objNull };
+        private _endRoad = if ((count _endRoads) > 0) then { _endRoads select 0 } else { objNull };
+
+        if (isNull _startRoad) then {
+            private _farRoads = _startPos nearRoads 1000;
+            if ((count _farRoads) > 0) then { _startRoad = _farRoads select 0; };
+        };
+        if (isNull _endRoad) then {
+            private _farRoads = _endPos nearRoads 1000;
+            if ((count _farRoads) > 0) then { _endRoad = _farRoads select 0; };
+        };
+        if (isNull _startRoad || isNull _endRoad) exitWith {
+            ConVLocc = 0;
+            ["SIDEMISSION", 1, format["Convoy Interdiction %1: No roads found near start/end positions", _missionId]] call FLO_fnc_log;
+        };
         
         _startPos = getPosATL _startRoad;
         _endPos = getPosATL _endRoad;
@@ -101,7 +143,7 @@ private _template = createHashMapFromArray [
 
         // Calculate spawn direction
         private _connectedRoads = roadsConnectedTo _startRoad;
-        private _spawnDir = if (count _connectedRoads > 0) then {
+        private _spawnDir = if ((count _connectedRoads) > 0) then {
             _startRoad getDir (_connectedRoads select 0)
         } else {
             _startPos getDir _endPos
@@ -112,16 +154,16 @@ private _template = createHashMapFromArray [
         private _spacing = 20;
         
         private _vehTypes = [
-            selectRandom East_Ground_Vehicles_Light,
-            selectRandom East_Ground_Transport,
-            selectRandom East_Ground_Vehicles_Light
+            selectRandom _enemyLight,
+            selectRandom _enemyTransport,
+            selectRandom _enemyLight
         ];
         
         if (_aggrScore > 5) then {
-            _vehTypes append [selectRandom East_Ground_Transport, selectRandom East_Ground_Vehicles_Light];
+            _vehTypes append [selectRandom _enemyTransport, selectRandom _enemyLight];
         };
         if (_aggrScore > 10) then {
-            _vehTypes append [selectRandom East_Ground_Transport, selectRandom East_Ground_Vehicles_Light];
+            _vehTypes append [selectRandom _enemyTransport, selectRandom _enemyLight];
         };
         
         {
@@ -145,7 +187,7 @@ private _template = createHashMapFromArray [
             _args params ["_vehs", "_finalPos", "_missionData"];
 
             // Start convoy controller with route
-            private _route = if (_status && count _posArray > 0) then { _posArray } else { [] };
+            private _route = if (_status && {(count _posArray) > 0}) then { _posArray } else { [] };
             
             private _controller = [
                 _vehs,
@@ -170,7 +212,7 @@ private _template = createHashMapFromArray [
         private _trackMarkerName = format ["SM_ConvoyTrack_%1", _missionId];
         private _trackMarker = createMarkerLocal [_trackMarkerName, getPos _leadVeh];
         _trackMarkerName setMarkerTypeLocal "o_mech_inf";
-        _trackMarkerName setMarkerColorLocal "colorOPFOR";
+        _trackMarkerName setMarkerColorLocal _enemyColor;
         _trackMarkerName setMarkerTextLocal "Convoy";
         _trackMarkerName setMarkerSizeLocal [0.8, 0.8];
         
@@ -230,4 +272,3 @@ private _template = createHashMapFromArray [
 ];
 
 _template
-
