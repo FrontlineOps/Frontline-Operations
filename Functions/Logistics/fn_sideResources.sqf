@@ -289,8 +289,8 @@ FLO_SideResources = createHashMap;
 
     if (_savedPayload isEqualType createHashMap) then {
         if (
-            {isNil {_savedPayload get "resources"}} ||
-            {isNil {_savedPayload get "efficiencies"}}
+            isNil {_savedPayload get "resources"} ||
+            isNil {_savedPayload get "efficiencies"}
         ) then {
             ["SIDE_RES", 1, format ["Discarding invalid saved payload for %1 resources", _sideKey]] call FLO_fnc_log;
             _savedPayload = objNull;
