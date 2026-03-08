@@ -237,6 +237,48 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         };
     };
 
+    private _fnc_extractVehicleClasses = {
+        params [["_list", []]];
+        private _result = [];
+        {
+            if (_x isEqualType []) then {
+                if (count _x > 0) then {
+                    private _cls = _x select 0;
+                    if (_cls isEqualType "" && {_cls != ""}) then {
+                        _result pushBackUnique _cls;
+                    };
+                };
+            } else {
+                if (_x isEqualType "" && {_x != ""}) then {
+                    _result pushBackUnique _x;
+                };
+            };
+        } forEach _list;
+        _result
+    };
+
+    private _trackedCrewTypes = createHashMap;
+    private _samList = missionNamespace getVariable ["F_SAM_List", []];
+    {
+        _trackedCrewTypes set [_x, true];
+    } forEach ([_samList] call _fnc_extractVehicleClasses);
+
+    if (!isNil "F_RADAR" && {F_RADAR isEqualType ""} && {F_RADAR != ""}) then {
+        _trackedCrewTypes set [F_RADAR, true];
+    };
+
+    private _fnc_restoreTrackedCrew = {
+        params ["_entity", "_type", "_attr", "_trackedCrewTypes"];
+        if !(_type in _trackedCrewTypes) exitWith {};
+
+        private _restoreCrew = if ("hadAICrew" in _attr) then { _attr get "hadAICrew" } else { true };
+        if (!_restoreCrew) exitWith {};
+
+        if (getText (configFile >> "CfgVehicles" >> _type >> "crew") != "") then {
+            createVehicleCrew _entity;
+        };
+    };
+
     // Restore vehicles
     if ("vehicles" in _savedData) then {
         private _vehHash = _savedData get "vehicles";
@@ -265,6 +307,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         { _x params ["_hp", "_dmg"]; _veh setHitPointDamage [_hp, _dmg]; } forEach _damagedHitpoints;
 
                         if (_attr getOrDefault ["engineOn", false]) then { _veh engineOn true; };
+                        [_veh, _type, _attr, _trackedCrewTypes] call _fnc_restoreTrackedCrew;
 
                         _loadedVehicles = _loadedVehicles + 1;
                     };
@@ -296,6 +339,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         _obj setDamage (_attr getOrDefault ["damage", 0]);
                         _obj setVariable ["IDS_Logistics_isPlacedEntity", _attr getOrDefault ["isPlacedEntity", false], true];
                         _obj setVariable ["FLO_SaveID", _objId, true];
+                        [_obj, _type, _attr, _trackedCrewTypes] call _fnc_restoreTrackedCrew;
 
                         _loadedObjects = _loadedObjects + 1;
                     };

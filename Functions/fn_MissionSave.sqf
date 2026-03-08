@@ -127,10 +127,12 @@ try {
                     private _id = if (_existingId != "") then { _existingId } else { [] call FLO_fnc_createUUID };
                     _veh setVariable ["FLO_SaveID", _id, true];
                     _savedIds set [_id, true];
+                    private _hadAICrew = ({ alive _x && {!isPlayer _x} } count (crew _veh)) > 0;
                     _vehHash set [_id, createHashMapFromArray [
                         ["type", typeOf _veh], ["posATL", getPosATL _veh], ["fuel", fuel _veh],
                         ["damage", damage _veh], ["damagedHitpoints", [_veh] call _fnc_getCompressedDamage],
-                        ["vectorDirAndUp", [vectorDir _veh, vectorUp _veh]], ["locked", locked _veh], ["engineOn", isEngineOn _veh]
+                        ["vectorDirAndUp", [vectorDir _veh, vectorUp _veh]], ["locked", locked _veh], ["engineOn", isEngineOn _veh],
+                        ["hadAICrew", _hadAICrew]
                     ]];
                 };
             };
@@ -182,10 +184,11 @@ try {
                     private _id = if (_existingId != "") then { _existingId } else { [] call FLO_fnc_createUUID };
                     _obj setVariable ["FLO_SaveID", _id, true];
                     _savedObjIds set [_id, true];
+                    private _hadAICrew = ({ alive _x && {!isPlayer _x} } count (crew _obj)) > 0;
                     _objHash set [_id, createHashMapFromArray [
                         ["type", _objType], ["posASL", getPosASL _obj],
                         ["vectorDirAndUp", [vectorDir _obj, vectorUp _obj]],
-                        ["damage", damage _obj]
+                        ["damage", damage _obj], ["hadAICrew", _hadAICrew]
                     ]];
                 };
             };
