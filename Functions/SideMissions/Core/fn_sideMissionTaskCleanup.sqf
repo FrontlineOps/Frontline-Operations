@@ -40,12 +40,9 @@ if (_taskId == "") exitWith {
 // Cleanup function
 private _doCleanup = {
     params ["_taskId", "_missionId"];
-    
-    // Remove the BIS task
-    if ([_taskId] call BIS_fnc_taskExists) then {
-        [_taskId] call BIS_fnc_deleteTask;
-        diag_log format ["[FLO_SM] Deleted task: %1", _taskId];
-    };
+
+    [_taskId] call BIS_fnc_deleteTask;
+    diag_log format ["[FLO_SM] Deleted task: %1", _taskId];
 };
 
 if (_immediate) then {
@@ -64,4 +61,3 @@ diag_log format ["[FLO_SM] Task cleanup %1 for %2 (delay: %3s)",
     if (_immediate) then {"immediate"} else {"scheduled"}, _missionId, _delay];
 
 true
-
