@@ -165,7 +165,7 @@ switch (true) do {
             // Select appropriate vehicle type
             switch (_groupType) do {
                 case "motorized": { _vehicleType = selectRandom _poolGroundLight; };
-                case "mechanized": { _vehicleType = selectRandom _poolGroundLight; };
+                case "mechanized": { _vehicleType = selectRandom _poolGroundHeavy; };
                 case "armor": { _vehicleType = selectRandom _poolGroundHeavy; };
                 default { _vehicleType = selectRandom _poolGroundLight; };
             };
