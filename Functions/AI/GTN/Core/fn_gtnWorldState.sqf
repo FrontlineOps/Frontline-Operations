@@ -736,8 +736,12 @@ private _worldState = createHashMapObject [[
             ["lastReconTime", 0],
             ["intelQuality", 0],
             ["confirmedStrength", 0],
+            ["totalCombatPower", 0],
             ["hasArmor", false],
             ["hasAA", false],
+            ["hasStatic", false],
+            ["fortificationLevel", 0],
+            ["recommendedForce", 0],
             ["defensePosture", "UNKNOWN"]
         ]]
     }],
