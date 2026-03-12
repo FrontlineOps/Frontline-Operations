@@ -219,6 +219,22 @@ private _fnc_extractVehicleClasses = {
     _result
 };
 
+private _fnc_getVarArray = {
+    params [["_varName", ""]];
+    if (_varName == "") exitWith { [] };
+    if (isNil _varName) exitWith { [] };
+    missionNamespace getVariable [_varName, []]
+};
+
+private _fnc_buildPoolFromVars = {
+    params [["_varNames", []]];
+    private _merged = [];
+    {
+        _merged append ([_x] call _fnc_getVarArray);
+    } forEach _varNames;
+    [_merged] call _fnc_extractVehicleClasses
+};
+
 private _westUnits = [];
 {
     if (!isNil _x) then {
@@ -235,41 +251,58 @@ private _westUnits = [];
     "F_Diver_TL", "F_Diver_Eod", "F_Diver_Rfl"
 ];
 
-private _fCarList = missionNamespace getVariable ["F_Car_List", []];
-private _fMrapList = missionNamespace getVariable ["F_MRAP_List", []];
-private _fTruckList = missionNamespace getVariable ["F_Truck_List", []];
-private _fApcList = missionNamespace getVariable ["F_APC_List", []];
-private _fTankList = missionNamespace getVariable ["F_Tank_List", []];
-private _fArtyList = missionNamespace getVariable ["F_Artillery_List", []];
-private _fHeliList = missionNamespace getVariable ["F_Heli_List", []];
-private _fHeliGunList = missionNamespace getVariable ["F_Heli_Gunship_List", []];
-private _fPlaneList = missionNamespace getVariable ["F_Plane_List", []];
-private _fSamList = missionNamespace getVariable ["F_SAM_List", []];
-private _fTurretList = missionNamespace getVariable ["F_Turret_List", []];
-
-private _westGroundLight = ([] + _fCarList + _fMrapList + _fTruckList) call _fnc_extractVehicleClasses;
-private _westGroundHeavy = ([] + _fApcList + _fTankList) call _fnc_extractVehicleClasses;
-private _westGroundTransport = ([] + _fTruckList + _fCarList) call _fnc_extractVehicleClasses;
-private _westArtillery = ([] + _fArtyList) call _fnc_extractVehicleClasses;
-private _westHeli = ([] + _fHeliList + _fHeliGunList) call _fnc_extractVehicleClasses;
-private _westJets = ([] + _fPlaneList) call _fnc_extractVehicleClasses;
-private _westMobileAA = ([] + _fApcList + _fTankList) call _fnc_extractVehicleClasses;
-private _westStaticAA = ([] + _fSamList + _fTurretList) call _fnc_extractVehicleClasses;
+private _westGroundLight = [["F_Car_List", "F_MRAP_List", "F_Truck_List"]] call _fnc_buildPoolFromVars;
+private _westGroundHeavy = [["F_APC_List", "F_Tank_List"]] call _fnc_buildPoolFromVars;
+private _westGroundTransport = [["F_Truck_List", "F_Car_List", "F_MRAP_List"]] call _fnc_buildPoolFromVars;
+private _westArtillery = [["F_Artillery_List"]] call _fnc_buildPoolFromVars;
+private _westHeli = [["F_Heli_List", "F_Heli_Gunship_List"]] call _fnc_buildPoolFromVars;
+private _westJets = [["F_Plane_List"]] call _fnc_buildPoolFromVars;
+private _westMobileAA = [["F_APC_List", "F_Tank_List"]] call _fnc_buildPoolFromVars;
+private _westStaticAA = [["F_SAM_List", "F_Turret_List"]] call _fnc_buildPoolFromVars;
 private _westRadar = if (!isNil "F_RADAR" && {F_RADAR isEqualType ""}) then { [F_RADAR] } else { [] };
+private _westAirTransport = [["F_Heli_List", "F_Heli_Respawn_List", "F_Plane_List"]] call _fnc_buildPoolFromVars;
+private _westAirDrone = [["F_UAV_List"]] call _fnc_buildPoolFromVars;
+private _westGroundDrone = [["F_UGV_List"]] call _fnc_buildPoolFromVars;
+private _westBoat = [["F_Boat_List"]] call _fnc_buildPoolFromVars;
+private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call _fnc_buildPoolFromVars;
+private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars;
+private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
+private _westContainers = [["F_Container_List"]] call _fnc_buildPoolFromVars;
+
+diag_log format [
+    "[FLO_INIT_P2] WEST pool sizes: units=%1 light=%2 heavy=%3 transport=%4 artillery=%5 heli=%6 jet=%7 mobileAA=%8 staticAA=%9 radar=%10 uav=%11 ugv=%12 boat=%13",
+    count _westUnits,
+    count _westGroundLight,
+    count _westGroundHeavy,
+    count _westGroundTransport,
+    count _westArtillery,
+    count _westHeli,
+    count _westJets,
+    count _westMobileAA,
+    count _westStaticAA,
+    count _westRadar,
+    count _westAirDrone,
+    count _westGroundDrone,
+    count _westBoat
+];
 
 private _eastCatalog = createHashMapFromArray [
     ["groups", if (!isNil "East_Groups") then { East_Groups } else { [] }],
     ["units", if (!isNil "East_Units") then { East_Units } else { [] }],
     ["officers", if (!isNil "East_Units_Officers") then { East_Units_Officers } else { if (!isNil "East_Units") then { East_Units } else { [] } }],
-    ["groundLight", if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { [] }],
-    ["groundHeavy", if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] }],
-    ["groundTransport", if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { [] }],
-    ["groundArtillery", if (!isNil "East_Ground_Artillery") then { East_Ground_Artillery } else { [] }],
-    ["airHeli", if (!isNil "East_Air_Heli") then { East_Air_Heli } else { [] }],
-    ["airJet", if (!isNil "East_Air_Jet") then { East_Air_Jet } else { [] }],
-    ["mobileAA", if (!isNil "East_Mobile_AA") then { East_Mobile_AA } else { [] }],
-    ["staticAA", if (!isNil "East_Static_AA") then { East_Static_AA } else { [] }],
-    ["radar", if (!isNil "East_Radar") then { East_Radar } else { [] }],
+    ["groundLight", [(if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { [] })] call _fnc_extractVehicleClasses],
+    ["groundHeavy", [(if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] })] call _fnc_extractVehicleClasses],
+    ["groundTransport", [(if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { [] })] call _fnc_extractVehicleClasses],
+    ["groundArtillery", [(if (!isNil "East_Ground_Artillery") then { East_Ground_Artillery } else { [] })] call _fnc_extractVehicleClasses],
+    ["airHeli", [(if (!isNil "East_Air_Heli") then { East_Air_Heli } else { [] })] call _fnc_extractVehicleClasses],
+    ["airJet", [(if (!isNil "East_Air_Jet") then { East_Air_Jet } else { [] })] call _fnc_extractVehicleClasses],
+    ["airTransport", [(if (!isNil "East_Air_Transport") then { East_Air_Transport } else { [] })] call _fnc_extractVehicleClasses],
+    ["airDrone", [(if (!isNil "East_Air_Drone") then { East_Air_Drone } else { [] })] call _fnc_extractVehicleClasses],
+    ["groundDrone", [(if (!isNil "East_Ground_Drone") then { East_Ground_Drone } else { [] })] call _fnc_extractVehicleClasses],
+    ["mobileAA", [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } else { [] })] call _fnc_extractVehicleClasses],
+    ["staticAA", [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call _fnc_extractVehicleClasses],
+    ["boat", [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call _fnc_extractVehicleClasses],
+    ["radar", [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses],
     ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }],
     ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
 ];
@@ -284,8 +317,16 @@ private _westCatalog = createHashMapFromArray [
     ["groundArtillery", _westArtillery],
     ["airHeli", _westHeli],
     ["airJet", _westJets],
+    ["airTransport", _westAirTransport],
+    ["airDrone", _westAirDrone],
+    ["groundDrone", _westGroundDrone],
     ["mobileAA", _westMobileAA],
     ["staticAA", _westStaticAA],
+    ["boat", _westBoat],
+    ["logisticsConstruction", _westLogisticsConstruction],
+    ["logisticsAmmo", _westLogisticsAmmo],
+    ["logisticsRespawn", _westLogisticsRespawn],
+    ["containers", _westContainers],
     ["radar", _westRadar],
     // Reuse objective composition and group counts for parity in this milestone.
     ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }],
