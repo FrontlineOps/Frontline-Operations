@@ -2,10 +2,10 @@
  * Function: FLO_fnc_seedObjectiveOwnership
  * Author: Frontline Operations Development Group
  * Description:
- *   Seeds initial EAST/WEST objective ownership using map X-axis split.
+ *   Seeds initial EAST/WEST objective ownership from the selected start position.
  *
  * Arguments:
- *   0: Center buffer width (meters) <NUMBER> - Optional
+ *   0: Start position <ARRAY>
  *
  * Returns:
  *   BOOL - true when ownership was seeded
@@ -14,61 +14,69 @@
 if (!isServer) exitWith { false };
 if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) exitWith { false };
 
-params [["_centerBuffer", -1, [0]]];
+params [["_startPos", [], [[]]]];
 
-private _midX = worldSize / 2;
-if (_centerBuffer < 0) then {
-    _centerBuffer = worldSize * 0.05;
-};
-
+private _allObjectives = keys FLO_Objectives;
+private _targetWestCount = ceil ((count _allObjectives) / 2);
 private _westOwned = [];
-private _eastOwned = [];
-private _centerObjectives = [];
+private _queue = [];
+private _queued = createHashMap;
+private _westSet = createHashMap;
 
-{
-    private _objId = _x;
-    private _objData = FLO_Objectives get _objId;
+private _seedObjId = ([_allObjectives, [], {
+    (((FLO_Objectives get _x) get "position") distance2D _startPos)
+}, "ASCEND"] call BIS_fnc_sortBy) select 0;
 
-    private _pos = _objData get "position";
-    private _xPos = _pos select 0;
+_queue pushBack _seedObjId;
+_queued set [_seedObjId, true];
 
-    if (_xPos < (_midX - _centerBuffer)) then {
+while {count _queue > 0 && {count _westOwned < _targetWestCount}} do {
+    private _objId = _queue deleteAt 0;
+    if (isNil {_westSet get _objId}) then {
+        private _objData = FLO_Objectives get _objId;
         _objData set ["owner", west];
+        FLO_Objectives set [_objId, _objData];
         _westOwned pushBack _objId;
-    } else {
-        if (_xPos > (_midX + _centerBuffer)) then {
-            _objData set ["owner", east];
-            _eastOwned pushBack _objId;
-        } else {
-            _centerObjectives pushBack _objId;
+        _westSet set [_objId, true];
+
+        private _neighbors = +(_objData get "linkedObjectives");
+        _neighbors = [_neighbors, [], {
+            (((FLO_Objectives get _x) get "position") distance2D _startPos)
+        }, "ASCEND"] call BIS_fnc_sortBy;
+
+        {
+            if (isNil {_queued get _x}) then {
+                _queue pushBack _x;
+                _queued set [_x, true];
+            };
+        } forEach _neighbors;
+
+        if (count _queue == 0 && {count _westOwned < _targetWestCount}) then {
+            private _closestUnqueued = ([_allObjectives select { isNil {_queued get _x} }, [], {
+                (((FLO_Objectives get _x) get "position") distance2D _startPos)
+            }, "ASCEND"] call BIS_fnc_sortBy) select 0;
+            _queue pushBack _closestUnqueued;
+            _queued set [_closestUnqueued, true];
         };
     };
+};
 
-    FLO_Objectives set [_objId, _objData];
-} forEach (keys FLO_Objectives);
-
-// Assign center buffer objectives to whichever side is currently weaker.
+private _eastOwned = [];
 {
-    private _objData = FLO_Objectives get _x;
-    private _toWest = (count _westOwned) <= (count _eastOwned);
-    private _owner = if (_toWest) then { west } else { east };
-    _objData set ["owner", _owner];
-    FLO_Objectives set [_x, _objData];
-    if (_toWest) then {
-        _westOwned pushBack _x;
-    } else {
+    if (isNil {_westSet get _x}) then {
+        private _objData = FLO_Objectives get _x;
+        _objData set ["owner", east];
+        FLO_Objectives set [_x, _objData];
         _eastOwned pushBack _x;
     };
-} forEach _centerObjectives;
+} forEach _allObjectives;
 
 // Ensure both sides own at least one objective.
 if ((count _westOwned) == 0 || {(count _eastOwned) == 0}) then {
-    private _all = keys FLO_Objectives;
-    if (count _all > 1) then {
-        private _sorted = [_all, [], {
-            ((FLO_Objectives get _x) get "position") select 0
+    if (count _allObjectives > 1) then {
+        private _sorted = [_allObjectives, [], {
+            (((FLO_Objectives get _x) get "position") distance2D _startPos)
         }, "ASCEND"] call BIS_fnc_sortBy;
-
         private _westObj = _sorted select 0;
         private _eastObj = _sorted select ((count _sorted) - 1);
 
@@ -76,23 +84,26 @@ if ((count _westOwned) == 0 || {(count _eastOwned) == 0}) then {
         _westObjData set ["owner", west];
         FLO_Objectives set [_westObj, _westObjData];
 
-        private _eastData = FLO_Objectives get _eastObj;
-        _eastData set ["owner", east];
-        FLO_Objectives set [_eastObj, _eastData];
+        private _eastObjData = FLO_Objectives get _eastObj;
+        _eastObjData set ["owner", east];
+        FLO_Objectives set [_eastObj, _eastObjData];
+
+        _westOwned = [_westObj];
+        _eastOwned = [_eastObj];
     };
 };
 
 // Refresh markers for seeded ownership.
 {
     [_x, FLO_Objectives get _x] call FLO_fnc_createObjectiveMarker;
-} forEach (keys FLO_Objectives);
+} forEach _allObjectives;
 
 publicVariable "FLO_Objectives";
 
-["OBJECTIVE", 2, format["Seeded ownership: WEST=%1 EAST=%2 (buffer=%3m)",
-    ({((FLO_Objectives get _x) get "owner") isEqualTo west} count (keys FLO_Objectives)),
-    ({((FLO_Objectives get _x) get "owner") isEqualTo east} count (keys FLO_Objectives)),
-    round _centerBuffer
+["OBJECTIVE", 2, format ["Seeded ownership from start position: WEST=%1 EAST=%2 (anchor=%3)",
+    ({((FLO_Objectives get _x) get "owner") isEqualTo west} count _allObjectives),
+    ({((FLO_Objectives get _x) get "owner") isEqualTo east} count _allObjectives),
+    _startPos
 ]] call FLO_fnc_log;
 
 true

@@ -114,7 +114,7 @@ if (isNil "FLO_MissionConfig" || {count keys FLO_MissionConfig == 0}) exitWith {
 };
 
 // Validate required config fields
-private _requiredFields = ["friendlyHandle", "enemyHandle", "civilianHandle"];
+private _requiredFields = ["friendlyHandle", "enemyHandle", "civilianHandle", "startPosition"];
 private _missingFields = _requiredFields select { !(_x in FLO_MissionConfig) };
 
 if (count _missingFields > 0) exitWith {

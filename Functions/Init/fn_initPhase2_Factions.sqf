@@ -201,6 +201,11 @@ if (isNil "FLO_ActivePlayerSide") then {
 
 private _fnc_extractVehicleClasses = {
     params [["_list", []]];
+    if (_list isEqualType "") then {
+        _list = [_list];
+    };
+    if !(_list isEqualType []) exitWith { [] };
+
     private _result = [];
     {
         if (_x isEqualType []) then {
@@ -223,7 +228,10 @@ private _fnc_getVarArray = {
     params [["_varName", ""]];
     if (_varName == "") exitWith { [] };
     if (isNil _varName) exitWith { [] };
-    missionNamespace getVariable [_varName, []]
+    private _value = missionNamespace getVariable [_varName, []];
+    if (_value isEqualType "") exitWith { [_value] };
+    if !(_value isEqualType []) exitWith { [] };
+    _value
 };
 
 private _fnc_buildPoolFromVars = {

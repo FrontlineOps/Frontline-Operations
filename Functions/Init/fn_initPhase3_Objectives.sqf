@@ -95,7 +95,7 @@ diag_log format ["[FLO_INIT_P3] Objective indexer created %1 objectives", count 
 
 // Seed initial EAST/WEST ownership for new runs.
 diag_log "[FLO_INIT_P3] Seeding initial objective ownership...";
-[] call FLO_fnc_seedObjectiveOwnership;
+[FLO_MissionConfig get "startPosition"] call FLO_fnc_seedObjectiveOwnership;
 
 // Build objective graph
 diag_log "[FLO_INIT_P3] Building objective graph...";
