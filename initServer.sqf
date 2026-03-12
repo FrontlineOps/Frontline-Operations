@@ -37,7 +37,7 @@ private _globalVars = createHashMapFromArray [
     ["FLO_FactionCatalog", createHashMap],
     ["FLO_GTN_CommandersBySide", createHashMap],
     ["FLO_GTN_CommandersBySideState", createHashMap],
-    ["FLO_GTN_EnablePlayerTaskBridge", false],
+    ["FLO_GTN_EnablePlayerTaskBridge", true],
     ["FLO_GTN_CommanderDebugEnabled", true],
     ["FLO_GTN_CommanderDebugRunning", false],
     ["FLO_GTN_CommanderDebugMarkers", createHashMap],
