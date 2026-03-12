@@ -80,7 +80,7 @@ while {true} do {
         private _radius = _objRecord get "radius";
         private _owner = _objRecord get "owner";
         private _progress = _objRecord get "captureProgress";
-        private _units = _pos nearEntities [["Man", "LandVehicle"], _radius];
+        private _units = _pos nearEntities ["Man", _radius];
         
         private _bluforCount = 0;
         private _opforCount = 0;
@@ -100,8 +100,7 @@ while {true} do {
         if (!isNil "FLO_virtualGroups") then {
             private _groups = FLO_virtualGroups get "_groups";
             {
-                private _groupId = _x;
-                private _gData = _groups get _groupId;
+                private _gData = _x;
                 if (_gData get "isActive") then { continue };
                 if ((_gData get "position") distance2D _pos >= _radius) then { continue };
 
@@ -109,7 +108,7 @@ while {true} do {
                 private _vCount = _gData get "unitCount";
                 if (_gSide isEqualTo east) then { _opforCount = _opforCount + _vCount };
                 if (_gSide isEqualTo west) then { _bluforCount = _bluforCount + _vCount };
-            } forEach (keys _groups);
+            } forEach (values _groups);
         };
         
         // Calculate progress (Dynamic Rate based on force difference)
