@@ -217,10 +217,10 @@ if (isNil "FLO_Intel_System") then {
 
         // Intel briefing with anticipation delay
         ["_showBriefing", {
-            params ["_source", "_callback"];
-            
+            params ["_source"];
+             
             _self set ["_pendingReveal", true];
-            
+             
             // Broadcast processing notification
             ["Processing intelligence...", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
             
@@ -229,11 +229,11 @@ if (isNil "FLO_Intel_System") then {
             
             // Delay for anticipation (2-4 seconds)
             private _delay = 2 + random 2;
-            
-            [_self, _callback, _delay] spawn {
-                params ["_system", "_cb", "_d"];
+             
+            [_self, _delay] spawn {
+                params ["_system", "_d"];
                 sleep _d;
-                
+                 
                 // Roll tier and execute
                 private _tier = _system call ["_rollRevealTier", []];
                 _system call ["_executeReveal", [_tier]];
@@ -357,7 +357,7 @@ if (isNil "FLO_Intel_System") then {
                 false
             };
             
-            _self call ["_showBriefing", [_source, nil]];
+            _self call ["_showBriefing", [_source]];
             true
         }],
 
