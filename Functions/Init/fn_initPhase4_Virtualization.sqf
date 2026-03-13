@@ -12,6 +12,8 @@
 if (!isServer) exitWith { false };
 
 diag_log "[FLO_INIT_P4] Initializing virtualization...";
+private _activationDistance = FLO_VirtualizationDistance;
+diag_log format ["[FLO_INIT_P4] Using virtualization distance: %1m", _activationDistance];
 
 // Check if loading from saved game with virtual groups
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
@@ -21,7 +23,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         diag_log "[FLO_INIT_P4] Loading virtual groups from save...";
 
         // Initialize virtualization system first
-        [] call FLO_fnc_initVirtualization;
+        [_activationDistance] call FLO_fnc_initVirtualization;
 
         private _savedGroups = _savedData get "virtualGroups";
         private _loadedCount = 0;
@@ -130,7 +132,7 @@ if (isNil "FLO_FactionCatalog") exitWith {
 
 // Initialize the virtualization system
 diag_log "[FLO_INIT_P4] Calling FLO_fnc_initVirtualization...";
-[] call FLO_fnc_initVirtualization;
+[_activationDistance] call FLO_fnc_initVirtualization;
 
 // Initialize objective groups for both sides
 diag_log "[FLO_INIT_P4] Creating objective groups for EAST/WEST...";

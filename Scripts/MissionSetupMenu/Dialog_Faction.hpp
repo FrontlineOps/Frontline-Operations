@@ -306,6 +306,46 @@ class FLO_FactionSelectDialog
 		};
 
 		// ====================================================================
+		// ROW 4: WORLD SETTINGS (Objective Size, Virtualization Distance)
+		// ====================================================================
+
+		class LabelObjectiveSizeThreshold: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Objective Size Threshold";
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 9.3 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboObjectiveSizeThreshold: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_OBJ_SIZE;
+			x = FACTION_COL1_X;
+			y = FACTION_CONTENT_Y + 10.1 * GUI_GRID_H;
+			tooltip = "Minimum structures required for generated cluster objectives";
+		};
+
+		class LabelVirtualizationDistance: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Virtualization Distance";
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + 9.3 * GUI_GRID_H;
+			w = FACTION_COL_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboVirtualizationDistance: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_VIRT_DIST;
+			x = FACTION_COL2_X;
+			y = FACTION_CONTENT_Y + 10.1 * GUI_GRID_H;
+			tooltip = "Distance at which virtual groups physically spawn";
+		};
+
+		// ====================================================================
 		// ACTION BUTTONS
 		// ====================================================================
 

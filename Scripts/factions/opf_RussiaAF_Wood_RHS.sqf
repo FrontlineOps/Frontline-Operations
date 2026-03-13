@@ -90,8 +90,3 @@ OPFOR_Group_Counts = [
     ["static_aa", 1]
 ];
 
-// ============================================================================
-// VIRTUALIZATION SETTINGS
-// ============================================================================
-OPFOR_Objective_Size_Threshold = "Medium";
-OPFOR_Virtualization_Distance = 2000;

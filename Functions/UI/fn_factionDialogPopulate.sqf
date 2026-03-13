@@ -24,6 +24,8 @@
  * FLO_IDC_FACTION_COMBO_DIFFICULTY = 1961
  * FLO_IDC_FACTION_COMBO_GTN_DEFENSE = 1962
  * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
+ * FLO_IDC_FACTION_COMBO_OBJ_SIZE = 1964
+ * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
  */
 
 disableSerialization;
@@ -193,6 +195,24 @@ private _tempoOptions = [
 ];
 
 [_tempoCombo, _tempoOptions, 1] call _fnc_addItems;
+
+// ============================================================================
+// OBJECTIVE SIZE THRESHOLD (IDC 1964)
+// ============================================================================
+
+private _objectiveSizeCombo = _display displayCtrl 1964;
+private _objectiveSizeOptions = ["Small", "Medium", "Large", "Huge"];
+
+[_objectiveSizeCombo, _objectiveSizeOptions, 1] call _fnc_addItems;
+
+// ============================================================================
+// VIRTUALIZATION DISTANCE (IDC 1965)
+// ============================================================================
+
+private _virtualizationDistanceCombo = _display displayCtrl 1965;
+private _virtualizationDistanceOptions = ["1000", "1500", "2000", "2500", "3000"];
+
+[_virtualizationDistanceCombo, _virtualizationDistanceOptions, 2] call _fnc_addItems;
 
 ["UI", 3, "Faction dialog dropdowns populated"] call FLO_fnc_log;
 

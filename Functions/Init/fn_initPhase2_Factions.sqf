@@ -311,8 +311,8 @@ private _eastCatalog = createHashMapFromArray [
     ["staticAA", [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call _fnc_extractVehicleClasses],
     ["boat", [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call _fnc_extractVehicleClasses],
     ["radar", [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses],
-    ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }],
-    ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
+    ["objectiveGroups", OPFOR_Objective_Groups],
+    ["groupCounts", OPFOR_Group_Counts]
 ];
 
 private _westCatalog = createHashMapFromArray [
@@ -336,9 +336,8 @@ private _westCatalog = createHashMapFromArray [
     ["logisticsRespawn", _westLogisticsRespawn],
     ["containers", _westContainers],
     ["radar", _westRadar],
-    // Reuse objective composition and group counts for parity in this milestone.
-    ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }],
-    ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
+    ["objectiveGroups", BLUFOR_Objective_Groups],
+    ["groupCounts", BLUFOR_Group_Counts]
 ];
 
 FLO_FactionCatalog = createHashMapFromArray [

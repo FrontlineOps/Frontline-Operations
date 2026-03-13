@@ -13,6 +13,16 @@
 
 diag_log "[ADV_INDEX] Starting fast objective indexing...";
 
+private _objectiveSizeThreshold = FLO_ObjectiveSizeThreshold;
+private _clusterThresholdMap = createHashMapFromArray [
+    ["Small", 4],
+    ["Medium", 8],
+    ["Large", 12],
+    ["Huge", 24]
+];
+private _clusterMinStructures = _clusterThresholdMap get _objectiveSizeThreshold;
+diag_log format ["[ADV_INDEX] Cluster size threshold=%1 (%2 min structures)", _objectiveSizeThreshold, _clusterMinStructures];
+
 // === PHASE 1: Get all map locations with their sizes ===
 private _center = [worldSize/2, worldSize/2, 0];
 
@@ -192,15 +202,15 @@ private _uncoveredBuildings = _allBuildings select {
 diag_log format ["[ADV_INDEX] Found %1 uncovered buildings", count _uncoveredBuildings];
 
 // Only run DBSCAN if there are uncovered buildings
-if (count _uncoveredBuildings > 10) then {
+if (count _uncoveredBuildings >= _clusterMinStructures) then {
     private _uncoveredPositions = _uncoveredBuildings apply { getPos _x };
-    private _clusters = [_uncoveredPositions, 150, 5] call FLO_fnc_dbscanCluster;  // Smaller epsilon
+    private _clusters = [_uncoveredPositions, 150, (_clusterMinStructures max 3)] call FLO_fnc_dbscanCluster;
     
     diag_log format ["[ADV_INDEX] DBSCAN found %1 additional clusters", count _clusters];
     
     {
         private _cluster = _x;
-        if (count _cluster < 5) then { continue };
+        if (count _cluster < _clusterMinStructures) then { continue };
         
         // Calculate centroid and radius
         private _sumX = 0; private _sumY = 0;

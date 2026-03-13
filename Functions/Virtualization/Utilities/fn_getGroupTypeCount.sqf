@@ -2,7 +2,7 @@
  * Function: FLO_fnc_getGroupTypeCount
  * Author: Frontline Operations Development Group
  * Description:
- * Returns the unit/vehicle count for a given group type from OPFOR_Group_Counts.
+ * Returns the unit/vehicle count for a given group type from side-scoped faction group counts.
  * Falls back to 1 and logs an error if the group type is not found.
  *
  * Arguments:
@@ -24,12 +24,8 @@ params [
 private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
 private _sideKey = _sideCtx get "sideKey";
 
-private _groupCounts = if (!isNil "FLO_FactionCatalog") then {
-    private _catalog = FLO_FactionCatalog getOrDefault [_sideKey, createHashMap];
-    _catalog getOrDefault ["groupCounts", if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }]
-} else {
-    if (!isNil "OPFOR_Group_Counts") then { OPFOR_Group_Counts } else { [] }
-};
+private _catalog = FLO_FactionCatalog get _sideKey;
+private _groupCounts = _catalog get "groupCounts";
 
 private _entry = _groupCounts select { _x select 0 isEqualTo _groupType };
 if (count _entry > 0) then {

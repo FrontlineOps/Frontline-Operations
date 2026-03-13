@@ -21,13 +21,8 @@ if (isNil "FLO_Objectives") exitWith { false };
 private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
 private _sideKey = _sideCtx get "sideKey";
 
-private _catalog = if (!isNil "FLO_FactionCatalog") then {
-    FLO_FactionCatalog getOrDefault [_sideKey, createHashMap]
-} else {
-    createHashMap
-};
-
-private _objectiveTemplatesRaw = _catalog getOrDefault ["objectiveGroups", if (!isNil "OPFOR_Objective_Groups") then { OPFOR_Objective_Groups } else { [] }];
+private _catalog = FLO_FactionCatalog get _sideKey;
+private _objectiveTemplatesRaw = _catalog get "objectiveGroups";
 private _objectiveGroupConfig = createHashMapFromArray _objectiveTemplatesRaw;
 
 ["VIRTUALIZATION", 3, format["Initializing objective groups for %1", _sideKey]] call FLO_fnc_log;

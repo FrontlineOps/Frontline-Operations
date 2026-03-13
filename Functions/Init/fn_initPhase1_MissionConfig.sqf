@@ -22,57 +22,44 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
     if (!isNil "FLO_SavedGameData") then {
         private _savedData = FLO_SavedGameData;
         // Config is stored under "config" key, not at root level
-        private _configData = _savedData getOrDefault ["config", createHashMap];
+        private _configData = _savedData get "config";
 
         diag_log format ["[FLO_INIT_P1] Loading config from save - found %1 keys in config", count keys _configData];
 
-        // Restore faction handles from the config sub-hashmap
-        if ("friendlyHandle" in _configData) then {
-            FLO_FriendlyHandle = _configData get "friendlyHandle";
-            publicVariable "FLO_FriendlyHandle";
-        };
-        if ("enemyHandle" in _configData) then {
-            FLO_EnemyHandle = _configData get "enemyHandle";
-            publicVariable "FLO_EnemyHandle";
-        };
-        if ("civilianHandle" in _configData) then {
-            FLO_CivilianHandle = _configData get "civilianHandle";
-            publicVariable "FLO_CivilianHandle";
-        };
-        if ("reputationHandle" in _configData) then {
-            FLO_ReputationHandle = _configData get "reputationHandle";
-            publicVariable "FLO_ReputationHandle";
-        };
-        if ("difficultyHandle" in _configData) then {
-            FLO_DifficultyHandle = _configData get "difficultyHandle";
-            publicVariable "FLO_DifficultyHandle";
-        };
-        if ("gtnAttackHandle" in _configData) then {
-            FLO_GTN_AttackHandle = _configData get "gtnAttackHandle";
-            publicVariable "FLO_GTN_AttackHandle";
-        };
-        if ("gtnDefenseHandle" in _configData) then {
-            FLO_GTN_DefenseHandle = _configData get "gtnDefenseHandle";
-            publicVariable "FLO_GTN_DefenseHandle";
-        };
-        if ("gtnTempoHandle" in _configData) then {
-            FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
-            publicVariable "FLO_GTN_TempoHandle";
-        };
-        if ("moneyHandle" in _configData) then {
-            FLO_MoneyHandle = _configData get "moneyHandle";
-            publicVariable "FLO_MoneyHandle";
-        };
-        if ("enemyPrec" in _configData) then {
-            EnemyPrec = _configData get "enemyPrec";
-            publicVariable "EnemyPrec";
-        };
+        // Restore required config fields from saved config
+        FLO_FriendlyHandle = _configData get "friendlyHandle";
+        FLO_EnemyHandle = _configData get "enemyHandle";
+        FLO_CivilianHandle = _configData get "civilianHandle";
+        FLO_ReputationHandle = _configData get "reputationHandle";
+        FLO_DifficultyHandle = _configData get "difficultyHandle";
+        FLO_GTN_AttackHandle = _configData get "gtnAttackHandle";
+        FLO_GTN_DefenseHandle = _configData get "gtnDefenseHandle";
+        FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
+        FLO_MoneyHandle = _configData get "moneyHandle";
+        EnemyPrec = _configData get "enemyPrec";
+        FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
+        FLO_VirtualizationDistance = _configData get "virtualizationDistance";
+
+        publicVariable "FLO_FriendlyHandle";
+        publicVariable "FLO_EnemyHandle";
+        publicVariable "FLO_CivilianHandle";
+        publicVariable "FLO_ReputationHandle";
+        publicVariable "FLO_DifficultyHandle";
+        publicVariable "FLO_GTN_AttackHandle";
+        publicVariable "FLO_GTN_DefenseHandle";
+        publicVariable "FLO_GTN_TempoHandle";
+        publicVariable "FLO_MoneyHandle";
+        publicVariable "EnemyPrec";
+        publicVariable "FLO_ObjectiveSizeThreshold";
+        publicVariable "FLO_VirtualizationDistance";
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
-            if (!isNil "FLO_FriendlyHandle" && {FLO_FriendlyHandle isEqualType createHashMap}) then {FLO_FriendlyHandle get "name"} else {"(not set)"},
-            if (!isNil "FLO_EnemyHandle" && {FLO_EnemyHandle isEqualType createHashMap}) then {FLO_EnemyHandle get "name"} else {"(not set)"}
+            FLO_FriendlyHandle get "name",
+            FLO_EnemyHandle get "name"
         ];
     };
+
+    diag_log format ["[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m", FLO_ObjectiveSizeThreshold, FLO_VirtualizationDistance];
 
     // Mark starting location as done for saved games
     StartingLocationDone = true;
@@ -114,7 +101,21 @@ if (isNil "FLO_MissionConfig" || {count keys FLO_MissionConfig == 0}) exitWith {
 };
 
 // Validate required config fields
-private _requiredFields = ["friendlyHandle", "enemyHandle", "civilianHandle", "startPosition"];
+private _requiredFields = [
+    "friendlyHandle",
+    "enemyHandle",
+    "civilianHandle",
+    "reputationHandle",
+    "difficultyHandle",
+    "gtnAttackHandle",
+    "gtnDefenseHandle",
+    "gtnTempoHandle",
+    "moneyHandle",
+    "enemyPresence",
+    "objectiveSizeThreshold",
+    "virtualizationDistance",
+    "startPosition"
+];
 private _missingFields = _requiredFields select { !(_x in FLO_MissionConfig) };
 
 if (count _missingFields > 0) exitWith {
@@ -133,41 +134,31 @@ publicVariable "FLO_FriendlyHandle";
 publicVariable "FLO_EnemyHandle";
 publicVariable "FLO_CivilianHandle";
 
-// Set other config values
-if ("reputationHandle" in FLO_MissionConfig) then {
-    FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
-    publicVariable "FLO_ReputationHandle";
-};
+// Set required config values
+FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
+FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
+FLO_GTN_AttackHandle = FLO_MissionConfig get "gtnAttackHandle";
+FLO_GTN_DefenseHandle = FLO_MissionConfig get "gtnDefenseHandle";
+FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
+FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
+EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
-if ("difficultyHandle" in FLO_MissionConfig) then {
-    FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
-    publicVariable "FLO_DifficultyHandle";
-};
+publicVariable "FLO_ReputationHandle";
+publicVariable "FLO_DifficultyHandle";
+publicVariable "FLO_GTN_AttackHandle";
+publicVariable "FLO_GTN_DefenseHandle";
+publicVariable "FLO_GTN_TempoHandle";
+publicVariable "FLO_MoneyHandle";
+publicVariable "EnemyPrec";
 
-if ("gtnAttackHandle" in FLO_MissionConfig) then {
-    FLO_GTN_AttackHandle = FLO_MissionConfig get "gtnAttackHandle";
-    publicVariable "FLO_GTN_AttackHandle";
-};
+private _objectiveSizeThreshold = FLO_MissionConfig get "objectiveSizeThreshold";
+FLO_ObjectiveSizeThreshold = _objectiveSizeThreshold;
+publicVariable "FLO_ObjectiveSizeThreshold";
 
-if ("gtnDefenseHandle" in FLO_MissionConfig) then {
-    FLO_GTN_DefenseHandle = FLO_MissionConfig get "gtnDefenseHandle";
-    publicVariable "FLO_GTN_DefenseHandle";
-};
-
-if ("gtnTempoHandle" in FLO_MissionConfig) then {
-    FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
-    publicVariable "FLO_GTN_TempoHandle";
-};
-
-if ("moneyHandle" in FLO_MissionConfig) then {
-    FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
-    publicVariable "FLO_MoneyHandle";
-};
-
-if ("enemyPresence" in FLO_MissionConfig) then {
-    EnemyPrec = FLO_MissionConfig get "enemyPresence";
-    publicVariable "EnemyPrec";
-};
+private _virtualizationDistance = FLO_MissionConfig get "virtualizationDistance";
+FLO_VirtualizationDistance = _virtualizationDistance;
+publicVariable "FLO_VirtualizationDistance";
+diag_log format ["[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m", FLO_ObjectiveSizeThreshold, FLO_VirtualizationDistance];
 
 // Mark starting location as done
 StartingLocationDone = true;

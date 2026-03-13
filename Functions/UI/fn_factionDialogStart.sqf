@@ -25,6 +25,8 @@
  * FLO_IDC_FACTION_COMBO_DIFFICULTY = 1961
  * FLO_IDC_FACTION_COMBO_GTN_DEFENSE = 1962
  * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
+ * FLO_IDC_FACTION_COMBO_OBJ_SIZE = 1964
+ * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -56,6 +58,8 @@ private _reputation = [1960] call _fnc_getSelection;
 private _difficulty = [1961] call _fnc_getSelection;
 private _defenseOps = [1962] call _fnc_getSelection;
 private _tempo = [1963] call _fnc_getSelection;
+private _objectiveSize = [1964] call _fnc_getSelection;
+private _virtualizationDistance = [1965] call _fnc_getSelection;
 
 // Validate selections
 if (_playerFaction isEqualTo "" || 
@@ -66,7 +70,9 @@ if (_playerFaction isEqualTo "" ||
     _reputation isEqualTo "" || 
     _difficulty isEqualTo "" ||
     _defenseOps isEqualTo "" ||
-    _tempo isEqualTo "") exitWith {
+    _tempo isEqualTo "" ||
+    _objectiveSize isEqualTo "" ||
+    _virtualizationDistance isEqualTo "") exitWith {
 	
 	["UI", 2, "Faction dialog validation failed - empty selections"] call FLO_fnc_log;
 	hint "Please select all options before starting the mission.";
@@ -81,8 +87,8 @@ _display closeDisplay 1;
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _attackOps, _resources, _reputation, _difficulty, _defenseOps, _tempo] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackOps", "_resources", "_reputation", "_difficulty", "_defenseOps", "_tempo"];
+[_playerFaction, _enemyFaction, _civilianFaction, _attackOps, _resources, _reputation, _difficulty, _defenseOps, _tempo, _objectiveSize, _virtualizationDistance] spawn {
+	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackOps", "_resources", "_reputation", "_difficulty", "_defenseOps", "_tempo", "_objectiveSize", "_virtualizationDistance"];
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -133,6 +139,9 @@ _display closeDisplay 1;
 		case "5s": {5};
 		default {10};
 	};
+
+	private _objectiveSizeThreshold = _objectiveSize;
+	private _virtualizationDistanceValue = parseNumber _virtualizationDistance;
 
 	// Legacy compatibility value (not consumed by current systems)
 	private _enemyPresence = 2;
@@ -190,6 +199,8 @@ _display closeDisplay 1;
 		["gtnTempoHandle", createHashMapFromArray [["value", _tempoValue], ["name", _tempo]]],
 		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
 		["enemyPresence", _enemyPresence],
+		["objectiveSizeThreshold", _objectiveSizeThreshold],
+		["virtualizationDistance", _virtualizationDistanceValue],
 		["startPosition", _startPos]
 	];
 	publicVariable "FLO_MissionConfig";

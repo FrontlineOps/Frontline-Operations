@@ -73,16 +73,18 @@ private _saveRadius = 300;
 
 try {
     private _cfg = createHashMap;
-    if (!isNil "FLO_FriendlyHandle") then { _cfg set ["friendlyHandle", FLO_FriendlyHandle]; };
-    if (!isNil "FLO_EnemyHandle") then { _cfg set ["enemyHandle", FLO_EnemyHandle]; };
-    if (!isNil "FLO_CivilianHandle") then { _cfg set ["civilianHandle", FLO_CivilianHandle]; };
-    if (!isNil "FLO_MoneyHandle") then { _cfg set ["moneyHandle", FLO_MoneyHandle]; };
-    if (!isNil "FLO_DifficultyHandle") then { _cfg set ["difficultyHandle", FLO_DifficultyHandle]; };
-    if (!isNil "FLO_ReputationHandle") then { _cfg set ["reputationHandle", FLO_ReputationHandle]; };
-    if (!isNil "FLO_GTN_AttackHandle") then { _cfg set ["gtnAttackHandle", FLO_GTN_AttackHandle]; };
-    if (!isNil "FLO_GTN_DefenseHandle") then { _cfg set ["gtnDefenseHandle", FLO_GTN_DefenseHandle]; };
-    if (!isNil "FLO_GTN_TempoHandle") then { _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle]; };
-    if (!isNil "EnemyPrec") then { _cfg set ["enemyPrec", EnemyPrec]; };
+    _cfg set ["friendlyHandle", FLO_FriendlyHandle];
+    _cfg set ["enemyHandle", FLO_EnemyHandle];
+    _cfg set ["civilianHandle", FLO_CivilianHandle];
+    _cfg set ["moneyHandle", FLO_MoneyHandle];
+    _cfg set ["difficultyHandle", FLO_DifficultyHandle];
+    _cfg set ["reputationHandle", FLO_ReputationHandle];
+    _cfg set ["gtnAttackHandle", FLO_GTN_AttackHandle];
+    _cfg set ["gtnDefenseHandle", FLO_GTN_DefenseHandle];
+    _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle];
+    _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
+    _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
+    _cfg set ["enemyPrec", EnemyPrec];
     if (!isNil "F_HQ_01") then { _cfg set ["fobType", F_HQ_01]; };
     if (!isNil "F_HQ_C_01") then { _cfg set ["fobContainerType", F_HQ_C_01]; };
     if (!isNil "F_OP_01") then { _cfg set ["opType", F_OP_01]; };

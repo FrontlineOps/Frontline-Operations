@@ -199,11 +199,9 @@ OPFOR_Group_Counts = [
 ### Performance Tuning
 
 ```sqf
-// Objective density (fewer = better performance)
-OPFOR_Objective_Size_Threshold = "Medium";  // "Small", "Medium", "Large", "Huge"
-
-// Spawn distance (lower = better performance, less immersion)
-OPFOR_Virtualization_Distance = 2000;  // Meters from player to spawn groups
+// Mission-level world settings (set in Mission Setup dialog)
+// objectiveSizeThreshold: "Small", "Medium", "Large", "Huge"
+// virtualizationDistance: 1000/1500/2000/2500/3000
 ```
 
 ### BLUFOR Faction Setup
@@ -282,7 +280,7 @@ private _notificationThresholds = [60, 30, 15, 10, 5, 2, 1];  // Minutes before 
 
 Groups exist in two states:
 - **Virtual**: Position tracked, no physical entities, minimal performance cost
-- **Active**: Physical units spawned when players within `OPFOR_Virtualization_Distance`
+- **Active**: Physical units spawned when players are within mission `virtualizationDistance`
 
 Groups automatically:
 - Spawn when players approach

@@ -17,7 +17,7 @@ F_Assault_AT = "rhsusf_army_ucp_javelin";
 F_Assault_Amm = "rhsusf_army_ucp_autoriflemana";
 F_Assault_Mg = "rhsusf_army_ucp_machinegunner";
 F_Assault_Med = "rhsusf_army_ucp_medic";
-F_Assault_Uav = "";
+F_Assault_Uav = "B_soldier_UAV_F";
 
 F_Recon_Snp = "rhsusf_usmc_recon_marpat_wd_sniper_M107";
 F_Recon_Sct = "rhsusf_usmc_recon_marpat_wd_rifleman";
@@ -25,9 +25,9 @@ F_Recon_TL = "rhsusf_usmc_recon_marpat_wd_teamleader";
 F_Recon_Mrk = "rhsusf_usmc_recon_marpat_wd_marksman";
 F_Recon_AT = "rhsusf_usmc_recon_marpat_wd_rifleman_at";
 F_Recon_Mg = "rhsusf_usmc_recon_marpat_wd_autorifleman";
-F_Recon_Eod = "";
-F_Recon_Med = "";
-F_Recon_Eng = "";
+F_Recon_Eod = F_Assault_Eod;
+F_Recon_Med = F_Assault_Med;
+F_Recon_Eng = F_Assault_Eng;
 
 F_Diver_TL = "rhsusf_socom_marsoc_teamleader";
 F_Diver_Rfl = "rhsusf_socom_marsoc_cso";
@@ -111,7 +111,7 @@ F_Tank_List = [
 ];
 
 F_Artillery_List = [ 
-    ["rhsusf_m109_usarmy ", 600],
+    ["rhsusf_m109_usarmy", 600],
     ["rhsusf_M142_usarmy_WD", 900]
 ];
 
@@ -164,3 +164,74 @@ F_SAM_List = [
     ["B_SAM_System_03_F", 500],
     ["B_AAA_System_01_F", 500]
 ];
+
+/*
+ * BLUFOR Virtualization Objective Configuration
+ * This section defines how many of each unit type should spawn at different
+ * objective subtypes produced by the objective indexing system. Subtypes
+ * include "capital", "city", "village", "local", "marine" and "cluster".
+ *
+ * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
+ */
+BLUFOR_Objective_Groups = [
+    // Capital objectives - highest concentration of defenders
+    ["capital", [
+        ["infantry", 12],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["air", 1],
+        ["armor", 1],
+        ["artillery", 1],
+        ["static_aa", 1],
+        ["mobile_aa", 1]
+    ]],
+
+    // Major cities
+    ["city", [
+        ["infantry", 7],
+        ["motorized", 2]
+    ]],
+
+    // Villages
+    ["village", [
+        ["infantry", 3]
+    ]],
+
+    // Small local objectives
+    // These tend to be military bases, strategic infrastructure, or other military-like objectives
+    ["local", [
+        ["infantry", 6],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["mobile_aa", 1]
+    ]],
+
+    // Coastal or marine facilities
+    ["marine", [
+        ["infantry", 3],
+        ["motorized", 1]
+    ]],
+
+    // Automatically generated clusters
+    ["cluster", [
+        ["infantry", 2]
+    ]]
+];
+
+/*
+ * Group Type Unit/Vehicle Counts
+ * Defines how many physical units/vehicles should be in each type of group
+ */
+BLUFOR_Group_Counts = [
+    ["infantry", 10],          // Number of individual soldiers
+    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
+    ["mechanized", 2],        // Number of APCs/IFVs
+    ["armor", 2],             // Number of tanks
+    ["helicopter", 1],        // Number of helicopters
+    ["jet", 1],               // Number of jets
+    ["air", 1],               // Number of aircraft
+    ["artillery", 3],         // Number of artillery pieces
+    ["mobile_aa", 1],         // Number of mobile AA vehicles
+    ["static_aa", 1]          // Number of static SAM launchers
+];
+

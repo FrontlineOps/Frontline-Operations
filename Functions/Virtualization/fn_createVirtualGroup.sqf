@@ -35,7 +35,7 @@ while {_groupId in _groups} do {
     _groupId = format["vgroup_%1", floor(random 999999)];
 };
 
-// Get unit count from OPFOR_Group_Counts or use provided count
+// Get unit count from side-scoped faction group counts or use provided count
 if (_unitCount <= 0) then {
     if (_groupType isEqualTo "civilian") then {
         _unitCount = 1 + floor random 3; // 1-3 civilians per group by default
