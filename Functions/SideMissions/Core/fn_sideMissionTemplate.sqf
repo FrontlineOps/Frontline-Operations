@@ -36,19 +36,19 @@ params [["_operation", ""], ["_args", []]];
 if (isNil "FLO_SM_Templates") then { FLO_SM_Templates = createHashMap; };
 if (isNil "FLO_SM_Cooldowns") then { FLO_SM_Cooldowns = createHashMap; };
 
-private _result = nil;
+private _templateResult = nil;
 
 switch (toLower _operation) do {
     // Initialize template system
     case "init": {
-        _result = true;
+        _templateResult = true;
     };
     
     // Register a mission template
     case "register": {
         _args params [["_typeName", ""], ["_template", createHashMap]];
         
-        if (_typeName == "") exitWith { _result = false; };
+        if (_typeName == "") exitWith { _templateResult = false; };
         
         // Validate required fields
         private _required = ["name", "fnc_spawn"];
@@ -60,7 +60,7 @@ switch (toLower _operation) do {
             };
         } forEach _required;
         
-        if (!_valid) exitWith { _result = false; };
+        if (!_valid) exitWith { _templateResult = false; };
         
         // Apply defaults for optional fields
         private _defaults = createHashMapFromArray [
@@ -86,19 +86,19 @@ switch (toLower _operation) do {
         
         FLO_SM_Templates set [_typeName, _template];
         diag_log format ["[FLO_SM] Registered template: %1", _typeName];
-        _result = true;
+        _templateResult = true;
     };
     
     // Get a template
     case "get": {
         _args params [["_typeName", ""]];
-        _result = FLO_SM_Templates getOrDefault [_typeName, nil];
+        _templateResult = FLO_SM_Templates getOrDefault [_typeName, nil];
     };
     
     // Check if template exists
     case "exists": {
         _args params [["_typeName", ""]];
-        _result = _typeName in FLO_SM_Templates;
+        _templateResult = _typeName in FLO_SM_Templates;
     };
     
     // Check if a mission type can spawn (cooldown + maxActive)
@@ -106,12 +106,12 @@ switch (toLower _operation) do {
         _args params [["_typeName", ""]];
 
         private _template = FLO_SM_Templates getOrDefault [_typeName, nil];
-        if (isNil "_template") exitWith { _result = false; };
+        if (isNil "_template") exitWith { _templateResult = false; };
 
         // Check cooldown
         private _cooldown = _template getOrDefault ["cooldown", 600];
         private _lastSpawn = FLO_SM_Cooldowns getOrDefault [_typeName, 0];
-        if (serverTime - _lastSpawn < _cooldown) exitWith { _result = false; };
+        if (serverTime - _lastSpawn < _cooldown) exitWith { _templateResult = false; };
 
         // Check max active
         private _maxActive = _template getOrDefault ["maxActive", -1];
@@ -126,19 +126,19 @@ switch (toLower _operation) do {
             if (_activeCount >= _maxActive) then { _canSpawn = false; };
         };
 
-        _result = _canSpawn;
+        _templateResult = _canSpawn;
     };
     
     // Mark cooldown for a type
     case "markcooldown": {
         _args params [["_typeName", ""]];
         FLO_SM_Cooldowns set [_typeName, serverTime];
-        _result = true;
+        _templateResult = true;
     };
     
     // Get all registered template names
     case "getall": {
-        _result = keys FLO_SM_Templates;
+        _templateResult = keys FLO_SM_Templates;
     };
     
     // Get all spawnable templates (not on cooldown, under max)
@@ -149,7 +149,7 @@ switch (toLower _operation) do {
                 _spawnable pushBack _x;
             };
         } forEach (keys FLO_SM_Templates);
-        _result = _spawnable;
+        _templateResult = _spawnable;
     };
 
     // Spawn a mission instance
@@ -159,7 +159,7 @@ switch (toLower _operation) do {
         private _template = FLO_SM_Templates getOrDefault [_typeName, nil];
         if (isNil "_template") exitWith { 
             diag_log format ["[FLO_SM] Spawn failed: Unknown template %1", _typeName];
-            _result = nil; 
+            _templateResult = nil; 
         };
         
         // Setup/Validate
@@ -168,19 +168,19 @@ switch (toLower _operation) do {
         
         if (!_canSpawn) exitWith { 
             diag_log format ["[FLO_SM] Spawn failed: Setup check returned false for %1", _typeName];
-            _result = nil; 
+            _templateResult = nil; 
         };
         
         // Spawn
         private _fncSpawn = _template get "fnc_spawn";
-        _result = [_typeName, _missionArgs] call _fncSpawn;
+        _templateResult = [_typeName, _missionArgs] call _fncSpawn;
     };
     
     default {
         diag_log format ["[FLO_SM] Template: Unknown operation: %1", _operation];
-        _result = nil;
+        _templateResult = nil;
     };
 };
 
-_result
-
+if (isNil "_templateResult") exitWith { nil };
+_templateResult
