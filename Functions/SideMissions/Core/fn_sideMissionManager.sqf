@@ -25,6 +25,7 @@ params [["_operation", ""], ["_args", []]];
 FLO_SM_MaxActive = 2;                               // Max concurrent missions
 FLO_SM_TickInterval = 30;                           // Check interval
 FLO_SM_SpawnInterval = 60 + random 1740;            // 1-30 min between spawns
+if (isNil "FLO_SM_MinPlayerSpawnDistance") then { FLO_SM_MinPlayerSpawnDistance = 1000; };
 if (isNil "FLO_SM_Running") then { FLO_SM_Running = false; };
 if (isNil "FLO_SM_LastSpawnCheck") then { FLO_SM_LastSpawnCheck = 0; };
 
@@ -177,12 +178,55 @@ switch (toLower _operation) do {
         private _template = ["get", [_typeName]] call FLO_fnc_sideMissionTemplate;
         if (isNil "_template") exitWith { _result = false; };
 
-        // Run setup to get position and validate
+        // Run setup to get position and validate.
+        // Retry a few times because setup is usually randomized and may pick a position near players.
         private _fnc_setup = _template getOrDefault ["fnc_setup", { [true, [0,0,0]] }];
-        private _setupResult = [_typeName] call _fnc_setup;
-        _setupResult params [["_canSpawn", false], ["_position", [0,0,0]]];
+        private _minPlayerDistance = FLO_SM_MinPlayerSpawnDistance;
+        private _maxSetupAttempts = 6;
+        private _canSpawn = false;
+        private _position = [0,0,0];
+        private _closestRejectedDistance = -1;
 
-        if (!_canSpawn) exitWith { _result = false; };
+        private _fnc_nearestPlayerDistance = {
+            params ["_pos"];
+            private _players = allPlayers select { alive _x && { side group _x in [east, west] } };
+            if (count _players == 0) exitWith { 1e9 };
+            private _nearest = 1e9;
+            {
+                private _dist = _x distance2D _pos;
+                if (_dist < _nearest) then { _nearest = _dist; };
+            } forEach _players;
+            _nearest
+        };
+
+        for "_attempt" from 1 to _maxSetupAttempts do {
+            private _setupResult = [_typeName] call _fnc_setup;
+            _setupResult params [["_setupOk", false], ["_setupPos", [0,0,0]]];
+
+            if (_setupOk) then {
+                private _nearestPlayerDist = [_setupPos] call _fnc_nearestPlayerDistance;
+                if (_nearestPlayerDist >= _minPlayerDistance) exitWith {
+                    _canSpawn = true;
+                    _position = _setupPos;
+                };
+                if (_nearestPlayerDist > _closestRejectedDistance) then {
+                    _closestRejectedDistance = _nearestPlayerDist;
+                };
+            };
+        };
+
+        if (!_canSpawn) exitWith {
+            if (_closestRejectedDistance >= 0) then {
+                diag_log format [
+                    "[FLO_SM] Spawn blocked for %1: no valid position >= %2m from players after %3 attempts (best=%4m)",
+                    _typeName,
+                    _minPlayerDistance,
+                    _maxSetupAttempts,
+                    round _closestRejectedDistance
+                ];
+            };
+            _result = false;
+        };
 
         // Create mission instance
         private _timeout = _template getOrDefault ["timeout", 3600];
