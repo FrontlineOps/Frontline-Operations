@@ -1406,13 +1406,97 @@ private _executor = createHashMapObject [[
             private _mgr = call FLO_fnc_gtnAirAssetManager;
             private _asset = _mgr call ["_requestAirAsset", [_objPos, "RECON", _self get "_ownSide"]];
 
-            if (_asset isEqualTo objNull) exitWith {
+            if (count _asset == 0) exitWith {
                 ["GTN", 2, "Air recon failed - no available air assets"] call FLO_fnc_log;
                 false
             };
 
             private _aircraft = _asset select 0;
             private _groupId = _asset select 1;
+            private _assetMode = _asset select 2;
+
+            if (_assetMode isEqualTo "VIRTUAL") exitWith {
+                private _enemySide = _gtnCmdr get "_enemySide";
+                private _groups = FLO_virtualGroups get "_groups";
+                private _scanRadius = 1500;
+
+                private _detectedCount = 0;
+                private _totalPower = 0;
+                private _hasArmor = false;
+                private _hasAA = false;
+                private _hasStatic = false;
+
+                {
+                    private _gData = _groups get _x;
+                    if ((_gData get "side") != _enemySide) then { continue };
+
+                    private _dist = (_gData get "position") distance2D _objPos;
+                    if (_dist > _scanRadius) then { continue };
+
+                    private _count = _gData get "unitCount";
+                    if (_count <= 0) then { continue };
+
+                    _detectedCount = _detectedCount + _count;
+
+                    private _type = _gData get "groupType";
+                    private _weight = switch (_type) do {
+                        case "infantry": { 1.0 };
+                        case "motorized": { 1.15 };
+                        case "mechanized": { 1.35 };
+                        case "armor": { 1.6 };
+                        case "artillery": { 0.9 };
+                        case "helicopter": { 1.25 };
+                        case "jet": { 1.4 };
+                        case "air": { 1.3 };
+                        case "mobile_aa": { 1.1 };
+                        case "static_aa": { 1.05 };
+                        default { 1.0 };
+                    };
+
+                    _totalPower = _totalPower + (_count * _weight);
+
+                    if (_type in ["armor", "mechanized"]) then { _hasArmor = true; };
+                    if (_type in ["mobile_aa", "static_aa"]) then { _hasAA = true; };
+                    if (_type isEqualTo "artillery") then { _hasStatic = true; };
+                } forEach (keys _groups);
+
+                private _posture = "UNKNOWN";
+                if (_detectedCount >= 24) then { _posture = "FORTIFIED"; };
+                if (_detectedCount >= 12 && _detectedCount < 24) then { _posture = "DEFENSIVE"; };
+                if (_detectedCount > 0 && _detectedCount < 12) then { _posture = "LIGHT"; };
+
+                private _intel = createHashMapFromArray [
+                    ["intelQuality", 0.45],
+                    ["confirmedStrength", _detectedCount],
+                    ["totalCombatPower", round _totalPower],
+                    ["hasArmor", _hasArmor],
+                    ["hasAA", _hasAA],
+                    ["hasStatic", _hasStatic],
+                    ["fortificationLevel", if (_posture isEqualTo "FORTIFIED") then { 2 } else { 0 }],
+                    ["recommendedForce", 0],
+                    ["defensePosture", _posture]
+                ];
+
+                private _ws = _gtnCmdr get "_worldState";
+                _ws call ["_updateObjectiveIntel", [_objId, _intel]];
+
+                _primData set ["dispatched", true];
+                _primData set ["reconComplete", true];
+                _primData set ["objectiveId", _objId];
+                _primData set ["aircraftGroupId", _groupId];
+                _taskNode set ["primitiveData", _primData];
+
+                ["GTN", 3, format[
+                    "Virtual air recon complete for %1 (strength=%2, power=%3, AA=%4)",
+                    _objId,
+                    _detectedCount,
+                    round _totalPower,
+                    _hasAA
+                ]] call FLO_fnc_log;
+
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
             
             // Get the real group from group data
             private _groups = FLO_virtualGroups get "_groups";

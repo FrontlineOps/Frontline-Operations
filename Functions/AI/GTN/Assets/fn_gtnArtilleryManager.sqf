@@ -2,10 +2,11 @@
     Function: FLO_fnc_gtnArtilleryManager
 
     Description:
-    Manages artillery groups that exist in the virtualization system. The manager
-    unvirtualizes a group for a fire mission, commands it to fire using LAMBS-style
-    beaten zone pattern (one round at a time with waitUntil), then executes
-    shoot-and-scoot tactics before revirtualizing.
+    Manages artillery groups that exist in the virtualization system.
+    For live areas (players/active groups nearby), the manager unvirtualizes
+    and executes a real fire mission.
+    For non-live areas, the manager keeps artillery virtual and applies a
+    virtual combat effect instead of spawning real assets.
 
     Firing pattern inspired by LAMBS Danger fnc_doArtillery:
     - Beaten zone cone pattern spreading towards the target
@@ -29,6 +30,109 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["shootAndScootTime", 90],
         ["defaultRounds", 6],
         ["defaultAccuracy", 100],  // Dispersion in meters
+
+        // Area is "live" when players or already-active groups are nearby.
+        // In non-live areas, artillery stays virtual.
+        ["_isLiveArea", {
+            params ["_targetPos", ["_radius", -1]];
+
+            if (_radius < 0) then { _radius = FLO_VirtualizationDistance; };
+
+            private _playersNear = {
+                alive _x &&
+                {side group _x in [east, west]} &&
+                {(getPosATL _x) distance2D _targetPos <= _radius}
+            } count allPlayers;
+            if (_playersNear > 0) exitWith { true };
+
+            private _groups = FLO_virtualGroups get "_groups";
+            private _activeGroupsNear = {
+                private _gData = _groups get _x;
+                private _gType = _gData get "groupType";
+                if (_gType in ["static_aa", "radar"]) then { false } else {
+                (_gData get "isActive") &&
+                {(_gData get "position") distance2D _targetPos <= _radius}
+                }
+            } count (keys _groups);
+
+            _activeGroupsNear > 0
+        }],
+
+        // Applies virtual artillery damage to nearby enemy virtual groups.
+        ["_applyVirtualFireEffect", {
+            params ["_artySide", "_targetPos", "_rounds", "_accuracy"];
+
+            private _enemySide = if (_artySide isEqualTo east) then { west } else { east };
+            private _groups = FLO_virtualGroups get "_groups";
+            private _impactRadius = ((_accuracy max 50) * 3) min 700;
+            private _candidates = [];
+
+            {
+                private _gid = _x;
+                private _gData = _groups get _gid;
+                if ((_gData get "side") != _enemySide) then { continue };
+                if (_gData get "isActive") then { continue };
+
+                private _dist = (_gData get "position") distance2D _targetPos;
+                if (_dist <= _impactRadius) then {
+                    _candidates pushBack [_gid, _gData, _dist];
+                };
+            } forEach (keys _groups);
+
+            if (count _candidates == 0) exitWith { 0 };
+
+            _candidates = [_candidates, [], {_x select 2}, "ASCEND"] call BIS_fnc_sortBy;
+
+            private _targetsToHit = ((ceil (_rounds / 4)) max 1) min 3;
+            private _totalLosses = 0;
+
+            for "_i" from 0 to ((_targetsToHit min (count _candidates)) - 1) do {
+                private _entry = _candidates select _i;
+                _entry params ["_gid", "_gData", "_dist"];
+
+                private _currentCount = _gData get "unitCount";
+                if (_currentCount <= 0) then { continue };
+
+                private _baseLoss = ceil ((_rounds * 0.35) / (_i + 1));
+                private _falloff = 1 - ((_dist / _impactRadius) * 0.5);
+                private _loss = ceil ((_baseLoss * _falloff) max 1);
+                if (_loss > _currentCount) then { _loss = _currentCount; };
+
+                private _newCount = _currentCount - _loss;
+                if (_newCount <= 0) then {
+                    _gData set ["unitCount", 0];
+                    _groups deleteAt _gid;
+                } else {
+                    _gData set ["unitCount", _newCount];
+                    _groups set [_gid, _gData];
+                };
+
+                _totalLosses = _totalLosses + _loss;
+            };
+
+            _totalLosses
+        }],
+
+        ["_scheduleVirtualMissionRelease", {
+            params ["_gid", ["_duration", 60]];
+
+            [_gid, _duration] spawn {
+                params ["_gid", "_duration"];
+                sleep _duration;
+
+                if (!isNil "FLO_virtualGroups") then {
+                    private _groups = FLO_virtualGroups get "_groups";
+                    if (_gid in _groups) then {
+                        private _gData = _groups get _gid;
+                        _gData set ["onMission", false];
+                    };
+                };
+
+                if (!isNil "FLO_GTNArtilleryManager") then {
+                    (FLO_GTNArtilleryManager get "missions") deleteAt _gid;
+                };
+            };
+        }],
 
         // =========================================================================
         // REQUEST FIRE MISSION
@@ -70,8 +174,28 @@ if (isNil "FLO_GTNArtilleryManager") then {
             private _sel = _sorted select 0;
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
+            private _isLiveArea = _self call ["_isLiveArea", [_targetPos]];
 
-            ["GTN Artillery", 3, format["Selected group %1, isActive: %2", _gid, _gdata get "isActive"]] call FLO_fnc_log;
+            ["GTN Artillery", 3, format["Selected group %1, isActive: %2, liveArea: %3", _gid, _gdata get "isActive", _isLiveArea]] call FLO_fnc_log;
+
+            // Non-live area: keep support entirely virtual.
+            if (!_isLiveArea) exitWith {
+                _gdata set ["onMission", true];
+                (_self get "missions") set [_gid, diag_tickTime];
+
+                private _losses = _self call ["_applyVirtualFireEffect", [_gdata get "side", _targetPos, _rounds, _accuracy]];
+                private _missionDuration = (40 + (_rounds * 4)) min 180;
+                _self call ["_scheduleVirtualMissionRelease", [_gid, _missionDuration]];
+
+                ["GTN Artillery", 3, format[
+                    "Virtual-only fire mission by %1 at %2 (losses=%3, duration=%4s)",
+                    _gid,
+                    _targetPos,
+                    _losses,
+                    round _missionDuration
+                ]] call FLO_fnc_log;
+                true
+            };
 
             if !(_gdata get "isActive") then {
                 [_gid, _gdata] call FLO_fnc_activateVirtualGroup;
@@ -151,4 +275,3 @@ if (isNil "FLO_GTNArtilleryManager") then {
 };
 
 FLO_GTNArtilleryManager
-

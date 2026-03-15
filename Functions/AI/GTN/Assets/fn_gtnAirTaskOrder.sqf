@@ -62,26 +62,32 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 private _asset = _mgr call ["_requestAirAsset", [_pos, _mission, _requestSide]];
                 private _air = objNull;
                 private _gid = "";
-                private _grp = grpNull;
+                private _mode = "";
 
                 // Extract aircraft and group ID from asset result
-                if (_asset isNotEqualTo objNull) then {
+                if (count _asset > 0) then {
                     _air = _asset select 0;
                     _gid = _asset select 1;
-                    _grp = group _air;
-                    _air flyInHeight _alt;
-                    ["GTN ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
-                    
-                    // Reveal intel to aircraft crew so they can engage targets
-                    // Uses knowsAbout 4 for immediate engagement capability
-                    if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
-                        private _enemySide = if (_requestSide isEqualTo east) then { west } else { east };
-                        private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_pos, 1500, crew _air, _enemySide]];
-                        ["GTN ATO", 3, format["Revealed %1 targets to CAS aircraft crew", _revealed]] call FLO_fnc_log;
+                    _mode = _asset select 2;
+                    if (_mode isEqualTo "REAL") then {
+                        _air flyInHeight _alt;
+                        ["GTN ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
+                        
+                        // Reveal intel to aircraft crew so they can engage targets
+                        // Uses knowsAbout 4 for immediate engagement capability
+                        if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
+                            private _enemySide = if (_requestSide isEqualTo east) then { west } else { east };
+                            private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_pos, 1500, crew _air, _enemySide]];
+                            ["GTN ATO", 3, format["Revealed %1 targets to CAS aircraft crew", _revealed]] call FLO_fnc_log;
+                        };
+                    } else {
+                        ["GTN ATO", 3, format["Virtual-only %1 mission assigned to %2 at %3 (no unvirtualize)", _mission, _gid, _pos]] call FLO_fnc_log;
                     };
                 } else {
                     ["GTN ATO", 2, "No available virtual air asset for task - skipping"] call FLO_fnc_log;
                 };
+
+                if (_mode isEqualTo "VIRTUAL") then { continue };
 
                 if (!isNull _air) then {
                     // Get mission duration based on type
