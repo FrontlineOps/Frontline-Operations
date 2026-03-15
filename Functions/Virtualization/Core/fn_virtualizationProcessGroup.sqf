@@ -29,6 +29,7 @@ private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
 private _realGroup = _groupData get "realGroup";
 private _onMission = _groupData get "onMission";
+private _inCombat = _groupData getOrDefault ["inCombat", false];
 private _forceVirtual = _groupData get "forceVirtual";
 private _attachedTo = _groupData get "attachedTo";
 
@@ -70,7 +71,7 @@ if (_attachedTo != "") exitWith {
 // ============================================================================
 // VIRTUAL MOVEMENT (Inactive groups)
 // ============================================================================
-if (!_isActive) then {
+if (!_isActive && !_inCombat) then {
     private _waypoints = _groupData get "waypoints";
     private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
     

@@ -149,6 +149,7 @@ switch (_wpType) do {
                 if (_groupData getOrDefault ["isReinforcing", false]) then {
                     _groupData set ["isReinforcing", false];
                     _groupData set ["onMission", false];
+                    _groupData set ["currentOrder", ""];
                     ["VIRTUALIZATION", 3, format["Group %1 reached destination - clearing reinforcement flags", _groupId]] call FLO_fnc_log;
                 };
             };

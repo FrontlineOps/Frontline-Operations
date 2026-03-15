@@ -60,6 +60,7 @@ private _groupData = createHashMapFromArray [
     ["isActive", false],
     ["realGroup", grpNull],
     ["state", "idle"],
+    ["inCombat", false],         // True while the virtual combat resolver has this group engaged
     ["waypoints", []],
     ["currentWaypointIndex", 0],
     ["comp", []],

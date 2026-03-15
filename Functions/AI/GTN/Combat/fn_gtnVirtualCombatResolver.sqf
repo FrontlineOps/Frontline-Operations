@@ -312,7 +312,28 @@ private _fnc_cleanupCombatMarkers = {
     FLO_GTN_CombatDebugMarkerOrder = _order;
 };
 
-[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_supportBonus, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL ] spawn {
+private _fnc_releaseGroupForRetask = {
+    params ["_groupId", "_gData"];
+
+    _gData set ["isReinforcing", false];
+    _gData set ["onMission", false];
+    _gData set ["currentOrder", ""];
+    _gData set ["state", "idle"];
+    _gData set ["waypoints", []];
+    _gData set ["currentWaypointIndex", 0];
+    _gData set ["pathRequestToken", -1];
+    _gData set ["pathRequestTarget", []];
+    _gData set ["pathRequestTrails", false];
+    _gData set ["pathRequestStartedAt", -1];
+
+    if (isNil "FLO_GTN_ResourceManager") exitWith {};
+    private _side = _gData get "side";
+    private _commander = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_side]];
+    if (isNil "_commander") exitWith {};
+    _commander call ["_releaseGroups", [[_groupId], ""]];
+};
+
+[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_supportBonus, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL, _fnc_releaseGroupForRetask ] spawn {
     params [
         "_interval",
         "_fnc_sideKey",
@@ -324,7 +345,8 @@ private _fnc_cleanupCombatMarkers = {
         "_fnc_recordCombatEvent",
         "_fnc_updateCombatMarker",
         "_fnc_cleanupCombatMarkers",
-        "_combatMarkerTTL"
+        "_combatMarkerTTL",
+        "_fnc_releaseGroupForRetask"
     ];
 
     waitUntil {
@@ -354,6 +376,21 @@ private _fnc_cleanupCombatMarkers = {
         } forEach (keys _groups);
 
         if ((count _eastPool) == 0 || {(count _westPool) == 0}) then {
+            {
+                private _groupId = _x;
+                private _gData = _groups get _groupId;
+                if !(_gData getOrDefault ["inCombat", false]) then { continue };
+
+                _gData set ["inCombat", false];
+                if ((_gData get "groupType") == "static_aa") then {
+                    _gData set ["state", "defending"];
+                    _gData set ["currentOrder", "AA_HOLD"];
+                    _gData set ["onMission", false];
+                } else {
+                    [_groupId, _gData] call _fnc_releaseGroupForRetask;
+                };
+            } forEach (keys _groups);
+
             [] call _fnc_cleanupCombatMarkers;
             sleep _interval;
             continue;
@@ -362,6 +399,7 @@ private _fnc_cleanupCombatMarkers = {
         private _engagementMaxDist = 400;
         private _usedWest = createHashMap;
         private _engagements = [];
+        private _engagedNow = createHashMap;
 
         {
             _x params ["_eastId", "_eastData"];
@@ -397,6 +435,8 @@ private _fnc_cleanupCombatMarkers = {
 
         {
             _x params ["_eastId", "_eastData", "_eastPos", "_westId", "_westData", "_westPos", "_engageDist"];
+            _engagedNow set [_eastId, true];
+            _engagedNow set [_westId, true];
 
             private _eastRefs = [[_eastId, _eastData]];
             private _westRefs = [[_westId, _westData]];
@@ -503,6 +543,49 @@ private _fnc_cleanupCombatMarkers = {
                 _westAfter
             ]] call FLO_fnc_log;
         } forEach _engagements;
+
+        {
+            private _groupId = _x;
+            private _gData = _groups get _groupId;
+            private _isEngaged = _engagedNow getOrDefault [_groupId, false];
+            private _wasInCombat = _gData getOrDefault ["inCombat", false];
+
+            if (_isEngaged) then {
+                if (!_wasInCombat) then {
+                    _gData set ["waypoints", []];
+                    _gData set ["currentWaypointIndex", 0];
+                    _gData set ["pathRequestToken", -1];
+                    _gData set ["pathRequestTarget", []];
+                    _gData set ["pathRequestTrails", false];
+                    _gData set ["pathRequestStartedAt", -1];
+                };
+
+                _gData set ["inCombat", true];
+                _gData set ["state", "inCombat"];
+
+                if ((_gData get "groupType") != "static_aa") then {
+                    _gData set ["isReinforcing", false];
+                    _gData set ["currentOrder", "COMBAT"];
+                    _gData set ["onMission", true];
+                } else {
+                    _gData set ["currentOrder", "AA_HOLD"];
+                    _gData set ["onMission", false];
+                };
+            } else {
+                if (_wasInCombat) then {
+                    _gData set ["inCombat", false];
+
+                    if ((_gData get "groupType") == "static_aa") then {
+                        _gData set ["state", "defending"];
+                        _gData set ["currentOrder", "AA_HOLD"];
+                        _gData set ["onMission", false];
+                    } else {
+                        [_groupId, _gData] call _fnc_releaseGroupForRetask;
+                        ["GTN_COMBAT", 3, format["Group %1 disengaged and released for retasking", _groupId]] call FLO_fnc_log;
+                    };
+                };
+            };
+        } forEach (keys _groups);
 
         [] call _fnc_cleanupCombatMarkers;
         if (_eventsChanged) then {

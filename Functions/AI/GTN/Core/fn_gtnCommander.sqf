@@ -589,6 +589,7 @@ private _gtnCommander = createHashMapObject [[
             private _groupType = _gData get "groupType";
             private _currentOrder = _gData get "currentOrder";
             private _side = _gData get "side";
+            private _inCombat = _gData getOrDefault ["inCombat", false];
 
             // Skip non-military or wrong side
             if (_groupType in ["civilian", "ambient"]) then { continue };
@@ -596,6 +597,7 @@ private _gtnCommander = createHashMapObject [[
 
             // Skip air and artillery assets
             if (_groupType in ["helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
+            if (_inCombat) then { continue };
 
             // Skip already tasked groups
             if (_groupId in _gtnTasked) then { continue };
@@ -1188,6 +1190,7 @@ private _gtnCommander = createHashMapObject [[
             ["wrongSide", 0],
             ["wrongType", 0],
             ["airArtillery", 0],
+            ["inCombat", 0],
             ["gtnTasked", 0],
             ["busyOrder", 0],
             ["available", 0]
@@ -1204,6 +1207,7 @@ private _gtnCommander = createHashMapObject [[
             private _groupType = _gData get "groupType";
             private _currentOrder = _gData get "currentOrder";
             private _side = _gData get "side";
+            private _inCombat = _gData getOrDefault ["inCombat", false];
             
             // Track order distribution
             private _orderKey = if (_currentOrder == "") then { "IDLE" } else { _currentOrder };
@@ -1213,6 +1217,7 @@ private _gtnCommander = createHashMapObject [[
             if (_side != _ownSide) exitWith { _stats set ["wrongSide", (_stats get "wrongSide") + 1] };
             if (_groupType in ["civilian", "ambient"]) exitWith { _stats set ["wrongType", (_stats get "wrongType") + 1] };
             if (_groupType in ["helicopter", "jet", "air", "artillery"]) exitWith { _stats set ["airArtillery", (_stats get "airArtillery") + 1] };
+            if (_inCombat) exitWith { _stats set ["inCombat", (_stats get "inCombat") + 1] };
             if (_groupId in _gtnTasked) exitWith { _stats set ["gtnTasked", (_stats get "gtnTasked") + 1] };
             if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", "DEFEND", ""])}) exitWith { 
                 _stats set ["busyOrder", (_stats get "busyOrder") + 1] 
@@ -1235,6 +1240,7 @@ private _gtnCommander = createHashMapObject [[
             _stats get "available"
         ]] call FLO_fnc_log;
         
+        ["GTN", 3, format["GROUP AVAILABILITY DETAIL: inCombat=%1", _stats get "inCombat"]] call FLO_fnc_log;
         ["GTN", 3, format["ORDER BREAKDOWN: %1", _orderStr joinString ", "]] call FLO_fnc_log;
         
         // Return stats for programmatic use
