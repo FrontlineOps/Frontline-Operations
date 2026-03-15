@@ -134,21 +134,55 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
     if (count _sanitizedWaypoints > 0) then {
         private _firstWaypoint = _sanitizedWaypoints select 0;
         private _endPos = _firstWaypoint select 0;
+        private _pathStart = +_currentPos;
+        private _pathEnd = +_endPos;
+        if (count _pathStart > 2) then { _pathStart resize 2; };
+        if (count _pathEnd > 2) then { _pathEnd resize 2; };
         
         // Temporary storage for waypoint settings
         _groupData set ["tempWaypointSettings", _firstWaypoint];
         _groupData set ["tempWaypointCount", 0];
         _groupData set ["state", "planning"];
         
-        // Create a callback function using compileFinal
-        private _callbackCode = compileFinal {
+        // Path callback
+        private _callbackCode = {
             params ["_status", "_posArray", "_args"];
             _args params ["_groupId","_waypointSettings"];
             
             if (!_status) exitWith {
                 ["VIRTUALIZATION", 2, format["Pathfinding failed for group %1", _groupId]] call FLO_fnc_log;
-                // Call fallback function
-                [false, _posArray, _args] call FLO_fnc_pathfindingFallbackCode;
+
+                private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+                private _wpType = _waypointSettings select 1;
+                private _wpBehavior = _waypointSettings select 2;
+                private _wpSpeed = _waypointSettings select 3;
+                private _wpFormation = _waypointSettings select 4;
+                private _wpMode = _waypointSettings select 5;
+                private _wpCompletionRadius = _waypointSettings select 6;
+                private _directWaypoints = [_waypointSettings];
+
+                _groupData set ["waypoints", _directWaypoints];
+                _groupData set ["patrolConfig", []];
+                _groupData set ["autoPatrol", false];
+                _groupData set ["state", "moving"];
+                _groupData set ["currentWaypointIndex", 0];
+                _groupData set ["lastMoveTime", diag_tickTime];
+
+                if (_groupData get "isActive") then {
+                    private _realGroup = _groupData get "realGroup";
+                    if (!isNull _realGroup) then {
+                        [_realGroup] call CBA_fnc_clearWaypoints;
+
+                        private _wpPos = _waypointSettings select 0;
+                        private _wp = _realGroup addWaypoint [_wpPos, 0];
+                        _wp setWaypointType _wpType;
+                        _wp setWaypointBehaviour _wpBehavior;
+                        _wp setWaypointSpeed _wpSpeed;
+                        _wp setWaypointFormation _wpFormation;
+                        _wp setWaypointCombatMode _wpMode;
+                        _wp setWaypointCompletionRadius _wpCompletionRadius;
+                    };
+                };
             };
             
             // Extract waypoint settings
@@ -235,54 +269,9 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             };
         };
         
-        // Define the fallback function
-        FLO_fnc_pathfindingFallbackCode = compileFinal {
-            params ["_status", "_posArray", "_args"];
-            _args params ["_groupId","_originalWaypoint"];
-            
-            ["VIRTUALIZATION", 2, format["Pathfinding failed for group %1, falling back to direct waypoint", _groupId]] call FLO_fnc_log;
-            
-            // Get the group data again
-            private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
-            // Create a single direct waypoint
-            private _directWaypoints = [_originalWaypoint];
-            _groupData set ["waypoints", _directWaypoints];
-            
-            // Set group state to moving
-            _groupData set ["state", "moving"];
-            _groupData set ["currentWaypointIndex", 0];
-            _groupData set ["lastMoveTime", diag_tickTime];
-            
-            // If the group is active, update its real waypoints
-            if (_groupData get "isActive") then {
-                private _realGroup = _groupData get "realGroup";
-                if (!isNull _realGroup) then {
-                    // Clear existing waypoints
-                    [_realGroup] call CBA_fnc_clearWaypoints;
-
-                    // Add direct waypoint
-                    private _wpPos = _originalWaypoint select 0;
-                    private _wpType = _originalWaypoint select 1;
-                    private _wpBehavior = _originalWaypoint select 2;
-                    private _wpSpeed = _originalWaypoint select 3;
-                    private _wpFormation = _originalWaypoint select 4;
-                    private _wpMode = _originalWaypoint select 5;
-                    private _wpCompletionRadius = _originalWaypoint select 6;
-                    
-                    private _wp = _realGroup addWaypoint [_wpPos, 0];
-                    _wp setWaypointType _wpType;
-                    _wp setWaypointBehaviour _wpBehavior;
-                    _wp setWaypointSpeed _wpSpeed;
-                    _wp setWaypointFormation _wpFormation;
-                    _wp setWaypointCombatMode _wpMode;
-                    _wp setWaypointCompletionRadius _wpCompletionRadius;
-                };
-            };
-        };
-        
         // Start the pathfinding process
-        ["VIRTUALIZATION", 3, format["Starting pathfinding for group %1 from %2 to %3", _groupId, _currentPos, _endPos]] call FLO_fnc_log;
-        [_currentPos, _endPos, _callbackCode, [_groupId, _firstWaypoint], _allowTrails] call FLO_fnc_findRoadPath;
+        ["VIRTUALIZATION", 3, format["Starting pathfinding for group %1 from %2 to %3", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
+        [_pathStart, _pathEnd, _callbackCode, [_groupId, _firstWaypoint], _allowTrails] call FLO_fnc_findRoadPath;
     };
 };
 
@@ -290,4 +279,4 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
 ["VIRTUALIZATION", 3, format["Updated waypoints for virtual group %1", _groupId]] call FLO_fnc_log;
 
 // Return success
-true 
+true

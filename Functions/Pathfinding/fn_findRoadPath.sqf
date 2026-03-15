@@ -38,8 +38,13 @@ params [
     ["_trails",false,[true]]
 ];
 
+if (count _startPos > 2) then { _startPos resize 2; };
+if (count _endPos > 2) then { _endPos resize 2; };
+
 private _search = createhashmapobject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos]];
-_search set ["Doctrine", [FLO_PF_RoadDoctrine_V,FLO_PF_RoadDoctrine_M] select _trails];
+private _doctrine = FLO_PF_RoadDoctrine_V;
+if (_trails) then { _doctrine = FLO_PF_RoadDoctrine_M; };
+_search set ["Doctrine", _doctrine];
 _search set ["Callback", _code];
 _search set ["CallbackArgs", _args];
 FLO_PF_Scheduler call ["AddItem", _search];
