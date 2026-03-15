@@ -116,6 +116,86 @@ private _processedVehicles = [];
 
 _groupData set ["comp", _comp];
 
+// --- SYNC VIRTUAL STRENGTH FROM REAL BATTLE OUTCOME ---
+private _groupType = _groupData get "groupType";
+private _aliveUnitCount = { alive _x } count units _realGroup;
+
+// Track surviving vehicle assets from alive crew/operators.
+// assignedVehicle catches dismounted crew that still own a live vehicle.
+private _assetVehicles = [];
+{
+    if (!alive _x) then { continue };
+
+    private _veh = vehicle _x;
+    if (_veh == _x) then {
+        _veh = assignedVehicle _x;
+    };
+
+    if (!isNull _veh && {_veh != _x} && {alive _veh}) then {
+        _assetVehicles pushBackUnique _veh;
+    };
+} forEach units _realGroup;
+
+private _syncedCount = switch (_groupType) do {
+    case "motorized";
+    case "mechanized";
+    case "armor";
+    case "helicopter";
+    case "jet";
+    case "air";
+    case "artillery";
+    case "mobile_aa";
+    case "civilianVehicle";
+    case "civ_car": {
+        count _assetVehicles
+    };
+
+    case "static_aa": {
+        private _side = _groupData get "side";
+        private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+        private _catalog = FLO_FactionCatalog get _sideKey;
+        private _radarTypes = _catalog get "radar";
+
+        {
+            private _vehType = typeOf _x;
+            !(_vehType in _radarTypes)
+        } count _assetVehicles
+    };
+
+    default {
+        _aliveUnitCount
+    };
+};
+
+_groupData set ["unitCount", _syncedCount];
+["VIRTUALIZATION", 4, format["Synced unitCount for %1 (%2): %3", _groupId, _groupType, _syncedCount]] call FLO_fnc_log;
+
+// Keep composition aligned with surviving real assets/units so next activation
+// recreates what actually survived.
+private _aliveUnits = units _realGroup select { alive _x };
+private _syncedComp = switch (_groupType) do {
+    case "motorized";
+    case "mechanized";
+    case "armor";
+    case "helicopter";
+    case "jet";
+    case "air";
+    case "artillery";
+    case "mobile_aa";
+    case "static_aa";
+    case "civilianVehicle";
+    case "civ_car": {
+        _assetVehicles apply { typeOf _x }
+    };
+
+    default {
+        _aliveUnits apply { typeOf _x }
+    };
+};
+
+_groupData set ["comp", _syncedComp];
+["VIRTUALIZATION", 4, format["Synced comp for %1 (%2): %3 entries", _groupId, _groupType, count _syncedComp]] call FLO_fnc_log;
+
 
 // ==========================================================================================
 // CLEANUP & DELETION
