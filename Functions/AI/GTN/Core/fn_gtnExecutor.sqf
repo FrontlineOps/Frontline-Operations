@@ -717,6 +717,7 @@ private _executor = createHashMapObject [[
 
             // === CHECK IF ASSAULT IS FEASIBLE ===
             private _ownSide = _cmdr get "_ownSide";
+            private _enemySide = _cmdr get "_enemySide";
             private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _objPos, _requiredPower, _ownSide]];
             private _availablePower = _feasibility get "powerAvailable";
             private _isFeasible = _feasibility get "feasible";
@@ -825,8 +826,8 @@ private _executor = createHashMapObject [[
             // Reveal intel to attacking groups so they can engage enemies
             {
                 private _gId = _x;
-                private _groups = FLO_virtualGroups get "_groups";
-                private _gData = _groups get _gId;
+                private _allGroups = FLO_virtualGroups get "_groups";
+                private _gData = _allGroups get _gId;
                 if (!isNil "_gData") then {
                     private _realGroup = _gData get "realGroup";
                     if (!isNull _realGroup) then {
