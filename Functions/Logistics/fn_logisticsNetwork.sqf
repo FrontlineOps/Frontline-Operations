@@ -173,7 +173,7 @@ if (isNil "FLO_Logistics_Network") then {
             if (count _enemyObjectives == 0) exitWith { [] };
 
             private _minEnemyDistance = 1500;
-            private _maxEnemyDistance = 7000;
+            private _maxEnemyDistance = 3000;
             private _targets = [];
 
             {
