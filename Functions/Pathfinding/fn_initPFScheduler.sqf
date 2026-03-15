@@ -32,7 +32,7 @@ XPS_typ_JobScheduler = [
 	["_handle",nil],
 	["_queueObject", nil],
 	["CurrentItem",nil],
-	["ProcessesPerFrame",10],
+	["ProcessesPerFrame",60],
 	["dequeue",compileFinal {
 		private _next = _self get "_queueObject" call ["Dequeue"];
 		if (isNil {_next}) then {
@@ -52,8 +52,28 @@ XPS_typ_JobScheduler = [
 		};
 		
 		if !(isNil {_self get "CurrentItem"}) then {
-			if (_self call ["processCurrent"]) then {
+			private _item = _self get "CurrentItem";
+
+			if !(isNil {_item get "BudgetRemaining"}) then {
+				private _budget = _item get "BudgetRemaining";
+				_budget = _budget - 1;
+				_item set ["BudgetRemaining", _budget];
+				if (_budget <= 0) exitWith {
+					private _cbArgs = _item get "CallbackArgs";
+					private _key = if (_cbArgs isEqualType [] && {count _cbArgs > 0}) then { _cbArgs select 0 } else { "unknown" };
+					["PATHFINDING", 2, format ["Path search budget exhausted: %1", _key]] call FLO_fnc_log;
+					_item set ["Status", "FAILURE"];
+					_self call ["finalizeCurrent"];
+				};
+			};
+
+			private _done = _item call ["ProcessNextNode"];
+			if (_done) then {
 				_self call ["finalizeCurrent"];
+			} else {
+				// Time-slice pending searches to avoid a single long route starving the queue.
+				_self get "_queueObject" call ["Enqueue", _item];
+				_self call ["dequeue"];
 			};
 		};
 	}],
@@ -68,10 +88,21 @@ XPS_typ_JobScheduler = [
 		private _handle = _self get "_handle";
 		if (isNil "_handle") then {
 			_handle = addMissionEventHandler ["EachFrame",compileFinal { 
+				private _sched = _thisArgs#0;
 				private _count = 0;
-				private _limit = _thisArgs#0 get "ProcessesPerFrame";
+				private _base = _sched get "ProcessesPerFrame";
+				private _queued = (_sched get "_queueObject") call ["Count"];
+				private _limit = _base;
+				if (_queued > 300) then {
+					_limit = _base * 4;
+				} else {
+					if (_queued > 100) then {
+						_limit = _base * 2;
+					};
+				};
+				if (_limit > 400) then { _limit = 400; };
 				while {_count < _limit} do {
-					_thisArgs#0 call ["preprocessCurrent"]; 
+					_sched call ["preprocessCurrent"];
 					_count = _count + 1;
 				};
 			}, [_self]];

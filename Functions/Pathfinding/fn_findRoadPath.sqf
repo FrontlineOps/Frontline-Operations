@@ -41,10 +41,80 @@ params [
 if (count _startPos > 2) then { _startPos resize 2; };
 if (count _endPos > 2) then { _endPos resize 2; };
 
-private _search = createhashmapobject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos]];
+if (isNil "FLO_PF_RequestCache") then {
+    FLO_PF_RequestCache = createHashMap;
+};
+if (isNil "FLO_PF_RequestPending") then {
+    FLO_PF_RequestPending = createHashMap;
+};
+if (isNil "FLO_PF_RequestTTL_Success") then {
+    FLO_PF_RequestTTL_Success = 300;
+};
+if (isNil "FLO_PF_RequestTTL_Fail") then {
+    FLO_PF_RequestTTL_Fail = 20;
+};
+if (isNil "FLO_PF_RequestCellSize") then {
+    FLO_PF_RequestCellSize = 25;
+};
+
+private _cellSize = FLO_PF_RequestCellSize;
+private _cellKey = {
+    params ["_pos", "_size"];
+    format ["%1_%2", round ((_pos select 0) / _size), round ((_pos select 1) / _size)]
+};
+
+private _sKey = [_startPos, _cellSize] call _cellKey;
+private _eKey = [_endPos, _cellSize] call _cellKey;
+private _routeKey = format ["%1>%2|%3", _sKey, _eKey, _trails];
+
+if (_routeKey in FLO_PF_RequestCache) then {
+    private _cached = FLO_PF_RequestCache get _routeKey;
+    _cached params ["_status", "_path", "_expiresAt"];
+    if (diag_tickTime < _expiresAt) exitWith {
+        [_status, +_path, _args] call _code;
+    };
+    FLO_PF_RequestCache deleteAt _routeKey;
+};
+
+if (_routeKey in FLO_PF_RequestPending) exitWith {
+    private _waiters = FLO_PF_RequestPending get _routeKey;
+    _waiters pushBack [_code, _args];
+    FLO_PF_RequestPending set [_routeKey, _waiters];
+};
+
+FLO_PF_RequestPending set [_routeKey, [[_code, _args]]];
+
+private _dispatch = {
+    params ["_status", "_posArray", "_cbArgs"];
+    _cbArgs params ["_key"];
+
+    private _waiters = FLO_PF_RequestPending get _key;
+    FLO_PF_RequestPending deleteAt _key;
+    if (isNil "_waiters") exitWith {};
+
+    private _resolved = if (_status && {_posArray isEqualType []}) then { +_posArray } else { [] };
+    private _ttl = if (_status && {count _resolved > 0}) then { FLO_PF_RequestTTL_Success } else { FLO_PF_RequestTTL_Fail };
+    FLO_PF_RequestCache set [_key, [_status, _resolved, diag_tickTime + _ttl]];
+
+    {
+        _x params ["_cb", "_userArgs"];
+        [_status, +_resolved, _userArgs] call _cb;
+    } forEach _waiters;
+};
+
+private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos]];
 private _doctrine = FLO_PF_RoadDoctrine_V;
 if (_trails) then { _doctrine = FLO_PF_RoadDoctrine_M; };
 _search set ["Doctrine", _doctrine];
-_search set ["Callback", _code];
-_search set ["CallbackArgs", _args];
+_search set ["Callback", _dispatch];
+_search set ["CallbackArgs", [_routeKey]];
+
+private _dist = _startPos distance2D _endPos;
+private _budget = 800 + round (_dist * 0.35);
+if (_trails) then { _budget = round (_budget * 1.25); };
+if (_budget < 800) then { _budget = 800; };
+if (_budget > 12000) then { _budget = 12000; };
+_search set ["BudgetInitial", _budget];
+_search set ["BudgetRemaining", _budget];
+
 FLO_PF_Scheduler call ["AddItem", _search];
