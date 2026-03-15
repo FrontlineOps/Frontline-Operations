@@ -43,7 +43,9 @@ private _isNavalGroup = _groupType in ["boat", "naval", "submarine"];
 // Handle water waypoints for non-naval groups
 private _sanitizedWaypoints = [];
 {
+    if !(_x isEqualType [] && {count _x >= 7}) then { continue };
     private _wpPos = _x select 0;
+    if !(_wpPos isEqualType [] && {count _wpPos >= 2}) then { continue };
 
     if (!_isNavalGroup && {surfaceIsWater _wpPos}) then {
         // Find safe land position for non-naval group

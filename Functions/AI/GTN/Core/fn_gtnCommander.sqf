@@ -687,6 +687,11 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        if !(_pos isEqualType [] && {count _pos >= 2}) exitWith {
+            ["GTN", 2, format["Cannot order move - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
+            false
+        };
+
         // Create waypoints for movement
         private _combatMode = switch (_mode) do {
             case "COMBAT": { "RED" };
@@ -719,6 +724,11 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        if !(_pos isEqualType [] && {count _pos >= 2}) exitWith {
+            ["GTN", 2, format["Cannot order attack - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
+            false
+        };
+
         // Create attack waypoints
         private _waypoints = [
             [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 75],
@@ -743,6 +753,11 @@ private _gtnCommander = createHashMapObject [[
         private _gData = _groups getOrDefault [_groupId, nil];
         if (isNil "_gData") exitWith {
             ["GTN", 2, format["Cannot order defend - group %1 not found", _groupId]] call FLO_fnc_log;
+            false
+        };
+
+        if !(_pos isEqualType [] && {count _pos >= 2}) exitWith {
+            ["GTN", 2, format["Cannot order defend - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
             false
         };
 
@@ -800,6 +815,8 @@ private _gtnCommander = createHashMapObject [[
     // Check if groups have arrived at a position (within threshold)
     ["_checkGroupsArrived", {
         params ["_groupIds", "_pos", ["_threshold", 100]];
+
+        if !(_pos isEqualType [] && {count _pos >= 2}) exitWith { false };
 
         private _groups = FLO_virtualGroups get "_groups";
         private _arrivedCount = 0;

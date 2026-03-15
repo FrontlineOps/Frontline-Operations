@@ -355,7 +355,7 @@ private _executor = createHashMapObject [[
                     
                     if (_ws call ["_isIntelFresh", [_intelKey, _intelTimeout]]) then {
                         ["GTN", 3, format["Staging for %1: Fresh intel found, proceeding", _intelKey]] call FLO_fnc_log;
-                        _ctx set ["status", "SUCCESS"];
+                        _hasGoodIntel = true;
                         // Clear wait time so next run doesn't wait
                         _executor call ["_storeTaskData", ["STAGING_INTEL_WAIT_START", -1]];
                     };
@@ -430,6 +430,12 @@ private _executor = createHashMapObject [[
             private _requiresAA = _completedData getOrDefault ["STAGING_REQUIRES_AA", false];
             private _currentGroups = _completedData getOrDefault ["STAGING_GROUPS", []];
             private _accumulatedPower = _completedData getOrDefault ["STAGING_ACCUMULATED_POWER", 0];
+
+            if !(_stagingPos isEqualType [] && {count _stagingPos >= 2}) exitWith {
+                ["GTN", 2, format["Staging assign failed - invalid STAGING_POSITION for %1: %2", _objId, _stagingPos]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // === GET CAPABILITY ANALYZER ===
             private _analyzer = FLO_GTN_CapabilityAnalyzer;
@@ -546,6 +552,12 @@ private _executor = createHashMapObject [[
             private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
             private _requiredPower = _completedData getOrDefault ["STAGING_REQUIRED_POWER", 100];
             private _accumulatedPower = _completedData getOrDefault ["STAGING_ACCUMULATED_POWER", 0];
+
+            if !(_stagingPos isEqualType [] && {count _stagingPos >= 2}) exitWith {
+                ["GTN", 2, format["Staging wait failed - invalid STAGING_POSITION: %1", _stagingPos]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             if (count _groups == 0) exitWith {
                 // No groups - fail
