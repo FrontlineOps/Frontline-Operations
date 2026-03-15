@@ -855,6 +855,7 @@ private _gtnCommander = createHashMapObject [[
         {
             private _groupId = _x;
             private _gData = _groups get _groupId;
+            if (isNil "_gData") then { continue };
 
             if ((_gData get "groupType") != "static_aa") then { continue };
             if ((_gData get "side") != _ownSide) then { continue };
