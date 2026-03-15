@@ -518,9 +518,9 @@ if (_isTransport && count _attachedGroups > 0) then {
     } forEach _attachedGroups;
 };
 
-// Disable AI pathfinding if objective is civ_building
-private _objective = _groupData get "objective";
-if (_objective isEqualTo "civ_building") then {
+// Disable AI pathfinding if home objective is civ_building
+private _homeObjective = _groupData get "homeObjective";
+if (_homeObjective isEqualTo "civ_building") then {
     {
         _x disableAI "PATH";
         _x disableAI "MOVE";

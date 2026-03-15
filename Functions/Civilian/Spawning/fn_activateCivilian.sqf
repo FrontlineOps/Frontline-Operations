@@ -34,9 +34,9 @@ switch (_groupType) do {
     case "civ_building": {
         _realGroup = createGroup [civilian, true];
         private _civUnits = [];
-        private _objective = _groupData get "objective";
+        private _homeObjective = _groupData get "homeObjective";
         
-        if (_objective isEqualTo "civ_building" || _groupType isEqualTo "civ_building") then {
+        if (_homeObjective isEqualTo "civ_building" || _groupType isEqualTo "civ_building") then {
             // Building civilians spawn at exact stored position
             for "_i" from 1 to _unitCount do {
                 private _unitType = selectRandom CivMenArray;

@@ -394,11 +394,16 @@ try {
                             };
                         } forEach _rawWaypoints;
                     };
+                    private _homeObjective = if ("homeObjective" in _gData) then {
+                        _gData get "homeObjective"
+                    } else {
+                        _gData getOrDefault ["objective", ""]
+                    };
 
                     _vgHash set [_x, createHashMapFromArray [
                         ["position", _pos],
                         ["groupType", _gData getOrDefault ["groupType", "infantry_squad"]],
-                        ["objective", _gData getOrDefault ["objective", ""]],
+                        ["homeObjective", _homeObjective],
                         ["unitCount", _gData getOrDefault ["unitCount", 4]],
                         ["side", _gData getOrDefault ["side", east]],
                         ["state", _gData getOrDefault ["state", "idle"]],

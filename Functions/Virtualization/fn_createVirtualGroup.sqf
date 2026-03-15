@@ -8,7 +8,7 @@
  * 0: Position <ARRAY> - [x, y, z] where the group will be created
  * 1: Group Type <STRING> - "infantry", "motorized", "mechanized", "armor", "helicopter", "jet", "air", "artillery", "civilian", "civilianVehicle"
  * 2: Group Config <CONFIG> - (Optional) Group config from CfgGroups if using a predefined group
- * 3: Objective <STRING> - (Optional) ID of the objective this group is tied to
+ * 3: Home Objective <STRING> - (Optional) ID of the objective this group is tied to
  * 4: Unit Count <NUMBER> - (Optional, default based on group type) Number of units in infantry groups
  * 5: Side <SIDE> - (Optional, default: east) Side of the group
  *
@@ -23,7 +23,7 @@ params [
     ["_position", [0,0,0], [[]]],
     ["_groupType", "infantry", [""]],
     ["_groupCfg", configNull, [configNull, []]],
-    ["_objective", "", [""]],
+    ["_homeObjective", "", [""]],
     ["_unitCount", -1, [0]],
     ["_side", east, [east]]
 ];
@@ -54,7 +54,7 @@ private _groupData = createHashMapFromArray [
     ["spawnPosition", _position],
     ["groupType", _groupType],
     ["groupCfg", _groupCfg],
-    ["objective", _objective],
+    ["homeObjective", _homeObjective],
     ["unitCount", _unitCount],
     ["side", _side],
     ["isActive", false],

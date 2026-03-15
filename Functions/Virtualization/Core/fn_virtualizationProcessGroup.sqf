@@ -110,9 +110,9 @@ if (!_isActive) then {
 
             // Generate patrol waypoints around current position or objective
             private _patrolCenter = _position;
-            private _objective = _groupData get "objective";
-            if (_objective != "" && !isNil "FLO_Objectives") then {
-                private _objData = FLO_Objectives get _objective;
+            private _homeObjective = _groupData get "homeObjective";
+            if (_homeObjective != "" && !isNil "FLO_Objectives") then {
+                private _objData = FLO_Objectives get _homeObjective;
                 if (!isNil "_objData") then {
                     _patrolCenter = _objData get "position";
                 };

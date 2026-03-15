@@ -37,13 +37,18 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                 if (!isNil "_groupData") then {
                     // Position must exist - if missing, save data is corrupt
                     private _pos = _groupData get "position";
+                    private _homeObjective = if ("homeObjective" in _groupData) then {
+                        _groupData get "homeObjective"
+                    } else {
+                        _groupData getOrDefault ["objective", ""]
+                    };
 
                     // Create the virtual group
                     private _newId = [
                         _pos,
                         _groupData getOrDefault ["groupType", "infantry_squad"],
                         nil,
-                        _groupData getOrDefault ["objective", ""],
+                        _homeObjective,
                         _groupData getOrDefault ["unitCount", 4],
                         _groupData getOrDefault ["side", east]
                     ] call FLO_fnc_createVirtualGroup;

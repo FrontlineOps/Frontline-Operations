@@ -66,6 +66,50 @@ while {true} do {
         } forEach _objKeys;
     } forEach _allPlayers;
 
+    // Pre-compute virtual contribution per objective once per tick.
+    // A virtual group contributes to exactly one objective: the nearest
+    // objective center among those whose area currently contains the group.
+    private _virtualObjectiveCounts = createHashMap;
+    {
+        _virtualObjectiveCounts set [_x, [0, 0]]; // [westCount, eastCount]
+    } forEach _objKeys;
+
+    if (!isNil "FLO_virtualGroups") then {
+        private _groups = FLO_virtualGroups get "_groups";
+        {
+            private _gData = _x;
+            if (_gData get "isActive") then { continue };
+
+            private _gPos = _gData get "position";
+            private _bestObjId = "";
+            private _bestDist = 1000000000;
+
+            {
+                private _oId = _x;
+                private _oData = FLO_Objectives get _oId;
+                private _dist = _gPos distance2D (_oData get "position");
+                if (_dist < (_oData get "radius") && {_dist < _bestDist}) then {
+                    _bestDist = _dist;
+                    _bestObjId = _oId;
+                };
+            } forEach _objKeys;
+
+            if (_bestObjId == "") then { continue };
+
+            private _entry = _virtualObjectiveCounts get _bestObjId;
+            private _vCount = _gData get "unitCount";
+            private _gSide = _gData get "side";
+
+            if (_gSide isEqualTo west) then {
+                _entry set [0, (_entry select 0) + _vCount];
+            };
+            if (_gSide isEqualTo east) then {
+                _entry set [1, (_entry select 1) + _vCount];
+            };
+            _virtualObjectiveCounts set [_bestObjId, _entry];
+        } forEach (values _groups);
+    };
+
     // === UPDATE LOGIC FUNCTION ===
     private _fnc_updateObjective = {
         params ["_id"];
@@ -96,20 +140,10 @@ while {true} do {
             };
         } forEach _units;
 
-        // Count virtual groups for both EAST and WEST (inactive only)
-        if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups get "_groups";
-            {
-                private _gData = _x;
-                if (_gData get "isActive") then { continue };
-                if ((_gData get "position") distance2D _pos >= _radius) then { continue };
-
-                private _gSide = _gData get "side";
-                private _vCount = _gData get "unitCount";
-                if (_gSide isEqualTo east) then { _opforCount = _opforCount + _vCount };
-                if (_gSide isEqualTo west) then { _bluforCount = _bluforCount + _vCount };
-            } forEach (values _groups);
-        };
+        // Add precomputed virtual presence for this objective.
+        private _virtualCounts = _virtualObjectiveCounts get _id;
+        _bluforCount = _bluforCount + (_virtualCounts select 0);
+        _opforCount = _opforCount + (_virtualCounts select 1);
         
         // Calculate progress (Dynamic Rate based on force difference)
         // More units = Faster capture
@@ -171,7 +205,9 @@ while {true} do {
     // Round-Robin update Inactive Objectives (2 per tick)
     // This ensures distant objectives are updated eventually without clogging CPU
     private _processCount = 0;
-    while {_processCount < 2} do {
+    private _scanAttempts = 0;
+    private _maxAttempts = count _objKeys;
+    while {_processCount < 2 && _scanAttempts < _maxAttempts} do {
         if (_inactiveMonitorIndex >= count _objKeys) then { _inactiveMonitorIndex = 0 };
         private _currKey = _objKeys select _inactiveMonitorIndex;
         
@@ -180,7 +216,7 @@ while {true} do {
             _processCount = _processCount + 1;
         };
         _inactiveMonitorIndex = _inactiveMonitorIndex + 1;
-        if (_processCount >= 2 && _inactiveMonitorIndex >= count _objKeys) exitWith {}; // Break if cycled fully
+        _scanAttempts = _scanAttempts + 1;
     };
 
     // === SYNC & UI ===
