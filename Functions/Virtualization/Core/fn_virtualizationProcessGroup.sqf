@@ -29,6 +29,7 @@ private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
 private _realGroup = _groupData get "realGroup";
 private _onMission = _groupData get "onMission";
+private _forceVirtual = _groupData get "forceVirtual";
 private _attachedTo = _groupData get "attachedTo";
 
 // ============================================================================
@@ -181,7 +182,7 @@ if (!_isActive) then {
 // ============================================================================
 // ACTIVATION / DEACTIVATION
 // ============================================================================
-if (_nearestDist <= _activationDist && !_isActive) then {
+if (!_forceVirtual && _nearestDist <= _activationDist && !_isActive) then {
     // ACTIVATE - player is close
     ["VIRTUALIZATION", 3, format["Activating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
     [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;

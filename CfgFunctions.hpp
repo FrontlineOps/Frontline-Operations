@@ -209,7 +209,6 @@ class FLO {
         file = "Functions\Logistics";
 
         class sideResources         {};
-        class opforResources        {};
         class logisticsNetwork      {};
         class vehicleMarket         {};
     };

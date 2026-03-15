@@ -250,11 +250,11 @@ private _restartIntervalHours = 8;  // Hours between restarts
 private _notificationThresholds = [60, 30, 15, 10, 5, 2, 1];  // Minutes before restart
 ```
 
-**OPFOR Resources** (`Functions/Logistics/fn_opforResources.sqf`):
+**Side Resources** (`Functions/Logistics/fn_sideResources.sqf`):
 ```sqf
-["BASE_GENERATION", 10],      // Base resources per cycle
-["GENERATION_INTERVAL", 300], // Seconds between generation
-["EFFICIENCY_DECAY", 0.02],   // Decay rate per cycle
+["RESOURCE_VALUES", createHashMapFromArray [...]], // Resource generation by objective type
+["STARTING_VALUES", createHashMapFromArray [...]], // Initial stockpile by objective type
+["SPENDING_TYPES", createHashMapFromArray [...]]   // Cost multipliers / thresholds by spend type
 ```
 
 **Intel System** (`Functions/Logistics/fn_intelSystem.sqf`):

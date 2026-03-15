@@ -2,16 +2,17 @@
     Function: FLO_fnc_logisticsNetwork
 
     Description:
-    OOP-based OPFOR logistics system that monitors and replaces destroyed
-    virtual groups using OPFOR resources. Integrates with FLO_OPFOR_Resources
-    and FLO_VirtualTransport for intelligent reinforcement spawning.
+    OOP-based logistics system that monitors and replaces destroyed
+    virtual groups using side-scoped resources. Integrates with
+    FLO_SideResources and FLO_VirtualTransport for reinforcement spawning.
 
     Features:
     - Tracks initial group composition and maintains force strength
     - Spawns reinforcements from map edges for realism
     - Uses virtual transport for mechanized/air assault groups
-    - Prioritizes objectives under BLUFOR pressure
-    - Resource-gated replacement (uses OPFOR_Resources)
+    - Prioritizes objectives under player-side pressure
+    - Resource-gated replacement (uses SideResources)
+    - Static AA replacements with dedicated rear-area deployment logic
 
     Group Costs (resources):
     - infantry: 4
@@ -21,6 +22,7 @@
     - helicopter: 19
     - air/jet: 24
     - artillery: 14
+    - static_aa: 18
 
     Parameter(s):
         None (self-initializing)
@@ -53,7 +55,8 @@ if (isNil "FLO_Logistics_Network") then {
             ["helicopter", 19],
             ["air", 24],
             ["jet", 24],
-            ["artillery", 14]
+            ["artillery", 14],
+            ["static_aa", 18]
         ]],
 
         ["CHECK_INTERVAL", 300],      // 5 minutes between checks
@@ -67,6 +70,9 @@ if (isNil "FLO_Logistics_Network") then {
         ["_stats", nil],  // Track replacements made
         ["_enabled", true],
         ["_lastReinforcementTarget", ""],
+        ["_managedSide", east],
+        ["_managedSideKey", "EAST"],
+        ["_enemySide", west],
 
         // ========================================
         // CONSTRUCTOR
@@ -110,9 +116,93 @@ if (isNil "FLO_Logistics_Network") then {
         // PRIVATE METHODS
         // ========================================
 
+        ["_sideKeyFor", {
+            params ["_side"];
+            if (_side isEqualTo east) exitWith { "EAST" };
+            if (_side isEqualTo west) exitWith { "WEST" };
+            "EAST"
+        }],
+
+        // Managed side is the AI/opposition side (opposite of active player side)
+        ["_refreshManagedSide", {
+            private _playerSide = missionNamespace getVariable ["FLO_ActivePlayerSide", sideUnknown];
+            private _managedSide = if (_playerSide isEqualTo east) then {
+                west
+            } else {
+                if (_playerSide isEqualTo west) then { east } else { east }
+            };
+            private _enemySide = if (_managedSide isEqualTo east) then { west } else { east };
+            private _sideKey = _self call ["_sideKeyFor", [_managedSide]];
+
+            _self set ["_managedSide", _managedSide];
+            _self set ["_managedSideKey", _sideKey];
+            _self set ["_enemySide", _enemySide];
+        }],
+
+        ["_getManagedResourceObject", {
+            if (isNil "FLO_SideResources") exitWith { nil };
+            private _sideKey = _self get "_managedSideKey";
+            FLO_SideResources get _sideKey
+        }],
+
+        ["_objectiveHasStaticAA", {
+            params ["_objectiveId"];
+            private _managedSide = _self get "_managedSide";
+            private _groups = FLO_virtualGroups get "_groups";
+
+            (keys _groups findIf {
+                private _gData = _groups get _x;
+                (_gData get "groupType") isEqualTo "static_aa"
+                && {(_gData get "side") isEqualTo _managedSide}
+                && {(_gData get "unitCount") > 0}
+                && {(_gData get "homeObjective") isEqualTo _objectiveId}
+            }) != -1
+        }],
+
+        // Static AA should deploy in rear/midline, not at frontline objectives.
+        ["_getRearAATargets", {
+            if (isNil "FLO_Objectives") exitWith { [] };
+
+            private _managedSide = _self get "_managedSide";
+            private _enemySide = _self get "_enemySide";
+            private _objectives = keys FLO_Objectives;
+
+            private _enemyObjectives = _objectives select {
+                ((FLO_Objectives get _x) get "owner") isEqualTo _enemySide
+            };
+            if (count _enemyObjectives == 0) exitWith { [] };
+
+            private _minEnemyDistance = 1500;
+            private _maxEnemyDistance = 7000;
+            private _targets = [];
+
+            {
+                private _objId = _x;
+                private _objData = FLO_Objectives get _objId;
+                if ((_objData get "owner") != _managedSide) then { continue };
+                if (_self call ["_objectiveHasStaticAA", [_objId]]) then { continue };
+
+                private _objPos = _objData get "position";
+                private _nearestEnemyDist = 1e12;
+
+                {
+                    private _enemyPos = (FLO_Objectives get _x) get "position";
+                    private _dist = _objPos distance2D _enemyPos;
+                    if (_dist < _nearestEnemyDist) then { _nearestEnemyDist = _dist; };
+                } forEach _enemyObjectives;
+
+                if (_nearestEnemyDist >= _minEnemyDistance && {_nearestEnemyDist <= _maxEnemyDistance}) then {
+                    _targets pushBack _objId;
+                };
+            } forEach _objectives;
+
+            _targets
+        }],
+
         // Capture initial group composition
         ["_captureInitialComposition", {
             if (isNil "FLO_virtualGroups") exitWith { createHashMap };
+            private _managedSide = _self get "_managedSide";
 
             private _allGroups = FLO_virtualGroups get "_groups";
             private _composition = createHashMap;
@@ -121,8 +211,7 @@ if (isNil "FLO_Logistics_Network") then {
                 private _groupType = _y getOrDefault ["groupType", "infantry"];
                 private _side = _y getOrDefault ["side", east];
 
-                // Only count OPFOR groups
-                if (_side isEqualTo east) then {
+                if (_side isEqualTo _managedSide) then {
                     _composition set [_groupType, (_composition getOrDefault [_groupType, 0]) + 1];
                 };
             } forEach _allGroups;
@@ -133,6 +222,7 @@ if (isNil "FLO_Logistics_Network") then {
         // Get current group composition
         ["_getCurrentComposition", {
             if (isNil "FLO_virtualGroups") exitWith { createHashMap };
+            private _managedSide = _self get "_managedSide";
 
             private _allGroups = FLO_virtualGroups get "_groups";
             private _composition = createHashMap;
@@ -141,7 +231,7 @@ if (isNil "FLO_Logistics_Network") then {
                 private _groupType = _y getOrDefault ["groupType", "infantry"];
                 private _side = _y getOrDefault ["side", east];
 
-                if (_side isEqualTo east) then {
+                if (_side isEqualTo _managedSide) then {
                     _composition set [_groupType, (_composition getOrDefault [_groupType, 0]) + 1];
                 };
             } forEach _allGroups;
@@ -151,12 +241,17 @@ if (isNil "FLO_Logistics_Network") then {
 
         // Pick best target using priority and variety logic
         ["_pickBestTarget", {
-            params ["_candidates"];
+            params ["_candidates", ["_groupType", "infantry"]];
             if (count _candidates == 0) exitWith { "" };
             
             // Variety Filter: Avoid last target if possible
             private _lastTarget = _self get "_lastReinforcementTarget";
             private _available = +_candidates;
+
+            if (_groupType isEqualTo "static_aa") then {
+                _available = _available select { !(_self call ["_objectiveHasStaticAA", [_x]]) };
+            };
+            if (count _available == 0) exitWith { "" };
             
             if (count _available > 1 && {_lastTarget in _available}) then {
                 _available = _available - [_lastTarget];
@@ -168,9 +263,21 @@ if (isNil "FLO_Logistics_Network") then {
             
             {
                 private _objId = _x;
-                private _score = 0;
+                private _objData = FLO_Objectives get _objId;
+                private _score = _objData get "priority";
                 
-                _score = (FLO_Objectives get _objId) get "priority";
+                if (_groupType isEqualTo "static_aa") then {
+                    private _enemySide = _self get "_enemySide";
+                    private _objPos = _objData get "position";
+                    private _nearestEnemyDist = 1e12;
+                    {
+                        private _enemyData = FLO_Objectives get _x;
+                        if ((_enemyData get "owner") != _enemySide) then { continue };
+                        private _dist = _objPos distance2D (_enemyData get "position");
+                        if (_dist < _nearestEnemyDist) then { _nearestEnemyDist = _dist; };
+                    } forEach (keys FLO_Objectives);
+                    _score = _score + ((_nearestEnemyDist min 6000) * 0.15);
+                };
                 
                 if (_score > _bestScore) then {
                     _bestScore = _score;
@@ -188,6 +295,7 @@ if (isNil "FLO_Logistics_Network") then {
         // Find best spawn position (map edge or rear objective)
         ["_findSpawnPosition", {
             params [["_useMapEdge", true]];
+            private _managedSide = _self get "_managedSide";
 
             // Try map edge first using transport system
             if (_useMapEdge) then {
@@ -199,7 +307,7 @@ if (isNil "FLO_Logistics_Network") then {
             if (isNil "FLO_Objectives") exitWith { [0,0,0] };
 
             private _opforObjs = (keys FLO_Objectives) select {
-                ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo east
+                ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo _managedSide
             };
 
             if (count _opforObjs == 0) exitWith { [] };
@@ -220,16 +328,18 @@ if (isNil "FLO_Logistics_Network") then {
             if (isNil "FLO_Objectives") exitWith { [] };
 
             private _detectRange = _self get "BLUFOR_DETECT_RANGE";
+            private _managedSide = _self get "_managedSide";
+            private _enemySide = _self get "_enemySide";
 
             private _opforObjs = (keys FLO_Objectives) select {
-                ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo east
+                ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo _managedSide
             };
 
-            // Filter to objectives with nearby BLUFOR
+            // Filter to objectives with nearby opposing players
             _opforObjs select {
                 private _pos = (FLO_Objectives get _x) get "position";
                 private _nearbyBlufor = allPlayers select {
-                    side _x == west && {_x distance2D _pos < _detectRange}
+                    side _x == _enemySide && {_x distance2D _pos < _detectRange}
                 };
                 count _nearbyBlufor > 0
             }
@@ -237,9 +347,10 @@ if (isNil "FLO_Logistics_Network") then {
 
         // Create a replacement group
         ["_createReplacement", {
-            params ["_groupType", "_spawnPos", "_targetObjId"];
+            params ["_groupType", "_spawnPos", "_targetObjId", ["_sourceObjId", ""]];
 
             if (isNil "FLO_virtualGroups") exitWith { "" };
+            private _managedSide = _self get "_managedSide";
 
             // Validate spawn position
             if !(_spawnPos isEqualType [] && {count _spawnPos >= 2} && {((_spawnPos select 0) > 100) || ((_spawnPos select 1) > 100)}) exitWith {
@@ -250,10 +361,10 @@ if (isNil "FLO_Logistics_Network") then {
             // Get and validate target position
             private _targetPos = if (_targetObjId != "" && !isNil "FLO_Objectives") then {
                 private _objData = FLO_Objectives getOrDefault [_targetObjId, createHashMap];
-                // Double-check that objective is still OPFOR-owned
+                // Double-check that objective is still managed-side owned
                 private _owner = _objData getOrDefault ["owner", east];
-                if !(_owner isEqualTo east) exitWith {
-                    ["LOGISTICS", 2, format["Target objective %1 no longer OPFOR-owned", _targetObjId]] call FLO_fnc_log;
+                if !(_owner isEqualTo _managedSide) exitWith {
+                    ["LOGISTICS", 2, format["Target objective %1 no longer owned by managed side", _targetObjId]] call FLO_fnc_log;
                     []
                 };
                 _objData get "position"
@@ -265,23 +376,49 @@ if (isNil "FLO_Logistics_Network") then {
                 ""
             };
 
-            // Build waypoints
-            private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
-
             // Get unit count for this type
             private _unitCount = if (!isNil "FLO_fnc_getGroupTypeCount") then {
-                [_groupType] call FLO_fnc_getGroupTypeCount
+                [_groupType, _managedSide] call FLO_fnc_getGroupTypeCount
             } else { 6 };
 
             // Create the virtual group
-            private _newGroupId = [_spawnPos, _groupType, nil, _targetObjId, _unitCount] call FLO_fnc_createVirtualGroup;
+            private _newGroupId = [_spawnPos, _groupType, nil, _targetObjId, _unitCount, _managedSide] call FLO_fnc_createVirtualGroup;
 
             if (_newGroupId != "") then {
                 // Mark as reinforcing
                 private _groups = FLO_virtualGroups get "_groups";
                 private _groupData = _groups getOrDefault [_newGroupId, nil];
+                private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
+
                 if (!isNil "_groupData") then {
                     _groupData set ["isReinforcing", true];
+
+                    if (_groupType isEqualTo "static_aa") then {
+                        if (_sourceObjId == "") then {
+                            _sourceObjId = [_spawnPos, _managedSide] call FLO_fnc_getNearestObjective;
+                        };
+
+                        _groupData set ["forceVirtual", true];
+                        _groupData set ["alwaysActive", false];
+                        _groupData set ["noWaypoints", false];
+                        _groupData set ["currentOrder", "AA_DEPLOY"];
+                        _groupData set ["aaDeployState", "MOVING"];
+                        _groupData set ["aaDeployTargetPos", _targetPos];
+                        _groupData set ["aaDeployTargetObjective", _targetObjId];
+                        _groupData set ["isStrategicAA", true];
+                        _groupData set ["onMission", true];
+                        _groupData set ["homeObjective", _targetObjId];
+
+                        private _path = if (_sourceObjId != "" && {_targetObjId != ""} && {_sourceObjId != _targetObjId}) then {
+                            [_sourceObjId, _targetObjId] call FLO_fnc_getObjectivePath
+                        } else { [] };
+
+                        _wps = [];
+                        {
+                            _wps pushBack [_x, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80];
+                        } forEach _path;
+                        _wps pushBack [_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80];
+                    };
                 };
 
                 // Set waypoints
@@ -315,11 +452,17 @@ if (isNil "FLO_Logistics_Network") then {
                     !isNil "FLO_virtualGroups" &&
                     {!isNil "InitializationOG"} &&
                     {InitializationOG} &&
-                    {!isNil "FLO_OPFOR_Resources"}
+                    {!isNil "FLO_SideResources"}
                 };
 
                 // Small delay to let groups spawn
                 sleep 10;
+
+                FLO_Logistics_Network call ["_refreshManagedSide", []];
+                ["LOGISTICS", 3, format[
+                    "Managed side resolved: %1",
+                    FLO_Logistics_Network get "_managedSideKey"
+                ]] call FLO_fnc_log;
 
                 // Capture initial composition if not loaded from save
                 if (isNil {FLO_Logistics_Network get "_initialComposition"}) then {
@@ -343,6 +486,9 @@ if (isNil "FLO_Logistics_Network") then {
 
         // Core replacement logic
         ["_checkAndReplace", {
+            _self call ["_refreshManagedSide", []];
+            private _managedSide = _self get "_managedSide";
+
             private _initialComp = _self get "_initialComposition";
             if (isNil "_initialComp") exitWith {};
 
@@ -368,12 +514,13 @@ if (isNil "FLO_Logistics_Network") then {
             };
 
             // Check if we have resources
-            if (isNil "FLO_OPFOR_Resources") exitWith {};
+            private _resources = _self call ["_getManagedResourceObject", []];
+            if (isNil "_resources") exitWith {};
 
-            // Find reinforcement targets - only OPFOR-held objectives under BLUFOR pressure
+            // Find reinforcement targets - managed-side objectives under player pressure
             private _targets = _self call ["_findReinforcementTargets", []];
             if (count _targets == 0) then {
-                // No objectives under pressure - find OPFOR objectives NOT near any player
+                // No objectives under pressure - find managed-side objectives NOT near any player
                 // This allows reinforcing rear objectives to maintain strength
                 ["LOGISTICS", 3, format["Need %1 replacements but no objectives under pressure - checking rear objectives", count _needed]] call FLO_fnc_log;
 
@@ -382,8 +529,7 @@ if (isNil "FLO_Logistics_Network") then {
                     private _owner = _objData getOrDefault ["owner", east];
                     private _pos = _objData get "position";
 
-                    // Must be OPFOR-owned
-                    _owner isEqualTo east &&
+                    _owner isEqualTo _managedSide &&
                     {
                         // Not near any player (rear objectives only)
                         private _nearPlayer = false;
@@ -397,8 +543,8 @@ if (isNil "FLO_Logistics_Network") then {
                 };
             };
 
-            if (count _targets == 0) exitWith {
-                ["LOGISTICS", 3, "No valid OPFOR objectives to reinforce"] call FLO_fnc_log;
+            if (count _targets == 0) then {
+                ["LOGISTICS", 3, "No pressure/rear objective targets for maneuver groups this cycle"] call FLO_fnc_log;
             };
 
             // Process replacements
@@ -406,27 +552,39 @@ if (isNil "FLO_Logistics_Network") then {
             {
                 private _groupType = _x;
                 private _cost = _groupCosts getOrDefault [_groupType, 4];
+                private _targetPool = if (_groupType isEqualTo "static_aa") then {
+                    _self call ["_getRearAATargets", []]
+                } else {
+                    _targets
+                };
+
+                if (count _targetPool == 0) then { continue };
 
                 // Check if we can afford
-                if !(FLO_OPFOR_Resources call ["canAfford", [_cost, "reinforcement"]]) then {
+                if !(_resources call ["canAfford", [_cost, "reinforcement"]]) then {
                     continue;
                 };
 
                 // Find spawn and target
-                private _spawnPos = _self call ["_findSpawnPosition", [true]];
+                private _useMapEdge = !(_groupType isEqualTo "static_aa");
+                private _spawnPos = _self call ["_findSpawnPosition", [_useMapEdge]];
                 if (_spawnPos isEqualTo [0,0,0]) then { continue };
 
                 // Select target with priority logic
-                private _targetObj = _self call ["_pickBestTarget", [_targets]];
+                private _targetObj = _self call ["_pickBestTarget", [_targetPool, _groupType]];
                 
                 // Update last target to ensure variety for next selection
                 if (_targetObj != "") then {
                      _self set ["_lastReinforcementTarget", _targetObj];
                 };
+                if (_targetObj == "") then { continue };
 
                 // Try to spend resources
-                if (FLO_OPFOR_Resources call ["spendResources", [_cost, "reinforcement"]]) then {
-                    private _newId = _self call ["_createReplacement", [_groupType, _spawnPos, _targetObj]];
+                if (_resources call ["spendResources", [_cost, "reinforcement"]]) then {
+                    private _sourceObjId = if (_groupType isEqualTo "static_aa") then {
+                        [_spawnPos, _managedSide] call FLO_fnc_getNearestObjective
+                    } else { "" };
+                    private _newId = _self call ["_createReplacement", [_groupType, _spawnPos, _targetObj, _sourceObjId]];
 
                     if (_newId != "") then {
                         _self call ["_recordReplacement", [_groupType, _cost]];

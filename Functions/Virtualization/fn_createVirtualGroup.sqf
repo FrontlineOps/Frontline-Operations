@@ -64,7 +64,12 @@ private _groupData = createHashMapFromArray [
     ["currentWaypointIndex", 0],
     ["comp", []],
     ["onMission", false],         // Whether this group is on an active mission (prevents virtualization)
+    ["forceVirtual", false],      // Keep group virtual regardless of player proximity
     ["currentOrder", ""],         // Current order type (MOVE, ATTACK, DEFEND, etc.)
+    ["aaDeployState", ""],        // "", "MOVING", "DEPLOYED"
+    ["aaDeployTargetPos", []],    // Final deployment position for commander-built static AA
+    ["aaDeployTargetObjective", ""],
+    ["isStrategicAA", false],     // True when commander-created AA network asset
     ["linkedObjectives", []],     // Objectives this group is linked to
     // Transport system fields
     ["attachedTo", ""],           // GroupId of transport this group is riding in

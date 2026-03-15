@@ -15,6 +15,11 @@ diag_log "[FLO_INIT_P4] Initializing virtualization...";
 private _activationDistance = FLO_VirtualizationDistance;
 diag_log format ["[FLO_INIT_P4] Using virtualization distance: %1m", _activationDistance];
 
+private _fnc_startRadarDataLink = {
+    diag_log "[FLO_INIT_P4] Starting radar data link system...";
+    [] spawn FLO_fnc_gtnRadarDataLink;
+};
+
 // Check if loading from saved game with virtual groups
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
     private _savedData = FLO_SavedGameData;
@@ -76,6 +81,14 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
                             _newData set ["waypoints", _validWaypoints];
                             _newData set ["currentWaypointIndex", if (count _validWaypoints > 0) then {(_groupData getOrDefault ["currentWaypointIndex", 0]) min (count _validWaypoints - 1)} else {0}];
+                            _newData set ["alwaysActive", _groupData getOrDefault ["alwaysActive", false]];
+                            _newData set ["currentOrder", _groupData getOrDefault ["currentOrder", ""]];
+                            _newData set ["noWaypoints", _groupData getOrDefault ["noWaypoints", false]];
+                            _newData set ["forceVirtual", _groupData getOrDefault ["forceVirtual", false]];
+                            _newData set ["aaDeployState", _groupData getOrDefault ["aaDeployState", ""]];
+                            _newData set ["aaDeployTargetPos", _groupData getOrDefault ["aaDeployTargetPos", []]];
+                            _newData set ["aaDeployTargetObjective", _groupData getOrDefault ["aaDeployTargetObjective", ""]];
+                            _newData set ["isStrategicAA", _groupData getOrDefault ["isStrategicAA", false]];
 
                             // Validate garrison position before restoring
                             private _garrisonPos = _groupData getOrDefault ["garrisonPosition", []];
@@ -115,6 +128,8 @@ if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
         diag_log "[FLO_INIT_P4] Restarting virtualization PFH";
         ["start"] call FLO_fnc_virtualizationUpdatePFH;
     };
+
+    call _fnc_startRadarDataLink;
 
     true
 };
@@ -175,9 +190,7 @@ diag_log "[FLO_INIT_P4] Initializing virtual transport system...";
 [] call FLO_fnc_transportConfig;
 [] call FLO_fnc_transportPool;
 
-// Start radar data link system (for AA target sharing)
-diag_log "[FLO_INIT_P4] Starting radar data link system...";
-[] spawn FLO_fnc_gtnRadarDataLink;
+call _fnc_startRadarDataLink;
 
 // Mark initialization complete
 InitializationOG = true;

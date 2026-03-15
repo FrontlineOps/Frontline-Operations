@@ -327,12 +327,6 @@ try {
         } forEach (keys FLO_SideResources);
         _data set ["sideResources", _sideResData];
         ["SAVE", 3, format ["Side resources saved for %1 sides", count (keys _sideResData)]] call FLO_fnc_log;
-    } else {
-        if (!isNil "FLO_OPFOR_Resources") then {
-            // Legacy compatibility payload for non-dual systems.
-            private _resData = FLO_OPFOR_Resources call ["serialize", []];
-            _data set ["opforResources", _resData];
-        };
     };
 } catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };
 
@@ -409,6 +403,14 @@ try {
                         ["state", _gData getOrDefault ["state", "idle"]],
                         ["waypoints", _validWaypoints],
                         ["currentWaypointIndex", _gData getOrDefault ["currentWaypointIndex", 0]],
+                        ["alwaysActive", _gData getOrDefault ["alwaysActive", false]],
+                        ["currentOrder", _gData getOrDefault ["currentOrder", ""]],
+                        ["noWaypoints", _gData getOrDefault ["noWaypoints", false]],
+                        ["forceVirtual", _gData getOrDefault ["forceVirtual", false]],
+                        ["aaDeployState", _gData getOrDefault ["aaDeployState", ""]],
+                        ["aaDeployTargetPos", _gData getOrDefault ["aaDeployTargetPos", []]],
+                        ["aaDeployTargetObjective", _gData getOrDefault ["aaDeployTargetObjective", ""]],
+                        ["isStrategicAA", _gData getOrDefault ["isStrategicAA", false]],
                         ["garrisonPosition", _garrisonPos],
                         ["garrisonObjective", _gData getOrDefault ["garrisonObjective", ""]]
                     ]];

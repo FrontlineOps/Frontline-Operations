@@ -188,6 +188,9 @@ private _gtnCommander = createHashMapObject [[
         // Execute all tracks in parallel
         _self call ["_executeAllTracks", []];
 
+        // Static AA deployment finalization (creation is handled by logistics network)
+        _self call ["_manageStaticAANetwork", []];
+
         // Manage force preservation (Retreats & Replenishment)
         _self call ["_manageForcePreservation", []];
         
@@ -592,7 +595,7 @@ private _gtnCommander = createHashMapObject [[
             if (_side != _ownSide) then { continue };
 
             // Skip air and artillery assets
-            if (_groupType in ["helicopter", "jet", "air", "artillery"]) then { continue };
+            if (_groupType in ["helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
 
             // Skip already tasked groups
             if (_groupId in _gtnTasked) then { continue };
@@ -839,6 +842,53 @@ private _gtnCommander = createHashMapObject [[
         } forEach (keys _enemyObjs);
 
         _weakest
+    }],
+
+    // Static AA deployment finalization
+    // - Static AA groups are created by logistics network
+    // - Commander only finalizes deployment when movers reach target
+    ["_manageStaticAANetwork", {
+        private _groups = FLO_virtualGroups get "_groups";
+        private _ownSide = _self get "_ownSide";
+
+        // Phase 1: finalize in-transit static AA deployments
+        {
+            private _groupId = _x;
+            private _gData = _groups get _groupId;
+
+            if ((_gData get "groupType") != "static_aa") then { continue };
+            if ((_gData get "side") != _ownSide) then { continue };
+            if ((_gData get "aaDeployState") != "MOVING") then { continue };
+
+            private _targetPos = _gData get "aaDeployTargetPos";
+            if (count _targetPos < 2) then { continue };
+            if ((_gData get "position") distance2D _targetPos > 120) then { continue };
+
+            _gData set ["forceVirtual", false];
+            _gData set ["waypoints", []];
+            _gData set ["currentWaypointIndex", 0];
+            _gData set ["alwaysActive", true];
+            _gData set ["noWaypoints", true];
+            _gData set ["currentOrder", "AA_HOLD"];
+            _gData set ["aaDeployState", "DEPLOYED"];
+            _gData set ["onMission", false];
+
+            if !(_gData get "isActive") then {
+                [_groupId, _gData] call FLO_fnc_activateVirtualGroup;
+            } else {
+                private _realGroup = _gData get "realGroup";
+                if (!isNull _realGroup) then {
+                    [_realGroup] call CBA_fnc_clearWaypoints;
+                };
+            };
+
+            ["GTN", 3, format[
+                "Static AA %1 deployed at %2 (objective %3)",
+                _groupId,
+                _targetPos,
+                _gData get "aaDeployTargetObjective"
+            ]] call FLO_fnc_log;
+        } forEach (keys _groups);
     }],
 
     // Force Preservation Management

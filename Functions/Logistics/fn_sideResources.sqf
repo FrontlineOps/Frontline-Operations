@@ -3,7 +3,6 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Initializes side-scoped resource objects for EAST and WEST.
- *   Keeps FLO_OPFOR_Resources as EAST alias for backward compatibility.
  *
  * Arguments:
  *   None
@@ -23,14 +22,6 @@ if (!isNil "FLO_SavedGameData" && {FLO_SavedGameData isEqualType createHashMap})
     private _savedRaw = FLO_SavedGameData get "sideResources";
     if (_savedRaw isEqualType createHashMap) then {
         _savedResources = _savedRaw;
-    };
-
-    if (count _savedResources == 0) then {
-        // Legacy compatibility: hydrate EAST from old singleton payload.
-        private _legacy = FLO_SavedGameData get "opforResources";
-        if (!isNil "_legacy" && {_legacy isEqualType createHashMap}) then {
-            _savedResources set ["EAST", _legacy];
-        };
     };
 };
 
@@ -305,9 +296,6 @@ FLO_SideResources = createHashMap;
     private _obj = [_side, _savedPayload] call _fnc_createResourceObject;
     FLO_SideResources set [_sideKey, _obj];
 } forEach [east, west];
-
-// Backward compatibility for existing systems that still read OPFOR resource singleton.
-FLO_OPFOR_Resources = FLO_SideResources get "EAST";
 
 // Publish lightweight serialized snapshot only (resource objects are not network-safe).
 private _pubState = createHashMap;

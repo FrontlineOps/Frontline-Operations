@@ -12,6 +12,9 @@
  */
 
 if (!isServer) exitWith {};
+if (!isNil "FLO_GTN_RadarDataLinkRunning" && {FLO_GTN_RadarDataLinkRunning}) exitWith {};
+FLO_GTN_RadarDataLinkRunning = true;
+publicVariable "FLO_GTN_RadarDataLinkRunning";
 
 ["RADAR", 3, "Radar data link system starting"] call FLO_fnc_log;
 
