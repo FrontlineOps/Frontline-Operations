@@ -2,7 +2,7 @@
  * Function: FLO_fnc_gtnVirtualCombatResolver
  * Author: Frontline Operations Development Group
  * Description:
- *   Resolves virtual combat as direct EAST/WEST group-vs-group engagements.
+ *   Resolves virtual combat as clustered EAST/WEST group engagements.
  *   Uses 2d6 + modifiers and applies margin-based attrition.
  *   Publishes combat telemetry as map markers + event history.
  *
@@ -396,50 +396,139 @@ private _fnc_releaseGroupForRetask = {
             continue;
         };
 
-        private _engagementMaxDist = 400;
-        private _usedWest = createHashMap;
+        private _engagementMaxDist = 500;
         private _engagements = [];
         private _engagedNow = createHashMap;
+
+        private _eastById = createHashMap;
+        private _westById = createHashMap;
+        private _eastLinks = createHashMap;
+        private _westLinks = createHashMap;
+
+        {
+            _x params ["_groupId", "_gData"];
+            _eastById set [_groupId, _gData];
+            _eastLinks set [_groupId, []];
+        } forEach _eastPool;
+
+        {
+            _x params ["_groupId", "_gData"];
+            _westById set [_groupId, _gData];
+            _westLinks set [_groupId, []];
+        } forEach _westPool;
 
         {
             _x params ["_eastId", "_eastData"];
             private _eastPos = _eastData get "position";
-            private _bestWest = [];
-            private _bestDist = 1000000000;
+            private _eastNeighborWest = _eastLinks get _eastId;
 
             {
                 _x params ["_westId", "_westData"];
-                if (_usedWest getOrDefault [_westId, false]) then { continue };
-
                 private _westPos = _westData get "position";
-                private _dist = _eastPos distance2D _westPos;
-                if (_dist < _bestDist) then {
-                    _bestDist = _dist;
-                    _bestWest = [_westId, _westData, _westPos];
-                };
-            } forEach _westPool;
+                if ((_eastPos distance2D _westPos) > _engagementMaxDist) then { continue };
 
-            if ((count _bestWest) > 0 && {_bestDist <= _engagementMaxDist}) then {
-                _usedWest set [_bestWest select 0, true];
-                _engagements pushBack [
-                    _eastId,
-                    _eastData,
-                    _eastPos,
-                    _bestWest select 0,
-                    _bestWest select 1,
-                    _bestWest select 2,
-                    _bestDist
-                ];
+                _eastNeighborWest pushBack _westId;
+                private _westNeighborEast = _westLinks get _westId;
+                _westNeighborEast pushBack _eastId;
+            } forEach _westPool;
+        } forEach _eastPool;
+
+        private _visitedEast = createHashMap;
+        private _visitedWest = createHashMap;
+
+        {
+            _x params ["_seedEastId"];
+            if (_visitedEast getOrDefault [_seedEastId, false]) then { continue };
+            if ((count (_eastLinks get _seedEastId)) == 0) then { continue };
+
+            private _queueEast = [_seedEastId];
+            private _queueWest = [];
+            private _clusterEastIds = [];
+            private _clusterWestIds = [];
+
+            while {(count _queueEast) > 0 || {(count _queueWest) > 0}} do {
+                while {(count _queueEast) > 0} do {
+                    private _eastId = _queueEast deleteAt 0;
+                    if (_visitedEast getOrDefault [_eastId, false]) then { continue };
+
+                    _visitedEast set [_eastId, true];
+                    _clusterEastIds pushBack _eastId;
+
+                    {
+                        if !(_visitedWest getOrDefault [_x, false]) then {
+                            _queueWest pushBack _x;
+                        };
+                    } forEach (_eastLinks get _eastId);
+                };
+
+                while {(count _queueWest) > 0} do {
+                    private _westId = _queueWest deleteAt 0;
+                    if (_visitedWest getOrDefault [_westId, false]) then { continue };
+
+                    _visitedWest set [_westId, true];
+                    _clusterWestIds pushBack _westId;
+
+                    {
+                        if !(_visitedEast getOrDefault [_x, false]) then {
+                            _queueEast pushBack _x;
+                        };
+                    } forEach (_westLinks get _westId);
+                };
             };
+
+            if ((count _clusterEastIds) == 0 || {(count _clusterWestIds) == 0}) then { continue };
+
+            private _eastRefs = _clusterEastIds apply {
+                [_x, _eastById get _x]
+            };
+            private _westRefs = _clusterWestIds apply {
+                [_x, _westById get _x]
+            };
+
+            private _eastCenter = [0, 0, 0];
+            {
+                private _pos = (_eastById get _x) get "position";
+                _eastCenter set [0, (_eastCenter select 0) + (_pos select 0)];
+                _eastCenter set [1, (_eastCenter select 1) + (_pos select 1)];
+            } forEach _clusterEastIds;
+            _eastCenter set [0, (_eastCenter select 0) / (count _clusterEastIds)];
+            _eastCenter set [1, (_eastCenter select 1) / (count _clusterEastIds)];
+
+            private _westCenter = [0, 0, 0];
+            {
+                private _pos = (_westById get _x) get "position";
+                _westCenter set [0, (_westCenter select 0) + (_pos select 0)];
+                _westCenter set [1, (_westCenter select 1) + (_pos select 1)];
+            } forEach _clusterWestIds;
+            _westCenter set [0, (_westCenter select 0) / (count _clusterWestIds)];
+            _westCenter set [1, (_westCenter select 1) / (count _clusterWestIds)];
+
+            private _clusterMinDist = 1000000000;
+            {
+                private _eastPos = (_eastById get _x) get "position";
+                {
+                    private _westPos = (_westById get _x) get "position";
+                    private _dist = _eastPos distance2D _westPos;
+                    if (_dist < _clusterMinDist) then { _clusterMinDist = _dist };
+                } forEach _clusterWestIds;
+            } forEach _clusterEastIds;
+
+            _engagements pushBack [
+                _clusterEastIds,
+                _eastRefs,
+                _eastCenter,
+                _clusterWestIds,
+                _westRefs,
+                _westCenter,
+                _clusterMinDist
+            ];
         } forEach _eastPool;
 
         {
-            _x params ["_eastId", "_eastData", "_eastPos", "_westId", "_westData", "_westPos", "_engageDist"];
-            _engagedNow set [_eastId, true];
-            _engagedNow set [_westId, true];
+            _x params ["_eastIds", "_eastRefs", "_eastPos", "_westIds", "_westRefs", "_westPos", "_engageDist"];
 
-            private _eastRefs = [[_eastId, _eastData]];
-            private _westRefs = [[_westId, _westData]];
+            { _engagedNow set [_x, true]; } forEach _eastIds;
+            { _engagedNow set [_x, true]; } forEach _westIds;
 
             private _eastStats = [_eastRefs] call _fnc_sidePower;
             private _westStats = [_westRefs] call _fnc_sidePower;
@@ -501,8 +590,14 @@ private _fnc_releaseGroupForRetask = {
                 _westAfter = _westAfterStats get "units";
             };
 
-            private _engagementId = format ["%1_vs_%2", _eastId, _westId];
-            private _engagementName = format ["%1 vs %2", _eastId, _westId];
+            private _engagementId = format [
+                "%1E_%2W_%3_vs_%4",
+                count _eastIds,
+                count _westIds,
+                _eastIds select 0,
+                _westIds select 0
+            ];
+            private _engagementName = format ["%1 EAST vs %2 WEST", count _eastIds, count _westIds];
             private _eventPos = [
                 ((_eastPos select 0) + (_westPos select 0)) * 0.5,
                 ((_eastPos select 1) + (_westPos select 1)) * 0.5,
