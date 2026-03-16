@@ -375,7 +375,33 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
         } else {
             ["VIRTUALIZATION", 3, format["Starting pathfinding for group %1 from %2 to %3 (direct movement active)", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
         };
-        [_pathStart, _pathEnd, _callbackCode, [_groupId, _firstWaypoint, _requestToken, _pathStart, _requestTime, _directBootstrapAllowed], _allowTrails] call FLO_fnc_findRoadPath;
+
+        // Stagger path requests so large commander waves don't enqueue in the same frame.
+        if (isNil "FLO_PF_DispatchNextAt") then {
+            FLO_PF_DispatchNextAt = diag_tickTime;
+        };
+        private _dispatchGap = 0.1; // ~10 requests/second max
+        private _slotTime = FLO_PF_DispatchNextAt max diag_tickTime;
+        FLO_PF_DispatchNextAt = _slotTime + _dispatchGap;
+
+        private _seed = 0;
+        { _seed = (_seed + _x) mod 23; } forEach toArray _groupId;
+        private _dispatchDelay = (_slotTime - diag_tickTime) + (_seed * 0.005);
+
+        if (_dispatchDelay <= 0.01) then {
+            [_pathStart, _pathEnd, _callbackCode, [_groupId, _firstWaypoint, _requestToken, _pathStart, _requestTime, _directBootstrapAllowed], _allowTrails] call FLO_fnc_findRoadPath;
+        } else {
+            [_groupId, _firstWaypoint, _requestToken, _pathStart, _requestTime, _directBootstrapAllowed, _pathStart, _pathEnd, _callbackCode, _allowTrails, _dispatchDelay] spawn {
+                params ["_groupId", "_firstWaypoint", "_requestToken", "_requestPos", "_requestTime", "_directBootstrapAllowed", "_pathStart", "_pathEnd", "_callbackCode", "_allowTrails", "_dispatchDelay"];
+                sleep _dispatchDelay;
+
+                private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+                if (isNil "_groupData") exitWith {};
+                if ((_groupData get "pathRequestToken") != _requestToken) exitWith {};
+
+                [_pathStart, _pathEnd, _callbackCode, [_groupId, _firstWaypoint, _requestToken, _requestPos, _requestTime, _directBootstrapAllowed], _allowTrails] call FLO_fnc_findRoadPath;
+            };
+        };
     };
 };
 
