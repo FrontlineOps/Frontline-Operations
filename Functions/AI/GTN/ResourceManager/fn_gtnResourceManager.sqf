@@ -45,6 +45,13 @@ private _resourceManager = createHashMapObject [[
             private _sideKey = _commander get "_sideKey";
             ["GTN", 3, format["Starting %1 execution loop (%2s)", _sideKey, _interval]] call FLO_fnc_log;
 
+            // Deterministic phase offset so both commanders do not spike on the same frame.
+            private _staggerDelay = if (_sideKey isEqualTo "WEST") then { _interval * 0.5 } else { 0 };
+            if (_staggerDelay > 0) then {
+                ["GTN", 3, format["%1 commander stagger delay: %2s", _sideKey, _staggerDelay]] call FLO_fnc_log;
+                sleep _staggerDelay;
+            };
+
             while {(_commander get "_isRunning") == 1} do {
                 _commander call ["_update", []];
                 sleep _interval;

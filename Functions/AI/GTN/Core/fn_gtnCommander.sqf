@@ -111,6 +111,7 @@ private _gtnCommander = createHashMapObject [[
         ["riskTolerance", _aggressionValue],       // 0-1, affects willingness to attack with lower ratios
         ["replanInterval", 60],       // Minimum seconds between replans
         ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
+        ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
         ["debugMode", false]          // Enable verbose logging
     ]],
     
@@ -187,6 +188,9 @@ private _gtnCommander = createHashMapObject [[
         
         // Execute all tracks in parallel
         _self call ["_executeAllTracks", []];
+
+        // Release DEFEND-tasked groups that sat idle too long in low-pressure sectors.
+        _self call ["_manageDefenseLeases", []];
 
         // Static AA deployment finalization (creation is handled by logistics network)
         _self call ["_manageStaticAANetwork", []];
@@ -669,11 +673,84 @@ private _gtnCommander = createHashMapObject [[
             private _gData = _groups get _groupId;
             if (!isNil "_gData") then {
                 _gData set ["currentOrder", _newOrder];
+                if (_newOrder != "DEFEND") then {
+                    _gData set ["defendLeaseIssuedAt", -1];
+                    _gData set ["defendLeaseUntil", -1];
+                    _gData set ["defendObjective", ""];
+                };
                 ["GTN", 3, format["Released group %1, order reset to '%2'", _groupId, _newOrder]] call FLO_fnc_log;
             };
         } forEach _groupIds;
         
         _self set ["_gtnTaskedGroups", _tasked];
+    }],
+
+    // Release DEFEND groups that are idle past lease expiry and not under pressure.
+    ["_manageDefenseLeases", {
+        private _tasked = +(_self get "_gtnTaskedGroups");
+        if ((count _tasked) == 0) exitWith {};
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _ownSide = _self get "_ownSide";
+        private _ws = _self get "_worldState";
+        private _objectives = _ws call ["_getObjectives", []];
+        private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
+        private _now = diag_tickTime;
+        private _releaseIds = [];
+
+        {
+            private _groupId = _x;
+            private _gData = _groups get _groupId;
+
+            if (isNil "_gData") then {
+                _releaseIds pushBack _groupId;
+                continue;
+            };
+            if ((_gData get "side") != _ownSide) then { continue };
+            if ((_gData get "groupType") == "static_aa") then { continue };
+            if ((_gData get "currentOrder") != "DEFEND") then { continue };
+            if (_gData getOrDefault ["inCombat", false]) then { continue };
+
+            private _leaseUntil = _gData getOrDefault ["defendLeaseUntil", -1];
+            if (_leaseUntil < 0) then {
+                _gData set ["defendLeaseIssuedAt", _now];
+                _gData set ["defendLeaseUntil", _now + _leaseSeconds];
+                continue;
+            };
+            if (_now < _leaseUntil) then { continue };
+
+            private _objId = _gData get "defendObjective";
+
+            private _hold = false;
+            if (_objId in _objectives) then {
+                private _obj = _objectives get _objId;
+                _hold = (_obj get "contested") || (_obj get "underAttack") || {(_obj get "owner") != _ownSide};
+            } else {
+                ["GTN", 2, format["Defense lease: group %1 has invalid defendObjective (%2), releasing", _groupId, _objId]] call FLO_fnc_log;
+            };
+
+            if (_hold) then {
+                _gData set ["defendLeaseIssuedAt", _now];
+                _gData set ["defendLeaseUntil", _now + _leaseSeconds];
+            } else {
+                _releaseIds pushBack _groupId;
+            };
+        } forEach _tasked;
+
+        if ((count _releaseIds) == 0) exitWith {};
+
+        {
+            private _gData = _groups get _x;
+            if (isNil "_gData") then { continue };
+            _gData set ["onMission", false];
+            _gData set ["state", "idle"];
+            _gData set ["defendLeaseIssuedAt", -1];
+            _gData set ["defendLeaseUntil", -1];
+            _gData set ["defendObjective", ""];
+        } forEach _releaseIds;
+
+        _self call ["_releaseGroups", [_releaseIds, ""]];
+        ["GTN", 3, format["Defense lease release: %1 groups returned to pool", count _releaseIds]] call FLO_fnc_log;
     }],
 
     // Order group to move using virtualization waypoints
@@ -705,6 +782,9 @@ private _gtnCommander = createHashMapObject [[
 
         [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "MOVE"];
+        _gData set ["defendLeaseIssuedAt", -1];
+        _gData set ["defendLeaseUntil", -1];
+        _gData set ["defendObjective", ""];
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -737,6 +817,9 @@ private _gtnCommander = createHashMapObject [[
 
         [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "ATTACK"];
+        _gData set ["defendLeaseIssuedAt", -1];
+        _gData set ["defendLeaseUntil", -1];
+        _gData set ["defendObjective", ""];
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -747,7 +830,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Order group to defend using virtualization waypoints
     ["_orderGroupDefend", {
-        params ["_groupId", "_pos"];
+        params ["_groupId", "_pos", ["_objectiveId", ""]];
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
@@ -769,6 +852,10 @@ private _gtnCommander = createHashMapObject [[
 
         [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "DEFEND"];
+        _gData set ["defendObjective", _objectiveId];
+        private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
+        _gData set ["defendLeaseIssuedAt", diag_tickTime];
+        _gData set ["defendLeaseUntil", diag_tickTime + _leaseSeconds];
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];

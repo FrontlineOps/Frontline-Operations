@@ -957,7 +957,7 @@ private _executor = createHashMapObject [[
 
             // Order to defend
             {
-                _cmdr call ["_orderGroupDefend", [_x, _objPos]];
+                _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
             } forEach _available;
 
             ["GTN", 3, format["Assigned %1 groups to defend %2", count _available, _objId]] call FLO_fnc_log;
@@ -1249,7 +1249,7 @@ private _executor = createHashMapObject [[
             if (count _available < 1) exitWith { false };
 
             {
-                _cmdr call ["_orderGroupDefend", [_x, _objPos]];
+                _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
             } forEach _available;
 
             private _taskNode = _ctx get "taskNode";
@@ -1932,7 +1932,7 @@ private _executor = createHashMapObject [[
             } forEach _available;
             
             // Order groups to defend
-            { _cmdr call ["_orderGroupDefend", [_x, _targetPos]] } forEach _toAssign;
+            { _cmdr call ["_orderGroupDefend", [_x, _targetPos, _objId]] } forEach _toAssign;
             
             ["GTN", 3, format["Garrison: %1 groups to %2 (AT:%3 AA:%4)", 
                 count _toAssign, _objId, _requiresAT, _requiresAA]] call FLO_fnc_log;
