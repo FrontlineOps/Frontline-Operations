@@ -280,6 +280,20 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
                 _newWaypoints pushBack [_wpPos, _wpType, _wpBehavior, _wpSpeed, _wpFormation, _wpMode, _wpCompletionRadius];
             } forEach _posArray;
 
+            private _targetPos = _waypointSettings select 0;
+            private _routeDistance = _requestPos distance2D _targetPos;
+            private _isReinforcementOrder = (_groupData get "currentOrder") in ["REINFORCE", "AA_DEPLOY"];
+            if (!_directBootstrapAllowed && _isReinforcementOrder && {_routeDistance > 1200} && {count _newWaypoints < 2}) exitWith {
+                _groupData set ["pathRequestToken", -1];
+                _groupData set ["pathRequestTarget", []];
+                _groupData set ["pathRequestTrails", false];
+                _groupData set ["pathRequestStartedAt", -1];
+                _groupData set ["waypoints", []];
+                _groupData set ["currentWaypointIndex", 0];
+                _groupData set ["state", "planning"];
+                ["VIRTUALIZATION", 2, format["Rejected fallback route for reinforcement group %1 (distance=%2m, points=%3)", _groupId, round _routeDistance, count _newWaypoints]] call FLO_fnc_log;
+            };
+
             if (count _newWaypoints == 0) exitWith {
                 _groupData set ["pathRequestToken", -1];
                 _groupData set ["pathRequestTarget", []];

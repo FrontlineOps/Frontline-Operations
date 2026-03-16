@@ -426,7 +426,8 @@ if (isNil "FLO_Logistics_Network") then {
                 // Set waypoints
                 if (!isNil "FLO_fnc_updateVirtualGroupWaypoints") then {
                     private _usesRoadRouting = !(_groupType in ["helicopter", "air", "jet", "boat", "naval", "submarine"]);
-                    [_newGroupId, _wps, _usesRoadRouting, false] call FLO_fnc_updateVirtualGroupWaypoints;
+                    private _allowTrails = _groupType in ["infantry"];
+                    [_newGroupId, _wps, _usesRoadRouting, _allowTrails] call FLO_fnc_updateVirtualGroupWaypoints;
                 };
             };
 
