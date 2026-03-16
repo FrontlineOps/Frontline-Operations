@@ -160,18 +160,45 @@ private _executor = createHashMapObject [[
         {
             private _param = _x;
 
-            if (_param isEqualType "" && {_param find "_SELECTED_" == 0}) then {
-                // Look up in completed task data
-                private _key = _param select [1];  // Remove leading underscore
-                private _value = _completedData getOrDefault [_key, nil];
-                if (!isNil "_value") then {
-                    _resolved pushBack _value;
-                } else {
-                    ["GTN", 2, format["Could not resolve param: %1", _param]] call FLO_fnc_log;
-                    _resolved pushBack "";
+            if (_param isEqualTo "_HIGHEST_PRIORITY_UNDER_ATTACK") then {
+                private _resolvedObjId = "";
+                private _gtnCmdr = _self get "_gtnCommander";
+
+                if (!isNil "_gtnCmdr") then {
+                    private _ws = _gtnCmdr get "_worldState";
+                    if (!isNil "_ws") then {
+                        private _underAttack = _ws call ["_getObjectivesUnderAttack", []];
+                        private _bestScore = -1000000;
+
+                        {
+                            private _objId = _x;
+                            private _objData = _underAttack get _objId;
+                            private _score = _objData get "priority";
+                            _score = _score + ((_objData get "enemyCount") * 5);
+
+                            if (_score > _bestScore) then {
+                                _bestScore = _score;
+                                _resolvedObjId = _objId;
+                            };
+                        } forEach (keys _underAttack);
+                    };
                 };
+
+                _resolved pushBack _resolvedObjId;
             } else {
-                _resolved pushBack _param;
+                if (_param isEqualType "" && {_param find "_SELECTED_" == 0}) then {
+                // Look up in completed task data
+                    private _key = _param select [1];  // Remove leading underscore
+                    private _value = _completedData getOrDefault [_key, nil];
+                    if (!isNil "_value") then {
+                        _resolved pushBack _value;
+                    } else {
+                        ["GTN", 2, format["Could not resolve param: %1", _param]] call FLO_fnc_log;
+                        _resolved pushBack "";
+                    };
+                } else {
+                    _resolved pushBack _param;
+                };
             };
         } forEach _params;
 
@@ -1204,28 +1231,38 @@ private _executor = createHashMapObject [[
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+
+            if (_objId == "") exitWith {
+                ["GTN", 3, "Defensive fires skipped - no under-attack objective"] call FLO_fnc_log;
+                _primData set ["missionFired", false];
+                _taskNode set ["primitiveData", _primData];
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith {
-                ["GTN", 2, format["Defensive fires failed - no position for %1", _objId]] call FLO_fnc_log;
-                _ctx set ["status", "FAILED"];
-                false
+                ["GTN", 3, format["Defensive fires skipped - no position for %1", _objId]] call FLO_fnc_log;
+                _primData set ["missionFired", false];
+                _taskNode set ["primitiveData", _primData];
+                _ctx set ["status", "SUCCESS"];
+                true
             };
 
             // Call for defensive artillery
             private _result = _cmdr call ["_requestArtillery", [_objPos, "DEFENSIVE", 6]];
             
             if (!_result) then {
-                ["GTN", 2, format["Defensive fires failed - artillery unavailable for %1", _objId]] call FLO_fnc_log;
+                ["GTN", 3, format["Defensive fires skipped - artillery unavailable for %1", _objId]] call FLO_fnc_log;
             };
 
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             _primData set ["missionFired", _result];
             _taskNode set ["primitiveData", _primData];
 
-            _ctx set ["status", if (_result) then {"SUCCESS"} else {"FAILED"}];
-            _result
+            _ctx set ["status", "SUCCESS"];
+            true
         }]];
 
         // prim_establish_defense
@@ -1235,8 +1272,18 @@ private _executor = createHashMapObject [[
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
 
+            if (_objId == "") exitWith {
+                ["GTN", 3, "Establish defense skipped - no under-attack objective"] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") exitWith { false };
+            if (isNil "_objPos") exitWith {
+                ["GTN", 3, format["Establish defense skipped - no position for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             // Get groups from track pool
             private _taskNode = _ctx get "taskNode";
@@ -1246,7 +1293,11 @@ private _executor = createHashMapObject [[
             } else {
                 _cmdr call ["_getAvailableGroups", [2]]
             };
-            if (count _available < 1) exitWith { false };
+            if (count _available < 1) exitWith {
+                ["GTN", 3, format["Establish defense skipped - no groups available for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             {
                 _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
@@ -1271,12 +1322,16 @@ private _executor = createHashMapObject [[
 
             if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
                 ["GTN", 2, format["Recon patrol aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
-                _ctx set ["status", "FAILED"];
-                false
+                _ctx set ["status", "SUCCESS"];
+                true
             };
 
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") exitWith { false };
+            if (isNil "_objPos") exitWith {
+                ["GTN", 3, format["Recon patrol skipped - no position for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             private _available = _cmdr call ["_getAvailableGroups", [1]];
             private _groups = FLO_virtualGroups get "_groups";
@@ -1284,7 +1339,16 @@ private _executor = createHashMapObject [[
                 private _gData = _groups get _x;
                 (_gData get "groupType") in ["infantry", "recon"]
             };
-            if (count _infantry < 1) exitWith { false };
+            if (count _infantry < 1) exitWith {
+                ["GTN", 3, format["Recon patrol skipped - no infantry available for %1", _objId]] call FLO_fnc_log;
+                private _taskNode = _ctx get "taskNode";
+                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+                _primData set ["patrolDispatched", false];
+                _primData set ["objectiveId", _objId];
+                _taskNode set ["primitiveData", _primData];
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             private _reconGroup = _infantry select 0;
             // Use random direction and safer distance (800m+)
@@ -1379,14 +1443,13 @@ private _executor = createHashMapObject [[
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
-            private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
             private _gtnCmdr = _self get "_gtnCommander";
 
             if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
                 ["GTN", 2, format["Air recon aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
-                _ctx set ["status", "FAILED"];
-                false
+                _ctx set ["status", "SUCCESS"];
+                true
             };
 
             // Check if we've already dispatched and are waiting for intel
@@ -1409,9 +1472,9 @@ private _executor = createHashMapObject [[
             // Phase 1: Dispatch aircraft
             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
             if (isNil "_objPos") exitWith {
-                ["GTN", 2, format["Air recon failed - no position for %1", _objId]] call FLO_fnc_log;
-                _ctx set ["status", "FAILED"];
-                false
+                ["GTN", 3, format["Air recon skipped - no position for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
             };
 
             // Request an actual air asset to fly over
@@ -1419,8 +1482,24 @@ private _executor = createHashMapObject [[
             private _asset = _mgr call ["_requestAirAsset", [_objPos, "RECON", _self get "_ownSide"]];
 
             if (count _asset == 0) exitWith {
-                ["GTN", 2, "Air recon failed - no available air assets"] call FLO_fnc_log;
-                false
+                ["GTN", 2, format["Air recon unavailable for %1 - falling back to ground recon", _objId]] call FLO_fnc_log;
+
+                private _handlers = _self get "_handlers";
+                private _groundReconHandler = _handlers getOrDefault ["prim_send_recon_patrol", nil];
+
+                if (isNil "_groundReconHandler") exitWith {
+                    ["GTN", 2, "Ground recon fallback handler missing - continuing with existing intel"] call FLO_fnc_log;
+                    _ctx set ["status", "SUCCESS"];
+                    true
+                };
+
+                private _fallbackResult = [_ctx] call _groundReconHandler;
+                if (!_fallbackResult && {(_ctx get "status") == "FAILED"}) then {
+                    ["GTN", 2, format["Ground recon fallback failed for %1 - continuing with existing intel", _objId]] call FLO_fnc_log;
+                    _ctx set ["status", "SUCCESS"];
+                };
+
+                true
             };
 
             private _aircraft = _asset select 0;
