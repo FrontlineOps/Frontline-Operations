@@ -37,7 +37,16 @@ private _attachedTo = _groupData get "attachedTo";
 // DISTANCE CHECK & TIERED UPDATE
 // ============================================================================
 private _nearestDist = [_position] call FLO_VirtUpdate_getNearestPlayerDist;
-private _lastGroupUpdate = _groupUpdateTimes getOrDefault [_groupId, 0];
+private _lastGroupUpdate = _groupUpdateTimes getOrDefault [_groupId, -1];
+
+// Deterministic phase offset per group to avoid synchronized update spikes.
+private _updatePhase = _groupData getOrDefault ["updatePhase", -1];
+if (_updatePhase < 0) then {
+    private _seed = 0;
+    { _seed = (_seed + _x) mod 997; } forEach toArray _groupId;
+    _updatePhase = _seed / 997;
+    _groupData set ["updatePhase", _updatePhase];
+};
 
 // Determine update interval based on distance
 private _updateInterval = if (_nearestDist < 1000) then {
@@ -52,6 +61,10 @@ private _updateInterval = if (_nearestDist < 1000) then {
 
 // Skip if not time for this group's tiered update (unless active or close)
 if (!_isActive && _nearestDist > _activationDist) then {
+    if (_lastGroupUpdate < 0) then {
+        _lastGroupUpdate = _now - (_updatePhase * _updateInterval);
+        _groupUpdateTimes set [_groupId, _lastGroupUpdate];
+    };
     if (_now - _lastGroupUpdate < _updateInterval) exitWith {};
 };
 _groupUpdateTimes set [_groupId, _now];
