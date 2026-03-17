@@ -147,6 +147,14 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
         if (count _pathStart > 2) then { _pathStart resize 2; };
         if (count _pathEnd > 2) then { _pathEnd resize 2; };
 
+        // Cooldown repeated retries for the same failed route target.
+        private _lastFailAt = _groupData getOrDefault ["pathLastFailAt", -1];
+        private _lastFailTarget = _groupData getOrDefault ["pathLastFailTarget", []];
+        private _lastFailTrails = _groupData getOrDefault ["pathLastFailTrails", false];
+        if (_lastFailAt > 0 && {count _lastFailTarget >= 2} && {(diag_tickTime - _lastFailAt) < 60} && {_lastFailTarget distance2D _pathEnd < 100} && {_lastFailTrails isEqualTo _allowTrails}) exitWith {
+            ["VIRTUALIZATION", 4, format["Skipping repeated failed path request for group %1 (cooldown)", _groupId]] call FLO_fnc_log;
+        };
+
         // Keep existing request if it's already pending for the same destination + trails mode.
         private _existingToken = _groupData getOrDefault ["pathRequestToken", -1];
         private _existingTarget = _groupData getOrDefault ["pathRequestTarget", []];
@@ -241,6 +249,9 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
 
             if (!_status) exitWith {
                 _groupData set ["pathRequestToken", -1];
+                _groupData set ["pathLastFailAt", diag_tickTime];
+                _groupData set ["pathLastFailTarget", _groupData getOrDefault ["pathRequestTarget", []]];
+                _groupData set ["pathLastFailTrails", _groupData getOrDefault ["pathRequestTrails", false]];
                 if (!_directBootstrapAllowed) then {
                     _groupData set ["state", "idle"];
                     ["VIRTUALIZATION", 2, format["Pathfinding failed for group %1; holding (resolved path required)", _groupId]] call FLO_fnc_log;
@@ -343,6 +354,9 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             _groupData set ["pathRequestTarget", []];
             _groupData set ["pathRequestTrails", false];
             _groupData set ["pathRequestStartedAt", -1];
+            _groupData set ["pathLastFailAt", -1];
+            _groupData set ["pathLastFailTarget", []];
+            _groupData set ["pathLastFailTrails", false];
 
             ["VIRTUALIZATION", 3, format["Pathfinding completed for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
 

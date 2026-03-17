@@ -1158,12 +1158,16 @@ private _executor = createHashMapObject [[
 
             if (count _available < 1) exitWith { false };
 
-            // Order to defend
+            // Order to defend (count only successful assignments)
+            private _assigned = 0;
             {
-                _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
+                if (_cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]]) then {
+                    _assigned = _assigned + 1;
+                };
             } forEach _available;
 
-            ["GTN", 3, format["Assigned %1 groups to defend %2", count _available, _objId]] call FLO_fnc_log;
+            if (_assigned < 1) exitWith { false };
+            ["GTN", 3, format["Assigned %1 groups to defend %2", _assigned, _objId]] call FLO_fnc_log;
             _ctx set ["status", "SUCCESS"];
             true
         }]];
@@ -1199,11 +1203,14 @@ private _executor = createHashMapObject [[
             if (count _available < 1) exitWith { false };
 
             // QRF should become objective defense, not a terminal MOVE order.
+            private _assigned = 0;
             {
-                _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
+                if (_cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]]) then {
+                    _assigned = _assigned + 1;
+                };
             } forEach _available;
 
-            true
+            _assigned > 0
         }]];
 
         // prim_select_priority_objective
@@ -1297,9 +1304,14 @@ private _executor = createHashMapObject [[
             };
             if (count _available < 1) exitWith { false };
 
+            private _assigned = 0;
             {
-                _cmdr call ["_orderGroupDefend", [_x, _objPos, _sectorId]];
+                if (_cmdr call ["_orderGroupDefend", [_x, _objPos, _sectorId]]) then {
+                    _assigned = _assigned + 1;
+                };
             } forEach _available;
+
+            if (_assigned < 1) exitWith { false };
 
             _primData set ["arrived", false];
             _taskNode set ["primitiveData", _primData];
@@ -1481,9 +1493,18 @@ private _executor = createHashMapObject [[
                 true
             };
 
+            private _assigned = 0;
             {
-                _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
+                if (_cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]]) then {
+                    _assigned = _assigned + 1;
+                };
             } forEach _available;
+
+            if (_assigned < 1) exitWith {
+                ["GTN", 3, format["Establish defense skipped - objective %1 already saturated", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
@@ -2193,10 +2214,21 @@ private _executor = createHashMapObject [[
             } forEach _available;
             
             // Order groups to defend
-            { _cmdr call ["_orderGroupDefend", [_x, _targetPos, _objId]] } forEach _toAssign;
+            private _assigned = 0;
+            {
+                if (_cmdr call ["_orderGroupDefend", [_x, _targetPos, _objId]]) then {
+                    _assigned = _assigned + 1;
+                };
+            } forEach _toAssign;
+
+            if (_assigned < 1) exitWith {
+                ["GTN", 3, format["Garrison skipped for %1 - objective saturated", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
             
             ["GTN", 3, format["Garrison: %1 groups to %2 (AT:%3 AA:%4)", 
-                count _toAssign, _objId, _requiresAT, _requiresAA]] call FLO_fnc_log;
+                _assigned, _objId, _requiresAT, _requiresAA]] call FLO_fnc_log;
             
             _ctx set ["status", "SUCCESS"];
             true

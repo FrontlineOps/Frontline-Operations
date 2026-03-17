@@ -118,5 +118,7 @@ XPS_typ_JobScheduler = [
 	}]
 ];
 
-FLO_PF_Scheduler = createhashmapobject [XPS_typ_JobScheduler];
-FLO_PF_Scheduler call ["Start"];
+if (isNil "FLO_PF_Scheduler") then {
+	FLO_PF_Scheduler = createhashmapobject [XPS_typ_JobScheduler];
+	FLO_PF_Scheduler call ["Start"];
+};

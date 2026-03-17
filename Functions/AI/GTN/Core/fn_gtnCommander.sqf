@@ -1082,13 +1082,14 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        private _alreadyAssigned = false;
+        private _saturated = false;
         if (_objectiveId != "") then {
-            private _alreadyAssigned = ((_gData get "currentOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId};
+            _alreadyAssigned = ((_gData get "currentOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId};
             if (!_alreadyAssigned) then {
                 private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
                 private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
-
-                if (_cap > 0 && {_assigned >= _cap}) exitWith {
+                if (_cap > 0 && {_assigned >= _cap}) then {
                     ["GTN", 3, format[
                         "Defend order skipped for %1: %2 already saturated (%3/%4)",
                         _groupId,
@@ -1096,10 +1097,19 @@ private _gtnCommander = createHashMapObject [[
                         _assigned,
                         _cap
                     ]] call FLO_fnc_log;
-                    false
+                    _saturated = true;
                 };
             };
         };
+
+        if (_alreadyAssigned) exitWith {
+            private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
+            _gData set ["defendLeaseIssuedAt", diag_tickTime];
+            _gData set ["defendLeaseUntil", diag_tickTime + _leaseSeconds];
+            true
+        };
+
+        if (_saturated) exitWith { false };
 
         // Create defense waypoints
         private _waypoints = [

@@ -51,10 +51,10 @@ if (isNil "FLO_PF_RequestTTL_Success") then {
     FLO_PF_RequestTTL_Success = 300;
 };
 if (isNil "FLO_PF_RequestTTL_Fail") then {
-    FLO_PF_RequestTTL_Fail = 20;
+    FLO_PF_RequestTTL_Fail = 90;
 };
 if (isNil "FLO_PF_RequestCellSize") then {
-    FLO_PF_RequestCellSize = 25;
+    FLO_PF_RequestCellSize = 60;
 };
 
 private _cellSize = FLO_PF_RequestCellSize;
@@ -66,6 +66,7 @@ private _cellKey = {
 private _sKey = [_startPos, _cellSize] call _cellKey;
 private _eKey = [_endPos, _cellSize] call _cellKey;
 private _routeKey = format ["%1>%2|%3", _sKey, _eKey, _trails];
+private _reverseRouteKey = format ["%1>%2|%3", _eKey, _sKey, _trails];
 
 if (_routeKey in FLO_PF_RequestCache) then {
     private _cached = FLO_PF_RequestCache get _routeKey;
@@ -76,10 +77,42 @@ if (_routeKey in FLO_PF_RequestCache) then {
     FLO_PF_RequestCache deleteAt _routeKey;
 };
 
+if (_reverseRouteKey in FLO_PF_RequestCache) then {
+    private _cachedReverse = FLO_PF_RequestCache get _reverseRouteKey;
+    _cachedReverse params ["_status", "_path", "_expiresAt"];
+    if (diag_tickTime < _expiresAt) exitWith {
+        if (_status && {count _path > 0}) then {
+            private _reversedPath = +_path;
+            reverse _reversedPath;
+            [_status, _reversedPath, _args] call _code;
+        } else {
+            [_status, [], _args] call _code;
+        };
+    };
+    FLO_PF_RequestCache deleteAt _reverseRouteKey;
+};
+
 if (_routeKey in FLO_PF_RequestPending) exitWith {
     private _waiters = FLO_PF_RequestPending get _routeKey;
     _waiters pushBack [_code, _args];
     FLO_PF_RequestPending set [_routeKey, _waiters];
+};
+
+if (_reverseRouteKey in FLO_PF_RequestPending) exitWith {
+    private _waiters = FLO_PF_RequestPending get _reverseRouteKey;
+    private _reverseWaiter = {
+        params ["_status", "_posArray", "_waiterArgs"];
+        _waiterArgs params ["_codeFn", "_codeArgs"];
+        if (_status && {count _posArray > 0}) then {
+            private _reversedPath = +_posArray;
+            reverse _reversedPath;
+            [_status, _reversedPath, _codeArgs] call _codeFn;
+        } else {
+            [_status, [], _codeArgs] call _codeFn;
+        };
+    };
+    _waiters pushBack [_reverseWaiter, [_code, _args]];
+    FLO_PF_RequestPending set [_reverseRouteKey, _waiters];
 };
 
 FLO_PF_RequestPending set [_routeKey, [[_code, _args]]];

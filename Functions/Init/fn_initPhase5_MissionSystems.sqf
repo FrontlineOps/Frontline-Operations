@@ -650,13 +650,21 @@ diag_log "[FLO_INIT_P5] Logistics crates initialized and broadcast";
 // ============================================
 diag_log "[FLO_INIT_P5] Initializing pathfinding...";
 if (!isNil "FLO_fnc_initRoadGraph") then {
-    [] spawn FLO_fnc_initRoadGraph;
-    diag_log "[FLO_INIT_P5] Road graph initialization started";
+    if (isNil "FLO_PF_RoadGraph") then {
+        [] call FLO_fnc_initRoadGraph;
+        diag_log "[FLO_INIT_P5] Road graph initialized";
+    } else {
+        diag_log "[FLO_INIT_P5] Road graph already initialized";
+    };
 };
 
 if (!isNil "FLO_fnc_initPFScheduler") then {
-    [] spawn FLO_fnc_initPFScheduler;
-    diag_log "[FLO_INIT_P5] Pathfinding scheduler started";
+    if (isNil "FLO_PF_Scheduler") then {
+        [] call FLO_fnc_initPFScheduler;
+        diag_log "[FLO_INIT_P5] Pathfinding scheduler started";
+    } else {
+        diag_log "[FLO_INIT_P5] Pathfinding scheduler already running";
+    };
 };
 
 diag_log "[FLO_INIT_P5] Mission systems phase complete";

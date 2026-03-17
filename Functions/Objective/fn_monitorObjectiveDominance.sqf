@@ -160,15 +160,29 @@ while {true} do {
         private _opforCount = 0;
         
         {
-            if (alive _x) then {
-                // Verify strictly inside (if irregular shape) or simple radius check
-                // Assuming radius check is sufficient
-                switch (side _x) do {
-                    case west: { _bluforCount = _bluforCount + 1 };
-                    case east: { _opforCount = _opforCount + 1 };
-                };
+            if (!alive _x) then { continue };
+            if ((_x distance2D _pos) > _radius) then { continue };
+
+            private _uSide = side _x;
+            if (isPlayer _x) then {
+                _uSide = side group _x;
             };
+
+            if (_uSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+            if (_uSide isEqualTo east) then { _opforCount = _opforCount + 1 };
         } forEach _units;
+
+        // Dedicated can occasionally miss remote players in nearEntities.
+        // Ensure player presence is always reflected in capture counts.
+        {
+            if (!alive _x) then { continue };
+            if ((_x distance2D _pos) > _radius) then { continue };
+            if (_x in _units) then { continue };
+
+            private _pSide = side group _x;
+            if (_pSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+            if (_pSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+        } forEach _allPlayers;
 
         // Add precomputed virtual presence for this objective.
         private _virtualCounts = _virtualObjectiveCounts get _id;

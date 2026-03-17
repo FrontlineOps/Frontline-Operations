@@ -304,10 +304,11 @@ XPS_PF_typ_RoadGraphSearch = [
 	}]
 ];
 
-// Build Road graph
-diag_Log "[FLO][Pathfinding]Building Road Graph";
-FLO_PF_RoadGraph = createhashmapobject [XPS_PF_typ_RoadGraph];
-diag_Log "[FLO][Pathfinding]Finished building Road Graph";
+if (isNil "FLO_PF_RoadGraph") then {
+	diag_Log "[FLO][Pathfinding]Building Road Graph";
+	FLO_PF_RoadGraph = createhashmapobject [XPS_PF_typ_RoadGraph];
+	diag_Log "[FLO][Pathfinding]Finished building Road Graph";
+};
 
 // Vehicle doctrine (no trails, main road always better - descending preference)
 FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.9, 1, 1.2],["MAIN ROAD","ROAD","TRACK"]]];
