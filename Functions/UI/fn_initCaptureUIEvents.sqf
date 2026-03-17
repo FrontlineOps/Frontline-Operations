@@ -43,8 +43,8 @@ FLO_CaptureUI_CurrentObj = "";
 
     ["UI", 3, format["CaptureUI_Show event received: %1 (%2)", _objectiveName, _objectiveId]] call FLO_fnc_log;
 
-    // Already showing this objective?
-    if (FLO_CaptureUI_DisplayOpen && {FLO_CaptureUI_CurrentObj == _objectiveId}) exitWith {};
+    // Already showing this objective and UI fully ready.
+    if (FLO_CaptureUI_DisplayOpen && {FLO_CaptureUI_CurrentObj == _objectiveId} && {FLO_CaptureUI_HTMLReady}) exitWith {};
 
     // If showing different objective, just update the name
     if (FLO_CaptureUI_DisplayOpen && {FLO_CaptureUI_HTMLReady}) then {
@@ -68,7 +68,7 @@ FLO_CaptureUI_CurrentObj = "";
             params ["_objName"];
 
             private _startTime = diag_tickTime;
-            private _timeout = 3;
+            private _timeout = 8;
             private _display = displayNull;
             private _ctrl = controlNull;
 
@@ -125,12 +125,15 @@ FLO_CaptureUI_CurrentObj = "";
 ["FLO_CaptureUI_Update", {
     params [["_ratio", 0.5], ["_bluforCount", 0], ["_opforCount", 0], ["_owner", "EAST"]];
 
-    if (!FLO_CaptureUI_DisplayOpen || !FLO_CaptureUI_HTMLReady) exitWith {};
+    if (!FLO_CaptureUI_DisplayOpen) exitWith {};
 
     private _display = uiNamespace getVariable ["FLO_CaptureUI_Display", displayNull];
     if (!isNull _display) then {
         private _ctrl = _display displayCtrl 1101;
         if (!isNull _ctrl) then {
+            if (!FLO_CaptureUI_HTMLReady) then {
+                FLO_CaptureUI_HTMLReady = true;
+            };
             _ctrl ctrlWebBrowserAction ["ExecJS", format ["updateCaptureUI(%1, %2, %3, '%4')", _ratio, _bluforCount, _opforCount, _owner]];
         };
     };
@@ -141,4 +144,3 @@ FLO_CaptureUI_EventsInit = true;
 ["UI", 3, "CaptureUI CBA event handlers registered"] call FLO_fnc_log;
 
 true
-

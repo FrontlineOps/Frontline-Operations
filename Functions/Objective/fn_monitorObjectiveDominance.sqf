@@ -58,6 +58,7 @@ while {true} do {
 
     private _dataChanged = false;
     private _activeObjectives = [];
+    private _liveObjectives = [];
     private _allPlayers = allPlayers;
     
     // === IDENTIFY ACTIVE OBJECTIVES (Near Players) ===
@@ -67,8 +68,12 @@ while {true} do {
             private _oId = _x;
             private _objData = FLO_Objectives get _oId;
             // Active if player is within 1000m (allows for seeing capture status from distance)
-            if ((_objData get "position") distance2D _pPos < 1000) then {
+            private _dist = (_objData get "position") distance2D _pPos;
+            if (_dist < 1000) then {
                 _activeObjectives pushBackUnique _oId;
+            };
+            if (_dist < (_objData get "radius")) then {
+                _liveObjectives pushBackUnique _oId;
             };
         } forEach _objKeys;
     } forEach _allPlayers;
@@ -119,6 +124,7 @@ while {true} do {
             } forEach _objectivesToUpdate;
 
             if (_bestObjId == "") then { continue };
+            if (_bestObjId in _liveObjectives) then { continue };
 
             private _entry = _virtualObjectiveCounts get _bestObjId;
             private _vCount = _gData get "unitCount";
@@ -176,7 +182,7 @@ while {true} do {
         if (_dynamicRate > 5.0) then { _dynamicRate = 5.0 }; // Cap at 5x speed
         
         // Minimum unit requirement to complete capture
-        private _minUnitsToCapture = 3;
+        private _minUnitsToCapture = if (_id in _liveObjectives) then { 1 } else { 3 };
         
         if (_bluforCount > _opforCount && {_bluforCount >= _minUnitsToCapture}) then {
             _progress = (_progress + (_deltaTime * _dynamicRate)) min _captureTime;
