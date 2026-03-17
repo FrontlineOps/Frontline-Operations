@@ -44,29 +44,49 @@ XPS_typ_AstarSearch = [
 	["frontierAdd",compileFinal {
 		params [["_priority",nil,[0]],"_item"];
 
-		private _frontier = _self get "frontier";
-		private _lo = 0;
-		private _hi = count _frontier;
-
-		// Binary-search insertion index (ascending by priority).
-		while {_lo < _hi} do {
-			private _mid = floor ((_lo + _hi) * 0.5);
-			private _midPriority = (_frontier select _mid) select 0;
-			if (_priority > _midPriority) then {
-				_lo = _mid + 1;
-			} else {
-				_hi = _mid;
-			};
+		private _heap = _self get "frontier";
+		_heap pushBack [_priority, _item];
+		private _idx = (count _heap) - 1;
+		while {_idx > 0} do {
+			private _parent = floor ((_idx - 1) / 2);
+			private _parentPri = (_heap select _parent) select 0;
+			if (_parentPri <= _priority) exitWith {};
+			_heap set [_idx, _heap select _parent];
+			_idx = _parent;
 		};
-
-		_frontier insert [_lo, [[_priority, _item]] ];
+		_heap set [_idx, [_priority, _item]];
 	}],
 	["frontierPullLowest",compileFinal {
-		private _frontier = _self get "frontier";
-		if (count _frontier > 0) exitWith {
-			(_frontier deleteat 0) # 1;
+		private _heap = _self get "frontier";
+		private _count = count _heap;
+		if (_count isEqualTo 0) exitWith { nil };
+
+		private _root = _heap select 0;
+		if (_count isEqualTo 1) exitWith {
+			_heap resize 0;
+			_root # 1;
 		};
-		nil;
+
+		private _last = _heap deleteAt (_count - 1);
+		private _lastPri = _last select 0;
+		private _idx = 0;
+		private _newCount = count _heap;
+
+		while {true} do {
+			private _left = (_idx * 2) + 1;
+			if (_left >= _newCount) exitWith {};
+			private _right = _left + 1;
+			private _child = _left;
+			if (_right < _newCount && {((_heap select _right) select 0) < ((_heap select _left) select 0)}) then {
+				_child = _right;
+			};
+			if (((_heap select _child) select 0) >= _lastPri) exitWith {};
+			_heap set [_idx, _heap select _child];
+			_idx = _child;
+		};
+
+		_heap set [_idx, _last];
+		_root # 1;
 	}],
 	["Path",[]],
 	["Status",nil],
@@ -121,12 +141,12 @@ XPS_typ_AstarSearch = [
 			private _estimate = _self call ["AdjustEstimate",[_graph call ["GetEstimate",[_x,_endNode]],_x,_endNode]];
 			private _cost = _self call ["AdjustCost",[_graph call ["GetCost",[_currentNode,_x]],_currentNode,_x]];
 			private _costSofar = (_costSoFarMap get (_currentNode get "Index")) + _cost;
-			private _priority = _costSoFar + _estimate;
+			private _priority = _costSofar + _estimate;
 			
 			private _costSoFarX = _costSoFarMap get (_x get "Index");
 
-			if (isNil {_costSoFarX} || {_costSoFar < _costSoFarX}) then {
-				_costSoFarMap set [_x get "Index", _costSoFar];
+			if (isNil {_costSoFarX} || {_costSofar < _costSoFarX}) then {
+				_costSoFarMap set [_x get "Index", _costSofar];
 				_self call ["frontierAdd",[_priority,_x]];
 				_self get "cameFrom" set [_x get "Index", _currentNode];
 			};

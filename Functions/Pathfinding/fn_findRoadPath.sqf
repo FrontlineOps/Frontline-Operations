@@ -54,17 +54,82 @@ if (isNil "FLO_PF_RequestTTL_Fail") then {
     FLO_PF_RequestTTL_Fail = 90;
 };
 if (isNil "FLO_PF_RequestCellSize") then {
-    FLO_PF_RequestCellSize = 60;
+    FLO_PF_RequestCellSize = 90;
+};
+if (isNil "FLO_PF_RequestCacheMax") then {
+    FLO_PF_RequestCacheMax = 3000;
+};
+if (isNil "FLO_PF_RequestPendingMax") then {
+    FLO_PF_RequestPendingMax = 1800;
+};
+if (isNil "FLO_PF_RequestPruneInterval") then {
+    FLO_PF_RequestPruneInterval = 15;
+};
+if (isNil "FLO_PF_RequestNextPruneAt") then {
+    FLO_PF_RequestNextPruneAt = 0;
+};
+if (isNil "FLO_PF_QueueSoftCap") then {
+    FLO_PF_QueueSoftCap = 1500;
 };
 
+private _now = diag_tickTime;
+private _queueDepth = 0;
+if (!isNil "FLO_PF_Scheduler") then {
+    _queueDepth = (FLO_PF_Scheduler get "_queueObject") call ["Count"];
+};
+if (_now >= FLO_PF_RequestNextPruneAt) then {
+    {
+        private _cacheEntry = FLO_PF_RequestCache get _x;
+        if ((_cacheEntry select 2) <= _now) then {
+            FLO_PF_RequestCache deleteAt _x;
+        };
+    } forEach (keys FLO_PF_RequestCache);
+
+    private _cacheKeys = keys FLO_PF_RequestCache;
+    private _cacheCount = count _cacheKeys;
+    if (_cacheCount > FLO_PF_RequestCacheMax) then {
+        private _expiryList = [];
+        {
+            _expiryList pushBack [((FLO_PF_RequestCache get _x) select 2), _x];
+        } forEach _cacheKeys;
+        _expiryList sort true;
+        private _dropCount = _cacheCount - FLO_PF_RequestCacheMax;
+        for "_i" from 0 to (_dropCount - 1) do {
+            FLO_PF_RequestCache deleteAt ((_expiryList select _i) select 1);
+        };
+    };
+
+    FLO_PF_RequestNextPruneAt = _now + FLO_PF_RequestPruneInterval;
+};
+
+private _dist = _startPos distance2D _endPos;
 private _cellSize = FLO_PF_RequestCellSize;
+if (_dist > 6000) then {
+    _cellSize = _cellSize * 4;
+} else {
+    if (_dist > 3000) then {
+        _cellSize = _cellSize * 3;
+    } else {
+        if (_dist > 1200) then {
+            _cellSize = _cellSize * 2;
+        };
+    };
+};
+if (_queueDepth > 1200) then {
+    _cellSize = _cellSize * 2;
+} else {
+    if (_queueDepth > 700) then {
+        _cellSize = _cellSize + FLO_PF_RequestCellSize;
+    };
+};
+
 private _cellKey = {
     params ["_pos", "_size"];
     format ["%1_%2", round ((_pos select 0) / _size), round ((_pos select 1) / _size)]
 };
 
-private _sKey = [_startPos, _cellSize] call _cellKey;
-private _eKey = [_endPos, _cellSize] call _cellKey;
+private _sKey = format ["%1@%2", [_startPos, _cellSize] call _cellKey, _cellSize];
+private _eKey = format ["%1@%2", [_endPos, _cellSize] call _cellKey, _cellSize];
 private _routeKey = format ["%1>%2|%3", _sKey, _eKey, _trails];
 private _reverseRouteKey = format ["%1>%2|%3", _eKey, _sKey, _trails];
 
@@ -115,19 +180,31 @@ if (_reverseRouteKey in FLO_PF_RequestPending) exitWith {
     FLO_PF_RequestPending set [_reverseRouteKey, _waiters];
 };
 
+if (_queueDepth >= FLO_PF_QueueSoftCap) exitWith {
+    FLO_PF_RequestCache set [_routeKey, [false, [], _now + 20]];
+    ["PATHFINDING", 3, format ["Queue soft cap hit (%1), rejecting route %2", _queueDepth, _routeKey]] call FLO_fnc_log;
+    [false, [], _args] call _code;
+};
+
+if ((count (keys FLO_PF_RequestPending)) >= FLO_PF_RequestPendingMax) exitWith {
+    ["PATHFINDING", 2, format ["Path request backlog overflow (%1), rejecting route %2", count (keys FLO_PF_RequestPending), _routeKey]] call FLO_fnc_log;
+    FLO_PF_RequestCache set [_routeKey, [false, [], _now + 20]];
+    [false, [], _args] call _code;
+};
+
 FLO_PF_RequestPending set [_routeKey, [[_code, _args]]];
 
 private _dispatch = {
     params ["_status", "_posArray", "_cbArgs"];
     _cbArgs params ["_key"];
 
-    private _waiters = FLO_PF_RequestPending get _key;
-    FLO_PF_RequestPending deleteAt _key;
-    if (isNil "_waiters") exitWith {};
-
     private _resolved = if (_status && {_posArray isEqualType []}) then { +_posArray } else { [] };
     private _ttl = if (_status && {count _resolved > 0}) then { FLO_PF_RequestTTL_Success } else { FLO_PF_RequestTTL_Fail };
     FLO_PF_RequestCache set [_key, [_status, _resolved, diag_tickTime + _ttl]];
+
+    private _waiters = FLO_PF_RequestPending get _key;
+    FLO_PF_RequestPending deleteAt _key;
+    if (isNil "_waiters") exitWith {};
 
     {
         _x params ["_cb", "_userArgs"];
@@ -142,11 +219,13 @@ _search set ["Doctrine", _doctrine];
 _search set ["Callback", _dispatch];
 _search set ["CallbackArgs", [_routeKey]];
 
-private _dist = _startPos distance2D _endPos;
-private _budget = 800 + round (_dist * 0.35);
-if (_trails) then { _budget = round (_budget * 1.25); };
-if (_budget < 800) then { _budget = 800; };
-if (_budget > 12000) then { _budget = 12000; };
+private _budget = 350 + round (_dist * 0.2);
+if (_dist > 4000) then {
+    _budget = _budget + round ((_dist - 4000) * 0.15);
+};
+if (_trails) then { _budget = round (_budget * 1.2); };
+if (_budget < 350) then { _budget = 350; };
+if (_budget > 9000) then { _budget = 9000; };
 _search set ["BudgetInitial", _budget];
 _search set ["BudgetRemaining", _budget];
 

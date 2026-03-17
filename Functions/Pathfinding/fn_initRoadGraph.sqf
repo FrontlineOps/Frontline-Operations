@@ -176,6 +176,7 @@ XPS_PF_typ_RoadGraph = [
 	["#create",compileFinal {
 		_self set ["_graphMarkersEnabled",false];
 		_self set ["_graphMarkers",[]];
+		_self set ["_nodeLookupCache", createHashMap];
 		_self call ["buildGraph"];
 	}],
 	["Roads",createhashmap],
@@ -206,18 +207,42 @@ XPS_PF_typ_RoadGraph = [
 	}],
 	["GetNodeAt",compileFinal {
 		if !(params [["_pos",nil,[[]],[2,3]]]) exitWith {nil};
+		private _cache = _self get "_nodeLookupCache";
+		private _cacheKey = format ["%1_%2", floor ((_pos select 0) / 50), floor ((_pos select 1) / 50)];
+		if (_cacheKey in _cache) exitWith {
+			_cache get _cacheKey;
+		};
+
 		private _node = nil;
-		// search for roads in increasingly large distances
-		{
-			private _roads = nearestTerrainObjects [_pos,["MAIN ROAD","ROAD","TRACK","TRAIL"],_x,true];
-			if (count _roads > 0) exitWith {
-				_node = _self get "Roads" get (str (_roads#0));
-			};
-		} foreach [50, 100, 500, 1000];
+
+		private _road = roadAt _pos;
+		if (!isNull _road) then {
+			_node = (_self get "Roads") get (str _road);
+		};
+
+		if (isNil "_node") then {
+			{
+				private _roads = _pos nearRoads _x;
+				if (count _roads > 0) exitWith {
+					_node = (_self get "Roads") get (str (_roads select 0));
+				};
+			} forEach [30, 100, 250, 500, 900];
+		};
+
+		if (isNil "_node") then {
+			{
+				private _roads = nearestTerrainObjects [_pos,["MAIN ROAD","ROAD","TRACK","TRAIL"],_x,false];
+				if (count _roads > 0) exitWith {
+					_node = (_self get "Roads") get (str (_roads select 0));
+				};
+			} forEach [100, 300, 700, 1000];
+		};
+
 		if (isNil "_node") exitwith {
 			diag_log format["[FLO][Pathfinding] RoadGraphSearch: failed to find suitable road within 1km of position %1",_pos];
 			false;
 		};
+		_cache set [_cacheKey, _node];
 		_node;
 	}],
 	["SmoothPath", compileFinal {
