@@ -429,8 +429,22 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
             // Filter to objectives with nearby opposing forces
             _opforObjs select {
                 private _pos = (FLO_Objectives get _x) get "position";
-                private _enemyNearby = (_pos nearEntities [["Man", "Car", "Tank", "LandVehicle", "Air", "Ship"], _detectRange]) findIf {
-                    alive _x && {side _x == _enemySide}
+                private _nearUnits = _pos nearEntities [["Man", "Car", "Tank", "LandVehicle", "Air", "Ship"], _detectRange];
+                private _enemyNearby = _nearUnits findIf {
+                    alive _x && {
+                        private _uSide = side _x;
+                        if (isPlayer _x) then {
+                            _uSide = side group _x;
+                        };
+                        _uSide isEqualTo _enemySide
+                    }
+                };
+                if (_enemyNearby == -1) then {
+                    _enemyNearby = allPlayers findIf {
+                        alive _x &&
+                        {(_x distance2D _pos) <= _detectRange} &&
+                        {(side group _x) isEqualTo _enemySide}
+                    };
                 };
                 _enemyNearby != -1
             }

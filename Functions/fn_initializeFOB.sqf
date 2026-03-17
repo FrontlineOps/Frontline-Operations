@@ -380,10 +380,34 @@ _fobBuilding addEventHandler ["Killed", {
 
     while {alive _fob} do {
         try {
-            // Optimized unit counting using nearEntities
+            // Dedicated-safe unit counting: nearEntities + player fallback.
+            private _fobPos = getPosATL _fob;
             private _nearUnits = _fob nearEntities [["Man", "LandVehicle"], _areaRadius];
-            private _bluforCount = {alive _x && side _x isEqualTo west} count _nearUnits;
-            private _opforCount = {alive _x && side _x isEqualTo east} count _nearUnits;
+            private _bluforCount = 0;
+            private _opforCount = 0;
+
+            {
+                if (!alive _x) then { continue };
+                if ((_x distance2D _fobPos) > _areaRadius) then { continue };
+
+                private _uSide = side _x;
+                if (isPlayer _x) then {
+                    _uSide = side group _x;
+                };
+
+                if (_uSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+                if (_uSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+            } forEach _nearUnits;
+
+            {
+                if (!alive _x) then { continue };
+                if ((_x distance2D _fobPos) > _areaRadius) then { continue };
+                if (_x in _nearUnits) then { continue };
+
+                private _pSide = side group _x;
+                if (_pSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+                if (_pSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+            } forEach allPlayers;
 
             if (_opforCount > _bluforCount && _opforCount > 0) then {
                 // Create status marker if needed

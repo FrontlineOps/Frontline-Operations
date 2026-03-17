@@ -249,9 +249,30 @@ private _template = createHashMapFromArray [
         
         // Or check if all nearby enemies eliminated (simpler check)
         private _position = _instance get "position";
-        private _enemies = (_position nearEntities ["Man", 150]) select { side _x == _enemySide && alive _x };
-        
-        (count _enemies) == 0
+        private _units = _position nearEntities ["Man", 150];
+        private _enemyCount = 0;
+
+        {
+            if (!alive _x) then { continue };
+            private _uSide = side _x;
+            if (isPlayer _x) then {
+                _uSide = side group _x;
+            };
+            if (_uSide isEqualTo _enemySide) then {
+                _enemyCount = _enemyCount + 1;
+            };
+        } forEach _units;
+
+        {
+            if (!alive _x) then { continue };
+            if ((_x distance2D _position) > 150) then { continue };
+            if (_x in _units) then { continue };
+            if ((side group _x) isEqualTo _enemySide) then {
+                _enemyCount = _enemyCount + 1;
+            };
+        } forEach allPlayers;
+
+        _enemyCount == 0
     }],
     
     ["fnc_checkFail", {

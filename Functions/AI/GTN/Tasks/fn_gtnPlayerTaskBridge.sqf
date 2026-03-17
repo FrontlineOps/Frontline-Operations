@@ -195,7 +195,11 @@ private _fnc_collectDestroyTargets = {
     private _targets = [];
     {
         if (!alive _x) then { continue };
-        if ((side _x) != _enemySide) then { continue };
+        private _tSide = side _x;
+        if (isPlayer _x) then {
+            _tSide = side group _x;
+        };
+        if !(_tSide isEqualTo _enemySide) then { continue };
 
         private _valuable = (_x isKindOf "Tank") || (_x isKindOf "Wheeled_APC_F") || (_x isKindOf "Tracked_APC_F") || (_x isKindOf "StaticWeapon");
 
@@ -209,7 +213,13 @@ private _fnc_collectDestroyTargets = {
 private _fnc_countAliveTargets = {
     params ["_targets", "_enemySide"];
     {
-        !isNull _x && {alive _x} && {(side _x) isEqualTo _enemySide}
+        if (isNull _x || {!alive _x}) then { false } else {
+            private _tSide = side _x;
+            if (isPlayer _x) then {
+                _tSide = side group _x;
+            };
+            _tSide isEqualTo _enemySide
+        }
     } count _targets
 };
 

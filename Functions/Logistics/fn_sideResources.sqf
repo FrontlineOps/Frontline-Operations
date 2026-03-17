@@ -167,9 +167,31 @@ private _fnc_createResourceObject = {
                         private _pos = _data get "position";
                         private _baseVal = _resourceValues get _subtype;
 
-                        private _nearEnemy = count ((_pos nearEntities [["Man", "Car", "Tank", "LandVehicle"], 1000]) select {
-                            alive _x && { side _x == _enemySide }
-                        });
+                        private _nearUnits = _pos nearEntities [["Man", "Car", "Tank", "LandVehicle"], 1000];
+                        private _nearEnemy = 0;
+
+                        {
+                            if (!alive _x) then { continue };
+
+                            private _uSide = side _x;
+                            if (isPlayer _x) then {
+                                _uSide = side group _x;
+                            };
+
+                            if (_uSide isEqualTo _enemySide) then {
+                                _nearEnemy = _nearEnemy + 1;
+                            };
+                        } forEach _nearUnits;
+
+                        {
+                            if (!alive _x) then { continue };
+                            if ((_x distance2D _pos) > 1000) then { continue };
+                            if (_x in _nearUnits) then { continue };
+
+                            if ((side group _x) isEqualTo _enemySide) then {
+                                _nearEnemy = _nearEnemy + 1;
+                            };
+                        } forEach allPlayers;
 
                         private _contested = _nearEnemy > 0;
                         private _contestMod = if (_contested) then { 0.5 } else { 1.0 };

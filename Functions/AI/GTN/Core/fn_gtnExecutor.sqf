@@ -1586,11 +1586,29 @@ private _executor = createHashMapObject [[
                 if (!isNull _realGroup) then {
                     private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
                     private _targets = _objPos nearEntities [["Man", "LandVehicle", "Tank"], 1000];
+
                     {
-                        if (side _x == _enemySide) then {
+                        if (!alive _x) then { continue };
+
+                        private _tSide = side _x;
+                        if (isPlayer _x) then {
+                            _tSide = side group _x;
+                        };
+
+                        if (_tSide isEqualTo _enemySide) then {
                             _realGroup reveal [_x, 4];
                         };
                     } forEach _targets;
+
+                    {
+                        if (!alive _x) then { continue };
+                        if ((_x distance2D _objPos) > 1000) then { continue };
+                        if (_x in _targets) then { continue };
+                        if ((side group _x) isEqualTo _enemySide) then {
+                            _realGroup reveal [_x, 4];
+                        };
+                    } forEach allPlayers;
+
                     ["GTN", 3, format["Recon Group %1 revealed %2 targets at %3", _reconGroup, count _targets, _objId]] call FLO_fnc_log;
                 };
                 if (isNil "_gtnCmdr") exitWith {};
@@ -1889,6 +1907,15 @@ private _executor = createHashMapObject [[
                 // This is why we use a nearEntities call to reveal targets to the aircraft.
                 private _nearEntities = _objPos nearEntities [["Man", "AllVehicles"], 1500];
                 private _enemyEntities = _nearEntities select { side _x == _enemySide || side group _x == _enemySide };
+
+                {
+                    if (!alive _x) then { continue };
+                    if ((_x distance2D _objPos) > 1500) then { continue };
+                    if (_x in _enemyEntities) then { continue };
+                    if ((side group _x) isEqualTo _enemySide) then {
+                        _enemyEntities pushBack _x;
+                    };
+                } forEach allPlayers;
                 
                 // Reveal enemies to aircraft CREW so nearTargets can detect them
                 // nearTargets returns what the CREW sees, not the vehicle itself
