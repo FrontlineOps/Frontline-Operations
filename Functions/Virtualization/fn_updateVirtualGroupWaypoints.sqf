@@ -67,9 +67,6 @@ if (_effectiveUsePathfinding && {count _sanitizedWaypoints > 0}) then {
         FLO_PF_HybridRouting = true;
     };
     if (FLO_PF_HybridRouting) then {
-        if (isNil "FLO_PF_HybridPlayerBubble") then {
-            FLO_PF_HybridPlayerBubble = 1500;
-        };
         if (isNil "FLO_PF_HybridForcePathSources") then {
             FLO_PF_HybridForcePathSources = [
                 "SIDEMISSION_HVT_CONVOY",
@@ -83,22 +80,7 @@ if (_effectiveUsePathfinding && {count _sanitizedWaypoints > 0}) then {
 
         private _forcePath = _sourceTag in FLO_PF_HybridForcePathSources;
         if (!_forcePath) then {
-            private _isGroundGroup = !(_groupType in ["helicopter", "air", "jet", "boat", "naval", "submarine"]);
-            if (_isGroundGroup) then {
-                private _targetPos = (_sanitizedWaypoints select 0) select 0;
-                private _nearPlayers = false;
-                {
-                    private _playerPos = getPosATL _x;
-                    if (_currentPos distance2D _playerPos <= FLO_PF_HybridPlayerBubble || {_targetPos distance2D _playerPos <= FLO_PF_HybridPlayerBubble}) exitWith {
-                        _nearPlayers = true;
-                    };
-                } forEach allPlayers;
-                if (!_nearPlayers) then {
-                    _effectiveUsePathfinding = false;
-                };
-            } else {
-                _effectiveUsePathfinding = false;
-            };
+            _effectiveUsePathfinding = false;
         };
     };
 };
