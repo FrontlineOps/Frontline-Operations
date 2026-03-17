@@ -483,7 +483,6 @@ private _executor = createHashMapObject [[
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
-            private _maxGroups = _params param [1, 8]; // Max groups to ever assign
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
 
@@ -527,6 +526,11 @@ private _executor = createHashMapObject [[
 
             // Filter out already assigned groups
             _availableAssets = _availableAssets - _currentGroups;
+            private _maxGroups = _cmdr call ["_getAttackCapForObjective", [_objId, _requiredPower]];
+            private _maxAvailable = count _currentGroups + count _availableAssets;
+            if (_maxGroups > _maxAvailable) then {
+                _maxGroups = _maxAvailable;
+            };
 
             if (count _availableAssets == 0) exitWith {
                 if (count _currentGroups > 0) then {
@@ -566,15 +570,14 @@ private _executor = createHashMapObject [[
 
             // Select groups until we meet power requirement or hit limit
             private _newGroups = [];
-            private _newPower = _accumulatedPower;
+            private _selectedPower = _accumulatedPower;
             {
                 if (count _currentGroups + count _newGroups >= _maxGroups) exitWith {};
-                if (_newPower >= _requiredPower) exitWith {};
+                if (_selectedPower >= _requiredPower) exitWith {};
 
                 _x params ["_score", "_gId", "_power"];
-                _newGroups pushBack _gId;
-                _newPower = _newPower + _power;
-                _groupPower set [_gId, _power];
+                _newGroups pushBack [_gId, _power];
+                _selectedPower = _selectedPower + _power;
             } forEach _scoredGroups;
 
             if (count _newGroups == 0) exitWith {
@@ -589,19 +592,38 @@ private _executor = createHashMapObject [[
             };
 
             // Order new groups to staging
+            private _issuedNewGroups = [];
+            private _issuedPower = 0;
             {
-                _cmdr call ["_orderGroupMove", [_x, _stagingPos, "AWARE"]];
+                _x params ["_gId", "_power"];
+                if (_cmdr call ["_orderGroupMove", [_gId, _stagingPos, "AWARE"]]) then {
+                    _issuedNewGroups pushBack _gId;
+                    _issuedPower = _issuedPower + _power;
+                    _groupPower set [_gId, _power];
+                };
             } forEach _newGroups;
 
+            if (count _issuedNewGroups == 0) exitWith {
+                ["GTN", 2, format["Staging failed - no groups could be ordered to staging for %1", _objId]] call FLO_fnc_log;
+                if (count _currentGroups > 0) then {
+                    _ctx set ["status", "SUCCESS"];
+                    true
+                } else {
+                    _ctx set ["status", "FAILED"];
+                    false
+                }
+            };
+
             // Update accumulated groups and power
-            private _allGroups = _currentGroups + _newGroups;
+            private _allGroups = _currentGroups + _issuedNewGroups;
+            private _newPower = _accumulatedPower + _issuedPower;
             _executor call ["_storeTaskData", ["STAGING_GROUPS", _allGroups]];
             _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _newPower]];
             _executor call ["_storeTaskData", ["STAGING_GROUP_POWER", _groupPower]];
             _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _allGroups]];
 
             ["GTN", 3, format["Assigned %1 new groups to staging (total: %2 groups, %3/%4 power)",
-                count _newGroups, count _allGroups, round _newPower, round _requiredPower]] call FLO_fnc_log;
+                count _issuedNewGroups, count _allGroups, round _newPower, round _requiredPower]] call FLO_fnc_log;
 
             _ctx set ["status", "SUCCESS"];
             true
@@ -719,7 +741,7 @@ private _executor = createHashMapObject [[
             } else {
                 // Not enough staged force yet - request reinforcements periodically.
                 private _lastReinfCheck = _completedData getOrDefault ["STAGING_LAST_REINF_CHECK", -1];
-                if (diag_tickTime - _lastReinfCheck > 30) then {
+                if (diag_tickTime - _lastReinfCheck > 10) then {
                     _executor call ["_storeTaskData", ["STAGING_LAST_REINF_CHECK", diag_tickTime]];
 
                     // Calculate how many groups we need based on staged power deficit.
@@ -764,11 +786,13 @@ private _executor = createHashMapObject [[
                         _groups = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUPS", []]; // Refresh local groups list
                         _groupPower = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUP_POWER", createHashMap];
                         private _analyzer = FLO_GTN_CapabilityAnalyzer;
+                        private _addedCount = 0;
 
                         {
                             private _gid = _x;
                             // Assign new group
-                            _cmdr call ["_orderGroupMove", [_gid, _stagingPos, "AWARE"]];
+                            if !(_cmdr call ["_orderGroupMove", [_gid, _stagingPos, "AWARE"]]) then { continue };
+                            _addedCount = _addedCount + 1;
                             _groups pushBackUnique _gid;
 
                             // Add its power
@@ -781,13 +805,17 @@ private _executor = createHashMapObject [[
                             ["GTN", 3, format["Staging Reinforcement: Commander assigned group %1", _gid]] call FLO_fnc_log;
                         } forEach _availableGroupIds;
 
-                        // Update shared data
-                        _executor call ["_storeTaskData", ["STAGING_GROUPS", _groups]];
-                        _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _accumulatedPower]];
-                        _executor call ["_storeTaskData", ["STAGING_GROUP_POWER", _groupPower]];
+                        if (_addedCount > 0) then {
+                            // Update shared data
+                            _executor call ["_storeTaskData", ["STAGING_GROUPS", _groups]];
+                            _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _accumulatedPower]];
+                            _executor call ["_storeTaskData", ["STAGING_GROUP_POWER", _groupPower]];
 
-                        ["GTN", 3, format["Staging: Added %1 groups, now at %2/%3 total power",
-                            count _availableGroupIds, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                            ["GTN", 3, format["Staging: Added %1 groups, now at %2/%3 total power",
+                                _addedCount, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                        } else {
+                            ["GTN", 2, "Staging: Reinforcement request returned groups but no move orders were accepted"] call FLO_fnc_log;
+                        };
                     } else {
                         ["GTN", 2, "Staging: No more groups available in track pool for reinforcement"] call FLO_fnc_log;
                     };
@@ -859,14 +887,18 @@ private _executor = createHashMapObject [[
             private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _objPos, _requiredPower, _ownSide]];
             private _availablePower = _feasibility get "powerAvailable";
             private _isFeasible = _feasibility get "feasible";
+            private _minCommitPower = _requiredPower * 0.55;
+            if (_minCommitPower < 700) then { _minCommitPower = 700; };
+            private _canCommitEarly = _availablePower >= _minCommitPower;
 
             // === FORCE BUILDUP LOGIC ===
             private _completedData = _executor get "_completedTaskData";
             private _buildupStart = _completedData getOrDefault ["ATTACK_BUILDUP_START", -1];
             private _aggressionSetting = FLO_DifficultyHandle get "value";
-            private _buildupTimeout = round (420 - (120 * _aggressionSetting));
+            private _buildupTimeout = round (180 - (60 * _aggressionSetting));
+            if (_buildupTimeout < 60) then { _buildupTimeout = 60; };
 
-            if (!_isFeasible) then {
+            if (!_isFeasible && !_canCommitEarly) then {
                 // Not enough power - check if we should wait or timeout
                 if (_buildupStart < 0) then {
                     // First time - start buildup timer
@@ -884,14 +916,14 @@ private _executor = createHashMapObject [[
                     _ctx set ["status", "RUNNING"];
                 } else {
                     // Timeout - proceed anyway with what we have
-                    ["GTN", 2, format["Attack on %1 proceeding after timeout with %2/%3 power",
-                        _objId, round _availablePower, round _requiredPower]] call FLO_fnc_log;
+                    ["GTN", 2, format["Attack on %1 proceeding after timeout with %2/%3 power (commit floor %4)",
+                        _objId, round _availablePower, round _requiredPower, round _minCommitPower]] call FLO_fnc_log;
                     _isFeasible = true; // Force proceed
                 };
             };
 
             // If still not feasible (and not timed out), keep waiting
-            if (!_isFeasible) exitWith { true };
+            if (!_isFeasible && !_canCommitEarly) exitWith { true };
 
             // === SELECT GROUPS USING CAPABILITY REQUIREMENTS ===
             // Clear buildup timer
@@ -905,6 +937,20 @@ private _executor = createHashMapObject [[
                 private _taskNode = _ctx get "taskNode";
                 private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
                 _groups = _primData getOrDefault ["assignedGroups", []];
+            };
+
+            // If still no groups, consume this track's pool first (prevents idle attack-track groups).
+            if (count _groups < 1) then {
+                private _taskNode = _ctx get "taskNode";
+                private _track = _taskNode get "_trackRef";
+                if (!isNil "_track") then {
+                    private _maxFromTrack = _cmdr call ["_getAttackCapForObjective", [_objId, _requiredPower]];
+                    _groups = _cmdr call ["_getGroupsFromTrack", [_track, _maxFromTrack]];
+                    if (count _groups > 0) then {
+                        ["GTN", 3, format["Pulled %1 groups from track %2 for attack on %3",
+                            count _groups, _track get "id", _objId]] call FLO_fnc_log;
+                    };
+                };
             };
 
             // If still no groups, use capability-aware selection
@@ -937,7 +983,12 @@ private _executor = createHashMapObject [[
 
                 // Select groups until we meet power requirement or hit limit
                 private _selectedPower = 0;
-                private _maxGroups = round (6 + (2 * _aggressionSetting));
+                private _forces = _ws call ["_getForces", []];
+                private _availableGroups = _forces get "availableGroups";
+                private _maxGroups = _cmdr call ["_getAttackCapForObjective", [_objId, _requiredPower]];
+                if (_availableGroups > 0 && {_maxGroups > _availableGroups}) then {
+                    _maxGroups = _availableGroups;
+                };
                 {
                     if (count _groups >= _maxGroups) exitWith {};
                     if (_selectedPower >= _requiredPower) exitWith {};
@@ -959,10 +1010,24 @@ private _executor = createHashMapObject [[
                 false
             };
 
+            private _allGroups = FLO_virtualGroups get "_groups";
+            private _validGroups = [];
+            {
+                private _gData = _allGroups get _x;
+                if (isNil "_gData") then { continue };
+                _validGroups pushBackUnique _x;
+            } forEach _groups;
+            _groups = _validGroups;
+
+            if (count _groups < 1) exitWith {
+                ["GTN", 2, format["Attack on %1 aborted - selected groups were stale", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
             ["GTN", 3, format["Attacking %1 at %2 with %3 groups", _objId, _objPos, count _groups]] call FLO_fnc_log;
 
             // Reveal intel to attacking groups so they can engage enemies
-            private _allGroups = FLO_virtualGroups get "_groups";
             {
                 private _gId = _x;
                 private _gData = _allGroups get _gId;
@@ -975,14 +1040,26 @@ private _executor = createHashMapObject [[
             } forEach _groups;
 
             // Order attack
+            private _issuedGroups = [];
             {
-                _cmdr call ["_orderGroupAttack", [_x, _objPos]];
+                if (_cmdr call ["_orderGroupAttack", [_x, _objPos]]) then {
+                    _issuedGroups pushBack _x;
+                };
             } forEach _groups;
+
+            if (count _issuedGroups < 1) exitWith {
+                ["GTN", 2, format["Attack on %1 failed - no groups accepted attack orders", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
+            _executor call ["_storeTaskData", ["STAGING_GROUPS", _issuedGroups]];
+            _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _issuedGroups]];
 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             _primData set ["objectiveId", _objId];
-            _primData set ["attackGroups", _groups];
+            _primData set ["attackGroups", _issuedGroups];
             _primData set ["requiredPower", _requiredPower];
             _primData set ["actualPower", _availablePower];
             _taskNode set ["primitiveData", _primData];
@@ -1134,9 +1211,10 @@ private _executor = createHashMapObject [[
             params ["_ctx"];
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
+            private _trackId = _ctx get "trackId";
 
             // Get highest priority enemy objective
-            private _objId = _cmdr call ["_selectPriorityObjective", []];
+            private _objId = _cmdr call ["_selectPriorityObjective", [_trackId]];
 
             if (isNil "_objId" || _objId == "") exitWith {
                 ["GTN", 2, "No priority objective found"] call FLO_fnc_log;
@@ -1311,13 +1389,19 @@ private _executor = createHashMapObject [[
             };
             if (count _available < 2) exitWith { false };
 
+            private _issued = [];
             {
-                _cmdr call ["_orderGroupAttack", [_x, _objPos]];
+                if (_cmdr call ["_orderGroupAttack", [_x, _objPos]]) then {
+                    _issued pushBack _x;
+                };
             } forEach _available;
+
+            if (count _issued < 1) exitWith { false };
 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
             _primData set ["objectiveId", _objId];
+            _primData set ["attackGroups", _issued];
             _taskNode set ["primitiveData", _primData];
 
             true

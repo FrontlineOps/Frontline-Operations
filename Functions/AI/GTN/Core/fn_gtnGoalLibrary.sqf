@@ -271,14 +271,30 @@ private _goalLibrary = createHashMapObject [[
                         if (_available < 3) exitWith { -1 };
                         if !(_assets get "artilleryAvailable") exitWith { -1 };
 
-                        private _score = 40;
-                        // Scale artillery ammo bonus: +2 per round, capped at +100
-                        private _artyBonus = ((_assets get "artilleryAmmo") * 2) min 100;
+                        private _attacking = _forces get "attackingGroups";
+                        private _total = _forces get "totalGroups";
+                        private _attackRatio = if (_total > 0) then { _attacking / _total } else { 0 };
+
+                        private _score = 35;
+                        // Prepared assault stays valuable, but no longer dominates every track.
+                        private _artyBonus = ((_assets get "artilleryAmmo") * 1.2) min 45;
                         _score = _score + _artyBonus;
+
                         private _armor = _ws call ["_getArmorGroupCount", []];
-                        if (_armor >= 2) then { _score = _score + 15 };
+                        if (_armor >= 2) then { _score = _score + 10 };
+
                         private _situation = _ws call ["_getTacticalSituation", []];
-                        if ((_situation get "momentum") < 0) then { _score = _score + 10 };
+                        if ((_situation get "momentum") < 0) then { _score = _score + 8 };
+
+                        // If many groups are still idle, bias other tracks toward faster direct attacks.
+                        if (_available >= 12) then { _score = _score - 8 };
+                        if (_available >= 20) then { _score = _score - 12 };
+
+                        // As offensive commitment grows, reduce additional prepared stacks.
+                        if (_attackRatio > 0.25) then {
+                            _score = _score - round ((_attackRatio - 0.25) * 80);
+                        };
+
                         _score
                     }],
                     ["subtasks", [
@@ -296,14 +312,32 @@ private _goalLibrary = createHashMapObject [[
                         private _forces = _ws call ["_getForces", []];
                         private _available = _forces get "availableGroups";
                         if (_available < 4) exitWith { -1 };
+                        private _attacking = _forces get "attackingGroups";
+                        private _total = _forces get "totalGroups";
+                        private _attackRatio = if (_total > 0) then { _attacking / _total } else { 0 };
 
                         private _score = 30;
-                        if (_available >= 8) then { _score = _score + 25 };
-                        if (_available >= 6) then { _score = _score + 15 };
+                        if (_available >= 6) then { _score = _score + 10 };
+                        if (_available >= 8) then { _score = _score + 15 };
+                        if (_available >= 12) then { _score = _score + 20 };
+
+                        // Idle-surplus boost so unused attack pools convert into active assaults.
+                        private _idleSurplus = (_available - 8) max 0;
+                        _score = _score + ((_idleSurplus * 1.5) min 30);
+
+                        if (_attackRatio > 0.2) then {
+                            _score = _score + round ((_attackRatio - 0.2) * 50);
+                        };
+
                         private _situation = _ws call ["_getTacticalSituation", []];
                         if ((_situation get "momentum") > 20) then { _score = _score + 20 };
+
                         private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
-                        if (count (keys _vulnObjs) > 0) then { _score = _score + 15 };
+                        private _vulnCount = count (keys _vulnObjs);
+                        if (_vulnCount > 0) then {
+                            _score = _score + (10 + ((_vulnCount * 5) min 20));
+                        };
+
                         _score
                     }],
                     ["subtasks", [
@@ -316,10 +350,16 @@ private _goalLibrary = createHashMapObject [[
                     ["score", {
                         params ["_ws", "_params", "_planner"];
                         private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
-                        if (count (keys _vulnObjs) == 0) exitWith { -1 };
+                        private _vulnCount = count (keys _vulnObjs);
+                        if (_vulnCount == 0) exitWith { -1 };
                         private _forces = _ws call ["_getForces", []];
-                        if ((_forces get "availableGroups") < 2) exitWith { -1 };
-                        25
+                        private _available = _forces get "availableGroups";
+                        if (_available < 2) exitWith { -1 };
+
+                        private _score = 20 + ((_vulnCount min 4) * 8);
+                        if (_available >= 6) then { _score = _score + 10 };
+                        if (_available >= 12) then { _score = _score + 10 };
+                        _score
                     }],
                     ["subtasks", [
                         ["prim_attack_vulnerable_objective", []]
@@ -567,7 +607,7 @@ private _goalLibrary = createHashMapObject [[
                     ["score", { 30 }],
                     ["subtasks", [
                         ["prim_select_staging_point", ["_PARAM_0"]],
-                        ["prim_assign_groups_to_staging", ["_PARAM_0", 4]],
+                        ["prim_assign_groups_to_staging", ["_PARAM_0"]],
                         ["prim_wait_for_staging", ["_PARAM_0"]]
                     ]]
                 ]

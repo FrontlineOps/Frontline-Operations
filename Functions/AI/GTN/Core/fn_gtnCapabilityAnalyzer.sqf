@@ -1766,6 +1766,11 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         };
 
         private _groups = FLO_virtualGroups get "_groups";
+        private _isTaskAvailable = {
+            params ["_gData"];
+            private _order = _gData get "currentOrder";
+            (_order == "" || {_order in ["PATROL", "GARRISON", "DEFEND"]})
+        };
 
         switch (toUpper _missionType) do {
             case "CAS": {
@@ -1813,7 +1818,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["infantry", "motorized", "mechanized", "armor"]) then {
-                        if !(_gData get "onMission") then {
+                        if ([_gData] call _isTaskAvailable) then {
                             private _analysis = _self call ["_analyzeGroup", [_x]];
                             if (!isNil "_analysis") then {
                                 _totalPower = _totalPower + (_analysis get "totalCombatPower");
@@ -1836,7 +1841,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 {
                     private _gData = _y;
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
-                    if !(_gData get "onMission") then {
+                    if ([_gData] call _isTaskAvailable) then {
                         (_result get "availableAssets") pushBack _x;
                     };
                 } forEach _groups;
@@ -1855,7 +1860,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["uav", "recon"]) then {
-                        if !(_gData get "onMission") then {
+                        if ([_gData] call _isTaskAvailable) then {
                             (_result get "availableAssets") pushBack _x;
                         };
                     };

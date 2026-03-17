@@ -223,8 +223,12 @@ private _fnc_clearAll = {
 
             // Reinforcement debug: pressure points, in-flight groups, and inbound targets.
             private _detectRange = 2000;
-            if (!isNil "FLO_Logistics_Network") then {
-                _detectRange = FLO_Logistics_Network get "BLUFOR_DETECT_RANGE";
+            private _logNetwork = nil;
+            if (!isNil "FLO_Logistics_Networks" && {FLO_Logistics_Networks isEqualType createHashMap}) then {
+                _logNetwork = FLO_Logistics_Networks getOrDefault [_cmdSideKey, nil];
+            };
+            if (!isNil "_logNetwork") then {
+                _detectRange = _logNetwork get "BLUFOR_DETECT_RANGE";
             };
 
             private _reinforcementPointRows = [];
@@ -258,15 +262,13 @@ private _fnc_clearAll = {
                 [_reinfPointMarkerId, _objPos, "mil_marker", _ownColor, _reinfPointText, [0.65, 0.65], 0.75] call _fnc_upsertMarker;
             };
 
-            if (!isNil "FLO_Logistics_Network") then {
-                if ((FLO_Logistics_Network get "_managedSide") isEqualTo _ownSide) then {
-                    private _lastReinfTarget = FLO_Logistics_Network get "_lastReinforcementTarget";
-                    if (_lastReinfTarget != "" && {_lastReinfTarget in FLO_Objectives}) then {
-                        private _lastTargetPos = (FLO_Objectives get _lastReinfTarget) get "position";
-                        private _lastMarkerId = format ["FLO_GTN_DBG_%1_REINF_LAST", _cmdSideKey];
-                        _activeIds pushBack _lastMarkerId;
-                        [_lastMarkerId, _lastTargetPos, "mil_objective", _ownColor, format ["%1 LOGI LAST %2", _cmdSideKey, _lastReinfTarget], [0.8, 0.8], 0.9] call _fnc_upsertMarker;
-                    };
+            if (!isNil "_logNetwork") then {
+                private _lastReinfTarget = _logNetwork get "_lastReinforcementTarget";
+                if (_lastReinfTarget != "" && {_lastReinfTarget in FLO_Objectives}) then {
+                    private _lastTargetPos = (FLO_Objectives get _lastReinfTarget) get "position";
+                    private _lastMarkerId = format ["FLO_GTN_DBG_%1_REINF_LAST", _cmdSideKey];
+                    _activeIds pushBack _lastMarkerId;
+                    [_lastMarkerId, _lastTargetPos, "mil_objective", _ownColor, format ["%1 LOGI LAST %2", _cmdSideKey, _lastReinfTarget], [0.8, 0.8], 0.9] call _fnc_upsertMarker;
                 };
             };
 

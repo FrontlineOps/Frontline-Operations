@@ -347,11 +347,16 @@ try {
 // ============================================================================
 
 try {
-    if (!isNil "FLO_Logistics_Network") then {
-        private _logData = FLO_Logistics_Network call ["serialize", []];
-        _data set ["logisticsNetwork", _logData];
-        private _stats = _logData getOrDefault ["stats", createHashMap];
-        ["SAVE", 3, format ["Logistics: %1 replacements", _stats getOrDefault ["totalReplacements", 0]]] call FLO_fnc_log;
+    if (!isNil "FLO_Logistics_Networks" && {FLO_Logistics_Networks isEqualType createHashMap} && {count (keys FLO_Logistics_Networks) > 0}) then {
+        private _bySide = createHashMap;
+        {
+            private _obj = FLO_Logistics_Networks get _x;
+            if (!isNil "_obj") then {
+                _bySide set [_x, _obj call ["serialize", []]];
+            };
+        } forEach (keys FLO_Logistics_Networks);
+        _data set ["logisticsNetworkBySide", _bySide];
+        ["SAVE", 3, format ["Logistics: saved %1 side contexts", count (keys _bySide)]] call FLO_fnc_log;
     };
 } catch { ["SAVE", 1, format ["Logistics failed: %1", _exception]] call FLO_fnc_log; };
 

@@ -28,7 +28,7 @@
         None (self-initializing)
 
     Returns:
-        Creates FLO_Logistics_Network global object
+        Creates FLO_Logistics_Networks side-context map
 
     Public Methods:
         getStats: Returns replacement statistics
@@ -38,7 +38,13 @@
 
 if (!isServer) exitWith {};
 
-if (isNil "FLO_Logistics_Network") then {
+private _fnc_sideKey = {
+    params ["_side"];
+    private _ctx = [_side] call FLO_fnc_gtnSideContext;
+    _ctx get "sideKey"
+};
+
+if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}) then {
     private _logisticsClass = [
         ["#type", "LogisticsNetwork"],
 
@@ -72,6 +78,7 @@ if (isNil "FLO_Logistics_Network") then {
         ["_lastReinforcementTarget", ""],
         ["_reinforcementTargetCycle", []],
         ["_reinforcementCycleIndex", 0],
+        ["_sideContext", sideUnknown],
         ["_managedSide", east],
         ["_managedSideKey", "EAST"],
         ["_enemySide", west],
@@ -83,11 +90,16 @@ if (isNil "FLO_Logistics_Network") then {
         // CONSTRUCTOR
         // ========================================
         ["#create", {
-            // Check for saved game data
-            private _savedState = nil;
-            if (!isNil "FLO_SavedGameData") then {
-                _savedState = FLO_SavedGameData getOrDefault ["logisticsNetwork", nil];
+            params [["_sideContext", sideUnknown], ["_savedStateOverride", nil]];
+
+            if (_sideContext in [east, west]) then {
+                _self set ["_sideContext", _sideContext];
+                _self call ["_setManagedSide", [_sideContext]];
+            } else {
+                _self call ["_refreshManagedSide", []];
             };
+
+            private _savedState = _savedStateOverride;
 
             if (!isNil "_savedState" && {_savedState isEqualType createHashMap}) then {
                 // Restore from save
@@ -129,27 +141,24 @@ if (isNil "FLO_Logistics_Network") then {
         // PRIVATE METHODS
         // ========================================
 
-        ["_sideKeyFor", {
-            params ["_side"];
-            if (_side isEqualTo east) exitWith { "EAST" };
-            if (_side isEqualTo west) exitWith { "WEST" };
-            "EAST"
+        ["_setManagedSide", {
+            params ["_managedSide"];
+            private _ctx = [_managedSide] call FLO_fnc_gtnSideContext;
+            _self set ["_managedSide", _ctx get "ownSide"];
+            _self set ["_managedSideKey", _ctx get "sideKey"];
+            _self set ["_enemySide", _ctx get "enemySide"];
         }],
 
         // Managed side is the AI/opposition side (opposite of active player side)
         ["_refreshManagedSide", {
-            private _playerSide = missionNamespace getVariable ["FLO_ActivePlayerSide", sideUnknown];
-            private _managedSide = if (_playerSide isEqualTo east) then {
-                west
-            } else {
-                if (_playerSide isEqualTo west) then { east } else { east }
+            private _context = _self get "_sideContext";
+            if (_context in [east, west]) exitWith {
+                _self call ["_setManagedSide", [_context]];
             };
-            private _enemySide = if (_managedSide isEqualTo east) then { west } else { east };
-            private _sideKey = _self call ["_sideKeyFor", [_managedSide]];
 
-            _self set ["_managedSide", _managedSide];
-            _self set ["_managedSideKey", _sideKey];
-            _self set ["_enemySide", _enemySide];
+            private _playerSide = missionNamespace getVariable ["FLO_ActivePlayerSide", sideUnknown];
+            private _managedSide = if (_playerSide isEqualTo east) then { west } else { east };
+            _self call ["_setManagedSide", [_managedSide]];
         }],
 
         ["_getManagedResourceObject", {
@@ -405,7 +414,7 @@ if (isNil "FLO_Logistics_Network") then {
             (FLO_Objectives get _bestObjId) get "position"
         }],
 
-        // Find objectives that need reinforcement (under BLUFOR pressure)
+        // Find objectives that need reinforcement (under enemy pressure)
         ["_findReinforcementTargets", {
             if (isNil "FLO_Objectives") exitWith { [] };
 
@@ -417,13 +426,13 @@ if (isNil "FLO_Logistics_Network") then {
                 ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo _managedSide
             };
 
-            // Filter to objectives with nearby opposing players
+            // Filter to objectives with nearby opposing forces
             _opforObjs select {
                 private _pos = (FLO_Objectives get _x) get "position";
-                private _nearbyBlufor = allPlayers select {
-                    side _x == _enemySide && {_x distance2D _pos < _detectRange}
+                private _enemyNearby = (_pos nearEntities [["Man", "Car", "Tank", "LandVehicle", "Air", "Ship"], _detectRange]) findIf {
+                    alive _x && {side _x == _enemySide}
                 };
-                count _nearbyBlufor > 0
+                _enemyNearby != -1
             }
         }],
 
@@ -531,7 +540,9 @@ if (isNil "FLO_Logistics_Network") then {
 
         // Main update loop
         ["_startMainLoop", {
-            [] spawn {
+            [_self] spawn {
+                params ["_net"];
+
                 // Wait for systems to initialize
                 waitUntil {
                     sleep 1;
@@ -544,28 +555,28 @@ if (isNil "FLO_Logistics_Network") then {
                 // Small delay to let groups spawn
                 sleep 10;
 
-                FLO_Logistics_Network call ["_refreshManagedSide", []];
+                _net call ["_refreshManagedSide", []];
                 ["LOGISTICS", 3, format[
-                    "Managed side resolved: %1",
-                    FLO_Logistics_Network get "_managedSideKey"
+                    "Logistics side context resolved: %1",
+                    _net get "_managedSideKey"
                 ]] call FLO_fnc_log;
 
                 // Capture initial composition if not loaded from save
-                if (isNil {FLO_Logistics_Network get "_initialComposition"}) then {
-                    private _comp = FLO_Logistics_Network call ["_captureInitialComposition", []];
-                    FLO_Logistics_Network set ["_initialComposition", _comp];
+                if (isNil {_net get "_initialComposition"}) then {
+                    private _comp = _net call ["_captureInitialComposition", []];
+                    _net set ["_initialComposition", _comp];
                     ["LOGISTICS", 3, format["Captured initial composition: %1", _comp]] call FLO_fnc_log;
                 };
 
                 // Main loop
                 while {true} do {
-                    if (isNil "FLO_Logistics_Network") exitWith {};
+                    if (isNil "_net") exitWith {};
 
-                    if (FLO_Logistics_Network get "_enabled") then {
-                        FLO_Logistics_Network call ["_checkAndReplace", []];
+                    if (_net get "_enabled") then {
+                        _net call ["_checkAndReplace", []];
                     };
 
-                    sleep (FLO_Logistics_Network get "CHECK_INTERVAL");
+                    sleep (_net get "CHECK_INTERVAL");
                 };
             };
         }],
@@ -728,6 +739,28 @@ if (isNil "FLO_Logistics_Network") then {
         }]
     ];
 
-    FLO_Logistics_Network = createHashMapObject [_logisticsClass];
-    ["LOGISTICS", 3, "Logistics Network initialized"] call FLO_fnc_log;
+    FLO_Logistics_Networks = createHashMap;
+
+    private _savedBySide = createHashMap;
+    if (!isNil "FLO_SavedGameData" && {FLO_SavedGameData isEqualType createHashMap}) then {
+        private _savedMap = FLO_SavedGameData getOrDefault ["logisticsNetworkBySide", createHashMap];
+        if (_savedMap isEqualType createHashMap) then {
+            _savedBySide = _savedMap;
+        };
+    };
+
+    {
+        private _side = _x;
+        private _sideKey = [_side] call _fnc_sideKey;
+
+        private _savedPayload = nil;
+        if (_sideKey in _savedBySide) then {
+            _savedPayload = _savedBySide get _sideKey;
+        };
+
+        private _net = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
+        FLO_Logistics_Networks set [_sideKey, _net];
+    } forEach [east, west];
+
+    ["LOGISTICS", 2, "Logistics Networks initialized for EAST/WEST contexts"] call FLO_fnc_log;
 };
