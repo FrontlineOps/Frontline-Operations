@@ -154,35 +154,39 @@ while {true} do {
         private _radius = _objRecord get "radius";
         private _owner = _objRecord get "owner";
         private _progress = _objRecord get "captureProgress";
-        private _units = _pos nearEntities ["Man", _radius];
-        
         private _bluforCount = 0;
         private _opforCount = 0;
-        
-        {
-            if (!alive _x) then { continue };
-            if ((_x distance2D _pos) > _radius) then { continue };
+        private _useLiveCounting = _id in _liveObjectives;
 
-            private _uSide = side _x;
-            if (isPlayer _x) then {
-                _uSide = side group _x;
-            };
+        if (_useLiveCounting) then {
+            // In live objectives (players inside), count from allUnits to avoid
+            // dedicated nearEntities misses and ensure vehicle crews are included.
+            private _liveUnits = allUnits select { alive _x && { (_x distance2D _pos) <= _radius } };
+            _bluforCount = { (side group _x) isEqualTo west } count _liveUnits;
+            _opforCount = { (side group _x) isEqualTo east } count _liveUnits;
+        } else {
+            private _units = _pos nearEntities ["Man", _radius];
 
-            if (_uSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
-            if (_uSide isEqualTo east) then { _opforCount = _opforCount + 1 };
-        } forEach _units;
+            {
+                if (!alive _x) then { continue };
+                if ((_x distance2D _pos) > _radius) then { continue };
 
-        // Dedicated can occasionally miss remote players in nearEntities.
-        // Ensure player presence is always reflected in capture counts.
-        {
-            if (!alive _x) then { continue };
-            if ((_x distance2D _pos) > _radius) then { continue };
-            if (_x in _units) then { continue };
+                private _uSide = side group _x;
+                if (_uSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+                if (_uSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+            } forEach _units;
 
-            private _pSide = side group _x;
-            if (_pSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
-            if (_pSide isEqualTo east) then { _opforCount = _opforCount + 1 };
-        } forEach _allPlayers;
+            // Dedicated can occasionally miss remote players in nearEntities.
+            {
+                if (!alive _x) then { continue };
+                if ((_x distance2D _pos) > _radius) then { continue };
+                if (_x in _units) then { continue };
+
+                private _pSide = side group _x;
+                if (_pSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+                if (_pSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+            } forEach _allPlayers;
+        };
 
         // Add precomputed virtual presence for this objective.
         private _virtualCounts = _virtualObjectiveCounts get _id;
