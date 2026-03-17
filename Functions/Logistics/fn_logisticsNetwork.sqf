@@ -92,7 +92,7 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
         // CONSTRUCTOR
         // ========================================
         ["#create", {
-            params [["_sideContext", sideUnknown], ["_savedStateOverride", nil]];
+            params [["_sideContext", sideUnknown], ["_savedStateOverride", false]];
 
             if (_sideContext in [east, west]) then {
                 _self set ["_sideContext", _sideContext];
@@ -103,7 +103,7 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
 
             private _savedState = _savedStateOverride;
 
-            if (!isNil "_savedState" && {_savedState isEqualType createHashMap}) then {
+            if (_savedState isEqualType createHashMap) then {
                 // Restore from save
                 _self set ["_initialComposition", _savedState getOrDefault ["initialComposition", createHashMap]];
                 _self set ["_stats", _savedState getOrDefault ["stats", createHashMapFromArray [
@@ -886,10 +886,7 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
         private _side = _x;
         private _sideKey = [_side] call _fnc_sideKey;
 
-        private _savedPayload = nil;
-        if (_sideKey in _savedBySide) then {
-            _savedPayload = _savedBySide get _sideKey;
-        };
+        private _savedPayload = _savedBySide getOrDefault [_sideKey, false];
 
         private _net = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
         FLO_Logistics_Networks set [_sideKey, _net];
