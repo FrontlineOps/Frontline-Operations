@@ -40,7 +40,9 @@ FLO_VirtUpdate = createHashMapFromArray [
     ["running", false],
     ["lastUpdateTime", 0],
     ["lastPlayerCacheTime", 0],
+    ["lastGroupCacheTime", 0],
     ["cachedPlayerPositions", []],
+    ["cachedGroupIds", []],
     ["currentBatchIndex", 0],
     ["groupUpdateTimes", createHashMap],  // groupId -> lastUpdateTime
     ["stats", createHashMapFromArray [
@@ -124,13 +126,28 @@ switch (toLower _mode) do {
 
             // Get groups
             private _groups = FLO_virtualGroups get "_groups";
-            private _groupIds = keys _groups;
+            if ((count _groups) == 0) exitWith {
+                FLO_VirtUpdate set ["cachedGroupIds", []];
+                FLO_VirtUpdate set ["currentBatchIndex", 0];
+            };
+
+            private _groupIds = FLO_VirtUpdate get "cachedGroupIds";
+            private _lastGroupCache = FLO_VirtUpdate get "lastGroupCacheTime";
+            if (_now - _lastGroupCache >= 1 || {count _groupIds != count _groups}) then {
+                _groupIds = keys _groups;
+                FLO_VirtUpdate set ["cachedGroupIds", _groupIds];
+                FLO_VirtUpdate set ["lastGroupCacheTime", _now];
+            };
             private _totalGroups = count _groupIds;
             private _activationDist = FLO_virtualGroups get "_activationDistance";
             private _groupUpdateTimes = FLO_VirtUpdate get "groupUpdateTimes";
 
             // Process batch of groups
             private _batchStart = FLO_VirtUpdate get "currentBatchIndex";
+            if (_batchStart >= _totalGroups) then {
+                _batchStart = 0;
+                FLO_VirtUpdate set ["currentBatchIndex", 0];
+            };
             private _batchEnd = (_batchStart + BATCH_SIZE - 1) min (_totalGroups - 1);
             private _processed = 0;
 
@@ -191,4 +208,3 @@ switch (toLower _mode) do {
 
     default { false };
 };
-

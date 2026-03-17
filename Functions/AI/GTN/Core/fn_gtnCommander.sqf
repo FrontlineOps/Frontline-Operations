@@ -104,6 +104,8 @@ private _gtnCommander = createHashMapObject [[
     ["_lastUpdate", 0],
     
     ["_tracks", _tracks],
+    ["_availabilityCacheDirty", true],
+    ["_availabilityCandidates", []],
     
     // Configuration
     ["_config", createHashMapFromArray [
@@ -112,6 +114,7 @@ private _gtnCommander = createHashMapObject [[
         ["replanInterval", 60],       // Minimum seconds between replans
         ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
         ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
+        ["maxTrackTasksPerCycle", 1], // Primitive burst cap per track per commander update
         ["debugMode", false]          // Enable verbose logging
     ]],
     
@@ -163,6 +166,7 @@ private _gtnCommander = createHashMapObject [[
         
         private _now = diag_tickTime;
         _self set ["_lastUpdate", _now];
+        _self set ["_availabilityCacheDirty", true];
         
         private _stats = _self get "_stats";
         _stats set ["cyclesRun", (_stats get "cyclesRun") + 1];
@@ -300,7 +304,7 @@ private _gtnCommander = createHashMapObject [[
                         case "PENDING";
                         case "RUNNING": {
                             // Execute current task with loop for synchronous completion chaining
-                            private _maxTasksPerCycle = 10;
+                            private _maxTasksPerCycle = (_self get "_config") get "maxTrackTasksPerCycle";
                             private _tasksThisCycle = 0;
                             private _continueLoop = true;
                             
@@ -573,52 +577,54 @@ private _gtnCommander = createHashMapObject [[
     // Groups currently tasked by GTN (prevent AI Commander from using them)
     ["_gtnTaskedGroups", []],
 
-    // Get available groups for tasking from virtualization system
-    ["_getAvailableGroups", {
-        params [["_count", 4], ["_targetPos", []]];
-
+    ["_rebuildAvailabilityCache", {
         private _groups = FLO_virtualGroups get "_groups";
-        private _gtnTasked = _self get "_gtnTaskedGroups";
+        private _tasked = _self get "_gtnTaskedGroups";
+        private _taskedSet = createHashMap;
+        { _taskedSet set [_x, true]; } forEach _tasked;
+
         private _ownSide = _self get "_ownSide";
         private _available = [];
 
-        // Find groups that are:
-        // 1. Military (not civilian)
-        // 2. Not already tasked by GTN
-        // 3. In garrison/idle state (currentOrder is empty or "PATROL")
         {
             private _groupId = _x;
             private _gData = _y;
 
             private _groupType = _gData get "groupType";
+            if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
+            if ((_gData get "side") != _ownSide) then { continue };
+            if (_gData get "inCombat") then { continue };
+            if (_taskedSet getOrDefault [_groupId, false]) then { continue };
+
             private _currentOrder = _gData get "currentOrder";
-            private _side = _gData get "side";
-            private _inCombat = _gData getOrDefault ["inCombat", false];
-
-            // Skip non-military or wrong side
-            if (_groupType in ["civilian", "ambient"]) then { continue };
-            if (_side != _ownSide) then { continue };
-
-            // Skip air and artillery assets
-            if (_groupType in ["helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
-            if (_inCombat) then { continue };
-
-            // Skip already tasked groups
-            if (_groupId in _gtnTasked) then { continue };
-
-            // Skip groups with active orders (unless patrolling or defending)
             if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", "DEFEND", ""])}) then { continue };
 
             _available pushBack [_groupId, _gData];
         } forEach _groups;
 
-        // Sort by distance to target if position provided
+        _self set ["_availabilityCandidates", _available];
+        _self set ["_availabilityCacheDirty", false];
+        _available
+    }],
+
+    // Get available groups for tasking from virtualization system
+    ["_getAvailableGroups", {
+        params [["_count", 4], ["_targetPos", []]];
+
+        if (_self get "_availabilityCacheDirty") then {
+            _self call ["_rebuildAvailabilityCache", []];
+        };
+        private _available = +(_self get "_availabilityCandidates");
+
+        // Sort by distance to target if position provided.
         if (count _targetPos >= 2) then {
-            _available = [_available, [], {
-                private _gData = _x select 1;
-                private _groupPos = _gData get "position";
-                _groupPos distance2D _targetPos
-            }, "ASCEND"] call BIS_fnc_sortBy;
+            private _scored = [];
+            {
+                _x params ["_groupId", "_gData"];
+                _scored pushBack [((_gData get "position") distance2D _targetPos), _groupId, _gData];
+            } forEach _available;
+            _scored sort true;
+            _available = _scored apply { [_x select 1, _x select 2] };
         };
 
         // Take requested count and extract just group IDs
@@ -629,24 +635,23 @@ private _gtnCommander = createHashMapObject [[
             _x params ["_groupId", "_gData"];
             _result pushBack _groupId;
 
-            // Collect info for logging
-            private _groupType = _gData get "groupType";
-            private _vehicleType = _gData getOrDefault ["vehicleType", ""];
-            private _unitCount = _gData get "unitCount";
-            private _shortId = _groupId select [7, 6]; // Extract numeric part from "vgroup_123456"
-            private _typeStr = if (_vehicleType != "") then { _vehicleType } else { _groupType };
-            _resultInfo pushBack format["%1[%2](%3)", _shortId, _typeStr, _unitCount];
+            // Collect compact info for logging (cap to avoid heavy string work on large pools).
+            if (count _resultInfo < 12) then {
+                private _groupType = _gData get "groupType";
+                private _vehicleType = _gData getOrDefault ["vehicleType", ""];
+                private _unitCount = _gData get "unitCount";
+                private _shortId = _groupId select [7, 6]; // Extract numeric part from "vgroup_123456"
+                private _typeStr = if (_vehicleType != "") then { _vehicleType } else { _groupType };
+                _resultInfo pushBack format["%1[%2](%3)", _shortId, _typeStr, _unitCount];
+            };
         } forEach _available;
 
-        ["GTN", 3, format["Found %1 groups (requested %2) near %3: %4", count _result, _count, _targetPos, _resultInfo joinString ", "]] call FLO_fnc_log;
-
-        // Log distances for debugging
-        {
-            private _gData = _groups get _x;
-            private _groupPos = _gData get "position";
-            private _dist = if (count _targetPos >= 2) then { _groupPos distance2D _targetPos } else { -1 };
-            ["GTN", 4, format["  Group %1 at %2 (dist: %3m)", _x, _groupPos, round _dist]] call FLO_fnc_log;
-        } forEach _result;
+        private _extraCount = (count _result) - (count _resultInfo);
+        private _preview = _resultInfo joinString ", ";
+        if (_extraCount > 0) then {
+            _preview = format ["%1 ... +%2 more", _preview, _extraCount];
+        };
+        ["GTN", 3, format["Found %1 groups (requested %2) near %3: %4", count _result, _count, _targetPos, _preview]] call FLO_fnc_log;
 
         _result
     }],
@@ -657,6 +662,29 @@ private _gtnCommander = createHashMapObject [[
         private _tasked = _self get "_gtnTaskedGroups";
         { _tasked pushBackUnique _x; } forEach _groupIds;
         _self set ["_gtnTaskedGroups", _tasked];
+        _self set ["_availabilityCacheDirty", true];
+    }],
+
+    // Remove stale group references after virtualization removes a group entry.
+    ["_onVirtualGroupRemoved", {
+        params ["_groupId"];
+
+        private _tasked = _self get "_gtnTaskedGroups";
+        if (_groupId in _tasked) then {
+            _self set ["_gtnTaskedGroups", _tasked - [_groupId]];
+        };
+
+        {
+            private _pool = _x get "groupPool";
+            if (_groupId in _pool) then {
+                _x set ["groupPool", _pool - [_groupId]];
+            };
+        } forEach (_self get "_tracks");
+
+        private _executor = _self get "_executor";
+        _executor call ["_pruneRemovedGroup", [_groupId]];
+
+        _self set ["_availabilityCacheDirty", true];
     }],
 
     // Release groups from GTN tasking and clear their orders
@@ -683,6 +711,7 @@ private _gtnCommander = createHashMapObject [[
         } forEach _groupIds;
         
         _self set ["_gtnTaskedGroups", _tasked];
+        _self set ["_availabilityCacheDirty", true];
     }],
 
     // Release DEFEND groups that are idle past lease expiry and not under pressure.

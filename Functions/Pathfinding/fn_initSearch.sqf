@@ -45,14 +45,21 @@ XPS_typ_AstarSearch = [
 		params [["_priority",nil,[0]],"_item"];
 
 		private _frontier = _self get "frontier";
-		private _frontierSize = count _frontier;
-		private _i = 0;
+		private _lo = 0;
+		private _hi = count _frontier;
 
-		while {_i <= _frontierSize - 1 && { _priority > ((_frontier select _i) select 0) }} do {
-			_i = _i + 1;
+		// Binary-search insertion index (ascending by priority).
+		while {_lo < _hi} do {
+			private _mid = floor ((_lo + _hi) * 0.5);
+			private _midPriority = (_frontier select _mid) select 0;
+			if (_priority > _midPriority) then {
+				_lo = _mid + 1;
+			} else {
+				_hi = _mid;
+			};
 		};
 
-		_frontier insert [_i, [[_priority, _item]] ];
+		_frontier insert [_lo, [[_priority, _item]] ];
 	}],
 	["frontierPullLowest",compileFinal {
 		private _frontier = _self get "frontier";

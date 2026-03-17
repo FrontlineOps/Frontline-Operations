@@ -92,8 +92,38 @@ private _fnc_sidePower = {
     ]
 };
 
+private _fnc_scanSupportAvailability = {
+    params ["_groups"];
+
+    private _availability = createHashMapFromArray [
+        ["EAST_ARTY", false],
+        ["EAST_AIR", false],
+        ["WEST_ARTY", false],
+        ["WEST_AIR", false]
+    ];
+
+    {
+        private _gData = _y;
+        private _side = _gData get "side";
+        if !(_side in [east, west]) then { continue };
+        if (_gData get "onMission") then { continue };
+
+        private _sideKey = [_side] call _fnc_sideKey;
+        private _groupType = _gData get "groupType";
+
+        if (_groupType isEqualTo "artillery") then {
+            _availability set [_sideKey + "_ARTY", true];
+        };
+        if (_groupType in ["air", "helicopter", "jet"]) then {
+            _availability set [_sideKey + "_AIR", true];
+        };
+    } forEach _groups;
+
+    _availability
+};
+
 private _fnc_supportBonus = {
-    params ["_side", "_groups"];
+    params ["_side", "_supportAvailability"];
 
     private _sideKey = [_side] call _fnc_sideKey;
     private _now = diag_tickTime;
@@ -101,30 +131,17 @@ private _fnc_supportBonus = {
     private _artyBonus = 0;
     private _airBonus = 0;
 
-    private _artyAvailable = false;
-    private _airAvailable = false;
+    private _artyKey = _sideKey + "_ARTY";
+    private _airKey = _sideKey + "_AIR";
 
-    {
-        private _groupId = _x;
-        private _gData = _groups get _groupId;
-        if ((_gData get "side") != _side) then { continue };
-        if (_gData get "onMission") then { continue };
-
-        private _groupType = _gData get "groupType";
-        if (_groupType isEqualTo "artillery") then { _artyAvailable = true };
-        if (_groupType in ["air", "helicopter", "jet"]) then { _airAvailable = true };
-    } forEach (keys _groups);
-
-    if (_artyAvailable) then {
-        private _artyKey = _sideKey + "_ARTY";
+    if (_supportAvailability get _artyKey) then {
         if (_now >= (FLO_GTN_VirtualSupportCooldowns get _artyKey)) then {
             _artyBonus = 1;
             FLO_GTN_VirtualSupportCooldowns set [_artyKey, _now + 180];
         };
     };
 
-    if (_airAvailable) then {
-        private _airKey = _sideKey + "_AIR";
+    if (_supportAvailability get _airKey) then {
         if (_now >= (FLO_GTN_VirtualSupportCooldowns get _airKey)) then {
             _airBonus = 1;
             FLO_GTN_VirtualSupportCooldowns set [_airKey, _now + 240];
@@ -149,7 +166,7 @@ private _fnc_applyAttrition = {
         private _count = _gData get "unitCount";
         if (_count <= 0) then {
             _gData set ["unitCount", 0];
-            _groupsMap deleteAt _groupId;
+            [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");
             continue;
         };
 
@@ -159,7 +176,7 @@ private _fnc_applyAttrition = {
         private _newCount = _count - _loss;
         if (_newCount <= 0) then {
             _gData set ["unitCount", 0];
-            _groupsMap deleteAt _groupId;
+            [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");
         } else {
             _gData set ["unitCount", _newCount];
             _groupsMap set [_groupId, _gData];
@@ -333,13 +350,14 @@ private _fnc_releaseGroupForRetask = {
     _commander call ["_releaseGroups", [[_groupId], ""]];
 };
 
-[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_supportBonus, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL, _fnc_releaseGroupForRetask ] spawn {
+[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_supportBonus, _fnc_scanSupportAvailability, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL, _fnc_releaseGroupForRetask ] spawn {
     params [
         "_interval",
         "_fnc_sideKey",
         "_fnc_typeWeight",
         "_fnc_sidePower",
         "_fnc_supportBonus",
+        "_fnc_scanSupportAvailability",
         "_fnc_applyAttrition",
         "_fnc_markerId",
         "_fnc_recordCombatEvent",
@@ -399,11 +417,14 @@ private _fnc_releaseGroupForRetask = {
         private _engagementMaxDist = 500;
         private _engagements = [];
         private _engagedNow = createHashMap;
+        private _supportAvailability = [_groups] call _fnc_scanSupportAvailability;
 
         private _eastById = createHashMap;
         private _westById = createHashMap;
         private _eastLinks = createHashMap;
         private _westLinks = createHashMap;
+        private _westCells = createHashMap;
+        private _cellSize = _engagementMaxDist;
 
         {
             _x params ["_groupId", "_gData"];
@@ -415,22 +436,40 @@ private _fnc_releaseGroupForRetask = {
             _x params ["_groupId", "_gData"];
             _westById set [_groupId, _gData];
             _westLinks set [_groupId, []];
+
+            private _westPos = _gData get "position";
+            private _cx = floor ((_westPos select 0) / _cellSize);
+            private _cy = floor ((_westPos select 1) / _cellSize);
+            private _cellKey = format ["%1_%2", _cx, _cy];
+            private _bucket = _westCells getOrDefault [_cellKey, []];
+            _bucket pushBack [_groupId, _gData];
+            _westCells set [_cellKey, _bucket];
         } forEach _westPool;
 
         {
             _x params ["_eastId", "_eastData"];
             private _eastPos = _eastData get "position";
             private _eastNeighborWest = _eastLinks get _eastId;
+            private _cx = floor ((_eastPos select 0) / _cellSize);
+            private _cy = floor ((_eastPos select 1) / _cellSize);
 
-            {
-                _x params ["_westId", "_westData"];
-                private _westPos = _westData get "position";
-                if ((_eastPos distance2D _westPos) > _engagementMaxDist) then { continue };
+            for "_dx" from -1 to 1 do {
+                for "_dy" from -1 to 1 do {
+                    private _cellKey = format ["%1_%2", _cx + _dx, _cy + _dy];
+                    if !(_cellKey in _westCells) then { continue };
 
-                _eastNeighborWest pushBack _westId;
-                private _westNeighborEast = _westLinks get _westId;
-                _westNeighborEast pushBack _eastId;
-            } forEach _westPool;
+                    {
+                        _x params ["_westId", "_westData"];
+                        private _westPos = _westData get "position";
+                        private _dist = _eastPos distance2D _westPos;
+                        if (_dist > _engagementMaxDist) then { continue };
+
+                        _eastNeighborWest pushBack [_westId, _dist];
+                        private _westNeighborEast = _westLinks get _westId;
+                        _westNeighborEast pushBack [_eastId, _dist];
+                    } forEach (_westCells get _cellKey);
+                };
+            };
         } forEach _eastPool;
 
         private _visitedEast = createHashMap;
@@ -445,6 +484,7 @@ private _fnc_releaseGroupForRetask = {
             private _queueWest = [];
             private _clusterEastIds = [];
             private _clusterWestIds = [];
+            private _clusterMinDist = _engagementMaxDist;
 
             while {(count _queueEast) > 0 || {(count _queueWest) > 0}} do {
                 while {(count _queueEast) > 0} do {
@@ -455,8 +495,10 @@ private _fnc_releaseGroupForRetask = {
                     _clusterEastIds pushBack _eastId;
 
                     {
-                        if !(_visitedWest getOrDefault [_x, false]) then {
-                            _queueWest pushBack _x;
+                        _x params ["_westId", "_dist"];
+                        if (_dist < _clusterMinDist) then { _clusterMinDist = _dist };
+                        if !(_visitedWest getOrDefault [_westId, false]) then {
+                            _queueWest pushBack _westId;
                         };
                     } forEach (_eastLinks get _eastId);
                 };
@@ -469,8 +511,10 @@ private _fnc_releaseGroupForRetask = {
                     _clusterWestIds pushBack _westId;
 
                     {
-                        if !(_visitedEast getOrDefault [_x, false]) then {
-                            _queueEast pushBack _x;
+                        _x params ["_eastId", "_dist"];
+                        if (_dist < _clusterMinDist) then { _clusterMinDist = _dist };
+                        if !(_visitedEast getOrDefault [_eastId, false]) then {
+                            _queueEast pushBack _eastId;
                         };
                     } forEach (_westLinks get _westId);
                 };
@@ -502,16 +546,6 @@ private _fnc_releaseGroupForRetask = {
             } forEach _clusterWestIds;
             _westCenter set [0, (_westCenter select 0) / (count _clusterWestIds)];
             _westCenter set [1, (_westCenter select 1) / (count _clusterWestIds)];
-
-            private _clusterMinDist = 1000000000;
-            {
-                private _eastPos = (_eastById get _x) get "position";
-                {
-                    private _westPos = (_westById get _x) get "position";
-                    private _dist = _eastPos distance2D _westPos;
-                    if (_dist < _clusterMinDist) then { _clusterMinDist = _dist };
-                } forEach _clusterWestIds;
-            } forEach _clusterEastIds;
 
             _engagements pushBack [
                 _clusterEastIds,
@@ -550,8 +584,8 @@ private _fnc_releaseGroupForRetask = {
             private _infOverEast = if ((_westStats get "armor") > 0 && {(_eastStats get "infantry") >= ((_westStats get "armor") * 4)}) then { 1 } else { 0 };
             private _infOverWest = if ((_eastStats get "armor") > 0 && {(_westStats get "infantry") >= ((_eastStats get "armor") * 4)}) then { 1 } else { 0 };
 
-            private _supportEast = [east, _groups] call _fnc_supportBonus;
-            private _supportWest = [west, _groups] call _fnc_supportBonus;
+            private _supportEast = [east, _supportAvailability] call _fnc_supportBonus;
+            private _supportWest = [west, _supportAvailability] call _fnc_supportBonus;
 
             private _modEast = _ratioModEast + _armorInfEast + _infOverEast + (_supportEast get "total");
             private _modWest = _ratioModWest + _armorInfWest + _infOverWest + (_supportWest get "total");

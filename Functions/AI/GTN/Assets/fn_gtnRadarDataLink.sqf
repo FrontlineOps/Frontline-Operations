@@ -21,19 +21,20 @@ publicVariable "FLO_GTN_RadarDataLinkRunning";
 // Track active radars
 private _updateInterval = 30; // seconds
 
-while {true} do {
+while {FLO_GTN_RadarDataLinkRunning} do {
     sleep _updateInterval;
+
+    if (isNil "FLO_virtualGroups") then { continue };
     
     // Find all active static_aa groups (which include radars)
     private _activeRadars = [];
+    private _groups = FLO_virtualGroups get "_groups";
     {
-        private _groupData = FLO_virtualGroups get "_groups" getOrDefault [_x, nil];
-        if (!isNil "_groupData") then {
-            if ((_groupData get "groupType") == "static_aa" && {_groupData getOrDefault ["alwaysActive", false]}) then {
-                _activeRadars pushBack (_groupData get "position");
-            };
+        private _groupData = _y;
+        if ((_groupData get "groupType") == "static_aa" && {_groupData getOrDefault ["alwaysActive", false]}) then {
+            _activeRadars pushBack (_groupData get "position");
         };
-    } forEach (keys (FLO_virtualGroups get "_groups"));
+    } forEach _groups;
     
     if (count _activeRadars == 0) then { continue; };
     
@@ -50,15 +51,27 @@ while {true} do {
     } forEach _activeRadars;
     
     if (count _detectedAircraft == 0) then { continue; };
+
+    private _eastLeaders = [];
+    {
+        private _gData = _y;
+        if ((_gData get "side") != east) then { continue };
+        if !(_gData get "isActive") then { continue };
+        private _realGroup = _gData get "realGroup";
+        if (isNull _realGroup) then { continue };
+        private _leader = leader _realGroup;
+        if (isNull _leader || {!alive _leader}) then { continue };
+        _eastLeaders pushBackUnique _leader;
+    } forEach _groups;
+
+    if (count _eastLeaders == 0) then { continue };
     
-    // Reveal detected aircraft to all OPFOR groups
+    // Reveal detected aircraft to active OPFOR leaders
     {
         private _aircraft = _x;
         {
-            if (side _x == east) then {
-                _x reveal [_aircraft, 4]; // Maximum knowledge
-            };
-        } forEach allGroups;
+            _x reveal [_aircraft, 4]; // Maximum knowledge
+        } forEach _eastLeaders;
     } forEach _detectedAircraft;
     
     ["RADAR", 4, format["Data link: %1 radars detected %2 aircraft", count _activeRadars, count _detectedAircraft]] call FLO_fnc_log;

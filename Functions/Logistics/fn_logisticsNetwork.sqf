@@ -70,9 +70,14 @@ if (isNil "FLO_Logistics_Network") then {
         ["_stats", nil],  // Track replacements made
         ["_enabled", true],
         ["_lastReinforcementTarget", ""],
+        ["_reinforcementTargetCycle", []],
+        ["_reinforcementCycleIndex", 0],
         ["_managedSide", east],
         ["_managedSideKey", "EAST"],
         ["_enemySide", west],
+        ["_edgeSpawnRotation", ["NORTH", "SOUTH", "EAST", "WEST"]],
+        ["_edgeSpawnIndex", 0],
+        ["_lastSpawnEdge", ""],
 
         // ========================================
         // CONSTRUCTOR
@@ -93,6 +98,10 @@ if (isNil "FLO_Logistics_Network") then {
                     ["byType", createHashMap]
                 ]]];
                 _self set ["_lastReinforcementTarget", _savedState getOrDefault ["lastReinforcementTarget", ""]];
+                _self set ["_reinforcementTargetCycle", _savedState getOrDefault ["reinforcementTargetCycle", []]];
+                _self set ["_reinforcementCycleIndex", _savedState getOrDefault ["reinforcementCycleIndex", 0]];
+                _self set ["_edgeSpawnIndex", _savedState getOrDefault ["edgeSpawnIndex", 0]];
+                _self set ["_lastSpawnEdge", _savedState getOrDefault ["lastSpawnEdge", ""]];
                 _self set ["_lastUpdate", time];
 
                 ["LOGISTICS", 3, format["Restored from save: %1 total replacements",
@@ -105,6 +114,10 @@ if (isNil "FLO_Logistics_Network") then {
                     ["byType", createHashMap]
                 ]];
                 _self set ["_lastReinforcementTarget", ""];
+                _self set ["_reinforcementTargetCycle", []];
+                _self set ["_reinforcementCycleIndex", 0];
+                _self set ["_edgeSpawnIndex", 0];
+                _self set ["_lastSpawnEdge", ""];
                 _self set ["_lastUpdate", time];
             };
 
@@ -150,8 +163,8 @@ if (isNil "FLO_Logistics_Network") then {
             private _managedSide = _self get "_managedSide";
             private _groups = FLO_virtualGroups get "_groups";
 
-            (keys _groups findIf {
-                private _gData = _groups get _x;
+            (values _groups findIf {
+                private _gData = _x;
                 (_gData get "groupType") isEqualTo "static_aa"
                 && {(_gData get "side") isEqualTo _managedSide}
                 && {(_gData get "unitCount") > 0}
@@ -241,7 +254,7 @@ if (isNil "FLO_Logistics_Network") then {
 
         // Pick best target using priority and variety logic
         ["_pickBestTarget", {
-            params ["_candidates", ["_groupType", "infantry"]];
+            params ["_candidates", ["_groupType", "infantry"], ["_spawnPos", []]];
             if (count _candidates == 0) exitWith { "" };
             
             // Variety Filter: Avoid last target if possible
@@ -252,44 +265,102 @@ if (isNil "FLO_Logistics_Network") then {
                 _available = _available select { !(_self call ["_objectiveHasStaticAA", [_x]]) };
             };
             if (count _available == 0) exitWith { "" };
-            
-            if (count _available > 1 && {_lastTarget in _available}) then {
-                _available = _available - [_lastTarget];
-            };
-            
-            //Priority Sorting using FLO_Objectives priority field
-            private _bestScore = -1;
-            private _bestCandidates = [];
-            
-            {
-                private _objId = _x;
-                private _objData = FLO_Objectives get _objId;
-                private _score = _objData get "priority";
-                
-                if (_groupType isEqualTo "static_aa") then {
+
+            // Static AA keeps priority-based targeting.
+            if (_groupType isEqualTo "static_aa") exitWith {
+                if (count _available > 1 && {_lastTarget in _available}) then {
+                    _available = _available - [_lastTarget];
+                };
+
+                private _bestScore = -1;
+                private _bestCandidates = [];
+                {
+                    private _objId = _x;
+                    private _objData = FLO_Objectives get _objId;
+                    private _score = _objData get "priority";
                     private _enemySide = _self get "_enemySide";
                     private _objPos = _objData get "position";
                     private _nearestEnemyDist = 1e12;
+
                     {
                         private _enemyData = FLO_Objectives get _x;
                         if ((_enemyData get "owner") != _enemySide) then { continue };
                         private _dist = _objPos distance2D (_enemyData get "position");
                         if (_dist < _nearestEnemyDist) then { _nearestEnemyDist = _dist; };
                     } forEach (keys FLO_Objectives);
+
                     _score = _score + ((_nearestEnemyDist min 6000) * 0.15);
-                };
-                
-                if (_score > _bestScore) then {
-                    _bestScore = _score;
-                    _bestCandidates = [_objId];
-                } else {
-                    if (_score == _bestScore) then {
-                        _bestCandidates pushBack _objId;
+
+                    if (_score > _bestScore) then {
+                        _bestScore = _score;
+                        _bestCandidates = [_objId];
+                    } else {
+                        if (_score == _bestScore) then {
+                            _bestCandidates pushBack _objId;
+                        };
                     };
-                };
+                } forEach _available;
+
+                selectRandom _bestCandidates
+            };
+
+            // Maneuver reinforcements: nearest-target rotation queue (max 6), skip last selected.
+            private _anchorPos = if (_spawnPos isEqualType [] && {count _spawnPos >= 2}) then {
+                _spawnPos
+            } else {
+                private _objPos = (FLO_Objectives get (_available select 0)) get "position";
+                _objPos
+            };
+
+            private _scored = [];
+            {
+                private _objPos = (FLO_Objectives get _x) get "position";
+                _scored pushBack [(_objPos distance2D _anchorPos), _x];
             } forEach _available;
-            
-            selectRandom _bestCandidates
+            _scored sort true;
+
+            private _ordered = _scored apply { _x select 1 };
+            if (count _ordered > 6) then {
+                _ordered resize 6;
+            };
+
+            private _cycle = _self get "_reinforcementTargetCycle";
+            if ((count _cycle) != (count _ordered) || {str _cycle != str _ordered}) then {
+                _cycle = +_ordered;
+                _self set ["_reinforcementTargetCycle", _cycle];
+                _self set ["_reinforcementCycleIndex", 0];
+            };
+
+            if (count _cycle == 0) exitWith { "" };
+
+            private _idx = _self get "_reinforcementCycleIndex";
+            if (_idx >= count _cycle) then {
+                _idx = 0;
+            };
+
+            private _selected = _cycle select _idx;
+            if ((count _cycle) > 1 && {_selected isEqualTo _lastTarget}) then {
+                _idx = (_idx + 1) mod (count _cycle);
+                _selected = _cycle select _idx;
+            };
+
+            _self set ["_reinforcementCycleIndex", (_idx + 1) mod (count _cycle)];
+            _selected
+        }],
+
+        ["_nextPreferredSpawnEdge", {
+            private _edges = _self get "_edgeSpawnRotation";
+            if (count _edges == 0) exitWith { "" };
+
+            private _idx = _self get "_edgeSpawnIndex";
+            if (_idx >= count _edges) then {
+                _idx = 0;
+            };
+
+            private _edge = _edges select _idx;
+            _self set ["_edgeSpawnIndex", (_idx + 1) mod (count _edges)];
+            _self set ["_lastSpawnEdge", _edge];
+            _edge
         }],
 
         // Find best spawn position (map edge or rear objective)
@@ -299,7 +370,11 @@ if (isNil "FLO_Logistics_Network") then {
 
             // Try map edge first using transport system
             if (_useMapEdge) then {
-                private _edgePos = [] call FLO_fnc_transportGetBestEdgeSpawnPos;
+                private _preferredEdge = _self call ["_nextPreferredSpawnEdge", []];
+                private _edgePos = [_preferredEdge] call FLO_fnc_transportGetBestEdgeSpawnPos;
+                if (_edgePos isEqualTo [0,0,0]) then {
+                    _edgePos = [] call FLO_fnc_transportGetBestEdgeSpawnPos;
+                };
                 if !(_edgePos isEqualTo [0,0,0]) exitWith { _edgePos };
             };
 
@@ -312,15 +387,22 @@ if (isNil "FLO_Logistics_Network") then {
 
             if (count _opforObjs == 0) exitWith { [] };
 
-            // Sort by distance from players (farthest first)
-            private _sorted = [_opforObjs, [], {
-                private _pos = (FLO_Objectives get _x) get "position";
+            // Select by max total distance from players (single pass).
+            private _bestObjId = "";
+            private _bestScore = -1e12;
+            {
+                private _objId = _x;
+                private _pos = (FLO_Objectives get _objId) get "position";
                 private _totalDist = 0;
                 { _totalDist = _totalDist + (_pos distance2D _x); } forEach allPlayers;
-                -_totalDist
-            }, "ASCEND"] call BIS_fnc_sortBy;
+                if (_totalDist > _bestScore) then {
+                    _bestScore = _totalDist;
+                    _bestObjId = _objId;
+                };
+            } forEach _opforObjs;
 
-            (FLO_Objectives get (_sorted select 0)) get "position"
+            if (_bestObjId == "") exitWith { [] };
+            (FLO_Objectives get _bestObjId) get "position"
         }],
 
         // Find objectives that need reinforcement (under BLUFOR pressure)
@@ -575,7 +657,7 @@ if (isNil "FLO_Logistics_Network") then {
                 if (_spawnPos isEqualTo [0,0,0]) then { continue };
 
                 // Select target with priority logic
-                private _targetObj = _self call ["_pickBestTarget", [_targetPool, _groupType]];
+                private _targetObj = _self call ["_pickBestTarget", [_targetPool, _groupType, _spawnPos]];
                 
                 // Update last target to ensure variety for next selection
                 if (_targetObj != "") then {
@@ -637,7 +719,11 @@ if (isNil "FLO_Logistics_Network") then {
             createHashMapFromArray [
                 ["initialComposition", _self get "_initialComposition"],
                 ["stats", _self get "_stats"],
-                ["lastReinforcementTarget", _self get "_lastReinforcementTarget"]
+                ["lastReinforcementTarget", _self get "_lastReinforcementTarget"],
+                ["reinforcementTargetCycle", _self get "_reinforcementTargetCycle"],
+                ["reinforcementCycleIndex", _self get "_reinforcementCycleIndex"],
+                ["edgeSpawnIndex", _self get "_edgeSpawnIndex"],
+                ["lastSpawnEdge", _self get "_lastSpawnEdge"]
             ]
         }]
     ];

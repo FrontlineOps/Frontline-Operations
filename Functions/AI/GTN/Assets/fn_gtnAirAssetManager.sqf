@@ -41,14 +41,15 @@ if (isNil "FLO_GTNAirAssetManager") then {
             if (_playersNear > 0) exitWith { true };
 
             private _groups = FLO_virtualGroups get "_groups";
-            private _activeGroupsNear = {
-                private _gData = _groups get _x;
+            private _activeGroupsNear = 0;
+            {
+                private _gData = _y;
                 private _gType = _gData get "groupType";
-                if (_gType in ["static_aa", "radar"]) then { false } else {
-                (_gData get "isActive") &&
-                {(_gData get "position") distance2D _targetPos <= _radius}
-                }
-            } count (keys _groups);
+                if (_gType in ["static_aa", "radar"]) then { continue };
+                if !(_gData get "isActive") then { continue };
+                if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
+                _activeGroupsNear = _activeGroupsNear + 1;
+            } forEach _groups;
 
             _activeGroupsNear > 0
         }],
@@ -82,19 +83,19 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _candidates = [];
             {
                 private _gid = _x;
-                private _gData = _groups get _gid;
+                private _gData = _y;
                 if ((_gData get "side") != _enemySide) then { continue };
                 if (_gData get "isActive") then { continue };
 
                 private _dist = (_gData get "position") distance2D _targetPos;
                 if (_dist <= _radius) then {
-                    _candidates pushBack [_gid, _gData, _dist];
+                    _candidates pushBack [_dist, _gid, _gData];
                 };
-            } forEach (keys _groups);
+            } forEach _groups;
 
             if (count _candidates == 0) exitWith { 0 };
 
-            _candidates = [_candidates, [], {_x select 2}, "ASCEND"] call BIS_fnc_sortBy;
+            _candidates sort true;
 
             private _targetsToHit = switch (toUpper _missionType) do {
                 case "CAP": { 1 };
@@ -115,7 +116,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _totalLosses = 0;
             for "_i" from 0 to ((_targetsToHit min (count _candidates)) - 1) do {
                 private _entry = _candidates select _i;
-                _entry params ["_gid", "_gData", "_dist"];
+                _entry params ["_dist", "_gid", "_gData"];
 
                 private _currentCount = _gData get "unitCount";
                 if (_currentCount <= 0) then { continue };
@@ -127,7 +128,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _newCount = _currentCount - _loss;
                 if (_newCount <= 0) then {
                     _gData set ["unitCount", 0];
-                    _groups deleteAt _gid;
+                    [FLO_virtualGroups, _gid] call (FLO_virtualGroups get "_removeGroup");
                 } else {
                     _gData set ["unitCount", _newCount];
                     _groups set [_gid, _gData];
@@ -189,9 +190,19 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
             if (count _airGroups == 0) exitWith {[]};
 
-            // Select nearest group to target
-            private _sorted = [_airGroups, [], {(_x select 1) get "position" distance2D _targetPos}, "ASCEND"] call BIS_fnc_sortBy;
-            private _sel = _sorted select 0;
+            // Select nearest group to target (single pass)
+            private _sel = [];
+            private _bestDist = 1e12;
+            {
+                _x params ["_gid", "_gData"];
+                private _dist = (_gData get "position") distance2D _targetPos;
+                if (_dist < _bestDist) then {
+                    _bestDist = _dist;
+                    _sel = [_gid, _gData];
+                };
+            } forEach _airGroups;
+            if (count _sel == 0) exitWith { [] };
+
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
             private _isLiveArea = _self call ["_isLiveArea", [_targetPos]];
@@ -220,7 +231,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 [_gid, _gdata] call FLO_fnc_activateVirtualGroup;
             };
 
-            _gdata = _groups get _gid; // refresh after activation
             private _realGroup = _gdata get "realGroup";
             if (isNull _realGroup) exitWith { [] };
             

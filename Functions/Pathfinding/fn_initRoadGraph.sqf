@@ -267,10 +267,9 @@ XPS_PF_typ_RoadGraphSearch = [
 		params ["_cost","_fromNode","_toNode"];
 
 		private _weights = _self get "Doctrine" get "Weights";
-		private _road = _toNode get "RoadObject";
-		private _info = getRoadInfo _road;
+		private _roadType = _toNode get "Type";
 		private _modifier = _weights#2;
-		switch (_info#0) do {
+		switch (_roadType) do {
 			case "MAIN ROAD" : {_modifier = _weights#0};
 			case "ROAD" : {_modifier = _weights#1};
 		};

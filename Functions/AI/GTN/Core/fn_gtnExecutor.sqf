@@ -128,6 +128,33 @@ private _executor = createHashMapObject [[
         _data set [_key, _value];
     }],
 
+    // Remove stale group IDs from per-track task data when a virtual group is deleted.
+    ["_pruneRemovedGroup", {
+        params ["_groupId"];
+
+        private _byTrack = _self get "_completedTaskDataByTrack";
+        {
+            private _trackData = _y;
+            private _stagingGroups = _trackData getOrDefault ["STAGING_GROUPS", []];
+            if (_groupId in _stagingGroups) then {
+                _trackData set ["STAGING_GROUPS", _stagingGroups - [_groupId]];
+            };
+
+            private _primData = _trackData getOrDefault ["PRIMITIVE_DATA", createHashMap];
+            if (_primData isEqualType createHashMap) then {
+                private _attackGroups = _primData getOrDefault ["attackGroups", []];
+                if (_groupId in _attackGroups) then {
+                    _primData set ["attackGroups", _attackGroups - [_groupId]];
+                };
+
+                private _assignedGroups = _primData getOrDefault ["assignedGroups", []];
+                if (_groupId in _assignedGroups) then {
+                    _primData set ["assignedGroups", _assignedGroups - [_groupId]];
+                };
+            };
+        } forEach _byTrack;
+    }],
+
     // Get stored task data
     ["_getTaskData", {
         params ["_key"];
@@ -431,6 +458,7 @@ private _executor = createHashMapObject [[
             _executor call ["_storeTaskData", ["STAGING_REQUIRES_AT", _requiresAT]];
             _executor call ["_storeTaskData", ["STAGING_REQUIRES_AA", _requiresAA]];
             _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", 0]];
+            _executor call ["_storeTaskData", ["STAGING_GROUP_POWER", createHashMap]];
 
             ["GTN", 3, format["Staging point created at %1 for objective %2 (power needed: %3)", 
                 _stagingPos, _objId, round _requiredPower]] call FLO_fnc_log;
@@ -457,6 +485,7 @@ private _executor = createHashMapObject [[
             private _requiresAA = _completedData getOrDefault ["STAGING_REQUIRES_AA", false];
             private _currentGroups = _completedData getOrDefault ["STAGING_GROUPS", []];
             private _accumulatedPower = _completedData getOrDefault ["STAGING_ACCUMULATED_POWER", 0];
+            private _groupPower = _completedData getOrDefault ["STAGING_GROUP_POWER", createHashMap];
 
             if !(_stagingPos isEqualType [] && {count _stagingPos >= 2}) exitWith {
                 ["GTN", 2, format["Staging assign failed - invalid STAGING_POSITION for %1: %2", _objId, _stagingPos]] call FLO_fnc_log;
@@ -519,11 +548,11 @@ private _executor = createHashMapObject [[
                     _score = _score * 1.5;
                 };
 
-                _scoredGroups pushBack [_gId, _score, _power];
+                _scoredGroups pushBack [_score, _gId, _power];
             } forEach _availableAssets;
 
             // Sort by score descending
-            _scoredGroups = [_scoredGroups, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+            _scoredGroups sort false;
 
             // Select groups until we meet power requirement or hit limit
             private _newGroups = [];
@@ -532,9 +561,10 @@ private _executor = createHashMapObject [[
                 if (count _currentGroups + count _newGroups >= _maxGroups) exitWith {};
                 if (_newPower >= _requiredPower) exitWith {};
 
-                _x params ["_gId", "_score", "_power"];
+                _x params ["_score", "_gId", "_power"];
                 _newGroups pushBack _gId;
                 _newPower = _newPower + _power;
+                _groupPower set [_gId, _power];
             } forEach _scoredGroups;
 
             if (count _newGroups == 0) exitWith {
@@ -557,6 +587,7 @@ private _executor = createHashMapObject [[
             private _allGroups = _currentGroups + _newGroups;
             _executor call ["_storeTaskData", ["STAGING_GROUPS", _allGroups]];
             _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _newPower]];
+            _executor call ["_storeTaskData", ["STAGING_GROUP_POWER", _groupPower]];
             _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _allGroups]];
 
             ["GTN", 3, format["Assigned %1 new groups to staging (total: %2 groups, %3/%4 power)",
@@ -579,6 +610,7 @@ private _executor = createHashMapObject [[
             private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
             private _requiredPower = _completedData getOrDefault ["STAGING_REQUIRED_POWER", 100];
             private _accumulatedPower = _completedData getOrDefault ["STAGING_ACCUMULATED_POWER", 0];
+            private _groupPower = _completedData getOrDefault ["STAGING_GROUP_POWER", createHashMap];
 
             if !(_stagingPos isEqualType [] && {count _stagingPos >= 2}) exitWith {
                 ["GTN", 2, format["Staging wait failed - invalid STAGING_POSITION: %1", _stagingPos]] call FLO_fnc_log;
@@ -593,8 +625,41 @@ private _executor = createHashMapObject [[
                 false
             };
 
-            // Check if groups have arrived
-            private _arrived = _cmdr call ["_checkGroupsArrived", [_groups, _stagingPos, 300]];
+            // Staging uses quorum/wave gating to avoid waiting on every straggler.
+            private _stagingRadius = 350 + ((count _groups) * 20);
+            if (_stagingRadius > 1000) then { _stagingRadius = 1000; };
+
+            private _allGroups = FLO_virtualGroups get "_groups";
+            private _arrivedGroups = [];
+            private _arrivedCount = 0;
+            private _validCount = 0;
+            private _arrivedPower = 0;
+
+            {
+                private _gData = _allGroups get _x;
+                if (isNil "_gData") then { continue };
+                _validCount = _validCount + 1;
+
+                if (((_gData get "position") distance2D _stagingPos) <= _stagingRadius) then {
+                    _arrivedGroups pushBack _x;
+                    _arrivedCount = _arrivedCount + 1;
+                    _arrivedPower = _arrivedPower + (_groupPower getOrDefault [_x, 0]);
+                };
+            } forEach _groups;
+
+            if (_arrivedPower <= 0 && _validCount > 0) then {
+                _arrivedPower = _accumulatedPower * (_arrivedCount / _validCount);
+            };
+
+            private _minArrivalRatio = 0.60;
+            private _requiredArrivalCount = ceil ((_validCount max 1) * _minArrivalRatio);
+            if (_requiredArrivalCount < 1) then { _requiredArrivalCount = 1; };
+
+            private _minPowerRatio = 0.70;
+            private _requiredArrivalPower = _requiredPower * _minPowerRatio;
+
+            private _quorumReady = _arrivedCount >= _requiredArrivalCount;
+            private _powerReady = _arrivedPower >= _requiredArrivalPower;
 
             // Check timeout
             private _waitStart = _completedData getOrDefault ["STAGING_WAIT_START", -1];
@@ -603,109 +668,133 @@ private _executor = createHashMapObject [[
                 _waitStart = diag_tickTime;
             };
             private _waitedTime = diag_tickTime - _waitStart;
-            private _timedOut = _waitedTime > 300; // 5 minutes
+            private _timedOut = _waitedTime > 180; // 3 minutes
 
-            if (_arrived) then {
-                // Groups arrived - check if we have enough power
-                if (_accumulatedPower >= _requiredPower) then {
-                    ["GTN", 3, format["Staging complete: %1 groups arrived with %2/%3 power",
-                        count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
-                    _ctx set ["status", "SUCCESS"];
+            if ((_quorumReady && _powerReady) || _timedOut) then {
+                private _waveGroups = if (_timedOut) then {
+                    _groups
                 } else {
-                    if (_timedOut) then {
-                        // Timeout - proceed with what we have
-                        ["GTN", 2, format["Staging timeout - proceeding with %1/%2 power",
-                            round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
-                        _ctx set ["status", "SUCCESS"];
-                    } else {
-                        // Not enough power yet - CHECK FOR REINFORCEMENTS
-                        private _lastReinfCheck = _completedData getOrDefault ["STAGING_LAST_REINF_CHECK", -1];
-                        if (diag_tickTime - _lastReinfCheck > 30) then {
-                            _executor call ["_storeTaskData", ["STAGING_LAST_REINF_CHECK", diag_tickTime]];
-                            
-                            // Calculate how many groups we need based on power deficit
-                            private _powerDeficit = _requiredPower - _accumulatedPower;
-                            
-                            // Get track pool and calculate average power using capability analyzer
-                            private _taskNode = _ctx get "taskNode";
-                            private _track = _taskNode get "_trackRef";
-                            private _poolSize = if (!isNil "_track") then { count (_track get "groupPool") } else { 20 };
-                            
-                            private _avgPowerPerGroup = 800; // Default fallback
-                            if (!isNil "_track" && _poolSize > 0) then {
-                                private _analyzer = FLO_GTN_CapabilityAnalyzer;
-                                private _pool = _track get "groupPool";
-                                private _totalPower = 0;
-                                private _sampleSize = _poolSize min 5; // Sample up to 5 groups
-                                for "_i" from 0 to (_sampleSize - 1) do {
-                                    private _gid = _pool select _i;
-                                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gid]];
-                                    if (!isNil "_gAnalysis") then {
-                                        _totalPower = _totalPower + (_gAnalysis get "totalCombatPower");
-                                    };
-                                };
-                                if (_sampleSize > 0 && _totalPower > 0) then {
-                                    _avgPowerPerGroup = _totalPower / _sampleSize;
-                                };
-                            };
-                            
-                            private _groupsNeeded = ceil(_powerDeficit / _avgPowerPerGroup) max 1;
-                            private _requestCount = _groupsNeeded min _poolSize; // Request what we need up to pool size
-                            
-                            ["GTN", 3, format["Staging reinforcement: Need %1 power, pool has %2 groups (avg %3 power/group), requesting %4", 
-                                round _powerDeficit, _poolSize, round _avgPowerPerGroup, _requestCount]] call FLO_fnc_log;
-                            
-                            private _availableGroupIds = if (!isNil "_track") then {
-                                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount]]
-                            } else {
-                                _cmdr call ["_getAvailableGroups", [_requestCount, _stagingPos]]
-                            };
-                            
-                            if (count _availableGroupIds > 0) then {
-                                _groups = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUPS", []]; // Refresh local groups list
-                                private _analyzer = FLO_GTN_CapabilityAnalyzer;
-                                
-                                {
-                                    private _gid = _x;
-                                    // Assign new group
-                                    _cmdr call ["_orderGroupMove", [_gid, _stagingPos, "AWARE"]];
-                                    _groups pushBackUnique _gid;
-                                    
-                                    // Add its power
-                                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gid]];
-                                    if (!isNil "_gAnalysis") then {
-                                        _accumulatedPower = _accumulatedPower + (_gAnalysis get "totalCombatPower");
-                                    };
-                                    ["GTN", 3, format["Staging Reinforcement: Commander assigned group %1", _gid]] call FLO_fnc_log;
-                                } forEach _availableGroupIds;
-                                
-                                // Update shared data
-                                _executor call ["_storeTaskData", ["STAGING_GROUPS", _groups]];
-                                _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _accumulatedPower]];
-                                
-                                ["GTN", 3, format["Staging: Added %1 groups, now at %2/%3 power", 
-                                    count _availableGroupIds, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
-                            } else {
-                                ["GTN", 2, "Staging: No more groups available in track pool for reinforcement"] call FLO_fnc_log;
+                    if (count _arrivedGroups > 0) then { _arrivedGroups } else { _groups };
+                };
+                private _wavePower = if (_timedOut) then {
+                    _accumulatedPower
+                } else {
+                    if (count _arrivedGroups > 0) then { _arrivedPower } else { _accumulatedPower };
+                };
+
+                _executor call ["_storeTaskData", ["STAGING_GROUPS", _waveGroups]];
+                _executor call ["_storeTaskData", ["STAGING_ASSIGNED_COUNT", count _waveGroups]];
+                _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _wavePower]];
+
+                if (_timedOut) then {
+                    ["GTN", 2, format[
+                        "Staging timeout: launching assigned force (%1/%2 groups, %3/%4 power, waited %5s)",
+                        count _waveGroups,
+                        _validCount,
+                        round _wavePower,
+                        round _requiredPower,
+                        round _waitedTime
+                    ]] call FLO_fnc_log;
+                } else {
+                    ["GTN", 3, format[
+                        "Staging wave ready: %1/%2 groups within %3m, %4/%5 power",
+                        count _waveGroups,
+                        _validCount,
+                        round _stagingRadius,
+                        round _wavePower,
+                        round _requiredPower
+                    ]] call FLO_fnc_log;
+                };
+                _ctx set ["status", "SUCCESS"];
+            } else {
+                // Not enough staged force yet - request reinforcements periodically.
+                private _lastReinfCheck = _completedData getOrDefault ["STAGING_LAST_REINF_CHECK", -1];
+                if (diag_tickTime - _lastReinfCheck > 30) then {
+                    _executor call ["_storeTaskData", ["STAGING_LAST_REINF_CHECK", diag_tickTime]];
+
+                    // Calculate how many groups we need based on staged power deficit.
+                    private _powerDeficit = (_requiredArrivalPower - _arrivedPower) max 0;
+
+                    // Get track pool and calculate average power using capability analyzer
+                    private _taskNode = _ctx get "taskNode";
+                    private _track = _taskNode get "_trackRef";
+                    private _poolSize = if (!isNil "_track") then { count (_track get "groupPool") } else { 20 };
+
+                    private _avgPowerPerGroup = 800; // Default fallback
+                    if (!isNil "_track" && _poolSize > 0) then {
+                        private _analyzer = FLO_GTN_CapabilityAnalyzer;
+                        private _pool = _track get "groupPool";
+                        private _totalPower = 0;
+                        private _sampleSize = _poolSize min 5; // Sample up to 5 groups
+                        for "_i" from 0 to (_sampleSize - 1) do {
+                            private _gid = _pool select _i;
+                            private _gAnalysis = _analyzer call ["_analyzeGroup", [_gid]];
+                            if (!isNil "_gAnalysis") then {
+                                _totalPower = _totalPower + (_gAnalysis get "totalCombatPower");
                             };
                         };
+                        if (_sampleSize > 0 && _totalPower > 0) then {
+                            _avgPowerPerGroup = _totalPower / _sampleSize;
+                        };
+                    };
 
-                        ["GTN", 3, format["Staging: %1 groups arrived but only %2/%3 power - waiting for reinforcements",
-                            count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
-                        _ctx set ["status", "RUNNING"];
+                    private _groupsNeeded = ceil(_powerDeficit / _avgPowerPerGroup) max 1;
+                    private _requestCount = _groupsNeeded min _poolSize; // Request what we need up to pool size
+
+                    ["GTN", 3, format["Staging reinforcement: Need %1 staged power, pool has %2 groups (avg %3 power/group), requesting %4",
+                        round _powerDeficit, _poolSize, round _avgPowerPerGroup, _requestCount]] call FLO_fnc_log;
+
+                    private _availableGroupIds = if (!isNil "_track") then {
+                        _cmdr call ["_getGroupsFromTrack", [_track, _requestCount]]
+                    } else {
+                        _cmdr call ["_getAvailableGroups", [_requestCount, _stagingPos]]
+                    };
+
+                    if (count _availableGroupIds > 0) then {
+                        _groups = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUPS", []]; // Refresh local groups list
+                        _groupPower = _executor get "_completedTaskData" getOrDefault ["STAGING_GROUP_POWER", createHashMap];
+                        private _analyzer = FLO_GTN_CapabilityAnalyzer;
+
+                        {
+                            private _gid = _x;
+                            // Assign new group
+                            _cmdr call ["_orderGroupMove", [_gid, _stagingPos, "AWARE"]];
+                            _groups pushBackUnique _gid;
+
+                            // Add its power
+                            private _gAnalysis = _analyzer call ["_analyzeGroup", [_gid]];
+                            if (!isNil "_gAnalysis") then {
+                                private _power = _gAnalysis get "totalCombatPower";
+                                _accumulatedPower = _accumulatedPower + _power;
+                                _groupPower set [_gid, _power];
+                            };
+                            ["GTN", 3, format["Staging Reinforcement: Commander assigned group %1", _gid]] call FLO_fnc_log;
+                        } forEach _availableGroupIds;
+
+                        // Update shared data
+                        _executor call ["_storeTaskData", ["STAGING_GROUPS", _groups]];
+                        _executor call ["_storeTaskData", ["STAGING_ACCUMULATED_POWER", _accumulatedPower]];
+                        _executor call ["_storeTaskData", ["STAGING_GROUP_POWER", _groupPower]];
+
+                        ["GTN", 3, format["Staging: Added %1 groups, now at %2/%3 total power",
+                            count _availableGroupIds, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
+                    } else {
+                        ["GTN", 2, "Staging: No more groups available in track pool for reinforcement"] call FLO_fnc_log;
                     };
                 };
-            } else {
-                // Groups still moving
-                if (_timedOut) then {
-                    ["GTN", 2, format["Staging wait timeout - proceeding with %1 groups (%2/%3 power)",
-                        count _groups, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
-                    _ctx set ["status", "SUCCESS"];
-                } else {
-                    ["GTN", 3, format["Waiting for staging: %1s/%2s (%3/%4 power)",
-                        round _waitedTime, 300, round _accumulatedPower, round _requiredPower]] call FLO_fnc_log;
-                    _ctx set ["status", "RUNNING"];
-                };
+
+                ["GTN", 3, format[
+                    "Waiting staging: %1s/%2s arrived=%3/%4 (need %5) power=%6/%7 (need %8)",
+                    round _waitedTime,
+                    180,
+                    _arrivedCount,
+                    _validCount,
+                    _requiredArrivalCount,
+                    round _arrivedPower,
+                    round _requiredPower,
+                    round _requiredArrivalPower
+                ]] call FLO_fnc_log;
+                _ctx set ["status", "RUNNING"];
             };
 
             true
@@ -830,11 +919,11 @@ private _executor = createHashMapObject [[
                         _score = _score * 1.5;
                     };
 
-                    _scoredGroups pushBack [_gId, _score, _power];
+                    _scoredGroups pushBack [_score, _gId, _power];
                 } forEach _availableAssets;
 
                 // Sort by score descending
-                _scoredGroups = [_scoredGroups, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+                _scoredGroups sort false;
 
                 // Select groups until we meet power requirement or hit limit
                 private _selectedPower = 0;
@@ -843,7 +932,7 @@ private _executor = createHashMapObject [[
                     if (count _groups >= _maxGroups) exitWith {};
                     if (_selectedPower >= _requiredPower) exitWith {};
 
-                    _x params ["_gId", "_score", "_power"];
+                    _x params ["_score", "_gId", "_power"];
                     _groups pushBack _gId;
                     _selectedPower = _selectedPower + _power;
                 } forEach _scoredGroups;
@@ -863,9 +952,9 @@ private _executor = createHashMapObject [[
             ["GTN", 3, format["Attacking %1 at %2 with %3 groups", _objId, _objPos, count _groups]] call FLO_fnc_log;
 
             // Reveal intel to attacking groups so they can engage enemies
+            private _allGroups = FLO_virtualGroups get "_groups";
             {
                 private _gId = _x;
-                private _allGroups = FLO_virtualGroups get "_groups";
                 private _gData = _allGroups get _gId;
                 if (!isNil "_gData") then {
                     private _realGroup = _gData get "realGroup";
@@ -1939,14 +2028,14 @@ private _executor = createHashMapObject [[
                 private _basePriority = _objData get "priority";
                 private _score = (_threatLevel * 10) + (_exposedFlanks * 30) + (_forceDeficit max 0) * 10 + (_basePriority / 2);
                 
-                _scoredObjs pushBack [_objId, _pos, _score, _exposedFlanks, _threatLevel];
+                _scoredObjs pushBack [_score, _objId, _pos, _exposedFlanks, _threatLevel];
                 
             } forEach (keys _friendlyObjs);
             
             // Select highest need
-            _scoredObjs = [_scoredObjs, [], {_x select 2}, "DESCEND"] call BIS_fnc_sortBy;
+            _scoredObjs sort false;
             private _selected = _scoredObjs select 0;
-            _selected params ["_objId", "_objPos", "_score", "_flanks", "_threat"];
+            _selected params ["_score", "_objId", "_objPos", "_flanks", "_threat"];
             
             _executor call ["_storeTaskData", ["_GARRISON_OBJECTIVE", _objId]];
             _executor call ["_storeTaskData", ["GARRISON_POSITION", _objPos]];

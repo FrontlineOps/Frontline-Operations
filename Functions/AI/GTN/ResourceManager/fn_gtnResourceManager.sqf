@@ -16,6 +16,8 @@ private _resourceManager = createHashMapObject [[
     ["_config", _config],
     ["_gtnCommander", nil], // Backward compatibility alias (EAST commander)
     ["_gtnCommandersBySide", createHashMap],
+    ["_virtGroupRemovedEH", -1],
+    ["_loopPfhsBySide", createHashMap],
 
     ["_sideKey", {
         params ["_side"];
@@ -34,28 +36,68 @@ private _resourceManager = createHashMapObject [[
         _self get "_gtnCommandersBySide"
     }],
 
+    ["_onVirtualGroupRemoved", {
+        params ["_groupId"];
+        {
+            private _cmdr = _y;
+            _cmdr call ["_onVirtualGroupRemoved", [_groupId]];
+        } forEach (_self get "_gtnCommandersBySide");
+    }],
+
+    ["_bindVirtualizationEvents", {
+        private _ehId = _self get "_virtGroupRemovedEH";
+        if (_ehId >= 0) exitWith {};
+
+        missionNamespace setVariable ["FLO_GTN_ResourceManagerRef", _self];
+        private _newEhId = ["FLO_Virtualization_GroupRemoved", {
+            params ["_groupId"];
+            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            _mgr call ["_onVirtualGroupRemoved", [_groupId]];
+        }] call CBA_fnc_addEventHandler;
+
+        _self set ["_virtGroupRemovedEH", _newEhId];
+    }],
+
     ["_startCommanderLoop", {
         params ["_gtn"];
         if (isNil "_gtn") exitWith {};
+        private _sideKey = _gtn get "_sideKey";
+        private _interval = _gtn get "_updateInterval";
+        private _pfhs = _self get "_loopPfhsBySide";
 
-        [_gtn] spawn {
-            params ["_commander"];
+        if (_sideKey in _pfhs) exitWith {
+            ["GTN", 3, format["%1 execution loop already active", _sideKey]] call FLO_fnc_log;
+        };
 
-            private _interval = _commander get "_updateInterval";
-            private _sideKey = _commander get "_sideKey";
-            ["GTN", 3, format["Starting %1 execution loop (%2s)", _sideKey, _interval]] call FLO_fnc_log;
+        // Deterministic phase offset so both commanders do not spike on the same frame.
+        private _staggerDelay = if (_sideKey isEqualTo "WEST") then { _interval * 0.5 } else { 0 };
+        if (_staggerDelay > 0) then {
+            ["GTN", 3, format["%1 commander stagger delay: %2s", _sideKey, _staggerDelay]] call FLO_fnc_log;
+        };
 
-            // Deterministic phase offset so both commanders do not spike on the same frame.
+        [_self, _gtn, _sideKey, _interval] spawn {
+            params ["_mgr", "_commander", "_sideKey", "_interval"];
             private _staggerDelay = if (_sideKey isEqualTo "WEST") then { _interval * 0.5 } else { 0 };
-            if (_staggerDelay > 0) then {
-                ["GTN", 3, format["%1 commander stagger delay: %2s", _sideKey, _staggerDelay]] call FLO_fnc_log;
-                sleep _staggerDelay;
-            };
+            if (_staggerDelay > 0) then { sleep _staggerDelay; };
 
-            while {(_commander get "_isRunning") == 1} do {
-                _commander call ["_update", []];
-                sleep _interval;
-            };
+            ["GTN", 3, format["Starting %1 execution loop (%2s, PFH)", _sideKey, _interval]] call FLO_fnc_log;
+
+            private _pfhId = [{
+                params ["_args", "_pfhId"];
+                _args params ["_mgr", "_cmdr", "_sKey"];
+
+                if ((_cmdr get "_isRunning") != 1) exitWith {
+                    [_pfhId] call CBA_fnc_removePerFrameHandler;
+                    private _pfhs = _mgr get "_loopPfhsBySide";
+                    _pfhs deleteAt _sKey;
+                    ["GTN", 3, format["Stopped %1 execution loop", _sKey]] call FLO_fnc_log;
+                };
+
+                _cmdr call ["_update", []];
+            }, _interval, [_mgr, _commander, _sideKey]] call CBA_fnc_addPerFrameHandler;
+
+            private _pfhs = _mgr get "_loopPfhsBySide";
+            _pfhs set [_sideKey, _pfhId];
         };
     }],
 
@@ -83,6 +125,8 @@ private _resourceManager = createHashMapObject [[
 
     ["_initializeGTN", {
         ["GTN Resource Manager", 3, "Initializing dual GTN subsystem"] call FLO_fnc_log;
+
+        _self call ["_bindVirtualizationEvents", []];
 
         private _map = _self get "_gtnCommandersBySide";
         if (count (keys _map) > 0) exitWith {

@@ -48,6 +48,13 @@ while {true} do {
         waitUntil { !isNil "FLO_Objectives" };
         _objKeys = keys FLO_Objectives; // Refresh keys
     };
+    private _currentObjectiveCount = count (keys FLO_Objectives);
+    if ((count _objKeys) != _currentObjectiveCount) then {
+        _objKeys = keys FLO_Objectives;
+        if (_inactiveMonitorIndex >= count _objKeys) then {
+            _inactiveMonitorIndex = 0;
+        };
+    };
 
     private _dataChanged = false;
     private _activeObjectives = [];
@@ -66,15 +73,32 @@ while {true} do {
         } forEach _objKeys;
     } forEach _allPlayers;
 
-    // Pre-compute virtual contribution per objective once per tick.
-    // A virtual group contributes to exactly one objective: the nearest
-    // objective center among those whose area currently contains the group.
+    // Build objective update set for this tick:
+    // all active objectives + a small round-robin slice of inactive objectives.
+    private _objectivesToUpdate = +_activeObjectives;
+    private _processCount = 0;
+    private _scanAttempts = 0;
+    private _maxAttempts = count _objKeys;
+    while {_processCount < 2 && _scanAttempts < _maxAttempts} do {
+        if (_inactiveMonitorIndex >= count _objKeys) then { _inactiveMonitorIndex = 0 };
+        private _currKey = _objKeys select _inactiveMonitorIndex;
+
+        if !(_currKey in _activeObjectives) then {
+            _objectivesToUpdate pushBack _currKey;
+            _processCount = _processCount + 1;
+        };
+        _inactiveMonitorIndex = _inactiveMonitorIndex + 1;
+        _scanAttempts = _scanAttempts + 1;
+    };
+
+    // Pre-compute virtual contribution only for objectives updated this tick.
+    // A virtual group contributes to the nearest objective whose area contains it.
     private _virtualObjectiveCounts = createHashMap;
     {
         _virtualObjectiveCounts set [_x, [0, 0]]; // [westCount, eastCount]
-    } forEach _objKeys;
+    } forEach _objectivesToUpdate;
 
-    if (!isNil "FLO_virtualGroups") then {
+    if (count _objectivesToUpdate > 0 && {!isNil "FLO_virtualGroups"}) then {
         private _groups = FLO_virtualGroups get "_groups";
         {
             private _gData = _x;
@@ -92,7 +116,7 @@ while {true} do {
                     _bestDist = _dist;
                     _bestObjId = _oId;
                 };
-            } forEach _objKeys;
+            } forEach _objectivesToUpdate;
 
             if (_bestObjId == "") then { continue };
 
@@ -198,26 +222,7 @@ while {true} do {
     };
 
     // === EXECUTE UPDATES ===
-    
-    // Always update Active Objectives
-    { [_x] call _fnc_updateObjective; } forEach _activeObjectives;
-    
-    // Round-Robin update Inactive Objectives (2 per tick)
-    // This ensures distant objectives are updated eventually without clogging CPU
-    private _processCount = 0;
-    private _scanAttempts = 0;
-    private _maxAttempts = count _objKeys;
-    while {_processCount < 2 && _scanAttempts < _maxAttempts} do {
-        if (_inactiveMonitorIndex >= count _objKeys) then { _inactiveMonitorIndex = 0 };
-        private _currKey = _objKeys select _inactiveMonitorIndex;
-        
-        if !(_currKey in _activeObjectives) then {
-            [_currKey] call _fnc_updateObjective;
-            _processCount = _processCount + 1;
-        };
-        _inactiveMonitorIndex = _inactiveMonitorIndex + 1;
-        _scanAttempts = _scanAttempts + 1;
-    };
+    { [_x] call _fnc_updateObjective; } forEach _objectivesToUpdate;
 
     // === SYNC & UI ===
     if (_dataChanged) then {

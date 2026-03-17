@@ -403,9 +403,17 @@ private _fnc_countAliveTargets = {
             };
         } forEach (keys FLO_Objectives);
 
-        _captureCandidates = [_captureCandidates, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
-        _defendCandidates = [_defendCandidates, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
-        _destroyCandidates = [_destroyCandidates, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+        private _captureRanked = _captureCandidates apply { [_x select 1, _x] };
+        _captureRanked sort false;
+        _captureCandidates = _captureRanked apply { _x select 1 };
+
+        private _defendRanked = _defendCandidates apply { [_x select 1, _x] };
+        _defendRanked sort false;
+        _defendCandidates = _defendRanked apply { _x select 1 };
+
+        private _destroyRanked = _destroyCandidates apply { [_x select 1, _x] };
+        _destroyRanked sort false;
+        _destroyCandidates = _destroyRanked apply { _x select 1 };
 
         private _primaryKind = "";
         private _primaryObjId = "";

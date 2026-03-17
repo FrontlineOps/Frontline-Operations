@@ -1367,7 +1367,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         } forEach _groups;
 
         // Sort by capability count (descending)
-        _result = [_result, [], {_x select 2}, "DESCEND"] call BIS_fnc_sortBy;
+        private _ranked = _result apply { [_x select 2, _x] };
+        _ranked sort false;
+        _result = _ranked apply { _x select 1 };
         _result
     }],
 
@@ -1426,7 +1428,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             _scoredGroups pushBack [_gId, _analysis, _score];
         } forEach _availableGroups;
 
-        _scoredGroups = [_scoredGroups, [], {_x select 2}, "DESCEND"] call BIS_fnc_sortBy;
+        private _scoredRanked = _scoredGroups apply { [_x select 2, _x] };
+        _scoredRanked sort false;
+        _scoredGroups = _scoredRanked apply { _x select 1 };
 
         // Select groups until requirements met
         private _selectedPower = 0;

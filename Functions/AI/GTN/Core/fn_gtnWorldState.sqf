@@ -85,6 +85,12 @@ private _worldState = createHashMapObject [[
     // State metadata
     ["_lastUpdate", 0],
     ["_updateInterval", 10],      // Seconds between full updates
+    ["_lastSupportAssetsSense", -1],
+    ["_supportAssetSenseInterval", 20],
+    ["_lastEnemyIntelSense", -1],
+    ["_enemyIntelSenseInterval", 30],
+    ["_enemyIntelScanCursor", 0],
+    ["_enemyIntelScanBudget", 24], // Max leaders to scan per intel pass
     ["_sideContext", _sideContext],
     ["_ownSide", _ownSide],
     ["_enemySide", _enemySide],
@@ -103,9 +109,29 @@ private _worldState = createHashMapObject [[
 
         private _ownSide = _self get "_ownSide";
         private _enemySide = _self get "_enemySide";
-        private _friendlyUnits = allUnits select {side _x == _ownSide && alive _x && !(captive _x)};
-        private _enemyUnits = allUnits select {side _x == _enemySide && alive _x};
+        private _senseRadius = 500;
         private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
+        private _friendlyGroups = [];
+        private _enemyGroups = [];
+
+        if (!isNil "FLO_virtualGroups") then {
+            private _groups = FLO_virtualGroups get "_groups";
+            {
+                private _gData = _y;
+                private _side = _gData get "side";
+                private _unitCount = _gData get "unitCount";
+                if (_unitCount <= 0) then { continue };
+
+                private _entry = [_gData get "position", _unitCount];
+                if (_side == _ownSide) then {
+                    _friendlyGroups pushBack _entry;
+                } else {
+                    if (_side == _enemySide) then {
+                        _enemyGroups pushBack _entry;
+                    };
+                };
+            } forEach _groups;
+        };
 
         {
             private _id = _x;
@@ -121,8 +147,21 @@ private _worldState = createHashMapObject [[
                 if (_ownerKey isEqualTo "WEST") then { _owner = west; };
             };
 
-            private _nearFriendly = count (_friendlyUnits inAreaArray [_pos, 500, 500]);
-            private _nearEnemy = count (_enemyUnits inAreaArray [_pos, 500, 500]);
+            private _nearFriendly = 0;
+            {
+                _x params ["_gPos", "_gCount"];
+                if ((_gPos distance2D _pos) <= _senseRadius) then {
+                    _nearFriendly = _nearFriendly + _gCount;
+                };
+            } forEach _friendlyGroups;
+
+            private _nearEnemy = 0;
+            {
+                _x params ["_gPos", "_gCount"];
+                if ((_gPos distance2D _pos) <= _senseRadius) then {
+                    _nearEnemy = _nearEnemy + _gCount;
+                };
+            } forEach _enemyGroups;
 
             private _contested = (_nearEnemy > 0) && (_nearFriendly > 0);
             private _underAttack = (_owner == _ownSide) && (_nearEnemy > 0);
@@ -333,82 +372,120 @@ private _worldState = createHashMapObject [[
         
         private _ownSide = _self get "_ownSide";
         private _enemySide = _self get "_enemySide";
+        private _scanLeaders = [];
 
-        // Iterate all active groups on this commander's side
-        {
-            if (side _x == _ownSide) then {
-                private _leader = leader _x;
-                if (alive _leader) then {
-                     // nearTargets returns [pos, type, side, subjectiveCost, object, accuracy]
-                     private _targets = _leader nearTargets 2000;
-                     
-                     {
-                         _x params ["_pos", "_type", "_side", "_cost", "_obj", "_acc"];
-                         
-                         // Only report enemies for this side context.
-                         if (_side == _enemySide) then {
-                             // Check if we already have a recent report for this location (within 50m, 60s)
-                             private _isNew = true;
-                             {
-                                 _x params ["_cPos", "_cTime"];
-                                 if (_cPos distance2D _pos < 50 && (diag_tickTime - _cTime) < 60) exitWith {
-                                     _isNew = false; 
-                                 };
-                             } forEach _contacts;
-                             
-                             if (_isNew) then {
-                                 // Create contact report: [Pos, Time, Strength(1), Type, Confidence]
-                                 _contacts pushBack [_pos, diag_tickTime, 1, _type, _acc];
-                                 _newContacts pushBack [_pos, _type];
-                             };
-                         };
-                     } forEach _targets;
-                };
-            };
-        } forEach allGroups;
-        
-        // Cluster contacts into concentrations (Potential Targets)
-        // Groups of 3+ reports within 150m
-        private _concentrations = [];
-        private _processedReports = [];
-        
-        {
-            if (_forEachIndex in _processedReports) then { continue };
-            
-            private _baseReport = _x;
-            _baseReport params ["_pos", "_time", "_strength"];
-            
-            private _cluster = [_baseReport];
-            _processedReports pushBack _forEachIndex;
-            
-            // Find neighbors
+        if (!isNil "FLO_virtualGroups") then {
+            private _groups = FLO_virtualGroups get "_groups";
             {
-                if !(_forEachIndex in _processedReports) then {
-                     private _nPos = _x select 0;
-                     if (_pos distance2D _nPos < 150) then {
-                         _cluster pushBack _x;
-                         _processedReports pushBack _forEachIndex;
-                     };
-                };
-            } forEach _contacts;
-            
-            if (count _cluster >= 3) then {
-                // Calculate centroid
-                private _centerPos = [0,0,0];
-                private _clusStrength = 0;
+                private _gData = _y;
+                if ((_gData get "side") != _ownSide) then { continue };
+                if !(_gData get "isActive") then { continue };
+
+                private _realGroup = _gData get "realGroup";
+                if (isNull _realGroup) then { continue };
+
+                private _leader = leader _realGroup;
+                if (isNull _leader || {!alive _leader}) then { continue };
+                _scanLeaders pushBack _leader;
+            } forEach _groups;
+        };
+
+        if (count _scanLeaders == 0) then {
+            {
+                if (side _x != _ownSide) then { continue };
+                private _leader = leader _x;
+                if (isNull _leader || {!alive _leader}) then { continue };
+                _scanLeaders pushBack _leader;
+            } forEach allGroups;
+        };
+
+        private _scanTotal = count _scanLeaders;
+        private _scanCursor = _self get "_enemyIntelScanCursor";
+        private _scanBudget = _self get "_enemyIntelScanBudget";
+
+        if (_scanTotal > 0) then {
+            if (_scanCursor >= _scanTotal) then { _scanCursor = 0; };
+            if (_scanBudget < 1) then { _scanBudget = 1; };
+            if (_scanBudget > _scanTotal) then { _scanBudget = _scanTotal; };
+
+            for "_step" from 0 to (_scanBudget - 1) do {
+                private _idx = (_scanCursor + _step) mod _scanTotal;
+                private _leader = _scanLeaders select _idx;
+                // nearTargets returns [pos, type, side, subjectiveCost, object, accuracy]
+                private _targets = _leader nearTargets 1500;
+
                 {
-                    _centerPos = _centerPos vectorAdd (_x select 0);
-                    _clusStrength = _clusStrength + (_x select 2);
-                } forEach _cluster;
-                _centerPos = _centerPos vectorMultiply (1 / count _cluster);
-                
-                _concentrations pushBack createHashMapFromArray [
-                    ["position", _centerPos],
-                    ["strength", _clusStrength],
-                    ["lastSeen", _time] // Use base time approx
-                ];
+                    _x params ["_pos", "_type", "_side", "_cost", "_obj", "_acc"];
+
+                    // Only report enemies for this side context.
+                    if (_side == _enemySide) then {
+                        // Check if we already have a recent report for this location (within 50m, 60s)
+                        private _isNew = true;
+                        {
+                            _x params ["_cPos", "_cTime"];
+                            if (_cPos distance2D _pos < 50 && (diag_tickTime - _cTime) < 60) exitWith {
+                                _isNew = false;
+                            };
+                        } forEach _contacts;
+
+                        if (_isNew) then {
+                            // Create contact report: [Pos, Time, Strength(1), Type, Confidence]
+                            _contacts pushBack [_pos, diag_tickTime, 1, _type, _acc];
+                            _newContacts pushBack [_pos, _type];
+                        };
+                    };
+                } forEach _targets;
             };
+
+            _scanCursor = (_scanCursor + _scanBudget) mod _scanTotal;
+        } else {
+            _scanCursor = 0;
+        };
+
+        _self set ["_enemyIntelScanCursor", _scanCursor];
+        
+        // Cluster contacts into concentrations using 150m spatial buckets.
+        // This keeps complexity near O(n) instead of O(n^2) during large fights.
+        private _concentrations = [];
+        private _bucketSize = 150;
+        private _buckets = createHashMap;
+
+        {
+            private _pos = _x select 0;
+            private _bx = floor ((_pos select 0) / _bucketSize);
+            private _by = floor ((_pos select 1) / _bucketSize);
+            private _bKey = format ["%1_%2", _bx, _by];
+
+            if !(_bKey in _buckets) then {
+                _buckets set [_bKey, []];
+            };
+            private _bucket = _buckets get _bKey;
+            _bucket pushBack _x;
+            _buckets set [_bKey, _bucket];
         } forEach _contacts;
+
+        {
+            private _cluster = _y;
+            if (count _cluster < 3) then { continue };
+
+            private _centerPos = [0,0,0];
+            private _clusStrength = 0;
+            private _lastSeen = 0;
+            {
+                _centerPos = _centerPos vectorAdd (_x select 0);
+                _clusStrength = _clusStrength + (_x select 2);
+                if ((_x select 1) > _lastSeen) then {
+                    _lastSeen = _x select 1;
+                };
+            } forEach _cluster;
+            _centerPos = _centerPos vectorMultiply (1 / count _cluster);
+
+            _concentrations pushBack createHashMapFromArray [
+                ["position", _centerPos],
+                ["strength", _clusStrength],
+                ["lastSeen", _lastSeen]
+            ];
+        } forEach _buckets;
 
         // Log significant new contacts
         if (count _newContacts > 0) then {
@@ -794,6 +871,10 @@ private _worldState = createHashMapObject [[
         private _now = diag_tickTime;
         private _lastUpdate = _self get "_lastUpdate";
         private _interval = _self get "_updateInterval";
+        private _lastSupportAssetsSense = _self get "_lastSupportAssetsSense";
+        private _supportAssetSenseInterval = _self get "_supportAssetSenseInterval";
+        private _lastEnemyIntelSense = _self get "_lastEnemyIntelSense";
+        private _enemyIntelSenseInterval = _self get "_enemyIntelSenseInterval";
 
         // Throttle updates
         if (_now - _lastUpdate < _interval) exitWith {};
@@ -801,8 +882,14 @@ private _worldState = createHashMapObject [[
         // Run all sensors
         _self call ["_senseObjectives", []];
         _self call ["_senseForces", []];
-        _self call ["_senseSupportAssets", []];
-        _self call ["_senseEnemyIntel", []];
+        if (_lastSupportAssetsSense < 0 || {_now - _lastSupportAssetsSense >= _supportAssetSenseInterval}) then {
+            _self call ["_senseSupportAssets", []];
+            _self set ["_lastSupportAssetsSense", _now];
+        };
+        if (_lastEnemyIntelSense < 0 || {_now - _lastEnemyIntelSense >= _enemyIntelSenseInterval}) then {
+            _self call ["_senseEnemyIntel", []];
+            _self set ["_lastEnemyIntelSense", _now];
+        };
         _self call ["_senseTacticalSituation", []];
 
         _self set ["_lastUpdate", _now];

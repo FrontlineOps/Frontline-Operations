@@ -176,7 +176,9 @@ private _fnc_clearAll = {
                 private _obj = _enemyObjectives get _objId;
                 _enemyObjectiveRows pushBack [_objId, _obj get "priority", _obj];
             } forEach (keys _enemyObjectives);
-            _enemyObjectiveRows = [_enemyObjectiveRows, [], {_x select 1}, "DESCEND"] call BIS_fnc_sortBy;
+            private _enemyObjectiveRanked = _enemyObjectiveRows apply { [_x select 1, _x] };
+            _enemyObjectiveRanked sort false;
+            _enemyObjectiveRows = _enemyObjectiveRanked apply { _x select 1 };
 
             private _maxTargetDebug = (count _enemyObjectiveRows) min 5;
             for "_i" from 0 to (_maxTargetDebug - 1) do {
@@ -235,7 +237,9 @@ private _fnc_clearAll = {
                     _reinforcementPointRows pushBack [_objId, _enemyPressure, _objData get "priority", _objPos];
                 };
             } forEach (keys _friendlyObjectives);
-            _reinforcementPointRows = [_reinforcementPointRows, [], { (_x select 1) * 100 + (_x select 2) }, "DESCEND"] call BIS_fnc_sortBy;
+            private _reinforcementRanked = _reinforcementPointRows apply { [((_x select 1) * 100 + (_x select 2)), _x] };
+            _reinforcementRanked sort false;
+            _reinforcementPointRows = _reinforcementRanked apply { _x select 1 };
 
             private _maxReinfPointDebug = (count _reinforcementPointRows) min 8;
             for "_i" from 0 to (_maxReinfPointDebug - 1) do {
