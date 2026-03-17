@@ -204,7 +204,7 @@ private _template = createHashMapFromArray [
             _missionData set ["convoyController", _controller];
         };
 
-        [_startPos, _endPos, _convoyPathCallback, [_vehicles, _endPos, _data], false] call FLO_fnc_findRoadPath;
+        [_startPos, _endPos, _convoyPathCallback, [_vehicles, _endPos, _data], false, "SIDEMISSION_HVT_CONVOY"] call FLO_fnc_findRoadPath;
 
         [_missionId] call FLO_fnc_sideMissionTaskCreate;
         

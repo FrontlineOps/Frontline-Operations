@@ -74,7 +74,7 @@ if !(_routeKey in FLO_PF_SyncPending) then {
             };
         };
 
-        [_startPos, _endPos, _cb, [_routeKey, _fallbackPos], _trails] call FLO_fnc_findRoadPath;
+        [_startPos, _endPos, _cb, [_routeKey, _fallbackPos], _trails, "SYNC_COMPAT"] call FLO_fnc_findRoadPath;
     };
 };
 

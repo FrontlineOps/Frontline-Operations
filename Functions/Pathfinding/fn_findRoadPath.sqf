@@ -11,7 +11,8 @@
    [StartPos, EndPos, IntermediatePositionsArray]     
  * 3: (Optional) Additional arguments to pass to callback <ARRAY> (Default: []) 
  * 4: (Optional) Include Trails <BOOL> (Default: False) - for Man units only - vehicles cannot traverse TRAILS
-   
+ * 5: (Optional) Source Tag <STRING> (Default: "") - pathfinding telemetry source
+
  *
  * Return Value:
  *  Nothing
@@ -35,11 +36,29 @@ params [
     ["_endPos",[0,0],[[]],[2,3]],
     ["_code",{},[{}]],
     ["_args",[],[[]]],
-    ["_trails",false,[true]]
+    ["_trails",false,[true]],
+    ["_sourceTag","",[""]]
 ];
 
 if (count _startPos > 2) then { _startPos resize 2; };
 if (count _endPos > 2) then { _endPos resize 2; };
+
+if (_sourceTag == "") then {
+    _sourceTag = "UNSPECIFIED";
+};
+
+if (isNil "FLO_PF_SourceStats") then {
+    FLO_PF_SourceStats = createHashMapFromArray [
+        ["attempts", createHashMap],
+        ["newSearch", createHashMap],
+        ["cacheHit", createHashMap],
+        ["pendingJoin", createHashMap],
+        ["rejected", createHashMap]
+    ];
+};
+
+private _attemptsBySource = FLO_PF_SourceStats get "attempts";
+_attemptsBySource set [_sourceTag, (_attemptsBySource getOrDefault [_sourceTag, 0]) + 1];
 
 if (isNil "FLO_PF_RequestCache") then {
     FLO_PF_RequestCache = createHashMap;
@@ -137,6 +156,8 @@ if (_routeKey in FLO_PF_RequestCache) then {
     private _cached = FLO_PF_RequestCache get _routeKey;
     _cached params ["_status", "_path", "_expiresAt"];
     if (diag_tickTime < _expiresAt) exitWith {
+        private _cacheHitsBySource = FLO_PF_SourceStats get "cacheHit";
+        _cacheHitsBySource set [_sourceTag, (_cacheHitsBySource getOrDefault [_sourceTag, 0]) + 1];
         [_status, +_path, _args] call _code;
     };
     FLO_PF_RequestCache deleteAt _routeKey;
@@ -146,6 +167,8 @@ if (_reverseRouteKey in FLO_PF_RequestCache) then {
     private _cachedReverse = FLO_PF_RequestCache get _reverseRouteKey;
     _cachedReverse params ["_status", "_path", "_expiresAt"];
     if (diag_tickTime < _expiresAt) exitWith {
+        private _cacheHitsBySource = FLO_PF_SourceStats get "cacheHit";
+        _cacheHitsBySource set [_sourceTag, (_cacheHitsBySource getOrDefault [_sourceTag, 0]) + 1];
         if (_status && {count _path > 0}) then {
             private _reversedPath = +_path;
             reverse _reversedPath;
@@ -158,12 +181,16 @@ if (_reverseRouteKey in FLO_PF_RequestCache) then {
 };
 
 if (_routeKey in FLO_PF_RequestPending) exitWith {
+    private _pendingJoinBySource = FLO_PF_SourceStats get "pendingJoin";
+    _pendingJoinBySource set [_sourceTag, (_pendingJoinBySource getOrDefault [_sourceTag, 0]) + 1];
     private _waiters = FLO_PF_RequestPending get _routeKey;
     _waiters pushBack [_code, _args];
     FLO_PF_RequestPending set [_routeKey, _waiters];
 };
 
 if (_reverseRouteKey in FLO_PF_RequestPending) exitWith {
+    private _pendingJoinBySource = FLO_PF_SourceStats get "pendingJoin";
+    _pendingJoinBySource set [_sourceTag, (_pendingJoinBySource getOrDefault [_sourceTag, 0]) + 1];
     private _waiters = FLO_PF_RequestPending get _reverseRouteKey;
     private _reverseWaiter = {
         params ["_status", "_posArray", "_waiterArgs"];
@@ -181,12 +208,16 @@ if (_reverseRouteKey in FLO_PF_RequestPending) exitWith {
 };
 
 if (_queueDepth >= FLO_PF_QueueSoftCap) exitWith {
+    private _rejectedBySource = FLO_PF_SourceStats get "rejected";
+    _rejectedBySource set [_sourceTag, (_rejectedBySource getOrDefault [_sourceTag, 0]) + 1];
     FLO_PF_RequestCache set [_routeKey, [false, [], _now + 20]];
     ["PATHFINDING", 3, format ["Queue soft cap hit (%1), rejecting route %2", _queueDepth, _routeKey]] call FLO_fnc_log;
     [false, [], _args] call _code;
 };
 
 if ((count (keys FLO_PF_RequestPending)) >= FLO_PF_RequestPendingMax) exitWith {
+    private _rejectedBySource = FLO_PF_SourceStats get "rejected";
+    _rejectedBySource set [_sourceTag, (_rejectedBySource getOrDefault [_sourceTag, 0]) + 1];
     ["PATHFINDING", 2, format ["Path request backlog overflow (%1), rejecting route %2", count (keys FLO_PF_RequestPending), _routeKey]] call FLO_fnc_log;
     FLO_PF_RequestCache set [_routeKey, [false, [], _now + 20]];
     [false, [], _args] call _code;
@@ -196,7 +227,7 @@ FLO_PF_RequestPending set [_routeKey, [[_code, _args]]];
 
 private _dispatch = {
     params ["_status", "_posArray", "_cbArgs"];
-    _cbArgs params ["_key"];
+    _cbArgs params ["_key", "_source"];
 
     private _resolved = if (_status && {_posArray isEqualType []}) then { +_posArray } else { [] };
     private _ttl = if (_status && {count _resolved > 0}) then { FLO_PF_RequestTTL_Success } else { FLO_PF_RequestTTL_Fail };
@@ -217,7 +248,7 @@ private _doctrine = FLO_PF_RoadDoctrine_V;
 if (_trails) then { _doctrine = FLO_PF_RoadDoctrine_M; };
 _search set ["Doctrine", _doctrine];
 _search set ["Callback", _dispatch];
-_search set ["CallbackArgs", [_routeKey]];
+_search set ["CallbackArgs", [_routeKey, _sourceTag]];
 
 private _budget = 350 + round (_dist * 0.2);
 if (_dist > 4000) then {
@@ -230,3 +261,5 @@ _search set ["BudgetInitial", _budget];
 _search set ["BudgetRemaining", _budget];
 
 FLO_PF_Scheduler call ["AddItem", _search];
+private _newSearchBySource = FLO_PF_SourceStats get "newSearch";
+_newSearchBySource set [_sourceTag, (_newSearchBySource getOrDefault [_sourceTag, 0]) + 1];

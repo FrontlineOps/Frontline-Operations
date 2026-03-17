@@ -87,6 +87,11 @@ XPS_typ_JobScheduler = [
 	["DispatchesPerFrame",10],
 	["FrameTimeBudgetMs",2.0],
 	["MaxFrameTimeBudgetMs",4.5],
+	["DispatchBackpressureHighQueue",1300],
+	["DispatchBackpressureLowQueue",900],
+	["DispatchBackpressureHighPending",1300],
+	["DispatchBackpressureLowPending",900],
+	["DispatchBackpressureActive",false],
 	["hasSearchWork", compileFinal {
 		if !(isNil {_self get "CurrentItem"}) exitWith { true };
 		!((_self get "_queueObject") call ["IsEmpty"]);
@@ -172,10 +177,11 @@ XPS_typ_JobScheduler = [
 			["_pathEnd",[],[[]]],
 			["_callbackCode",{},[{}]],
 			["_callbackArgs",[],[[]]],
-			["_allowTrails",false,[true]]
+			["_allowTrails",false,[true]],
+			["_sourceTag","",[""]]
 		]) exitWith { false };
 
-		(_self get "_dispatchQueue") call ["Enqueue", [_dispatchAt, _pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails]];
+		(_self get "_dispatchQueue") call ["Enqueue", [_dispatchAt, _pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag]];
 		private _metrics = _self get "_metrics";
 		_metrics set ["dispatchQueued", (_metrics get "dispatchQueued") + 1];
 		private _depth = (_self get "_dispatchQueue") call ["Count"];
@@ -190,14 +196,33 @@ XPS_typ_JobScheduler = [
 		private _now = diag_tickTime;
 		private _queue = _self get "_dispatchQueue";
 		private _limit = _self get "DispatchesPerFrame";
+
+		private _searchDepth = (_self get "_queueObject") call ["Count"];
+		private _pendingCount = if (isNil "FLO_PF_RequestPending") then { 0 } else { count (keys FLO_PF_RequestPending) };
+		private _isBackpressured = _self get "DispatchBackpressureActive";
+		if (_isBackpressured) then {
+			if (_searchDepth <= (_self get "DispatchBackpressureLowQueue") && {_pendingCount <= (_self get "DispatchBackpressureLowPending")}) then {
+				_self set ["DispatchBackpressureActive", false];
+			};
+		} else {
+			if (_searchDepth >= (_self get "DispatchBackpressureHighQueue") || {_pendingCount >= (_self get "DispatchBackpressureHighPending")}) then {
+				_self set ["DispatchBackpressureActive", true];
+			};
+		};
+		if (_self get "DispatchBackpressureActive") exitWith {
+			private _metrics = _self get "_metrics";
+			_metrics set ["dispatchQueueDepth", _queue call ["Count"]];
+			0;
+		};
+
 		while {_processed < _limit} do {
 			private _next = _queue call ["Peek"];
 			if (isNil "_next") exitWith {};
-			_next params ["_dispatchAt", "_pathStart", "_pathEnd", "_callbackCode", "_callbackArgs", "_allowTrails"];
+			_next params ["_dispatchAt", "_pathStart", "_pathEnd", "_callbackCode", "_callbackArgs", "_allowTrails", "_sourceTag"];
 			if (_dispatchAt > _now) exitWith {};
 
 			_queue call ["Dequeue"];
-			[_pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails] call FLO_fnc_findRoadPath;
+			[_pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag] call FLO_fnc_findRoadPath;
 			_processed = _processed + 1;
 		};
 
@@ -328,4 +353,29 @@ if (isNil "FLO_fnc_pfProbe") then {
 
 if (isNil "FLO_fnc_pathfindingProbe") then {
 	FLO_fnc_pathfindingProbe = FLO_fnc_pfProbe;
+};
+
+if (isNil "FLO_fnc_pfSourceProbe") then {
+	FLO_fnc_pfSourceProbe = compileFinal {
+		if (isNil "FLO_PF_SourceStats") exitWith { [] };
+
+		private _emitSorted = {
+			params ["_map"];
+			if (isNil "_map") exitWith { [] };
+			private _pairs = [];
+			{
+				_pairs pushBack [(_map get _x), _x];
+			} forEach (keys _map);
+			_pairs sort false;
+			_pairs apply { [_x select 1, _x select 0] }
+		};
+
+		[
+			["attempts", [(FLO_PF_SourceStats get "attempts")] call _emitSorted],
+			["newSearch", [(FLO_PF_SourceStats get "newSearch")] call _emitSorted],
+			["cacheHit", [(FLO_PF_SourceStats get "cacheHit")] call _emitSorted],
+			["pendingJoin", [(FLO_PF_SourceStats get "pendingJoin")] call _emitSorted],
+			["rejected", [(FLO_PF_SourceStats get "rejected")] call _emitSorted]
+		]
+	};
 };

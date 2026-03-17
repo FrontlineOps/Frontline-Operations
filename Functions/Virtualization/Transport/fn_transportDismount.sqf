@@ -64,7 +64,7 @@ if (!isNil "FLO_TransportPool") then {
             private _waypoints = [
                 [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 50]
             ];
-            [_x, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+            [_x, _waypoints, true, true, "TRANSPORT_DISMOUNT"] call FLO_fnc_updateVirtualGroupWaypoints;
             _infData set ["postDismountWaypoint", []];
             
             ["TRANSPORT", 3, format["Set post-dismount %1 waypoint for %2", _orderType, _x]] call FLO_fnc_log;

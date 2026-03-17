@@ -812,6 +812,8 @@ private _gtnCommander = createHashMapObject [[
             private _gData = _groups get _groupId;
             if (!isNil "_gData") then {
                 _gData set ["currentOrder", _newOrder];
+                _gData set ["orderTargetPos", []];
+                _gData set ["orderMode", ""];
                 if (_newOrder != "DEFEND") then {
                     _gData set ["defendLeaseIssuedAt", -1];
                     _gData set ["defendLeaseUntil", -1];
@@ -999,6 +1001,16 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        private _existingTarget = _gData getOrDefault ["orderTargetPos", []];
+        private _existingMode = _gData getOrDefault ["orderMode", ""];
+        private _hasRouteContext = (count (_gData getOrDefault ["waypoints", []]) > 0) || {(_gData getOrDefault ["pathRequestToken", -1]) >= 0};
+        if ((_gData get "currentOrder") == "MOVE" && {_existingMode == _mode} && {_hasRouteContext} && {count _existingTarget >= 2} && {_existingTarget distance2D _pos < 35}) exitWith {
+            if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
+            FLO_GTN_OrderNoOps set ["MOVE", (FLO_GTN_OrderNoOps getOrDefault ["MOVE", 0]) + 1];
+            _self call ["_taskGroups", [[_groupId]]];
+            true
+        };
+
         // Create waypoints for movement
         private _combatMode = switch (_mode) do {
             case "COMBAT": { "RED" };
@@ -1010,8 +1022,10 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "MOVE", _mode, "NORMAL", "WEDGE", _combatMode, 30]
         ];
 
-        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, true, true, "GTN_MOVE"] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "MOVE"];
+        _gData set ["orderTargetPos", _pos];
+        _gData set ["orderMode", _mode];
         _gData set ["defendLeaseIssuedAt", -1];
         _gData set ["defendLeaseUntil", -1];
         _gData set ["defendObjective", ""];
@@ -1039,14 +1053,25 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        private _existingTarget = _gData getOrDefault ["orderTargetPos", []];
+        private _hasRouteContext = (count (_gData getOrDefault ["waypoints", []]) > 0) || {(_gData getOrDefault ["pathRequestToken", -1]) >= 0};
+        if ((_gData get "currentOrder") == "ATTACK" && {_hasRouteContext} && {count _existingTarget >= 2} && {_existingTarget distance2D _pos < 60}) exitWith {
+            if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
+            FLO_GTN_OrderNoOps set ["ATTACK", (FLO_GTN_OrderNoOps getOrDefault ["ATTACK", 0]) + 1];
+            _self call ["_taskGroups", [[_groupId]]];
+            true
+        };
+
         // Create attack waypoints
         private _waypoints = [
             [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 75],
             [_pos, "MOVE", "COMBAT", "NORMAL", "LINE", "RED", 50]
         ];
 
-        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, true, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "ATTACK"];
+        _gData set ["orderTargetPos", _pos];
+        _gData set ["orderMode", "COMBAT"];
         _gData set ["defendLeaseIssuedAt", -1];
         _gData set ["defendLeaseUntil", -1];
         _gData set ["defendObjective", ""];
@@ -1077,7 +1102,8 @@ private _gtnCommander = createHashMapObject [[
         private _alreadyAssigned = false;
         private _saturated = false;
         if (_objectiveId != "") then {
-            _alreadyAssigned = ((_gData get "currentOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId};
+            private _hasRouteContext = (count (_gData getOrDefault ["waypoints", []]) > 0) || {(_gData getOrDefault ["pathRequestToken", -1]) >= 0};
+            _alreadyAssigned = ((_gData get "currentOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId} && {_hasRouteContext};
             if (!_alreadyAssigned) then {
                 private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
                 private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
@@ -1095,6 +1121,8 @@ private _gtnCommander = createHashMapObject [[
         };
 
         if (_alreadyAssigned) exitWith {
+            if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
+            FLO_GTN_OrderNoOps set ["DEFEND", (FLO_GTN_OrderNoOps getOrDefault ["DEFEND", 0]) + 1];
             private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
             _gData set ["defendLeaseIssuedAt", diag_tickTime];
             _gData set ["defendLeaseUntil", diag_tickTime + _leaseSeconds];
@@ -1109,9 +1137,11 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "GUARD", "COMBAT", "NORMAL", "LINE", "RED", 60]
         ];
 
-        [_groupId, _waypoints, true] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, true, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "DEFEND"];
         _gData set ["defendObjective", _objectiveId];
+        _gData set ["orderTargetPos", _pos];
+        _gData set ["orderMode", "DEFEND"];
         private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
         _gData set ["defendLeaseIssuedAt", diag_tickTime];
         _gData set ["defendLeaseUntil", diag_tickTime + _leaseSeconds];
@@ -1353,7 +1383,7 @@ private _gtnCommander = createHashMapObject [[
                          
                         // Break Contact Order: Careless (ignore threats), Hold Fire (don't stop to shoot)
                         private _wps = [[_retreatPos, "MOVE", "CARELESS", "FULL", "FILE", "BLUE", 0]];
-                        [_gId, _wps, true] call FLO_fnc_updateVirtualGroupWaypoints;
+                        [_gId, _wps, true, true, "GTN_RETREAT"] call FLO_fnc_updateVirtualGroupWaypoints;
                     };
                 };
             };

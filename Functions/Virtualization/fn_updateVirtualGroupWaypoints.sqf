@@ -12,6 +12,7 @@
  *   Each waypoint is an array: [position, type, behavior, speed, formation, combat mode, completion radius]
  * 2: (Optional) Use Road Pathfinding <BOOLEAN> - Whether to use road pathfinding (Default: false)
  * 3: (Optional) Allow Trails <BOOLEAN> - Whether to allow trails for pathfinding (Default: false)
+ * 4: (Optional) Request Source <STRING> - Source tag for pathfinding telemetry (Default: "")
  *
  * Return Value:
  * Success <BOOLEAN>
@@ -25,7 +26,8 @@ params [
     "_groupId",
     "_waypoints",
     ["_usePathfinding", false, [true]],
-    ["_allowTrails", true, [true]]
+    ["_allowTrails", true, [true]],
+    ["_requestSource", "", [""]]
 ];
 
 // Get the group data
@@ -58,16 +60,63 @@ private _sanitizedWaypoints = [];
     };
 } forEach _waypoints;
 
+private _sourceTag = if (_requestSource != "") then { _requestSource } else { "VG_GENERIC" };
+private _effectiveUsePathfinding = _usePathfinding;
+if (_effectiveUsePathfinding && {count _sanitizedWaypoints > 0}) then {
+    if (isNil "FLO_PF_HybridRouting") then {
+        FLO_PF_HybridRouting = true;
+    };
+    if (FLO_PF_HybridRouting) then {
+        if (isNil "FLO_PF_HybridPlayerBubble") then {
+            FLO_PF_HybridPlayerBubble = 1500;
+        };
+        if (isNil "FLO_PF_HybridForcePathSources") then {
+            FLO_PF_HybridForcePathSources = [
+                "SIDEMISSION_HVT_CONVOY",
+                "SIDEMISSION_CONVOY_INTERDICT",
+                "OBJECTIVE_LINK",
+                "SYNC_COMPAT",
+                "LOGI_REINF",
+                "LOGI_STATIC_AA"
+            ];
+        };
+
+        private _forcePath = _sourceTag in FLO_PF_HybridForcePathSources;
+        if (!_forcePath) then {
+            private _isGroundGroup = !(_groupType in ["helicopter", "air", "jet", "boat", "naval", "submarine"]);
+            if (_isGroundGroup) then {
+                private _targetPos = (_sanitizedWaypoints select 0) select 0;
+                private _nearPlayers = false;
+                {
+                    private _playerPos = getPosATL _x;
+                    if (_currentPos distance2D _playerPos <= FLO_PF_HybridPlayerBubble || {_targetPos distance2D _playerPos <= FLO_PF_HybridPlayerBubble}) exitWith {
+                        _nearPlayers = true;
+                    };
+                } forEach allPlayers;
+                if (!_nearPlayers) then {
+                    _effectiveUsePathfinding = false;
+                };
+            } else {
+                _effectiveUsePathfinding = false;
+            };
+        };
+    };
+};
+
 // If no waypoints or using direct assignment (no pathfinding)
-if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
+if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
     // Clear path request metadata when assigning direct waypoints.
     _groupData set ["pathRequestToken", -1];
     _groupData set ["pathRequestTarget", []];
     _groupData set ["pathRequestTrails", false];
     _groupData set ["pathRequestStartedAt", -1];
+    _groupData set ["pathLastIssuedTarget", []];
+    _groupData set ["pathLastIssuedTrails", false];
+    _groupData set ["pathLastIssuedAt", -1];
 
     // Store the waypoints and initialize tracking for both virtual and physical movement
     _groupData set ["waypoints", _sanitizedWaypoints];
+    _groupData set ["pathRequestSource", _sourceTag];
 
     // Clear patrol state - Commander is giving new orders, overrides auto-patrol
     _groupData set ["patrolConfig", []];
@@ -167,6 +216,22 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
             ["VIRTUALIZATION", 4, format["Skipping repeated failed path request for group %1 (cooldown)", _groupId]] call FLO_fnc_log;
         };
 
+        // Suppress repeated same-destination request spam from commander loops.
+        private _sameTargetWindow = 20;
+        if (_pfQueueDepth > 1200) then {
+            _sameTargetWindow = 90;
+        } else {
+            if (_pfQueueDepth > 800) then {
+                _sameTargetWindow = 50;
+            };
+        };
+        private _lastIssuedAt = _groupData getOrDefault ["pathLastIssuedAt", -1];
+        private _lastIssuedTarget = _groupData getOrDefault ["pathLastIssuedTarget", []];
+        private _lastIssuedTrails = _groupData getOrDefault ["pathLastIssuedTrails", false];
+        if (_lastIssuedAt > 0 && {(diag_tickTime - _lastIssuedAt) < _sameTargetWindow} && {count _lastIssuedTarget >= 2} && {_lastIssuedTarget distance2D _pathEnd < 35} && {_lastIssuedTrails isEqualTo _allowTrails}) exitWith {
+            ["VIRTUALIZATION", 4, format["Skipping no-op path request for group %1 (same target %2m ago)", _groupId, round (diag_tickTime - _lastIssuedAt)]] call FLO_fnc_log;
+        };
+
         // Keep existing request if it's already pending for the same destination + trails mode.
         private _existingToken = _groupData getOrDefault ["pathRequestToken", -1];
         private _existingTarget = _groupData getOrDefault ["pathRequestTarget", []];
@@ -257,6 +322,10 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
         _groupData set ["pathRequestTarget", _pathEnd];
         _groupData set ["pathRequestTrails", _allowTrails];
         _groupData set ["pathRequestStartedAt", _requestTime];
+        _groupData set ["pathRequestSource", _sourceTag];
+        _groupData set ["pathLastIssuedTarget", _pathEnd];
+        _groupData set ["pathLastIssuedTrails", _allowTrails];
+        _groupData set ["pathLastIssuedAt", _requestTime];
         
         // Path callback
         private _callbackCode = {
@@ -423,9 +492,9 @@ if (count _sanitizedWaypoints == 0 || !_usePathfinding) then {
         private _callbackArgs = [_groupId, _firstWaypoint, _requestToken, _pathStart, _requestTime, _directBootstrapAllowed];
 
         if (isNil "FLO_PF_Scheduler") then {
-            [_pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails] call FLO_fnc_findRoadPath;
+            [_pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag] call FLO_fnc_findRoadPath;
         } else {
-            FLO_PF_Scheduler call ["EnqueueDispatch", [_slotTime, _pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails]];
+            FLO_PF_Scheduler call ["EnqueueDispatch", [_slotTime, _pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag]];
         };
     };
 };

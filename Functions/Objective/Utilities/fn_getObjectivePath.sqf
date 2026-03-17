@@ -81,7 +81,7 @@ if (count _path == 0) then {
             FLO_ObjectiveLinks set [_linkKey, _linkData];
         };
 
-        [_fromPos, _toPos, _cb, [_key, _toPos], false] call FLO_fnc_findRoadPath;
+        [_fromPos, _toPos, _cb, [_key, _toPos], false, "OBJECTIVE_LINK"] call FLO_fnc_findRoadPath;
     };
 
     // Immediate non-blocking fallback while async path computes.
