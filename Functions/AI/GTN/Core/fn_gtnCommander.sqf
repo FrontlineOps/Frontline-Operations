@@ -166,6 +166,7 @@ private _gtnCommander = createHashMapObject [[
         
         private _now = diag_tickTime;
         _self set ["_lastUpdate", _now];
+        _self call ["_normalizeTaskedGroups", []];
         _self set ["_availabilityCacheDirty", true];
         
         private _stats = _self get "_stats";
@@ -577,6 +578,22 @@ private _gtnCommander = createHashMapObject [[
     // Groups currently tasked by GTN (prevent AI Commander from using them)
     ["_gtnTaskedGroups", []],
 
+    ["_normalizeTaskedGroups", {
+        private _tasked = _self get "_gtnTaskedGroups";
+        private _normalized = [];
+
+        {
+            private _groupId = if (_x isEqualType []) then { _x param [0, ""] } else { _x };
+            if (_groupId != "") then {
+                _normalized pushBackUnique _groupId;
+            };
+        } forEach _tasked;
+
+        if ((count _normalized) != (count _tasked)) then {
+            _self set ["_gtnTaskedGroups", _normalized];
+        };
+    }],
+
     ["_rebuildAvailabilityCache", {
         private _groups = FLO_virtualGroups get "_groups";
         private _tasked = _self get "_gtnTaskedGroups";
@@ -714,6 +731,53 @@ private _gtnCommander = createHashMapObject [[
         _self set ["_availabilityCacheDirty", true];
     }],
 
+    // Dynamic cap for how many groups should defend a single objective.
+    ["_getDefenseCapForObjective", {
+        params ["_objectiveId"];
+
+        private _ws = _self get "_worldState";
+        private _objectives = _ws call ["_getObjectives", []];
+        if !(_objectiveId in _objectives) exitWith { 0 };
+
+        private _obj = _objectives get _objectiveId;
+        private _enemyCount = _obj get "enemyCount";
+        private _friendlyCount = _obj get "friendlyCount";
+        private _underAttack = _obj get "underAttack";
+        private _contested = _obj get "contested";
+
+        private _cap = (4 max (ceil (_enemyCount * 1.25))) min 24;
+        if (_underAttack) then { _cap = (_cap + 4) min 32; };
+        if (_contested) then { _cap = (_cap + 2) min 32; };
+
+        private _deficit = (_enemyCount - _friendlyCount) max 0;
+        if (_deficit > 0) then {
+            _cap = (_cap + (ceil (_deficit * 0.5))) min 32;
+        };
+
+        _cap
+    }],
+
+    // Count current defenders assigned to a specific objective.
+    ["_countObjectiveDefenders", {
+        params ["_objectiveId"];
+        if (_objectiveId == "") exitWith { 0 };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        private _ownSide = _self get "_ownSide";
+        private _count = 0;
+
+        {
+            private _gData = _y;
+            if ((_gData get "side") != _ownSide) then { continue };
+            if ((_gData get "groupType") == "static_aa") then { continue };
+            if ((_gData get "currentOrder") != "DEFEND") then { continue };
+            if ((_gData get "defendObjective") != _objectiveId) then { continue };
+            _count = _count + 1;
+        } forEach _groups;
+
+        _count
+    }],
+
     // Release DEFEND groups that are idle past lease expiry and not under pressure.
     ["_manageDefenseLeases", {
         private _tasked = +(_self get "_gtnTaskedGroups");
@@ -766,6 +830,49 @@ private _gtnCommander = createHashMapObject [[
             };
         } forEach _tasked;
 
+        // Trim excess defenders above per-objective cap (idle only).
+        private _idleDefendersByObjective = createHashMap;
+        {
+            private _groupId = _x;
+            if (_groupId in _releaseIds) then { continue };
+
+            private _gData = _groups get _groupId;
+            if (isNil "_gData") then { continue };
+            if ((_gData get "side") != _ownSide) then { continue };
+            if ((_gData get "groupType") == "static_aa") then { continue };
+            if ((_gData get "currentOrder") != "DEFEND") then { continue };
+            if (_gData getOrDefault ["inCombat", false]) then { continue };
+
+            private _objId = _gData get "defendObjective";
+            if (_objId == "") then { continue };
+
+            private _bucket = _idleDefendersByObjective getOrDefault [_objId, []];
+            _bucket pushBack _groupId;
+            _idleDefendersByObjective set [_objId, _bucket];
+        } forEach _tasked;
+
+        {
+            private _objId = _x;
+            private _bucket = +(_idleDefendersByObjective get _objId);
+            private _cap = _self call ["_getDefenseCapForObjective", [_objId]];
+            if (_cap <= 0) then { continue };
+
+            private _excess = (count _bucket) - _cap;
+            if (_excess <= 0) then { continue };
+
+            for "_i" from 1 to _excess do {
+                if ((count _bucket) == 0) exitWith {};
+                _releaseIds pushBackUnique (_bucket deleteAt ((count _bucket) - 1));
+            };
+
+            ["GTN", 3, format[
+                "Defense cap trim at %1: released %2 excess defenders (cap=%3)",
+                _objId,
+                _excess,
+                _cap
+            ]] call FLO_fnc_log;
+        } forEach (keys _idleDefendersByObjective);
+
         if ((count _releaseIds) == 0) exitWith {};
 
         {
@@ -816,7 +923,7 @@ private _gtnCommander = createHashMapObject [[
         _gData set ["defendObjective", ""];
 
         // Mark as tasked
-        _self call ["_taskGroups", [[_groupId]]];
+        _self call ["_taskGroups", [_groupId]];
 
         ["GTN", 3, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
         true
@@ -851,7 +958,7 @@ private _gtnCommander = createHashMapObject [[
         _gData set ["defendObjective", ""];
 
         // Mark as tasked
-        _self call ["_taskGroups", [[_groupId]]];
+        _self call ["_taskGroups", [_groupId]];
 
         ["GTN", 3, format["Ordered group %1 to attack %2", _groupId, _pos]] call FLO_fnc_log;
         true
@@ -873,6 +980,25 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        if (_objectiveId != "") then {
+            private _alreadyAssigned = ((_gData get "currentOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId};
+            if (!_alreadyAssigned) then {
+                private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
+                private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
+
+                if (_cap > 0 && {_assigned >= _cap}) exitWith {
+                    ["GTN", 3, format[
+                        "Defend order skipped for %1: %2 already saturated (%3/%4)",
+                        _groupId,
+                        _objectiveId,
+                        _assigned,
+                        _cap
+                    ]] call FLO_fnc_log;
+                    false
+                };
+            };
+        };
+
         // Create defense waypoints
         private _waypoints = [
             [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 40],
@@ -887,7 +1013,7 @@ private _gtnCommander = createHashMapObject [[
         _gData set ["defendLeaseUntil", diag_tickTime + _leaseSeconds];
 
         // Mark as tasked
-        _self call ["_taskGroups", [[_groupId]]];
+        _self call ["_taskGroups", [_groupId]];
 
         ["GTN", 3, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
         true

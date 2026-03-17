@@ -200,8 +200,18 @@ private _executor = createHashMapObject [[
                         {
                             private _objId = _x;
                             private _objData = _underAttack get _objId;
+                            private _assigned = _gtnCmdr call ["_countObjectiveDefenders", [_objId]];
+                            private _cap = _gtnCmdr call ["_getDefenseCapForObjective", [_objId]];
+                            if (_cap > 0 && {_assigned >= _cap}) then { continue };
+
+                            private _enemyCount = _objData get "enemyCount";
+                            private _friendlyCount = _objData get "friendlyCount";
+                            private _deficit = (_enemyCount - _friendlyCount) max 0;
+
                             private _score = _objData get "priority";
-                            _score = _score + ((_objData get "enemyCount") * 5);
+                            _score = _score + (_enemyCount * 5);
+                            _score = _score + (_deficit * 6);
+                            _score = _score - (_assigned * 3);
 
                             if (_score > _bestScore) then {
                                 _bestScore = _score;
