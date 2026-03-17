@@ -159,8 +159,7 @@ private _goalLibrary = createHashMapObject [[
                         _score
                     }],
                     ["subtasks", [
-                        ["capture_priority_objective", []],
-                        ["maintain_force_ratio", []]
+                        ["capture_priority_objective", []]
                     ]]
                 ],
                 createHashMapFromArray [

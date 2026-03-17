@@ -163,6 +163,7 @@ private _gtnCommander = createHashMapObject [[
     // Main update cycle - call this from commander's update loop
     ["_update", {
         if ((_self get "_isRunning") isEqualTo 0) exitWith {};
+        if (!(missionNamespace getVariable ["FLO_MissionReady", false])) exitWith {};
         
         private _now = diag_tickTime;
         _self set ["_lastUpdate", _now];
@@ -923,7 +924,7 @@ private _gtnCommander = createHashMapObject [[
         _gData set ["defendObjective", ""];
 
         // Mark as tasked
-        _self call ["_taskGroups", [_groupId]];
+        _self call ["_taskGroups", [[_groupId]]];
 
         ["GTN", 3, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
         true
@@ -958,7 +959,7 @@ private _gtnCommander = createHashMapObject [[
         _gData set ["defendObjective", ""];
 
         // Mark as tasked
-        _self call ["_taskGroups", [_groupId]];
+        _self call ["_taskGroups", [[_groupId]]];
 
         ["GTN", 3, format["Ordered group %1 to attack %2", _groupId, _pos]] call FLO_fnc_log;
         true
@@ -1013,7 +1014,7 @@ private _gtnCommander = createHashMapObject [[
         _gData set ["defendLeaseUntil", diag_tickTime + _leaseSeconds];
 
         // Mark as tasked
-        _self call ["_taskGroups", [_groupId]];
+        _self call ["_taskGroups", [[_groupId]]];
 
         ["GTN", 3, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
         true
