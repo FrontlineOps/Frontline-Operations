@@ -67,6 +67,10 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
 
         ["CHECK_INTERVAL", 300],      // 5 minutes between checks
         ["BLUFOR_DETECT_RANGE", 2000], // Range to detect BLUFOR pressure
+        ["DISPATCH_MIN_INTERVAL", 300], // 5 minutes
+        ["DISPATCH_MAX_INTERVAL", 600], // 10 minutes
+        ["DISPATCH_BATCH_MIN", 1],      // Spawn only a few groups per dispatch
+        ["DISPATCH_BATCH_MAX", 3],
 
         // ========================================
         // STATE PROPERTIES
@@ -85,6 +89,8 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
         ["_edgeSpawnRotation", ["NORTH", "SOUTH", "EAST", "WEST"]],
         ["_edgeSpawnIndex", 0],
         ["_lastSpawnEdge", ""],
+        ["_reinforcementQueue", []],
+        ["_nextDispatchAt", 0],
 
         // ========================================
         // CONSTRUCTOR
@@ -114,6 +120,14 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 _self set ["_reinforcementCycleIndex", _savedState getOrDefault ["reinforcementCycleIndex", 0]];
                 _self set ["_edgeSpawnIndex", _savedState getOrDefault ["edgeSpawnIndex", 0]];
                 _self set ["_lastSpawnEdge", _savedState getOrDefault ["lastSpawnEdge", ""]];
+                _self set ["_reinforcementQueue", _savedState getOrDefault ["reinforcementQueue", []]];
+                private _savedNextDispatchAt = _savedState getOrDefault ["nextDispatchAt", -1];
+                private _maxAllowedDelay = _self get "DISPATCH_MAX_INTERVAL";
+                if (_savedNextDispatchAt > time && {(_savedNextDispatchAt - time) <= _maxAllowedDelay}) then {
+                    _self set ["_nextDispatchAt", _savedNextDispatchAt];
+                } else {
+                    _self set ["_nextDispatchAt", time + ((_self get "DISPATCH_MIN_INTERVAL") + random ((_self get "DISPATCH_MAX_INTERVAL") - (_self get "DISPATCH_MIN_INTERVAL")))];
+                };
                 _self set ["_lastUpdate", time];
 
                 ["LOGISTICS", 3, format["Restored from save: %1 total replacements",
@@ -130,6 +144,8 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 _self set ["_reinforcementCycleIndex", 0];
                 _self set ["_edgeSpawnIndex", 0];
                 _self set ["_lastSpawnEdge", ""];
+                _self set ["_reinforcementQueue", []];
+                _self set ["_nextDispatchAt", time + ((_self get "DISPATCH_MIN_INTERVAL") + random ((_self get "DISPATCH_MAX_INTERVAL") - (_self get "DISPATCH_MIN_INTERVAL")))];
                 _self set ["_lastUpdate", time];
             };
 
@@ -624,7 +640,47 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 ["LOGISTICS", 3, "All group types at target strength"] call FLO_fnc_log;
             };
 
-            // Check if we have resources
+            // Rebuild pending queue from current deficits while preserving existing order.
+            private _queue = _self get "_reinforcementQueue";
+            private _neededCounts = createHashMap;
+            {
+                _neededCounts set [_x, (_neededCounts getOrDefault [_x, 0]) + 1];
+            } forEach _needed;
+
+            private _rebuiltQueue = [];
+            {
+                private _remain = _neededCounts getOrDefault [_x, 0];
+                if (_remain > 0) then {
+                    _rebuiltQueue pushBack _x;
+                    _neededCounts set [_x, _remain - 1];
+                };
+            } forEach _queue;
+
+            {
+                private _type = _x;
+                private _missingCount = _neededCounts get _type;
+                for "_i" from 1 to _missingCount do {
+                    _rebuiltQueue pushBack _type;
+                };
+            } forEach (keys _neededCounts);
+
+            _queue = _rebuiltQueue;
+            _self set ["_reinforcementQueue", _queue];
+
+            if (count _queue == 0) exitWith {
+                ["LOGISTICS", 3, "No pending reinforcements after queue reconciliation"] call FLO_fnc_log;
+            };
+
+            private _nextDispatchAt = _self get "_nextDispatchAt";
+            if (time < _nextDispatchAt) exitWith {
+                ["LOGISTICS", 3, format["Reinforcement queue pending: %1 groups | next dispatch in %2s",
+                    count _queue,
+                    round (_nextDispatchAt - time)
+                ]] call FLO_fnc_log;
+                _self set ["_lastUpdate", time];
+            };
+
+            // Check resources only when dispatch window opens.
             private _resources = _self call ["_getManagedResourceObject", []];
             if (isNil "_resources") exitWith {};
 
@@ -633,7 +689,7 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
             if (count _targets == 0) then {
                 // No objectives under pressure - find managed-side objectives NOT near any player
                 // This allows reinforcing rear objectives to maintain strength
-                ["LOGISTICS", 3, format["Need %1 replacements but no objectives under pressure - checking rear objectives", count _needed]] call FLO_fnc_log;
+                ["LOGISTICS", 3, format["Queue dispatch: no objectives under pressure - checking rear objectives (%1 pending)", count _queue]] call FLO_fnc_log;
 
                 private _opforObjs = (keys FLO_Objectives) select {
                     private _objData = FLO_Objectives get _x;
@@ -655,13 +711,25 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
             };
 
             if (count _targets == 0) then {
-                ["LOGISTICS", 3, "No pressure/rear objective targets for maneuver groups this cycle"] call FLO_fnc_log;
+                ["LOGISTICS", 3, "No pressure/rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
             };
 
-            // Process replacements
+            private _batchMin = _self get "DISPATCH_BATCH_MIN";
+            private _batchMax = _self get "DISPATCH_BATCH_MAX";
+            private _batchSize = _batchMin + floor random ((_batchMax - _batchMin) + 1);
+            if (_batchSize > count _queue) then {
+                _batchSize = count _queue;
+            };
+
             private _replaced = 0;
-            {
-                private _groupType = _x;
+            private _attempted = 0;
+
+            for "_i" from 1 to _batchSize do {
+                if (count _queue == 0) exitWith {};
+
+                private _groupType = _queue deleteAt 0;
+                _attempted = _attempted + 1;
+
                 private _cost = _groupCosts getOrDefault [_groupType, 4];
                 private _targetPool = if (_groupType isEqualTo "static_aa") then {
                     _self call ["_getRearAATargets", []]
@@ -669,26 +737,34 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                     _targets
                 };
 
-                if (count _targetPool == 0) then { continue };
+                if (count _targetPool == 0) then {
+                    _queue pushBack _groupType;
+                    continue;
+                };
 
                 // Check if we can afford
                 if !(_resources call ["canAfford", [_cost, "reinforcement"]]) then {
+                    _queue pushBack _groupType;
                     continue;
                 };
 
                 // Find spawn and target
                 private _useMapEdge = !(_groupType isEqualTo "static_aa");
                 private _spawnPos = _self call ["_findSpawnPosition", [_useMapEdge]];
-                if (_spawnPos isEqualTo [0,0,0]) then { continue };
+                if (_spawnPos isEqualTo [0,0,0]) then {
+                    _queue pushBack _groupType;
+                    continue;
+                };
 
                 // Select target with priority logic
                 private _targetObj = _self call ["_pickBestTarget", [_targetPool, _groupType, _spawnPos]];
-                
-                // Update last target to ensure variety for next selection
-                if (_targetObj != "") then {
-                     _self set ["_lastReinforcementTarget", _targetObj];
+                if (_targetObj == "") then {
+                    _queue pushBack _groupType;
+                    continue;
                 };
-                if (_targetObj == "") then { continue };
+
+                // Update last target to ensure variety for next selection
+                _self set ["_lastReinforcementTarget", _targetObj];
 
                 // Try to spend resources
                 if (_resources call ["spendResources", [_cost, "reinforcement"]]) then {
@@ -705,11 +781,23 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                             _groupType, _targetObj, _cost]] call FLO_fnc_log;
                     };
                 };
-            } forEach _needed;
+            };
+
+            _self set ["_reinforcementQueue", _queue];
+
+            private _nextInterval = (_self get "DISPATCH_MIN_INTERVAL") + random ((_self get "DISPATCH_MAX_INTERVAL") - (_self get "DISPATCH_MIN_INTERVAL"));
+            _self set ["_nextDispatchAt", time + _nextInterval];
+
+            ["LOGISTICS", 3, format["Dispatch window complete: attempted=%1 created=%2 queueRemaining=%3 nextIn=%4s",
+                _attempted,
+                _replaced,
+                count _queue,
+                round _nextInterval
+            ]] call FLO_fnc_log;
 
             if (_replaced > 0) then {
                 private _stats = _self get "_stats";
-                ["LOGISTICS", 3, format["Replacement cycle: %1 created | Total: %2 | Spent: %3",
+                ["LOGISTICS", 3, format["Replacement totals: %1 created | Total: %2 | Spent: %3",
                     _replaced,
                     _stats getOrDefault ["totalReplacements", 0],
                     _stats getOrDefault ["resourcesSpent", 0]]] call FLO_fnc_log;
@@ -747,6 +835,8 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 ["lastReinforcementTarget", _self get "_lastReinforcementTarget"],
                 ["reinforcementTargetCycle", _self get "_reinforcementTargetCycle"],
                 ["reinforcementCycleIndex", _self get "_reinforcementCycleIndex"],
+                ["reinforcementQueue", _self get "_reinforcementQueue"],
+                ["nextDispatchAt", _self get "_nextDispatchAt"],
                 ["edgeSpawnIndex", _self get "_edgeSpawnIndex"],
                 ["lastSpawnEdge", _self get "_lastSpawnEdge"]
             ]

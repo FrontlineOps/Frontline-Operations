@@ -255,7 +255,7 @@ private _goalLibrary = createHashMapObject [[
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "capture_priority_objective"],
             ["type", GOAL_OPERATIONAL],
-            ["description", "Capture the highest priority enemy-held objective"],
+            ["description", "Capture the nearest frontline enemy-held objective"],
             ["preconditions", {
                 params ["_ws", "_params"];
                 count (keys (_ws call ["_getEnemyObjectives", []])) > 0
@@ -755,7 +755,7 @@ private _goalLibrary = createHashMapObject [[
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "select_objective"],
             ["type", GOAL_TACTICAL],
-            ["description", "Select the best objective to attack"],
+            ["description", "Select nearest frontline objective to attack"],
             ["preconditions", { true }],
             ["methods", [
                 createHashMapFromArray [

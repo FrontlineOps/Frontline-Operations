@@ -510,14 +510,6 @@ private _executor = createHashMapObject [[
                 false
             };
 
-            // === CHECK IF WE ALREADY HAVE ENOUGH POWER ===
-            if (_accumulatedPower >= _requiredPower && count _currentGroups > 0) exitWith {
-                ["GTN", 3, format["Staging complete: Have %1/%2 power with %3 groups",
-                    round _accumulatedPower, round _requiredPower, count _currentGroups]] call FLO_fnc_log;
-                _ctx set ["status", "SUCCESS"];
-                true
-            };
-
             // === FIND MORE GROUPS TO ASSIGN ===
             // Get all available ground forces
             private _ownSide = _cmdr get "_ownSide";
@@ -526,11 +518,16 @@ private _executor = createHashMapObject [[
 
             // Filter out already assigned groups
             _availableAssets = _availableAssets - _currentGroups;
-            private _maxGroups = _cmdr call ["_getAttackCapForObjective", [_objId, _requiredPower]];
-            private _maxAvailable = count _currentGroups + count _availableAssets;
-            if (_maxGroups > _maxAvailable) then {
-                _maxGroups = _maxAvailable;
+
+            // Prefer this track's own pool so each attack track actively uses its allocation.
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            if (!isNil "_track") then {
+                private _trackPool = _track get "groupPool";
+                _availableAssets = _availableAssets arrayIntersect _trackPool;
             };
+
+            private _maxGroups = count _currentGroups + count _availableAssets;
 
             if (count _availableAssets == 0) exitWith {
                 if (count _currentGroups > 0) then {
@@ -546,10 +543,13 @@ private _executor = createHashMapObject [[
 
             // === SCORE AND SELECT GROUPS ===
             private _scoredGroups = [];
+            private _groupMap = FLO_virtualGroups get "_groups";
             {
                 private _gId = _x;
                 private _gAnalysis = _analyzer call ["_analyzeGroup", [_gId]];
                 if (isNil "_gAnalysis") then { continue };
+                private _gData = _groupMap get _gId;
+                if (isNil "_gData") then { continue };
 
                 private _power = _gAnalysis get "totalCombatPower";
                 private _score = _power;
@@ -562,20 +562,21 @@ private _executor = createHashMapObject [[
                     _score = _score * 1.5;
                 };
 
-                _scoredGroups pushBack [_score, _gId, _power];
+                // Nearest groups first; capability score is secondary tie-break.
+                private _dist = (_gData get "position") distance2D _stagingPos;
+                _scoredGroups pushBack [_dist, -_score, _gId, _power];
             } forEach _availableAssets;
 
-            // Sort by score descending
-            _scoredGroups sort false;
+            // Sort by distance ascending, then capability score descending.
+            _scoredGroups sort true;
 
-            // Select groups until we meet power requirement or hit limit
+            // Select groups until this track's available list is exhausted.
             private _newGroups = [];
             private _selectedPower = _accumulatedPower;
             {
                 if (count _currentGroups + count _newGroups >= _maxGroups) exitWith {};
-                if (_selectedPower >= _requiredPower) exitWith {};
 
-                _x params ["_score", "_gId", "_power"];
+                _x params ["_dist", "_negScore", "_gId", "_power"];
                 _newGroups pushBack [_gId, _power];
                 _selectedPower = _selectedPower + _power;
             } forEach _scoredGroups;
@@ -777,7 +778,7 @@ private _executor = createHashMapObject [[
                         round _powerDeficit, _poolSize, round _avgPowerPerGroup, _requestCount]] call FLO_fnc_log;
 
                     private _availableGroupIds = if (!isNil "_track") then {
-                        _cmdr call ["_getGroupsFromTrack", [_track, _requestCount]]
+                        _cmdr call ["_getGroupsFromTrack", [_track, _requestCount, _stagingPos]]
                     } else {
                         _cmdr call ["_getAvailableGroups", [_requestCount, _stagingPos]]
                     };
@@ -944,8 +945,9 @@ private _executor = createHashMapObject [[
                 private _taskNode = _ctx get "taskNode";
                 private _track = _taskNode get "_trackRef";
                 if (!isNil "_track") then {
-                    private _maxFromTrack = _cmdr call ["_getAttackCapForObjective", [_objId, _requiredPower]];
-                    _groups = _cmdr call ["_getGroupsFromTrack", [_track, _maxFromTrack]];
+                    private _trackPool = _track get "groupPool";
+                    private _maxFromTrack = count _trackPool;
+                    _groups = _cmdr call ["_getGroupsFromTrack", [_track, _maxFromTrack, _objPos]];
                     if (count _groups > 0) then {
                         ["GTN", 3, format["Pulled %1 groups from track %2 for attack on %3",
                             count _groups, _track get "id", _objId]] call FLO_fnc_log;
@@ -956,13 +958,16 @@ private _executor = createHashMapObject [[
             // If still no groups, use capability-aware selection
             if (count _groups < 1) then {
                 private _availableAssets = _feasibility get "availableAssets";
+                private _groupMap = FLO_virtualGroups get "_groups";
 
-                // Score and sort groups by how well they match requirements
+                // Score and sort groups: nearest-first with capability tie-break.
                 private _scoredGroups = [];
                 {
                     private _gId = _x;
                     private _gAnalysis = _analyzer call ["_analyzeGroup", [_gId]];
                     if (isNil "_gAnalysis") then { continue };
+                    private _gData = _groupMap get _gId;
+                    if (isNil "_gData") then { continue };
 
                     private _power = _gAnalysis get "totalCombatPower";
                     private _score = _power;
@@ -975,25 +980,20 @@ private _executor = createHashMapObject [[
                         _score = _score * 1.5;
                     };
 
-                    _scoredGroups pushBack [_score, _gId, _power];
+                    private _dist = (_gData get "position") distance2D _objPos;
+                    _scoredGroups pushBack [_dist, -_score, _gId, _power];
                 } forEach _availableAssets;
 
-                // Sort by score descending
-                _scoredGroups sort false;
+                // Sort by distance ascending, then score descending.
+                _scoredGroups sort true;
 
-                // Select groups until we meet power requirement or hit limit
+                // Select from the full scored pool (no hard attack cap).
                 private _selectedPower = 0;
-                private _forces = _ws call ["_getForces", []];
-                private _availableGroups = _forces get "availableGroups";
-                private _maxGroups = _cmdr call ["_getAttackCapForObjective", [_objId, _requiredPower]];
-                if (_availableGroups > 0 && {_maxGroups > _availableGroups}) then {
-                    _maxGroups = _availableGroups;
-                };
+                private _maxGroups = count _scoredGroups;
                 {
                     if (count _groups >= _maxGroups) exitWith {};
-                    if (_selectedPower >= _requiredPower) exitWith {};
 
-                    _x params ["_score", "_gId", "_power"];
+                    _x params ["_dist", "_negScore", "_gId", "_power"];
                     _groups pushBack _gId;
                     _selectedPower = _selectedPower + _power;
                 } forEach _scoredGroups;
@@ -1372,17 +1372,12 @@ private _executor = createHashMapObject [[
                 _allCandidates
             };
 
-            // Select highest priority, then shortest route distance
+            // Select nearest vulnerable frontline objective.
             private _objId = "";
-            private _bestPriority = -1;
             private _bestDist = 1e12;
             {
                 _x params ["_candidateId", "_priority", "_routeDist"];
-                if (
-                    _priority > _bestPriority
-                    || { _priority == _bestPriority && { _routeDist < _bestDist } }
-                ) then {
-                    _bestPriority = _priority;
+                if (_routeDist < _bestDist) then {
                     _bestDist = _routeDist;
                     _objId = _candidateId;
                 };
@@ -1395,9 +1390,9 @@ private _executor = createHashMapObject [[
             private _taskNode = _ctx get "taskNode";
             private _track = _taskNode get "_trackRef";
             private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, 4]]
+                _cmdr call ["_getGroupsFromTrack", [_track, 4, _objPos]]
             } else {
-                _cmdr call ["_getAvailableGroups", [4]]
+                _cmdr call ["_getAvailableGroups", [4, _objPos]]
             };
             if (count _available < 2) exitWith { false };
 
@@ -2101,7 +2096,7 @@ private _executor = createHashMapObject [[
             private _taskNode = _ctx get "taskNode";
             private _track = _taskNode get "_trackRef";
             private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, 3]]
+                _cmdr call ["_getGroupsFromTrack", [_track, 3, _targetPos]]
             } else {
                 _cmdr call ["_getAvailableGroups", [3, _targetPos]]
             };

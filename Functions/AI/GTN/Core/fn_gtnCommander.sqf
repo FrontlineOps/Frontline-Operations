@@ -115,7 +115,7 @@ private _gtnCommander = createHashMapObject [[
         ["replanInterval", 60],       // Minimum seconds between replans
         ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
         ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
-        ["maxTracksPerObjective", 2], // Baseline cap for concurrent attack tracks on one objective
+        ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["maxTrackTasksPerCycle", 2], // Primitive burst cap per track per commander update
         ["debugMode", false]          // Enable verbose logging
     ]],
@@ -399,7 +399,7 @@ private _gtnCommander = createHashMapObject [[
     
     // Get groups from a track's pool
     ["_getGroupsFromTrack", {
-        params ["_track", "_count"];
+        params ["_track", "_count", ["_targetPos", []]];
         
         private _pool = _track get "groupPool";
         private _allGroups = FLO_virtualGroups get "_groups";
@@ -414,6 +414,16 @@ private _gtnCommander = createHashMapObject [[
             _filteredPool pushBack _x;
         } forEach _pool;
         _pool = _filteredPool;
+
+        if (count _targetPos >= 2) then {
+            private _scored = [];
+            {
+                private _gData = _allGroups get _x;
+                _scored pushBack [((_gData get "position") distance2D _targetPos), _x];
+            } forEach _pool;
+            _scored sort true;
+            _pool = _scored apply { _x select 1 };
+        };
 
         private _result = [];
         
@@ -521,7 +531,7 @@ private _gtnCommander = createHashMapObject [[
 
     // === TACTICAL METHODS (used by executor handlers) ===
 
-    // Select highest priority enemy objective
+    // Select nearest frontline enemy objective (priority only as a tie-breaker).
     ["_selectPriorityObjective", {
         params [["_trackId", ""]];
         private _ws = _self get "_worldState";
@@ -529,9 +539,44 @@ private _gtnCommander = createHashMapObject [[
         private _allObjectives = _ws call ["_getObjectives", []];
         private _objectives = _ws call ["_getFrontlineEnemyObjectives", []];
         private _reservations = _self get "_attackObjectiveReservations";
-        private _baseCap = ((_self get "_config") get "maxTracksPerObjective");
+        private _spreadMeters = ((_self get "_config") get "attackReservationSpreadMeters");
+        private _trackAnchorPos = [];
 
+        if (count (keys _objectives) == 0) then {
+            _objectives = _ws call ["_getEnemyObjectives", []];
+            ["GTN", 3, "No frontline enemy objectives; falling back to all enemy objectives"] call FLO_fnc_log;
+        };
         if (count (keys _objectives) == 0) exitWith { "" };
+
+        if (_trackId != "") then {
+            private _tracks = _self get "_tracks";
+            private _trackPool = [];
+            {
+                if ((_x get "id") == _trackId) exitWith {
+                    _trackPool = _x get "groupPool";
+                };
+            } forEach _tracks;
+
+            if (count _trackPool > 0) then {
+                private _groupMap = FLO_virtualGroups get "_groups";
+                private _sumX = 0;
+                private _sumY = 0;
+                private _count = 0;
+
+                {
+                    private _gData = _groupMap get _x;
+                    if (isNil "_gData") then { continue };
+                    private _pos = _gData get "position";
+                    _sumX = _sumX + (_pos select 0);
+                    _sumY = _sumY + (_pos select 1);
+                    _count = _count + 1;
+                } forEach _trackPool;
+
+                if (_count > 0) then {
+                    _trackAnchorPos = [_sumX / _count, _sumY / _count, 0];
+                };
+            };
+        };
 
         private _landCandidates = [];
         private _allCandidates = [];
@@ -577,70 +622,46 @@ private _gtnCommander = createHashMapObject [[
             ["GTN", 3, format["Priority selection fallback: no land-connected frontline objectives, using %1 cross-water candidates", count _allCandidates]] call FLO_fnc_log;
         };
 
-        // Find highest priority objective that still has reservation capacity.
-        private _fallbackObj = "";
-        private _fallbackPriority = -1;
-        private _fallbackDist = 1e12;
         private _bestObj = "";
-        private _bestPriority = -1;
+        private _bestPriority = -1e12;
         private _bestDist = 1e12;
-        private _bestCap = _baseCap;
-        private _bestReserved = 0;
+        private _bestEffectiveDist = 1e12;
+        private _bestReserved = 1000000000;
 
         {
             _x params ["_objId", "_priority", "_routeDist"];
 
-            if (
-                _priority > _fallbackPriority
-                || { _priority == _fallbackPriority && { _routeDist < _fallbackDist } }
-            ) then {
-                _fallbackPriority = _priority;
-                _fallbackDist = _routeDist;
-                _fallbackObj = _objId;
-            };
-
-            private _obj = _objectives get _objId;
-            private _enemyCount = _obj get "enemyCount";
-            private _cap = _baseCap;
-            if (_enemyCount >= 40) then { _cap = _cap + 1; };
-            if (_enemyCount >= 80) then { _cap = _cap + 1; };
-
             private _reserved = _reservations getOrDefault [_objId, 0];
-            if (_reserved >= _cap) then { continue };
+            private _selectionDist = _routeDist;
+            if (count _trackAnchorPos >= 2) then {
+                _selectionDist = _trackAnchorPos distance2D ((_objectives get _objId) get "position");
+            };
+            private _effectiveDist = _selectionDist + (_reserved * _spreadMeters);
 
             if (
-                _priority > _bestPriority
-                || { _priority == _bestPriority && { _routeDist < _bestDist } }
+                _effectiveDist < _bestEffectiveDist
+                || { _effectiveDist == _bestEffectiveDist && { _selectionDist < _bestDist } }
+                || { _effectiveDist == _bestEffectiveDist && { _selectionDist == _bestDist && { _reserved < _bestReserved } } }
+                || { _effectiveDist == _bestEffectiveDist && { _selectionDist == _bestDist && { _reserved == _bestReserved && { _priority > _bestPriority } } } }
             ) then {
-                _bestPriority = _priority;
-                _bestDist = _routeDist;
                 _bestObj = _objId;
-                _bestCap = _cap;
+                _bestDist = _selectionDist;
+                _bestEffectiveDist = _effectiveDist;
                 _bestReserved = _reserved;
+                _bestPriority = _priority;
             };
         } forEach _selectionPool;
-
-        if (_bestObj == "") then {
-            _bestObj = _fallbackObj;
-            if (_bestObj != "") then {
-                private _obj = _objectives get _bestObj;
-                private _enemyCount = _obj get "enemyCount";
-                _bestCap = _baseCap;
-                if (_enemyCount >= 40) then { _bestCap = _bestCap + 1; };
-                if (_enemyCount >= 80) then { _bestCap = _bestCap + 1; };
-                _bestReserved = _reservations getOrDefault [_bestObj, 0];
-            };
-        };
 
         if (_bestObj != "") then {
             _reservations set [_bestObj, _bestReserved + 1];
             if (_trackId != "") then {
                 ["GTN", 3, format[
-                    "Priority objective reserved for %1: %2 (%3/%4 slots used)",
+                    "Nearest objective reserved for %1: %2 (dist=%3m, effective=%4, reservations=%5)",
                     _trackId,
                     _bestObj,
-                    _bestReserved + 1,
-                    _bestCap
+                    round _bestDist,
+                    round _bestEffectiveDist,
+                    _bestReserved + 1
                 ]] call FLO_fnc_log;
             };
         };
@@ -826,35 +847,6 @@ private _gtnCommander = createHashMapObject [[
         if (_deficit > 0) then {
             _cap = (_cap + (ceil (_deficit * 0.5))) min 32;
         };
-
-        _cap
-    }],
-
-    // Dynamic cap for how many groups should attack a single objective.
-    // Scales from required power and objective pressure (enemy surplus / contest state).
-    ["_getAttackCapForObjective", {
-        params ["_objectiveId", ["_requiredPower", 0]];
-
-        private _ws = _self get "_worldState";
-        private _objectives = _ws call ["_getObjectives", []];
-
-        private _cap = ceil (_requiredPower / 650);
-        if (_cap < 8) then { _cap = 8; };
-
-        if !(_objectiveId in _objectives) exitWith { _cap };
-
-        private _obj = _objectives get _objectiveId;
-        private _enemyCount = _obj get "enemyCount";
-        private _friendlyCount = _obj get "friendlyCount";
-        private _underAttack = _obj get "underAttack";
-        private _contested = _obj get "contested";
-
-        private _pressure = (_enemyCount - _friendlyCount) max 0;
-        if (_pressure > 0) then {
-            _cap = _cap + (ceil (_pressure * 0.4));
-        };
-        if (_underAttack) then { _cap = _cap + 2; };
-        if (_contested) then { _cap = _cap + 1; };
 
         _cap
     }],
