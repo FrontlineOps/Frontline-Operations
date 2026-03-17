@@ -133,11 +133,11 @@ _display closeDisplay 1;
 
 	// Process GTN commander update tempo (seconds)
 	private _tempoValue = switch (_tempo) do {
-		case "12s": {12};
 		case "10s": {10};
-		case "7s": {7};
-		case "5s": {5};
-		default {10};
+		case "14s": {14};
+		case "20s": {20};
+		case "28s": {28};
+		default {20};
 	};
 
 	private _objectiveSizeThreshold = _objectiveSize;

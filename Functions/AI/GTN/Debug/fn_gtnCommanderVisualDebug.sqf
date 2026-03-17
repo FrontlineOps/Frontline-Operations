@@ -332,6 +332,7 @@ private _fnc_clearAll = {
 
                 private _groupPos = _gData get "position";
                 private _groupOrder = _gData get "currentOrder";
+                private _groupState = _gData get "state";
                 private _groupUnits = _gData get "unitCount";
                 private _groupType = _gData get "groupType";
                 private _shortId = if ((count _groupId) > 7) then { _groupId select [7] } else { _groupId };
@@ -347,10 +348,11 @@ private _fnc_clearAll = {
                 private _groupMarkerId = format ["FLO_GTN_DBG_%1_GROUP_%2", _cmdSideKey, _groupId];
                 _activeIds pushBack _groupMarkerId;
                 private _groupText = format [
-                    "%1 %2 %3 u%4 %5",
+                    "%1 %2 ord:%3 st:%4 u%5 %6",
                     _cmdSideKey,
                     _shortId,
                     _groupOrder,
+                    _groupState,
                     _groupUnits,
                     _groupType
                 ];

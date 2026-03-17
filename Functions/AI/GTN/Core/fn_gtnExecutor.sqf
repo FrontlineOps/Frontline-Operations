@@ -1094,7 +1094,6 @@ private _executor = createHashMapObject [[
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
-            private _mode = _params param [1, "AWARE"];
             private _cmdr = _ctx get "commander";
 
             // Get objective position
@@ -1112,9 +1111,9 @@ private _executor = createHashMapObject [[
 
             if (count _available < 1) exitWith { false };
 
-            // Order move
+            // QRF should become objective defense, not a terminal MOVE order.
             {
-                _cmdr call ["_orderGroupMove", [_x, _objPos, _mode]];
+                _cmdr call ["_orderGroupDefend", [_x, _objPos, _objId]];
             } forEach _available;
 
             true
@@ -1211,7 +1210,7 @@ private _executor = createHashMapObject [[
             if (count _available < 1) exitWith { false };
 
             {
-                _cmdr call ["_orderGroupMove", [_x, _objPos, "AWARE"]];
+                _cmdr call ["_orderGroupDefend", [_x, _objPos, _sectorId]];
             } forEach _available;
 
             _primData set ["arrived", false];

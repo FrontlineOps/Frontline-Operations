@@ -188,13 +188,13 @@ private _defenseOpsOptions = [
 
 private _tempoCombo = _display displayCtrl 1963;
 private _tempoOptions = [
-	"12s",
 	"10s",
-	"7s",
-	"5s"
+	"14s",
+	"20s",
+	"28s"
 ];
 
-[_tempoCombo, _tempoOptions, 1] call _fnc_addItems;
+[_tempoCombo, _tempoOptions, 2] call _fnc_addItems;
 
 // ============================================================================
 // OBJECTIVE SIZE THRESHOLD (IDC 1964)
