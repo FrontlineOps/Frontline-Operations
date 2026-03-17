@@ -3,13 +3,12 @@
 
     Description:
     OOP-based logistics system that monitors and replaces destroyed
-    virtual groups using side-scoped resources. Integrates with
-    FLO_SideResources and FLO_VirtualTransport for reinforcement spawning.
+    virtual groups using side-scoped resources.
 
     Features:
     - Tracks initial group composition and maintains force strength
-    - Spawns reinforcements from map edges for realism
-    - Uses virtual transport for mechanized/air assault groups
+    - Spawns reinforcements from nearby managed objectives (non-contested source hubs)
+    - Uses virtual group waypoint/pathing updates for reinforcement movement
     - Prioritizes objectives under player-side pressure
     - Resource-gated replacement (uses SideResources)
     - Static AA replacements with dedicated rear-area deployment logic
@@ -86,9 +85,6 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
         ["_managedSide", east],
         ["_managedSideKey", "EAST"],
         ["_enemySide", west],
-        ["_edgeSpawnRotation", ["NORTH", "SOUTH", "EAST", "WEST"]],
-        ["_edgeSpawnIndex", 0],
-        ["_lastSpawnEdge", ""],
         ["_reinforcementQueue", []],
         ["_nextDispatchAt", 0],
 
@@ -118,8 +114,6 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 _self set ["_lastReinforcementTarget", _savedState getOrDefault ["lastReinforcementTarget", ""]];
                 _self set ["_reinforcementTargetCycle", _savedState getOrDefault ["reinforcementTargetCycle", []]];
                 _self set ["_reinforcementCycleIndex", _savedState getOrDefault ["reinforcementCycleIndex", 0]];
-                _self set ["_edgeSpawnIndex", _savedState getOrDefault ["edgeSpawnIndex", 0]];
-                _self set ["_lastSpawnEdge", _savedState getOrDefault ["lastSpawnEdge", ""]];
                 _self set ["_reinforcementQueue", _savedState getOrDefault ["reinforcementQueue", []]];
                 private _savedNextDispatchAt = _savedState getOrDefault ["nextDispatchAt", -1];
                 private _maxAllowedDelay = _self get "DISPATCH_MAX_INTERVAL";
@@ -142,8 +136,6 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 _self set ["_lastReinforcementTarget", ""];
                 _self set ["_reinforcementTargetCycle", []];
                 _self set ["_reinforcementCycleIndex", 0];
-                _self set ["_edgeSpawnIndex", 0];
-                _self set ["_lastSpawnEdge", ""];
                 _self set ["_reinforcementQueue", []];
                 _self set ["_nextDispatchAt", time + ((_self get "DISPATCH_MIN_INTERVAL") + random ((_self get "DISPATCH_MAX_INTERVAL") - (_self get "DISPATCH_MIN_INTERVAL")))];
                 _self set ["_lastUpdate", time];
@@ -373,61 +365,101 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
             _selected
         }],
 
-        ["_nextPreferredSpawnEdge", {
-            private _edges = _self get "_edgeSpawnRotation";
-            if (count _edges == 0) exitWith { "" };
+        // Pick a managed-side source objective near the defended objective.
+        // Source objectives must not be in the contested set for this cycle.
+        ["_pickSpawnSourceObjective", {
+            params ["_targetObjId", ["_blockedObjectives", []]];
 
-            private _idx = _self get "_edgeSpawnIndex";
-            if (_idx >= count _edges) then {
-                _idx = 0;
-            };
+            if (isNil "FLO_Objectives" || {_targetObjId == ""}) exitWith { "" };
 
-            private _edge = _edges select _idx;
-            _self set ["_edgeSpawnIndex", (_idx + 1) mod (count _edges)];
-            _self set ["_lastSpawnEdge", _edge];
-            _edge
-        }],
-
-        // Find best spawn position (map edge or rear objective)
-        ["_findSpawnPosition", {
-            params [["_useMapEdge", true]];
             private _managedSide = _self get "_managedSide";
+            private _enemySide = _self get "_enemySide";
+            private _targetData = FLO_Objectives get _targetObjId;
+            private _targetPos = _targetData get "position";
 
-            // Try map edge first using transport system
-            if (_useMapEdge) then {
-                private _preferredEdge = _self call ["_nextPreferredSpawnEdge", []];
-                private _edgePos = [_preferredEdge] call FLO_fnc_transportGetBestEdgeSpawnPos;
-                if (_edgePos isEqualTo [0,0,0]) then {
-                    _edgePos = [] call FLO_fnc_transportGetBestEdgeSpawnPos;
-                };
-                if !(_edgePos isEqualTo [0,0,0]) exitWith { _edgePos };
+            private _enemyObjectiveIds = (keys FLO_Objectives) select {
+                ((FLO_Objectives get _x) get "owner") isEqualTo _enemySide
             };
 
-            // Fallback: Find OPFOR objective farthest from players
-            if (isNil "FLO_Objectives") exitWith { [0,0,0] };
-
-            private _opforObjs = (keys FLO_Objectives) select {
-                ((FLO_Objectives get _x) getOrDefault ["owner", east]) isEqualTo _managedSide
+            private _candidates = (keys FLO_Objectives) select {
+                private _objId = _x;
+                private _objData = FLO_Objectives get _objId;
+                (_objData get "owner") isEqualTo _managedSide &&
+                {_objId != _targetObjId} &&
+                {!(_objId in _blockedObjectives)}
             };
 
-            if (count _opforObjs == 0) exitWith { [] };
+            if (count _candidates == 0) exitWith { _targetObjId };
 
-            // Select by max total distance from players (single pass).
             private _bestObjId = "";
             private _bestScore = -1e12;
+
             {
                 private _objId = _x;
-                private _pos = (FLO_Objectives get _objId) get "position";
-                private _totalDist = 0;
-                { _totalDist = _totalDist + (_pos distance2D _x); } forEach allPlayers;
-                if (_totalDist > _bestScore) then {
-                    _bestScore = _totalDist;
+                private _objData = FLO_Objectives get _objId;
+                private _objPos = _objData get "position";
+                private _distToTarget = _objPos distance2D _targetPos;
+                if (_distToTarget > 3500) then { continue };
+
+                private _nearestEnemyDist = 1e12;
+                {
+                    private _enemyPos = (FLO_Objectives get _x) get "position";
+                    private _dist = _objPos distance2D _enemyPos;
+                    if (_dist < _nearestEnemyDist) then { _nearestEnemyDist = _dist };
+                } forEach _enemyObjectiveIds;
+
+                if (_nearestEnemyDist < 800) then { continue };
+
+                private _priority = _objData get "priority";
+                private _score = (5000 - (_distToTarget min 5000)) + (_priority * 25) + ((_nearestEnemyDist min 3000) * 0.15);
+
+                if (_score > _bestScore) then {
+                    _bestScore = _score;
                     _bestObjId = _objId;
                 };
-            } forEach _opforObjs;
+            } forEach _candidates;
 
-            if (_bestObjId == "") exitWith { [] };
-            (FLO_Objectives get _bestObjId) get "position"
+            if (_bestObjId == "") then {
+                private _closestDist = 1e12;
+                {
+                    private _objPos = (FLO_Objectives get _x) get "position";
+                    private _distToTarget = _objPos distance2D _targetPos;
+                    if (_distToTarget < _closestDist) then {
+                        _closestDist = _distToTarget;
+                        _bestObjId = _x;
+                    };
+                } forEach _candidates;
+            };
+
+            if (_bestObjId == "") then { _targetObjId } else { _bestObjId }
+        }],
+
+        // Find reinforcement spawn position from objective source hubs, not map edges.
+        ["_findSpawnPosition", {
+            params ["_targetObjId", ["_blockedObjectives", []]];
+
+            if (isNil "FLO_Objectives" || {_targetObjId == ""}) exitWith { [[0,0,0], ""] };
+
+            private _sourceObjId = _self call ["_pickSpawnSourceObjective", [_targetObjId, _blockedObjectives]];
+            if (_sourceObjId == "") exitWith { [[0,0,0], ""] };
+
+            private _spawnPos = [_sourceObjId, true] call FLO_fnc_getRandomObjectivePos;
+            if (_spawnPos isEqualTo [0,0,0]) then {
+                _spawnPos = (FLO_Objectives get _sourceObjId) get "position";
+            };
+
+            private _targetPos = (FLO_Objectives get _targetObjId) get "position";
+
+            // Hard cap march distance so reinforcements are seen and felt faster in-game.
+            if ((_spawnPos distance2D _targetPos) > 4500) then {
+                _spawnPos = [_targetObjId, true] call FLO_fnc_getRandomObjectivePos;
+                if (_spawnPos isEqualTo [0,0,0]) then {
+                    _spawnPos = _targetPos;
+                };
+                _sourceObjId = _targetObjId;
+            };
+
+            [_spawnPos, _sourceObjId]
         }],
 
         // Find objectives that need reinforcement (under enemy pressure)
@@ -748,17 +780,18 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                     continue;
                 };
 
-                // Find spawn and target
-                private _useMapEdge = !(_groupType isEqualTo "static_aa");
-                private _spawnPos = _self call ["_findSpawnPosition", [_useMapEdge]];
-                if (_spawnPos isEqualTo [0,0,0]) then {
+                // Select target with priority logic
+                private _targetObj = _self call ["_pickBestTarget", [_targetPool, _groupType, []]];
+                if (_targetObj == "") then {
                     _queue pushBack _groupType;
                     continue;
                 };
 
-                // Select target with priority logic
-                private _targetObj = _self call ["_pickBestTarget", [_targetPool, _groupType, _spawnPos]];
-                if (_targetObj == "") then {
+                // Resolve nearby source objective and spawn position.
+                private _spawnData = _self call ["_findSpawnPosition", [_targetObj, _targets]];
+                private _spawnPos = _spawnData select 0;
+                private _sourceObjId = _spawnData select 1;
+                if (_spawnPos isEqualTo [0,0,0]) then {
                     _queue pushBack _groupType;
                     continue;
                 };
@@ -768,17 +801,14 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
 
                 // Try to spend resources
                 if (_resources call ["spendResources", [_cost, "reinforcement"]]) then {
-                    private _sourceObjId = if (_groupType isEqualTo "static_aa") then {
-                        [_spawnPos, _managedSide] call FLO_fnc_getNearestObjective
-                    } else { "" };
                     private _newId = _self call ["_createReplacement", [_groupType, _spawnPos, _targetObj, _sourceObjId]];
 
                     if (_newId != "") then {
                         _self call ["_recordReplacement", [_groupType, _cost]];
                         _replaced = _replaced + 1;
 
-                        ["LOGISTICS", 3, format["Created %1 reinforcement -> %2 (cost: %3)",
-                            _groupType, _targetObj, _cost]] call FLO_fnc_log;
+                        ["LOGISTICS", 3, format["Created %1 reinforcement %2 -> %3 (cost: %4)",
+                            _groupType, _sourceObjId, _targetObj, _cost]] call FLO_fnc_log;
                     };
                 };
             };
@@ -836,9 +866,7 @@ if (isNil "FLO_Logistics_Networks" || {count (keys FLO_Logistics_Networks) == 0}
                 ["reinforcementTargetCycle", _self get "_reinforcementTargetCycle"],
                 ["reinforcementCycleIndex", _self get "_reinforcementCycleIndex"],
                 ["reinforcementQueue", _self get "_reinforcementQueue"],
-                ["nextDispatchAt", _self get "_nextDispatchAt"],
-                ["edgeSpawnIndex", _self get "_edgeSpawnIndex"],
-                ["lastSpawnEdge", _self get "_lastSpawnEdge"]
+                ["nextDispatchAt", _self get "_nextDispatchAt"]
             ]
         }]
     ];
