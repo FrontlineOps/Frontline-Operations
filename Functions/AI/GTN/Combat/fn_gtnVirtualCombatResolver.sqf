@@ -15,7 +15,7 @@
 
 if (!isServer) exitWith { false };
 
-params [["_interval", 30, [0]]];
+params [["_interval", 20, [0]]];
 if (_interval < 5) then { _interval = 5 };
 
 if (!isNil "FLO_GTN_VirtualCombatRunning" && {FLO_GTN_VirtualCombatRunning}) exitWith { true };
@@ -37,6 +37,11 @@ if (isNil "FLO_GTN_CombatLastByObjective") then { FLO_GTN_CombatLastByObjective 
 if (isNil "FLO_GTN_CombatDebugEnabled") then { FLO_GTN_CombatDebugEnabled = true; };
 
 private _combatMarkerTTL = 90;
+private _engagementMaxDist = 500;
+private _engagementParticipationDist = 850;
+private _engagementMaxGroupsPerSide = 16;
+private _engagementMaxUnitsPerSide = 140;
+private _engagementMaxLinksPerGroup = 6;
 
 private _fnc_sideKey = {
     params ["_side"];
@@ -90,6 +95,69 @@ private _fnc_sidePower = {
         ["infantry", _inf],
         ["armor", _armor]
     ]
+};
+
+private _fnc_centerFromRefs = {
+    params ["_refs"];
+
+    private _center = [0, 0, 0];
+    private _refCount = count _refs;
+    if (_refCount == 0) exitWith { _center };
+
+    {
+        _x params ["_groupId", "_gData"];
+        private _pos = _gData get "position";
+        _center set [0, (_center select 0) + (_pos select 0)];
+        _center set [1, (_center select 1) + (_pos select 1)];
+    } forEach _refs;
+
+    _center set [0, (_center select 0) / _refCount];
+    _center set [1, (_center select 1) / _refCount];
+    _center
+};
+
+private _fnc_limitRefsForEngagement = {
+    params ["_refs", "_anchorPos", "_maxDist", "_maxGroups", "_maxUnits"];
+
+    private _candidates = [];
+    {
+        _x params ["_groupId", "_gData"];
+        private _count = _gData get "unitCount";
+        if (_count <= 0) then { continue };
+
+        private _dist = (_gData get "position") distance2D _anchorPos;
+        if (_dist > _maxDist) then { continue };
+        _candidates pushBack [_dist, _groupId, _gData, _count];
+    } forEach _refs;
+
+    if ((count _candidates) == 0) then {
+        {
+            _x params ["_groupId", "_gData"];
+            private _count = _gData get "unitCount";
+            if (_count <= 0) then { continue };
+
+            private _dist = (_gData get "position") distance2D _anchorPos;
+            _candidates pushBack [_dist, _groupId, _gData, _count];
+        } forEach _refs;
+    };
+
+    _candidates sort true;
+
+    private _selectedIds = [];
+    private _selectedRefs = [];
+    private _selectedUnits = 0;
+    {
+        _x params ["_dist", "_groupId", "_gData", "_count"];
+
+        if ((count _selectedRefs) >= _maxGroups) exitWith {};
+        if ((_selectedUnits + _count) > _maxUnits && {(count _selectedRefs) > 0}) then { continue };
+
+        _selectedIds pushBack _groupId;
+        _selectedRefs pushBack [_groupId, _gData];
+        _selectedUnits = _selectedUnits + _count;
+    } forEach _candidates;
+
+    [_selectedIds, _selectedRefs]
 };
 
 private _fnc_scanSupportAvailability = {
@@ -350,12 +418,14 @@ private _fnc_releaseGroupForRetask = {
     _commander call ["_releaseGroups", [[_groupId], ""]];
 };
 
-[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_supportBonus, _fnc_scanSupportAvailability, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL, _fnc_releaseGroupForRetask ] spawn {
+[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_centerFromRefs, _fnc_limitRefsForEngagement, _fnc_supportBonus, _fnc_scanSupportAvailability, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL, _fnc_releaseGroupForRetask, _engagementMaxDist, _engagementParticipationDist, _engagementMaxGroupsPerSide, _engagementMaxUnitsPerSide, _engagementMaxLinksPerGroup ] spawn {
     params [
         "_interval",
         "_fnc_sideKey",
         "_fnc_typeWeight",
         "_fnc_sidePower",
+        "_fnc_centerFromRefs",
+        "_fnc_limitRefsForEngagement",
         "_fnc_supportBonus",
         "_fnc_scanSupportAvailability",
         "_fnc_applyAttrition",
@@ -364,7 +434,12 @@ private _fnc_releaseGroupForRetask = {
         "_fnc_updateCombatMarker",
         "_fnc_cleanupCombatMarkers",
         "_combatMarkerTTL",
-        "_fnc_releaseGroupForRetask"
+        "_fnc_releaseGroupForRetask",
+        "_engagementMaxDist",
+        "_engagementParticipationDist",
+        "_engagementMaxGroupsPerSide",
+        "_engagementMaxUnitsPerSide",
+        "_engagementMaxLinksPerGroup"
     ];
 
     waitUntil {
@@ -414,7 +489,6 @@ private _fnc_releaseGroupForRetask = {
             continue;
         };
 
-        private _engagementMaxDist = 500;
         private _engagements = [];
         private _engagedNow = createHashMap;
         private _supportAvailability = [_groups] call _fnc_scanSupportAvailability;
@@ -452,6 +526,7 @@ private _fnc_releaseGroupForRetask = {
             private _eastNeighborWest = _eastLinks get _eastId;
             private _cx = floor ((_eastPos select 0) / _cellSize);
             private _cy = floor ((_eastPos select 1) / _cellSize);
+            private _nearbyWest = [];
 
             for "_dx" from -1 to 1 do {
                 for "_dy" from -1 to 1 do {
@@ -464,10 +539,21 @@ private _fnc_releaseGroupForRetask = {
                         private _dist = _eastPos distance2D _westPos;
                         if (_dist > _engagementMaxDist) then { continue };
 
-                        _eastNeighborWest pushBack [_westId, _dist];
-                        private _westNeighborEast = _westLinks get _westId;
-                        _westNeighborEast pushBack [_eastId, _dist];
+                        _nearbyWest pushBack [_dist, _westId];
                     } forEach (_westCells get _cellKey);
+                };
+            };
+
+            if ((count _nearbyWest) > 0) then {
+                _nearbyWest sort true;
+                private _linkCount = (count _nearbyWest) min _engagementMaxLinksPerGroup;
+                for "_idx" from 0 to (_linkCount - 1) do {
+                    private _entry = _nearbyWest select _idx;
+                    _entry params ["_dist", "_westId"];
+                    _eastNeighborWest pushBack [_westId, _dist];
+
+                    private _westNeighborEast = _westLinks get _westId;
+                    _westNeighborEast pushBack [_eastId, _dist];
                 };
             };
         } forEach _eastPool;
