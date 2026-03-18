@@ -1011,15 +1011,10 @@ private _gtnCommander = createHashMapObject [[
             true
         };
 
-        // Create waypoints for movement
-        private _combatMode = switch (_mode) do {
-            case "COMBAT": { "RED" };
-            case "STEALTH": { "GREEN" };
-            default { "YELLOW" };
-        };
+        private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
 
         private _waypoints = [
-            [_pos, "MOVE", _mode, "NORMAL", "WEDGE", _combatMode, 30]
+            [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 30]
         ];
 
         [_groupId, _waypoints, true, true, "GTN_MOVE"] call FLO_fnc_updateVirtualGroupWaypoints;
@@ -1062,10 +1057,11 @@ private _gtnCommander = createHashMapObject [[
             true
         };
 
-        // Create attack waypoints
+        private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
+
         private _waypoints = [
-            [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 75],
-            [_pos, "MOVE", "COMBAT", "NORMAL", "LINE", "RED", 50]
+            [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 75],
+            [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 50]
         ];
 
         [_groupId, _waypoints, true, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
@@ -1131,10 +1127,11 @@ private _gtnCommander = createHashMapObject [[
 
         if (_saturated) exitWith { false };
 
-        // Create defense waypoints
+        private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
+
         private _waypoints = [
-            [_pos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 40],
-            [_pos, "GUARD", "COMBAT", "NORMAL", "LINE", "RED", 60]
+            [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 40],
+            [_pos, "GUARD", "SAFE", "FULL", _formation, "GREEN", 60]
         ];
 
         [_groupId, _waypoints, true, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
@@ -1381,8 +1378,8 @@ private _gtnCommander = createHashMapObject [[
                         private _retreatPos = [_retreatObj] call FLO_fnc_getObjectivePosition;
                         _gData set ["retreatPos", _retreatPos];
                          
-                        // Break Contact Order: Careless (ignore threats), Hold Fire (don't stop to shoot)
-                        private _wps = [[_retreatPos, "MOVE", "CARELESS", "FULL", "FILE", "BLUE", 0]];
+                        private _retreatFormation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
+                        private _wps = [[_retreatPos, "MOVE", "SAFE", "FULL", _retreatFormation, "GREEN", 0]];
                         [_gId, _wps, true, true, "GTN_RETREAT"] call FLO_fnc_updateVirtualGroupWaypoints;
                     };
                 };
