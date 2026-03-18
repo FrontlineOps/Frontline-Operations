@@ -7,7 +7,7 @@
  *   Publishes combat telemetry as map markers + event history.
  *
  * Arguments:
- *   0: Tick interval in seconds <NUMBER> - Default 30
+ *   0: Tick interval in seconds <NUMBER> - Default 20
  *
  * Return Value:
  *   BOOL - true when resolver loop started
@@ -567,14 +567,19 @@ private _fnc_releaseGroupForRetask = {
             if ((count (_eastLinks get _seedEastId)) == 0) then { continue };
 
             private _queueEast = [_seedEastId];
+            private _queueEastIdx = 0;
             private _queueWest = [];
+            private _queueWestIdx = 0;
             private _clusterEastIds = [];
             private _clusterWestIds = [];
-            private _clusterMinDist = _engagementMaxDist;
+            private _clusterMinDist = 999999;
+            private _clusterAnchorEastId = "";
+            private _clusterAnchorWestId = "";
 
-            while {(count _queueEast) > 0 || {(count _queueWest) > 0}} do {
-                while {(count _queueEast) > 0} do {
-                    private _eastId = _queueEast deleteAt 0;
+            while {_queueEastIdx < (count _queueEast) || {_queueWestIdx < (count _queueWest)}} do {
+                while {_queueEastIdx < (count _queueEast)} do {
+                    private _eastId = _queueEast select _queueEastIdx;
+                    _queueEastIdx = _queueEastIdx + 1;
                     if (_visitedEast getOrDefault [_eastId, false]) then { continue };
 
                     _visitedEast set [_eastId, true];
@@ -582,15 +587,20 @@ private _fnc_releaseGroupForRetask = {
 
                     {
                         _x params ["_westId", "_dist"];
-                        if (_dist < _clusterMinDist) then { _clusterMinDist = _dist };
+                        if (_dist < _clusterMinDist) then {
+                            _clusterMinDist = _dist;
+                            _clusterAnchorEastId = _eastId;
+                            _clusterAnchorWestId = _westId;
+                        };
                         if !(_visitedWest getOrDefault [_westId, false]) then {
                             _queueWest pushBack _westId;
                         };
                     } forEach (_eastLinks get _eastId);
                 };
 
-                while {(count _queueWest) > 0} do {
-                    private _westId = _queueWest deleteAt 0;
+                while {_queueWestIdx < (count _queueWest)} do {
+                    private _westId = _queueWest select _queueWestIdx;
+                    _queueWestIdx = _queueWestIdx + 1;
                     if (_visitedWest getOrDefault [_westId, false]) then { continue };
 
                     _visitedWest set [_westId, true];
@@ -598,7 +608,11 @@ private _fnc_releaseGroupForRetask = {
 
                     {
                         _x params ["_eastId", "_dist"];
-                        if (_dist < _clusterMinDist) then { _clusterMinDist = _dist };
+                        if (_dist < _clusterMinDist) then {
+                            _clusterMinDist = _dist;
+                            _clusterAnchorEastId = _eastId;
+                            _clusterAnchorWestId = _westId;
+                        };
                         if !(_visitedEast getOrDefault [_eastId, false]) then {
                             _queueEast pushBack _eastId;
                         };
@@ -607,37 +621,40 @@ private _fnc_releaseGroupForRetask = {
             };
 
             if ((count _clusterEastIds) == 0 || {(count _clusterWestIds) == 0}) then { continue };
+            if (_clusterAnchorEastId == "" || {_clusterAnchorWestId == ""}) then { continue };
+            if (_clusterMinDist == 999999) then { _clusterMinDist = _engagementMaxDist };
 
-            private _eastRefs = _clusterEastIds apply {
+            private _anchorEastPos = (_eastById get _clusterAnchorEastId) get "position";
+            private _anchorWestPos = (_westById get _clusterAnchorWestId) get "position";
+            private _engagementAnchorPos = [
+                ((_anchorEastPos select 0) + (_anchorWestPos select 0)) * 0.5,
+                ((_anchorEastPos select 1) + (_anchorWestPos select 1)) * 0.5,
+                0
+            ];
+
+            private _clusterEastRefs = _clusterEastIds apply {
                 [_x, _eastById get _x]
             };
-            private _westRefs = _clusterWestIds apply {
+            private _clusterWestRefs = _clusterWestIds apply {
                 [_x, _westById get _x]
             };
 
-            private _eastCenter = [0, 0, 0];
-            {
-                private _pos = (_eastById get _x) get "position";
-                _eastCenter set [0, (_eastCenter select 0) + (_pos select 0)];
-                _eastCenter set [1, (_eastCenter select 1) + (_pos select 1)];
-            } forEach _clusterEastIds;
-            _eastCenter set [0, (_eastCenter select 0) / (count _clusterEastIds)];
-            _eastCenter set [1, (_eastCenter select 1) / (count _clusterEastIds)];
+            private _eastSelection = [_clusterEastRefs, _engagementAnchorPos, _engagementParticipationDist, _engagementMaxGroupsPerSide, _engagementMaxUnitsPerSide] call _fnc_limitRefsForEngagement;
+            private _westSelection = [_clusterWestRefs, _engagementAnchorPos, _engagementParticipationDist, _engagementMaxGroupsPerSide, _engagementMaxUnitsPerSide] call _fnc_limitRefsForEngagement;
 
-            private _westCenter = [0, 0, 0];
-            {
-                private _pos = (_westById get _x) get "position";
-                _westCenter set [0, (_westCenter select 0) + (_pos select 0)];
-                _westCenter set [1, (_westCenter select 1) + (_pos select 1)];
-            } forEach _clusterWestIds;
-            _westCenter set [0, (_westCenter select 0) / (count _clusterWestIds)];
-            _westCenter set [1, (_westCenter select 1) / (count _clusterWestIds)];
+            _eastSelection params ["_eastIds", "_eastRefs"];
+            _westSelection params ["_westIds", "_westRefs"];
+
+            if ((count _eastIds) == 0 || {(count _westIds) == 0}) then { continue };
+
+            private _eastCenter = [_eastRefs] call _fnc_centerFromRefs;
+            private _westCenter = [_westRefs] call _fnc_centerFromRefs;
 
             _engagements pushBack [
-                _clusterEastIds,
+                _eastIds,
                 _eastRefs,
                 _eastCenter,
-                _clusterWestIds,
+                _westIds,
                 _westRefs,
                 _westCenter,
                 _clusterMinDist
