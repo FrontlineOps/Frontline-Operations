@@ -532,10 +532,12 @@ private _goalLibrary = createHashMapObject [[
                     ["id", "ground_recon"],
                     ["score", {
                         params ["_ws", "_params", "_planner"];
+                        private _objId = _params param [0, ""];
+                        if (_objId != "" && {_ws call ["_isIntelFresh", [_objId, 900]]}) exitWith { -1 };
+
                         private _forces = _ws call ["_getForces", []];
                         if ((_forces get "infantryGroups") < 1) exitWith { -1 };
                         private _score = 40;
-                        private _objId = _params param [0, ""];
                         if (_objId != "" && {!(_ws call ["_isIntelFresh", [_objId, 300]])}) then {
                             _score = _score + 20;
                         };
@@ -550,25 +552,28 @@ private _goalLibrary = createHashMapObject [[
                     ["id", "air_recon"],
                     ["score", {
                         params ["_ws", "_params", "_planner"];
+                        private _objId = _params param [0, ""];
+                        if (_objId != "" && {_ws call ["_isIntelFresh", [_objId, 900]]}) exitWith { -1 };
                         if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { -1 };
 
-                        // Air recon is faster and safer than ground patrol
-                        private _score = 55;  // Base higher than ground_recon (40)
+                        // Air recon should be reserved for remote objectives where
+                        // ground patrols are much less practical.
+                        private _score = 15;
 
                         // Bonus if objective is far from friendly forces
-                        private _objId = _params param [0, ""];
                         if (_objId != "") then {
                             private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
                             if (!isNil "_objPos") then {
                                 private _friendlyDist = _ws call ["_getNearestFriendlyDistance", [_objPos]];
-                                if (_friendlyDist > 2000) then { _score = _score + 20 };
+                                if (_friendlyDist > 2500) then { _score = _score + 20 };
+                                if (_friendlyDist > 4000) then { _score = _score + 15 };
                             };
                         };
 
-                        // Bonus for ordnance availability (aircraft can defend itself if needed)
+                        // Small bonus when air inventory is healthy.
                         private _assets = _ws call ["_getSupportAssets", []];
                         private _ordnance = _assets getOrDefault ["casOrdnance", 0];
-                        if (_ordnance > 4) then { _score = _score + 10 };
+                        if (_ordnance > 4) then { _score = _score + 5 };
 
                         _score
                     }],

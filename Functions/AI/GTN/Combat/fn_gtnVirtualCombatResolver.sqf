@@ -2,15 +2,17 @@
  * Function: FLO_fnc_gtnVirtualCombatResolver
  * Author: Frontline Operations Development Group
  * Description:
- *   Resolves virtual combat as clustered EAST/WEST group engagements.
- *   Uses 2d6 + modifiers and applies margin-based attrition.
- *   Publishes combat telemetry as map markers + event history.
+ *   Resolves virtual combat as contact zones built from the shared virtualization
+ *   spatial index. Combat is treated as an overlay on top of existing commander
+ *   orders instead of rewriting task ownership. Zones near players are handed
+ *   off to real AI; remote zones stay virtual and use attrition rolls plus
+ *   combat telemetry.
  *
  * Arguments:
  *   0: Tick interval in seconds <NUMBER> - Default 20
  *
  * Return Value:
- *   BOOL - true when resolver loop started
+ *   BOOL - true when resolver PFH started
  */
 
 if (!isServer) exitWith { false };
@@ -19,7 +21,10 @@ params [["_interval", 20, [0]]];
 if (_interval < 5) then { _interval = 5 };
 
 if (!isNil "FLO_GTN_VirtualCombatRunning" && {FLO_GTN_VirtualCombatRunning}) exitWith { true };
+
 FLO_GTN_VirtualCombatRunning = true;
+if (isNil "FLO_GTN_VirtualCombatPFH") then { FLO_GTN_VirtualCombatPFH = -1; };
+if (isNil "FLO_GTN_VirtualCombatResumeStates") then { FLO_GTN_VirtualCombatResumeStates = createHashMap; };
 
 if (isNil "FLO_GTN_VirtualSupportCooldowns") then {
     FLO_GTN_VirtualSupportCooldowns = createHashMapFromArray [
@@ -37,798 +42,199 @@ if (isNil "FLO_GTN_CombatLastByObjective") then { FLO_GTN_CombatLastByObjective 
 if (isNil "FLO_GTN_CombatDebugEnabled") then { FLO_GTN_CombatDebugEnabled = true; };
 
 private _combatMarkerTTL = 90;
-private _engagementMaxDist = 500;
-private _engagementParticipationDist = 850;
-private _engagementMaxGroupsPerSide = 16;
-private _engagementMaxUnitsPerSide = 140;
-private _engagementMaxLinksPerGroup = 6;
+private _engagementMaxDist = 300;
+private _perfLogThreshold = 0.02;
 
-private _fnc_sideKey = {
-    params ["_side"];
-    if (_side isEqualTo east) exitWith { "EAST" };
-    if (_side isEqualTo west) exitWith { "WEST" };
-    "EAST"
-};
+private _pfhId = [{
+    params ["_args", "_pfhId"];
+    _args params ["_combatMarkerTTL", "_engagementMaxDist", "_perfLogThreshold"];
 
-private _fnc_typeWeight = {
-    params ["_groupType"];
-    switch (_groupType) do {
-        case "infantry": { 1.0 };
-        case "motorized": { 1.15 };
-        case "mechanized": { 1.35 };
-        case "armor": { 1.6 };
-        case "artillery": { 0.9 };
-        case "helicopter": { 1.25 };
-        case "jet": { 1.4 };
-        case "air": { 1.3 };
-        case "mobile_aa": { 1.1 };
-        case "static_aa": { 1.05 };
-        default { 1.0 };
-    }
-};
+    if (!FLO_GTN_VirtualCombatRunning) exitWith {
+        [_pfhId] call CBA_fnc_removePerFrameHandler;
+        FLO_GTN_VirtualCombatPFH = -1;
+        ["GTN_COMBAT", 3, "Virtual combat resolver stopped"] call FLO_fnc_log;
+    };
 
-private _fnc_sidePower = {
-    params ["_sideGroups"];
+    if (isNil "FLO_virtualGroups") exitWith {};
 
-    private _power = 0;
-    private _units = 0;
-    private _inf = 0;
-    private _armor = 0;
+    private _cycleStart = diag_tickTime;
+    private _groups = FLO_virtualGroups get "_groups";
+    private _groupCount = count _groups;
+    private _resumeStates = FLO_GTN_VirtualCombatResumeStates;
 
-    {
-        _x params ["_id", "_gData"];
-        private _count = _gData get "unitCount";
-        if (_count <= 0) then { continue };
+    [_groups, _resumeStates] call FLO_fnc_gtnCombatCleanupResumeStates;
 
-        private _type = _gData get "groupType";
-        private _weight = [_type] call _fnc_typeWeight;
-        _power = _power + (_count * _weight);
-        _units = _units + _count;
+    if (_groupCount == 0) exitWith {
+        call FLO_fnc_gtnCombatCleanupMarkers;
+    };
 
-        if (_type isEqualTo "infantry") then { _inf = _inf + _count };
-        if (_type in ["armor", "mechanized"]) then { _armor = _armor + _count };
-    } forEach _sideGroups;
-
-    createHashMapFromArray [
-        ["power", _power],
-        ["units", _units],
-        ["infantry", _inf],
-        ["armor", _armor]
-    ]
-};
-
-private _fnc_centerFromRefs = {
-    params ["_refs"];
-
-    private _center = [0, 0, 0];
-    private _refCount = count _refs;
-    if (_refCount == 0) exitWith { _center };
+    private _classification = [_groups] call FLO_fnc_gtnCombatClassifyGroups;
+    private _combatGroups = _classification get "combatGroups";
+    private _combatGroupCount = count _combatGroups;
+    private _eastSeeds = _classification get "eastSeeds";
+    private _supportAvailability = _classification get "supportAvailability";
+    private _zones = [_combatGroups, _eastSeeds, _engagementMaxDist] call FLO_fnc_gtnCombatCollectEngagementZones;
+    private _engagedNow = createHashMap;
+    private _eventsChanged = false;
+    private _liveAreaRadius = FLO_virtualGroups get "_activationDistance";
+    private _players = allPlayers select { alive _x && {side group _x in [east, west]} };
 
     {
-        _x params ["_groupId", "_gData"];
-        private _pos = _gData get "position";
-        _center set [0, (_center select 0) + (_pos select 0)];
-        _center set [1, (_center select 1) + (_pos select 1)];
-    } forEach _refs;
+        _x params ["_eastRefs", "_westRefs", "_zonePos", "_contactDist"];
 
-    _center set [0, (_center select 0) / _refCount];
-    _center set [1, (_center select 1) / _refCount];
-    _center
-};
-
-private _fnc_limitRefsForEngagement = {
-    params ["_refs", "_anchorPos", "_maxDist", "_maxGroups", "_maxUnits"];
-
-    private _candidates = [];
-    {
-        _x params ["_groupId", "_gData"];
-        private _count = _gData get "unitCount";
-        if (_count <= 0) then { continue };
-
-        private _dist = (_gData get "position") distance2D _anchorPos;
-        if (_dist > _maxDist) then { continue };
-        _candidates pushBack [_dist, _groupId, _gData, _count];
-    } forEach _refs;
-
-    if ((count _candidates) == 0) then {
         {
             _x params ["_groupId", "_gData"];
-            private _count = _gData get "unitCount";
-            if (_count <= 0) then { continue };
+            _engagedNow set [_groupId, true];
+            [_groupId, _gData, _resumeStates] call FLO_fnc_gtnCombatEnterState;
+        } forEach (_eastRefs + _westRefs);
 
-            private _dist = (_gData get "position") distance2D _anchorPos;
-            _candidates pushBack [_dist, _groupId, _gData, _count];
-        } forEach _refs;
-    };
-
-    _candidates sort true;
-
-    private _selectedIds = [];
-    private _selectedRefs = [];
-    private _selectedUnits = 0;
-    {
-        _x params ["_dist", "_groupId", "_gData", "_count"];
-
-        if ((count _selectedRefs) >= _maxGroups) exitWith {};
-        if ((_selectedUnits + _count) > _maxUnits && {(count _selectedRefs) > 0}) then { continue };
-
-        _selectedIds pushBack _groupId;
-        _selectedRefs pushBack [_groupId, _gData];
-        _selectedUnits = _selectedUnits + _count;
-    } forEach _candidates;
-
-    [_selectedIds, _selectedRefs]
-};
-
-private _fnc_scanSupportAvailability = {
-    params ["_groups"];
-
-    private _availability = createHashMapFromArray [
-        ["EAST_ARTY", false],
-        ["EAST_AIR", false],
-        ["WEST_ARTY", false],
-        ["WEST_AIR", false]
-    ];
-
-    {
-        private _gData = _y;
-        private _side = _gData get "side";
-        if !(_side in [east, west]) then { continue };
-        if (_gData get "onMission") then { continue };
-
-        private _sideKey = [_side] call _fnc_sideKey;
-        private _groupType = _gData get "groupType";
-
-        if (_groupType isEqualTo "artillery") then {
-            _availability set [_sideKey + "_ARTY", true];
-        };
-        if (_groupType in ["air", "helicopter", "jet"]) then {
-            _availability set [_sideKey + "_AIR", true];
-        };
-    } forEach _groups;
-
-    _availability
-};
-
-private _fnc_supportBonus = {
-    params ["_side", "_supportAvailability"];
-
-    private _sideKey = [_side] call _fnc_sideKey;
-    private _now = diag_tickTime;
-    private _bonus = 0;
-    private _artyBonus = 0;
-    private _airBonus = 0;
-
-    private _artyKey = _sideKey + "_ARTY";
-    private _airKey = _sideKey + "_AIR";
-
-    if (_supportAvailability get _artyKey) then {
-        if (_now >= (FLO_GTN_VirtualSupportCooldowns get _artyKey)) then {
-            _artyBonus = 1;
-            FLO_GTN_VirtualSupportCooldowns set [_artyKey, _now + 180];
-        };
-    };
-
-    if (_supportAvailability get _airKey) then {
-        if (_now >= (FLO_GTN_VirtualSupportCooldowns get _airKey)) then {
-            _airBonus = 1;
-            FLO_GTN_VirtualSupportCooldowns set [_airKey, _now + 240];
-        };
-    };
-
-    _bonus = _artyBonus + _airBonus;
-
-    createHashMapFromArray [
-        ["total", _bonus],
-        ["artillery", _artyBonus],
-        ["air", _airBonus]
-    ]
-};
-
-private _fnc_applyAttrition = {
-    params ["_groupsMap", "_groupRefs", "_lossPct"];
-
-    {
-        _x params ["_groupId", "_gData"];
-
-        private _count = _gData get "unitCount";
-        if (_count <= 0) then {
-            _gData set ["unitCount", 0];
-            [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");
-            continue;
-        };
-
-        private _loss = ceil (_count * _lossPct * (0.85 + random 0.3));
-        if (_loss < 1) then { _loss = 1 };
-
-        private _newCount = _count - _loss;
-        if (_newCount <= 0) then {
-            _gData set ["unitCount", 0];
-            [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");
-        } else {
-            _gData set ["unitCount", _newCount];
-            _groupsMap set [_groupId, _gData];
-        };
-    } forEach _groupRefs;
-};
-
-private _fnc_markerId = {
-    params ["_objId"];
-    private _raw = toArray (str _objId);
-    private _safe = _raw apply {
-        if (
-            (_x >= 48 && _x <= 57) ||
-            (_x >= 65 && _x <= 90) ||
-            (_x >= 97 && _x <= 122) ||
-            (_x == 95)
-        ) then {
-            _x
-        } else {
-            95
-        }
-    };
-
-    format ["FLO_GTN_COMBAT_%1", toString _safe]
-};
-
-private _fnc_recordCombatEvent = {
-    params [
-        "_objId",
-        "_objName",
-        "_objPos",
-        "_winner",
-        "_margin",
-        "_rollEast",
-        "_rollWest",
-        "_modEast",
-        "_modWest",
-        "_eastBefore",
-        "_eastAfter",
-        "_westBefore",
-        "_westAfter"
-    ];
-
-    private _event = createHashMapFromArray [
-        ["time", diag_tickTime],
-        ["objectiveId", _objId],
-        ["objectiveName", _objName],
-        ["position", _objPos],
-        ["winner", _winner],
-        ["margin", _margin],
-        ["eastRoll", _rollEast],
-        ["westRoll", _rollWest],
-        ["eastMod", _modEast],
-        ["westMod", _modWest],
-        ["eastBefore", _eastBefore],
-        ["eastAfter", _eastAfter],
-        ["westBefore", _westBefore],
-        ["westAfter", _westAfter]
-    ];
-
-    FLO_GTN_CombatEvents pushBack _event;
-    if ((count FLO_GTN_CombatEvents) > 60) then {
-        FLO_GTN_CombatEvents deleteAt 0;
-    };
-
-    FLO_GTN_CombatLastByObjective set [str _objId, _event];
-    _event
-};
-
-private _fnc_updateCombatMarker = {
-    params ["_event", "_fnc_markerId", "_markerTTL"];
-    if (!FLO_GTN_CombatDebugEnabled) exitWith {};
-
-    private _objId = _event get "objectiveId";
-    private _pos = _event get "position";
-    private _winner = _event get "winner";
-    if !(_winner in [east, west]) exitWith {};
-    private _margin = _event get "margin";
-    private _eastAfter = _event get "eastAfter";
-    private _westAfter = _event get "westAfter";
-
-    private _id = [_objId] call _fnc_markerId;
-    createMarker [_id, _pos];
-    _id setMarkerPos _pos;
-    _id setMarkerShape "ICON";
-    _id setMarkerType "hd_destroy";
-    _id setMarkerSize [0.7, 0.7];
-    _id setMarkerAlpha 0.85;
-
-    private _winnerLabel = "EAST";
-    private _color = "ColorWhite";
-    if (_winner isEqualTo east) then {
-        _color = "ColorEAST";
-    };
-    if (_winner isEqualTo west) then {
-        _winnerLabel = "WEST";
-        _color = "ColorWEST";
-    };
-
-    _id setMarkerColor _color;
-    _id setMarkerText format [
-        "GTN %1 m%2 | E%3 W%4",
-        _winnerLabel,
-        _margin,
-        _eastAfter,
-        _westAfter
-    ];
-
-    FLO_GTN_CombatDebugMarkers set [_id, diag_tickTime + _markerTTL];
-
-    private _order = FLO_GTN_CombatDebugMarkerOrder;
-    private _existingIdx = _order find _id;
-    if (_existingIdx >= 0) then {
-        _order deleteAt _existingIdx;
-    };
-    _order pushBack _id;
-
-    FLO_GTN_CombatDebugMarkerOrder = _order;
-};
-
-private _fnc_cleanupCombatMarkers = {
-    if (!FLO_GTN_CombatDebugEnabled) exitWith {
-        {
-            deleteMarker _x;
-        } forEach (keys FLO_GTN_CombatDebugMarkers);
-        FLO_GTN_CombatDebugMarkers = createHashMap;
-        FLO_GTN_CombatDebugMarkerOrder = [];
-    };
-
-    private _now = diag_tickTime;
-    private _expired = [];
-    {
-        private _markerId = _x;
-        private _expiresAt = FLO_GTN_CombatDebugMarkers get _markerId;
-        if (_expiresAt <= _now) then {
-            _expired pushBack _markerId;
-        };
-    } forEach (keys FLO_GTN_CombatDebugMarkers);
-
-    private _order = FLO_GTN_CombatDebugMarkerOrder;
-    {
-        deleteMarker _x;
-        FLO_GTN_CombatDebugMarkers deleteAt _x;
-        private _idx = _order find _x;
-        if (_idx >= 0) then {
-            _order deleteAt _idx;
-        };
-    } forEach _expired;
-
-    FLO_GTN_CombatDebugMarkerOrder = _order;
-};
-
-private _fnc_releaseGroupForRetask = {
-    params ["_groupId", "_gData"];
-
-    _gData set ["isReinforcing", false];
-    _gData set ["onMission", false];
-    _gData set ["currentOrder", ""];
-    _gData set ["state", "idle"];
-    _gData set ["waypoints", []];
-    _gData set ["currentWaypointIndex", 0];
-    _gData set ["pathRequestToken", -1];
-    _gData set ["pathRequestTarget", []];
-    _gData set ["pathRequestTrails", false];
-    _gData set ["pathRequestStartedAt", -1];
-
-    if (isNil "FLO_GTN_ResourceManager") exitWith {};
-    private _side = _gData get "side";
-    private _commander = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_side]];
-    if (isNil "_commander") exitWith {};
-    _commander call ["_releaseGroups", [[_groupId], ""]];
-};
-
-[ _interval, _fnc_sideKey, _fnc_typeWeight, _fnc_sidePower, _fnc_centerFromRefs, _fnc_limitRefsForEngagement, _fnc_supportBonus, _fnc_scanSupportAvailability, _fnc_applyAttrition, _fnc_markerId, _fnc_recordCombatEvent, _fnc_updateCombatMarker, _fnc_cleanupCombatMarkers, _combatMarkerTTL, _fnc_releaseGroupForRetask, _engagementMaxDist, _engagementParticipationDist, _engagementMaxGroupsPerSide, _engagementMaxUnitsPerSide, _engagementMaxLinksPerGroup ] spawn {
-    params [
-        "_interval",
-        "_fnc_sideKey",
-        "_fnc_typeWeight",
-        "_fnc_sidePower",
-        "_fnc_centerFromRefs",
-        "_fnc_limitRefsForEngagement",
-        "_fnc_supportBonus",
-        "_fnc_scanSupportAvailability",
-        "_fnc_applyAttrition",
-        "_fnc_markerId",
-        "_fnc_recordCombatEvent",
-        "_fnc_updateCombatMarker",
-        "_fnc_cleanupCombatMarkers",
-        "_combatMarkerTTL",
-        "_fnc_releaseGroupForRetask",
-        "_engagementMaxDist",
-        "_engagementParticipationDist",
-        "_engagementMaxGroupsPerSide",
-        "_engagementMaxUnitsPerSide",
-        "_engagementMaxLinksPerGroup"
-    ];
-
-    waitUntil {
-        sleep 0.5;
-        !isNil "FLO_virtualGroups"
-    };
-
-    while {FLO_GTN_VirtualCombatRunning} do {
-        private _groups = FLO_virtualGroups get "_groups";
-        if (count _groups == 0) then {
-            sleep _interval;
-            continue;
-        };
-
-        private _eventsChanged = false;
-        private _eastPool = [];
-        private _westPool = [];
-
-        {
-            private _groupId = _x;
-            private _gData = _groups get _groupId;
-            if (_gData get "isActive") then { continue };
-
-            private _side = _gData get "side";
-            if (_side isEqualTo east) then { _eastPool pushBack [_groupId, _gData]; };
-            if (_side isEqualTo west) then { _westPool pushBack [_groupId, _gData]; };
-        } forEach (keys _groups);
-
-        if ((count _eastPool) == 0 || {(count _westPool) == 0}) then {
+        private _liveArea = [_zonePos, _players, _liveAreaRadius] call FLO_fnc_gtnCombatIsLiveArea;
+        if (_liveArea) then {
             {
-                private _groupId = _x;
-                private _gData = _groups get _groupId;
-                if !(_gData getOrDefault ["inCombat", false]) then { continue };
-
-                _gData set ["inCombat", false];
-                if ((_gData get "groupType") == "static_aa") then {
-                    _gData set ["state", "defending"];
-                    _gData set ["currentOrder", "AA_HOLD"];
-                    _gData set ["onMission", false];
-                } else {
-                    [_groupId, _gData] call _fnc_releaseGroupForRetask;
+                _x params ["_groupId", "_gData"];
+                if !(_gData get "isActive") then {
+                    [_groupId, _gData] call FLO_fnc_activateVirtualGroup;
                 };
-            } forEach (keys _groups);
+                [_gData] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
+            } forEach (_eastRefs + _westRefs);
 
-            [] call _fnc_cleanupCombatMarkers;
-            sleep _interval;
+            ["GTN_COMBAT", 3, format [
+                "Live combat handoff near %1m for %2 EAST groups vs %3 WEST groups",
+                round _contactDist,
+                count _eastRefs,
+                count _westRefs
+            ]] call FLO_fnc_log;
             continue;
         };
 
-        private _engagements = [];
-        private _engagedNow = createHashMap;
-        private _supportAvailability = [_groups] call _fnc_scanSupportAvailability;
+        private _eastStats = [_eastRefs] call FLO_fnc_gtnCombatSidePower;
+        private _westStats = [_westRefs] call FLO_fnc_gtnCombatSidePower;
+        private _eastBefore = _eastStats get "units";
+        private _westBefore = _westStats get "units";
+        private _eastPower = _eastStats get "power";
+        private _westPower = _westStats get "power";
 
-        private _eastById = createHashMap;
-        private _westById = createHashMap;
-        private _eastLinks = createHashMap;
-        private _westLinks = createHashMap;
-        private _westCells = createHashMap;
-        private _cellSize = _engagementMaxDist;
+        if (_eastPower <= 0 || {_westPower <= 0}) then { continue };
 
-        {
-            _x params ["_groupId", "_gData"];
-            _eastById set [_groupId, _gData];
-            _eastLinks set [_groupId, []];
-        } forEach _eastPool;
+        private _ratioEW = _eastPower / (_westPower max 1);
+        private _ratioWE = _westPower / (_eastPower max 1);
+        private _ratioModEast = round ((((_ratioEW - 1) * 2) max -2) min 2);
+        private _ratioModWest = round ((((_ratioWE - 1) * 2) max -2) min 2);
+        private _armorInfEast = if ((_eastStats get "armor") > 0 && {(_westStats get "infantry") > 0}) then { 1 } else { 0 };
+        private _armorInfWest = if ((_westStats get "armor") > 0 && {(_eastStats get "infantry") > 0}) then { 1 } else { 0 };
+        private _infOverEast = if ((_westStats get "armor") > 0 && {(_eastStats get "infantry") >= ((_westStats get "armor") * 4)}) then { 1 } else { 0 };
+        private _infOverWest = if ((_eastStats get "armor") > 0 && {(_westStats get "infantry") >= ((_eastStats get "armor") * 4)}) then { 1 } else { 0 };
+        private _supportEast = [east, _supportAvailability] call FLO_fnc_gtnCombatSupportBonus;
+        private _supportWest = [west, _supportAvailability] call FLO_fnc_gtnCombatSupportBonus;
+        private _modEast = _ratioModEast + _armorInfEast + _infOverEast + (_supportEast get "total");
+        private _modWest = _ratioModWest + _armorInfWest + _infOverWest + (_supportWest get "total");
 
-        {
-            _x params ["_groupId", "_gData"];
-            _westById set [_groupId, _gData];
-            _westLinks set [_groupId, []];
+        if (_modEast > 4) then { _modEast = 4 };
+        if (_modEast < -4) then { _modEast = -4 };
+        if (_modWest > 4) then { _modWest = 4 };
+        if (_modWest < -4) then { _modWest = -4 };
 
-            private _westPos = _gData get "position";
-            private _cx = floor ((_westPos select 0) / _cellSize);
-            private _cy = floor ((_westPos select 1) / _cellSize);
-            private _cellKey = format ["%1_%2", _cx, _cy];
-            private _bucket = _westCells getOrDefault [_cellKey, []];
-            _bucket pushBack [_groupId, _gData];
-            _westCells set [_cellKey, _bucket];
-        } forEach _westPool;
+        private _rollEast = (1 + floor random 6) + (1 + floor random 6) + _modEast;
+        private _rollWest = (1 + floor random 6) + (1 + floor random 6) + _modWest;
+        private _winner = sideUnknown;
+        private _margin = 0;
+        private _eastAfter = _eastBefore;
+        private _westAfter = _westBefore;
 
-        {
-            _x params ["_eastId", "_eastData"];
-            private _eastPos = _eastData get "position";
-            private _eastNeighborWest = _eastLinks get _eastId;
-            private _cx = floor ((_eastPos select 0) / _cellSize);
-            private _cy = floor ((_eastPos select 1) / _cellSize);
-            private _nearbyWest = [];
+        if (_rollEast != _rollWest) then {
+            _winner = if (_rollEast > _rollWest) then { east } else { west };
+            _margin = abs (_rollEast - _rollWest);
 
-            for "_dx" from -1 to 1 do {
-                for "_dy" from -1 to 1 do {
-                    private _cellKey = format ["%1_%2", _cx + _dx, _cy + _dy];
-                    if !(_cellKey in _westCells) then { continue };
+            private _loserLossPct = ((0.06 * _margin) max 0.05) min 0.35;
+            private _winnerLossPct = ((0.02 * _margin) max 0.01) min 0.12;
 
-                    {
-                        _x params ["_westId", "_westData"];
-                        private _westPos = _westData get "position";
-                        private _dist = _eastPos distance2D _westPos;
-                        if (_dist > _engagementMaxDist) then { continue };
-
-                        _nearbyWest pushBack [_dist, _westId];
-                    } forEach (_westCells get _cellKey);
-                };
-            };
-
-            if ((count _nearbyWest) > 0) then {
-                _nearbyWest sort true;
-                private _linkCount = (count _nearbyWest) min _engagementMaxLinksPerGroup;
-                for "_idx" from 0 to (_linkCount - 1) do {
-                    private _entry = _nearbyWest select _idx;
-                    _entry params ["_dist", "_westId"];
-                    _eastNeighborWest pushBack [_westId, _dist];
-
-                    private _westNeighborEast = _westLinks get _westId;
-                    _westNeighborEast pushBack [_eastId, _dist];
-                };
-            };
-        } forEach _eastPool;
-
-        private _visitedEast = createHashMap;
-        private _visitedWest = createHashMap;
-
-        {
-            _x params ["_seedEastId"];
-            if (_visitedEast getOrDefault [_seedEastId, false]) then { continue };
-            if ((count (_eastLinks get _seedEastId)) == 0) then { continue };
-
-            private _queueEast = [_seedEastId];
-            private _queueEastIdx = 0;
-            private _queueWest = [];
-            private _queueWestIdx = 0;
-            private _clusterEastIds = [];
-            private _clusterWestIds = [];
-            private _clusterMinDist = 999999;
-            private _clusterAnchorEastId = "";
-            private _clusterAnchorWestId = "";
-
-            while {_queueEastIdx < (count _queueEast) || {_queueWestIdx < (count _queueWest)}} do {
-                while {_queueEastIdx < (count _queueEast)} do {
-                    private _eastId = _queueEast select _queueEastIdx;
-                    _queueEastIdx = _queueEastIdx + 1;
-                    if (_visitedEast getOrDefault [_eastId, false]) then { continue };
-
-                    _visitedEast set [_eastId, true];
-                    _clusterEastIds pushBack _eastId;
-
-                    {
-                        _x params ["_westId", "_dist"];
-                        if (_dist < _clusterMinDist) then {
-                            _clusterMinDist = _dist;
-                            _clusterAnchorEastId = _eastId;
-                            _clusterAnchorWestId = _westId;
-                        };
-                        if !(_visitedWest getOrDefault [_westId, false]) then {
-                            _queueWest pushBack _westId;
-                        };
-                    } forEach (_eastLinks get _eastId);
-                };
-
-                while {_queueWestIdx < (count _queueWest)} do {
-                    private _westId = _queueWest select _queueWestIdx;
-                    _queueWestIdx = _queueWestIdx + 1;
-                    if (_visitedWest getOrDefault [_westId, false]) then { continue };
-
-                    _visitedWest set [_westId, true];
-                    _clusterWestIds pushBack _westId;
-
-                    {
-                        _x params ["_eastId", "_dist"];
-                        if (_dist < _clusterMinDist) then {
-                            _clusterMinDist = _dist;
-                            _clusterAnchorEastId = _eastId;
-                            _clusterAnchorWestId = _westId;
-                        };
-                        if !(_visitedEast getOrDefault [_eastId, false]) then {
-                            _queueEast pushBack _eastId;
-                        };
-                    } forEach (_westLinks get _westId);
-                };
-            };
-
-            if ((count _clusterEastIds) == 0 || {(count _clusterWestIds) == 0}) then { continue };
-            if (_clusterAnchorEastId == "" || {_clusterAnchorWestId == ""}) then { continue };
-            if (_clusterMinDist == 999999) then { _clusterMinDist = _engagementMaxDist };
-
-            private _anchorEastPos = (_eastById get _clusterAnchorEastId) get "position";
-            private _anchorWestPos = (_westById get _clusterAnchorWestId) get "position";
-            private _engagementAnchorPos = [
-                ((_anchorEastPos select 0) + (_anchorWestPos select 0)) * 0.5,
-                ((_anchorEastPos select 1) + (_anchorWestPos select 1)) * 0.5,
-                0
-            ];
-
-            private _clusterEastRefs = _clusterEastIds apply {
-                [_x, _eastById get _x]
-            };
-            private _clusterWestRefs = _clusterWestIds apply {
-                [_x, _westById get _x]
-            };
-
-            private _eastSelection = [_clusterEastRefs, _engagementAnchorPos, _engagementParticipationDist, _engagementMaxGroupsPerSide, _engagementMaxUnitsPerSide] call _fnc_limitRefsForEngagement;
-            private _westSelection = [_clusterWestRefs, _engagementAnchorPos, _engagementParticipationDist, _engagementMaxGroupsPerSide, _engagementMaxUnitsPerSide] call _fnc_limitRefsForEngagement;
-
-            _eastSelection params ["_eastIds", "_eastRefs"];
-            _westSelection params ["_westIds", "_westRefs"];
-
-            if ((count _eastIds) == 0 || {(count _westIds) == 0}) then { continue };
-
-            private _eastCenter = [_eastRefs] call _fnc_centerFromRefs;
-            private _westCenter = [_westRefs] call _fnc_centerFromRefs;
-
-            _engagements pushBack [
-                _eastIds,
-                _eastRefs,
-                _eastCenter,
-                _westIds,
-                _westRefs,
-                _westCenter,
-                _clusterMinDist
-            ];
-        } forEach _eastPool;
-
-        {
-            _x params ["_eastIds", "_eastRefs", "_eastPos", "_westIds", "_westRefs", "_westPos", "_engageDist"];
-
-            { _engagedNow set [_x, true]; } forEach _eastIds;
-            { _engagedNow set [_x, true]; } forEach _westIds;
-
-            private _eastStats = [_eastRefs] call _fnc_sidePower;
-            private _westStats = [_westRefs] call _fnc_sidePower;
-
-            private _eastBefore = _eastStats get "units";
-            private _westBefore = _westStats get "units";
-            private _eastPower = _eastStats get "power";
-            private _westPower = _westStats get "power";
-            if (_eastPower <= 0 || {_westPower <= 0}) then { continue };
-
-            private _ratioEW = _eastPower / (_westPower max 1);
-            private _ratioWE = _westPower / (_eastPower max 1);
-            private _ratioModEast = round (((( _ratioEW - 1) * 2) max -2) min 2);
-            private _ratioModWest = round (((( _ratioWE - 1) * 2) max -2) min 2);
-
-            private _armorInfEast = if ((_eastStats get "armor") > 0 && {(_westStats get "infantry") > 0}) then { 1 } else { 0 };
-            private _armorInfWest = if ((_westStats get "armor") > 0 && {(_eastStats get "infantry") > 0}) then { 1 } else { 0 };
-
-            private _infOverEast = if ((_westStats get "armor") > 0 && {(_eastStats get "infantry") >= ((_westStats get "armor") * 4)}) then { 1 } else { 0 };
-            private _infOverWest = if ((_eastStats get "armor") > 0 && {(_westStats get "infantry") >= ((_eastStats get "armor") * 4)}) then { 1 } else { 0 };
-
-            private _supportEast = [east, _supportAvailability] call _fnc_supportBonus;
-            private _supportWest = [west, _supportAvailability] call _fnc_supportBonus;
-
-            private _modEast = _ratioModEast + _armorInfEast + _infOverEast + (_supportEast get "total");
-            private _modWest = _ratioModWest + _armorInfWest + _infOverWest + (_supportWest get "total");
-
-            if (_modEast > 4) then { _modEast = 4 };
-            if (_modEast < -4) then { _modEast = -4 };
-            if (_modWest > 4) then { _modWest = 4 };
-            if (_modWest < -4) then { _modWest = -4 };
-
-            private _rollEast = (1 + floor random 6) + (1 + floor random 6) + _modEast;
-            private _rollWest = (1 + floor random 6) + (1 + floor random 6) + _modWest;
-
-            private _winner = sideUnknown;
-            private _margin = 0;
-            private _eastAfter = _eastBefore;
-            private _westAfter = _westBefore;
-
-            if (_rollEast != _rollWest) then {
-                _winner = if (_rollEast > _rollWest) then { east } else { west };
-                _margin = abs (_rollEast - _rollWest);
-
-                private _lossPct = ((0.06 * _margin) max 0.05) min 0.35;
-                private _winnerLossPct = ((0.02 * _margin) max 0.01) min 0.12;
-
-                if (_winner isEqualTo east) then {
-                    [_groups, _westRefs, _lossPct] call _fnc_applyAttrition;
-                    [_groups, _eastRefs, _winnerLossPct] call _fnc_applyAttrition;
-                } else {
-                    [_groups, _eastRefs, _lossPct] call _fnc_applyAttrition;
-                    [_groups, _westRefs, _winnerLossPct] call _fnc_applyAttrition;
-                };
-
-                private _eastAfterStats = [_eastRefs] call _fnc_sidePower;
-                private _westAfterStats = [_westRefs] call _fnc_sidePower;
-                _eastAfter = _eastAfterStats get "units";
-                _westAfter = _westAfterStats get "units";
-            };
-
-            private _engagementId = format [
-                "%1E_%2W_%3_vs_%4",
-                count _eastIds,
-                count _westIds,
-                _eastIds select 0,
-                _westIds select 0
-            ];
-            private _engagementName = format ["%1 EAST vs %2 WEST", count _eastIds, count _westIds];
-            private _eventPos = [
-                ((_eastPos select 0) + (_westPos select 0)) * 0.5,
-                ((_eastPos select 1) + (_westPos select 1)) * 0.5,
-                0
-            ];
-
-            private _event = [
-                _engagementId,
-                _engagementName,
-                _eventPos,
-                _winner,
-                _margin,
-                _rollEast,
-                _rollWest,
-                _modEast,
-                _modWest,
-                _eastBefore,
-                _eastAfter,
-                _westBefore,
-                _westAfter
-            ] call _fnc_recordCombatEvent;
-            _eventsChanged = true;
-
-            [_event, _fnc_markerId, _combatMarkerTTL] call _fnc_updateCombatMarker;
-
-            ["GTN_COMBAT", 3, format["%1 resolved at %2m: EAST %3 (mod %4) WEST %5 (mod %6) winner=%7 margin=%8 E %9->%10 W %11->%12",
-                _engagementId,
-                round _engageDist,
-                _rollEast,
-                _modEast,
-                _rollWest,
-                _modWest,
-                _winner,
-                _margin,
-                _eastBefore,
-                _eastAfter,
-                _westBefore,
-                _westAfter
-            ]] call FLO_fnc_log;
-        } forEach _engagements;
-
-        {
-            private _groupId = _x;
-            private _gData = _groups get _groupId;
-            private _isEngaged = _engagedNow getOrDefault [_groupId, false];
-            private _wasInCombat = _gData getOrDefault ["inCombat", false];
-
-            if (_isEngaged) then {
-                if (!_wasInCombat) then {
-                    _gData set ["waypoints", []];
-                    _gData set ["currentWaypointIndex", 0];
-                    _gData set ["pathRequestToken", -1];
-                    _gData set ["pathRequestTarget", []];
-                    _gData set ["pathRequestTrails", false];
-                    _gData set ["pathRequestStartedAt", -1];
-                };
-
-                _gData set ["inCombat", true];
-                _gData set ["state", "inCombat"];
-
-                if ((_gData get "groupType") != "static_aa") then {
-                    _gData set ["isReinforcing", false];
-                    _gData set ["currentOrder", "COMBAT"];
-                    _gData set ["onMission", true];
-                } else {
-                    _gData set ["currentOrder", "AA_HOLD"];
-                    _gData set ["onMission", false];
-                };
+            if (_winner isEqualTo east) then {
+                [_groups, _westRefs, _loserLossPct] call FLO_fnc_gtnCombatApplyAttrition;
+                [_groups, _eastRefs, _winnerLossPct] call FLO_fnc_gtnCombatApplyAttrition;
             } else {
-                if (_wasInCombat) then {
-                    _gData set ["inCombat", false];
-
-                    if ((_gData get "groupType") == "static_aa") then {
-                        _gData set ["state", "defending"];
-                        _gData set ["currentOrder", "AA_HOLD"];
-                        _gData set ["onMission", false];
-                    } else {
-                        [_groupId, _gData] call _fnc_releaseGroupForRetask;
-                        ["GTN_COMBAT", 3, format["Group %1 disengaged and released for retasking", _groupId]] call FLO_fnc_log;
-                    };
-                };
+                [_groups, _eastRefs, _loserLossPct] call FLO_fnc_gtnCombatApplyAttrition;
+                [_groups, _westRefs, _winnerLossPct] call FLO_fnc_gtnCombatApplyAttrition;
             };
-        } forEach (keys _groups);
 
-        [] call _fnc_cleanupCombatMarkers;
-        if (_eventsChanged) then {
-            publicVariable "FLO_GTN_CombatEvents";
-            publicVariable "FLO_GTN_CombatLastByObjective";
+            private _eastAfterStats = [_eastRefs] call FLO_fnc_gtnCombatSidePower;
+            private _westAfterStats = [_westRefs] call FLO_fnc_gtnCombatSidePower;
+            _eastAfter = _eastAfterStats get "units";
+            _westAfter = _westAfterStats get "units";
         };
 
-        sleep _interval;
-    };
-};
+        private _descriptor = [_zonePos, _eastRefs, _westRefs] call FLO_fnc_gtnCombatResolveZoneDescriptor;
+        _descriptor params ["_zoneId", "_zoneName"];
 
-["GTN_COMBAT", 2, format["Virtual combat resolver started (%1s interval)", _interval]] call FLO_fnc_log;
+        private _event = [
+            _zoneId,
+            _zoneName,
+            _zonePos,
+            _winner,
+            _margin,
+            _rollEast,
+            _rollWest,
+            _modEast,
+            _modWest,
+            _eastBefore,
+            _eastAfter,
+            _westBefore,
+            _westAfter,
+            count _eastRefs,
+            count _westRefs
+        ] call FLO_fnc_gtnCombatRecordEvent;
+        _eventsChanged = true;
+
+        [_event, _combatMarkerTTL] call FLO_fnc_gtnCombatUpdateMarker;
+
+        ["GTN_COMBAT", 3, format [
+            "%1 resolved at %2m: EAST %3 (mod %4) WEST %5 (mod %6) winner=%7 margin=%8 E %9->%10 W %11->%12",
+            _zoneId,
+            round _contactDist,
+            _rollEast,
+            _modEast,
+            _rollWest,
+            _modWest,
+            _winner,
+            _margin,
+            _eastBefore,
+            _eastAfter,
+            _westBefore,
+            _westAfter
+        ]] call FLO_fnc_log;
+    } forEach _zones;
+
+    {
+        private _groupId = _x;
+        private _gData = _groups get _groupId;
+
+        if !(_gData get "inCombat") then { continue };
+        if (_engagedNow getOrDefault [_groupId, false]) then { continue };
+
+        [_groupId, _gData, _resumeStates] call FLO_fnc_gtnCombatExitState;
+        ["GTN_COMBAT", 3, format ["Group %1 disengaged and resumed %2", _groupId, _gData get "state"]] call FLO_fnc_log;
+    } forEach (keys _groups);
+
+    call FLO_fnc_gtnCombatCleanupMarkers;
+
+    if (_eventsChanged) then {
+        publicVariable "FLO_GTN_CombatEvents";
+        publicVariable "FLO_GTN_CombatLastByObjective";
+    };
+
+    private _dt = diag_tickTime - _cycleStart;
+    if (_dt > _perfLogThreshold) then {
+        diag_log format [
+            "[FLO][PERF] GTN virtual combat processed %1 zones across %2 combat groups (%3 total) in %4 ms",
+            count _zones,
+            _combatGroupCount,
+            _groupCount,
+            _dt * 1000
+        ];
+    };
+}, _interval, [_combatMarkerTTL, _engagementMaxDist, _perfLogThreshold]] call CBA_fnc_addPerFrameHandler;
+
+FLO_GTN_VirtualCombatPFH = _pfhId;
+
+["GTN_COMBAT", 2, format ["Virtual combat resolver started (%1s interval, PFH)", _interval]] call FLO_fnc_log;
 
 true

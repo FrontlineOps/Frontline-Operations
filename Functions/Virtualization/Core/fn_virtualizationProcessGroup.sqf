@@ -29,9 +29,10 @@ private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
 private _realGroup = _groupData get "realGroup";
 private _onMission = _groupData get "onMission";
-private _inCombat = _groupData getOrDefault ["inCombat", false];
+private _inCombat = _groupData get "inCombat";
 private _forceVirtual = _groupData get "forceVirtual";
 private _attachedTo = _groupData get "attachedTo";
+private _isReinforcing = _groupData getOrDefault ["isReinforcing", false];
 
 // ============================================================================
 // DISTANCE CHECK & TIERED UPDATE
@@ -78,7 +79,7 @@ if (_attachedTo != "") exitWith {
     private _transportData = _groups get _attachedTo;
     // Sync position with transport
     private _tPos = _transportData get "position";
-    _groupData set ["position", _tPos];
+    [FLO_virtualGroups, _groupId, _tPos] call (FLO_virtualGroups get "_updateGroupPosition");
 };
 
 // ============================================================================
@@ -108,7 +109,7 @@ if (!_isActive && !_inCombat) then {
             private _dir = _position getDir _wpPos;
             private _newPos = _position getPos [_moveDistance, _dir];
 
-            _groupData set ["position", _newPos];
+            [FLO_virtualGroups, _groupId, _newPos] call (FLO_virtualGroups get "_updateGroupPosition");
             _groupData set ["lastMoveTime", _now];
             _groupData set ["state", "moving"];
         } else {
@@ -205,8 +206,8 @@ if (!_forceVirtual && _nearestDist <= _activationDist && !_isActive) then {
     if (_nearestDist > _activationDist && _isActive) then {
         // DEACTIVATE - player moved away
         private _alwaysActive = _groupData getOrDefault ["alwaysActive", false];
-        if (_onMission || _alwaysActive) then {
-            // Skip deactivation for groups on mission OR always-active (Static AA)
+        if ((_onMission && !_isReinforcing) || _alwaysActive) then {
+            // Skip deactivation for non-reinforcement mission groups or always-active groups.
         } else {
             ["VIRTUALIZATION", 3, format["Deactivating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
             [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
@@ -222,7 +223,15 @@ if (_isActive && !isNull _realGroup) then {
     if (!isNull _leader && alive _leader) then {
         private _realPos = getPosATL _leader;
         if ([_realPos] call FLO_VirtUpdate_isValidPos) then {
-            _groupData set ["position", _realPos];
+            [FLO_virtualGroups, _groupId, _realPos] call (FLO_virtualGroups get "_updateGroupPosition");
+        };
+
+        if (_isReinforcing) then {
+            private _reinforcementTargetPos = _groupData getOrDefault ["reinforcementTargetPos", []];
+            if (count _reinforcementTargetPos >= 2 && {_realPos distance2D _reinforcementTargetPos <= 120}) then {
+                [_groupId, _groupData] call FLO_fnc_virtualizationFinalizeReinforcement;
+                _isReinforcing = false;
+            };
         };
 
         // Check if active group has no waypoints and needs patrol

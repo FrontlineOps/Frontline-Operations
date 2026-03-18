@@ -8,7 +8,6 @@
  *
  * Arguments:
  * 0: Position <ARRAY> - Original position for spawning
- *
  * Return Value:
  * Adjusted position <ARRAY>
  *

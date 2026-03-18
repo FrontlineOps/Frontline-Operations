@@ -1152,10 +1152,10 @@ private _gtnCommander = createHashMapObject [[
 
     // Request artillery fire using the artillery asset manager
     ["_requestArtillery", {
-        params ["_pos", "_missionType", "_rounds"];
+        params ["_pos", "_missionType", "_rounds", ["_objectiveId", ""]];
 
         private _manager = call FLO_fnc_gtnArtilleryManager;
-        private _success = _manager call ["_requestFireMission", [_pos, _rounds]];
+        private _success = _manager call ["_requestFireMission", [_pos, _rounds, -1, _self get "_ownSide", _objectiveId]];
 
         if (_success) then {
             ["GTN", 3, format["Artillery %1 mission fired at %2 (%3 rounds)", _missionType, _pos, _rounds]] call FLO_fnc_log;

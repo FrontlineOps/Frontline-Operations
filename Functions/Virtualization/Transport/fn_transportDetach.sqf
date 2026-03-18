@@ -55,7 +55,7 @@ _infData set ["attachedType", ""];
 private _pos = _infData get "position";
 if (_offsetDir < 0) then { _offsetDir = random 360; };
 private _newPos = _pos getPos [30, _offsetDir];
-_infData set ["position", _newPos];
+[FLO_virtualGroups, _infantryGroupId, _newPos] call (FLO_virtualGroups get "_updateGroupPosition");
 
 ["TRANSPORT", 3, format["Detached %1 from transport %2", _infantryGroupId, _transportId]] call FLO_fnc_log;
 

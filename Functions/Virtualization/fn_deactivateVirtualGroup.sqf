@@ -33,7 +33,7 @@ private _leader = leader _realGroup;
 if (!isNull _leader && {alive _leader}) then {
     private _currentPos = getPos _leader;
     if ((_currentPos select 0) > 100 || (_currentPos select 1) > 100) then {
-        _groupData set ["position", _currentPos];
+        [FLO_virtualGroups, _groupId, _currentPos] call (FLO_virtualGroups get "_updateGroupPosition");
         ["VIRTUALIZATION", 4, format["Saved position %1 for group %2", _currentPos, _groupId]] call FLO_fnc_log;
     } else {
         ["VIRTUALIZATION", 2, format["WARNING: Invalid position %1 for group %2 - keeping original", _currentPos, _groupId]] call FLO_fnc_log;

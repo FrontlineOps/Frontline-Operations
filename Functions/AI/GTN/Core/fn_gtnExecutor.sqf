@@ -75,6 +75,33 @@ private _executor = createHashMapObject [[
     ["_activeTrackId", "GLOBAL"],
     ["_completedTaskDataByTrack", createHashMap],
     ["_completedTaskData", createHashMap],
+    ["_objectiveReconLocks", createHashMap],
+    ["_objectiveReconLockSeconds", 300],
+
+    ["_isObjectiveReconLocked", {
+        params ["_objId"];
+
+        private _locks = _self get "_objectiveReconLocks";
+        private _lockedUntil = _locks getOrDefault [_objId, -1];
+        if (_lockedUntil < 0) exitWith { false };
+        if (_lockedUntil <= diag_tickTime) exitWith {
+            _locks deleteAt _objId;
+            false
+        };
+
+        true
+    }],
+
+    ["_lockObjectiveRecon", {
+        params ["_objId", ["_duration", -1]];
+
+        if (_duration < 0) then {
+            _duration = _self get "_objectiveReconLockSeconds";
+        };
+
+        private _locks = _self get "_objectiveReconLocks";
+        _locks set [_objId, diag_tickTime + _duration];
+    }],
 
     ["_resolveTrackId", {
         params [["_taskNode", nil]];
@@ -1092,7 +1119,7 @@ private _executor = createHashMapObject [[
             };
 
             // Request fire mission via GTN Commander
-            private _result = _cmdr call ["_requestArtillery", [_objPos, _missionType, _rounds]];
+            private _result = _cmdr call ["_requestArtillery", [_objPos, _missionType, _rounds, _objId]];
 
             if (_result) then {
                 ["GTN", 3, format["Artillery mission fired at %1", _objId]] call FLO_fnc_log;
@@ -1441,7 +1468,7 @@ private _executor = createHashMapObject [[
             };
 
             // Call for defensive artillery
-            private _result = _cmdr call ["_requestArtillery", [_objPos, "DEFENSIVE", 6]];
+            private _result = _cmdr call ["_requestArtillery", [_objPos, "DEFENSIVE", 6, _objId]];
             
             if (!_result) then {
                 ["GTN", 3, format["Defensive fires skipped - artillery unavailable for %1", _objId]] call FLO_fnc_log;
@@ -1517,9 +1544,22 @@ private _executor = createHashMapObject [[
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
             private _gtnCmdr = _self get "_gtnCommander";
+            private _ws = _gtnCmdr get "_worldState";
 
             if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
                 ["GTN", 2, format["Recon patrol aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            if (_ws call ["_isIntelFresh", [_objId, 900]]) exitWith {
+                ["GTN", 3, format["Recon patrol skipped - fresh intel already available for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            if (_self call ["_isObjectiveReconLocked", [_objId]]) exitWith {
+                ["GTN", 3, format["Recon patrol skipped - recon already in progress for %1", _objId]] call FLO_fnc_log;
                 _ctx set ["status", "SUCCESS"];
                 true
             };
@@ -1552,7 +1592,13 @@ private _executor = createHashMapObject [[
             // Use random direction and safer distance (800m+)
             private _reconPos = _objPos getPos [500, random 90];
 
-            _cmdr call ["_orderGroupMove", [_reconGroup, _reconPos, "STEALTH"]];
+            if !(_cmdr call ["_orderGroupMove", [_reconGroup, _reconPos, "STEALTH"]]) exitWith {
+                ["GTN", 2, format["Recon patrol skipped - move order failed for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            _self call ["_lockObjectiveRecon", [_objId]];
 
             private _taskNode = _ctx get "taskNode";
             private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
@@ -1591,7 +1637,7 @@ private _executor = createHashMapObject [[
                         };
 
                         if (_tSide isEqualTo _enemySide) then {
-                            _realGroup reveal [_x, 4];
+                            _realGroup reveal [_x, 1];
                         };
                     } forEach _targets;
 
@@ -1600,7 +1646,7 @@ private _executor = createHashMapObject [[
                         if ((_x distance2D _objPos) > 1000) then { continue };
                         if (_x in _targets) then { continue };
                         if ((side group _x) isEqualTo _enemySide) then {
-                            _realGroup reveal [_x, 4];
+                            _realGroup reveal [_x, 1];
                         };
                     } forEach allPlayers;
 
@@ -1661,9 +1707,22 @@ private _executor = createHashMapObject [[
             private _objId = _params param [0, ""];
             private _executor = _ctx get "executor";
             private _gtnCmdr = _self get "_gtnCommander";
+            private _ws = _gtnCmdr get "_worldState";
 
             if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
                 ["GTN", 2, format["Air recon aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            if (_ws call ["_isIntelFresh", [_objId, 900]]) exitWith {
+                ["GTN", 3, format["Air recon skipped - fresh intel already available for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            if (_self call ["_isObjectiveReconLocked", [_objId]]) exitWith {
+                ["GTN", 3, format["Air recon skipped - recon already in progress for %1", _objId]] call FLO_fnc_log;
                 _ctx set ["status", "SUCCESS"];
                 true
             };
@@ -1723,6 +1782,8 @@ private _executor = createHashMapObject [[
             private _assetMode = _asset select 2;
 
             if (_assetMode isEqualTo "VIRTUAL") exitWith {
+                _self call ["_lockObjectiveRecon", [_objId]];
+
                 private _enemySide = _gtnCmdr get "_enemySide";
                 private _groups = FLO_virtualGroups get "_groups";
                 private _scanRadius = 1500;
@@ -1818,6 +1879,8 @@ private _executor = createHashMapObject [[
             };
             private _grp = _gData get "realGroup";
 
+            _self call ["_lockObjectiveRecon", [_objId]];
+
             ["GTN", 3, format["Air recon dispatched: %1 flying to %2", typeOf _aircraft, _objId]] call FLO_fnc_log;
 
             // Mark as dispatched immediately
@@ -1894,12 +1957,9 @@ private _executor = createHashMapObject [[
                 private _scanDuration = 15;
                 private _scanEnd = diag_tickTime + _scanDuration;
                 
-                // Full Reveal to simulate advanced sensors (Radar/Thermal)
-                // This overcomes AI blindness by forcing knowledge of nearby enemy units
-                // We set it to 4 for incoming CAS Aircraft to allow them to see targets. This is a very specific behavior.
-                // Aircraft do not attack targets that are not revealed to them at the knowsAbout Level of 1.5.
-                // This is a problem because 4 is very rare for most AI. Most AI will never have a level of knowsAbout 4.
-                // This is why we use a nearEntities call to reveal targets to the aircraft.
+                // Recon aircraft still need a minimal reveal so nearTargets can pick up
+                // nearby enemies during the scan, but we keep it at knowsAbout 1 to avoid
+                // forcing groups to be on combatmode
                 private _nearEntities = _objPos nearEntities [["Man", "AllVehicles"], 1500];
                 private _enemyEntities = _nearEntities select { side _x == _enemySide || side group _x == _enemySide };
 
@@ -1918,7 +1978,7 @@ private _executor = createHashMapObject [[
                 {
                     private _enemy = _x;
                     {
-                        _x reveal [_enemy, 4];
+                        _x reveal [_enemy, 1];
                     } forEach _crew;
                 } forEach _enemyEntities;
 
@@ -2042,7 +2102,7 @@ private _executor = createHashMapObject [[
             if (_targetPos isEqualTo [0,0,0]) exitWith { false };
             
             // 4 rounds, standard accuracy
-            private _result = FLO_GTNArtilleryManager call ["_requestFireMission", [_targetPos, 4, 100]];
+            private _result = FLO_GTNArtilleryManager call ["_requestFireMission", [_targetPos, 4, 100, _self get "_ownSide", ""]];
             
             if (_result) then {
                 ["GTN", 3, format["Artillery interdiction fired at %1", _targetPos]] call FLO_fnc_log;

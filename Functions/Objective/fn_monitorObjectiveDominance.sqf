@@ -28,12 +28,11 @@ private _captureTime = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
 
 // 0.5s is reasonable for capture logic; clients poll faster for UI
 private _updateInterval = 0.5;
-
-// Track time for progress calculation
-private _lastTickTime = diag_tickTime;
+private _targetInactiveRefresh = 2;
 
 // Track which objective each player is in (for CBA event firing)
 FLO_PlayerObjectiveStates = createHashMap;
+private _objectiveLastUpdateTimes = createHashMap;
 
 // Initialize inactive update index
 private _inactiveMonitorIndex = 0;
@@ -41,8 +40,6 @@ private _objKeys = keys FLO_Objectives;
 
 while {true} do {
     private _currentTime = diag_tickTime;
-    private _deltaTime = _currentTime - _lastTickTime;
-    _lastTickTime = _currentTime;
 
     if (isNil "FLO_Objectives") then {
         waitUntil { !isNil "FLO_Objectives" };
@@ -79,12 +76,19 @@ while {true} do {
     } forEach _allPlayers;
 
     // Build objective update set for this tick:
-    // all active objectives + a small round-robin slice of inactive objectives.
+    // all active objectives + a bounded round-robin slice of inactive objectives.
     private _objectivesToUpdate = +_activeObjectives;
+    private _inactiveObjectiveCount = ((count _objKeys) - (count _activeObjectives)) max 0;
+    private _inactiveBatchSize = 0;
+    if (_inactiveObjectiveCount > 0) then {
+        _inactiveBatchSize = ceil ((_inactiveObjectiveCount * _updateInterval) / _targetInactiveRefresh);
+        if (_inactiveBatchSize < 2) then { _inactiveBatchSize = 2; };
+        if (_inactiveBatchSize > _inactiveObjectiveCount) then { _inactiveBatchSize = _inactiveObjectiveCount; };
+    };
     private _processCount = 0;
     private _scanAttempts = 0;
     private _maxAttempts = count _objKeys;
-    while {_processCount < 2 && _scanAttempts < _maxAttempts} do {
+    while {_processCount < _inactiveBatchSize && _scanAttempts < _maxAttempts} do {
         if (_inactiveMonitorIndex >= count _objKeys) then { _inactiveMonitorIndex = 0 };
         private _currKey = _objKeys select _inactiveMonitorIndex;
 
@@ -108,6 +112,9 @@ while {true} do {
         {
             private _gData = _x;
             if (_gData get "isActive") then { continue };
+            if ((_gData get "unitCount") <= 0) then { continue };
+            if ((_gData get "attachedTo") != "") then { continue };
+            if !([_gData get "groupType"] call FLO_fnc_gtnCombatIsDirectCombatGroup) then { continue };
 
             private _gPos = _gData get "position";
             private _bestObjId = "";
@@ -142,7 +149,7 @@ while {true} do {
 
     // === UPDATE LOGIC FUNCTION ===
     private _fnc_updateObjective = {
-        params ["_id"];
+        params ["_id", "_currentTime"];
         private _objRecord = FLO_Objectives get _id;
 
         if (isNil {_objRecord get "owner"}) then { _objRecord set ["owner", east]; };
@@ -157,6 +164,13 @@ while {true} do {
         private _bluforCount = 0;
         private _opforCount = 0;
         private _useLiveCounting = _id in _liveObjectives;
+        private _lastObjectiveUpdate = _objectiveLastUpdateTimes getOrDefault [_id, _currentTime];
+        private _objectiveDeltaTime = _currentTime - _lastObjectiveUpdate;
+        _objectiveLastUpdateTimes set [_id, _currentTime];
+
+        if (_objectiveDeltaTime < 0) then {
+            _objectiveDeltaTime = 0;
+        };
 
         if (_useLiveCounting) then {
             // In live objectives (players inside), count from allUnits to avoid
@@ -203,14 +217,14 @@ while {true} do {
         private _minUnitsToCapture = if (_id in _liveObjectives) then { 1 } else { 3 };
         
         if (_bluforCount > _opforCount && {_bluforCount >= _minUnitsToCapture}) then {
-            _progress = (_progress + (_deltaTime * _dynamicRate)) min _captureTime;
+            _progress = (_progress + (_objectiveDeltaTime * _dynamicRate)) min _captureTime;
         } else {
             if (_opforCount > _bluforCount && {_opforCount >= _minUnitsToCapture}) then {
-                _progress = (_progress - (_deltaTime * _dynamicRate)) max (-_captureTime);
+                _progress = (_progress - (_objectiveDeltaTime * _dynamicRate)) max (-_captureTime);
             } else {
                 // Decay (slower than capture)
-                if (_progress > 0) then { _progress = (_progress - (_deltaTime * 0.5)) max 0 };
-                if (_progress < 0) then { _progress = (_progress + (_deltaTime * 0.5)) min 0 };
+                if (_progress > 0) then { _progress = (_progress - (_objectiveDeltaTime * 0.5)) max 0 };
+                if (_progress < 0) then { _progress = (_progress + (_objectiveDeltaTime * 0.5)) min 0 };
             };
         };
         
@@ -246,7 +260,7 @@ while {true} do {
     };
 
     // === EXECUTE UPDATES ===
-    { [_x] call _fnc_updateObjective; } forEach _objectivesToUpdate;
+    { [_x, _currentTime] call _fnc_updateObjective; } forEach _objectivesToUpdate;
 
     // === SYNC & UI ===
     if (_dataChanged) then {

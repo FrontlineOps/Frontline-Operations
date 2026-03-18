@@ -37,11 +37,7 @@ class FLO {
         class gtnCapabilityAnalyzer {};
     };
 
-    class GTNCombat {
-        file = "Functions\AI\GTN\Combat";
-
-        class gtnVirtualCombatResolver {};
-    };
+    #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
 
     class GTNTasks {
         file = "Functions\AI\GTN\Tasks";
@@ -67,8 +63,11 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
         class gtnArtilleryFireMission   {};
+        class gtnArtilleryProcessObservedFireRequests {};
+        class gtnArtillerySyncObservedSpotter {};
         class gtnRadarDataLink          {};
     };
     
@@ -154,6 +153,7 @@ class FLO {
         class virtualizationUpdatePFH       {};
         class virtualizationProcessGroup    {};
         class virtualizationAdvanceWaypoint {};
+        class virtualizationFinalizeReinforcement {};
         class virtualizationSpatialIndex    {};
         class virtualizationEvents          {};
     };
@@ -205,13 +205,7 @@ class FLO {
         class refreshRespawnMarkersByTerritory {};
     };
 
-    class Logistics {
-        file = "Functions\Logistics";
-
-        class sideResources         {};
-        class logisticsNetwork      {};
-        class vehicleMarket         {};
-    };
+    #include "Functions\Logistics\CfgFunctions.hpp"
 
     // === INTELLIGENCE SYSTEM ===
     class IntelCore {

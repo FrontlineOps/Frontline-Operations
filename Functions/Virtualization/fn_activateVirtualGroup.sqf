@@ -107,9 +107,9 @@ _groupData set ["currentWaypointIndex", 0];
 private _isTransport = _groupData get "isTransport";
 private _attachedGroups = _groupData get "attachedGroups";
 
-// Ensure we don't spawn on top of players
+// Ensure we don't spawn on top of players.
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
-_groupData set ["position", _position];
+[FLO_virtualGroups, _groupId, _position] call (FLO_virtualGroups get "_updateGroupPosition");
 
 // Get group data
 private _unitCount = _groupData get "unitCount";
@@ -434,6 +434,7 @@ if !(_groupType in ["civilian", "civilianVehicle"]) then {
 _groupData set ["realGroup", _realGroup];
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
+_realGroup setVariable ["FLO_virtualGroupId", _groupId];
 
 // ========================================================================
 // TRANSPORT PASSENGER LOADING
@@ -511,6 +512,7 @@ if (_isTransport && count _attachedGroups > 0) then {
             _attachedData set ["isActive", true];
             _attachedData set ["lastStateChangeTime", diag_tickTime];
             _attachedData set ["mountedIn", _groupId]; // Track that they're mounted
+            _infGroup setVariable ["FLO_virtualGroupId", _attachedId];
 
             ["VIRTUALIZATION", 3, format["Loaded attached group %1 (%2 units) into transport %3",
                 _attachedId, count units _infGroup, _groupId]] call FLO_fnc_log;

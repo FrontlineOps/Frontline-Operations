@@ -2277,7 +2277,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         {
             private _enemy = _x;
             {
-                _x reveal [_enemy, 4];
+                _x reveal [_enemy, 1];
             } forEach _revealTo;
         } forEach _enemies;
 

@@ -79,7 +79,7 @@ if (_currentLoad + _infUnitCount > _capacity) exitWith {
 // Perform attachment
 _infData set ["attachedTo", _transportGroupId];
 _infData set ["attachedType", if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}];
-_infData set ["position", _transData get "position"];
+[FLO_virtualGroups, _infantryGroupId, _transData get "position"] call (FLO_virtualGroups get "_updateGroupPosition");
 
 _attachedGroups pushBack _infantryGroupId;
 _transData set ["attachedGroups", _attachedGroups];

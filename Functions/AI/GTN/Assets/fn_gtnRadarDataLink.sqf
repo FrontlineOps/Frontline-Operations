@@ -70,7 +70,7 @@ while {FLO_GTN_RadarDataLinkRunning} do {
     {
         private _aircraft = _x;
         {
-            _x reveal [_aircraft, 4]; // Maximum knowledge
+            _x reveal [_aircraft, 1];
         } forEach _eastLeaders;
     } forEach _detectedAircraft;
     
