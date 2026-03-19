@@ -18,17 +18,18 @@ params ["_net", ["_minPlayerDistance", 3000]];
 private _managedSide = _net get "_managedSide";
 private _players = allPlayers;
 private _objectiveIds = keys FLO_Objectives;
-
-if (count _players == 0) exitWith {
+private _rearObjectives = if (count _players == 0) then {
     _objectiveIds select {
         ((FLO_Objectives get _x) get "owner") isEqualTo _managedSide
     }
+} else {
+    _objectiveIds select {
+        private _objData = FLO_Objectives get _x;
+        if ((_objData get "owner") isNotEqualTo _managedSide) exitWith { false };
+
+        private _objPos = _objData get "position";
+        ({ _x distance2D _objPos < _minPlayerDistance } count _players) isEqualTo 0
+    }
 };
 
-_objectiveIds select {
-    private _objData = FLO_Objectives get _x;
-    if ((_objData get "owner") isNotEqualTo _managedSide) exitWith { false };
-
-    private _objPos = _objData get "position";
-    ({ _x distance2D _objPos < _minPlayerDistance } count _players) isEqualTo 0
-}
+_rearObjectives
