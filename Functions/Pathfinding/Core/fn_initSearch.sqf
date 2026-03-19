@@ -17,10 +17,13 @@ XPS_typ_AstarSearch = [
 	["_reverse",nil],
 	["cameFrom",nil], //part of working graph
 	["cameEdge",nil], //path segment from previous node to this node
+	["closedSet",nil],
 	["costSoFar",nil], //part of working graph
 	["currentNode",nil],
 	["frontier",nil], //part of working graph
+	["frontierBest",nil],
 	["lastNode",nil],
+	["UseDecoratedNeighborsOnly",false],
 	["getPath",compileFinal {
 		private _status = "PARTIAL";
 		private _start = _self get "StartNode";
@@ -66,6 +69,14 @@ XPS_typ_AstarSearch = [
 	["frontierAdd",compileFinal {
 		params [["_priority",nil,[0]],"_item"];
 
+		private _frontierBest = _self get "frontierBest";
+		private _itemIndex = _item get "Index";
+		private _knownBest = _frontierBest get _itemIndex;
+		if !(isNil "_knownBest") then {
+			if (_priority >= _knownBest) exitWith { false };
+		};
+		_frontierBest set [_itemIndex, _priority];
+
 		private _heap = _self get "frontier";
 		_heap pushBack [_priority, _item];
 		private _idx = (count _heap) - 1;
@@ -77,6 +88,7 @@ XPS_typ_AstarSearch = [
 			_idx = _parent;
 		};
 		_heap set [_idx, [_priority, _item]];
+		true;
 	}],
 	["frontierPullLowest",compileFinal {
 		private _heap = _self get "frontier";
@@ -86,7 +98,7 @@ XPS_typ_AstarSearch = [
 		private _root = _heap select 0;
 		if (_count isEqualTo 1) exitWith {
 			_heap resize 0;
-			_root # 1;
+			_root;
 		};
 
 		private _last = _heap deleteAt (_count - 1);
@@ -108,7 +120,7 @@ XPS_typ_AstarSearch = [
 		};
 
 		_heap set [_idx, _last];
-		_root # 1;
+		_root;
 	}],
 	["Path",[]],
 	["Status",nil],
@@ -132,13 +144,17 @@ XPS_typ_AstarSearch = [
 	}],
 	["Init",compileFinal {
 		private _graph = _self get "_workingGraph";
-		_self set ["StartNode",_graph call ["GetNodeAt",[_self get "_workingStartKey"]]];
+		private _startNode = _graph call ["GetNodeAt",[_self get "_workingStartKey"]];
+		_self set ["StartNode",_startNode];
 		_self set ["EndNode",_graph call ["GetNodeAt",[_self get "_workingEndKey"]]];
-		_self set ["frontier",[[0,_self get "StartNode"]]];
+		_self set ["frontier",[[0,_startNode]]];
+		_self set ["frontierBest",createhashmap];
+		(_self get "frontierBest") set [_startNode get "Index", 0];
 		_self set ["costSoFar",createhashmap];
-		_self get "costSoFar" set [_self get "StartNode" get "Index",0];
+		_self get "costSoFar" set [_startNode get "Index",0];
 		_self set ["cameFrom",createhashmap];
 		_self set ["cameEdge",createhashmap];
+		_self set ["closedSet",createhashmap];
 		_self set ["Path",[]];
 		_self set ["Status","INITIALIZED"];
 	}],
@@ -151,17 +167,40 @@ XPS_typ_AstarSearch = [
 
 		private _graph = _self get "_workingGraph";
 		private _endNode = _self get "EndNode";
-		private _currentNode = _self call ["frontierPullLowest"];
+		private _frontierBest = _self get "frontierBest";
+		private _closedSet = _self get "closedSet";
+		private _currentNode = nil;
+
+		while {isNil "_currentNode"} do {
+			private _frontierEntry = _self call ["frontierPullLowest"];
+			if (isNil "_frontierEntry") exitWith {};
+
+			_frontierEntry params ["_entryPriority", "_entryNode"];
+			private _entryIndex = _entryNode get "Index";
+			if !(isNil { _closedSet get _entryIndex }) then { continue };
+
+			private _knownBest = _frontierBest get _entryIndex;
+			if (!(isNil "_knownBest") && {_entryPriority > _knownBest}) then { continue };
+
+			_currentNode = _entryNode;
+		};
+
 		_self set ["currentNode",_currentNode];
 		
 		// Check if path is found or failed to be found
 		if (isNil "_currentNode" || (_endNode get "Index") isEqualTo (_currentNode get "Index")) exitWith {
 			_self call ["getPath"];
 		};
+
+		private _currentIndex = _currentNode get "Index";
+		_closedSet set [_currentIndex, true];
 		private _prevNode = _self get "cameFrom" get (_currentNode get "Index");
 
-		private _neighbors = _graph call ["GetNeighbors",[_currentNode,_prevNode]];
-		_self call ["FilterNeighbors",[_neighbors]];
+		private _neighbors = [];
+		if !(_self get "UseDecoratedNeighborsOnly") then {
+			_neighbors = _graph call ["GetNeighbors",[_currentNode,_prevNode]];
+			_self call ["FilterNeighbors",[_neighbors]];
+		};
 		_neighbors = _self call ["DecorateNeighbors",[_currentNode,_prevNode,_neighbors]];
 
 		{
@@ -190,6 +229,7 @@ XPS_typ_AstarSearch = [
 			private _priority = _costSofar + _estimate;
 			
 			private _neighborIndex = _neighborNode get "Index";
+			if !(isNil { _closedSet get _neighborIndex }) then { continue };
 			private _costSoFarX = _costSoFarMap get _neighborIndex;
 
 			if (isNil {_costSoFarX} || {_costSofar < _costSoFarX}) then {

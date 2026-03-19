@@ -271,6 +271,7 @@ XPS_PF_typ_RoadGraphSearch = [
 	["#str", compileFinal {"XPS_PF_typ_RoadGraphSearch"}],
 	["#type","XPS_PF_typ_RoadGraphSearch"],
 	["#base",XPS_typ_AstarSearch],
+	["UseDecoratedNeighborsOnly",true],
 	["AdjustEstimate",compileFinal {
 		params ["_estimate","_fromNode","_toNode"];
 		_estimate * ((_self get "Doctrine") get "EstimateBias");
