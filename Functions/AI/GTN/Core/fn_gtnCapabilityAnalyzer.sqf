@@ -37,8 +37,10 @@ if (!isNil "FLO_GTN_CapabilityAnalyzer") exitWith { FLO_GTN_CapabilityAnalyzer }
 FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
     // Analysis cache to avoid repeated config lookups
     ["_analysisCache", createHashMap],
+    ["_objectiveAnalysisCache", createHashMap],
     ["_configCache", createHashMap],  // Cache for config lookups
     ["_cacheTimeout", 60],
+    ["_objectiveCacheTimeout", 10],
 
     // Caliber thresholds for capability classification (from Arma config values)
     // These are based on actual Arma 3 caliber values in CfgAmmo
@@ -72,6 +74,24 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
     ["_setCache", {
         params ["_key", "_value"];
         (_self get "_analysisCache") set [_key, [diag_tickTime, _value]];
+    }],
+
+    ["_getObjectiveCached", {
+        params ["_key"];
+        private _cache = _self get "_objectiveAnalysisCache";
+        private _entry = _cache getOrDefault [_key, nil];
+        if (isNil "_entry") exitWith { nil };
+        private _timestamp = _entry select 0;
+        if (diag_tickTime - _timestamp > (_self get "_objectiveCacheTimeout")) exitWith {
+            _cache deleteAt _key;
+            nil
+        };
+        _entry select 1
+    }],
+
+    ["_setObjectiveCache", {
+        params ["_key", "_value"];
+        (_self get "_objectiveAnalysisCache") set [_key, [diag_tickTime, _value]];
     }],
 
     // Get cached config value (configs never change during mission)
@@ -1606,6 +1626,15 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
         if (isNil "FLO_Objectives") exitWith { nil };
 
+        private _cacheScope = if (!isNil "_worldState") then {
+            _worldState get "_sideKey"
+        } else {
+            "GLOBAL"
+        };
+        private _cacheKey = format ["objective_%1_%2", _cacheScope, _objectiveId];
+        private _cached = _self call ["_getObjectiveCached", [_cacheKey]];
+        if (!isNil "_cached") exitWith { _cached };
+
         private _obj = FLO_Objectives getOrDefault [_objectiveId, nil];
         if (isNil "_obj") exitWith { nil };
 
@@ -1741,6 +1770,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         _analysis set ["requiresAT", (_analysis get "hasArmor") || _power > 200];
         _analysis set ["requiresAA", (_analysis get "hasAA") || (_analysis getOrDefault ["threatVsAir", 0]) > 0.3];
 
+        _self call ["_setObjectiveCache", [_cacheKey, _analysis]];
         _analysis
     }],
 
@@ -2150,6 +2180,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
     // Clear analysis cache (for when units/vehicles change significantly)
     ["_clearCache", {
         _self set ["_analysisCache", createHashMap];
+        _self set ["_objectiveAnalysisCache", createHashMap];
         ["GTN Capability Analyzer", 4, "Analysis cache cleared"] call FLO_fnc_log;
     }],
 

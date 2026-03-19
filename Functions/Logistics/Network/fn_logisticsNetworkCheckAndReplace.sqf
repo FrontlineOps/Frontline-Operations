@@ -14,34 +14,56 @@
 
 params ["_net"];
 
+private _perf = createHashMapFromArray [
+    ["neededCount", 0],
+    ["queueBefore", 0],
+    ["queueAfter", 0],
+    ["targetCount", 0],
+    ["batchSize", 0],
+    ["attempted", 0],
+    ["created", 0],
+    ["refreshMs", 0],
+    ["compositionMs", 0],
+    ["reconcileMs", 0],
+    ["targetMs", 0],
+    ["dispatchMs", 0],
+    ["status", "RUN"]
+];
+
+private _phaseT0 = diag_tickTime;
 [_net] call FLO_fnc_logisticsNetworkRefreshManagedSide;
+_perf set ["refreshMs", (diag_tickTime - _phaseT0) * 1000];
+
+_phaseT0 = diag_tickTime;
 private _initialComp = _net get "_initialComposition";
 private _currentComp = [_net] call FLO_fnc_logisticsNetworkGetComposition;
 private _groupCosts = _net get "GROUP_COSTS";
-
-private _needed = [];
+private _neededCounts = createHashMap;
+private _neededTotal = 0;
 {
     private _type = _x;
     private _target = _initialComp get _type;
     private _current = _currentComp getOrDefault [_type, 0];
 
     if (_current < _target) then {
-        for "_i" from 1 to (_target - _current) do {
-            _needed pushBack _type;
-        };
+        private _missing = _target - _current;
+        _neededCounts set [_type, _missing];
+        _neededTotal = _neededTotal + _missing;
     };
 } forEach (keys _initialComp);
+_perf set ["compositionMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["neededCount", _neededTotal];
 
-if (count _needed == 0) exitWith {
+if (_neededTotal == 0) exitWith {
+    _perf set ["status", "AT_TARGET"];
+    _net set ["_lastPerf", _perf];
     ["LOGISTICS", 3, "All group types at target strength"] call FLO_fnc_log;
 };
 
 private _queue = _net get "_reinforcementQueue";
-private _neededCounts = createHashMap;
-{
-    _neededCounts set [_x, (_neededCounts getOrDefault [_x, 0]) + 1];
-} forEach _needed;
+_perf set ["queueBefore", count _queue];
 
+_phaseT0 = diag_tickTime;
 private _rebuiltQueue = [];
 {
     private _remain = _neededCounts getOrDefault [_x, 0];
@@ -61,13 +83,19 @@ private _rebuiltQueue = [];
 
 _queue = _rebuiltQueue;
 _net set ["_reinforcementQueue", _queue];
+_perf set ["reconcileMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["queueAfter", count _queue];
 
 if (count _queue == 0) exitWith {
+    _perf set ["status", "QUEUE_EMPTY"];
+    _net set ["_lastPerf", _perf];
     ["LOGISTICS", 3, "No pending reinforcements after queue reconciliation"] call FLO_fnc_log;
 };
 
 private _nextDispatchAt = _net get "_nextDispatchAt";
 if (time < _nextDispatchAt) exitWith {
+    _perf set ["status", "WAITING"];
+    _net set ["_lastPerf", _perf];
     ["LOGISTICS", 3, format [
         "Reinforcement queue pending: %1 groups | next dispatch in %2s",
         count _queue,
@@ -76,6 +104,7 @@ if (time < _nextDispatchAt) exitWith {
     _net set ["_lastUpdate", time];
 };
 
+_phaseT0 = diag_tickTime;
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
 private _targets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
 
@@ -91,6 +120,8 @@ if (count _targets == 0) then {
         _targets = [selectRandom _managedObjectives];
     };
 };
+_perf set ["targetMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["targetCount", count _targets];
 
 if (count _targets == 0) then {
     ["LOGISTICS", 3, "No pressure/rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
@@ -102,10 +133,12 @@ private _batchSize = _batchMin + floor random ((_batchMax - _batchMin) + 1);
 if (_batchSize > count _queue) then {
     _batchSize = count _queue;
 };
+_perf set ["batchSize", _batchSize];
 
 private _replaced = 0;
 private _attempted = 0;
 
+_phaseT0 = diag_tickTime;
 for "_i" from 1 to _batchSize do {
     if (count _queue == 0) exitWith {};
 
@@ -161,6 +194,9 @@ for "_i" from 1 to _batchSize do {
         };
     };
 };
+_perf set ["dispatchMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["attempted", _attempted];
+_perf set ["created", _replaced];
 
 _net set ["_reinforcementQueue", _queue];
 
@@ -186,3 +222,5 @@ if (_replaced > 0) then {
 };
 
 _net set ["_lastUpdate", time];
+_perf set ["status", "DISPATCHED"];
+_net set ["_lastPerf", _perf];

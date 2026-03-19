@@ -79,8 +79,8 @@ try {
     _cfg set ["moneyHandle", FLO_MoneyHandle];
     _cfg set ["difficultyHandle", FLO_DifficultyHandle];
     _cfg set ["reputationHandle", FLO_ReputationHandle];
-    _cfg set ["gtnAttackHandle", FLO_GTN_AttackHandle];
-    _cfg set ["gtnDefenseHandle", FLO_GTN_DefenseHandle];
+    _cfg set ["gtnAttackLaneHandle", FLO_GTN_AttackLaneHandle];
+    _cfg set ["gtnDefenseCoverageHandle", FLO_GTN_DefenseCoverageHandle];
     _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle];
     _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];

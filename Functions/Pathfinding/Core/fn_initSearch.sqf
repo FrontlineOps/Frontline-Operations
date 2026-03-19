@@ -194,7 +194,9 @@ XPS_typ_AstarSearch = [
 
 		private _currentIndex = _currentNode get "Index";
 		_closedSet set [_currentIndex, true];
-		private _prevNode = _self get "cameFrom" get (_currentNode get "Index");
+		private _prevNode = _self get "cameFrom" get _currentIndex;
+		private _costSoFarMap = _self get "costSoFar";
+		private _currentCostSoFar = _costSoFarMap get _currentIndex;
 
 		private _neighbors = [];
 		if !(_self get "UseDecoratedNeighborsOnly") then {
@@ -213,7 +215,7 @@ XPS_typ_AstarSearch = [
 					_edgeCost = _x select 1;
 				};
 				if ((count _x) > 2) then {
-					_edgePath = +(_x select 2);
+					_edgePath = _x select 2;
 				};
 			} else {
 				_edgeCost = _graph call ["GetCost",[_currentNode,_neighborNode]];
@@ -222,10 +224,9 @@ XPS_typ_AstarSearch = [
 
 			if (isNil "_neighborNode") then { continue };
 
-			private _costSoFarMap = _self get "costSoFar";
 			private _estimate = _self call ["AdjustEstimate",[_graph call ["GetEstimate",[_neighborNode,_endNode]],_neighborNode,_endNode]];
 			private _cost = _self call ["AdjustCost",[_edgeCost,_currentNode,_neighborNode]];
-			private _costSofar = (_costSoFarMap get (_currentNode get "Index")) + _cost;
+			private _costSofar = _currentCostSoFar + _cost;
 			private _priority = _costSofar + _estimate;
 			
 			private _neighborIndex = _neighborNode get "Index";

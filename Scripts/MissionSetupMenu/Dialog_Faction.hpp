@@ -187,14 +187,14 @@ class FLO_FactionSelectDialog
 		};
 
 		// ====================================================================
-		// ROW 2: COMMANDER SETTINGS (Attack Ops, Defense Ops, Aggression)
+		// ROW 2: COMMANDER SETTINGS (Attack Lanes, Defense Coverage, Aggression)
 		// ====================================================================
 
-		// AI Commander Attack Operations
+		// AI Commander Attack Lanes
 		class LabelStartingZones: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "AI Commander Attack Ops";
+			text = "AI Commander Attack Lanes";
 			x = FACTION_COL1_X;
 			y = FACTION_CONTENT_Y + 4.5 * GUI_GRID_H;
 			w = FACTION_COL_W;
@@ -206,13 +206,13 @@ class FLO_FactionSelectDialog
 			idc = FLO_IDC_FACTION_COMBO_PRESENCE;
 			x = FACTION_COL1_X;
 			y = FACTION_CONTENT_Y + 5.3 * GUI_GRID_H;
-			tooltip = "Set how many concurrent offensive plans each AI commander can run";
+			tooltip = "Set how many concurrent offensive lanes each AI commander can maintain";
 		};
 
 		class LabelGTNDefenseOps: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "AI Commander Defense Ops";
+			text = "AI Commander Defense Coverage";
 			x = FACTION_COL2_X;
 			y = FACTION_CONTENT_Y + 4.5 * GUI_GRID_H;
 			w = FACTION_COL_W;
@@ -224,7 +224,7 @@ class FLO_FactionSelectDialog
 			idc = FLO_IDC_FACTION_COMBO_GTN_DEFENSE;
 			x = FACTION_COL2_X;
 			y = FACTION_CONTENT_Y + 5.3 * GUI_GRID_H;
-			tooltip = "Set how many concurrent defensive plans each AI commander can run";
+			tooltip = "Set how heavily each AI commander fills defensive slots across held objectives";
 		};
 
 		// AI Commander Aggression

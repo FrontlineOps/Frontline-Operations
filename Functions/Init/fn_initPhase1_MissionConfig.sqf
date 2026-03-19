@@ -32,8 +32,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_CivilianHandle = _configData get "civilianHandle";
         FLO_ReputationHandle = _configData get "reputationHandle";
         FLO_DifficultyHandle = _configData get "difficultyHandle";
-        FLO_GTN_AttackHandle = _configData get "gtnAttackHandle";
-        FLO_GTN_DefenseHandle = _configData get "gtnDefenseHandle";
+        FLO_GTN_AttackLaneHandle = _configData get "gtnAttackLaneHandle";
+        FLO_GTN_DefenseCoverageHandle = _configData get "gtnDefenseCoverageHandle";
         FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
         FLO_MoneyHandle = _configData get "moneyHandle";
         EnemyPrec = _configData get "enemyPrec";
@@ -45,8 +45,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "FLO_CivilianHandle";
         publicVariable "FLO_ReputationHandle";
         publicVariable "FLO_DifficultyHandle";
-        publicVariable "FLO_GTN_AttackHandle";
-        publicVariable "FLO_GTN_DefenseHandle";
+        publicVariable "FLO_GTN_AttackLaneHandle";
+        publicVariable "FLO_GTN_DefenseCoverageHandle";
         publicVariable "FLO_GTN_TempoHandle";
         publicVariable "FLO_MoneyHandle";
         publicVariable "EnemyPrec";
@@ -107,8 +107,8 @@ private _requiredFields = [
     "civilianHandle",
     "reputationHandle",
     "difficultyHandle",
-    "gtnAttackHandle",
-    "gtnDefenseHandle",
+    "gtnAttackLaneHandle",
+    "gtnDefenseCoverageHandle",
     "gtnTempoHandle",
     "moneyHandle",
     "enemyPresence",
@@ -125,7 +125,7 @@ if (count _missingFields > 0) exitWith {
     false
 };
 
-// Extract and set global handles for backwards compatibility
+// Extract and set global handles
 FLO_FriendlyHandle = FLO_MissionConfig get "friendlyHandle";
 FLO_EnemyHandle = FLO_MissionConfig get "enemyHandle";
 FLO_CivilianHandle = FLO_MissionConfig get "civilianHandle";
@@ -137,16 +137,16 @@ publicVariable "FLO_CivilianHandle";
 // Set required config values
 FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
 FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
-FLO_GTN_AttackHandle = FLO_MissionConfig get "gtnAttackHandle";
-FLO_GTN_DefenseHandle = FLO_MissionConfig get "gtnDefenseHandle";
+FLO_GTN_AttackLaneHandle = FLO_MissionConfig get "gtnAttackLaneHandle";
+FLO_GTN_DefenseCoverageHandle = FLO_MissionConfig get "gtnDefenseCoverageHandle";
 FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
 FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
 EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
 publicVariable "FLO_ReputationHandle";
 publicVariable "FLO_DifficultyHandle";
-publicVariable "FLO_GTN_AttackHandle";
-publicVariable "FLO_GTN_DefenseHandle";
+publicVariable "FLO_GTN_AttackLaneHandle";
+publicVariable "FLO_GTN_DefenseCoverageHandle";
 publicVariable "FLO_GTN_TempoHandle";
 publicVariable "FLO_MoneyHandle";
 publicVariable "EnemyPrec";

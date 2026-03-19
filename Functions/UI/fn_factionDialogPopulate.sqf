@@ -120,7 +120,7 @@ private _civilianFactions = [
 [_civilianCombo, _civilianFactions, 0] call _fnc_addItems;
 
 // ============================================================================
-// AI COMMANDER ATTACK OPS (IDC 1958)
+// AI COMMANDER ATTACK LANES (IDC 1958)
 // ============================================================================
 
 private _presenceCombo = _display displayCtrl 1958;
@@ -131,7 +131,7 @@ private _presenceOptions = [
 	"Relentless"
 ];
 
-[_presenceCombo, _presenceOptions, 0] call _fnc_addItems;
+[_presenceCombo, _presenceOptions, 1] call _fnc_addItems;
 
 // ============================================================================
 // STARTING RESOURCES (IDC 1959)
@@ -169,7 +169,7 @@ private _difficultyOptions = [
 [_difficultyCombo, _difficultyOptions, 1] call _fnc_addItems;
 
 // ============================================================================
-// AI COMMANDER DEFENSE OPS (IDC 1962)
+// AI COMMANDER DEFENSE COVERAGE (IDC 1962)
 // ============================================================================
 
 private _defenseOpsCombo = _display displayCtrl 1962;
@@ -180,7 +180,7 @@ private _defenseOpsOptions = [
 	"Maximum Coverage"
 ];
 
-[_defenseOpsCombo, _defenseOpsOptions, 0] call _fnc_addItems;
+[_defenseOpsCombo, _defenseOpsOptions, 1] call _fnc_addItems;
 
 // ============================================================================
 // AI COMMANDER TEMPO (IDC 1963)

@@ -252,19 +252,28 @@ XPS_PF_typ_RoadDoctrine = [
 			["_roadTypes",["MAIN ROAD","ROAD","TRACK"],[[]],[1,2,3,4]],
 			["_spacingCap",350,[0]],
 			["_turnThreshold",50,[0]],
-			["_estimateBias",1,[0]]
+			["_estimateBias",1,[0]],
+			["_minEmitDistance",75,[0]],
+			["_junctionTurnThreshold",-1,[0]]
 		];
 		_self set ["Weights",_heuristics];
 		_self set ["RoadTypes",_roadTypes];
 		_self set ["SpacingCap", _spacingCap];
 		_self set ["TurnThreshold", _turnThreshold];
 		_self set ["EstimateBias", _estimateBias];
+		_self set ["MinEmitDistance", _minEmitDistance];
+		if (_junctionTurnThreshold < 0) then {
+			_junctionTurnThreshold = _turnThreshold;
+		};
+		_self set ["JunctionTurnThreshold", _junctionTurnThreshold];
 	}],
 	["Weights",[0.9, 1, 1.2]],
 	["RoadTypes",["MAIN ROAD","ROAD","TRACK"]],
 	["SpacingCap",350],
 	["TurnThreshold",50],
-	["EstimateBias",1]
+	["EstimateBias",1],
+	["MinEmitDistance",75],
+	["JunctionTurnThreshold",50]
 ];
 
 XPS_PF_typ_RoadGraphSearch = [
@@ -313,12 +322,12 @@ XPS_PF_typ_RoadGraphSearch = [
 			_x params ["_nextNode", "_edgeCost", "_edgePath"];
 			private _resolvedNode = _nextNode;
 			private _resolvedCost = _edgeCost;
-			private _resolvedPath = +_edgePath;
+			private _resolvedPath = _edgePath;
 
 			if !((_resolvedNode get "Index") isEqualTo _endIndex) then {
-				private _endPathIndex = _resolvedPath findIf { (_x get "Index") isEqualTo _endIndex };
+				private _endPathIndex = _edgePath findIf { (_x get "Index") isEqualTo _endIndex };
 				if (_endPathIndex >= 0) then {
-					_resolvedPath = _resolvedPath select [0, _endPathIndex + 1];
+					_resolvedPath = _edgePath select [0, _endPathIndex + 1];
 					_resolvedNode = _resolvedPath select _endPathIndex;
 					_resolvedCost = 0;
 					private _prevHop = _currentNode;
@@ -341,7 +350,8 @@ XPS_PF_typ_RoadGraphSearch = [
 		private _doctrine = _self get "Doctrine";
 		private _spacingCap = _doctrine get "SpacingCap";
 		private _turnThreshold = _doctrine get "TurnThreshold";
-		private _minEmitDistance = 75;
+		private _minEmitDistance = _doctrine get "MinEmitDistance";
+		private _junctionTurnThreshold = _doctrine get "JunctionTurnThreshold";
 		private _route = [];
 		private _endPos = +(_self get "_workingEndKey");
 
@@ -369,6 +379,11 @@ XPS_PF_typ_RoadGraphSearch = [
 				if (!_shouldEmit && { _forEachIndex > 0 }) then {
 					private _prevPos = +((_resolvedNodes select (_forEachIndex - 1)) get "PosASL");
 					_prevPos set [2, 0];
+					private _turnRefPos = if (count _route > 0) then {
+						+_lastEmitted
+					} else {
+						+_prevPos
+					};
 
 					private _nextPos = if ((_forEachIndex + 1) < (count _resolvedNodes)) then {
 						+((_resolvedNodes select (_forEachIndex + 1)) get "PosASL")
@@ -377,13 +392,14 @@ XPS_PF_typ_RoadGraphSearch = [
 					};
 					_nextPos set [2, 0];
 
-					private _dirIn = _prevPos getDir _pos;
+					private _dirIn = _turnRefPos getDir _pos;
 					private _dirOut = _pos getDir _nextPos;
 					private _turnDelta = abs (((_dirOut - _dirIn + 540) mod 360) - 180);
-					if (_turnDelta >= _turnThreshold) then {
+					private _turnSampleDist = _turnRefPos distance2D _pos;
+					if (_turnDelta >= _turnThreshold && {_turnSampleDist >= (_minEmitDistance * 0.8)}) then {
 						_shouldEmit = true;
 					} else {
-						if ((_node get "Intersection") && {_turnDelta >= (_turnThreshold * 0.7)} && {(_lastEmitted distance2D _pos) >= (_spacingCap * 0.6)}) then {
+						if ((_node get "Intersection") && {_turnDelta >= _junctionTurnThreshold} && {(_lastEmitted distance2D _pos) >= (_spacingCap * 0.85)}) then {
 							_shouldEmit = true;
 						};
 					};
@@ -424,10 +440,13 @@ if (isNil "FLO_PF_RoadGraph") then {
 };
 
 // Vehicle doctrine (no trails, main road always better - descending preference)
-FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.9, 1, 1.2],["MAIN ROAD","ROAD","TRACK"],350,50,1.15]];
+FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.85, 1, 1.3],["MAIN ROAD","ROAD","TRACK"],550,70,1.3,140,80]];
+
+// Logistics reinforcement doctrine favors throughput and coarse route output over lane-precise steering.
+FLO_PF_RoadDoctrine_V_Logi = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.8, 1, 1.35],["MAIN ROAD","ROAD","TRACK"],700,85,1.4,220,95]];
 
 // Man doctrine (with trails, all roads equal)
-FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"],220,35,1.1]];
+FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"],260,40,1.15,110,50]];
 
 // To initiate a search :
 // _search = createhashmapobject [XPS_PF_typ_RoadGraphSearch,[FLO_Pathfinding_RoadGraph, <start road object> , <end road object>, <reverse path?: true/false>]];

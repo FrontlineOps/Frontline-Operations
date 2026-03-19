@@ -169,6 +169,10 @@ private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadG
 private _doctrine = FLO_PF_RoadDoctrine_V;
 if (_trails) then {
     _doctrine = FLO_PF_RoadDoctrine_M;
+} else {
+    if (_sourceTag == "LOGI_REINF") then {
+        _doctrine = FLO_PF_RoadDoctrine_V_Logi;
+    };
 };
 _search set ["Doctrine", _doctrine];
 _search set ["Callback", _dispatch];

@@ -95,6 +95,27 @@ private _worldState = createHashMapObject [[
     ["_ownSide", _ownSide],
     ["_enemySide", _enemySide],
     ["_sideKey", _sideKey],
+    ["_perf", createHashMapFromArray [
+        ["lastUpdateMs", 0],
+        ["peakUpdateMs", 0],
+        ["slowUpdates", 0],
+        ["lastRanAt", -1],
+        ["lastPhaseMs", createHashMapFromArray [
+            ["objectives", 0],
+            ["forces", 0],
+            ["supportAssets", 0],
+            ["enemyIntel", 0],
+            ["tacticalSituation", 0]
+        ]],
+        ["lastMeta", createHashMapFromArray [
+            ["objectiveCount", 0],
+            ["availableGroups", 0],
+            ["contactCount", 0],
+            ["concentrationCount", 0],
+            ["supportSenseRan", false],
+            ["enemyIntelSenseRan", false]
+        ]]
+    ]],
     
     // Reference to AI Commander for integration
     ["_commander", nil],
@@ -109,29 +130,9 @@ private _worldState = createHashMapObject [[
 
         private _ownSide = _self get "_ownSide";
         private _enemySide = _self get "_enemySide";
-        private _senseRadius = 500;
+        private _friendlyCountKey = if (_ownSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
+        private _enemyCountKey = if (_enemySide isEqualTo east) then { "opforCount" } else { "bluforCount" };
         private _intelCache = _self getOrDefault ["_objectiveIntel", createHashMap];
-        private _friendlyGroups = [];
-        private _enemyGroups = [];
-
-        if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups get "_groups";
-            {
-                private _gData = _y;
-                private _side = _gData get "side";
-                private _unitCount = _gData get "unitCount";
-                if (_unitCount <= 0) then { continue };
-
-                private _entry = [_gData get "position", _unitCount];
-                if (_side == _ownSide) then {
-                    _friendlyGroups pushBack _entry;
-                } else {
-                    if (_side == _enemySide) then {
-                        _enemyGroups pushBack _entry;
-                    };
-                };
-            } forEach _groups;
-        };
 
         {
             private _id = _x;
@@ -147,21 +148,8 @@ private _worldState = createHashMapObject [[
                 if (_ownerKey isEqualTo "WEST") then { _owner = west; };
             };
 
-            private _nearFriendly = 0;
-            {
-                _x params ["_gPos", "_gCount"];
-                if ((_gPos distance2D _pos) <= _senseRadius) then {
-                    _nearFriendly = _nearFriendly + _gCount;
-                };
-            } forEach _friendlyGroups;
-
-            private _nearEnemy = 0;
-            {
-                _x params ["_gPos", "_gCount"];
-                if ((_gPos distance2D _pos) <= _senseRadius) then {
-                    _nearEnemy = _nearEnemy + _gCount;
-                };
-            } forEach _enemyGroups;
+            private _nearFriendly = _data get _friendlyCountKey;
+            private _nearEnemy = _data get _enemyCountKey;
 
             private _contested = (_nearEnemy > 0) && (_nearFriendly > 0);
             private _underAttack = (_owner == _ownSide) && (_nearEnemy > 0);
@@ -756,6 +744,10 @@ private _worldState = createHashMapObject [[
         _self get "_supportAssets"
     }],
 
+    ["_getPerf", {
+        _self get "_perf"
+    }],
+
     ["_getObjectiveAnalysis", {
         params ["_objId"];
         private _cmdr = _self get "_commander";
@@ -858,26 +850,75 @@ private _worldState = createHashMapObject [[
         private _supportAssetSenseInterval = _self get "_supportAssetSenseInterval";
         private _lastEnemyIntelSense = _self get "_lastEnemyIntelSense";
         private _enemyIntelSenseInterval = _self get "_enemyIntelSenseInterval";
+        private _perf = _self get "_perf";
 
         // Throttle updates
-        if (_now - _lastUpdate < _interval) exitWith {};
+        if (_now - _lastUpdate < _interval) exitWith { false };
+
+        private _phaseMs = createHashMapFromArray [
+            ["objectives", 0],
+            ["forces", 0],
+            ["supportAssets", 0],
+            ["enemyIntel", 0],
+            ["tacticalSituation", 0]
+        ];
+        private _meta = createHashMapFromArray [
+            ["objectiveCount", 0],
+            ["availableGroups", 0],
+            ["contactCount", 0],
+            ["concentrationCount", 0],
+            ["supportSenseRan", false],
+            ["enemyIntelSenseRan", false]
+        ];
+        private _cycleStart = diag_tickTime;
+        private _tPhase = diag_tickTime;
 
         // Run all sensors
         _self call ["_senseObjectives", []];
+        _phaseMs set ["objectives", (diag_tickTime - _tPhase) * 1000];
+
+        _tPhase = diag_tickTime;
         _self call ["_senseForces", []];
+        _phaseMs set ["forces", (diag_tickTime - _tPhase) * 1000];
         if (_lastSupportAssetsSense < 0 || {_now - _lastSupportAssetsSense >= _supportAssetSenseInterval}) then {
+            _tPhase = diag_tickTime;
             _self call ["_senseSupportAssets", []];
+            _phaseMs set ["supportAssets", (diag_tickTime - _tPhase) * 1000];
+            _meta set ["supportSenseRan", true];
             _self set ["_lastSupportAssetsSense", _now];
         };
         if (_lastEnemyIntelSense < 0 || {_now - _lastEnemyIntelSense >= _enemyIntelSenseInterval}) then {
+            _tPhase = diag_tickTime;
             _self call ["_senseEnemyIntel", []];
+            _phaseMs set ["enemyIntel", (diag_tickTime - _tPhase) * 1000];
+            _meta set ["enemyIntelSenseRan", true];
             _self set ["_lastEnemyIntelSense", _now];
         };
+        _tPhase = diag_tickTime;
         _self call ["_senseTacticalSituation", []];
+        _phaseMs set ["tacticalSituation", (diag_tickTime - _tPhase) * 1000];
 
         _self set ["_lastUpdate", _now];
 
+        _meta set ["objectiveCount", count (keys (_self get "_objectives"))];
+        _meta set ["availableGroups", ((_self get "_ownForces") get "availableGroups")];
+        _meta set ["contactCount", count ((_self get "_enemyIntel") get "contactReports")];
+        _meta set ["concentrationCount", count ((_self get "_enemyIntel") get "concentrations")];
+
+        private _dtMs = (diag_tickTime - _cycleStart) * 1000;
+        _perf set ["lastUpdateMs", _dtMs];
+        _perf set ["lastPhaseMs", _phaseMs];
+        _perf set ["lastMeta", _meta];
+        _perf set ["lastRanAt", _now];
+        if (_dtMs > (_perf get "peakUpdateMs")) then {
+            _perf set ["peakUpdateMs", _dtMs];
+        };
+        if (_dtMs > 10) then {
+            _perf set ["slowUpdates", (_perf get "slowUpdates") + 1];
+        };
+
         ["GTN", 4, "World state updated"] call FLO_fnc_log;
+        true
     }],
 
     // Set commander reference

@@ -55,6 +55,16 @@ private _executor = createHashMapObject [[
 
     // Execution handlers (primitive id -> handler function)
     ["_handlers", createHashMap],
+    ["_perf", createHashMapFromArray [
+        ["primitiveLogThresholdMs", 10],
+        ["checkLogThresholdMs", 10],
+        ["lastPrimitiveMs", createHashMap],
+        ["peakPrimitiveMs", createHashMap],
+        ["slowPrimitiveCount", createHashMap],
+        ["lastCheckMs", createHashMap],
+        ["peakCheckMs", createHashMap],
+        ["slowCheckCount", createHashMap]
+    ]],
 
     // Set GTN Commander reference (called after GTN commander is created)
     ["_setGTNCommander", {
@@ -69,6 +79,10 @@ private _executor = createHashMapObject [[
         private _handlers = _self get "_handlers";
         _handlers set [_primitiveId, _handlerFn];
         _self set ["_handlers", _handlers];
+    }],
+
+    ["_getPerf", {
+        _self get "_perf"
     }],
     
     // Per-track task data used for runtime parameter resolution and primitive state handoff.
@@ -307,7 +321,29 @@ private _executor = createHashMapObject [[
         ];
         
         // Execute handler
+        private _tExec = diag_tickTime;
         private _result = [_context] call _handler;
+        private _execMs = (diag_tickTime - _tExec) * 1000;
+
+        private _perf = _self get "_perf";
+        private _lastPrimitiveMs = _perf get "lastPrimitiveMs";
+        private _peakPrimitiveMs = _perf get "peakPrimitiveMs";
+        private _slowPrimitiveCount = _perf get "slowPrimitiveCount";
+        _lastPrimitiveMs set [_taskId, _execMs];
+        private _peakPrimitive = _peakPrimitiveMs get _taskId;
+        if (isNil "_peakPrimitive" || { _execMs > _peakPrimitive }) then {
+            _peakPrimitiveMs set [_taskId, _execMs];
+        };
+        if (_execMs >= (_perf get "primitiveLogThresholdMs")) then {
+            _slowPrimitiveCount set [_taskId, (_slowPrimitiveCount getOrDefault [_taskId, 0]) + 1];
+            diag_log format [
+                "[FLO][PERF] GTN executor %1 primitive %2 track=%3 execute took %4 ms",
+                _self get "_sideKey",
+                _taskId,
+                _trackId,
+                _execMs
+            ];
+        };
         
         // Store active execution
         private _active = _self get "_activeExecutions";
@@ -342,7 +378,27 @@ private _executor = createHashMapObject [[
             private _handler = _handlers getOrDefault [_taskId, nil];
 
             if (!isNil "_handler") then {
+                private _tCheck = diag_tickTime;
                 [_context] call _handler;
+                private _checkMs = (diag_tickTime - _tCheck) * 1000;
+                private _perf = _self get "_perf";
+                private _lastCheckMs = _perf get "lastCheckMs";
+                private _peakCheckMs = _perf get "peakCheckMs";
+                private _slowCheckCount = _perf get "slowCheckCount";
+                _lastCheckMs set [_taskId, _checkMs];
+                private _peakCheck = _peakCheckMs get _taskId;
+                if (isNil "_peakCheck" || { _checkMs > _peakCheck }) then {
+                    _peakCheckMs set [_taskId, _checkMs];
+                };
+                if (_checkMs >= (_perf get "checkLogThresholdMs")) then {
+                    _slowCheckCount set [_taskId, (_slowCheckCount getOrDefault [_taskId, 0]) + 1];
+                    diag_log format [
+                        "[FLO][PERF] GTN executor %1 primitive %2 check took %3 ms",
+                        _self get "_sideKey",
+                        _taskId,
+                        _checkMs
+                    ];
+                };
                 _status = _context get "status";
             };
         };
@@ -867,13 +923,17 @@ private _executor = createHashMapObject [[
         }]];
 
         // prim_attack_objective
-        // Capability-aware attack that blocks for force buildup until recommended power is met
+        // Capability-aware attack that blocks for force buildup until recommended power is met.
+        // Re-checks reuse cached task analysis and stop once the selected force reaches the commit target.
         _self call ["_registerHandler", ["prim_attack_objective", {
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
             private _cmdr = _ctx get "commander";
             private _executor = _ctx get "executor";
+            private _taskNode = _ctx get "taskNode";
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _completedData = _executor get "_completedTaskData";
 
             if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
                 ["GTN", 2, format["Attack aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
@@ -898,40 +958,173 @@ private _executor = createHashMapObject [[
             };
 
             private _ws = _cmdr get "_worldState";
-            private _objAnalysis = _analyzer call ["_analyzeObjective", [_objId, _ws]];
-            private _requiredPower = if (!isNil "_objAnalysis") then {
-                _objAnalysis get "recommendedAttackForce"
-            } else { 100 }; // Fallback if analysis fails
-
-            private _requiresAT = if (!isNil "_objAnalysis") then { _objAnalysis get "hasArmor" } else { false };
-            private _requiresAA = if (!isNil "_objAnalysis") then { _objAnalysis get "hasAA" } else { false };
-
-            ["GTN", 3, format["Objective %1 analysis: Required Power=%2, NeedsAT=%3, NeedsAA=%4",
-                _objId, round _requiredPower, _requiresAT, _requiresAA]] call FLO_fnc_log;
-
-            // === CHECK IF ASSAULT IS FEASIBLE ===
             private _ownSide = _cmdr get "_ownSide";
             private _enemySide = _cmdr get "_enemySide";
-            private _feasibility = _analyzer call ["_canExecuteMission", ["ASSAULT", _objPos, _requiredPower, _ownSide]];
-            private _availablePower = _feasibility get "powerAvailable";
-            private _isFeasible = _feasibility get "feasible";
+            private _allObjectives = _ws call ["_getObjectives", []];
+            private _sourceObjectives = _cmdr call ["_getFriendlyAttackSourceObjectives", [_objId]];
+            private _sourceObjectiveSet = createHashMap;
+            { _sourceObjectiveSet set [_x, true]; } forEach _sourceObjectives;
+
+            private _supportObjectives = +_sourceObjectives;
+            {
+                private _sourceObj = _allObjectives get _x;
+                if (isNil "_sourceObj") then { continue };
+
+                {
+                    private _linkedObj = _allObjectives get _x;
+                    if (isNil "_linkedObj") then { continue };
+                    if ((_linkedObj get "owner") != _ownSide) then { continue };
+                    _supportObjectives pushBackUnique _x;
+                } forEach (_sourceObj get "linkedObjectives");
+            } forEach _sourceObjectives;
+
+            private _supportObjectiveSet = createHashMap;
+            { _supportObjectiveSet set [_x, true]; } forEach _supportObjectives;
+            private _localReserveMeters = (_cmdr get "_config") get "attackLocalReserveMeters";
+            private _maxPullDistanceMeters = (_cmdr get "_config") get "attackMaxPullDistanceMeters";
+            private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_objId]];
+            private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objId]];
+            private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
+
+            // Reuse cached task analysis while the primitive remains active.
+            private _requiredPower = _primData getOrDefault ["requiredPower", -1];
+            private _requiresAT = _primData getOrDefault ["requiresAT", false];
+            private _requiresAA = _primData getOrDefault ["requiresAA", false];
+            if ((_primData getOrDefault ["objectiveId", ""]) != _objId || {_requiredPower < 0}) then {
+                private _objAnalysis = _ws call ["_getObjectiveAnalysis", [_objId]];
+                if (isNil "_objAnalysis") then {
+                    _objAnalysis = _analyzer call ["_analyzeObjective", [_objId, _ws]];
+                };
+
+                _requiredPower = if (!isNil "_objAnalysis") then {
+                    _objAnalysis get "recommendedAttackForce"
+                } else { 100 };
+                _requiresAT = if (!isNil "_objAnalysis") then { _objAnalysis get "hasArmor" } else { false };
+                _requiresAA = if (!isNil "_objAnalysis") then { _objAnalysis get "hasAA" } else { false };
+
+                _primData set ["objectiveId", _objId];
+                _primData set ["requiredPower", _requiredPower];
+                _primData set ["requiresAT", _requiresAT];
+                _primData set ["requiresAA", _requiresAA];
+                _taskNode set ["primitiveData", _primData];
+
+                ["GTN", 3, format["Objective %1 analysis: Required Power=%2, NeedsAT=%3, NeedsAA=%4",
+                    _objId, round _requiredPower, _requiresAT, _requiresAA]] call FLO_fnc_log;
+            };
+
+            private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
+            if (count _groups < 1) then {
+                _groups = _primData getOrDefault ["assignedGroups", []];
+            };
+
+            private _availablePower = 0;
+            private _candidateScores = [];
+            private _groupPower = createHashMap;
+            private _groupMap = FLO_virtualGroups get "_groups";
+            private _analyzedCandidates = 0;
+
+            if (count _groups > 0) then {
+                {
+                    private _gData = _groupMap get _x;
+                    if (isNil "_gData") then { continue };
+
+                    private _analysis = _analyzer call ["_analyzeGroup", [_x]];
+                    if (isNil "_analysis") then { continue };
+
+                    private _power = _analysis get "totalCombatPower";
+                    _availablePower = _availablePower + _power;
+                    _groupPower set [_x, _power];
+                } forEach _groups;
+            } else {
+                private _track = _taskNode get "_trackRef";
+                private _trackPoolSet = createHashMap;
+                if (!isNil "_track") then {
+                    { _trackPoolSet set [_x, true]; } forEach (_track get "groupPool");
+                };
+
+                private _candidateIds = _cmdr call ["_getAvailableGroups", [9999]];
+                private _candidateMeta = [];
+                {
+                    private _gId = _x;
+                    private _gData = _groupMap get _gId;
+                    if (isNil "_gData") then { continue };
+
+                    private _gType = _gData get "groupType";
+                    if !(_gType in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
+
+                    private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+                    private _distToObjective = (_gData get "position") distance2D _objPos;
+                    private _sourceBand = 4;
+                    if (_sourceObjectiveSet getOrDefault [_homeObjective, false]) then {
+                        _sourceBand = 0;
+                    } else {
+                        if (_supportObjectiveSet getOrDefault [_homeObjective, false]) then {
+                            _sourceBand = 1;
+                        } else {
+                            if (_distToObjective <= _localReserveMeters) then {
+                                _sourceBand = 2;
+                            } else {
+                                if (_distToObjective <= _maxPullDistanceMeters) then {
+                                    _sourceBand = 3;
+                                } else {
+                                    continue;
+                                };
+                            };
+                        };
+                    };
+
+                    _candidateMeta pushBack [_sourceBand, if (_trackPoolSet getOrDefault [_gId, false]) then { 0 } else { 1 }, _distToObjective, _gId];
+                } forEach _candidateIds;
+
+                _candidateMeta sort true;
+
+                private _analysisLimit = ((((_slotsRemaining max 1) min (_attackCap max 1)) * 3) max 18) min 48;
+                private _analyzedCount = 0;
+                {
+                    if (_analyzedCount >= _analysisLimit) exitWith {};
+
+                    _x params ["_sourceBand", "_trackBand", "_distToObjective", "_gId"];
+                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gId]];
+                    if (isNil "_gAnalysis") then { continue };
+
+                    private _power = _gAnalysis get "totalCombatPower";
+                    private _score = _power;
+
+                    if (_requiresAT && (_gAnalysis get "canEngageArmor")) then {
+                        _score = _score * 1.5;
+                    };
+                    if (_requiresAA && (_gAnalysis get "canEngageAir")) then {
+                        _score = _score * 1.5;
+                    };
+
+                    _availablePower = _availablePower + _power;
+                    _groupPower set [_gId, _power];
+                    _candidateScores pushBack [_sourceBand, _trackBand, _distToObjective, -_score, _gId, _power];
+                    _analyzedCount = _analyzedCount + 1;
+                } forEach _candidateMeta;
+                _analyzedCandidates = _analyzedCount;
+            };
+
+            private _isFeasible = _availablePower >= _requiredPower;
             private _minCommitPower = _requiredPower * 0.55;
             if (_minCommitPower < 700) then { _minCommitPower = 700; };
             private _canCommitEarly = _availablePower >= _minCommitPower;
+            private _commitPowerTarget = if (_isFeasible) then { _requiredPower } else { _minCommitPower };
 
             // === FORCE BUILDUP LOGIC ===
-            private _completedData = _executor get "_completedTaskData";
-            private _buildupStart = _completedData getOrDefault ["ATTACK_BUILDUP_START", -1];
+            private _buildupStart = _primData getOrDefault ["buildupStart", -1];
             private _aggressionSetting = FLO_DifficultyHandle get "value";
             private _buildupTimeout = round (180 - (60 * _aggressionSetting));
             if (_buildupTimeout < 60) then { _buildupTimeout = 60; };
 
-            if (!_isFeasible && !_canCommitEarly) then {
+            private _timedOut = false;
+            if ((count _groups) < 1 && {!_isFeasible && !_canCommitEarly}) then {
                 // Not enough power - check if we should wait or timeout
                 if (_buildupStart < 0) then {
                     // First time - start buildup timer
-                    _executor call ["_storeTaskData", ["ATTACK_BUILDUP_START", diag_tickTime]];
                     _buildupStart = diag_tickTime;
+                    _primData set ["buildupStart", _buildupStart];
+                    _taskNode set ["primitiveData", _primData];
                     ["GTN", 3, format["Attack on %1 waiting for force buildup: Have %2/%3 power",
                         _objId, round _availablePower, round _requiredPower]] call FLO_fnc_log;
                 };
@@ -942,91 +1135,59 @@ private _executor = createHashMapObject [[
                     ["GTN", 4, format["Force buildup: %1s/%2s - Power %3/%4",
                         round _waitedTime, _buildupTimeout, round _availablePower, round _requiredPower]] call FLO_fnc_log;
                     _ctx set ["status", "RUNNING"];
+                    _taskNode set ["primitiveData", _primData];
                 } else {
                     // Timeout - proceed anyway with what we have
                     ["GTN", 2, format["Attack on %1 proceeding after timeout with %2/%3 power (commit floor %4)",
                         _objId, round _availablePower, round _requiredPower, round _minCommitPower]] call FLO_fnc_log;
-                    _isFeasible = true; // Force proceed
+                    _timedOut = true;
                 };
             };
 
             // If still not feasible (and not timed out), keep waiting
-            if (!_isFeasible && !_canCommitEarly) exitWith { true };
+            if ((count _groups) < 1 && {!_isFeasible && !_canCommitEarly && !_timedOut}) exitWith { true };
+
+            // Clear buildup timer once we commit.
+            _primData set ["buildupStart", -1];
+
+            if ((count _groups) < 1 && {_attackCap > 0 && {_slotsRemaining <= 0}}) exitWith {
+                ["GTN", 3, format["Attack on %1 skipped - objective already saturated (%2/%3 attackers)", _objId, _activeAttackers, _attackCap]] call FLO_fnc_log;
+                _ctx set ["status", "FAILED"];
+                false
+            };
 
             // === SELECT GROUPS USING CAPABILITY REQUIREMENTS ===
-            // Clear buildup timer
-            _executor call ["_storeTaskData", ["ATTACK_BUILDUP_START", -1]];
-
-            // Get attack groups - first check for staged groups from earlier primitive
-            private _groups = _completedData getOrDefault ["STAGING_GROUPS", []];
-
-            // If no staged groups, check primitiveData (for direct assignment)
             if (count _groups < 1) then {
-                private _taskNode = _ctx get "taskNode";
-                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-                _groups = _primData getOrDefault ["assignedGroups", []];
-            };
-
-            // If still no groups, consume this track's pool first (prevents idle attack-track groups).
-            if (count _groups < 1) then {
-                private _taskNode = _ctx get "taskNode";
+                private _selectedPower = 0;
+                private _selectedLookup = createHashMap;
                 private _track = _taskNode get "_trackRef";
+                private _trackPoolSet = createHashMap;
                 if (!isNil "_track") then {
-                    private _trackPool = _track get "groupPool";
-                    private _maxFromTrack = count _trackPool;
-                    _groups = _cmdr call ["_getGroupsFromTrack", [_track, _maxFromTrack, _objPos]];
-                    if (count _groups > 0) then {
-                        ["GTN", 3, format["Pulled %1 groups from track %2 for attack on %3",
-                            count _groups, _track get "id", _objId]] call FLO_fnc_log;
+                    { _trackPoolSet set [_x, true]; } forEach (_track get "groupPool");
+                };
+
+                _candidateScores sort true;
+                {
+                    _x params ["_sourceBand", "_trackBand", "_dist", "_negScore", "_gId", "_power"];
+                    if (_selectedLookup getOrDefault [_gId, false]) then { continue };
+
+                    _groups pushBack _gId;
+                    _selectedLookup set [_gId, true];
+                    _selectedPower = _selectedPower + _power;
+
+                    if (_attackCap > 0 && {count _groups >= _slotsRemaining}) exitWith {};
+                    if (_selectedPower >= _commitPowerTarget) exitWith {};
+                } forEach _candidateScores;
+
+                if (!isNil "_track") then {
+                    private _selectedFromTrack = _groups select { _trackPoolSet getOrDefault [_x, false] };
+                    if (count _selectedFromTrack > 0) then {
+                        _track set ["groupPool", (_track get "groupPool") - _selectedFromTrack];
                     };
                 };
-            };
 
-            // If still no groups, use capability-aware selection
-            if (count _groups < 1) then {
-                private _availableAssets = _feasibility get "availableAssets";
-                private _groupMap = FLO_virtualGroups get "_groups";
-
-                // Score and sort groups: nearest-first with capability tie-break.
-                private _scoredGroups = [];
-                {
-                    private _gId = _x;
-                    private _gAnalysis = _analyzer call ["_analyzeGroup", [_gId]];
-                    if (isNil "_gAnalysis") then { continue };
-                    private _gData = _groupMap get _gId;
-                    if (isNil "_gData") then { continue };
-
-                    private _power = _gAnalysis get "totalCombatPower";
-                    private _score = _power;
-
-                    // Bonus for required capabilities
-                    if (_requiresAT && (_gAnalysis get "canEngageArmor")) then {
-                        _score = _score * 1.5;
-                    };
-                    if (_requiresAA && (_gAnalysis get "canEngageAir")) then {
-                        _score = _score * 1.5;
-                    };
-
-                    private _dist = (_gData get "position") distance2D _objPos;
-                    _scoredGroups pushBack [_dist, -_score, _gId, _power];
-                } forEach _availableAssets;
-
-                // Sort by distance ascending, then score descending.
-                _scoredGroups sort true;
-
-                // Select from the full scored pool (no hard attack cap).
-                private _selectedPower = 0;
-                private _maxGroups = count _scoredGroups;
-                {
-                    if (count _groups >= _maxGroups) exitWith {};
-
-                    _x params ["_dist", "_negScore", "_gId", "_power"];
-                    _groups pushBack _gId;
-                    _selectedPower = _selectedPower + _power;
-                } forEach _scoredGroups;
-
-                ["GTN", 3, format["Selected %1 groups with %2 power for attack on %3",
-                    count _groups, round _selectedPower, _objId]] call FLO_fnc_log;
+                ["GTN", 3, format["Selected %1 groups with %2 power for attack on %3 (active=%4/%5, localSources=%6, analyzed=%7)",
+                    count _groups, round _selectedPower, _objId, _activeAttackers, _attackCap, count _sourceObjectives, _analyzedCandidates]] call FLO_fnc_log;
             } else {
                 ["GTN", 3, format["Using %1 pre-staged groups for attack", count _groups]] call FLO_fnc_log;
             };
@@ -1068,9 +1229,11 @@ private _executor = createHashMapObject [[
 
             // Order attack
             private _issuedGroups = [];
+            private _issuedPower = 0;
             {
-                if (_cmdr call ["_orderGroupAttack", [_x, _objPos]]) then {
+                if (_cmdr call ["_orderGroupAttack", [_x, _objPos, _objId]]) then {
                     _issuedGroups pushBack _x;
+                    _issuedPower = _issuedPower + (_groupPower getOrDefault [_x, 0]);
                 };
             } forEach _groups;
 
@@ -1088,7 +1251,7 @@ private _executor = createHashMapObject [[
             _primData set ["objectiveId", _objId];
             _primData set ["attackGroups", _issuedGroups];
             _primData set ["requiredPower", _requiredPower];
-            _primData set ["actualPower", _availablePower];
+            _primData set ["actualPower", _issuedPower];
             _taskNode set ["primitiveData", _primData];
 
             _ctx set ["status", "SUCCESS"];
@@ -1399,6 +1562,16 @@ private _executor = createHashMapObject [[
                 _allCandidates
             };
 
+            private _unsaturatedCandidates = _selectionPool select {
+                private _candidateId = _x select 0;
+                private _attackCap = _cmdr call ["_getAttackCapForObjective", [_candidateId]];
+                private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_candidateId]];
+                (_attackCap <= 0) || {_activeAttackers < _attackCap}
+            };
+            if (count _unsaturatedCandidates > 0) then {
+                _selectionPool = _unsaturatedCandidates;
+            };
+
             // Select nearest vulnerable frontline objective.
             private _objId = "";
             private _bestDist = 1e12;
@@ -1425,7 +1598,7 @@ private _executor = createHashMapObject [[
 
             private _issued = [];
             {
-                if (_cmdr call ["_orderGroupAttack", [_x, _objPos]]) then {
+                if (_cmdr call ["_orderGroupAttack", [_x, _objPos, _objId]]) then {
                     _issued pushBack _x;
                 };
             } forEach _available;
@@ -2199,34 +2372,67 @@ private _executor = createHashMapObject [[
                 _ctx set ["status", "FAILED"];
                 false
             };
-            
+
+            private _defenderCounts = createHashMap;
+            private _groups = FLO_virtualGroups get "_groups";
+            private _ownSide = _gtnCmdr get "_ownSide";
+            {
+                private _gData = _y;
+                if ((_gData get "side") != _ownSide) then { continue };
+                if ((_gData get "groupType") == "static_aa") then { continue };
+                if ((_gData get "currentOrder") != "DEFEND") then { continue };
+
+                private _defendObjective = _gData get "defendObjective";
+                if (_defendObjective == "") then { continue };
+
+                private _defenderCount = _defenderCounts get _defendObjective;
+                if (isNil "_defenderCount") then { _defenderCount = 0; };
+                _defenderCounts set [_defendObjective, _defenderCount + 1];
+            } forEach _groups;
+
             // Analyze each objective for garrison priority
             private _scoredObjs = [];
             {
                 private _objId = _x;
                 private _objData = _friendlyObjs get _objId;
                 private _pos = _objData get "position";
-                
-                // Get threat analysis from capability analyzer
-                private _analysis = FLO_GTN_CapabilityAnalyzer call ["_analyzeObjective", [_objId, _ws]];
-                private _threatLevel = _analysis get "threatLevel";
-                
+
+                private _assigned = _defenderCounts get _objId;
+                if (isNil "_assigned") then { _assigned = 0; };
+                private _cap = _gtnCmdr call ["_getDefenseCapForObjective", [_objId]];
+                if (_cap > 0 && {_assigned >= _cap}) then { continue };
+
+                private _underAttack = _objData get "underAttack";
+                private _contested = _objData get "contested";
+
                 // Check exposed flanks (linked to enemy objectives)
                 private _linkedObjs = _objData get "linkedObjectives";
                 private _exposedFlanks = { (FLO_Objectives get _x get "owner") == _enemySide } count _linkedObjs;
-                
+
                 // Force ratio from World State
                 private _friendlyCount = _objData get "friendlyCount";
                 private _enemyCount = _objData get "enemyCount";
                 private _forceDeficit = (_enemyCount * 1.5) - _friendlyCount;
-                
+                private _freeSlots = (_cap - _assigned) max 0;
+
+                // Build a direct local-threat score from maintained objective state instead of
+                // paying for heavyweight capability analysis on every friendly objective.
+                private _threatLevel = ((_enemyCount * 0.5)
+                    + (if (_underAttack) then { 2 } else { 0 })
+                    + (if (_contested) then { 1 } else { 0 })) min 10;
+
                 // Score: threat + flanks + deficit + priority
                 private _basePriority = _objData get "priority";
-                private _score = (_threatLevel * 10) + (_exposedFlanks * 30) + (_forceDeficit max 0) * 10 + (_basePriority / 2);
-                
+                private _score = (_threatLevel * 10) + (_exposedFlanks * 30) + (_forceDeficit max 0) * 10 + (_basePriority / 2) + (_freeSlots * 2);
+
                 _scoredObjs pushBack [_score, _objId, _pos, _exposedFlanks, _threatLevel];
-                
+
             } forEach (keys _friendlyObjs);
+
+            if (count _scoredObjs == 0) exitWith {
+                _ctx set ["status", "FAILED"];
+                false
+            };
             
             // Select highest need
             _scoredObjs sort false;
@@ -2258,11 +2464,11 @@ private _executor = createHashMapObject [[
             private _objData = FLO_Objectives get _objId;
             private _targetPos = _objData get "position";
             private _enemyDist = _executor call ["_getTaskData", ["GARRISON_ENEMY_DIST"]];
-            
+
             // Analyze threat using capability analyzer
             private _ws = _gtnCmdr get "_worldState";
-            private _analysis = FLO_GTN_CapabilityAnalyzer call ["_analyzeObjective", [_objId, _ws]];
-            
+            private _analysis = _ws call ["_getObjectiveAnalysis", [_objId]];
+
             private _requiresAT = _analysis get "requiresAT";
             private _requiresAA = _analysis get "requiresAA";
             private _threatLevel = _analysis get "threatLevel";
@@ -2270,9 +2476,15 @@ private _executor = createHashMapObject [[
             
             // Frontline objectives get more garrison
             if (_enemyDist < 1500) then { _groupsNeeded = _groupsNeeded + 1 };
-            
+
             // Get available groups
-            private _available = _cmdr call ["_getAvailableGroups", [_groupsNeeded * 2, _targetPos]];
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, _groupsNeeded * 2]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [_groupsNeeded * 2, _targetPos]]
+            };
             if (count _available == 0) exitWith {
                 ["GTN", 3, "No groups available for garrison"] call FLO_fnc_log;
                 _ctx set ["status", "FAILED"];

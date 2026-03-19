@@ -52,11 +52,11 @@ private _fnc_getSelection = {
 private _playerFaction = [1955] call _fnc_getSelection;
 private _enemyFaction = [1956] call _fnc_getSelection;
 private _civilianFaction = [1957] call _fnc_getSelection;
-private _attackOps = [1958] call _fnc_getSelection;
+private _attackLanes = [1958] call _fnc_getSelection;
 private _resources = [1959] call _fnc_getSelection;
 private _reputation = [1960] call _fnc_getSelection;
 private _difficulty = [1961] call _fnc_getSelection;
-private _defenseOps = [1962] call _fnc_getSelection;
+private _defenseCoverage = [1962] call _fnc_getSelection;
 private _tempo = [1963] call _fnc_getSelection;
 private _objectiveSize = [1964] call _fnc_getSelection;
 private _virtualizationDistance = [1965] call _fnc_getSelection;
@@ -65,11 +65,11 @@ private _virtualizationDistance = [1965] call _fnc_getSelection;
 if (_playerFaction isEqualTo "" || 
     _enemyFaction isEqualTo "" || 
     _civilianFaction isEqualTo "" || 
-    _attackOps isEqualTo "" || 
+    _attackLanes isEqualTo "" || 
     _resources isEqualTo "" || 
     _reputation isEqualTo "" || 
     _difficulty isEqualTo "" ||
-    _defenseOps isEqualTo "" ||
+    _defenseCoverage isEqualTo "" ||
     _tempo isEqualTo "" ||
     _objectiveSize isEqualTo "" ||
     _virtualizationDistance isEqualTo "") exitWith {
@@ -87,8 +87,8 @@ _display closeDisplay 1;
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _attackOps, _resources, _reputation, _difficulty, _defenseOps, _tempo, _objectiveSize, _virtualizationDistance] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackOps", "_resources", "_reputation", "_difficulty", "_defenseOps", "_tempo", "_objectiveSize", "_virtualizationDistance"];
+[_playerFaction, _enemyFaction, _civilianFaction, _attackLanes, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance] spawn {
+	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackLanes", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance"];
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -114,21 +114,21 @@ _display closeDisplay 1;
 	// Process resources
 	private _resourceValue = parseNumber _resources;
 
-	// Process concurrent GTN attack/defense plan limits
-	private _attackOpsValue = switch (_attackOps) do {
-		case "Conservative": {4};
-		case "Balanced": {8};
-		case "Aggressive": {10};
-		case "Relentless": {12};
-		default {4};
+	// Process GTN attack lanes and defense coverage.
+	private _attackOpsValue = switch (_attackLanes) do {
+		case "Conservative": {1};
+		case "Balanced": {2};
+		case "Aggressive": {3};
+		case "Relentless": {4};
+		default {2};
 	};
 
-	private _defenseOpsValue = switch (_defenseOps) do {
-		case "Minimal Coverage": {4};
-		case "Balanced Coverage": {8};
-		case "Layered Coverage": {10};
-		case "Maximum Coverage": {12};
-		default {4};
+	private _defenseOpsValue = switch (_defenseCoverage) do {
+		case "Minimal Coverage": {0.75};
+		case "Balanced Coverage": {1};
+		case "Layered Coverage": {1.25};
+		case "Maximum Coverage": {1.5};
+		default {1};
 	};
 
 	// Process GTN commander update tempo (seconds)
@@ -194,8 +194,8 @@ _display closeDisplay 1;
 		["civilianHandle", createHashMapFromArray [["name", _civilianFaction]]],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["difficultyHandle", createHashMapFromArray [["value", _difficultyValue], ["name", _difficulty]]],
-		["gtnAttackHandle", createHashMapFromArray [["value", _attackOpsValue], ["name", _attackOps]]],
-		["gtnDefenseHandle", createHashMapFromArray [["value", _defenseOpsValue], ["name", _defenseOps]]],
+		["gtnAttackLaneHandle", createHashMapFromArray [["value", _attackOpsValue], ["name", _attackLanes]]],
+		["gtnDefenseCoverageHandle", createHashMapFromArray [["value", _defenseOpsValue], ["name", _defenseCoverage]]],
 		["gtnTempoHandle", createHashMapFromArray [["value", _tempoValue], ["name", _tempo]]],
 		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
 		["enemyPresence", _enemyPresence],

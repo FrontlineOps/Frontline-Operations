@@ -62,11 +62,25 @@ _net set ["_loopStarted", true];
                         private _dt = diag_tickTime - _t0;
 
                         if (_dt > 0.01) then {
+                            private _perf = _net get "_lastPerf";
+                            if (isNil "_perf") then {
+                                _perf = createHashMap;
+                            };
                             diag_log format [
-                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms",
+                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reconcile=%6 targets=%7 dispatch=%8 | needed=%9 batch=%10 attempted=%11 created=%12 status=%13",
                                 _net get "_managedSideKey",
                                 count (_net get "_reinforcementQueue"),
-                                _dt * 1000
+                                _dt * 1000,
+                                _perf getOrDefault ["refreshMs", 0],
+                                _perf getOrDefault ["compositionMs", 0],
+                                _perf getOrDefault ["reconcileMs", 0],
+                                _perf getOrDefault ["targetMs", 0],
+                                _perf getOrDefault ["dispatchMs", 0],
+                                _perf getOrDefault ["neededCount", 0],
+                                _perf getOrDefault ["batchSize", 0],
+                                _perf getOrDefault ["attempted", 0],
+                                _perf getOrDefault ["created", 0],
+                                _perf getOrDefault ["status", "UNKNOWN"]
                             ];
                         };
                     };

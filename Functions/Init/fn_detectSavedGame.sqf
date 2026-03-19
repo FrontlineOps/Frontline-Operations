@@ -68,18 +68,38 @@ private _savedConfig = createHashMap;
 // Get the config sub-hashmap
 private _configData = _saveData getOrDefault ["config", createHashMap];
 
-// Try to get saved faction handles from the config sub-hashmap
 private _handleKeys = [
     ["friendlyHandle", "FLO_FriendlyHandle"],
     ["enemyHandle", "FLO_EnemyHandle"],
     ["civilianHandle", "FLO_CivilianHandle"],
     ["difficultyHandle", "FLO_DifficultyHandle"],
-    ["gtnAttackHandle", "FLO_GTN_AttackHandle"],
-    ["gtnDefenseHandle", "FLO_GTN_DefenseHandle"],
+    ["gtnAttackLaneHandle", "FLO_GTN_AttackLaneHandle"],
+    ["gtnDefenseCoverageHandle", "FLO_GTN_DefenseCoverageHandle"],
     ["gtnTempoHandle", "FLO_GTN_TempoHandle"],
     ["moneyHandle", "FLO_MoneyHandle"],
     ["reputationHandle", "FLO_ReputationHandle"]
 ];
+
+private _requiredConfigKeys = [
+    "friendlyHandle",
+    "enemyHandle",
+    "civilianHandle",
+    "difficultyHandle",
+    "gtnAttackLaneHandle",
+    "gtnDefenseCoverageHandle",
+    "gtnTempoHandle",
+    "moneyHandle",
+    "reputationHandle",
+    "objectiveSizeThreshold",
+    "virtualizationDistance",
+    "enemyPrec"
+];
+
+private _missingConfigKeys = _requiredConfigKeys select { !(_x in _configData) };
+if (count _missingConfigKeys > 0) exitWith {
+    ["SAVE_DETECT", 2, format ["Save config missing required keys: %1", _missingConfigKeys]] call FLO_fnc_log;
+    [false, nil]
+};
 
 private _foundHandles = 0;
 {
@@ -91,9 +111,8 @@ private _foundHandles = 0;
     };
 } forEach _handleKeys;
 
-// We need at least the faction handles to proceed
-if (_foundHandles < 3) exitWith {
-    ["SAVE_DETECT", 2, format ["Only found %1/3 required faction handles - treating as fresh start", _foundHandles]] call FLO_fnc_log;
+if (_foundHandles != count _handleKeys) exitWith {
+    ["SAVE_DETECT", 2, format ["Only found %1/%2 required config handles - treating as fresh start", _foundHandles, count _handleKeys]] call FLO_fnc_log;
     [false, nil]
 };
 
