@@ -78,7 +78,7 @@ XPS_typ_JobScheduler = [
     ["_queueObject", nil],
     ["_metrics", nil],
     ["CurrentItem", nil],
-    ["MaxNodesPerTick", 20000],
+    ["MaxNodesPerFrame", 32],
     ["hasSearchWork", compileFinal {
         if !(isNil { _self get "CurrentItem" }) exitWith { true };
         !((_self get "_queueObject") call ["IsEmpty"]);
@@ -183,7 +183,7 @@ XPS_typ_JobScheduler = [
             private _sched = _args # 0;
             private _frameStart = diag_tickTime;
             private _count = 0;
-            private _limit = _sched get "MaxNodesPerTick";
+            private _limit = _sched get "MaxNodesPerFrame";
 
             while { _count < _limit } do {
                 if !(_sched call ["hasSearchWork"]) exitWith {};
@@ -211,10 +211,11 @@ XPS_typ_JobScheduler = [
             if (_frameCost >= (_perf get "slowFrameThresholdMs") && { _now >= (_perf get "nextSlowFrameLogAt") }) then {
                 _perf set ["nextSlowFrameLogAt", _now + (_perf get "logCooldownSec")];
                 diag_log format [
-                    "[FLO][PERF] Pathfinding scheduler processed %1 nodes with queue=%2 in %3 ms",
+                    "[FLO][PERF] Pathfinding scheduler processed %1 nodes with queue=%2 in %3 ms (cap=%4)",
                     _count,
                     _queueDepth,
-                    _frameCost
+                    _frameCost,
+                    _limit
                 ];
             };
 

@@ -251,23 +251,30 @@ XPS_PF_typ_RoadDoctrine = [
 			["_heuristics",[0.9, 1, 1.2],[[]],[3]],
 			["_roadTypes",["MAIN ROAD","ROAD","TRACK"],[[]],[1,2,3,4]],
 			["_spacingCap",350,[0]],
-			["_turnThreshold",50,[0]]
+			["_turnThreshold",50,[0]],
+			["_estimateBias",1,[0]]
 		];
 		_self set ["Weights",_heuristics];
 		_self set ["RoadTypes",_roadTypes];
 		_self set ["SpacingCap", _spacingCap];
 		_self set ["TurnThreshold", _turnThreshold];
+		_self set ["EstimateBias", _estimateBias];
 	}],
 	["Weights",[0.9, 1, 1.2]],
 	["RoadTypes",["MAIN ROAD","ROAD","TRACK"]],
 	["SpacingCap",350],
-	["TurnThreshold",50]
+	["TurnThreshold",50],
+	["EstimateBias",1]
 ];
 
 XPS_PF_typ_RoadGraphSearch = [
 	["#str", compileFinal {"XPS_PF_typ_RoadGraphSearch"}],
 	["#type","XPS_PF_typ_RoadGraphSearch"],
 	["#base",XPS_typ_AstarSearch],
+	["AdjustEstimate",compileFinal {
+		params ["_estimate","_fromNode","_toNode"];
+		_estimate * ((_self get "Doctrine") get "EstimateBias");
+	}],
 	["AdjustCost",compileFinal {
 		params ["_cost","_fromNode","_toNode"];
 
@@ -416,10 +423,10 @@ if (isNil "FLO_PF_RoadGraph") then {
 };
 
 // Vehicle doctrine (no trails, main road always better - descending preference)
-FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.9, 1, 1.2],["MAIN ROAD","ROAD","TRACK"],350,50]];
+FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.9, 1, 1.2],["MAIN ROAD","ROAD","TRACK"],350,50,1.15]];
 
 // Man doctrine (with trails, all roads equal)
-FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"],220,35]];
+FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"],220,35,1.1]];
 
 // To initiate a search :
 // _search = createhashmapobject [XPS_PF_typ_RoadGraphSearch,[FLO_Pathfinding_RoadGraph, <start road object> , <end road object>, <reverse path?: true/false>]];

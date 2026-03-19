@@ -8,6 +8,7 @@ private _emittedWaypointsAvg = if (_resolvedCount > 0) then { (_metrics get "emi
 private _perf = FLO_PF_Perf;
 
 [
+    ["maxNodesPerFrame", FLO_PF_Scheduler get "MaxNodesPerFrame"],
     ["queueDepth", _metrics get "queueDepth"],
     ["queuePeak", _metrics get "queuePeak"],
     ["processedThisFrame", _metrics get "processedThisFrame"],
