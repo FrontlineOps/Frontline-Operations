@@ -654,25 +654,8 @@ private _worldState = createHashMapObject [[
         if (isNil "_routeDistance") then {
             private _fromPos = ((FLO_Objectives get _fromObjectiveId) get "position");
             private _toPos = ((FLO_Objectives get _toObjectiveId) get "position");
-            private _path = [_fromObjectiveId, _toObjectiveId] call FLO_fnc_getObjectivePath;
-
-            private _nodes = [_fromPos];
-            { _nodes pushBack _x; } forEach _path;
-            if (((_nodes select ((count _nodes) - 1)) distance2D _toPos) > 5) then {
-                _nodes pushBack _toPos;
-            };
-
-            _routeDistance = 0;
-            _crossesWater = false;
-
-            for "_i" from 0 to ((count _nodes) - 2) do {
-                private _a = _nodes select _i;
-                private _b = _nodes select (_i + 1);
-                _routeDistance = _routeDistance + (_a distance2D _b);
-                if (_self call ["_segmentCrossesWater", [_a, _b]]) then {
-                    _crossesWater = true;
-                };
-            };
+            _routeDistance = _fromPos distance2D _toPos;
+            _crossesWater = _self call ["_segmentCrossesWater", [_fromPos, _toPos]];
 
             _linkData set ["routeDistance", _routeDistance];
             _linkData set ["crossesWater", _crossesWater];

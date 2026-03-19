@@ -85,7 +85,7 @@ private _dismountPos = _destinationPos getPos [100, _destinationPos getDir _curr
 private _waypoints = [
     [_dismountPos, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 50]
 ];
-[_transportId, _waypoints, true, true, "TRANSPORT_REQUEST"] call FLO_fnc_updateVirtualGroupWaypoints;
+[_transportId, _waypoints, false, true, "TRANSPORT_REQUEST"] call FLO_fnc_updateVirtualGroupWaypoints;
 
 // Configure for dismount
 _transData set ["dismountAtWaypoint", 0];

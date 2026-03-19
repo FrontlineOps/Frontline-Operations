@@ -14,8 +14,9 @@
  *
  * Examples:
  * ["init", [500]] call FLO_fnc_virtualizationSpatialIndex;           // Init with 500m cells
- * ["add", [_groupId, _position]] call FLO_fnc_virtualizationSpatialIndex;
- * ["queryRadius", [_pos, 1000]] call FLO_fnc_virtualizationSpatialIndex;  // Groups within 1000m
+ * ["add", [_groupId, _position, east]] call FLO_fnc_virtualizationSpatialIndex;
+ * ["queryRadius", [_pos, 1000]] call FLO_fnc_virtualizationSpatialIndex;  // Groups in overlapping cells
+ * ["queryRadius", [_pos, 1000, west, true]] call FLO_fnc_virtualizationSpatialIndex;  // Exact-radius WEST groups
  */
 
 params [["_mode", "init", [""]], ["_args", [], [[]]]];
@@ -27,7 +28,14 @@ if (isNil "FLO_VirtSpatial") then {
     FLO_VirtSpatial = createHashMapFromArray [
         ["cellSize", 500],
         ["grid", createHashMap],        // "cellX_cellY" -> [groupId1, groupId2, ...]
-        ["groupCells", createHashMap],  // groupId -> "cellX_cellY" (for fast removal)
+        ["gridBySide", createHashMapFromArray [
+            ["EAST", createHashMap],
+            ["WEST", createHashMap],
+            ["GUER", createHashMap],
+            ["CIV", createHashMap],
+            ["UNKNOWN", createHashMap]
+        ]],
+        ["groupMeta", createHashMap],   // groupId -> [cellKey, sideKey]
         ["mapSize", 30720]              // Default Altis size, will be updated
     ];
 };
@@ -62,6 +70,37 @@ private _getCellsInRadius = {
     _cells
 };
 
+private _getSideKey = {
+    params [["_side", nil]];
+
+    if (isNil "_side") exitWith { "" };
+    if (_side isEqualType "") exitWith {
+        private _sideKey = toUpper _side;
+        if !(_sideKey in ["EAST", "WEST", "GUER", "CIV", "UNKNOWN"]) then {
+            _sideKey = "UNKNOWN";
+        };
+        _sideKey;
+    };
+    if (_side isEqualTo east) exitWith { "EAST" };
+    if (_side isEqualTo west) exitWith { "WEST" };
+    if (_side isEqualTo resistance) exitWith { "GUER" };
+    if (_side isEqualTo civilian) exitWith { "CIV" };
+    "UNKNOWN";
+};
+
+private _removeFromGrid = {
+    params ["_grid", "_cellKey", "_groupId"];
+
+    private _cell = _grid getOrDefault [_cellKey, []];
+    _cell = _cell - [_groupId];
+
+    if (count _cell == 0) then {
+        _grid deleteAt _cellKey;
+    } else {
+        _grid set [_cellKey, _cell];
+    };
+};
+
 // ============================================================================
 // MODE HANDLERS
 // ============================================================================
@@ -74,7 +113,14 @@ switch (toLower _mode) do {
         
         FLO_VirtSpatial set ["cellSize", _cellSize];
         FLO_VirtSpatial set ["grid", createHashMap];
-        FLO_VirtSpatial set ["groupCells", createHashMap];
+        FLO_VirtSpatial set ["gridBySide", createHashMapFromArray [
+            ["EAST", createHashMap],
+            ["WEST", createHashMap],
+            ["GUER", createHashMap],
+            ["CIV", createHashMap],
+            ["UNKNOWN", createHashMap]
+        ]];
+        FLO_VirtSpatial set ["groupMeta", createHashMap];
         FLO_VirtSpatial set ["mapSize", worldSize];
         
         ["VIRTUALIZATION", 3, format["Spatial index initialized (cell size: %1m)", _cellSize]] call FLO_fnc_log;
@@ -83,13 +129,16 @@ switch (toLower _mode) do {
 
     // Add a group to the index
     case "add": {
-        _args params ["_groupId", "_position"];
+        _args params ["_groupId", "_position", ["_side", nil]];
         
         if (isNil "_groupId" || isNil "_position") exitWith { false };
         
         private _cellKey = [_position] call _getCellKey;
         private _grid = FLO_VirtSpatial get "grid";
-        private _groupCells = FLO_VirtSpatial get "groupCells";
+        private _groupMeta = FLO_VirtSpatial get "groupMeta";
+        private _sideKey = [_side] call _getSideKey;
+        private _gridBySide = FLO_VirtSpatial get "gridBySide";
+        private _sideGrid = _gridBySide getOrDefault [_sideKey, _gridBySide get "UNKNOWN"];
         
         // Add to grid
         private _cell = _grid getOrDefault [_cellKey, []];
@@ -97,9 +146,15 @@ switch (toLower _mode) do {
             _cell pushBack _groupId;
             _grid set [_cellKey, _cell];
         };
+
+        private _sideCell = _sideGrid getOrDefault [_cellKey, []];
+        if !(_groupId in _sideCell) then {
+            _sideCell pushBack _groupId;
+            _sideGrid set [_cellKey, _sideCell];
+        };
         
-        // Track group's cell
-        _groupCells set [_groupId, _cellKey];
+        // Track group's cell and side
+        _groupMeta set [_groupId, [_cellKey, _sideKey]];
         
         true
     };
@@ -110,21 +165,19 @@ switch (toLower _mode) do {
         
         if (isNil "_groupId") exitWith { false };
         
-        private _groupCells = FLO_VirtSpatial get "groupCells";
-        private _cellKey = _groupCells getOrDefault [_groupId, ""];
+        private _groupMeta = FLO_VirtSpatial get "groupMeta";
+        private _meta = _groupMeta getOrDefault [_groupId, []];
+        _meta params [["_cellKey", ""], ["_sideKey", "UNKNOWN"]];
         
         if (_cellKey != "") then {
             private _grid = FLO_VirtSpatial get "grid";
-            private _cell = _grid getOrDefault [_cellKey, []];
-            _cell = _cell - [_groupId];
-            
-            if (count _cell == 0) then {
-                _grid deleteAt _cellKey;
-            } else {
-                _grid set [_cellKey, _cell];
-            };
-            
-            _groupCells deleteAt _groupId;
+            [_grid, _cellKey, _groupId] call _removeFromGrid;
+
+            private _gridBySide = FLO_VirtSpatial get "gridBySide";
+            private _sideGrid = _gridBySide getOrDefault [_sideKey, _gridBySide get "UNKNOWN"];
+            [_sideGrid, _cellKey, _groupId] call _removeFromGrid;
+
+            _groupMeta deleteAt _groupId;
         };
         
         true
@@ -132,18 +185,20 @@ switch (toLower _mode) do {
 
     // Update a group's position in the index
     case "update": {
-        _args params ["_groupId", "_newPosition"];
+        _args params ["_groupId", "_newPosition", ["_side", nil]];
         
         if (isNil "_groupId" || isNil "_newPosition") exitWith { false };
         
-        private _groupCells = FLO_VirtSpatial get "groupCells";
-        private _oldCellKey = _groupCells getOrDefault [_groupId, ""];
+        private _groupMeta = FLO_VirtSpatial get "groupMeta";
+        private _meta = _groupMeta getOrDefault [_groupId, []];
+        _meta params [["_oldCellKey", ""], ["_oldSideKey", "UNKNOWN"]];
         private _newCellKey = [_newPosition] call _getCellKey;
+        private _newSideKey = [_side] call _getSideKey;
         
-        // Only update if cell changed
-        if (_oldCellKey != _newCellKey) then {
+        // Only update if cell or side changed
+        if (_oldCellKey != _newCellKey || {_oldSideKey != _newSideKey}) then {
             ["remove", [_groupId]] call FLO_fnc_virtualizationSpatialIndex;
-            ["add", [_groupId, _newPosition]] call FLO_fnc_virtualizationSpatialIndex;
+            ["add", [_groupId, _newPosition, _side]] call FLO_fnc_virtualizationSpatialIndex;
         };
         
         true
@@ -161,10 +216,15 @@ switch (toLower _mode) do {
 
     // Query groups within radius of position
     case "queryradius": {
-        _args params ["_position", "_radius"];
+        _args params ["_position", "_radius", ["_filterSide", nil], ["_exact", false]];
         
         private _cells = [_position, _radius] call _getCellsInRadius;
-        private _grid = FLO_VirtSpatial get "grid";
+        private _sideKey = [_filterSide] call _getSideKey;
+        private _grid = if (_sideKey == "") then {
+            FLO_VirtSpatial get "grid"
+        } else {
+            (FLO_VirtSpatial get "gridBySide") getOrDefault [_sideKey, createHashMap]
+        };
         private _result = [];
         
         {
@@ -173,7 +233,14 @@ switch (toLower _mode) do {
         } forEach _cells;
         
         // Remove duplicates and return
-        _result arrayIntersect _result
+        _result = _result arrayIntersect _result;
+        if !(_exact) exitWith { _result };
+
+        private _groups = FLO_virtualGroups get "_groups";
+        _result select {
+            private _gData = _groups get _x;
+            (_gData get "position") distance2D _position <= _radius
+        }
     };
 
     // Rebuild entire index from current groups
@@ -181,12 +248,19 @@ switch (toLower _mode) do {
         if (isNil "FLO_virtualGroups") exitWith { false };
         
         FLO_VirtSpatial set ["grid", createHashMap];
-        FLO_VirtSpatial set ["groupCells", createHashMap];
+        FLO_VirtSpatial set ["gridBySide", createHashMapFromArray [
+            ["EAST", createHashMap],
+            ["WEST", createHashMap],
+            ["GUER", createHashMap],
+            ["CIV", createHashMap],
+            ["UNKNOWN", createHashMap]
+        ]];
+        FLO_VirtSpatial set ["groupMeta", createHashMap];
         
         private _groups = FLO_virtualGroups get "_groups";
         {
             private _pos = _y get "position";
-            ["add", [_x, _pos]] call FLO_fnc_virtualizationSpatialIndex;
+            ["add", [_x, _pos, _y get "side"]] call FLO_fnc_virtualizationSpatialIndex;
         } forEach _groups;
         
         ["VIRTUALIZATION", 3, format["Spatial index rebuilt: %1 groups", count keys _groups]] call FLO_fnc_log;

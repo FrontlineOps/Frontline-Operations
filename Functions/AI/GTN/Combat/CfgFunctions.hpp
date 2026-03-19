@@ -9,6 +9,7 @@ class GTNCombatResolver {
 
     class gtnCombatApplyAttrition {};
     class gtnCombatAveragePosition {};
+    class gtnCombatAffectsClassification {};
     class gtnCombatClassifyGroups {};
     class gtnCombatCleanupMarkers {};
     class gtnCombatCleanupResumeStates {};
@@ -16,8 +17,12 @@ class GTNCombatResolver {
     class gtnCombatDerivePostCombatState {};
     class gtnCombatEnterState {};
     class gtnCombatExitState {};
+    class gtnCombatGetClassification {};
+    class gtnCombatGetState {};
     class gtnCombatIsDirectCombatGroup {};
+    class gtnCombatIsSupportProvider {};
     class gtnCombatIsLiveArea {};
+    class gtnCombatMarkClassificationDirty {};
     class gtnCombatMarkerId {};
     class gtnCombatPrepareRealGroupForCombat {};
     class gtnCombatRecordEvent {};

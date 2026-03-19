@@ -16,26 +16,48 @@ XPS_typ_AstarSearch = [
 	["_workingEndKey",nil],
 	["_reverse",nil],
 	["cameFrom",nil], //part of working graph
+	["cameEdge",nil], //path segment from previous node to this node
 	["costSoFar",nil], //part of working graph
 	["currentNode",nil],
 	["frontier",nil], //part of working graph
 	["lastNode",nil],
 	["getPath",compileFinal {
-		private _status = "FAILURE";
+		private _status = "PARTIAL";
 		private _start = _self get "StartNode";
 		private _end = _self get "EndNode";
-		private _current = _end;
 		private _path = [];
 		private _cameFrom = _self get "cameFrom";
+		private _cameEdge = _self get "cameEdge";
+		private _resolvedNode = _self get "lastNode";
+		private _reachedEnd = false;
 
-		if (isNil {_cameFrom get (_current get "Index")}) then {_current = _self get "lastNode";};
+		if ((_end get "Index") isEqualTo (_start get "Index")) then {
+			_reachedEnd = true;
+			_resolvedNode = _end;
+		} else {
+			if !(isNil {_cameFrom get (_end get "Index")}) then {
+				_reachedEnd = true;
+				_resolvedNode = _end;
+			};
+		};
+
+		private _current = _resolvedNode;
 
 		while {!(isNil "_current") && !(_current isEqualTo _start)} do {
-			_path pushBack _current;
+			private _edgeSegment = _cameEdge get (_current get "Index");
+			if (isNil "_edgeSegment") then {
+				_path pushBack _current;
+			} else {
+				private _segment = +_edgeSegment;
+				reverse _segment;
+				{
+					_path pushBack _x;
+				} forEach _segment;
+			};
 			_current = _cameFrom get (_current get "Index");
 		};
 
-		if (_current isEqualTo _start) then {_status = "SUCCESS";};
+		if (_reachedEnd && {_current isEqualTo _start}) then {_status = "SUCCESS";};
 		if (_self get "_reverse") then {reverse _path};
 		_self set ["Path",_path];
 		_self set ["Status",_status];
@@ -104,6 +126,10 @@ XPS_typ_AstarSearch = [
 		params ["_neighbors"];
 		_neighbors;
 	}],
+	["DecorateNeighbors",compileFinal {
+		params ["_currentNode","_prevNode","_neighbors"];
+		_neighbors;
+	}],
 	["Init",compileFinal {
 		private _graph = _self get "_workingGraph";
 		_self set ["StartNode",_graph call ["GetNodeAt",[_self get "_workingStartKey"]]];
@@ -112,12 +138,13 @@ XPS_typ_AstarSearch = [
 		_self set ["costSoFar",createhashmap];
 		_self get "costSoFar" set [_self get "StartNode" get "Index",0];
 		_self set ["cameFrom",createhashmap];
+		_self set ["cameEdge",createhashmap];
 		_self set ["Path",[]];
 		_self set ["Status","INITIALIZED"];
 	}],
 	["ProcessNextNode",compileFinal {
 		//Bail if already finished
-		if (_self get "Status" in ["SUCCESS","FAILURE"]) exitWith {true;};
+		if (_self get "Status" in ["SUCCESS","PARTIAL"]) exitWith {true;};
 		
 		// Set status Running if not already
 		if !(_self get "Status" == "RUNNING") then {_self set ["Status","RUNNING"]};
@@ -135,20 +162,41 @@ XPS_typ_AstarSearch = [
 
 		private _neighbors = _graph call ["GetNeighbors",[_currentNode,_prevNode]];
 		_self call ["FilterNeighbors",[_neighbors]];
+		_neighbors = _self call ["DecorateNeighbors",[_currentNode,_prevNode,_neighbors]];
 
 		{
+			private _neighborNode = _x;
+			private _edgeCost = 0;
+			private _edgePath = [];
+			if (_x isEqualType []) then {
+				_neighborNode = _x select 0;
+				if ((count _x) > 1) then {
+					_edgeCost = _x select 1;
+				};
+				if ((count _x) > 2) then {
+					_edgePath = +(_x select 2);
+				};
+			} else {
+				_edgeCost = _graph call ["GetCost",[_currentNode,_neighborNode]];
+				_edgePath = [_neighborNode];
+			};
+
+			if (isNil "_neighborNode") then { continue };
+
 			private _costSoFarMap = _self get "costSoFar";
-			private _estimate = _self call ["AdjustEstimate",[_graph call ["GetEstimate",[_x,_endNode]],_x,_endNode]];
-			private _cost = _self call ["AdjustCost",[_graph call ["GetCost",[_currentNode,_x]],_currentNode,_x]];
+			private _estimate = _self call ["AdjustEstimate",[_graph call ["GetEstimate",[_neighborNode,_endNode]],_neighborNode,_endNode]];
+			private _cost = _self call ["AdjustCost",[_edgeCost,_currentNode,_neighborNode]];
 			private _costSofar = (_costSoFarMap get (_currentNode get "Index")) + _cost;
 			private _priority = _costSofar + _estimate;
 			
-			private _costSoFarX = _costSoFarMap get (_x get "Index");
+			private _neighborIndex = _neighborNode get "Index";
+			private _costSoFarX = _costSoFarMap get _neighborIndex;
 
 			if (isNil {_costSoFarX} || {_costSofar < _costSoFarX}) then {
-				_costSoFarMap set [_x get "Index", _costSofar];
-				_self call ["frontierAdd",[_priority,_x]];
-				_self get "cameFrom" set [_x get "Index", _currentNode];
+				_costSoFarMap set [_neighborIndex, _costSofar];
+				_self call ["frontierAdd",[_priority,_neighborNode]];
+				_self get "cameFrom" set [_neighborIndex, _currentNode];
+				_self get "cameEdge" set [_neighborIndex, _edgePath];
 			};
 
 		} forEach _neighbors;

@@ -197,7 +197,6 @@ class FLO {
 
         class getRandomObjectivePos   {};
         class getNearestObjective     {};
-        class getObjectivePath        {};
         class getObjectiveNearPlayer  {};
         class getObjectivePosition    {};
         class isPositionInObjective   {};
@@ -335,13 +334,5 @@ class FLO {
         class initCaptureUIEvents     {};
     };
 
-    class Pathfinding {
-        file = "Functions\Pathfinding";
-
-        class initPFScheduler   {preInit = 1;};
-        class initSearch        {preInit = 1;};
-        class initRoadGraph     {preInit = 1;};
-        class findRoadPath      {};
-        class findRoadPathSync  {};
-    };
+    #include "Functions\Pathfinding\CfgFunctions.hpp"
 };

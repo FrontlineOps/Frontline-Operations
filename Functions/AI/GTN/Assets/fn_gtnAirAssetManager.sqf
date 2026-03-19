@@ -334,7 +334,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     [_rtbPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 50],
                     [_rtbPos, "LOITER", "SAFE", "LIMITED", "COLUMN", "GREEN", 500]
                 ];
-                [_groupId, _waypoints, true, true, "GTN_AIR"] call FLO_fnc_updateVirtualGroupWaypoints;
+                [_groupId, _waypoints, false, true, "GTN_AIR"] call FLO_fnc_updateVirtualGroupWaypoints;
 
                 ["GTN Air Asset Manager", 3, format["Virtual RTB waypoints for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             };

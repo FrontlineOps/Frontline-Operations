@@ -2,66 +2,90 @@
  * Function: FLO_fnc_gtnCombatCollectEngagementZones
  * Author: Frontline Operations Development Group
  * Description:
- *   Builds local EAST/WEST engagement zones from the shared virtualization
- *   spatial index. Zones are anchored on the nearest opposing contact so fights
- *   do not merge across long transitive chains.
+ *   Builds local engagement zones from the shared virtualization spatial index.
+ *   Zones are anchored on the nearest opposing contact so fights do not merge
+ *   across long transitive chains.
  *
  * Arguments:
  *   0: Direct-combat virtual groups map <HASHMAP>
- *   1: EAST seed group IDs <ARRAY>
- *   2: Engagement distance <NUMBER>
+ *   1: Seed group IDs <ARRAY>
+ *   2: Seed side <SIDE>
+ *   3: Opponent side <SIDE>
+ *   4: Engagement distance <NUMBER>
+ *   5: Seed cell size <NUMBER>
+ *   6: Opponent threat cells <HASHMAP>
  *
  * Return Value:
  *   Engagement zones <ARRAY>
  */
 
-params ["_combatGroups", "_eastSeeds", "_engagementDist"];
+params [
+    "_combatGroups",
+    "_seedIds",
+    "_seedSide",
+    "_opponentSide",
+    "_engagementDist",
+    ["_seedCellSize", 150, [0]],
+    ["_opponentThreatCells", createHashMap]
+];
+
+private _threatCellRadius = ceil (_engagementDist / _seedCellSize);
+private _cellKeyBase = ceil (worldSize / _seedCellSize) + _threatCellRadius + 8;
+private _cellKeyStride = (_cellKeyBase * 2) + 1;
 
 private _zones = [];
 private _assigned = createHashMap;
 
 {
-    private _seedEastId = _x;
-    if (_assigned getOrDefault [_seedEastId, false]) then { continue };
+    private _seedId = _x;
+    if (_assigned getOrDefault [_seedId, false]) then { continue };
 
-    private _seedEastData = _combatGroups get _seedEastId;
-    if (isNil "_seedEastData") then { continue };
+    private _seedData = _combatGroups get _seedId;
+    if (isNil "_seedData") then { continue };
 
-    private _seedEastPos = _seedEastData get "position";
-    private _nearIds = ["queryRadius", [_seedEastPos, _engagementDist]] call FLO_fnc_virtualizationSpatialIndex;
-    private _closestWestId = "";
-    private _closestWestData = createHashMap;
+    private _seedPos = _seedData get "position";
+    private _seedCellX = floor ((_seedPos select 0) / _seedCellSize);
+    private _seedCellY = floor ((_seedPos select 1) / _seedCellSize);
+    private _seedCellKey = ((_seedCellX + _cellKeyBase) * _cellKeyStride) + (_seedCellY + _cellKeyBase);
+    private _hasOpponentCell = _opponentThreatCells getOrDefault [_seedCellKey, false];
+
+    if (!_hasOpponentCell) then { continue };
+
+    private _nearIds = ["queryRadius", [_seedPos, _engagementDist, _opponentSide, true]] call FLO_fnc_virtualizationSpatialIndex;
+    private _closestOpponentId = "";
+    private _closestOpponentData = createHashMap;
     private _closestDist = _engagementDist + 1;
 
     {
         private _otherId = _x;
-        if (_otherId isEqualTo _seedEastId) then { continue };
+        if (_otherId isEqualTo _seedId) then { continue };
         if (_assigned getOrDefault [_otherId, false]) then { continue };
 
         private _otherData = _combatGroups get _otherId;
         if (isNil "_otherData") then { continue };
-        if !((_otherData get "side") isEqualTo west) then { continue };
+        if !((_otherData get "side") isEqualTo _opponentSide) then { continue };
 
-        private _dist = _seedEastPos distance2D (_otherData get "position");
+        private _dist = _seedPos distance2D (_otherData get "position");
         if (_dist > _engagementDist) then { continue };
         if (_dist >= _closestDist) then { continue };
 
-        _closestWestId = _otherId;
-        _closestWestData = _otherData;
+        _closestOpponentId = _otherId;
+        _closestOpponentData = _otherData;
         _closestDist = _dist;
     } forEach _nearIds;
 
-    if (_closestWestId == "") then { continue };
+    if (_closestOpponentId == "") then { continue };
 
-    private _closestWestPos = _closestWestData get "position";
+    private _closestOpponentPos = _closestOpponentData get "position";
     private _anchorPos = [
-        ((_seedEastPos select 0) + (_closestWestPos select 0)) * 0.5,
-        ((_seedEastPos select 1) + (_closestWestPos select 1)) * 0.5,
+        ((_seedPos select 0) + (_closestOpponentPos select 0)) * 0.5,
+        ((_seedPos select 1) + (_closestOpponentPos select 1)) * 0.5,
         0
     ];
-    private _candidateIds = ["queryRadius", [_anchorPos, _engagementDist]] call FLO_fnc_virtualizationSpatialIndex;
-    private _eastCandidates = [];
-    private _westCandidates = [];
+    private _seedCandidateIds = ["queryRadius", [_anchorPos, _engagementDist, _seedSide, true]] call FLO_fnc_virtualizationSpatialIndex;
+    private _opponentCandidateIds = ["queryRadius", [_anchorPos, _engagementDist, _opponentSide, true]] call FLO_fnc_virtualizationSpatialIndex;
+    private _seedCandidates = [];
+    private _opponentCandidates = [];
 
     {
         private _candidateId = _x;
@@ -70,16 +94,28 @@ private _assigned = createHashMap;
         private _candidateData = _combatGroups get _candidateId;
         if (isNil "_candidateData") then { continue };
 
-        private _candidateSide = _candidateData get "side";
-        if !(_candidateSide in [east, west]) then { continue };
-        if ((_candidateData get "position") distance2D _anchorPos > _engagementDist) then { continue };
+        _seedCandidates pushBack [_candidateId, _candidateData];
+    } forEach _seedCandidateIds;
 
-        if (_candidateSide isEqualTo east) then {
-            _eastCandidates pushBack [_candidateId, _candidateData];
-        } else {
-            _westCandidates pushBack [_candidateId, _candidateData];
-        };
-    } forEach _candidateIds;
+    {
+        private _candidateId = _x;
+        if (_assigned getOrDefault [_candidateId, false]) then { continue };
+
+        private _candidateData = _combatGroups get _candidateId;
+        if (isNil "_candidateData") then { continue };
+
+        _opponentCandidates pushBack [_candidateId, _candidateData];
+    } forEach _opponentCandidateIds;
+
+    private _eastCandidates = [];
+    private _westCandidates = [];
+    if (_seedSide isEqualTo east) then {
+        _eastCandidates = _seedCandidates;
+        _westCandidates = _opponentCandidates;
+    } else {
+        _eastCandidates = _opponentCandidates;
+        _westCandidates = _seedCandidates;
+    };
 
     if (count _eastCandidates == 0 || {count _westCandidates == 0}) then { continue };
 
@@ -153,6 +189,6 @@ private _assigned = createHashMap;
     {
         _assigned set [_x select 0, true];
     } forEach _westRefs;
-} forEach _eastSeeds;
+} forEach _seedIds;
 
 _zones

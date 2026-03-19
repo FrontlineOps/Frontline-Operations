@@ -1017,7 +1017,7 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 30]
         ];
 
-        [_groupId, _waypoints, true, true, "GTN_MOVE"] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, false, true, "GTN_MOVE"] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "MOVE"];
         _gData set ["orderTargetPos", _pos];
         _gData set ["orderMode", _mode];
@@ -1064,7 +1064,7 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 50]
         ];
 
-        [_groupId, _waypoints, true, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, false, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "ATTACK"];
         _gData set ["orderTargetPos", _pos];
         _gData set ["orderMode", "COMBAT"];
@@ -1134,7 +1134,7 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "GUARD", "SAFE", "FULL", _formation, "GREEN", 60]
         ];
 
-        [_groupId, _waypoints, true, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
+        [_groupId, _waypoints, false, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
         _gData set ["currentOrder", "DEFEND"];
         _gData set ["defendObjective", _objectiveId];
         _gData set ["orderTargetPos", _pos];
@@ -1380,7 +1380,7 @@ private _gtnCommander = createHashMapObject [[
                          
                         private _retreatFormation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
                         private _wps = [[_retreatPos, "MOVE", "SAFE", "FULL", _retreatFormation, "GREEN", 0]];
-                        [_gId, _wps, true, true, "GTN_RETREAT"] call FLO_fnc_updateVirtualGroupWaypoints;
+                        [_gId, _wps, false, true, "GTN_RETREAT"] call FLO_fnc_updateVirtualGroupWaypoints;
                     };
                 };
             };

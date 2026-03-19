@@ -62,28 +62,6 @@ private _sanitizedWaypoints = [];
 
 private _sourceTag = if (_requestSource != "") then { _requestSource } else { "VG_GENERIC" };
 private _effectiveUsePathfinding = _usePathfinding;
-if (_effectiveUsePathfinding && {count _sanitizedWaypoints > 0}) then {
-    if (isNil "FLO_PF_HybridRouting") then {
-        FLO_PF_HybridRouting = true;
-    };
-    if (FLO_PF_HybridRouting) then {
-        if (isNil "FLO_PF_HybridForcePathSources") then {
-            FLO_PF_HybridForcePathSources = [
-                "SIDEMISSION_HVT_CONVOY",
-                "SIDEMISSION_CONVOY_INTERDICT",
-                "OBJECTIVE_LINK",
-                "SYNC_COMPAT",
-                "LOGI_REINF",
-                "LOGI_STATIC_AA"
-            ];
-        };
-
-        private _forcePath = _sourceTag in FLO_PF_HybridForcePathSources;
-        if (!_forcePath) then {
-            _effectiveUsePathfinding = false;
-        };
-    };
-};
 
 // If no waypoints or using direct assignment (no pathfinding)
 if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
@@ -92,9 +70,6 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
     _groupData set ["pathRequestTarget", []];
     _groupData set ["pathRequestTrails", false];
     _groupData set ["pathRequestStartedAt", -1];
-    _groupData set ["pathLastIssuedTarget", []];
-    _groupData set ["pathLastIssuedTrails", false];
-    _groupData set ["pathLastIssuedAt", -1];
 
     // Store the waypoints and initialize tracking for both virtual and physical movement
     _groupData set ["waypoints", _sanitizedWaypoints];
@@ -178,64 +153,13 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
         if (count _pathStart > 2) then { _pathStart resize 2; };
         if (count _pathEnd > 2) then { _pathEnd resize 2; };
 
-        // Cooldown repeated retries for the same failed route target.
-        private _pfQueueDepth = 0;
-        if (!isNil "FLO_PF_Scheduler") then {
-            _pfQueueDepth = (FLO_PF_Scheduler get "_queueObject") call ["Count"];
-        };
-        private _failedRetryCooldown = 60;
-        if (_pfQueueDepth > 1200) then {
-            _failedRetryCooldown = 150;
-        } else {
-            if (_pfQueueDepth > 800) then {
-                _failedRetryCooldown = 100;
-            };
-        };
-        private _lastFailAt = _groupData getOrDefault ["pathLastFailAt", -1];
-        private _lastFailTarget = _groupData getOrDefault ["pathLastFailTarget", []];
-        private _lastFailTrails = _groupData getOrDefault ["pathLastFailTrails", false];
-        if (_lastFailAt > 0 && {count _lastFailTarget >= 2} && {(diag_tickTime - _lastFailAt) < _failedRetryCooldown} && {_lastFailTarget distance2D _pathEnd < 100} && {_lastFailTrails isEqualTo _allowTrails}) exitWith {
-            ["VIRTUALIZATION", 4, format["Skipping repeated failed path request for group %1 (cooldown)", _groupId]] call FLO_fnc_log;
-        };
-
-        // Suppress repeated same-destination request spam from commander loops.
-        private _sameTargetWindow = 20;
-        if (_pfQueueDepth > 1200) then {
-            _sameTargetWindow = 90;
-        } else {
-            if (_pfQueueDepth > 800) then {
-                _sameTargetWindow = 50;
-            };
-        };
-        private _lastIssuedAt = _groupData getOrDefault ["pathLastIssuedAt", -1];
-        private _lastIssuedTarget = _groupData getOrDefault ["pathLastIssuedTarget", []];
-        private _lastIssuedTrails = _groupData getOrDefault ["pathLastIssuedTrails", false];
-        if (_lastIssuedAt > 0 && {(diag_tickTime - _lastIssuedAt) < _sameTargetWindow} && {count _lastIssuedTarget >= 2} && {_lastIssuedTarget distance2D _pathEnd < 35} && {_lastIssuedTrails isEqualTo _allowTrails}) exitWith {
-            ["VIRTUALIZATION", 4, format["Skipping no-op path request for group %1 (same target %2m ago)", _groupId, round (diag_tickTime - _lastIssuedAt)]] call FLO_fnc_log;
-        };
-
         // Keep existing request if it's already pending for the same destination + trails mode.
-        private _existingToken = _groupData getOrDefault ["pathRequestToken", -1];
-        private _existingTarget = _groupData getOrDefault ["pathRequestTarget", []];
-        private _existingTrails = _groupData getOrDefault ["pathRequestTrails", false];
-        private _existingStartedAt = _groupData getOrDefault ["pathRequestStartedAt", -1];
-        private _replaceCooldown = 20;
-        if (_pfQueueDepth > 1200) then {
-            _replaceCooldown = 90;
-        } else {
-            if (_pfQueueDepth > 800) then {
-                _replaceCooldown = 45;
-            };
-        };
+        private _existingToken = _groupData get "pathRequestToken";
+        private _existingTarget = _groupData get "pathRequestTarget";
+        private _existingTrails = _groupData get "pathRequestTrails";
         private _sameRoutePending = _existingToken >= 0 && {count _existingTarget >= 2} && {_existingTarget distance2D _pathEnd < 25} && {_existingTrails isEqualTo _allowTrails};
         if (_sameRoutePending) exitWith {
             ["VIRTUALIZATION", 4, format["Path request already pending for group %1 to %2", _groupId, _pathEnd]] call FLO_fnc_log;
-        };
-
-        // Avoid request thrash: when a path request is already pending, allow it to finish
-        // for a short window before replacing with a new destination.
-        if (_existingToken >= 0 && {_existingStartedAt > 0} && {(diag_tickTime - _existingStartedAt) < _replaceCooldown}) exitWith {
-            ["VIRTUALIZATION", 4, format["Path request cooldown active for group %1 (age %2s/%3s), keeping pending route", _groupId, round (diag_tickTime - _existingStartedAt), _replaceCooldown]] call FLO_fnc_log;
         };
 
         // Invalidate previous request only when replacing it with a new route target.
@@ -305,43 +229,15 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
         _groupData set ["pathRequestTrails", _allowTrails];
         _groupData set ["pathRequestStartedAt", _requestTime];
         _groupData set ["pathRequestSource", _sourceTag];
-        _groupData set ["pathLastIssuedTarget", _pathEnd];
-        _groupData set ["pathLastIssuedTrails", _allowTrails];
-        _groupData set ["pathLastIssuedAt", _requestTime];
         
         // Path callback
         private _callbackCode = {
-            params ["_status", "_posArray", "_args"];
-            _args params ["_groupId", "_waypointSettings", "_requestToken", "_requestPos", "_requestTime", "_directBootstrapAllowed"];
+            params ["_resolved", "_posArray", "_args"];
+            _args params ["_groupId", "_waypointSettings", "_requestToken"];
 
             private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
             if (isNil "_groupData") exitWith {};
             if ((_groupData get "pathRequestToken") != _requestToken) exitWith {};
-
-            if (!_status) exitWith {
-                _groupData set ["pathRequestToken", -1];
-                _groupData set ["pathLastFailAt", diag_tickTime];
-                _groupData set ["pathLastFailTarget", _groupData getOrDefault ["pathRequestTarget", []]];
-                _groupData set ["pathLastFailTrails", _groupData getOrDefault ["pathRequestTrails", false]];
-                if (!_directBootstrapAllowed) then {
-                    _groupData set ["state", "idle"];
-                    ["VIRTUALIZATION", 2, format["Pathfinding failed for group %1; holding (resolved path required)", _groupId]] call FLO_fnc_log;
-                } else {
-                    ["VIRTUALIZATION", 3, format["Pathfinding failed for group %1, keeping direct route", _groupId]] call FLO_fnc_log;
-                };
-                _groupData set ["pathRequestTarget", []];
-                _groupData set ["pathRequestTrails", false];
-                _groupData set ["pathRequestStartedAt", -1];
-            };
-
-            // Avoid applying very late paths after the group has already moved far from request origin.
-            if ((diag_tickTime - _requestTime) > 30 && {((_groupData get "position") distance2D _requestPos) > 300}) exitWith {
-                _groupData set ["pathRequestToken", -1];
-                ["VIRTUALIZATION", 3, format["Discarded stale path for group %1", _groupId]] call FLO_fnc_log;
-                _groupData set ["pathRequestTarget", []];
-                _groupData set ["pathRequestTrails", false];
-                _groupData set ["pathRequestStartedAt", -1];
-            };
             
             // Extract waypoint settings
             private _wpType = _waypointSettings select 1;
@@ -350,6 +246,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
             private _wpFormation = _waypointSettings select 4;
             private _wpMode = _waypointSettings select 5;
             private _wpCompletionRadius = _waypointSettings select 6;
+            private _resolvedPositions = +_posArray;
             
             // Create new waypoints array, ensuring positions are on land
             private _newWaypoints = [];
@@ -360,28 +257,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
                     _wpPos = [_wpPos, 300] call FLO_fnc_getSafeLandPos;
                 };
                 _newWaypoints pushBack [_wpPos, _wpType, _wpBehavior, _wpSpeed, _wpFormation, _wpMode, _wpCompletionRadius];
-            } forEach _posArray;
-
-            private _targetPos = _waypointSettings select 0;
-            private _routeDistance = _requestPos distance2D _targetPos;
-            private _isReinforcementOrder = (_groupData get "currentOrder") in ["REINFORCE", "AA_DEPLOY"];
-            if (!_directBootstrapAllowed && _isReinforcementOrder && {_routeDistance > 1200} && {count _newWaypoints < 2}) exitWith {
-                _groupData set ["pathRequestToken", -1];
-                _groupData set ["pathRequestTarget", []];
-                _groupData set ["pathRequestTrails", false];
-                _groupData set ["pathRequestStartedAt", -1];
-                _groupData set ["waypoints", []];
-                _groupData set ["currentWaypointIndex", 0];
-                _groupData set ["state", "planning"];
-                ["VIRTUALIZATION", 2, format["Rejected fallback route for reinforcement group %1 (distance=%2m, points=%3)", _groupId, round _routeDistance, count _newWaypoints]] call FLO_fnc_log;
-            };
-
-            if (count _newWaypoints == 0) exitWith {
-                _groupData set ["pathRequestToken", -1];
-                _groupData set ["pathRequestTarget", []];
-                _groupData set ["pathRequestTrails", false];
-                _groupData set ["pathRequestStartedAt", -1];
-            };
+            } forEach _resolvedPositions;
 
             // Update the virtual group with the resolved road waypoints
             // Store the waypoints
@@ -425,11 +301,8 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
             _groupData set ["pathRequestTarget", []];
             _groupData set ["pathRequestTrails", false];
             _groupData set ["pathRequestStartedAt", -1];
-            _groupData set ["pathLastFailAt", -1];
-            _groupData set ["pathLastFailTarget", []];
-            _groupData set ["pathLastFailTrails", false];
 
-            ["VIRTUALIZATION", 3, format["Pathfinding completed for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
+            ["VIRTUALIZATION", 3, format["Pathfinding resolved for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
 
             // If the group is active, update its real waypoints too
             if (_groupData get "isActive") then {
@@ -461,23 +334,8 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
             ["VIRTUALIZATION", 3, format["Starting pathfinding for group %1 from %2 to %3 (direct movement active)", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
         };
 
-        // Stagger path requests through central scheduler dispatch queue.
-        if (isNil "FLO_PF_DispatchNextAt") then {
-            FLO_PF_DispatchNextAt = diag_tickTime;
-        };
-        if (isNil "FLO_PF_DispatchGap") then {
-            FLO_PF_DispatchGap = 0.1; // ~10 requests/second max
-        };
-
-        private _slotTime = FLO_PF_DispatchNextAt max diag_tickTime;
-        FLO_PF_DispatchNextAt = _slotTime + FLO_PF_DispatchGap;
-        private _callbackArgs = [_groupId, _firstWaypoint, _requestToken, _pathStart, _requestTime, _directBootstrapAllowed];
-
-        if (isNil "FLO_PF_Scheduler") then {
-            [_pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag] call FLO_fnc_findRoadPath;
-        } else {
-            FLO_PF_Scheduler call ["EnqueueDispatch", [_slotTime, _pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag]];
-        };
+        private _callbackArgs = [_groupId, _firstWaypoint, _requestToken];
+        [_pathStart, _pathEnd, _callbackCode, _callbackArgs, _allowTrails, _sourceTag] call FLO_fnc_findRoadPath;
     };
 };
 

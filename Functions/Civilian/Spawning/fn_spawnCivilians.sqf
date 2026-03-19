@@ -148,7 +148,7 @@ private _fnc_getRoadWaypoints = {
                         [_destRoadPos, "CYCLE", "CARELESS", "LIMITED", "COLUMN", "WHITE", 20]
                     ];
 
-                    [_carGroupId, _carWaypoints, true, true, "CIV_CAR"] call FLO_fnc_updateVirtualGroupWaypoints;
+                    [_carGroupId, _carWaypoints, false, true, "CIV_CAR"] call FLO_fnc_updateVirtualGroupWaypoints;
                 };
             };
         };

@@ -43,7 +43,7 @@ if (isNil "FLO_GTN_CombatDebugEnabled") then { FLO_GTN_CombatDebugEnabled = true
 
 private _combatMarkerTTL = 90;
 private _engagementMaxDist = 300;
-private _perfLogThreshold = 0.02;
+private _perfLogThreshold = 0.05;
 
 private _pfhId = [{
     params ["_args", "_pfhId"];
@@ -68,12 +68,24 @@ private _pfhId = [{
         call FLO_fnc_gtnCombatCleanupMarkers;
     };
 
-    private _classification = [_groups] call FLO_fnc_gtnCombatClassifyGroups;
+    private _classification = [_groups, _engagementMaxDist * 0.5, _engagementMaxDist] call FLO_fnc_gtnCombatGetClassification;
     private _combatGroups = _classification get "combatGroups";
     private _combatGroupCount = count _combatGroups;
-    private _eastSeeds = _classification get "eastSeeds";
+    private _seedIds = _classification get "seedIds";
+    private _seedSide = _classification get "seedSide";
+    private _opponentSide = _classification get "opponentSide";
+    private _seedCellSize = _classification get "seedCellSize";
+    private _opponentThreatCells = if (_seedSide isEqualTo east) then { _classification get "westThreatCells" } else { _classification get "eastThreatCells" };
     private _supportAvailability = _classification get "supportAvailability";
-    private _zones = [_combatGroups, _eastSeeds, _engagementMaxDist] call FLO_fnc_gtnCombatCollectEngagementZones;
+    private _zones = [
+        _combatGroups,
+        _seedIds,
+        _seedSide,
+        _opponentSide,
+        _engagementMaxDist,
+        _seedCellSize,
+        _opponentThreatCells
+    ] call FLO_fnc_gtnCombatCollectEngagementZones;
     private _engagedNow = createHashMap;
     private _eventsChanged = false;
     private _liveAreaRadius = FLO_virtualGroups get "_activationDistance";

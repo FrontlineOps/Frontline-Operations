@@ -50,6 +50,7 @@ if (!isNil "_transData") then {
 // Clear infantry attachment
 _infData set ["attachedTo", ""];
 _infData set ["attachedType", ""];
+[true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 
 // Offset position from transport
 private _pos = _infData get "position";

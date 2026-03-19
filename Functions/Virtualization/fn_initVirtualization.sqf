@@ -57,7 +57,10 @@ FLO_virtualGroups = createHashMapObject [[
 
         // Add to spatial index - position must exist
         private _pos = _groupData get "position";
-        ["add", [_groupId, _pos]] call FLO_fnc_virtualizationSpatialIndex;
+        ["add", [_groupId, _pos, _groupData get "side"]] call FLO_fnc_virtualizationSpatialIndex;
+        if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
+            [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
+        };
 
         // Fire event for other systems (GTN, AI Commander)
         ["FLO_Virtualization_GroupAdded", [_groupId, _groupData]] call CBA_fnc_localEvent;
@@ -72,6 +75,9 @@ FLO_virtualGroups = createHashMapObject [[
         if (!isNil "_groupData") then {
             // Remove from spatial index
             ["remove", [_groupId]] call FLO_fnc_virtualizationSpatialIndex;
+            if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
+                [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
+            };
 
             // Clean up debug markers
             ["cleanup", _groupId] call FLO_fnc_virtualizationDebugManager;
@@ -94,10 +100,32 @@ FLO_virtualGroups = createHashMapObject [[
         if (!isNil "_groupData") then {
             // Validate position
             if ((_newPosition select 0) > 100 || (_newPosition select 1) > 100) then {
+                private _oldPosition = _groupData get "position";
+                private _groupType = _groupData get "groupType";
+                private _side = _groupData get "side";
+                private _trackCombatSeed = (_side in [east, west]) && {(_groupData get "attachedTo") == ""} && {_groupType in ["infantry", "motorized", "mechanized", "armor", "mobile_aa"]};
+                private _seedCellSize = if (isNil "FLO_GTN_CombatState") then { 150 } else { FLO_GTN_CombatState get "classificationSeedCellSize" };
+
                 _groupData set ["position", _newPosition];
 
                 // Update spatial index (only if position changed significantly)
-                ["update", [_groupId, _newPosition]] call FLO_fnc_virtualizationSpatialIndex;
+                ["update", [_groupId, _newPosition, _groupData get "side"]] call FLO_fnc_virtualizationSpatialIndex;
+
+                if (_trackCombatSeed) then {
+                    private _oldSeedCellKey = format [
+                        "%1_%2",
+                        floor ((_oldPosition select 0) / _seedCellSize),
+                        floor ((_oldPosition select 1) / _seedCellSize)
+                    ];
+                    private _newSeedCellKey = format [
+                        "%1_%2",
+                        floor ((_newPosition select 0) / _seedCellSize),
+                        floor ((_newPosition select 1) / _seedCellSize)
+                    ];
+                    if (_oldSeedCellKey != _newSeedCellKey) then {
+                        [false] call FLO_fnc_gtnCombatMarkClassificationDirty;
+                    };
+                };
             };
         };
     }],
@@ -111,6 +139,13 @@ FLO_virtualGroups = createHashMapObject [[
             _groupData set ["onMission", true];
             _groupData set ["missionType", _missionType];
             _groupData set ["state", "reserved"];
+            if (
+                (_groupData get "side") in [east, west]
+                && {(_groupData get "attachedTo") == ""}
+                && {[(_groupData get "groupType")] call FLO_fnc_gtnCombatIsSupportProvider}
+            ) then {
+                [false] call FLO_fnc_gtnCombatMarkClassificationDirty;
+            };
 
             ["FLO_Virtualization_GroupReserved", [_groupId, _missionType]] call CBA_fnc_localEvent;
             true
@@ -128,6 +163,13 @@ FLO_virtualGroups = createHashMapObject [[
             _groupData set ["onMission", false];
             _groupData set ["missionType", ""];
             _groupData set ["state", "idle"];
+            if (
+                (_groupData get "side") in [east, west]
+                && {(_groupData get "attachedTo") == ""}
+                && {[(_groupData get "groupType")] call FLO_fnc_gtnCombatIsSupportProvider}
+            ) then {
+                [false] call FLO_fnc_gtnCombatMarkClassificationDirty;
+            };
 
             ["FLO_Virtualization_GroupReleased", [_groupId]] call CBA_fnc_localEvent;
             true

@@ -63,6 +63,11 @@ private _groupData = createHashMapFromArray [
     ["inCombat", false],         // True while the virtual combat resolver has this group engaged
     ["waypoints", []],
     ["currentWaypointIndex", 0],
+    ["pathRequestToken", -1],
+    ["pathRequestTarget", []],
+    ["pathRequestTrails", false],
+    ["pathRequestStartedAt", -1],
+    ["pathRequestSource", ""],
     ["comp", []],
     ["onMission", false],         // Whether this group is on an active mission (prevents virtualization)
     ["forceVirtual", false],      // Keep group virtual regardless of player proximity

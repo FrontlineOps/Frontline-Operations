@@ -33,81 +33,6 @@ XPS_PF_typ_RoadNode = [
 XPS_PF_typ_RoadGraph = [
 	["#str", compileFinal {"XPS_PF_typ_RoadGraph"}],
 	["#type","XPS_PF_typ_RoadGraph"],
-	["_getConnectedToPath",compileFinal {
-		if !(params [["_fromPoint",nil,[[]],[3]],["_direction",nil,[0]],["_toObject",nil,[createhashmap]],["_toWidth",nil,[0]],["_nextObject",nil,[createhashmap]],["_nextWidth",nil,[0]],["_dirOffset",nil,[0]]]) exitWith {diag_log ["_getConnectedToPath:",_fromPoint,_toObject,_toWidth,_nextObject,_dirOffset]};
-		if (_fromPoint isEqualTo [0,0,0]) then {diag_log ["_getConnectedToPath:",_fromPoint,_toObject,_toWidth,_nextObject,_dirOffset]};
-
-		private _posA = _toObject get "PosASL";
-		private _bPosA = _toObject get "BeginPos";
-		private _ePosA = _toObject get "EndPos";
-
-		private _posB = _nextObject get "PosASL";
-		private _bPosB = _nextObject get "BeginPos";
-		private _ePosB = _nextObject get "EndPos";
-
-		private _int = [_bPosA,_ePosA,_bPosB,_ePosB] call XPS_fnc_lineIntersect2d;
-		private _dirA = 0;
-		private _dirB = 0;
-
-		if (isNil "_int" || count _int isEqualTo 0) then {
-			_dirA = _posA getdir _posB;
-			_dirB = _posA getdir _posB;
-		} else {
-			_dirA = _posA getdir _int;
-			_dirB = _int getdir _posB;
-		}; 
-
-		private _headA = _bposA getdir _eposA;
-		private _headB = _bposB getdir _eposB;
-		private _posS = _posA;
-		private _posE = _eposB ;
-
-		if (abs (_headA - _dirA) > 90) then {_headA = _eposA getdir _bposA;}; 
-		if (abs (_headB - _dirB) > 90) then {_headB = _eposB getdir _bposB;_posE = _bPosB;}; 
-
-		private _posS = _posS getpos [_toWidth,_headA + _dirOffset]; _posS set [2,_posA#2];
-		private _posE = _posE getpos [_nextWidth,_headB + _dirOffset]; _posE set [2,_posB#2];
-
-		private _points = [];
-		if ((_posS distance2d _posE)*1.15 < (_fromPoint distance2d _posE)) then {_points pushBack _posS;_fromPoint = _posS;};
-		private _p1 = _frompoint;
-		private _p2 = _frompoint getpos [5,_direction];
-		private _p3 = _bPosB getpos [_nextWidth,_headB + _dirOffset];
-		private _p4 = _ePosB getpos [_nextWidth,_headB + _dirOffset];
-		
-		// _m = createmarker ["db"+ str _fromPoint,_fromPoint]; 
-		// _m setmarkertype "mil_circle"; 
-		// _m setmarkercolor "ColorOrange"; 
-		// _m setmarkersize [0.25,0.25]; 
-		// _m = createmarker ["db"+ str str _posE,_posE]; 
-		// _m setmarkertype "mil_circle"; 
-		// _m setmarkercolor "ColorBlack"; 
-		// _m setmarkersize [0.25,0.25]; 
-
-
-		private _intersect = [_p1,_p2,_p3,_p4] call XPS_fnc_lineIntersect2D;
-		private _intPoints = [];
-		if !(isNil "_intersect" || count _intersect isEqualTo 0) then {
-			if ((_intersect distance2d _posE < _fromPoint distance2d _posE) && (_intersect distance2d _fromPoint < _fromPoint distance2d _posE)) then {
-				private _iB = _intersect getpos [(_intersect distance _frompoint)/2,_intersect getdir _frompoint]; 
-				private _iE = _intersect getpos [(_intersect distance _posE)/2,_intersect getdir _posE]; 
-				_intPoints pushBack _iB;
-				_intPoints pushBack _intersect;
-				_intPoints pushBack _iE;
-				for "_p" from 0.1 to 0.5 step 0.1 do {
-					private _nPos = _p bezierInterpolation _intPoints;
-					//if !(roadAt _nPos isEqualTo (_toObject get "RoadObject")) then {
-						_points pushBack _nPos;
-					//};
-				};
-				// _m = createmarker ["db"+ str _intersect,_intersect]; 
-				// _m setmarkertype "mil_circle"; 
-				// _m setmarkercolor "ColorYellow"; 
-				// _m setmarkersize [0.25,0.25]; 
-			};
-		};
-		_points;
-	}],
 	["addRoadToGraph",compileFinal {
 		params [["_object",objNull,[objNull]],["_typeDef",XPS_PF_typ_RoadNode,[[]]]];
 		if !(_object isEqualto objNull) then {
@@ -177,6 +102,7 @@ XPS_PF_typ_RoadGraph = [
 		_self set ["_graphMarkersEnabled",false];
 		_self set ["_graphMarkers",[]];
 		_self set ["_nodeLookupCache", createHashMap];
+		_self set ["_searchEdgeCache", createHashMap];
 		_self call ["buildGraph"];
 	}],
 	["Roads",createhashmap],
@@ -199,6 +125,73 @@ XPS_PF_typ_RoadGraph = [
 			};
 		} forEach _neighbors;
 		_result;
+	}],
+	["BuildSearchEdge",compileFinal {
+		params [["_current",nil,[createhashmap]],["_next",nil,[createhashmap]],["_allowedTypes",[],[[]]]];
+
+		if (isNil "_next") exitWith { nil };
+		if !((_next get "Type") in _allowedTypes) exitWith { nil };
+
+		private _pathNodes = [];
+		private _edgeCost = 0;
+		private _prevNode = _current;
+		private _cursor = _next;
+		private _visited = createHashMap;
+		_visited set [_current get "Index", true];
+
+		while {true} do {
+			private _cursorIndex = _cursor get "Index";
+			if (_visited getOrDefault [_cursorIndex, false]) exitWith {};
+			_visited set [_cursorIndex, true];
+
+			_pathNodes pushBack _cursor;
+			_edgeCost = _edgeCost + ((_prevNode get "PosASL") distance (_cursor get "PosASL"));
+
+			private _connected = values (_cursor get "ConnectedTo");
+			if ((count _connected) != 2) exitWith {};
+			if (_cursor get "Intersection") exitWith {};
+
+			private _prevRoad = _prevNode get "RoadObject";
+			private _forwardRoad = objNull;
+			{
+				if !(_x isEqualTo _prevRoad) exitWith {
+					_forwardRoad = _x;
+				};
+			} forEach _connected;
+
+			if (_forwardRoad isEqualTo objNull) exitWith {};
+
+			private _forwardNode = (_self get "Roads") get (str _forwardRoad);
+			if (isNil "_forwardNode") exitWith {};
+			if !((_forwardNode get "Type") in _allowedTypes) exitWith {};
+
+			_prevNode = _cursor;
+			_cursor = _forwardNode;
+		};
+
+		[_cursor, _edgeCost, _pathNodes];
+	}],
+	["GetSearchEdges",compileFinal {
+		params [["_current",nil,[createhashmap]],["_allowedTypes",[],[[]]]];
+
+		private _cache = _self get "_searchEdgeCache";
+		private _modeKey = _allowedTypes joinString "|";
+		private _cacheKey = format ["%1|%2", _current get "Index", _modeKey];
+		if (_cacheKey in _cache) exitWith {
+			_cache get _cacheKey;
+		};
+
+		private _edges = [];
+		{
+			private _nextNode = (_self get "Roads") get (str _x);
+			if (isNil "_nextNode") then { continue };
+			private _edge = _self call ["BuildSearchEdge", [_current, _nextNode, _allowedTypes]];
+			if (isNil "_edge") then { continue };
+			_edges pushBack _edge;
+		} forEach (values (_current get "ConnectedTo"));
+
+		_cache set [_cacheKey, _edges];
+		_edges;
 	}],
 	["GetCost",compileFinal {
 		params [["_current",nil,[createhashmap]],["_next",nil,[createhashmap]]];
@@ -226,7 +219,7 @@ XPS_PF_typ_RoadGraph = [
 				if (count _roads > 0) exitWith {
 					_node = (_self get "Roads") get (str (_roads select 0));
 				};
-			} forEach [30, 100, 250, 500, 900];
+			} forEach [30, 100, 250, 500, 900, 1500, 3000];
 		};
 
 		if (isNil "_node") then {
@@ -235,40 +228,18 @@ XPS_PF_typ_RoadGraph = [
 				if (count _roads > 0) exitWith {
 					_node = (_self get "Roads") get (str (_roads select 0));
 				};
-			} forEach [100, 300, 700, 1000];
+			} forEach [100, 300, 700, 1500, 3000, 6000];
 		};
 
 		if (isNil "_node") exitwith {
-			diag_log format["[FLO][Pathfinding] RoadGraphSearch: failed to find suitable road within 1km of position %1",_pos];
-			false;
+			private _roads = nearestTerrainObjects [_pos, ["MAIN ROAD", "ROAD", "TRACK", "TRAIL"], worldSize, false];
+			private _road = _roads select 0;
+			_node = (_self get "Roads") get (str _road);
+			_cache set [_cacheKey, _node];
+			_node;
 		};
 		_cache set [_cacheKey, _node];
 		_node;
-	}],
-	["SmoothPath", compileFinal {
-		params [["_path",[],[[]]]];
-
-		if (count _path > 3) then {
-			private _i = 1;
-			while {_i < (count _path)-1} do {
-
-				private _first = _path#(_i-1);
-				private _second = _path#(_i);
-				private _third = _path#(_i+1);
-
-				private _posA = _first get "PosASL";
-				private _posB = _second get "PosASL";
-				private _posC = _third get "PosASL";
-				private _checkPositions = [_third get "BeginPos",_third get "EndPos"];
-				
-				// Check if C is actually closer than B and delete if so
-				if ((_posA distance2D (_checkPositions#0)) < (_posA distance2D _posB) || (_posA distance2D (_checkPositions#1)) < (_posA distance2D _posB)) then {
-					_path deleteAt _i;
-				} else {
-					_i = _i + 1;
-				};
-			};		
-		};
 	}]
 ];
 
@@ -276,12 +247,21 @@ XPS_PF_typ_RoadDoctrine = [
 	["#str", compileFinal {"XPS_PF_typ_RoadGraphDoctrine"}],
 	["#type","XPS_PF_typ_RoadGraphDoctrine"],
 	["#create",compileFinal {
-		params [["_heuristics",[0.9, 1, 1.2],[[]],[3]],["_roadTypes",["MAIN ROAD","ROAD","TRACK"],[[]],[1,2,3,4]]];
+		params [
+			["_heuristics",[0.9, 1, 1.2],[[]],[3]],
+			["_roadTypes",["MAIN ROAD","ROAD","TRACK"],[[]],[1,2,3,4]],
+			["_spacingCap",350,[0]],
+			["_turnThreshold",50,[0]]
+		];
 		_self set ["Weights",_heuristics];
 		_self set ["RoadTypes",_roadTypes];
+		_self set ["SpacingCap", _spacingCap];
+		_self set ["TurnThreshold", _turnThreshold];
 	}],
 	["Weights",[0.9, 1, 1.2]],
-	["RoadTypes",["MAIN ROAD","ROAD","TRACK"]]
+	["RoadTypes",["MAIN ROAD","ROAD","TRACK"]],
+	["SpacingCap",350],
+	["TurnThreshold",50]
 ];
 
 XPS_PF_typ_RoadGraphSearch = [
@@ -310,36 +290,136 @@ XPS_PF_typ_RoadGraphSearch = [
 			} else {_i = _i + 1;};
 		};
 	}],
+	["DecorateNeighbors",compileFinal {
+		params ["_currentNode","_prevNode","_neighbors"];
+
+		private _graph = _self get "_workingGraph";
+		private _allowedTypes = _self get "Doctrine" get "RoadTypes";
+		private _endNode = _self get "EndNode";
+		private _endIndex = _endNode get "Index";
+		private _prevIndex = if (isNil "_prevNode") then { "" } else { _prevNode get "Index" };
+		private _edges = _graph call ["GetSearchEdges", [_currentNode, _allowedTypes]];
+		private _decorated = [];
+
+		{
+			_x params ["_nextNode", "_edgeCost", "_edgePath"];
+			private _resolvedNode = _nextNode;
+			private _resolvedCost = _edgeCost;
+			private _resolvedPath = +_edgePath;
+
+			if !((_resolvedNode get "Index") isEqualTo _endIndex) then {
+				private _endPathIndex = _resolvedPath findIf { (_x get "Index") isEqualTo _endIndex };
+				if (_endPathIndex >= 0) then {
+					_resolvedPath = _resolvedPath select [0, _endPathIndex + 1];
+					_resolvedNode = _resolvedPath select _endPathIndex;
+					_resolvedCost = 0;
+					private _prevHop = _currentNode;
+					{
+						_resolvedCost = _resolvedCost + ((_prevHop get "PosASL") distance (_x get "PosASL"));
+						_prevHop = _x;
+					} forEach _resolvedPath;
+				};
+			};
+
+			if (_prevIndex != "" && {(_resolvedNode get "Index") isEqualTo _prevIndex}) then { continue };
+			_decorated pushBack [_resolvedNode, _resolvedCost, _resolvedPath];
+		} forEach _edges;
+
+		_decorated;
+	}],
 	["Doctrine",nil],
 	["SmoothPath", compileFinal {
-		private _path = [];
-		private _posA = [-1000,-1000,0];
+		private _resolvedNodes = _self get "Path";
+		private _doctrine = _self get "Doctrine";
+		private _spacingCap = _doctrine get "SpacingCap";
+		private _turnThreshold = _doctrine get "TurnThreshold";
+		private _minEmitDistance = 75;
+		private _route = [];
+		private _endPos = +(_self get "_workingEndKey");
+
+		if (count _endPos > 2) then {
+			_endPos set [2, 0];
+		} else {
+			_endPos pushBack 0;
+		};
+
+		if (count _resolvedNodes isEqualTo 0) exitWith { [_endPos] };
+
+		private _lastEmitted = [];
 		{
-			private _pos = _x get "PosASL";
-			if ((_x get "Intersection" && {_posA distance2D _pos > 1000}) || {_posA distance2D _pos > 1000}) then {
-				// Convert to ATL (ground level)
-				_path pushBack [_pos select 0, _pos select 1, 0];
-				_posA = _pos;
+			private _node = _x;
+			private _pos = +(_node get "PosASL");
+			_pos set [2, 0];
+
+			private _shouldEmit = false;
+			if (count _route isEqualTo 0) then {
+				_shouldEmit = true;
+			} else {
+				if ((_lastEmitted distance2D _pos) >= _spacingCap) then {
+					_shouldEmit = true;
+				};
+				if (!_shouldEmit && { _forEachIndex > 0 }) then {
+					private _prevPos = +((_resolvedNodes select (_forEachIndex - 1)) get "PosASL");
+					_prevPos set [2, 0];
+
+					private _nextPos = if ((_forEachIndex + 1) < (count _resolvedNodes)) then {
+						+((_resolvedNodes select (_forEachIndex + 1)) get "PosASL")
+					} else {
+						+_endPos
+					};
+					_nextPos set [2, 0];
+
+					private _dirIn = _prevPos getDir _pos;
+					private _dirOut = _pos getDir _nextPos;
+					private _turnDelta = abs (((_dirOut - _dirIn + 540) mod 360) - 180);
+					if (_turnDelta >= _turnThreshold) then {
+						_shouldEmit = true;
+					} else {
+						if ((_node get "Intersection") && {_turnDelta >= (_turnThreshold * 0.7)} && {(_lastEmitted distance2D _pos) >= (_spacingCap * 0.6)}) then {
+							_shouldEmit = true;
+						};
+					};
+				};
 			};
-		} foreach (_self get "Path");
-		// Also normalize the end position
-		private _endPos = _self get "_workingEndKey";
-		_path pushBack [_endPos select 0, _endPos select 1, 0];
-		_path;
+
+			if (_shouldEmit && { (count _route isEqualTo 0) || { _lastEmitted distance2D _pos >= _minEmitDistance } }) then {
+				_route pushBack _pos;
+				_lastEmitted = _pos;
+			};
+		} forEach _resolvedNodes;
+
+		if (count _route isEqualTo 0) exitWith { [_endPos] };
+
+		private _lastIndex = (count _route) - 1;
+		if ((_route select _lastIndex) distance2D _endPos < _minEmitDistance) then {
+			_route set [_lastIndex, _endPos];
+		} else {
+			_route pushBack _endPos;
+		};
+
+		_route;
 	}]
 ];
 
 if (isNil "FLO_PF_RoadGraph") then {
-	diag_Log "[FLO][Pathfinding]Building Road Graph";
+	private _t0 = diag_tickTime;
 	FLO_PF_RoadGraph = createhashmapobject [XPS_PF_typ_RoadGraph];
-	diag_Log "[FLO][Pathfinding]Finished building Road Graph";
+	private _buildMs = (diag_tickTime - _t0) * 1000;
+	private _roadCount = count (keys (FLO_PF_RoadGraph get "Roads"));
+	FLO_PF_Perf set ["graphBuildMs", _buildMs];
+	FLO_PF_Perf set ["roadCount", _roadCount];
+	diag_log format [
+		"[FLO][PERF] Pathfinding road graph built %1 road nodes in %2 ms",
+		_roadCount,
+		_buildMs
+	];
 };
 
 // Vehicle doctrine (no trails, main road always better - descending preference)
-FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.9, 1, 1.2],["MAIN ROAD","ROAD","TRACK"]]];
+FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.9, 1, 1.2],["MAIN ROAD","ROAD","TRACK"],350,50]];
 
 // Man doctrine (with trails, all roads equal)
-FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"]]];
+FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"],220,35]];
 
 // To initiate a search :
 // _search = createhashmapobject [XPS_PF_typ_RoadGraphSearch,[FLO_Pathfinding_RoadGraph, <start road object> , <end road object>, <reverse path?: true/false>]];

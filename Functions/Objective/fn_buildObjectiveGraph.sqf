@@ -2,8 +2,7 @@
  * Function: FLO_fnc_buildObjectiveGraph
  * Author: Frontline Operations Development Group
  * Description:
- *   Builds road-linked graph between objectives. Uses road pathfinding
- *   to generate cached waypoint arrays between linked objectives.
+ *   Builds the objective adjacency graph from linked objective metadata.
  *   Results are stored in FLO_ObjectiveLinks hashmap. When _debug is true
  *   line markers are created to visualize the links on the map.
  *
@@ -17,11 +16,6 @@
 params [ ["_debug", false, [true]] ];
 
 if (isNil "FLO_Objectives") exitWith {false};
-
-// Ensure pathfinding is initialized
-if (isNil "FLO_PF_RoadGraph") then {
-    [] call FLO_fnc_initRoadGraph;
-};
 
 FLO_ObjectiveLinks = createHashMap;
 
@@ -61,11 +55,10 @@ private _ids = keys FLO_Objectives;
         private _otherData = FLO_Objectives get _other;
         if (isNil "_otherData") then { continue; };
 
-        // Only store start/end points. Pathfinding will occur on demand
+        // Store adjacency metadata only. Path routes are not cached on links.
         private _linkMap = createHashMapFromArray [
             ["from", _id],
-            ["to", _other],
-            ["waypoints", []]
+            ["to", _other]
         ];
         FLO_ObjectiveLinks set [_key, _linkMap];
 

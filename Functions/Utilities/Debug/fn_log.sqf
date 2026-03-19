@@ -32,7 +32,7 @@ params [
 ];
 
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 3;
+    FLO_Debug_Level = 1;
 };
 
 // Always log errors (1) and warnings (2)

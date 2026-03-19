@@ -54,10 +54,6 @@ _groupData set ["reinforcementTargetPos", _targetPos];
 _groupData set ["reinforcementTargetObjective", _targetObjId];
 
 if (_groupType isEqualTo "static_aa") then {
-    if (_sourceObjId == "") then {
-        _sourceObjId = [_spawnPos, _managedSide] call FLO_fnc_getNearestObjective;
-    };
-
     _groupData set ["forceVirtual", true];
     _groupData set ["alwaysActive", false];
     _groupData set ["noWaypoints", false];
@@ -67,18 +63,7 @@ if (_groupType isEqualTo "static_aa") then {
     _groupData set ["aaDeployTargetObjective", _targetObjId];
     _groupData set ["isStrategicAA", true];
     _groupData set ["homeObjective", _targetObjId];
-
-    private _path = if (_sourceObjId != "" && {_targetObjId != ""} && {_sourceObjId != _targetObjId}) then {
-        [_sourceObjId, _targetObjId] call FLO_fnc_getObjectivePath
-    } else {
-        []
-    };
-
-    _wps = [];
-    {
-        _wps pushBack [_x, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80];
-    } forEach _path;
-    _wps pushBack [_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80];
+    _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80]];
 };
 
 private _usesRoadRouting = !(_groupType in ["helicopter", "air", "jet", "boat", "naval", "submarine"]);
