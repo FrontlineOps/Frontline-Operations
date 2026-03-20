@@ -41,6 +41,10 @@ private _requestsBySide = createHashMapFromArray [
     ["EAST", 0],
     ["WEST", 0]
 ];
+private _availableArtilleryBySide = createHashMapFromArray [
+    ["EAST", nil],
+    ["WEST", nil]
+];
 
 private _t0 = diag_tickTime;
 
@@ -64,6 +68,13 @@ for "_step" from 0 to (_batchSize - 1) do {
     private _sideKey = ([_requestSide] call FLO_fnc_gtnSideContext) get "sideKey";
     if ((_requestsBySide get _sideKey) >= _maxPerSide) then { continue };
 
+    private _availableArtillery = _availableArtilleryBySide get _sideKey;
+    if (isNil "_availableArtillery") then {
+        _availableArtillery = [_manager, _requestSide] call FLO_fnc_gtnArtilleryGetAvailableGroups;
+        _availableArtilleryBySide set [_sideKey, _availableArtillery];
+    };
+    if (count _availableArtillery == 0) then { continue };
+
     private _solution = [_manager, _gData] call FLO_fnc_gtnArtilleryEvaluateObservedTarget;
     if (count _solution == 0) then { continue };
 
@@ -73,6 +84,7 @@ for "_step" from 0 to (_batchSize - 1) do {
         _manager call ["_markSpotterCooldown", [_groupId]];
         _manager call ["_markObservedTargetCooldown", [_targetKey]];
         _requestsBySide set [_sideKey, (_requestsBySide get _sideKey) + 1];
+        _availableArtilleryBySide set [_sideKey, nil];
 
         ["GTN Artillery", 3, format [
             "Observed fire mission from %1 at %2 (enemy=%3, vehicles=%4, armor=%5)",

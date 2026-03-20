@@ -28,6 +28,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
     FLO_GTNArtilleryManager = createHashMapObject [[
         ["missions", createHashMap],
         ["objectiveCooldowns", createHashMap],
+        ["artilleryGroupsBySide", createHashMapFromArray [
+            ["ALL", createHashMap],
+            ["EAST", createHashMap],
+            ["WEST", createHashMap]
+        ]],
         ["observedSpotters", createHashMap],
         ["observedFireSpotterCooldowns", createHashMap],
         ["observedFireTargetCooldowns", createHashMap],
@@ -44,6 +49,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["observedFireMaxPerSidePerCycle", 1],
         ["observedFireCursor", 0],
         ["observedFirePfhId", -1],
+        ["observedFireAddedEh", -1],
         ["observedFireActivatedEh", -1],
         ["observedFireDeactivatedEh", -1],
         ["observedFireRemovedEh", -1],
@@ -247,8 +253,15 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             private _groups = FLO_virtualGroups get "_groups";
             {
+                [FLO_GTNArtilleryManager, _x, _y, true] call FLO_fnc_gtnArtillerySyncCachedGroup;
                 [FLO_GTNArtilleryManager, _x, _y] call FLO_fnc_gtnArtillerySyncObservedSpotter;
             } forEach _groups;
+
+            private _addedHandler = ["FLO_Virtualization_GroupAdded", {
+                params ["_groupId", "_groupData"];
+                [FLO_GTNArtilleryManager, _groupId, _groupData, true] call FLO_fnc_gtnArtillerySyncCachedGroup;
+            }] call CBA_fnc_addEventHandler;
+            _self set ["observedFireAddedEh", _addedHandler];
 
             private _activatedHandler = ["FLO_Virtualization_GroupActivated", {
                 params ["_groupId", "_groupData", "_realGroup"];
@@ -264,6 +277,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             private _removedHandler = ["FLO_Virtualization_GroupRemoved", {
                 params ["_groupId"];
+                [FLO_GTNArtilleryManager, _groupId, nil, false] call FLO_fnc_gtnArtillerySyncCachedGroup;
                 (FLO_GTNArtilleryManager get "observedSpotters") deleteAt _groupId;
                 (FLO_GTNArtilleryManager get "observedFireSpotterCooldowns") deleteAt _groupId;
             }] call CBA_fnc_addEventHandler;
@@ -280,6 +294,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
             if (_pfhId >= 0) then {
                 [_pfhId] call CBA_fnc_removePerFrameHandler;
                 _self set ["observedFirePfhId", -1];
+            };
+
+            private _addedHandler = _self get "observedFireAddedEh";
+            if (_addedHandler >= 0) then {
+                ["FLO_Virtualization_GroupAdded", _addedHandler] call CBA_fnc_removeEventHandler;
+                _self set ["observedFireAddedEh", -1];
             };
 
             private _activatedHandler = _self get "observedFireActivatedEh";
@@ -331,29 +351,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 };
             };
 
-            private _groups = FLO_virtualGroups get "_groups";
-            private _artGroups = [];
-            {
-                private _gid = _x;
-                private _gData = _y;
-                if (_gData get "groupType" == "artillery") then {
-                    if (_requestSide in [east, west] && {(_gData get "side") != _requestSide}) then {
-                        continue;
-                    };
-                    _artGroups pushBack [_gid, _gData];
-                };
-            } forEach _groups;
+            private _missions = _self get "missions";
+            private _artGroups = [_self, _requestSide] call FLO_fnc_gtnArtilleryGetAvailableGroups;
 
             ["GTN Artillery", 3, format["Found %1 artillery groups", count _artGroups]] call FLO_fnc_log;
 
             if (count _artGroups == 0) exitWith { false };
-
-            // Filter out groups already on mission
-            private _missions = _self get "missions";
-            _artGroups = _artGroups select {
-                private _id = _x select 0;
-                !(_id in _missions)
-            };
 
             ["GTN Artillery", 3, format["Available (not on mission): %1. Missions map: %2", count _artGroups, _missions]] call FLO_fnc_log;
 

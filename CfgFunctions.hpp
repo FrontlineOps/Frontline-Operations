@@ -63,10 +63,12 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
         class gtnArtilleryFireMission   {};
         class gtnArtilleryProcessObservedFireRequests {};
+        class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
         class gtnRadarDataLink          {};
     };
