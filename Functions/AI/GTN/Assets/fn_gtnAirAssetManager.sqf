@@ -25,11 +25,147 @@ params [];
 if (isNil "FLO_GTNAirAssetManager") then {
     FLO_GTNAirAssetManager = createHashMapObject [[
         ["missions", createHashMap],
+        ["_perf", createHashMapFromArray [
+            ["requestSlowThresholdMs", 10],
+            ["releaseSlowThresholdMs", 5],
+            ["liveCheckSlowThresholdMs", 5],
+            ["requestsTotal", 0],
+            ["requestsReal", 0],
+            ["requestsVirtual", 0],
+            ["requestsFailed", 0],
+            ["releasesTotal", 0],
+            ["rtbOrdersTotal", 0],
+            ["lastRequestMs", 0],
+            ["peakRequestMs", 0],
+            ["lastReleaseMs", 0],
+            ["peakReleaseMs", 0],
+            ["lastLiveCheckMs", 0],
+            ["peakLiveCheckMs", 0],
+            ["slowRequestCount", 0],
+            ["slowReleaseCount", 0],
+            ["slowLiveCheckCount", 0],
+            ["lastRequestInfo", createHashMap],
+            ["lastReleaseInfo", createHashMap],
+            ["lastLiveCheckInfo", createHashMap]
+        ]],
+
+        ["_getPerf", {
+            _self get "_perf"
+        }],
+
+        ["_recordRequestPerf", {
+            params [
+                ["_dtMs", 0],
+                ["_missionType", ""],
+                ["_requestSide", sideUnknown],
+                ["_result", "NONE"],
+                ["_liveArea", false],
+                ["_candidateCount", 0],
+                ["_availableCount", 0],
+                ["_activated", false],
+                ["_selectedId", ""],
+                ["_phaseLiveMs", 0],
+                ["_phaseActivateMs", 0],
+                ["_phaseVirtualMs", 0]
+            ];
+
+            private _perf = _self get "_perf";
+            _perf set ["requestsTotal", (_perf get "requestsTotal") + 1];
+            _perf set ["lastRequestMs", _dtMs];
+            if (_dtMs > (_perf get "peakRequestMs")) then {
+                _perf set ["peakRequestMs", _dtMs];
+            };
+
+            switch (_result) do {
+                case "REAL": { _perf set ["requestsReal", (_perf get "requestsReal") + 1]; };
+                case "VIRTUAL": { _perf set ["requestsVirtual", (_perf get "requestsVirtual") + 1]; };
+                default { _perf set ["requestsFailed", (_perf get "requestsFailed") + 1]; };
+            };
+
+            _perf set ["lastRequestInfo", createHashMapFromArray [
+                ["missionType", _missionType],
+                ["requestSide", str _requestSide],
+                ["result", _result],
+                ["liveArea", _liveArea],
+                ["candidateCount", _candidateCount],
+                ["availableCount", _availableCount],
+                ["activated", _activated],
+                ["selectedId", _selectedId],
+                ["phaseLiveMs", _phaseLiveMs],
+                ["phaseActivateMs", _phaseActivateMs],
+                ["phaseVirtualMs", _phaseVirtualMs],
+                ["missionCount", count keys (_self get "missions")]
+            ]];
+
+            if (_dtMs >= (_perf get "requestSlowThresholdMs")) then {
+                _perf set ["slowRequestCount", (_perf get "slowRequestCount") + 1];
+                diag_log format [
+                    "[FLO][PERF] Air asset manager request %1 side=%2 result=%3 live=%4 candidates=%5 available=%6 activated=%7 selected=%8 in %9 ms | liveCheck=%10 activate=%11 virtualEffect=%12 missions=%13",
+                    _missionType,
+                    _requestSide,
+                    _result,
+                    _liveArea,
+                    _candidateCount,
+                    _availableCount,
+                    _activated,
+                    _selectedId,
+                    _dtMs,
+                    _phaseLiveMs,
+                    _phaseActivateMs,
+                    _phaseVirtualMs,
+                    count keys (_self get "missions")
+                ];
+            };
+        }],
+
+        ["_recordReleasePerf", {
+            params [
+                ["_dtMs", 0],
+                ["_gid", ""],
+                ["_released", false],
+                ["_sentRTB", false],
+                ["_missionState", ""]
+            ];
+
+            private _perf = _self get "_perf";
+            _perf set ["releasesTotal", (_perf get "releasesTotal") + 1];
+            if (_sentRTB) then {
+                _perf set ["rtbOrdersTotal", (_perf get "rtbOrdersTotal") + 1];
+            };
+
+            _perf set ["lastReleaseMs", _dtMs];
+            if (_dtMs > (_perf get "peakReleaseMs")) then {
+                _perf set ["peakReleaseMs", _dtMs];
+            };
+
+            _perf set ["lastReleaseInfo", createHashMapFromArray [
+                ["groupId", _gid],
+                ["released", _released],
+                ["sentRTB", _sentRTB],
+                ["missionState", _missionState],
+                ["missionCount", count keys (_self get "missions")]
+            ]];
+
+            if (_dtMs >= (_perf get "releaseSlowThresholdMs")) then {
+                _perf set ["slowReleaseCount", (_perf get "slowReleaseCount") + 1];
+                diag_log format [
+                    "[FLO][PERF] Air asset manager release gid=%1 released=%2 sentRTB=%3 state=%4 in %5 ms | missions=%6",
+                    _gid,
+                    _released,
+                    _sentRTB,
+                    _missionState,
+                    _dtMs,
+                    count keys (_self get "missions")
+                ];
+            };
+        }],
 
         // Area is "live" when players or already-active groups are nearby.
         // In non-live areas, air support stays virtual.
         ["_isLiveArea", {
             params ["_targetPos", ["_radius", -1]];
+
+            private _t0 = diag_tickTime;
 
             if (_radius < 0) then { _radius = FLO_VirtualizationDistance; };
 
@@ -38,20 +174,50 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 {side group _x in [east, west]} &&
                 {(getPosATL _x) distance2D _targetPos <= _radius}
             } count allPlayers;
-            if (_playersNear > 0) exitWith { true };
-
-            private _groups = FLO_virtualGroups get "_groups";
             private _activeGroupsNear = 0;
-            {
-                private _gData = _y;
-                private _gType = _gData get "groupType";
-                if (_gType in ["static_aa", "radar"]) then { continue };
-                if !(_gData get "isActive") then { continue };
-                if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
-                _activeGroupsNear = _activeGroupsNear + 1;
-            } forEach _groups;
+            private _result = _playersNear > 0;
 
-            _activeGroupsNear > 0
+            if (!_result) then {
+                private _groups = FLO_virtualGroups get "_groups";
+                {
+                    private _gData = _y;
+                    private _gType = _gData get "groupType";
+                    if (_gType in ["static_aa", "radar"]) then { continue };
+                    if !(_gData get "isActive") then { continue };
+                    if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
+                    _activeGroupsNear = _activeGroupsNear + 1;
+                } forEach _groups;
+
+                _result = _activeGroupsNear > 0;
+            };
+
+            private _dtMs = (diag_tickTime - _t0) * 1000;
+            private _perf = _self get "_perf";
+            _perf set ["lastLiveCheckMs", _dtMs];
+            if (_dtMs > (_perf get "peakLiveCheckMs")) then {
+                _perf set ["peakLiveCheckMs", _dtMs];
+            };
+
+            _perf set ["lastLiveCheckInfo", createHashMapFromArray [
+                ["radius", _radius],
+                ["playersNear", _playersNear],
+                ["activeGroupsNear", _activeGroupsNear],
+                ["result", _result]
+            ]];
+
+            if (_dtMs >= (_perf get "liveCheckSlowThresholdMs")) then {
+                _perf set ["slowLiveCheckCount", (_perf get "slowLiveCheckCount") + 1];
+                diag_log format [
+                    "[FLO][PERF] Air asset manager liveArea players=%1 activeGroups=%2 radius=%3 result=%4 in %5 ms",
+                    _playersNear,
+                    _activeGroupsNear,
+                    _radius,
+                    _result,
+                    _dtMs
+                ];
+            };
+
+            _result
         }],
 
         ["_getVirtualMissionDuration", {
@@ -166,7 +332,32 @@ if (isNil "FLO_GTNAirAssetManager") then {
         ["_requestAirAsset", {
             params ["_targetPos", ["_missionType", "CAS"], ["_requestSide", sideUnknown]];
 
-            if (isNil "FLO_virtualGroups") exitWith {[]};
+            private _tRequest = diag_tickTime;
+            private _candidateCount = 0;
+            private _availableCount = 0;
+            private _activated = false;
+            private _selectedId = "";
+            private _phaseLiveMs = 0;
+            private _phaseActivateMs = 0;
+            private _phaseVirtualMs = 0;
+
+            if (isNil "FLO_virtualGroups") exitWith {
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    false,
+                    0,
+                    0,
+                    false,
+                    "",
+                    0,
+                    0,
+                    0
+                ]];
+                []
+            };
             private _groups = FLO_virtualGroups get "_groups";
             private _airGroups = [];
             {
@@ -180,7 +371,24 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 };
             } forEach _groups;
 
-            if (count _airGroups == 0) exitWith {[]};
+            _candidateCount = count _airGroups;
+            if (_candidateCount == 0) exitWith {
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    false,
+                    _candidateCount,
+                    0,
+                    false,
+                    "",
+                    0,
+                    0,
+                    0
+                ]];
+                []
+            };
 
             // Filter out groups already on mission
             private _missions = _self get "missions";
@@ -188,7 +396,24 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _id = _x select 0;
                 !(_id in _missions)
             };
-            if (count _airGroups == 0) exitWith {[]};
+            _availableCount = count _airGroups;
+            if (_availableCount == 0) exitWith {
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    false,
+                    _candidateCount,
+                    _availableCount,
+                    false,
+                    "",
+                    0,
+                    0,
+                    0
+                ]];
+                []
+            };
 
             // Select nearest group to target (single pass)
             private _sel = [];
@@ -201,18 +426,39 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     _sel = [_gid, _gData];
                 };
             } forEach _airGroups;
-            if (count _sel == 0) exitWith { [] };
+            if (count _sel == 0) exitWith {
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    false,
+                    _candidateCount,
+                    _availableCount,
+                    false,
+                    "",
+                    0,
+                    0,
+                    0
+                ]];
+                []
+            };
 
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
+            _selectedId = _gid;
+            private _tLive = diag_tickTime;
             private _isLiveArea = _self call ["_isLiveArea", [_targetPos]];
+            _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
             if (!_isLiveArea) exitWith {
                 _gdata set ["onMission", true];
                 (_self get "missions") set [_gid, "VIRTUAL"];
 
                 private _duration = _self call ["_getVirtualMissionDuration", [_missionType]];
+                private _tVirtual = diag_tickTime;
                 private _losses = _self call ["_applyVirtualAirEffect", [_gdata get "side", _targetPos, _missionType]];
+                _phaseVirtualMs = (diag_tickTime - _tVirtual) * 1000;
                 _self call ["_scheduleVirtualMissionRelease", [_gid, _duration]];
 
                 ["GTN Air Asset Manager", 3, format[
@@ -224,15 +470,49 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     round _duration
                 ]] call FLO_fnc_log;
 
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "VIRTUAL",
+                    false,
+                    _candidateCount,
+                    _availableCount,
+                    false,
+                    _selectedId,
+                    _phaseLiveMs,
+                    0,
+                    _phaseVirtualMs
+                ]];
+
                 [objNull, _gid, "VIRTUAL"]
             };
 
             if !(_gdata get "isActive") then {
+                private _tActivate = diag_tickTime;
                 [_gid, _gdata] call FLO_fnc_activateVirtualGroup;
+                _phaseActivateMs = (diag_tickTime - _tActivate) * 1000;
+                _activated = true;
             };
 
             private _realGroup = _gdata get "realGroup";
-            if (isNull _realGroup) exitWith { [] };
+            if (isNull _realGroup) exitWith {
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    true,
+                    _candidateCount,
+                    _availableCount,
+                    _activated,
+                    _selectedId,
+                    _phaseLiveMs,
+                    _phaseActivateMs,
+                    0
+                ]];
+                []
+            };
             
             // Mark group as on mission to prevent deactivation
             _gdata set ["onMission", true];
@@ -251,33 +531,77 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 };
             } forEach units _realGroup;
             if (isNull _veh) then { _veh = vehicle (leader _realGroup); };
-            if (isNull _veh) exitWith { [] };
+            if (isNull _veh) exitWith {
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    true,
+                    _candidateCount,
+                    _availableCount,
+                    _activated,
+                    _selectedId,
+                    _phaseLiveMs,
+                    _phaseActivateMs,
+                    0
+                ]];
+                []
+            };
 
             (_self get "missions") set [_gid, _veh];
+            _self call ["_recordRequestPerf", [
+                (diag_tickTime - _tRequest) * 1000,
+                _missionType,
+                _requestSide,
+                "REAL",
+                true,
+                _candidateCount,
+                _availableCount,
+                _activated,
+                _selectedId,
+                _phaseLiveMs,
+                _phaseActivateMs,
+                0
+            ]];
 
             [_veh, _gid, "REAL"]
         }],
         ["_releaseAirAsset", {
             params ["_gid"];
+            private _tRelease = diag_tickTime;
             private _missions = _self get "missions";
+            private _released = false;
+            private _sentRTB = false;
+            private _missionState = "";
 
             ["GTN Air Asset Manager", 4, format["_releaseAirAsset called for: '%1'", _gid]] call FLO_fnc_log;
 
             if (_gid in _missions) then {
-                private _missionState = _missions get _gid;
+                _missionState = _missions get _gid;
                 private _groups = FLO_virtualGroups get "_groups";
                 if (_gid in _groups) then {
                     private _data = _groups get _gid;
                     _data set ["onMission", false];
                     if !(_missionState isEqualTo "VIRTUAL") then {
                         _self call ["_sendToRTB", [_gid]];
+                        _sentRTB = true;
                     };
+                    _released = true;
                 } else {
                     ["GTN Air Asset Manager", 2, format["Group %1 not found in virtualGroups - may have been destroyed", _gid]] call FLO_fnc_log;
                 };
                 (_self get "missions") deleteAt _gid;
                 ["GTN Air Asset Manager", 3, format["Released air asset %1", _gid]] call FLO_fnc_log;
             };
+
+            _self call ["_recordReleasePerf", [
+                (diag_tickTime - _tRelease) * 1000,
+                _gid,
+                _released,
+                _sentRTB,
+                str _missionState
+            ]];
         }],
 
         // Get RTB position for an aircraft (returns original spawn position)
