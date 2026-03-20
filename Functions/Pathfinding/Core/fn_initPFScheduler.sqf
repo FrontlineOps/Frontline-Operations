@@ -205,7 +205,31 @@ XPS_typ_JobScheduler = [
             private _item = _self get "CurrentItem";
             private _metrics = _self get "_metrics";
             _metrics set ["nodeSteps", (_metrics get "nodeSteps") + 1];
-            _item set ["NodeSteps", (_item get "NodeSteps") + 1];
+            private _nodeSteps = (_item get "NodeSteps") + 1;
+            _item set ["NodeSteps", _nodeSteps];
+
+            private _perf = FLO_PF_Perf;
+            private _nextRunawayLogAt = _item getOrDefault ["RunawayLogNextNodeSteps", (_perf get "runawayNodeStepsThreshold")];
+            if (_nodeSteps >= _nextRunawayLogAt) then {
+                private _queueDepth = ((_self get "_queueObject") call ["Count"]) + 1;
+                diag_log format [
+                    "[FLO][PERF] Pathfinding suspect route source=%1 doctrine=%2 nodes=%3 queue=%4 requestDist=%5 startSnap=%6 endSnap=%7 startNode=%8(%9) endNode=%10(%11) start=%12 end=%13",
+                    _item get "SourceTag",
+                    _item get "DoctrineName",
+                    _nodeSteps,
+                    _queueDepth,
+                    _item get "RequestDistance",
+                    _item get "StartSnapDistance",
+                    _item get "EndSnapDistance",
+                    _item get "StartNodeIndex",
+                    _item get "StartNodeType",
+                    _item get "EndNodeIndex",
+                    _item get "EndNodeType",
+                    _item get "RequestStartPos",
+                    _item get "RequestEndPos"
+                ];
+                _item set ["RunawayLogNextNodeSteps", _nextRunawayLogAt + (_perf get "runawayNodeStepsLogInterval")];
+            };
 
             private _done = _item call ["ProcessNextNode"];
             if (_done) then {

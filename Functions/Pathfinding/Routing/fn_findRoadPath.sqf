@@ -159,11 +159,14 @@ private _dispatch = {
 
 private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos]];
 private _doctrine = FLO_PF_RoadDoctrine_V;
+private _doctrineName = "VEHICLE";
 if (_trails) then {
     _doctrine = FLO_PF_RoadDoctrine_M;
+    _doctrineName = "MIXED";
 } else {
     if (_sourceTag == "LOGI_REINF") then {
         _doctrine = FLO_PF_RoadDoctrine_V_Logi;
+        _doctrineName = "LOGI_REINF";
     };
 };
 _search set ["Doctrine", _doctrine];
@@ -174,6 +177,24 @@ _search set ["SourceTag", _sourceTag];
 _search set ["RouteKey", _routeKey];
 _search set ["RequestDistance", _dist];
 _search set ["NodeSteps", 0];
+_search set ["DoctrineName", _doctrineName];
+_search set ["RequestStartPos", +_startPos];
+_search set ["RequestEndPos", +_endPos];
+_search set ["RunawayLogNextNodeSteps", FLO_PF_Perf get "runawayNodeStepsThreshold"];
+
+private _startNode = _search get "StartNode";
+private _endNode = _search get "EndNode";
+private _startNodePos = +(_startNode get "PosASL");
+private _endNodePos = +(_endNode get "PosASL");
+
+_search set ["StartNodeIndex", _startNode get "Index"];
+_search set ["EndNodeIndex", _endNode get "Index"];
+_search set ["StartNodeType", _startNode get "Type"];
+_search set ["EndNodeType", _endNode get "Type"];
+_search set ["StartNodePos", _startNodePos];
+_search set ["EndNodePos", _endNodePos];
+_search set ["StartSnapDistance", _startPos distance2D _startNodePos];
+_search set ["EndSnapDistance", _endPos distance2D _endNodePos];
 
 FLO_PF_Scheduler call ["AddItem", _search];
 
