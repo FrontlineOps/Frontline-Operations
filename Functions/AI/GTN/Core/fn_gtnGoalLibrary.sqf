@@ -680,7 +680,7 @@ private _goalLibrary = createHashMapObject [[
                     ["id", "standard_defense"],
                     ["conditions", { true }],
                     ["subtasks", [
-                        ["prim_assign_groups_to_defense", ["_PARAM_0", 2]],
+                        ["prim_assign_groups_to_defense", ["_PARAM_0", 4]],
                         ["prim_set_defense_posture", ["_PARAM_0"]]
                     ]]
                 ]
@@ -702,7 +702,7 @@ private _goalLibrary = createHashMapObject [[
                     ["id", "immediate_qrf"],
                     ["conditions", { true }],
                     ["subtasks", [
-                        ["prim_assign_groups_to_defense", ["_PARAM_0", 2]],
+                        ["prim_assign_groups_to_defense", ["_PARAM_0", 4]],
                         ["prim_move_to_position", ["_PARAM_0", "COMBAT"]]
                     ]]
                 ]

@@ -1296,7 +1296,7 @@ private _executor = createHashMapObject [[
             params ["_ctx"];
             private _params = _ctx get "params";
             private _objId = _params param [0, ""];
-            private _count = _params param [1, 2];
+            private _count = _params param [1, 4];
             private _cmdr = _ctx get "commander";
 
             // Get objective position
@@ -1306,13 +1306,23 @@ private _executor = createHashMapObject [[
             // Get groups from track pool
             private _taskNode = _ctx get "taskNode";
             private _track = _taskNode get "_trackRef";
+            private _requestCount = _cmdr call ["_estimateDefenseDispatchCount", [_objId, _count, _track]];
+            if (_requestCount < 1) exitWith {
+                ["GTN", 3, format["Defense assignment skipped - %1 already covered", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
             private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, _count]]
+                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount, _objPos]]
             } else {
-                _cmdr call ["_getAvailableGroups", [_count]]
+                _cmdr call ["_getAvailableGroups", [_requestCount, _objPos]]
             };
 
-            if (count _available < 1) exitWith { false };
+            if (count _available < 1) exitWith {
+                ["GTN", 3, format["Defense assignment skipped - no groups available for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             // Order to defend (count only successful assignments)
             private _assigned = 0;
@@ -1322,7 +1332,11 @@ private _executor = createHashMapObject [[
                 };
             } forEach _available;
 
-            if (_assigned < 1) exitWith { false };
+            if (_assigned < 1) exitWith {
+                ["GTN", 3, format["Defense assignment skipped - objective %1 already saturated", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
             ["GTN", 3, format["Assigned %1 groups to defend %2", _assigned, _objId]] call FLO_fnc_log;
             _ctx set ["status", "SUCCESS"];
             true
@@ -1350,13 +1364,23 @@ private _executor = createHashMapObject [[
             // Get groups from track pool
             private _taskNode = _ctx get "taskNode";
             private _track = _taskNode get "_trackRef";
+            private _requestCount = _cmdr call ["_estimateDefenseDispatchCount", [_objId, 3, _track]];
+            if (_requestCount < 1) exitWith {
+                ["GTN", 3, format["QRF move skipped - %1 already has enough defenders", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
             private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, 2]]
+                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount, _objPos]]
             } else {
-                _cmdr call ["_getAvailableGroups", [2]]
+                _cmdr call ["_getAvailableGroups", [_requestCount, _objPos]]
             };
 
-            if (count _available < 1) exitWith { false };
+            if (count _available < 1) exitWith {
+                ["GTN", 3, format["QRF move skipped - no groups available for %1", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             // QRF should become objective defense, not a terminal MOVE order.
             private _assigned = 0;
@@ -1366,7 +1390,14 @@ private _executor = createHashMapObject [[
                 };
             } forEach _available;
 
-            _assigned > 0
+            if (_assigned < 1) exitWith {
+                ["GTN", 3, format["QRF move skipped - objective %1 already saturated", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            _ctx set ["status", "SUCCESS"];
+            true
         }]];
 
         // prim_select_priority_objective
@@ -1453,12 +1484,22 @@ private _executor = createHashMapObject [[
 
             // Get groups from track pool
             private _track = _taskNode get "_trackRef";
-            private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, 2]]
-            } else {
-                _cmdr call ["_getAvailableGroups", [2]]
+            private _requestCount = _cmdr call ["_estimateDefenseDispatchCount", [_sectorId, 4, _track]];
+            if (_requestCount < 1) exitWith {
+                ["GTN", 3, format["Sector reinforcement skipped - %1 already has enough defenders", _sectorId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
             };
-            if (count _available < 1) exitWith { false };
+            private _available = if (!isNil "_track") then {
+                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount, _objPos]]
+            } else {
+                _cmdr call ["_getAvailableGroups", [_requestCount, _objPos]]
+            };
+            if (count _available < 1) exitWith {
+                ["GTN", 3, format["Sector reinforcement skipped - no groups available for %1", _sectorId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             private _assigned = 0;
             {
@@ -1467,10 +1508,15 @@ private _executor = createHashMapObject [[
                 };
             } forEach _available;
 
-            if (_assigned < 1) exitWith { false };
+            if (_assigned < 1) exitWith {
+                ["GTN", 3, format["Sector reinforcement skipped - %1 already saturated", _sectorId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
 
             _primData set ["arrived", false];
             _taskNode set ["primitiveData", _primData];
+            _ctx set ["status", "SUCCESS"];
             true
         }]];
 
@@ -1538,6 +1584,19 @@ private _executor = createHashMapObject [[
                 _selectionPool = _unsaturatedCandidates;
             };
 
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            private _trackSectorObjectives = if (!isNil "_track") then { _track get "frontSectorObjectives" } else { [] };
+            if ((count _trackSectorObjectives) > 0) then {
+                private _sectorCandidates = _selectionPool select {
+                    private _candidateId = _x select 0;
+                    (count (((_allObjectives get _candidateId) get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0
+                };
+                if (count _sectorCandidates > 0) then {
+                    _selectionPool = _sectorCandidates;
+                };
+            };
+
             // Select nearest vulnerable frontline objective.
             private _objId = "";
             private _bestDist = 1e12;
@@ -1553,14 +1612,14 @@ private _executor = createHashMapObject [[
             if (isNil "_objPos") exitWith { false };
 
             // Get groups from track pool
-            private _taskNode = _ctx get "taskNode";
-            private _track = _taskNode get "_trackRef";
+            private _requestCount = _cmdr call ["_estimateAttackDispatchCount", [_objId, 4, _track]];
+            if (_requestCount < 1) exitWith { false };
             private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, 4, _objPos]]
+                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount, _objPos]]
             } else {
-                _cmdr call ["_getAvailableGroups", [4, _objPos]]
+                _cmdr call ["_getAvailableGroups", [_requestCount, _objPos]]
             };
-            if (count _available < 2) exitWith { false };
+            if (count _available < 1) exitWith { false };
 
             private _issued = [];
             {
@@ -1603,10 +1662,16 @@ private _executor = createHashMapObject [[
             // Get groups from track pool
             private _taskNode = _ctx get "taskNode";
             private _track = _taskNode get "_trackRef";
+            private _requestCount = _cmdr call ["_estimateDefenseDispatchCount", [_objId, 4, _track]];
+            if (_requestCount < 1) exitWith {
+                ["GTN", 3, format["Establish defense skipped - %1 already has enough defenders", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
             private _available = if (!isNil "_track") then {
-                _cmdr call ["_getGroupsFromTrack", [_track, 2]]
+                _cmdr call ["_getGroupsFromTrack", [_track, _requestCount, _objPos]]
             } else {
-                _cmdr call ["_getAvailableGroups", [2]]
+                _cmdr call ["_getAvailableGroups", [_requestCount, _objPos]]
             };
             if (count _available < 1) exitWith {
                 ["GTN", 3, format["Establish defense skipped - no groups available for %1", _objId]] call FLO_fnc_log;
@@ -2398,14 +2463,16 @@ private _executor = createHashMapObject [[
             private _requiresAT = _analysis get "requiresAT";
             private _requiresAA = _analysis get "requiresAA";
             private _threatLevel = _analysis get "threatLevel";
-            private _groupsNeeded = (ceil (_threatLevel / 2)) max 1 min 4;
-            
-            // Frontline objectives get more garrison
-            if (_enemyDist < 1500) then { _groupsNeeded = _groupsNeeded + 1 };
-
-            // Get available groups
             private _taskNode = _ctx get "taskNode";
             private _track = _taskNode get "_trackRef";
+            private _groupsNeeded = _cmdr call ["_estimateGarrisonDispatchCount", [_objId, _threatLevel, _enemyDist < 1500, _track]];
+            if (_groupsNeeded < 1) exitWith {
+                ["GTN", 3, format["Garrison skipped for %1 - already covered", _objId]] call FLO_fnc_log;
+                _ctx set ["status", "SUCCESS"];
+                true
+            };
+
+            // Get available groups
             private _available = if (!isNil "_track") then {
                 _cmdr call ["_getGroupsFromTrack", [_track, _groupsNeeded * 2]]
             } else {
@@ -2449,7 +2516,11 @@ private _executor = createHashMapObject [[
             
             ["GTN", 3, format["Garrison: %1 groups to %2 (AT:%3 AA:%4)", 
                 _assigned, _objId, _requiresAT, _requiresAA]] call FLO_fnc_log;
-            
+
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["garrisonAssigned", true];
+            _taskNode set ["primitiveData", _primData];
+
             _ctx set ["status", "SUCCESS"];
             true
         }]];

@@ -65,7 +65,9 @@ for "_i" from 1 to _attackTrackCount do {
         ["resourceShare", _resourceShare],
         ["planner", nil],
         ["status", "IDLE"],
-        ["groupPool", []]
+        ["groupPool", []],
+        ["frontSectorObjectives", []],
+        ["frontSectorAnchorPos", []]
     ]);
 };
 
@@ -76,7 +78,9 @@ for "_i" from 1 to _defenseTrackCount do {
         ["resourceShare", _resourceShare],
         ["planner", nil],
         ["status", "IDLE"],
-        ["groupPool", []]
+        ["groupPool", []],
+        ["frontSectorObjectives", []],
+        ["frontSectorAnchorPos", []]
     ]);
 };
 
@@ -115,11 +119,18 @@ private _gtnCommander = createHashMapObject [[
         ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
-        ["attackGroupsPerFrontLink", 4], // Scale live attack cap by number of friendly frontage links
-        ["attackMinGroupCap", 6], // Never commit more than a small assault package to one objective by default
-        ["attackMaxGroupCap", 12], // Hard cap to stop theater-wide dogpiles on one objective
+        ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
+        ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of friendly frontage links
+        ["attackMinGroupCap", 8], // Never commit less than a meaningful assault package to one objective
+        ["attackMaxGroupCap", 18], // Hard cap to stop theater-wide dogpiles on one objective
+        ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
+        ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
         ["attackLocalReserveMeters", 2500], // Prefer groups already in the local sector before pulling wider reserves
         ["attackMaxPullDistanceMeters", 4000], // Do not drag attack groups from the other side of the map
+        ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
+        ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
+        ["garrisonDispatchMinGroups", 3], // Minimum garrison package once an objective is selected
+        ["garrisonDispatchMaxGroups", 10], // Upper bound per garrison assignment pass
         ["maxTrackTasksPerCycle", 2], // Primitive burst cap per track per commander update
         ["debugMode", false]          // Enable verbose logging
     ]],
@@ -396,7 +407,129 @@ private _gtnCommander = createHashMapObject [[
         } forEach _tracks;
     }],
     
-    // Allocate available groups to tracks (50/50 round-robin)
+    // Assign attack tracks to distinct frontline source sectors before pool allocation.
+    ["_buildAttackTrackSectors", {
+        params [["_attackTracks", []]];
+
+        {
+            _x set ["frontSectorObjectives", []];
+            _x set ["frontSectorAnchorPos", []];
+        } forEach _attackTracks;
+
+        if ((count _attackTracks) == 0) exitWith { createHashMap };
+
+        private _ws = _self get "_worldState";
+        private _ownSide = _self get "_ownSide";
+        private _allObjectives = _ws call ["_getObjectives", []];
+        private _frontlineEnemyObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+        private _sourceScores = createHashMap;
+        private _sourcePositions = createHashMap;
+
+        {
+            private _enemyObj = _frontlineEnemyObjectives get _x;
+            private _scoreAdd = (_enemyObj get "priority")
+                + ((_enemyObj get "enemyCount") * 2)
+                + (_enemyObj get "friendlyCount")
+                + (if (_enemyObj get "contested") then { 20 } else { 0 });
+
+            {
+                private _sourceObj = _allObjectives get _x;
+                if (isNil "_sourceObj") then { continue };
+                if ((_sourceObj get "owner") != _ownSide) then { continue };
+
+                _sourceScores set [_x, (_sourceScores getOrDefault [_x, 0]) + _scoreAdd];
+                _sourcePositions set [_x, _sourceObj get "position"];
+            } forEach (_enemyObj get "linkedObjectives");
+        } forEach (keys _frontlineEnemyObjectives);
+
+        if ((count (keys _sourceScores)) == 0) exitWith { createHashMap };
+
+        private _rankedSources = [];
+        {
+            _rankedSources pushBack [-( _sourceScores get _x), _x];
+        } forEach (keys _sourceScores);
+        _rankedSources sort true;
+
+        private _trackAssignments = [];
+        {
+            _trackAssignments pushBack [_x, []];
+        } forEach _attackTracks;
+
+        for "_i" from 0 to ((count _rankedSources) - 1) do {
+            private _sourceObjId = (_rankedSources select _i) select 1;
+            private _sourcePos = _sourcePositions get _sourceObjId;
+            private _selectedIdx = -1;
+
+            for "_j" from 0 to ((count _trackAssignments) - 1) do {
+                if ((count ((_trackAssignments select _j) select 1)) == 0) exitWith {
+                    _selectedIdx = _j;
+                };
+            };
+
+            if (_selectedIdx < 0) then {
+                private _bestDist = 1e12;
+                private _bestAssignedCount = 1000000;
+
+                for "_j" from 0 to ((count _trackAssignments) - 1) do {
+                    private _pair = _trackAssignments select _j;
+                    private _assignedSources = _pair select 1;
+                    private _sumX = 0;
+                    private _sumY = 0;
+
+                    {
+                        private _assignedPos = _sourcePositions get _x;
+                        _sumX = _sumX + (_assignedPos select 0);
+                        _sumY = _sumY + (_assignedPos select 1);
+                    } forEach _assignedSources;
+
+                    private _anchorPos = [_sumX / (count _assignedSources), _sumY / (count _assignedSources), 0];
+                    private _dist = _anchorPos distance2D _sourcePos;
+
+                    if (
+                        _dist < _bestDist
+                        || { _dist == _bestDist && { (count _assignedSources) < _bestAssignedCount } }
+                    ) then {
+                        _bestDist = _dist;
+                        _bestAssignedCount = count _assignedSources;
+                        _selectedIdx = _j;
+                    };
+                };
+            };
+
+            private _selectedPair = _trackAssignments select _selectedIdx;
+            private _selectedSources = _selectedPair select 1;
+            _selectedSources pushBack _sourceObjId;
+            _selectedPair set [1, _selectedSources];
+            _trackAssignments set [_selectedIdx, _selectedPair];
+        };
+
+        private _sectorMap = createHashMap;
+        {
+            _x params ["_track", "_sectorObjectives"];
+
+            private _anchorPos = [];
+            if ((count _sectorObjectives) > 0) then {
+                private _sumX = 0;
+                private _sumY = 0;
+
+                {
+                    private _objPos = _sourcePositions get _x;
+                    _sumX = _sumX + (_objPos select 0);
+                    _sumY = _sumY + (_objPos select 1);
+                } forEach _sectorObjectives;
+
+                _anchorPos = [_sumX / (count _sectorObjectives), _sumY / (count _sectorObjectives), 0];
+            };
+
+            _track set ["frontSectorObjectives", _sectorObjectives];
+            _track set ["frontSectorAnchorPos", _anchorPos];
+            _sectorMap set [_track get "id", _sectorObjectives];
+        } forEach _trackAssignments;
+
+        _sectorMap
+    }],
+
+    // Allocate available groups to tracks using frontline sectors instead of blind round-robin.
     ["_allocateGroupsToTracks", {
         private _tracks = _self get "_tracks";
         private _metrics = createHashMapFromArray [
@@ -405,6 +538,7 @@ private _gtnCommander = createHashMapObject [[
             ["availableCount", 0],
             ["allocatedCount", 0],
             ["trackCount", count _tracks],
+            ["frontSectorCount", 0],
             ["scanMs", 0],
             ["roundRobinMs", 0]
         ];
@@ -419,22 +553,126 @@ private _gtnCommander = createHashMapObject [[
         _metrics set ["availableCount", _totalCount];
         
         // Clear existing pools
-        { _x set ["groupPool", []]; } forEach _tracks;
+        {
+            _x set ["groupPool", []];
+            _x set ["frontSectorObjectives", []];
+            _x set ["frontSectorAnchorPos", []];
+        } forEach _tracks;
         
         if (_totalCount == 0) exitWith {
             ["GTN", 2, "No available groups to allocate to tracks"] call FLO_fnc_log;
             _metrics
         };
         
-        // Round-robin allocation to tracks
+        private _attackTracks = _tracks select { (_x get "goal") == "capture_priority_objective" };
+        private _defenseTracks = _tracks select { (_x get "goal") == "protect_critical_assets" };
+        private _defenseTrack = if ((count _defenseTracks) > 0) then { _defenseTracks select 0 } else { nil };
+        private _ws = _self get "_worldState";
+        private _allObjectives = _ws call ["_getObjectives", []];
+        private _frontSectors = _self call ["_buildAttackTrackSectors", [_attackTracks]];
+        _metrics set ["frontSectorCount", count (keys _frontSectors)];
+
+        // Front-aware allocation to tracks.
         private _tRoundRobin = diag_tickTime;
-        private _trackCount = count _tracks;
+        private _ownSide = _self get "_ownSide";
+        private _allGroups = FLO_virtualGroups get "_groups";
+        private _maxPullDistanceMeters = ((_self get "_config") get "attackMaxPullDistanceMeters");
+
         {
-            private _trackIdx = _forEachIndex mod _trackCount;
-            private _track = _tracks select _trackIdx;
-            private _pool = _track get "groupPool";
-            _pool pushBack _x;
-            _track set ["groupPool", _pool];
+            private _groupId = _x;
+            private _gData = _allGroups get _groupId;
+            if (isNil "_gData") then { continue };
+
+            private _assignedTrack = nil;
+            private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+            private _currentOrder = _gData get "currentOrder";
+            private _groupPos = _gData get "position";
+
+            if (!isNil "_defenseTrack") then {
+                if (_currentOrder == "DEFEND") then {
+                    _assignedTrack = _defenseTrack;
+                };
+
+                if (isNil "_assignedTrack" && {_homeObjective != ""} && {_homeObjective in _allObjectives}) then {
+                    private _homeObj = _allObjectives get _homeObjective;
+                    if ((_homeObj get "owner") == _ownSide && {(_homeObj get "underAttack") || (_homeObj get "contested")}) then {
+                        _assignedTrack = _defenseTrack;
+                    };
+                };
+            };
+
+            if (isNil "_assignedTrack" && {(count _attackTracks) > 0}) then {
+                private _bestTrack = nil;
+                private _bestBand = 10;
+                private _bestDist = 1e12;
+                private _bestPool = 1000000;
+
+                {
+                    private _sectorObjectives = _x get "frontSectorObjectives";
+                    private _anchorPos = _x get "frontSectorAnchorPos";
+                    private _band = 3;
+
+                    if (_homeObjective != "" && {_homeObjective in _sectorObjectives}) then {
+                        _band = 0;
+                    } else {
+                        if (_homeObjective != "" && {_homeObjective in _allObjectives}) then {
+                            private _homeObj = _allObjectives get _homeObjective;
+                            if ((count ((_homeObj get "linkedObjectives") arrayIntersect _sectorObjectives)) > 0) then {
+                                _band = 1;
+                            } else {
+                                if ((count _anchorPos) >= 2 && {((_homeObj get "position") distance2D _anchorPos) <= _maxPullDistanceMeters}) then {
+                                    _band = 2;
+                                };
+                            };
+                        } else {
+                            if ((count _anchorPos) >= 2 && {_groupPos distance2D _anchorPos <= _maxPullDistanceMeters}) then {
+                                _band = 2;
+                            };
+                        };
+                    };
+
+                    private _dist = if ((count _anchorPos) >= 2) then { _groupPos distance2D _anchorPos } else { 1e12 };
+                    private _poolSize = count (_x get "groupPool");
+
+                    if (
+                        _band < _bestBand
+                        || { _band == _bestBand && { _dist < _bestDist } }
+                        || { _band == _bestBand && { _dist == _bestDist && { _poolSize < _bestPool } } }
+                    ) then {
+                        _bestTrack = _x;
+                        _bestBand = _band;
+                        _bestDist = _dist;
+                        _bestPool = _poolSize;
+                    };
+                } forEach _attackTracks;
+
+                _assignedTrack = _bestTrack;
+            };
+
+            if (isNil "_assignedTrack" && {!isNil "_defenseTrack"}) then {
+                _assignedTrack = _defenseTrack;
+            };
+
+            if (isNil "_assignedTrack" && {(count _attackTracks) > 0}) then {
+                private _leastLoadedTrack = _attackTracks select 0;
+                private _leastLoadedCount = count (_leastLoadedTrack get "groupPool");
+
+                {
+                    private _poolCount = count (_x get "groupPool");
+                    if (_poolCount < _leastLoadedCount) then {
+                        _leastLoadedTrack = _x;
+                        _leastLoadedCount = _poolCount;
+                    };
+                } forEach _attackTracks;
+
+                _assignedTrack = _leastLoadedTrack;
+            };
+
+            if (isNil "_assignedTrack") then { continue };
+
+            private _pool = _assignedTrack get "groupPool";
+            _pool pushBack _groupId;
+            _assignedTrack set ["groupPool", _pool];
         } forEach _allAvailable;
         _metrics set ["roundRobinMs", (diag_tickTime - _tRoundRobin) * 1000];
         _metrics set ["allocatedCount", _totalCount];
@@ -442,10 +680,11 @@ private _gtnCommander = createHashMapObject [[
         // Log allocation
         {
             private _track = _x;
-            ["GTN", 3, format["Track %1 (%2) allocated %3 groups", 
-                _track get "id", 
+            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
+                _track get "id",
                 _track get "goal",
-                count (_track get "groupPool")
+                count (_track get "groupPool"),
+                count (_track get "frontSectorObjectives")
             ]] call FLO_fnc_log;
         } forEach _tracks;
 
@@ -770,7 +1009,9 @@ private _gtnCommander = createHashMapObject [[
         private _objectives = _ws call ["_getFrontlineEnemyObjectives", []];
         private _reservations = _self get "_attackObjectiveReservations";
         private _spreadMeters = ((_self get "_config") get "attackReservationSpreadMeters");
+        private _crossSectorPenalty = ((_self get "_config") get "attackCrossSectorPenaltyMeters");
         private _trackAnchorPos = [];
+        private _trackSectorObjectives = [];
 
         if (count (keys _objectives) == 0) then {
             _objectives = _ws call ["_getEnemyObjectives", []];
@@ -784,6 +1025,8 @@ private _gtnCommander = createHashMapObject [[
             {
                 if ((_x get "id") == _trackId) exitWith {
                     _trackPool = _x get "groupPool";
+                    _trackSectorObjectives = _x get "frontSectorObjectives";
+                    _trackAnchorPos = +(_x get "frontSectorAnchorPos");
                 };
             } forEach _tracks;
 
@@ -867,7 +1110,9 @@ private _gtnCommander = createHashMapObject [[
         };
 
         private _availableTargets = [];
+        private _sectorAvailableTargets = [];
         private _saturatedTargets = [];
+        private _sectorSaturatedTargets = [];
         {
             _x params ["_objId", "_priority", "_routeDist"];
 
@@ -887,24 +1132,46 @@ private _gtnCommander = createHashMapObject [[
             if (count _trackAnchorPos >= 2) then {
                 _selectionDist = _trackAnchorPos distance2D ((_objectives get _objId) get "position");
             };
+            private _sectorMatch = (count _trackSectorObjectives == 0)
+                || { (count (((_objectives get _objId) get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0 };
             private _effectiveDist = _selectionDist + (_committed * _spreadMeters);
+            if (!_sectorMatch) then {
+                _effectiveDist = _effectiveDist + _crossSectorPenalty;
+            };
             private _candidate = [_objId, _priority, _selectionDist, _effectiveDist, _reserved, _activeAttackers, _attackCap, _committed];
 
             if (_attackCap > 0 && {_committed < _attackCap}) then {
                 _availableTargets pushBack _candidate;
+                if (_sectorMatch) then {
+                    _sectorAvailableTargets pushBack _candidate;
+                };
             } else {
                 _saturatedTargets pushBack _candidate;
+                if (_sectorMatch) then {
+                    _sectorSaturatedTargets pushBack _candidate;
+                };
             };
         } forEach _selectionPool;
 
-        private _candidatePool = if (count _availableTargets > 0) then {
-            _availableTargets
+        private _candidatePool = if (count _sectorAvailableTargets > 0) then {
+            _sectorAvailableTargets
         } else {
-            _saturatedTargets
+            if (count _availableTargets > 0) then {
+                _availableTargets
+            } else {
+                if (count _sectorSaturatedTargets > 0) then {
+                    _sectorSaturatedTargets
+                } else {
+                    _saturatedTargets
+                }
+            }
         };
 
         if (count _availableTargets == 0 && {count _saturatedTargets > 0}) then {
             ["GTN", 3, format["Priority selection fallback: all %1 candidate objectives already at attack cap", count _saturatedTargets]] call FLO_fnc_log;
+        };
+        if (_trackId != "" && {(count _trackSectorObjectives) > 0} && {count _sectorAvailableTargets == 0} && {count _sectorSaturatedTargets == 0}) then {
+            ["GTN", 3, format["Priority selection fallback: %1 has no sector-linked enemy objective, widening search", _trackId]] call FLO_fnc_log;
         };
 
         private _bestObj = "";
@@ -1186,6 +1453,105 @@ private _gtnCommander = createHashMapObject [[
 
         _cap = (_cap max (_config get "attackMinGroupCap")) min (_config get "attackMaxGroupCap");
         _cap
+    }],
+
+    // How many groups one attack primitive should pull right now for this objective.
+    ["_estimateAttackDispatchCount", {
+        params ["_objectiveId", ["_minimum", 0], ["_track", nil]];
+        if (_objectiveId == "") exitWith { 0 };
+
+        private _attackCap = _self call ["_getAttackCapForObjective", [_objectiveId]];
+        if (_attackCap <= 0) exitWith { 0 };
+
+        private _activeAttackers = _self call ["_countObjectiveAttackers", [_objectiveId]];
+        private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
+        if (_slotsRemaining <= 0) exitWith { 0 };
+
+        private _config = _self get "_config";
+        private _requestCount = ceil (_slotsRemaining * 0.75);
+        private _minDispatch = if (_minimum > 0) then { _minimum } else { _config get "attackDispatchMinGroups" };
+
+        if (_slotsRemaining > _minDispatch) then {
+            _requestCount = _requestCount max _minDispatch;
+        } else {
+            _requestCount = _slotsRemaining;
+        };
+
+        _requestCount = _requestCount min (_config get "attackDispatchMaxGroups");
+
+        if (!isNil "_track") then {
+            _requestCount = _requestCount min (count (_track get "groupPool"));
+        };
+
+        _requestCount min _slotsRemaining
+    }],
+
+    // How many groups one defense primitive should pull right now for this objective.
+    ["_estimateDefenseDispatchCount", {
+        params ["_objectiveId", ["_minimum", 0], ["_track", nil]];
+        if (_objectiveId == "") exitWith { 0 };
+
+        private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
+        if (_cap <= 0) exitWith { 0 };
+
+        private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
+        private _slotsRemaining = (_cap - _assigned) max 0;
+        if (_slotsRemaining <= 0) exitWith { 0 };
+
+        private _ws = _self get "_worldState";
+        private _objectives = _ws call ["_getObjectives", []];
+        if !(_objectiveId in _objectives) exitWith { 0 };
+
+        private _obj = _objectives get _objectiveId;
+        private _underAttack = _obj get "underAttack";
+        private _contested = _obj get "contested";
+        private _enemyCount = _obj get "enemyCount";
+        private _friendlyCount = _obj get "friendlyCount";
+        private _forceDeficit = (_enemyCount - _friendlyCount) max 0;
+        private _requestCount = ceil (_slotsRemaining * (if (_underAttack || _contested) then { 0.75 } else { 0.5 }));
+        private _config = _self get "_config";
+        private _minDispatch = if (_minimum > 0) then { _minimum } else { _config get "defenseDispatchMinGroups" };
+
+        if (_slotsRemaining > _minDispatch) then {
+            _requestCount = _requestCount max _minDispatch;
+        } else {
+            _requestCount = _slotsRemaining;
+        };
+
+        _requestCount = _requestCount + ((ceil (_forceDeficit * 0.35)) min 3);
+        _requestCount = _requestCount min (_config get "defenseDispatchMaxGroups");
+
+        if (!isNil "_track") then {
+            _requestCount = _requestCount min (count (_track get "groupPool"));
+        };
+
+        _requestCount min _slotsRemaining
+    }],
+
+    // How many groups one garrison pass should commit to an owned objective.
+    ["_estimateGarrisonDispatchCount", {
+        params ["_objectiveId", ["_threatLevel", 0], ["_frontline", false], ["_track", nil]];
+        if (_objectiveId == "") exitWith { 0 };
+
+        private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
+        if (_cap <= 0) exitWith { 0 };
+
+        private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
+        private _slotsRemaining = (_cap - _assigned) max 0;
+        if (_slotsRemaining <= 0) exitWith { 0 };
+
+        private _config = _self get "_config";
+        private _requestCount = (ceil (_threatLevel / 1.5)) max (_config get "garrisonDispatchMinGroups");
+        if (_frontline) then {
+            _requestCount = _requestCount + 2;
+        };
+        _requestCount = _requestCount min (_config get "garrisonDispatchMaxGroups");
+
+        if (!isNil "_track") then {
+            _requestCount = _requestCount min (count (_track get "groupPool"));
+        };
+
+        _requestCount min _slotsRemaining
     }],
 
     // Count current attackers assigned to a specific objective.
