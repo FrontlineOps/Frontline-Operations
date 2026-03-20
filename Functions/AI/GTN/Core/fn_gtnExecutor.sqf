@@ -1258,40 +1258,6 @@ private _executor = createHashMapObject [[
             true
         }]];
 
-        // prim_call_artillery
-        _self call ["_registerHandler", ["prim_call_artillery", {
-            params ["_ctx"];
-            private _params = _ctx get "params";
-            private _objId = _params param [0, ""];
-            private _missionType = _params param [1, "PREPARATORY"];
-            private _rounds = _params param [2, 8];
-            private _cmdr = _ctx get "commander";
-            private _executor = _ctx get "executor";
-
-            if !(_executor call ["_isEnemyObjective", [_objId]]) exitWith {
-                ["GTN", 2, format["Artillery mission aborted - objective %1 is not enemy-owned anymore", _objId]] call FLO_fnc_log;
-                _ctx set ["status", "FAILED"];
-                false
-            };
-
-            // Get objective position
-            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") exitWith {
-                ["GTN", 2, format["Artillery failed - no position for %1", _objId]] call FLO_fnc_log;
-                false
-            };
-
-            // Request fire mission via GTN Commander
-            private _result = _cmdr call ["_requestArtillery", [_objPos, _missionType, _rounds, _objId]];
-
-            if (_result) then {
-                ["GTN", 3, format["Artillery mission fired at %1", _objId]] call FLO_fnc_log;
-                _ctx set ["status", "SUCCESS"];
-            };
-
-            _result
-        }]];
-
         // prim_call_cas
         _self call ["_registerHandler", ["prim_call_cas", {
             params ["_ctx"];
@@ -1611,46 +1577,6 @@ private _executor = createHashMapObject [[
             _primData set ["attackGroups", _issued];
             _taskNode set ["primitiveData", _primData];
 
-            true
-        }]];
-
-        // prim_call_defensive_fires
-        _self call ["_registerHandler", ["prim_call_defensive_fires", {
-            params ["_ctx"];
-            private _params = _ctx get "params";
-            private _objId = _params param [0, ""];
-            private _cmdr = _ctx get "commander";
-            private _taskNode = _ctx get "taskNode";
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-
-            if (_objId == "") exitWith {
-                ["GTN", 3, "Defensive fires skipped - no under-attack objective"] call FLO_fnc_log;
-                _primData set ["missionFired", false];
-                _taskNode set ["primitiveData", _primData];
-                _ctx set ["status", "SUCCESS"];
-                true
-            };
-
-            private _objPos = [_objId] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") exitWith {
-                ["GTN", 3, format["Defensive fires skipped - no position for %1", _objId]] call FLO_fnc_log;
-                _primData set ["missionFired", false];
-                _taskNode set ["primitiveData", _primData];
-                _ctx set ["status", "SUCCESS"];
-                true
-            };
-
-            // Call for defensive artillery
-            private _result = _cmdr call ["_requestArtillery", [_objPos, "DEFENSIVE", 6, _objId]];
-            
-            if (!_result) then {
-                ["GTN", 3, format["Defensive fires skipped - artillery unavailable for %1", _objId]] call FLO_fnc_log;
-            };
-
-            _primData set ["missionFired", _result];
-            _taskNode set ["primitiveData", _primData];
-
-            _ctx set ["status", "SUCCESS"];
             true
         }]];
 

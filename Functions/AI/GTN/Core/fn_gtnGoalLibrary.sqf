@@ -266,20 +266,14 @@ private _goalLibrary = createHashMapObject [[
                     ["score", {
                         params ["_ws", "_params", "_planner"];
                         private _forces = _ws call ["_getForces", []];
-                        private _assets = _ws call ["_getSupportAssets", []];
                         private _available = _forces get "availableGroups";
                         if (_available < 3) exitWith { -1 };
-                        if !(_assets get "artilleryAvailable") exitWith { -1 };
 
                         private _attacking = _forces get "attackingGroups";
                         private _total = _forces get "totalGroups";
                         private _attackRatio = if (_total > 0) then { _attacking / _total } else { 0 };
 
                         private _score = 35;
-                        // Prepared assault stays valuable, but no longer dominates every track.
-                        private _artyBonus = ((_assets get "artilleryAmmo") * 1.2) min 45;
-                        _score = _score + _artyBonus;
-
                         private _armor = _ws call ["_getArmorGroupCount", []];
                         if (_armor >= 2) then { _score = _score + 10 };
 
@@ -301,7 +295,6 @@ private _goalLibrary = createHashMapObject [[
                         ["select_objective", []],
                         ["recon_objective", ["_SELECTED_OBJECTIVE"]],
                         ["stage_assault_force", ["_SELECTED_OBJECTIVE"]],
-                        ["preparatory_fires", ["_SELECTED_OBJECTIVE"]],
                         ["assault_objective", ["_SELECTED_OBJECTIVE"]]
                     ]]
                 ],
@@ -378,26 +371,6 @@ private _goalLibrary = createHashMapObject [[
                 _objId != "" || {count (keys (_ws call ["_getObjectivesUnderAttack", []])) > 0}
             }],
             ["methods", [
-                createHashMapFromArray [
-                    ["id", "defense_with_fires"],
-                    ["score", {
-                        params ["_ws", "_params", "_planner"];
-                        private _assets = _ws call ["_getSupportAssets", []];
-                        if !(_assets get "artilleryAvailable") exitWith { -1 };
-
-                        private _score = 50;
-                        // Scale artillery ammo bonus: +1.5 per round, capped at +75 for defense
-                        private _artyBonus = ((_assets get "artilleryAmmo") * 1.5) min 75;
-                        _score = _score + _artyBonus;
-                        private _forces = _ws call ["_getForces", []];
-                        if ((_forces get "availableGroups") < 2) then { _score = _score + 20 };
-                        _score
-                    }],
-                    ["subtasks", [
-                        ["prim_call_defensive_fires", ["_PARAM_0"]],
-                        ["prim_establish_defense", ["_PARAM_0"]]
-                    ]]
-                ],
                 createHashMapFromArray [
                     ["id", "immediate_reinforcement"],
                     ["score", {
@@ -696,26 +669,6 @@ private _goalLibrary = createHashMapObject [[
             ]]
         ]]];
 
-        // PREPARATORY_FIRES - Call artillery before assault
-        _self call ["_registerGoal", [createHashMapFromArray [
-            ["id", "preparatory_fires"],
-            ["type", GOAL_TACTICAL],
-            ["description", "Call preparatory artillery fires on objective"],
-            ["preconditions", {
-                params ["_ws", "_params"];
-                _ws call ["_isAssetAvailable", ["artillery"]]
-            }],
-            ["methods", [
-                createHashMapFromArray [
-                    ["id", "standard_prep_fires"],
-                    ["conditions", { true }],
-                    ["subtasks", [
-                        ["prim_call_artillery", ["_PARAM_0", "PREPARATORY", 8]]
-                    ]]
-                ]
-            ]]
-        ]]];
-
         // ESTABLISH_DEFENSE - Set up defensive position
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "establish_defense"],
@@ -827,18 +780,6 @@ private _goalLibrary = createHashMapObject [[
                 if (isNil "_obj") exitWith { false };
                 private _ownSide = _ws getOrDefault ["_ownSide", east];
                 (_obj getOrDefault ["owner", sideUnknown]) isEqualTo _ownSide  // Objective captured
-            }]
-        ]]];
-
-        _self call ["_registerPrimitive", [createHashMapFromArray [
-            ["id", "prim_call_artillery"],
-            ["description", "Call artillery fire mission"],
-            ["handler", "GTN_callArtillery"],
-            ["timeout", 120],
-            ["completionCheck", {
-                params ["_ws", "_taskData"];
-                private _fired = _taskData getOrDefault ["missionFired", false];
-                _fired
             }]
         ]]];
 
@@ -970,17 +911,6 @@ private _goalLibrary = createHashMapObject [[
             }]
         ]]];
         
-        _self call ["_registerPrimitive", [createHashMapFromArray [
-            ["id", "prim_call_defensive_fires"],
-            ["description", "Call defensive artillery fire"],
-            ["handler", "GTN_callDefensiveFires"],
-            ["timeout", 120],
-            ["completionCheck", {
-                params ["_ws", "_taskData"];
-                _taskData getOrDefault ["missionFired", false]
-            }]
-        ]]];
-
         _self call ["_registerPrimitive", [createHashMapFromArray [
             ["id", "prim_establish_defense"],
             ["description", "Establish defensive position"],
