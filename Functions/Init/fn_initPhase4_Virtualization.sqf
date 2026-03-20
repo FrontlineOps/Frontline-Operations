@@ -64,7 +64,32 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         private _newData = _groups get _newId;
 
                         if (!isNil "_newData") then {
-                            _newData set ["state", _groupData getOrDefault ["state", "idle"]];
+                            private _state = _groupData getOrDefault ["state", "idle"];
+                            private _currentOrder = _groupData getOrDefault ["currentOrder", ""];
+                            private _aaDeployState = _groupData getOrDefault ["aaDeployState", ""];
+                            private _isReinforcing = (_groupData getOrDefault ["isReinforcing", false]) || {_currentOrder == "REINFORCE"} || {_currentOrder == "AA_DEPLOY" && {_aaDeployState == "MOVING"}};
+                            private _reinforcementTargetObjective = _groupData getOrDefault ["reinforcementTargetObjective", ""];
+                            if (_reinforcementTargetObjective == "" && {_isReinforcing}) then {
+                                _reinforcementTargetObjective = _homeObjective;
+                            };
+                            private _reinforcementTargetPos = _groupData getOrDefault ["reinforcementTargetPos", []];
+                            if !(_reinforcementTargetPos isEqualType [] && {count _reinforcementTargetPos >= 2}) then {
+                                _reinforcementTargetPos = [];
+                                if (_reinforcementTargetObjective != "" && {_reinforcementTargetObjective in FLO_Objectives}) then {
+                                    private _targetObjective = FLO_Objectives get _reinforcementTargetObjective;
+                                    _reinforcementTargetPos = _targetObjective get "position";
+                                };
+                            };
+                            private _pathRequestTarget = _groupData getOrDefault ["pathRequestTarget", []];
+                            if !(_pathRequestTarget isEqualType [] && {count _pathRequestTarget >= 2}) then {
+                                _pathRequestTarget = [];
+                            };
+                            private _tempWaypointSettings = _groupData getOrDefault ["tempWaypointSettings", []];
+                            if !(_tempWaypointSettings isEqualType [] && {count _tempWaypointSettings >= 7}) then {
+                                _tempWaypointSettings = [];
+                            };
+
+                            _newData set ["state", _state];
 
                             // Validate and restore waypoints
                             private _savedWaypoints = _groupData getOrDefault ["waypoints", []];
@@ -81,11 +106,19 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
                             _newData set ["waypoints", _validWaypoints];
                             _newData set ["currentWaypointIndex", if (count _validWaypoints > 0) then {(_groupData getOrDefault ["currentWaypointIndex", 0]) min (count _validWaypoints - 1)} else {0}];
+                            _newData set ["onMission", _isReinforcing];
+                            _newData set ["isReinforcing", _isReinforcing];
+                            _newData set ["reinforcementTargetPos", _reinforcementTargetPos];
+                            _newData set ["reinforcementTargetObjective", _reinforcementTargetObjective];
+                            _newData set ["pathRequestTarget", _pathRequestTarget];
+                            _newData set ["pathRequestTrails", _groupData getOrDefault ["pathRequestTrails", false]];
+                            _newData set ["pathRequestSource", _groupData getOrDefault ["pathRequestSource", ""]];
+                            _newData set ["tempWaypointSettings", _tempWaypointSettings];
                             _newData set ["alwaysActive", _groupData getOrDefault ["alwaysActive", false]];
-                            _newData set ["currentOrder", _groupData getOrDefault ["currentOrder", ""]];
+                            _newData set ["currentOrder", _currentOrder];
                             _newData set ["noWaypoints", _groupData getOrDefault ["noWaypoints", false]];
                             _newData set ["forceVirtual", _groupData getOrDefault ["forceVirtual", false]];
-                            _newData set ["aaDeployState", _groupData getOrDefault ["aaDeployState", ""]];
+                            _newData set ["aaDeployState", _aaDeployState];
                             _newData set ["aaDeployTargetPos", _groupData getOrDefault ["aaDeployTargetPos", []]];
                             _newData set ["aaDeployTargetObjective", _groupData getOrDefault ["aaDeployTargetObjective", ""]];
                             _newData set ["isStrategicAA", _groupData getOrDefault ["isStrategicAA", false]];

@@ -156,6 +156,7 @@ class FLO {
         class virtualizationProcessGroup    {};
         class virtualizationAdvanceWaypoint {};
         class virtualizationFinalizeReinforcement {};
+        class virtualizationResumeSavedRoutes {};
         class virtualizationSpatialIndex    {};
         class virtualizationEvents          {};
     };

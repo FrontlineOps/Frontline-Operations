@@ -667,5 +667,12 @@ if (!isNil "FLO_fnc_initPFScheduler") then {
     };
 };
 
+if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_fnc_virtualizationResumeSavedRoutes"}) then {
+    private _resumedRoutes = [] call FLO_fnc_virtualizationResumeSavedRoutes;
+    if (_resumedRoutes > 0) then {
+        diag_log format ["[FLO_INIT_P5] Reissued %1 saved virtual routes after load", _resumedRoutes];
+    };
+};
+
 diag_log "[FLO_INIT_P5] Mission systems phase complete";
 true

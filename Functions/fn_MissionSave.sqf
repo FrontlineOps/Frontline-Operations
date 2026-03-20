@@ -393,6 +393,18 @@ try {
                             };
                         } forEach _rawWaypoints;
                     };
+                    private _reinforcementTargetPos = _gData getOrDefault ["reinforcementTargetPos", []];
+                    if !(_reinforcementTargetPos isEqualType [] && {count _reinforcementTargetPos >= 2}) then {
+                        _reinforcementTargetPos = [];
+                    };
+                    private _pathRequestTarget = _gData getOrDefault ["pathRequestTarget", []];
+                    if !(_pathRequestTarget isEqualType [] && {count _pathRequestTarget >= 2}) then {
+                        _pathRequestTarget = [];
+                    };
+                    private _tempWaypointSettings = _gData getOrDefault ["tempWaypointSettings", []];
+                    if !(_tempWaypointSettings isEqualType [] && {count _tempWaypointSettings >= 7}) then {
+                        _tempWaypointSettings = [];
+                    };
                     private _homeObjective = if ("homeObjective" in _gData) then {
                         _gData get "homeObjective"
                     } else {
@@ -408,6 +420,14 @@ try {
                         ["state", _gData getOrDefault ["state", "idle"]],
                         ["waypoints", _validWaypoints],
                         ["currentWaypointIndex", _gData getOrDefault ["currentWaypointIndex", 0]],
+                        ["onMission", _gData getOrDefault ["onMission", false]],
+                        ["isReinforcing", _gData getOrDefault ["isReinforcing", false]],
+                        ["reinforcementTargetPos", _reinforcementTargetPos],
+                        ["reinforcementTargetObjective", _gData getOrDefault ["reinforcementTargetObjective", ""]],
+                        ["pathRequestTarget", _pathRequestTarget],
+                        ["pathRequestTrails", _gData getOrDefault ["pathRequestTrails", false]],
+                        ["pathRequestSource", _gData getOrDefault ["pathRequestSource", ""]],
+                        ["tempWaypointSettings", _tempWaypointSettings],
                         ["alwaysActive", _gData getOrDefault ["alwaysActive", false]],
                         ["currentOrder", _gData getOrDefault ["currentOrder", ""]],
                         ["noWaypoints", _gData getOrDefault ["noWaypoints", false]],
