@@ -14,7 +14,7 @@
     Returns:
     HashMap - ATO object with methods:
         _addTask - Add a mission to the queue [position, missionType, aircraftType, altitude, requestSide]
-        _processTasks - Assign aircraft for queued tasks
+        _processTasks - Assign aircraft for queued tasks and return assigned count
 */
 
 if (!isServer) exitWith {};
@@ -52,6 +52,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
         ["_processTasks", {
             private _queue = _self get "_taskQueue";
             private _mgr = call FLO_fnc_gtnAirAssetManager;
+            private _assignedCount = 0;
 
             ["GTN ATO", 3, format["Processing %1 queued air tasks", count _queue]] call FLO_fnc_log;
 
@@ -69,6 +70,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     _air = _asset select 0;
                     _gid = _asset select 1;
                     _mode = _asset select 2;
+                    _assignedCount = _assignedCount + 1;
                     if (_mode isEqualTo "REAL") then {
                         _air flyInHeight _alt;
                         ["GTN ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
@@ -218,6 +220,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 };
             } forEach _queue;
             _self set ["_taskQueue", []];
+            _assignedCount
         }]
     ]];
 };

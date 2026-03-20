@@ -1565,13 +1565,16 @@ private _gtnCommander = createHashMapObject [[
         private _altitude = if (_missionType in ["BOMB", "LASER"]) then { 300 } else { 150 };
 
         _ato call ["_addTask", [_pos, _missionType, "", _altitude, _ownSide]];
+        private _assignedCount = _ato call ["_processTasks", []];
+        private _success = _assignedCount > 0;
 
-        ["GTN", 3, format["CAS mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+        if (_success) then {
+            ["GTN", 3, format["CAS mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+        } else {
+            ["GTN", 2, format["CAS request failed - no available air assets for %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+        };
 
-        // Process immediately
-        _ato call ["_processTasks", []];
-
-        true
+        _success
     }],
 
     // Check if groups have arrived at a position (within threshold)
