@@ -2376,8 +2376,7 @@ private _executor = createHashMapObject [[
                 private _defendObjective = _gData get "defendObjective";
                 if (_defendObjective == "") then { continue };
 
-                private _defenderCount = _defenderCounts get _defendObjective;
-                if (isNil "_defenderCount") then { _defenderCount = 0; };
+                private _defenderCount = _defenderCounts getOrDefault [_defendObjective, 0];
                 _defenderCounts set [_defendObjective, _defenderCount + 1];
             } forEach _groups;
 
@@ -2388,8 +2387,7 @@ private _executor = createHashMapObject [[
                 private _objData = _friendlyObjs get _objId;
                 private _pos = _objData get "position";
 
-                private _assigned = _defenderCounts get _objId;
-                if (isNil "_assigned") then { _assigned = 0; };
+                private _assigned = _defenderCounts getOrDefault [_objId, 0];
                 private _cap = _gtnCmdr call ["_getDefenseCapForObjective", [_objId]];
                 if (_cap > 0 && {_assigned >= _cap}) then { continue };
 
