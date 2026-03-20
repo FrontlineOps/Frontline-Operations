@@ -106,6 +106,7 @@ private _gtnCommander = createHashMapObject [[
     ["_lastUpdate", 0],
     
     ["_tracks", _tracks],
+    ["_nextTrackExecutionIndex", 0],
     ["_availabilityCacheDirty", true],
     ["_availabilityCandidates", []],
     ["_attackObjectiveReservations", createHashMap],
@@ -127,6 +128,8 @@ private _gtnCommander = createHashMapObject [[
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
         ["attackLocalReserveMeters", 2500], // Prefer groups already in the local sector before pulling wider reserves
         ["attackMaxPullDistanceMeters", 4000], // Do not drag attack groups from the other side of the map
+        ["defenseLocalReserveMeters", 2000], // Prefer defenders already tied to the threatened objective or adjacent sectors
+        ["defenseMaxPullDistanceMeters", 3500], // Keep defense pulls local unless no better option exists
         ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
         ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
         ["garrisonDispatchMinGroups", 3], // Minimum garrison package once an objective is selected
@@ -152,6 +155,7 @@ private _gtnCommander = createHashMapObject [[
         ["lastPhaseMs", createHashMapFromArray [
             ["normalizeTasked", 0],
             ["worldState", 0],
+            ["attackAssignments", 0],
             ["allocateTracks", 0],
             ["executeTracks", 0],
             ["defenseLeases", 0],
@@ -206,6 +210,7 @@ private _gtnCommander = createHashMapObject [[
         private _phaseMs = createHashMapFromArray [
             ["normalizeTasked", 0],
             ["worldState", 0],
+            ["attackAssignments", 0],
             ["allocateTracks", 0],
             ["executeTracks", 0],
             ["defenseLeases", 0],
@@ -244,6 +249,11 @@ private _gtnCommander = createHashMapObject [[
         // Reset per-cycle attack objective reservations so tracks spread within the same cycle.
         _self set ["_attackObjectiveReservations", createHashMap];
 
+        // Release attack-tasked groups whose objective is no longer enemy-held.
+        _tPhase = diag_tickTime;
+        private _attackAssignmentMetrics = _self call ["_manageCompletedAttackAssignments", []];
+        _phaseMs set ["attackAssignments", (diag_tickTime - _tPhase) * 1000];
+
         // Allocate groups to tracks (refreshes each cycle)
         _tPhase = diag_tickTime;
         private _allocationMetrics = _self call ["_allocateGroupsToTracks", []];
@@ -279,6 +289,7 @@ private _gtnCommander = createHashMapObject [[
             ["normalize", _normalizeMetrics],
             ["worldStateRan", _wsRan],
             ["worldState", _wsPerf],
+            ["attackAssignments", _attackAssignmentMetrics],
             ["allocation", _allocationMetrics],
             ["execute", _executeMetrics],
             ["defenseLeases", _leaseMetrics],
@@ -296,7 +307,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 processed %3 groups (tasked=%4, tracks=%5) in %6 ms | normalize=%7 ws=%8 allocate=%9 execute=%10 defense=%11 staticAA=%12 preserve=%13",
+                "[FLO][PERF] GTN commander %1 cycle %2 processed %3 groups (tasked=%4, tracks=%5) in %6 ms | normalize=%7 ws=%8 attack=%9 allocate=%10 execute=%11 defense=%12 staticAA=%13 preserve=%14",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "groupCount",
@@ -305,6 +316,7 @@ private _gtnCommander = createHashMapObject [[
                 _dtMs,
                 _phaseMs get "normalizeTasked",
                 _phaseMs get "worldState",
+                _phaseMs get "attackAssignments",
                 _phaseMs get "allocateTracks",
                 _phaseMs get "executeTracks",
                 _phaseMs get "defenseLeases",
@@ -366,11 +378,12 @@ private _gtnCommander = createHashMapObject [[
             };
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 aaMoving=%5 aaDeployed=%6 preserveScanned=%7 retreats=%8 arrivals=%9 replenishTicks=%10 returned=%11 vehicleRespawns=%12",
+                "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 attackReleased=%5 aaMoving=%6 aaDeployed=%7 preserveScanned=%8 retreats=%9 arrivals=%10 replenishTicks=%11 returned=%12 vehicleRespawns=%13",
                 _self get "_sideKey",
                 _leaseMetrics get "releasedCount",
                 _leaseMetrics get "trimmedExcess",
                 _leaseMetrics get "holdRefreshCount",
+                _attackAssignmentMetrics get "releasedCount",
                 _staticAAMetrics get "movingStaticAACount",
                 _staticAAMetrics get "deployedCount",
                 _forcePreservationMetrics get "groupCount",
@@ -691,14 +704,15 @@ private _gtnCommander = createHashMapObject [[
         _metrics
     }],
     
-    // Execute all tracks in parallel
+    // Execute one track per cycle to stagger strategic work across updates.
     ["_executeAllTracks", {
         private _tracks = _self get "_tracks";
         private _executor = _self get "_executor";
+        private _trackCount = count _tracks;
         private _metrics = createHashMapFromArray [
-            ["tracksTotal", count _tracks],
-            ["idleTracks", 0],
-            ["runningTracks", 0],
+            ["tracksTotal", _trackCount],
+            ["idleTracks", { (_x get "status") == "IDLE" } count _tracks],
+            ["runningTracks", { (_x get "status") == "RUNNING" } count _tracks],
             ["emptyPoolSkips", 0],
             ["planCalls", 0],
             ["plansCreated", 0],
@@ -712,152 +726,164 @@ private _gtnCommander = createHashMapObject [[
             ["syncSuccesses", 0],
             ["tasksExecuted", 0],
             ["plansCompleted", 0],
-            ["plansFailed", 0]
+            ["plansFailed", 0],
+            ["processedTrackId", ""]
         ];
-        
-        {
-            private _track = _x;
-            private _trackId = _track get "id";
-            private _planner = _track get "planner";
-            private _status = _track get "status";
-            private _goal = _track get "goal";
-            
-            switch (_status) do {
-                case "IDLE": {
-                    _metrics set ["idleTracks", (_metrics get "idleTracks") + 1];
-                    // Check if track has resources to work with
-                    private _pool = _track get "groupPool";
-                    if (count _pool == 0) exitWith {
-                        _metrics set ["emptyPoolSkips", (_metrics get "emptyPoolSkips") + 1];
-                        ["GTN", 2, format["Track %1 has no groups, skipping", _trackId]] call FLO_fnc_log;
-                    };
-                    
-                    // Create plan for this track's goal
-                    _metrics set ["planCalls", (_metrics get "planCalls") + 1];
-                    private _tPlan = diag_tickTime;
-                    private _planResult = _planner call ["_plan", [_goal, []]];
-                    _metrics set ["planMs", (_metrics get "planMs") + ((diag_tickTime - _tPlan) * 1000)];
-                    private _plan = if (isNil "_planResult") then { [] } else { _planResult };
-                    if (count _plan > 0) then {
-                        _metrics set ["plansCreated", (_metrics get "plansCreated") + 1];
-                        _metrics set ["planTaskTotal", (_metrics get "planTaskTotal") + (count _plan)];
-                        _track set ["status", "RUNNING"];
-                        ["GTN", 3, format["Track %1: Started plan for %2 (%3 tasks)", 
-                            _trackId, _goal, count _plan]] call FLO_fnc_log;
-                    } else {
-                        ["GTN", 3, format["Track %1: No plan for %2 (preconditions not met)", 
-                            _trackId, _goal]] call FLO_fnc_log;
-                    };
-                };
-                
-                case "RUNNING": {
-                    _metrics set ["runningTracks", (_metrics get "runningTracks") + 1];
-                    private _planStatus = _planner call ["_getPlanStatus", []];
-                    
-                    switch (_planStatus) do {
-                        case "PENDING";
-                        case "RUNNING": {
-                            // Execute current task with loop for synchronous completion chaining
-                            private _maxTasksPerCycle = (_self get "_config") get "maxTrackTasksPerCycle";
-                            private _tasksThisCycle = 0;
-                            private _continueLoop = true;
-                            
-                            while {_continueLoop && {_tasksThisCycle < _maxTasksPerCycle}} do {
-                                private _currentStatus = _planner call ["_getPlanStatus", []];
-                                
-                                if (_currentStatus in ["PENDING", "RUNNING"]) then {
-                                    private _currentTask = _planner call ["_getCurrentTask", []];
-                                    
-                                    if (!isNil "_currentTask") then {
-                                        // Store track reference for primitives
-                                        _currentTask set ["_trackRef", _track];
-                                        
-                                        if (_currentStatus == "PENDING") then {
-                                            private _taskId = _currentTask get "taskId";
-                                            _executor call ["_setActiveTrack", [_currentTask]];
-                                            ["GTN", 3, format["Track %1: Executing %2", _trackId, _taskId]] call FLO_fnc_log;
-                                            
-                                            _metrics set ["primitiveExecCalls", (_metrics get "primitiveExecCalls") + 1];
-                                            private _tExec = diag_tickTime;
-                                            private _result = _executor call ["_executePrimitive", [_currentTask]];
-                                            _metrics set ["primitiveExecMs", (_metrics get "primitiveExecMs") + ((diag_tickTime - _tExec) * 1000)];
-                                            if (_result) then {
-                                                _planner call ["_executeNext", []];
-                                                private _stats = _self get "_stats";
-                                                _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
-                                                _metrics set ["tasksExecuted", (_metrics get "tasksExecuted") + 1];
-                                                _tasksThisCycle = _tasksThisCycle + 1;
-                                                
-                                                // Check for synchronous completion
-                                                _metrics set ["checkCalls", (_metrics get "checkCalls") + 1];
-                                                private _tCheck = diag_tickTime;
-                                                if (_planner call ["_checkCurrentTask", [_executor]]) then {
-                                                    _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
-                                                    private _taskStatus = _currentTask get "status";
-                                                    if (_taskStatus == "SUCCESS") then {
-                                                        _metrics set ["syncSuccesses", (_metrics get "syncSuccesses") + 1];
-                                                        ["GTN", 4, format["Track %1: Task %2 completed synchronously", _trackId, _taskId]] call FLO_fnc_log;
-                                                        private _nextTask = _planner call ["_getCurrentTask", []];
-                                                        _planner set ["_planStatus", if (isNil "_nextTask") then { "SUCCESS" } else { "PENDING" }];
-                                                    } else {
-                                                        ["GTN", 2, format["Track %1: Task %2 failed during sync check", _trackId, _taskId]] call FLO_fnc_log;
-                                                        _planner set ["_planStatus", "FAILED"];
-                                                        _continueLoop = false;
-                                                    };
-                                                } else {
-                                                    _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
-                                                    _continueLoop = false;
-                                                };
-                                            } else {
-                                                _metrics set ["primitiveFailures", (_metrics get "primitiveFailures") + 1];
-                                                ["GTN", 2, format["Track %1: Primitive %2 failed", _trackId, _taskId]] call FLO_fnc_log;
-                                                _planner set ["_planStatus", "FAILED"];
-                                                _continueLoop = false;
-                                            };
+
+        if (_trackCount == 0) exitWith { _metrics };
+
+        private _startIdx = _self get "_nextTrackExecutionIndex";
+        if (_startIdx >= _trackCount) then {
+            _startIdx = 0;
+        };
+
+        private _selectedIdx = -1;
+        for "_offset" from 0 to (_trackCount - 1) do {
+            private _idx = (_startIdx + _offset) mod _trackCount;
+            private _track = _tracks select _idx;
+            if ((_track get "status") == "RUNNING" || { count (_track get "groupPool") > 0 }) exitWith {
+                _selectedIdx = _idx;
+            };
+        };
+
+        if (_selectedIdx < 0) then {
+            _selectedIdx = _startIdx;
+        };
+
+        _self set ["_nextTrackExecutionIndex", (_selectedIdx + 1) mod _trackCount];
+
+        private _track = _tracks select _selectedIdx;
+        private _trackId = _track get "id";
+        private _planner = _track get "planner";
+        private _status = _track get "status";
+        private _goal = _track get "goal";
+        _metrics set ["processedTrackId", _trackId];
+
+        if (_status == "IDLE") then {
+            private _pool = _track get "groupPool";
+            if ((count _pool) == 0) exitWith {
+                _metrics set ["emptyPoolSkips", 1];
+                ["GTN", 3, format["Track %1 has no groups, skipping this cycle", _trackId]] call FLO_fnc_log;
+                _metrics
+            };
+
+            _metrics set ["planCalls", 1];
+            private _tPlan = diag_tickTime;
+            private _planResult = _planner call ["_plan", [_goal, []]];
+            _metrics set ["planMs", (diag_tickTime - _tPlan) * 1000];
+            private _plan = if (isNil "_planResult") then { [] } else { _planResult };
+            if ((count _plan) == 0) exitWith {
+                ["GTN", 3, format["Track %1: No plan for %2 (preconditions not met)", _trackId, _goal]] call FLO_fnc_log;
+                _metrics
+            };
+
+            _metrics set ["plansCreated", 1];
+            _metrics set ["planTaskTotal", count _plan];
+            _track set ["status", "RUNNING"];
+            _status = "RUNNING";
+            ["GTN", 3, format["Track %1: Started plan for %2 (%3 tasks)", _trackId, _goal, count _plan]] call FLO_fnc_log;
+        };
+
+        if (_status != "RUNNING") exitWith { _metrics };
+
+        private _planStatus = _planner call ["_getPlanStatus", []];
+        switch (_planStatus) do {
+            case "PENDING";
+            case "RUNNING": {
+                private _maxTasksPerCycle = (_self get "_config") get "maxTrackTasksPerCycle";
+                private _tasksThisCycle = 0;
+                private _continueLoop = true;
+
+                while {_continueLoop && {_tasksThisCycle < _maxTasksPerCycle}} do {
+                    private _currentStatus = _planner call ["_getPlanStatus", []];
+
+                    if (_currentStatus in ["PENDING", "RUNNING"]) then {
+                        private _currentTask = _planner call ["_getCurrentTask", []];
+
+                        if (!isNil "_currentTask") then {
+                            _currentTask set ["_trackRef", _track];
+
+                            if (_currentStatus == "PENDING") then {
+                                private _taskId = _currentTask get "taskId";
+                                _executor call ["_setActiveTrack", [_currentTask]];
+                                ["GTN", 3, format["Track %1: Executing %2", _trackId, _taskId]] call FLO_fnc_log;
+
+                                _metrics set ["primitiveExecCalls", (_metrics get "primitiveExecCalls") + 1];
+                                private _tExec = diag_tickTime;
+                                private _result = _executor call ["_executePrimitive", [_currentTask]];
+                                _metrics set ["primitiveExecMs", (_metrics get "primitiveExecMs") + ((diag_tickTime - _tExec) * 1000)];
+                                if (_result) then {
+                                    _planner call ["_executeNext", []];
+                                    private _stats = _self get "_stats";
+                                    _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
+                                    _metrics set ["tasksExecuted", (_metrics get "tasksExecuted") + 1];
+                                    _tasksThisCycle = _tasksThisCycle + 1;
+
+                                    _metrics set ["checkCalls", (_metrics get "checkCalls") + 1];
+                                    private _tCheck = diag_tickTime;
+                                    if (_planner call ["_checkCurrentTask", [_executor]]) then {
+                                        _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
+                                        private _taskStatus = _currentTask get "status";
+                                        if (_taskStatus == "SUCCESS") then {
+                                            _metrics set ["syncSuccesses", (_metrics get "syncSuccesses") + 1];
+                                            ["GTN", 4, format["Track %1: Task %2 completed synchronously", _trackId, _taskId]] call FLO_fnc_log;
+                                            private _nextTask = _planner call ["_getCurrentTask", []];
+                                            _planner set ["_planStatus", if (isNil "_nextTask") then { "SUCCESS" } else { "PENDING" }];
                                         } else {
-                                            // RUNNING - check if async task completed
-                                            _executor call ["_setActiveTrack", [_currentTask]];
-                                            _metrics set ["checkCalls", (_metrics get "checkCalls") + 1];
-                                            private _tCheck = diag_tickTime;
-                                            if (_planner call ["_checkCurrentTask", [_executor]]) then {
-                                                _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
-                                                private _taskStatus = _currentTask get "status";
-                                                if (_taskStatus == "SUCCESS") then {
-                                                    private _nextTask = _planner call ["_getCurrentTask", []];
-                                                    _planner set ["_planStatus", if (isNil "_nextTask") then { "SUCCESS" } else { "PENDING" }];
-                                                } else {
-                                                    _planner set ["_planStatus", "FAILED"];
-                                                    _continueLoop = false;
-                                                };
-                                            } else {
-                                                _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
-                                                _continueLoop = false;
-                                            };
+                                            ["GTN", 2, format["Track %1: Task %2 failed during sync check", _trackId, _taskId]] call FLO_fnc_log;
+                                            _planner set ["_planStatus", "FAILED"];
+                                            _continueLoop = false;
                                         };
                                     } else {
+                                        _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
                                         _continueLoop = false;
                                     };
                                 } else {
+                                    _metrics set ["primitiveFailures", (_metrics get "primitiveFailures") + 1];
+                                    ["GTN", 2, format["Track %1: Primitive %2 failed", _trackId, _taskId]] call FLO_fnc_log;
+                                    _planner set ["_planStatus", "FAILED"];
+                                    _continueLoop = false;
+                                };
+                            } else {
+                                _executor call ["_setActiveTrack", [_currentTask]];
+                                _metrics set ["checkCalls", (_metrics get "checkCalls") + 1];
+                                private _tCheck = diag_tickTime;
+                                if (_planner call ["_checkCurrentTask", [_executor]]) then {
+                                    _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
+                                    private _taskStatus = _currentTask get "status";
+                                    if (_taskStatus == "SUCCESS") then {
+                                        private _nextTask = _planner call ["_getCurrentTask", []];
+                                        _planner set ["_planStatus", if (isNil "_nextTask") then { "SUCCESS" } else { "PENDING" }];
+                                    } else {
+                                        _planner set ["_planStatus", "FAILED"];
+                                        _continueLoop = false;
+                                    };
+                                } else {
+                                    _metrics set ["checkMs", (_metrics get "checkMs") + ((diag_tickTime - _tCheck) * 1000)];
                                     _continueLoop = false;
                                 };
                             };
+                        } else {
+                            _continueLoop = false;
                         };
-                        
-                        case "SUCCESS": {
-                            _metrics set ["plansCompleted", (_metrics get "plansCompleted") + 1];
-                            ["GTN", 3, format["Track %1: Plan completed successfully", _trackId]] call FLO_fnc_log;
-                            _track set ["status", "IDLE"];
-                        };
-                        
-                        case "FAILED": {
-                            _metrics set ["plansFailed", (_metrics get "plansFailed") + 1];
-                            ["GTN", 2, format["Track %1: Plan failed, will retry next cycle", _trackId]] call FLO_fnc_log;
-                            _track set ["status", "IDLE"];
-                        };
+                    } else {
+                        _continueLoop = false;
                     };
                 };
             };
-        } forEach _tracks;
+
+            case "SUCCESS": {
+                _metrics set ["plansCompleted", 1];
+                ["GTN", 3, format["Track %1: Plan completed successfully", _trackId]] call FLO_fnc_log;
+                _track set ["status", "IDLE"];
+            };
+
+            case "FAILED": {
+                _metrics set ["plansFailed", 1];
+                ["GTN", 2, format["Track %1: Plan failed, will retry next cycle", _trackId]] call FLO_fnc_log;
+                _track set ["status", "IDLE"];
+            };
+        };
 
         _metrics
     }],
@@ -999,6 +1025,20 @@ private _gtnCommander = createHashMapObject [[
     }],
 
     // === TACTICAL METHODS (used by executor handlers) ===
+
+    ["_allocateFrontlineAttacks", {
+        params [["_track", nil]];
+        [_self, _track] call FLO_fnc_gtnAllocateFrontlineAttacks
+    }],
+
+    ["_allocateFrontlineDefense", {
+        params [["_track", nil]];
+        [_self, _track] call FLO_fnc_gtnAllocateFrontlineDefense
+    }],
+
+    ["_manageCompletedAttackAssignments", {
+        [_self] call FLO_fnc_gtnReleaseCompletedAttackAssignments
+    }],
 
     // Select nearest frontline enemy objective (priority only as a tie-breaker).
     ["_selectPriorityObjective", {

@@ -235,14 +235,14 @@ private _goalLibrary = createHashMapObject [[
                         60
                     }],
                     ["subtasks", [
-                        ["defend_objective", ["_HIGHEST_PRIORITY_UNDER_ATTACK"]]
+                        ["prim_allocate_frontline_defense", []]
                     ]]
                 ],
                 createHashMapFromArray [
                     ["id", "garrison_defense"],
                     ["score", { 25 }],
                     ["subtasks", [
-                        ["establish_garrison", []]
+                        ["prim_allocate_frontline_defense", []]
                     ]]
                 ]
             ]]
@@ -255,107 +255,35 @@ private _goalLibrary = createHashMapObject [[
         _self call ["_registerGoal", [createHashMapFromArray [
             ["id", "capture_priority_objective"],
             ["type", GOAL_OPERATIONAL],
-            ["description", "Capture the nearest frontline enemy-held objective"],
+            ["description", "Fill frontline attack deficits across enemy-held objectives"],
             ["preconditions", {
                 params ["_ws", "_params"];
                 count (keys (_ws call ["_getEnemyObjectives", []])) > 0
             }],
             ["methods", [
                 createHashMapFromArray [
-                    ["id", "prepared_assault"],
+                    ["id", "frontline_allocation"],
                     ["score", {
                         params ["_ws", "_params", "_planner"];
                         private _forces = _ws call ["_getForces", []];
                         private _available = _forces get "availableGroups";
-                        if (_available < 3) exitWith { -1 };
+                        if (_available < 1) exitWith { -1 };
 
-                        private _attacking = _forces get "attackingGroups";
-                        private _total = _forces get "totalGroups";
-                        private _attackRatio = if (_total > 0) then { _attacking / _total } else { 0 };
-
-                        private _score = 35;
-                        private _armor = _ws call ["_getArmorGroupCount", []];
-                        if (_armor >= 2) then { _score = _score + 10 };
+                        private _frontlineObjs = _ws call ["_getFrontlineEnemyObjectives", []];
+                        private _score = 30 + ((count (keys _frontlineObjs)) * 5);
+                        if (_available >= 6) then { _score = _score + 10 };
+                        if (_available >= 12) then { _score = _score + 15 };
+                        if (_available >= 20) then { _score = _score + 20 };
 
                         private _situation = _ws call ["_getTacticalSituation", []];
-                        if ((_situation get "momentum") < 0) then { _score = _score + 8 };
-
-                        // If many groups are still idle, bias other tracks toward faster direct attacks.
-                        if (_available >= 12) then { _score = _score - 8 };
-                        if (_available >= 20) then { _score = _score - 12 };
-
-                        // As offensive commitment grows, reduce additional prepared stacks.
-                        if (_attackRatio > 0.25) then {
-                            _score = _score - round ((_attackRatio - 0.25) * 80);
+                        if ((_situation get "momentum") > 0) then {
+                            _score = _score + 10;
                         };
 
                         _score
                     }],
                     ["subtasks", [
-                        ["select_objective", []],
-                        ["recon_objective", ["_SELECTED_OBJECTIVE"]],
-                        ["stage_assault_force", ["_SELECTED_OBJECTIVE"]],
-                        ["assault_objective", ["_SELECTED_OBJECTIVE"]]
-                    ]]
-                ],
-                createHashMapFromArray [
-                    ["id", "direct_assault"],
-                    ["score", {
-                        params ["_ws", "_params", "_planner"];
-                        private _forces = _ws call ["_getForces", []];
-                        private _available = _forces get "availableGroups";
-                        if (_available < 4) exitWith { -1 };
-                        private _attacking = _forces get "attackingGroups";
-                        private _total = _forces get "totalGroups";
-                        private _attackRatio = if (_total > 0) then { _attacking / _total } else { 0 };
-
-                        private _score = 30;
-                        if (_available >= 6) then { _score = _score + 10 };
-                        if (_available >= 8) then { _score = _score + 15 };
-                        if (_available >= 12) then { _score = _score + 20 };
-
-                        // Idle-surplus boost so unused attack pools convert into active assaults.
-                        private _idleSurplus = (_available - 8) max 0;
-                        _score = _score + ((_idleSurplus * 1.5) min 30);
-
-                        if (_attackRatio > 0.2) then {
-                            _score = _score + round ((_attackRatio - 0.2) * 50);
-                        };
-
-                        private _situation = _ws call ["_getTacticalSituation", []];
-                        if ((_situation get "momentum") > 20) then { _score = _score + 20 };
-
-                        private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
-                        private _vulnCount = count (keys _vulnObjs);
-                        if (_vulnCount > 0) then {
-                            _score = _score + (10 + ((_vulnCount * 5) min 20));
-                        };
-
-                        _score
-                    }],
-                    ["subtasks", [
-                        ["select_objective", []],
-                        ["assault_objective", ["_SELECTED_OBJECTIVE"]]
-                    ]]
-                ],
-                createHashMapFromArray [
-                    ["id", "opportunistic_attack"],
-                    ["score", {
-                        params ["_ws", "_params", "_planner"];
-                        private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
-                        private _vulnCount = count (keys _vulnObjs);
-                        if (_vulnCount == 0) exitWith { -1 };
-                        private _forces = _ws call ["_getForces", []];
-                        private _available = _forces get "availableGroups";
-                        if (_available < 2) exitWith { -1 };
-
-                        private _score = 20 + ((_vulnCount min 4) * 8);
-                        if (_available >= 6) then { _score = _score + 10 };
-                        if (_available >= 12) then { _score = _score + 10 };
-                        _score
-                    }],
-                    ["subtasks", [
-                        ["prim_attack_vulnerable_objective", []]
+                        ["prim_allocate_frontline_attacks", []]
                     ]]
                 ]
             ]]
@@ -765,6 +693,22 @@ private _goalLibrary = createHashMapObject [[
                 private _assembled = _taskData getOrDefault ["assembled", 0];
                 _assembled >= _minForce
             }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_allocate_frontline_attacks"],
+            ["description", "Allocate attack groups across frontline objectives"],
+            ["handler", "GTN_allocateFrontlineAttacks"],
+            ["timeout", 30],
+            ["completionCheck", { true }]
+        ]]];
+
+        _self call ["_registerPrimitive", [createHashMapFromArray [
+            ["id", "prim_allocate_frontline_defense"],
+            ["description", "Allocate defense groups across threatened objectives"],
+            ["handler", "GTN_allocateFrontlineDefense"],
+            ["timeout", 30],
+            ["completionCheck", { true }]
         ]]];
 
         _self call ["_registerPrimitive", [createHashMapFromArray [

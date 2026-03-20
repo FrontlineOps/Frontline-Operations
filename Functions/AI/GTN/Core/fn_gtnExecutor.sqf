@@ -922,6 +922,46 @@ private _executor = createHashMapObject [[
             true
         }]];
 
+        // prim_allocate_frontline_attacks
+        _self call ["_registerHandler", ["prim_allocate_frontline_attacks", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            if (isNil "_track") exitWith {
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
+            private _metrics = _cmdr call ["_allocateFrontlineAttacks", [_track]];
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["metrics", _metrics];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
+        // prim_allocate_frontline_defense
+        _self call ["_registerHandler", ["prim_allocate_frontline_defense", {
+            params ["_ctx"];
+            private _cmdr = _ctx get "commander";
+            private _taskNode = _ctx get "taskNode";
+            private _track = _taskNode get "_trackRef";
+            if (isNil "_track") exitWith {
+                _ctx set ["status", "FAILED"];
+                false
+            };
+
+            private _metrics = _cmdr call ["_allocateFrontlineDefense", [_track]];
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            _primData set ["metrics", _metrics];
+            _taskNode set ["primitiveData", _primData];
+
+            _ctx set ["status", "SUCCESS"];
+            true
+        }]];
+
         // prim_attack_objective
         // Capability-aware attack that blocks for force buildup until recommended power is met.
         // Re-checks reuse cached task analysis and stop once the selected force reaches the commit target.
