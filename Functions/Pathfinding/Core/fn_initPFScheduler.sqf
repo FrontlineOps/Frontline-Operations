@@ -60,6 +60,9 @@ XPS_typ_JobScheduler = [
             ["completedPartial", 0],
             ["nodeSteps", 0],
             ["resolvedCount", 0],
+            ["resolvedNodeStepsLast", 0],
+            ["resolvedNodeStepsPeak", 0],
+            ["resolvedNodeStepsTotal", 0],
             ["resolvedMsLast", 0],
             ["resolvedMsPeak", 0],
             ["resolvedMsTotal", 0],
@@ -70,8 +73,11 @@ XPS_typ_JobScheduler = [
             ["queueDepth", 0],
             ["queuePeak", 0],
             ["frameCostMs", 0],
+            ["lastNonZeroFrameCostMs", 0],
             ["frameCostPeakMs", 0],
-            ["lastFrameAt", 0]
+            ["hadWorkLastFrame", false],
+            ["lastFrameAt", 0],
+            ["lastWorkFrameAt", 0]
         ]];
     }],
     ["_handle", -1],
@@ -96,6 +102,7 @@ XPS_typ_JobScheduler = [
         private _status = _item get "Status";
         private _resolvedPath = _item call ["SmoothPath"];
         private _resolvedWaypointCount = count _resolvedPath;
+        private _resolvedNodeSteps = _item get "NodeSteps";
         private _resolvedMs = if (isNil { _item get "SubmittedAt" }) then {
             0
         } else {
@@ -110,10 +117,15 @@ XPS_typ_JobScheduler = [
             _metrics set ["completedPartial", (_metrics get "completedPartial") + 1];
         };
         _metrics set ["resolvedCount", (_metrics get "resolvedCount") + 1];
+        _metrics set ["resolvedNodeStepsLast", _resolvedNodeSteps];
+        _metrics set ["resolvedNodeStepsTotal", (_metrics get "resolvedNodeStepsTotal") + _resolvedNodeSteps];
         _metrics set ["resolvedMsLast", _resolvedMs];
         _metrics set ["resolvedMsTotal", (_metrics get "resolvedMsTotal") + _resolvedMs];
         _metrics set ["emittedWaypointsLast", _resolvedWaypointCount];
         _metrics set ["emittedWaypointsTotal", (_metrics get "emittedWaypointsTotal") + _resolvedWaypointCount];
+        if (_resolvedNodeSteps > (_metrics get "resolvedNodeStepsPeak")) then {
+            _metrics set ["resolvedNodeStepsPeak", _resolvedNodeSteps];
+        };
         if (_resolvedMs > (_metrics get "resolvedMsPeak")) then {
             _metrics set ["resolvedMsPeak", _resolvedMs];
         };
@@ -121,16 +133,63 @@ XPS_typ_JobScheduler = [
             _metrics set ["emittedWaypointsPeak", _resolvedWaypointCount];
         };
 
+        private _sourceTag = _item get "SourceTag";
+        private _sourceStats = FLO_PF_SourceStats;
+        private _completedSuccessBySource = _sourceStats get "completedSuccess";
+        private _completedPartialBySource = _sourceStats get "completedPartial";
+        private _resolvedCountBySource = _sourceStats get "resolvedCount";
+        private _resolvedNodeStepsLastBySource = _sourceStats get "resolvedNodeStepsLast";
+        private _resolvedNodeStepsTotalBySource = _sourceStats get "resolvedNodeStepsTotal";
+        private _resolvedNodeStepsPeakBySource = _sourceStats get "resolvedNodeStepsPeak";
+        private _resolvedMsLastBySource = _sourceStats get "resolvedMsLast";
+        private _resolvedMsTotalBySource = _sourceStats get "resolvedMsTotal";
+        private _resolvedMsPeakBySource = _sourceStats get "resolvedMsPeak";
+        private _emittedLastBySource = _sourceStats get "emittedWaypointsLast";
+        private _emittedTotalBySource = _sourceStats get "emittedWaypointsTotal";
+        private _emittedPeakBySource = _sourceStats get "emittedWaypointsPeak";
+        private _inFlightBySource = _sourceStats get "inFlight";
+
+        if (_status isEqualTo "SUCCESS") then {
+            _completedSuccessBySource set [_sourceTag, (_completedSuccessBySource getOrDefault [_sourceTag, 0]) + 1];
+        } else {
+            _completedPartialBySource set [_sourceTag, (_completedPartialBySource getOrDefault [_sourceTag, 0]) + 1];
+        };
+
+        _resolvedCountBySource set [_sourceTag, (_resolvedCountBySource getOrDefault [_sourceTag, 0]) + 1];
+        _resolvedNodeStepsLastBySource set [_sourceTag, _resolvedNodeSteps];
+        _resolvedNodeStepsTotalBySource set [_sourceTag, (_resolvedNodeStepsTotalBySource getOrDefault [_sourceTag, 0]) + _resolvedNodeSteps];
+        if (_resolvedNodeSteps > (_resolvedNodeStepsPeakBySource getOrDefault [_sourceTag, 0])) then {
+            _resolvedNodeStepsPeakBySource set [_sourceTag, _resolvedNodeSteps];
+        };
+        _resolvedMsLastBySource set [_sourceTag, _resolvedMs];
+        _resolvedMsTotalBySource set [_sourceTag, (_resolvedMsTotalBySource getOrDefault [_sourceTag, 0]) + _resolvedMs];
+        if (_resolvedMs > (_resolvedMsPeakBySource getOrDefault [_sourceTag, 0])) then {
+            _resolvedMsPeakBySource set [_sourceTag, _resolvedMs];
+        };
+
+        _emittedLastBySource set [_sourceTag, _resolvedWaypointCount];
+        _emittedTotalBySource set [_sourceTag, (_emittedTotalBySource getOrDefault [_sourceTag, 0]) + _resolvedWaypointCount];
+        if (_resolvedWaypointCount > (_emittedPeakBySource getOrDefault [_sourceTag, 0])) then {
+            _emittedPeakBySource set [_sourceTag, _resolvedWaypointCount];
+        };
+
+        private _remainingInFlight = (_inFlightBySource getOrDefault [_sourceTag, 0]) - 1;
+        if (_remainingInFlight < 0) then {
+            _remainingInFlight = 0;
+        };
+        _inFlightBySource set [_sourceTag, _remainingInFlight];
+
         private _perf = FLO_PF_Perf;
         private _now = diag_tickTime;
         if (_resolvedMs >= (_perf get "slowSearchThresholdMs") && { _now >= (_perf get "nextSlowSearchLogAt") }) then {
             _perf set ["nextSlowSearchLogAt", _now + (_perf get "logCooldownSec")];
             diag_log format [
-                "[FLO][PERF] Pathfinding route source=%1 status=%2 distance=%3 m waypoints=%4 resolved in %5 ms",
+                "[FLO][PERF] Pathfinding route source=%1 status=%2 distance=%3 m waypoints=%4 nodes=%5 resolved in %6 ms",
                 _item get "SourceTag",
                 _status,
                 _item get "RequestDistance",
                 _resolvedWaypointCount,
+                _resolvedNodeSteps,
                 _resolvedMs
             ];
         };
@@ -146,6 +205,7 @@ XPS_typ_JobScheduler = [
             private _item = _self get "CurrentItem";
             private _metrics = _self get "_metrics";
             _metrics set ["nodeSteps", (_metrics get "nodeSteps") + 1];
+            _item set ["NodeSteps", (_item get "NodeSteps") + 1];
 
             private _done = _item call ["ProcessNextNode"];
             if (_done) then {
@@ -198,9 +258,14 @@ XPS_typ_JobScheduler = [
             _metrics set ["processedThisFrame", _count];
             _metrics set ["queueDepth", _queueDepth];
             _metrics set ["frameCostMs", _frameCost];
+            _metrics set ["hadWorkLastFrame", _count > 0];
 
             if (_queueDepth > (_metrics get "queuePeak")) then {
                 _metrics set ["queuePeak", _queueDepth];
+            };
+            if (_count > 0) then {
+                _metrics set ["lastWorkFrameAt", diag_tickTime];
+                _metrics set ["lastNonZeroFrameCostMs", _frameCost];
             };
             if (_frameCost > (_metrics get "frameCostPeakMs")) then {
                 _metrics set ["frameCostPeakMs", _frameCost];

@@ -67,7 +67,6 @@ if (_now >= FLO_PF_RequestNextPruneAt) then {
 };
 
 private _dist = _startPos distance2D _endPos;
-private _queueDepth = (FLO_PF_Scheduler get "_queueObject") call ["Count"];
 private _cellSize = FLO_PF_RequestCellSize;
 if (_dist > 6000) then {
     _cellSize = _cellSize * 4;
@@ -78,13 +77,6 @@ if (_dist > 6000) then {
         if (_dist > 1200) then {
             _cellSize = _cellSize * 2;
         };
-    };
-};
-if (_queueDepth > 1200) then {
-    _cellSize = _cellSize * 2;
-} else {
-    if (_queueDepth > 700) then {
-        _cellSize = _cellSize + FLO_PF_RequestCellSize;
     };
 };
 
@@ -181,8 +173,18 @@ _search set ["SubmittedAt", _now];
 _search set ["SourceTag", _sourceTag];
 _search set ["RouteKey", _routeKey];
 _search set ["RequestDistance", _dist];
+_search set ["NodeSteps", 0];
 
 FLO_PF_Scheduler call ["AddItem", _search];
 
 private _newSearchBySource = FLO_PF_SourceStats get "newSearch";
 _newSearchBySource set [_sourceTag, (_newSearchBySource getOrDefault [_sourceTag, 0]) + 1];
+
+private _inFlightBySource = FLO_PF_SourceStats get "inFlight";
+private _newInFlight = (_inFlightBySource getOrDefault [_sourceTag, 0]) + 1;
+_inFlightBySource set [_sourceTag, _newInFlight];
+
+private _inFlightPeakBySource = FLO_PF_SourceStats get "inFlightPeak";
+if (_newInFlight > (_inFlightPeakBySource getOrDefault [_sourceTag, 0])) then {
+    _inFlightPeakBySource set [_sourceTag, _newInFlight];
+};

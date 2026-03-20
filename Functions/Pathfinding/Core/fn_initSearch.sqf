@@ -196,6 +196,8 @@ XPS_typ_AstarSearch = [
 		_closedSet set [_currentIndex, true];
 		private _prevNode = _self get "cameFrom" get _currentIndex;
 		private _costSoFarMap = _self get "costSoFar";
+		private _cameFromMap = _self get "cameFrom";
+		private _cameEdgeMap = _self get "cameEdge";
 		private _currentCostSoFar = _costSoFarMap get _currentIndex;
 
 		private _neighbors = [];
@@ -234,10 +236,11 @@ XPS_typ_AstarSearch = [
 			private _costSoFarX = _costSoFarMap get _neighborIndex;
 
 			if (isNil {_costSoFarX} || {_costSofar < _costSoFarX}) then {
-				_costSoFarMap set [_neighborIndex, _costSofar];
-				_self call ["frontierAdd",[_priority,_neighborNode]];
-				_self get "cameFrom" set [_neighborIndex, _currentNode];
-				_self get "cameEdge" set [_neighborIndex, _edgePath];
+				if (_self call ["frontierAdd",[_priority,_neighborNode]]) then {
+					_costSoFarMap set [_neighborIndex, _costSofar];
+					_cameFromMap set [_neighborIndex, _currentNode];
+					_cameEdgeMap set [_neighborIndex, _edgePath];
+				};
 			};
 
 		} forEach _neighbors;

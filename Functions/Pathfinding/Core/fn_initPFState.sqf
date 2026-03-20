@@ -10,7 +10,21 @@ FLO_PF_SourceStats = createHashMapFromArray [
     ["attempts", createHashMap],
     ["newSearch", createHashMap],
     ["cacheHit", createHashMap],
-    ["pendingJoin", createHashMap]
+    ["pendingJoin", createHashMap],
+    ["inFlight", createHashMap],
+    ["inFlightPeak", createHashMap],
+    ["completedSuccess", createHashMap],
+    ["completedPartial", createHashMap],
+    ["resolvedCount", createHashMap],
+    ["resolvedNodeStepsLast", createHashMap],
+    ["resolvedNodeStepsTotal", createHashMap],
+    ["resolvedNodeStepsPeak", createHashMap],
+    ["resolvedMsLast", createHashMap],
+    ["resolvedMsTotal", createHashMap],
+    ["resolvedMsPeak", createHashMap],
+    ["emittedWaypointsLast", createHashMap],
+    ["emittedWaypointsTotal", createHashMap],
+    ["emittedWaypointsPeak", createHashMap]
 ];
 
 FLO_PF_Perf = createHashMapFromArray [
