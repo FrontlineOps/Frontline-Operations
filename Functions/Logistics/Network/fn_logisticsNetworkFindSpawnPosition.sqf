@@ -20,6 +20,7 @@ if (_targetObjId == "") exitWith { [[0, 0, 0], ""] };
 
 private _sourceObjId = [_net, _targetObjId, _blockedObjectives] call FLO_fnc_logisticsNetworkPickSpawnSourceObjective;
 if (_sourceObjId == "") exitWith { [[0, 0, 0], ""] };
+if (_sourceObjId isEqualTo _targetObjId) exitWith { [[0, 0, 0], ""] };
 
 private _spawnPos = [_sourceObjId, true] call FLO_fnc_getRandomObjectivePos;
 if (_spawnPos isEqualTo [0, 0, 0]) then {
@@ -28,12 +29,6 @@ if (_spawnPos isEqualTo [0, 0, 0]) then {
 
 private _targetPos = (FLO_Objectives get _targetObjId) get "position";
 
-if ((_spawnPos distance2D _targetPos) > 4500) then {
-    _spawnPos = [_targetObjId, true] call FLO_fnc_getRandomObjectivePos;
-    if (_spawnPos isEqualTo [0, 0, 0]) then {
-        _spawnPos = _targetPos;
-    };
-    _sourceObjId = _targetObjId;
-};
+if ((_spawnPos distance2D _targetPos) > 4500) exitWith { [[0, 0, 0], ""] };
 
 [_spawnPos, _sourceObjId]

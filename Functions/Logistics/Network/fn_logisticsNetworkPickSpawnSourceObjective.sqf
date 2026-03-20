@@ -35,7 +35,7 @@ private _candidates = (keys FLO_Objectives) select {
     {!(_objId in _blockedObjectives)}
 };
 
-if (count _candidates == 0) exitWith { _targetObjId };
+if (count _candidates == 0) exitWith { "" };
 
 private _bestObjId = "";
 private _bestScore = -1e12;
@@ -79,4 +79,4 @@ if (_bestObjId == "") then {
     } forEach _candidates;
 };
 
-if (_bestObjId == "") then { _targetObjId } else { _bestObjId }
+if (_bestObjId == "") then { "" } else { _bestObjId }
