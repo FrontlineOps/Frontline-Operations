@@ -165,6 +165,7 @@ class FLO {
         file = "Functions\Virtualization\Debug";
 
         class virtualizationDebugManager      {};
+        class virtualizationProbe             {};
         class virtualizationDebugUpdateMarker {};
         class testVirtualizationSystem        {};
     };

@@ -73,7 +73,7 @@ if (_mode in ["pfh", "full"]) then {
     if (!isNil "FLO_VirtUpdate") then {
         private _stats = ["stats"] call FLO_fnc_virtualizationUpdatePFH;
         private _hasStats = !isNil "_stats" && {_stats isEqualType createHashMap};
-        ["PFH Stats", _hasStats, if (_hasStats) then {format["Cycles: %1", _stats getOrDefault ["cycles", 0]]} else {"No stats"}] call _addResult;
+        ["PFH Stats", _hasStats, if (_hasStats) then {format["Cycles: %1", _stats getOrDefault ["cyclesRun", 0]]} else {"No stats"}] call _addResult;
     };
 };
 
@@ -135,4 +135,3 @@ if ((_results get "failed") > 0) then {
 };
 
 _results
-

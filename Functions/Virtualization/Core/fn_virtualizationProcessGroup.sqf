@@ -21,6 +21,8 @@
 
 params ["_groupId", "_groupData", "_activationDist", "_now", "_groupUpdateTimes"];
 
+private _virtStats = FLO_VirtUpdate get "stats";
+
 // ============================================================================
 // EXTRACT STATE - use get for data that must exist
 // ============================================================================
@@ -66,7 +68,10 @@ if (!_isActive && _nearestDist > _activationDist) then {
         _lastGroupUpdate = _now - (_updatePhase * _updateInterval);
         _groupUpdateTimes set [_groupId, _lastGroupUpdate];
     };
-    if (_now - _lastGroupUpdate < _updateInterval) exitWith {};
+    if (_now - _lastGroupUpdate < _updateInterval) exitWith {
+        _virtStats set ["tierSkipsTotal", (_virtStats get "tierSkipsTotal") + 1];
+        _virtStats set ["tierSkipsThisBatch", (_virtStats get "tierSkipsThisBatch") + 1];
+    };
 };
 _groupUpdateTimes set [_groupId, _now];
 
@@ -80,6 +85,8 @@ if (_attachedTo != "") exitWith {
     // Sync position with transport
     private _tPos = _transportData get "position";
     [FLO_virtualGroups, _groupId, _tPos] call (FLO_virtualGroups get "_updateGroupPosition");
+    _virtStats set ["attachedSyncsTotal", (_virtStats get "attachedSyncsTotal") + 1];
+    _virtStats set ["attachedSyncsThisBatch", (_virtStats get "attachedSyncsThisBatch") + 1];
 };
 
 // ============================================================================
@@ -112,10 +119,14 @@ if (!_isActive && !_inCombat) then {
             [FLO_virtualGroups, _groupId, _newPos] call (FLO_virtualGroups get "_updateGroupPosition");
             _groupData set ["lastMoveTime", _now];
             _groupData set ["state", "moving"];
+            _virtStats set ["virtualMovesTotal", (_virtStats get "virtualMovesTotal") + 1];
+            _virtStats set ["virtualMovesThisBatch", (_virtStats get "virtualMovesThisBatch") + 1];
         } else {
             if (_distToWp <= _completionRadius) then {
                 // Waypoint reached - advance
                 [_groupId, _groupData, _currentWpIdx, _waypoints] call FLO_fnc_virtualizationAdvanceWaypoint;
+                _virtStats set ["waypointAdvancesTotal", (_virtStats get "waypointAdvancesTotal") + 1];
+                _virtStats set ["waypointAdvancesThisBatch", (_virtStats get "waypointAdvancesThisBatch") + 1];
             };
         };
     } else {
@@ -187,6 +198,8 @@ if (!_isActive && !_inCombat) then {
                 _groupData set ["patrolConfig", [_offsetCenter, (_minDist + _maxDist) / 2, count _patrolWaypoints, "AWARE", "LIMITED"]];
                 _groupData set ["autoPatrol", true];
                 _groupData set ["state", "moving"];
+                _virtStats set ["patrolAssignmentsTotal", (_virtStats get "patrolAssignmentsTotal") + 1];
+                _virtStats set ["patrolAssignmentsThisBatch", (_virtStats get "patrolAssignmentsThisBatch") + 1];
 
                 ["VIRTUALIZATION", 4, format["Assigned auto-patrol to idle group %1 (%2 waypoints, range %3-%4m)", _groupId, count _patrolWaypoints, _minDist, _maxDist]] call FLO_fnc_log;
             };
@@ -201,6 +214,8 @@ if (!_forceVirtual && _nearestDist <= _activationDist && !_isActive) then {
     // ACTIVATE - player is close
     ["VIRTUALIZATION", 3, format["Activating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
     [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;
+    _virtStats set ["activationsTotal", (_virtStats get "activationsTotal") + 1];
+    _virtStats set ["activationsThisBatch", (_virtStats get "activationsThisBatch") + 1];
     
 } else {
     if (_nearestDist > _activationDist && _isActive) then {
@@ -208,9 +223,13 @@ if (!_forceVirtual && _nearestDist <= _activationDist && !_isActive) then {
         private _alwaysActive = _groupData getOrDefault ["alwaysActive", false];
         if ((_onMission && !_isReinforcing) || _alwaysActive) then {
             // Skip deactivation for non-reinforcement mission groups or always-active groups.
+            _virtStats set ["missionHoldSkipsTotal", (_virtStats get "missionHoldSkipsTotal") + 1];
+            _virtStats set ["missionHoldSkipsThisBatch", (_virtStats get "missionHoldSkipsThisBatch") + 1];
         } else {
             ["VIRTUALIZATION", 3, format["Deactivating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
             [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
+            _virtStats set ["deactivationsTotal", (_virtStats get "deactivationsTotal") + 1];
+            _virtStats set ["deactivationsThisBatch", (_virtStats get "deactivationsThisBatch") + 1];
         };
     };
 };
@@ -224,6 +243,8 @@ if (_isActive && !isNull _realGroup) then {
         private _realPos = getPosATL _leader;
         if ([_realPos] call FLO_VirtUpdate_isValidPos) then {
             [FLO_virtualGroups, _groupId, _realPos] call (FLO_virtualGroups get "_updateGroupPosition");
+            _virtStats set ["activePositionSyncsTotal", (_virtStats get "activePositionSyncsTotal") + 1];
+            _virtStats set ["activePositionSyncsThisBatch", (_virtStats get "activePositionSyncsThisBatch") + 1];
         };
 
         if (_isReinforcing) then {
@@ -270,6 +291,8 @@ if (_isActive && !isNull _realGroup) then {
             _groupData set ["patrolConfig", [_offsetCenter, _patrolRadius, _numWps, "AWARE", "LIMITED"]];
             _groupData set ["autoPatrol", true];
             _groupData set ["state", "moving"];
+            _virtStats set ["patrolAssignmentsTotal", (_virtStats get "patrolAssignmentsTotal") + 1];
+            _virtStats set ["patrolAssignmentsThisBatch", (_virtStats get "patrolAssignmentsThisBatch") + 1];
 
             ["VIRTUALIZATION", 4, format["Assigned taskPatrol to active group %1 (%2 waypoints, radius %3m)", _groupId, _numWps, _patrolRadius]] call FLO_fnc_log;
         };
@@ -282,6 +305,8 @@ if (_isActive && !isNull _realGroup) then {
             ["VIRTUALIZATION", 3, format["Group %1 eliminated - removing", _groupId]] call FLO_fnc_log;
             ["cleanup", _groupId] call FLO_fnc_virtualizationDebugManager;
             [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");
+            _virtStats set ["eliminatedGroupsTotal", (_virtStats get "eliminatedGroupsTotal") + 1];
+            _virtStats set ["eliminatedGroupsThisBatch", (_virtStats get "eliminatedGroupsThisBatch") + 1];
         };
     };
 };
