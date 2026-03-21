@@ -39,8 +39,8 @@ private _logisticsClass = [
     ["BLUFOR_DETECT_RANGE", 2000],
     ["DISPATCH_MIN_INTERVAL", 150],
     ["DISPATCH_MAX_INTERVAL", 420],
-    ["DISPATCH_BATCH_MIN", 2],
-    ["DISPATCH_BATCH_MAX", 16],
+    ["DISPATCH_BATCH_MIN", 4],
+    ["DISPATCH_BATCH_MAX", 32],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
