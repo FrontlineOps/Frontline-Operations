@@ -37,7 +37,6 @@ if ((count _pool) == 0) exitWith { _metrics };
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
-private _config = _cmdr get "_config";
 private _groups = FLO_virtualGroups get "_groups";
 private _objectives = _ws call ["_getObjectives", []];
 
@@ -81,11 +80,14 @@ private _candidateObjectives = [];
     };
 
     private _pressure = ((_enemyCount - (_objective get "friendlyCount")) max 0) + (if (_underAttack) then { 4 } else { 0 });
+    private _reserveDistances = [_cmdr, _objectiveId, "defense"] call FLO_fnc_gtnGetObjectiveReserveDistances;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
         ["linkedObjectives", _objective get "linkedObjectives"],
+        ["localReserveMeters", _reserveDistances select 0],
+        ["maxPullDistanceMeters", _reserveDistances select 1],
         ["priority", _objective get "priority"],
         ["pressureBand", _pressureBand],
         ["pressure", _pressure],
@@ -109,8 +111,6 @@ private _rankedCandidates = [];
 _rankedCandidates sort true;
 _candidateObjectives = _rankedCandidates apply { _x select 3 };
 
-private _localReserveMeters = _config get "defenseLocalReserveMeters";
-private _maxPullDistanceMeters = _config get "defenseMaxPullDistanceMeters";
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
@@ -124,6 +124,8 @@ while {_continueAllocation && {(count _pool) > 0}} do {
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
         private _linkedObjectives = _x get "linkedObjectives";
+        private _localReserveMeters = _x get "localReserveMeters";
+        private _maxPullDistanceMeters = _x get "maxPullDistanceMeters";
 
         private _bestGroupId = "";
         private _bestBand = 10;

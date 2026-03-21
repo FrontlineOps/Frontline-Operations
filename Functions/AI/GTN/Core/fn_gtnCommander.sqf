@@ -131,8 +131,14 @@ private _gtnCommander = createHashMapObject [[
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
         ["attackLocalReserveMeters", 2500], // Prefer groups already in the local sector before pulling wider reserves
         ["attackMaxPullDistanceMeters", 4000], // Do not drag attack groups from the other side of the map
+        ["attackLocalReserveSpacingMultiplier", 1.5], // Sparse fronts can widen local reserve pulls based on source-objective spacing
+        ["attackMaxPullSpacingMultiplier", 2.5], // Sparse fronts can widen maximum attack pulls beyond the dense-map floor
+        ["attackDynamicPullCapMeters", 9000], // Hard stop so sparse-map scaling does not drag attack groups across the theater
         ["defenseLocalReserveMeters", 2000], // Prefer defenders already tied to the threatened objective or adjacent sectors
         ["defenseMaxPullDistanceMeters", 3500], // Keep defense pulls local unless no better option exists
+        ["defenseLocalReserveSpacingMultiplier", 1.25], // Threatened sectors can widen local reserve pulls based on nearby objective spacing
+        ["defenseMaxPullSpacingMultiplier", 2.0], // Sparse defensive fronts can pull wider than the dense-map floor
+        ["defenseDynamicPullCapMeters", 7000], // Hard stop so defense still stays materially local on sparse fronts
         ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
         ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
         ["garrisonDispatchMinGroups", 3], // Minimum garrison package once an objective is selected

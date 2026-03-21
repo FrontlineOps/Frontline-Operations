@@ -37,7 +37,6 @@ if ((count _pool) == 0) exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
-private _config = _cmdr get "_config";
 private _groups = FLO_virtualGroups get "_groups";
 private _allObjectives = _ws call ["_getObjectives", []];
 private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
@@ -94,12 +93,15 @@ private _candidateObjectives = [];
     private _sectorMatch = (count _trackSectorObjectives) == 0
         || { (count ((_objective get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0 };
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
+    private _reserveDistances = [_cmdr, _objectiveId, "attack"] call FLO_fnc_gtnGetObjectiveReserveDistances;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
         ["sourceObjectives", _sourceObjectives],
         ["supportObjectives", _supportObjectives],
+        ["localReserveMeters", _reserveDistances select 0],
+        ["maxPullDistanceMeters", _reserveDistances select 1],
         ["sectorMatch", _sectorMatch],
         ["selectionDist", _selectionDist],
         ["priority", _objective get "priority"],
@@ -125,8 +127,6 @@ private _rankedCandidates = [];
 _rankedCandidates sort true;
 _candidateObjectives = _rankedCandidates apply { _x select 4 };
 
-private _localReserveMeters = _config get "attackLocalReserveMeters";
-private _maxPullDistanceMeters = _config get "attackMaxPullDistanceMeters";
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
@@ -141,6 +141,8 @@ while {_continueAllocation && {(count _pool) > 0}} do {
         private _objectivePos = _x get "objectivePos";
         private _sourceObjectives = _x get "sourceObjectives";
         private _supportObjectives = _x get "supportObjectives";
+        private _localReserveMeters = _x get "localReserveMeters";
+        private _maxPullDistanceMeters = _x get "maxPullDistanceMeters";
 
         private _bestGroupId = "";
         private _bestBand = 10;

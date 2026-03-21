@@ -1020,8 +1020,9 @@ private _executor = createHashMapObject [[
 
             private _supportObjectiveSet = createHashMap;
             { _supportObjectiveSet set [_x, true]; } forEach _supportObjectives;
-            private _localReserveMeters = (_cmdr get "_config") get "attackLocalReserveMeters";
-            private _maxPullDistanceMeters = (_cmdr get "_config") get "attackMaxPullDistanceMeters";
+            private _reserveDistances = [_cmdr, _objId, "attack"] call FLO_fnc_gtnGetObjectiveReserveDistances;
+            private _localReserveMeters = _reserveDistances select 0;
+            private _maxPullDistanceMeters = _reserveDistances select 1;
             private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_objId]];
             private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objId]];
             private _slotsRemaining = (_attackCap - _activeAttackers) max 0;

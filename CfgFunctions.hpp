@@ -29,6 +29,7 @@ class FLO {
 
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
+        class gtnGetObjectiveReserveDistances {};
         class gtnSideContext        {};
         class gtnWorldState         {};
         class gtnGoalLibrary        {};
