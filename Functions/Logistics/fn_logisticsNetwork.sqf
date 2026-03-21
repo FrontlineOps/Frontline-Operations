@@ -35,12 +35,12 @@ private _logisticsClass = [
         ["static_aa", 18]
     ]],
 
-    ["CHECK_INTERVAL", 120],
+    ["CHECK_INTERVAL", 60],
     ["BLUFOR_DETECT_RANGE", 2000],
-    ["DISPATCH_MIN_INTERVAL", 120],
-    ["DISPATCH_MAX_INTERVAL", 240],
-    ["DISPATCH_BATCH_MIN", 4],
-    ["DISPATCH_BATCH_MAX", 32],
+    ["DISPATCH_MIN_INTERVAL", 60],
+    ["DISPATCH_MAX_INTERVAL", 120],
+    ["DISPATCH_BATCH_MIN", 12],
+    ["DISPATCH_BATCH_MAX", 64],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
