@@ -111,6 +111,7 @@ private _gtnCommander = createHashMapObject [[
     ["_nextTrackExecutionIndex", 0],
     ["_availabilityCacheDirty", true],
     ["_availabilityCandidates", []],
+    ["_availabilityOwnSideTotal", 0],
     ["_attackObjectiveReservations", createHashMap],
     
     // Configuration
@@ -282,10 +283,14 @@ private _gtnCommander = createHashMapObject [[
         _phaseMs set ["forcePreservation", (diag_tickTime - _tPhase) * 1000];
 
         private _groups = FLO_virtualGroups get "_groups";
+        private _registryGroupCount = count (keys _groups);
         private _dtMs = (diag_tickTime - _cycleStart) * 1000;
         private _metrics = createHashMapFromArray [
             ["cycleIndex", _cycleIndex],
-            ["groupCount", count (keys _groups)],
+            ["groupCount", _registryGroupCount],
+            ["registryGroupCount", _registryGroupCount],
+            ["ownSideGroupCount", _allocationMetrics get "ownSideGroups"],
+            ["availableGroupCount", _allocationMetrics get "availableCount"],
             ["taskedCount", count (_self get "_gtnTaskedGroups")],
             ["trackCount", count (_self get "_tracks")],
             ["normalize", _normalizeMetrics],
@@ -309,10 +314,12 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 processed %3 groups (tasked=%4, tracks=%5) in %6 ms | normalize=%7 ws=%8 attack=%9 allocate=%10 execute=%11 defense=%12 staticAA=%13 preserve=%14",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 execute=%13 defense=%14 staticAA=%15 preserve=%16",
                 _self get "_sideKey",
                 _cycleIndex,
-                _metrics get "groupCount",
+                _metrics get "registryGroupCount",
+                _metrics get "ownSideGroupCount",
+                _metrics get "availableGroupCount",
                 _metrics get "taskedCount",
                 _metrics get "trackCount",
                 _dtMs,
@@ -327,10 +334,11 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 availability | cacheDirty=%2 total=%3 available=%4 scanMs=%5 roundRobinMs=%6 normalizeChanged=%7",
+                "[FLO][PERF] GTN commander %1 availability | cacheDirty=%2 registry=%3 own=%4 available=%5 scanMs=%6 roundRobinMs=%7 normalizeChanged=%8",
                 _self get "_sideKey",
                 (_allocationMetrics get "cacheDirty"),
                 _allocationMetrics get "totalGroups",
+                _allocationMetrics get "ownSideGroups",
                 _allocationMetrics get "availableCount",
                 _allocationMetrics get "scanMs",
                 _allocationMetrics get "roundRobinMs",
@@ -550,6 +558,7 @@ private _gtnCommander = createHashMapObject [[
         private _metrics = createHashMapFromArray [
             ["cacheDirty", _self get "_availabilityCacheDirty"],
             ["totalGroups", 0],
+            ["ownSideGroups", _self get "_availabilityOwnSideTotal"],
             ["availableCount", 0],
             ["allocatedCount", 0],
             ["trackCount", count _tracks],
@@ -564,6 +573,7 @@ private _gtnCommander = createHashMapObject [[
         private _tScan = diag_tickTime;
         private _allAvailable = _self call ["_getAvailableGroups", [_totalGroups]];
         _metrics set ["scanMs", (diag_tickTime - _tScan) * 1000];
+        _metrics set ["ownSideGroups", _self get "_availabilityOwnSideTotal"];
         private _totalCount = count _allAvailable;
         _metrics set ["availableCount", _totalCount];
         
@@ -1297,14 +1307,16 @@ private _gtnCommander = createHashMapObject [[
 
         private _ownSide = _self get "_ownSide";
         private _available = [];
+        private _ownSideGroupCount = 0;
 
         {
             private _groupId = _x;
             private _gData = _y;
 
             private _groupType = _gData get "groupType";
-            if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
             if ((_gData get "side") != _ownSide) then { continue };
+            _ownSideGroupCount = _ownSideGroupCount + 1;
+            if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
             if (_gData get "inCombat") then { continue };
             if (_taskedSet getOrDefault [_groupId, false]) then { continue };
 
@@ -1315,6 +1327,7 @@ private _gtnCommander = createHashMapObject [[
         } forEach _groups;
 
         _self set ["_availabilityCandidates", _available];
+        _self set ["_availabilityOwnSideTotal", _ownSideGroupCount];
         _self set ["_availabilityCacheDirty", false];
         _available
     }],
