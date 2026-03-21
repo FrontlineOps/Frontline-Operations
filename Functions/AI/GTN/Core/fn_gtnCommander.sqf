@@ -388,11 +388,12 @@ private _gtnCommander = createHashMapObject [[
             };
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 attackReleased=%5 aaMoving=%6 aaDeployed=%7 preserveScanned=%8 retreats=%9 arrivals=%10 replenishTicks=%11 returned=%12 vehicleRespawns=%13",
+                "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 defenseLost=%5 attackReleased=%6 aaMoving=%7 aaDeployed=%8 preserveScanned=%9 retreats=%10 arrivals=%11 replenishTicks=%12 returned=%13 vehicleRespawns=%14",
                 _self get "_sideKey",
                 _leaseMetrics get "releasedCount",
                 _leaseMetrics get "trimmedExcess",
                 _leaseMetrics get "holdRefreshCount",
+                _leaseMetrics get "lostObjectiveReleaseCount",
                 _attackAssignmentMetrics get "releasedCount",
                 _staticAAMetrics get "movingStaticAACount",
                 _staticAAMetrics get "deployedCount",
@@ -1657,6 +1658,7 @@ private _gtnCommander = createHashMapObject [[
             ["taskedCount", count _tasked],
             ["leaseIssuedCount", 0],
             ["holdRefreshCount", 0],
+            ["lostObjectiveReleaseCount", 0],
             ["invalidObjectiveCount", 0],
             ["trimmedExcess", 0],
             ["releasedCount", 0]
@@ -1684,6 +1686,22 @@ private _gtnCommander = createHashMapObject [[
             if ((_gData get "currentOrder") != "DEFEND") then { continue };
             if (_gData getOrDefault ["inCombat", false]) then { continue };
 
+            private _objId = _gData get "defendObjective";
+            if !(_objId in _objectives) then {
+                _metrics set ["invalidObjectiveCount", (_metrics get "invalidObjectiveCount") + 1];
+                ["GTN", 2, format["Defense lease: group %1 has invalid defendObjective (%2), releasing", _groupId, _objId]] call FLO_fnc_log;
+                _releaseIds pushBack _groupId;
+                continue;
+            };
+
+            private _obj = _objectives get _objId;
+            if ((_obj get "owner") != _ownSide) then {
+                _metrics set ["lostObjectiveReleaseCount", (_metrics get "lostObjectiveReleaseCount") + 1];
+                ["GTN", 2, format["Defense lease: group %1 releasing from lost objective %2", _groupId, _objId]] call FLO_fnc_log;
+                _releaseIds pushBack _groupId;
+                continue;
+            };
+
             private _leaseUntil = _gData getOrDefault ["defendLeaseUntil", -1];
             if (_leaseUntil < 0) then {
                 _gData set ["defendLeaseIssuedAt", _now];
@@ -1693,16 +1711,8 @@ private _gtnCommander = createHashMapObject [[
             };
             if (_now < _leaseUntil) then { continue };
 
-            private _objId = _gData get "defendObjective";
-
             private _hold = false;
-            if (_objId in _objectives) then {
-                private _obj = _objectives get _objId;
-                _hold = (_obj get "contested") || (_obj get "underAttack") || {(_obj get "owner") != _ownSide};
-            } else {
-                _metrics set ["invalidObjectiveCount", (_metrics get "invalidObjectiveCount") + 1];
-                ["GTN", 2, format["Defense lease: group %1 has invalid defendObjective (%2), releasing", _groupId, _objId]] call FLO_fnc_log;
-            };
+            _hold = (_obj get "contested") || (_obj get "underAttack");
 
             if (_hold) then {
                 _gData set ["defendLeaseIssuedAt", _now];
