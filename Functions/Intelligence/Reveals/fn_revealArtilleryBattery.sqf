@@ -22,36 +22,55 @@ if (isNil "FLO_virtualGroups") exitWith {
 
 private _centerPos = if (typeName _center == "OBJECT") then { getPos _center } else { _center };
 
-// Find artillery virtual groups
-private _artilleryGroups = [];
-{
-    private _gid = _x;
-    private _gData = _y;
-    private _groupType = _gData getOrDefault ["groupType", ""];
-    private _side = _gData getOrDefault ["side", east];
-    
-    if (_side == east && {_groupType in ["artillery", "mortar", "mlrs"]}) then {
-        private _pos = _gData get "position";
-        if (_pos distance _centerPos < _radius) then {
-            _artilleryGroups pushBack [_gid, _gData];
-        };
-    };
-} forEach (FLO_virtualGroups get "_groups");
+private _groups = FLO_virtualGroups get "_groups";
+private _chosenId = "";
+private _chosenData = createHashMap;
+private _matchCount = 0;
 
-if (count _artilleryGroups == 0) exitWith { 
-    ["No artillery batteries detected in range", "info"] call FLO_fnc_sendNotification;
-    false 
+if (!isNil "FLO_GTNArtilleryManager") then {
+    private _cache = (FLO_GTNArtilleryManager get "artilleryGroupsBySide") get "EAST";
+    {
+        if !(_x in _groups) then { continue };
+
+        private _gData = _groups get _x;
+        private _pos = _gData get "position";
+        if ((_pos distance2D _centerPos) > _radius) then { continue };
+
+        _matchCount = _matchCount + 1;
+        if ((floor random _matchCount) == 0) then {
+            _chosenId = _x;
+            _chosenData = _gData;
+        };
+    } forEach (keys _cache);
+} else {
+    {
+        private _gData = _y;
+        if ((_gData get "side") != east) then { continue };
+        if !((_gData get "groupType") in ["artillery", "mortar", "mlrs"]) then { continue };
+
+        private _pos = _gData get "position";
+        if ((_pos distance2D _centerPos) > _radius) then { continue };
+
+        _matchCount = _matchCount + 1;
+        if ((floor random _matchCount) == 0) then {
+            _chosenId = _x;
+            _chosenData = _gData;
+        };
+    } forEach _groups;
 };
 
-private _chosen = selectRandom _artilleryGroups;
-_chosen params ["_gid", "_gdata"];
-private _pos = _gdata get "position";
+if (_matchCount isEqualTo 0) exitWith {
+    ["No artillery batteries detected in range", "info"] call FLO_fnc_sendNotification;
+    false
+};
+
+private _pos = _chosenData get "position";
 
 // Add slight position randomization (intel isn't perfect)
 private _revealPos = _pos getPos [50 + random 100, random 360];
 
 // Create position marker
-private _mrkId = format ["artyIntel_%1_%2", _gid, floor diag_tickTime];
+private _mrkId = format ["artyIntel_%1_%2", _chosenId, floor diag_tickTime];
 private _mrkPos = createMarkerLocal [_mrkId, _revealPos];
 _mrkPos setMarkerTypeLocal "mil_warning";
 _mrkPos setMarkerColorLocal "colorOPFOR";

@@ -38,7 +38,46 @@ if (isNil "_commander") exitWith {
     false 
 };
 
-private _targetObjId = _commander call ["_selectPriorityObjective", []];
+if (isNil "FLO_virtualGroups") exitWith {
+    ["Enemy command analysis unavailable", "warning"] call FLO_fnc_sendNotification;
+    false
+};
+
+private _groups = FLO_virtualGroups get "_groups";
+private _objectiveWeights = createHashMap;
+
+{
+    private _gData = _y;
+    if ((_gData get "side") != _enemySide) then { continue };
+    if ((_gData get "currentOrder") != "ATTACK") then { continue };
+
+    private _objectiveId = _gData get "attackObjective";
+    if (_objectiveId == "") then { continue };
+    if !(_objectiveId in FLO_Objectives) then { continue };
+
+    private _objData = FLO_Objectives get _objectiveId;
+    if ((_objData get "owner") == _enemySide) then { continue };
+
+    private _weight = (_gData get "unitCount") max 1;
+    _objectiveWeights set [_objectiveId, (_objectiveWeights getOrDefault [_objectiveId, 0]) + _weight];
+} forEach _groups;
+
+private _targetObjId = "";
+private _bestWeight = -1;
+private _bestPriority = -1;
+
+{
+    private _objectiveId = _x;
+    private _weight = _objectiveWeights get _objectiveId;
+    private _priority = (FLO_Objectives get _objectiveId) get "priority";
+
+    if (_weight > _bestWeight || {_weight == _bestWeight && {_priority > _bestPriority}}) then {
+        _targetObjId = _objectiveId;
+        _bestWeight = _weight;
+        _bestPriority = _priority;
+    };
+} forEach (keys _objectiveWeights);
+
 if (_targetObjId == "") exitWith {
     ["No active enemy operations detected", "info"] call FLO_fnc_sendNotification;
     false

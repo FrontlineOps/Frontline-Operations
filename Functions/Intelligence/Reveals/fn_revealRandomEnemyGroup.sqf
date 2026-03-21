@@ -19,26 +19,30 @@ if (isNil "FLO_virtualGroups") exitWith {};
 private _centerPos = if (typeName _center == "OBJECT") then { position _center } else { _center };
 
 private _groupsMap = FLO_virtualGroups get "_groups";
-private _nearGroups = [];
+private _chosenId = "";
+private _chosenData = createHashMap;
+private _matchCount = 0;
+
 {
-    private _gid = _x;
     private _data = _y;
     private _pos = _data get "position";
-    private _side = _data getOrDefault ["side", east];
-    if (_side == east && { _pos distance _centerPos <= _radius }) then {
-        _nearGroups pushBack [_gid, _data];
+    if ((_data get "side") != east) then { continue };
+    if ((_pos distance2D _centerPos) > _radius) then { continue };
+
+    _matchCount = _matchCount + 1;
+    if ((floor random _matchCount) == 0) then {
+        _chosenId = _x;
+        _chosenData = _data;
     };
 } forEach _groupsMap;
 
-if (count _nearGroups isEqualTo 0) exitWith {
+if (_matchCount isEqualTo 0) exitWith {
     ["STR_FLO_INTEL_NONE", "info"] call FLO_fnc_sendNotification;
 };
 
-private _chosen = selectRandom _nearGroups;
-_chosen params ["_gid", "_gdata"];
-private _gpos = _gdata get "position";
+private _gpos = _chosenData get "position";
 
-private _markerBase = format ["milIntel_%1_%2", _gid, floor diag_tickTime];
+private _markerBase = format ["milIntel_%1_%2", _chosenId, floor diag_tickTime];
 private _mrkGrp = createMarkerLocal [_markerBase, _gpos];
 _mrkGrp setMarkerTypeLocal "o_unknown";
 _mrkGrp setMarkerColorLocal "colorOPFOR";
@@ -46,7 +50,7 @@ _mrkGrp setMarkerSizeLocal [0.8,0.8];
 _mrkGrp setMarkerAlpha 1;
 
 private _markers = [_mrkGrp];
-private _wpts = _gdata getOrDefault ["waypoints", []];
+private _wpts = _chosenData get "waypoints";
 {
     private _wName = format ["%1_wp_%2", _markerBase, _forEachIndex];
     private _wpPos = _x select 0;
