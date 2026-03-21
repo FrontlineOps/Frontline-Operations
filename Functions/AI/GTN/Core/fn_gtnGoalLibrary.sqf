@@ -388,7 +388,7 @@ private _goalLibrary = createHashMapObject [[
                         ["prim_select_target_concentration", []],
                         ["prim_assault_coord", ["_SELECTED_CONCENTRATION"]]
                     ]]
-                ],
+                ]
             ]]
         ]]];
     }],
