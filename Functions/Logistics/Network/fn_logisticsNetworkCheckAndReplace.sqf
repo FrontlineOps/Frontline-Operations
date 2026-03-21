@@ -146,6 +146,9 @@ _perf set ["batchSize", _batchSize];
 
 private _replaced = 0;
 private _attempted = 0;
+private _inboundCounts = [_net] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
+private _recentDispatchCounts = [_net] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
+private _batchDispatchCounts = createHashMap;
 
 _phaseT0 = diag_tickTime;
 for "_i" from 1 to _batchSize do {
@@ -173,7 +176,7 @@ for "_i" from 1 to _batchSize do {
         continue;
     };
 
-    private _targetObj = [_net, _targetPool, _groupType, []] call FLO_fnc_logisticsNetworkPickBestTarget;
+    private _targetObj = [_net, _targetPool, _groupType, [], _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
     if (_targetObj == "") then {
         _perf set ["failNoTargetObj", (_perf get "failNoTargetObj") + 1];
         _queue pushBack _groupType;
@@ -189,13 +192,15 @@ for "_i" from 1 to _batchSize do {
         continue;
     };
 
-    _net set ["_lastReinforcementTarget", _targetObj];
-
     if (_resources call ["spendResources", [_cost, "reinforcement"]]) then {
         private _newId = [_net, _groupType, _spawnPos, _targetObj, _sourceObjId] call FLO_fnc_logisticsNetworkCreateReplacement;
         if (_newId != "") then {
             [_net, _groupType, _cost] call FLO_fnc_logisticsNetworkRecordReplacement;
+            [_net, _targetObj] call FLO_fnc_logisticsNetworkRecordTargetDispatch;
             _replaced = _replaced + 1;
+            _inboundCounts set [_targetObj, (_inboundCounts getOrDefault [_targetObj, 0]) + 1];
+            _recentDispatchCounts set [_targetObj, (_recentDispatchCounts getOrDefault [_targetObj, 0]) + 1];
+            _batchDispatchCounts set [_targetObj, (_batchDispatchCounts getOrDefault [_targetObj, 0]) + 1];
 
             ["LOGISTICS", 3, format [
                 "Created %1 reinforcement %2 -> %3 (cost: %4)",

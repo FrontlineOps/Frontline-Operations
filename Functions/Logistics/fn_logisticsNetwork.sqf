@@ -41,6 +41,11 @@ private _logisticsClass = [
     ["DISPATCH_MAX_INTERVAL", 90],
     ["DISPATCH_BATCH_MIN", 12],
     ["DISPATCH_BATCH_MAX", 64],
+    ["REINFORCEMENT_RECENT_TARGET_WINDOW", 300],
+    ["REINFORCEMENT_BATCH_TARGET_PENALTY", 2400],
+    ["REINFORCEMENT_INBOUND_TARGET_PENALTY", 1800],
+    ["REINFORCEMENT_RECENT_TARGET_PENALTY", 1400],
+    ["REINFORCEMENT_LAST_TARGET_PENALTY", 900],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
@@ -49,6 +54,7 @@ private _logisticsClass = [
     ["_lastReinforcementTarget", ""],
     ["_reinforcementTargetCycle", []],
     ["_reinforcementCycleIndex", 0],
+    ["_recentReinforcementDispatches", []],
     ["_sideContext", sideUnknown],
     ["_managedSide", east],
     ["_managedSideKey", "EAST"],
@@ -94,6 +100,14 @@ private _logisticsClass = [
         ([_self] + _this) call FLO_fnc_logisticsNetworkPickBestTarget;
     }],
 
+    ["_buildInboundObjectiveCounts", {
+        [_self] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
+    }],
+
+    ["_buildRecentDispatchCounts", {
+        [_self] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
+    }],
+
     ["_pickSpawnSourceObjective", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkPickSpawnSourceObjective;
     }],
@@ -112,6 +126,10 @@ private _logisticsClass = [
 
     ["_recordReplacement", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkRecordReplacement;
+    }],
+
+    ["_recordTargetDispatch", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkRecordTargetDispatch;
     }],
 
     ["_startMainLoop", {

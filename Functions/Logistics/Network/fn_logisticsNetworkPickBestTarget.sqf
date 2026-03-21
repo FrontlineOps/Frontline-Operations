@@ -16,7 +16,15 @@
  *   STRING - Selected objective ID or empty string
  */
 
-params ["_net", "_candidates", ["_groupType", "infantry"], ["_spawnPos", []]];
+params [
+    "_net",
+    "_candidates",
+    ["_groupType", "infantry"],
+    ["_spawnPos", []],
+    ["_inboundCounts", createHashMap],
+    ["_recentDispatchCounts", createHashMap],
+    ["_batchDispatchCounts", createHashMap]
+];
 
 if (count _candidates == 0) exitWith { "" };
 
@@ -77,37 +85,46 @@ private _anchorPos = if (_spawnPos isEqualType [] && {count _spawnPos >= 2}) the
     (FLO_Objectives get (_available select 0)) get "position"
 };
 
-private _scored = [];
+private _managedSide = _net get "_managedSide";
+private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
+private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
+private _batchPenalty = _net get "REINFORCEMENT_BATCH_TARGET_PENALTY";
+private _inboundPenalty = _net get "REINFORCEMENT_INBOUND_TARGET_PENALTY";
+private _recentPenalty = _net get "REINFORCEMENT_RECENT_TARGET_PENALTY";
+private _lastTargetPenalty = _net get "REINFORCEMENT_LAST_TARGET_PENALTY";
+
+private _bestTarget = "";
+private _bestScore = 1e12;
+private _bestDist = 1e12;
+
 {
-    private _objPos = (FLO_Objectives get _x) get "position";
-    _scored pushBack [(_objPos distance2D _anchorPos), _x];
+    private _objId = _x;
+    private _objData = FLO_Objectives get _objId;
+    private _objPos = _objData get "position";
+    private _dist = _objPos distance2D _anchorPos;
+    private _friendlyCount = _objData get _friendlyCountKey;
+    private _enemyCount = _objData get _enemyCountKey;
+    private _pressure = ((_enemyCount * 2) - _friendlyCount) max 0;
+    private _priority = _objData get "priority";
+    private _batchCount = _batchDispatchCounts getOrDefault [_objId, 0];
+    private _inboundCount = _inboundCounts getOrDefault [_objId, 0];
+    private _recentCount = _recentDispatchCounts getOrDefault [_objId, 0];
+    private _score = _dist
+        + (_batchCount * _batchPenalty)
+        + (_inboundCount * _inboundPenalty)
+        + (_recentCount * _recentPenalty)
+        - (_pressure * 450)
+        - (_priority * 120);
+
+    if ((count _available) > 1 && {_objId isEqualTo _lastTarget}) then {
+        _score = _score + _lastTargetPenalty;
+    };
+
+    if (_score < _bestScore || {_score == _bestScore && {_dist < _bestDist}}) then {
+        _bestTarget = _objId;
+        _bestScore = _score;
+        _bestDist = _dist;
+    };
 } forEach _available;
-_scored sort true;
 
-private _ordered = _scored apply { _x select 1 };
-if (count _ordered > 6) then {
-    _ordered resize 6;
-};
-
-private _cycle = _net get "_reinforcementTargetCycle";
-if ((count _cycle) != (count _ordered) || {str _cycle != str _ordered}) then {
-    _cycle = +_ordered;
-    _net set ["_reinforcementTargetCycle", _cycle];
-    _net set ["_reinforcementCycleIndex", 0];
-};
-
-if (count _cycle == 0) exitWith { "" };
-
-private _idx = _net get "_reinforcementCycleIndex";
-if (_idx >= count _cycle) then {
-    _idx = 0;
-};
-
-private _selected = _cycle select _idx;
-if ((count _cycle) > 1 && {_selected isEqualTo _lastTarget}) then {
-    _idx = (_idx + 1) mod (count _cycle);
-    _selected = _cycle select _idx;
-};
-
-_net set ["_reinforcementCycleIndex", (_idx + 1) mod (count _cycle)];
-_selected
+_bestTarget

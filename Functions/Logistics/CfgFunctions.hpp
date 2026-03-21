@@ -25,6 +25,8 @@ class LogisticsSideResources {
 class LogisticsNetwork {
     file = "Functions\Logistics\Network";
 
+    class logisticsNetworkBuildInboundObjectiveCounts {};
+    class logisticsNetworkBuildRecentDispatchCounts {};
     class logisticsNetworkCheckAndReplace {};
     class logisticsNetworkCreate {};
     class logisticsNetworkCreateReplacement {};
@@ -37,6 +39,7 @@ class LogisticsNetwork {
     class logisticsNetworkPickBestTarget {};
     class logisticsNetworkPickSpawnSourceObjective {};
     class logisticsNetworkRecordReplacement {};
+    class logisticsNetworkRecordTargetDispatch {};
     class logisticsNetworkRefreshManagedSide {};
     class logisticsNetworkSetManagedSide {};
     class logisticsNetworkStartMainLoop {};
