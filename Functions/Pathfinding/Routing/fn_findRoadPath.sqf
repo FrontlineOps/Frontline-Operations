@@ -67,6 +67,18 @@ if (_now >= FLO_PF_RequestNextPruneAt) then {
 };
 
 private _dist = _startPos distance2D _endPos;
+private _doctrine = FLO_PF_RoadDoctrine_V;
+private _doctrineName = "VEHICLE";
+if (_trails) then {
+    _doctrine = FLO_PF_RoadDoctrine_M;
+    _doctrineName = "MIXED";
+} else {
+    if (_sourceTag == "LOGI_REINF") then {
+        _doctrine = FLO_PF_RoadDoctrine_V_Logi;
+        _doctrineName = "LOGI_REINF";
+    };
+};
+
 private _cellSize = FLO_PF_RequestCellSize;
 if (_dist > 6000) then {
     _cellSize = _cellSize * 4;
@@ -87,8 +99,8 @@ private _cellKey = {
 
 private _sKey = format ["%1@%2", [_startPos, _cellSize] call _cellKey, _cellSize];
 private _eKey = format ["%1@%2", [_endPos, _cellSize] call _cellKey, _cellSize];
-private _routeKey = format ["%1>%2|%3", _sKey, _eKey, _trails];
-private _reverseRouteKey = format ["%1>%2|%3", _eKey, _sKey, _trails];
+private _routeKey = format ["%1>%2|%3|%4", _sKey, _eKey, _trails, _doctrineName];
+private _reverseRouteKey = format ["%1>%2|%3|%4", _eKey, _sKey, _trails, _doctrineName];
 
 if (_routeKey in FLO_PF_RequestCache) then {
     private _cached = FLO_PF_RequestCache get _routeKey;
@@ -157,18 +169,7 @@ private _dispatch = {
     } forEach _waiters;
 };
 
-private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos]];
-private _doctrine = FLO_PF_RoadDoctrine_V;
-private _doctrineName = "VEHICLE";
-if (_trails) then {
-    _doctrine = FLO_PF_RoadDoctrine_M;
-    _doctrineName = "MIXED";
-} else {
-    if (_sourceTag == "LOGI_REINF") then {
-        _doctrine = FLO_PF_RoadDoctrine_V_Logi;
-        _doctrineName = "LOGI_REINF";
-    };
-};
+private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos, _doctrine]];
 _search set ["Doctrine", _doctrine];
 _search set ["Callback", _dispatch];
 _search set ["CallbackArgs", [_routeKey]];
@@ -193,8 +194,29 @@ _search set ["StartNodeType", _startNode get "Type"];
 _search set ["EndNodeType", _endNode get "Type"];
 _search set ["StartNodePos", _startNodePos];
 _search set ["EndNodePos", _endNodePos];
-_search set ["StartSnapDistance", _startPos distance2D _startNodePos];
-_search set ["EndSnapDistance", _endPos distance2D _endNodePos];
+private _startSnapDistance = _startPos distance2D _startNodePos;
+private _endSnapDistance = _endPos distance2D _endNodePos;
+_search set ["StartSnapDistance", _startSnapDistance];
+_search set ["EndSnapDistance", _endSnapDistance];
+
+if (_sourceTag == "LOGI_REINF") then {
+    private _maxSnapDistance = if (_dist <= 900) then { 180 } else { 260 };
+    if (_startSnapDistance > _maxSnapDistance || {_endSnapDistance > _maxSnapDistance}) exitWith {
+        diag_log format [
+            "[FLO][PERF] Pathfinding fallback source=%1 doctrine=%2 requestDist=%3 startSnap=%4 endSnap=%5 startNode=%6(%7) endNode=%8(%9)",
+            _sourceTag,
+            _doctrineName,
+            _dist,
+            _startSnapDistance,
+            _endSnapDistance,
+            _search get "StartNodeIndex",
+            _search get "StartNodeType",
+            _search get "EndNodeIndex",
+            _search get "EndNodeType"
+        ];
+        [true, [+_endPos], [_routeKey]] call _dispatch;
+    };
+};
 
 FLO_PF_Scheduler call ["AddItem", _search];
 

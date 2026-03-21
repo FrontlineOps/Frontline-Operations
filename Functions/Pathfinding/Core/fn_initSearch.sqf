@@ -144,9 +144,21 @@ XPS_typ_AstarSearch = [
 	}],
 	["Init",compileFinal {
 		private _graph = _self get "_workingGraph";
-		private _startNode = _graph call ["GetNodeAt",[_self get "_workingStartKey"]];
+		private _allowedTypes = nil;
+		if !(isNil { _self get "Doctrine" }) then {
+			_allowedTypes = (_self get "Doctrine") get "RoadTypes";
+		};
+		private _startNode = if (isNil "_allowedTypes") then {
+			_graph call ["GetNodeAt",[_self get "_workingStartKey"]]
+		} else {
+			_graph call ["GetNodeAt",[_self get "_workingStartKey", _allowedTypes]]
+		};
 		_self set ["StartNode",_startNode];
-		_self set ["EndNode",_graph call ["GetNodeAt",[_self get "_workingEndKey"]]];
+		_self set ["EndNode", if (isNil "_allowedTypes") then {
+			_graph call ["GetNodeAt",[_self get "_workingEndKey"]]
+		} else {
+			_graph call ["GetNodeAt",[_self get "_workingEndKey", _allowedTypes]]
+		}];
 		_self set ["frontier",[[0,_startNode]]];
 		_self set ["frontierBest",createhashmap];
 		(_self get "frontierBest") set [_startNode get "Index", 0];

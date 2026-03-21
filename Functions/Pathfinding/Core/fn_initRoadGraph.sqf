@@ -199,9 +199,10 @@ XPS_PF_typ_RoadGraph = [
 		(_current get "PosASL") distance (_next get "PosASL");
 	}],
 	["GetNodeAt",compileFinal {
-		if !(params [["_pos",nil,[[]],[2,3]]]) exitWith {nil};
+		if !(params [["_pos",nil,[[]],[2,3]],["_allowedTypes",["MAIN ROAD","ROAD","TRACK","TRAIL"],[[]]]]) exitWith {nil};
 		private _cache = _self get "_nodeLookupCache";
-		private _cacheKey = format ["%1_%2", floor ((_pos select 0) / 50), floor ((_pos select 1) / 50)];
+		private _typeKey = _allowedTypes joinString "|";
+		private _cacheKey = format ["%1_%2|%3", floor ((_pos select 0) / 50), floor ((_pos select 1) / 50), _typeKey];
 		if (_cacheKey in _cache) exitWith {
 			_cache get _cacheKey;
 		};
@@ -210,21 +211,28 @@ XPS_PF_typ_RoadGraph = [
 
 		private _road = roadAt _pos;
 		if (!isNull _road) then {
-			_node = (_self get "Roads") get (str _road);
+			private _directNode = (_self get "Roads") get (str _road);
+			if (!isNil "_directNode" && {(_directNode get "Type") in _allowedTypes}) then {
+				_node = _directNode;
+			};
 		};
 
 		if (isNil "_node") then {
 			{
 				private _roads = _pos nearRoads _x;
-				if (count _roads > 0) exitWith {
-					_node = (_self get "Roads") get (str (_roads select 0));
+				private _roadIndex = _roads findIf {
+					private _roadNode = (_self get "Roads") get (str _x);
+					!isNil "_roadNode" && {(_roadNode get "Type") in _allowedTypes}
+				};
+				if (_roadIndex >= 0) exitWith {
+					_node = (_self get "Roads") get (str (_roads select _roadIndex));
 				};
 			} forEach [30, 100, 250, 500, 900, 1500, 3000];
 		};
 
 		if (isNil "_node") then {
 			{
-				private _roads = nearestTerrainObjects [_pos,["MAIN ROAD","ROAD","TRACK","TRAIL"],_x,false];
+				private _roads = nearestTerrainObjects [_pos,_allowedTypes,_x,false];
 				if (count _roads > 0) exitWith {
 					_node = (_self get "Roads") get (str (_roads select 0));
 				};
@@ -232,7 +240,7 @@ XPS_PF_typ_RoadGraph = [
 		};
 
 		if (isNil "_node") exitwith {
-			private _roads = nearestTerrainObjects [_pos, ["MAIN ROAD", "ROAD", "TRACK", "TRAIL"], worldSize, false];
+			private _roads = nearestTerrainObjects [_pos, _allowedTypes, worldSize, false];
 			private _road = _roads select 0;
 			_node = (_self get "Roads") get (str _road);
 			_cache set [_cacheKey, _node];
@@ -280,6 +288,26 @@ XPS_PF_typ_RoadGraphSearch = [
 	["#str", compileFinal {"XPS_PF_typ_RoadGraphSearch"}],
 	["#type","XPS_PF_typ_RoadGraphSearch"],
 	["#base",XPS_typ_AstarSearch],
+	["#create",compileFinal {
+		params [
+			["_graph",nil,[createhashmap]],
+			["_startKey",nil,[]],
+			["_endKey",nil,[]],
+			["_doctrine",nil,[createhashmap]],
+			["_reversePath",true,[true]]
+		];
+		_self set ["_workingGraph",_graph];
+		_self set ["_workingStartKey",_startKey];
+		_self set ["_workingEndKey",_endKey];
+		_self set ["_reverse",_reversePath];
+		if (isNil "_doctrine") then {
+			_doctrine = FLO_PF_RoadDoctrine_V;
+		};
+		_self set ["Doctrine",_doctrine];
+		_self set ["Path",[]];
+		_self set ["CallbackArgs",[]];
+		_self call ["Init"];
+	}],
 	["UseDecoratedNeighborsOnly",true],
 	["AdjustEstimate",compileFinal {
 		params ["_estimate","_fromNode","_toNode"];
@@ -443,7 +471,7 @@ if (isNil "FLO_PF_RoadGraph") then {
 FLO_PF_RoadDoctrine_V = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.85, 1, 1.3],["MAIN ROAD","ROAD","TRACK"],550,70,1.3,140,80]];
 
 // Logistics reinforcement doctrine favors throughput and coarse route output over lane-precise steering.
-FLO_PF_RoadDoctrine_V_Logi = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.8, 1, 1.35],["MAIN ROAD","ROAD","TRACK"],700,85,1.4,220,95]];
+FLO_PF_RoadDoctrine_V_Logi = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[0.8, 1, 1.35],["MAIN ROAD","ROAD"],700,85,1.4,220,95]];
 
 // Man doctrine (with trails, all roads equal)
 FLO_PF_RoadDoctrine_M = createhashmapobject [XPS_PF_typ_RoadDoctrine,[[1, 1, 1],["MAIN ROAD","ROAD","TRACK","TRAIL"],260,40,1.15,110,50]];
