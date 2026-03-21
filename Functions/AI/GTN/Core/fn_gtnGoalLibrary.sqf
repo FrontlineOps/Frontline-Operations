@@ -389,29 +389,6 @@ private _goalLibrary = createHashMapObject [[
                         ["prim_assault_coord", ["_SELECTED_CONCENTRATION"]]
                     ]]
                 ],
-                createHashMapFromArray [
-                    ["id", "artillery_interdiction"],
-                    ["score", {
-                        params ["_ws", "_params", "_planner"];
-                        private _assets = _ws call ["_getSupportAssets", []];
-                        if !(_assets get "artilleryAvailable") exitWith { -1 };
-                        
-                        private _score = 45;
-                        // Bonus for high threat level
-                        private _intel = _ws call ["_getEnemyIntel", []];
-                        private _threat = _intel getOrDefault ["threatLevel", 0];
-                        if (_threat > 5) then { _score = _score + 15 };
-                        
-                        // Penalty if friendly forces are very close to enemy (danger close)
-                        // This logic should be in the primitive selection really, but score drop helps
-                        
-                        _score
-                    }],
-                    ["subtasks", [
-                        ["prim_select_target_concentration", []],
-                        ["prim_call_artillery_coord", ["_SELECTED_CONCENTRATION"]]
-                    ]]
-                ]
             ]]
         ]]];
     }],
@@ -822,17 +799,6 @@ private _goalLibrary = createHashMapObject [[
             ["completionCheck", { true }]
         ]]];
 
-        _self call ["_registerPrimitive", [createHashMapFromArray [
-            ["id", "prim_call_artillery_coord"],
-            ["description", "Call artillery on specific coordinate"],
-            ["handler", "GTN_callArtilleryCoord"],
-            ["timeout", 120],
-            ["completionCheck", {
-                params ["_ws", "_taskData"];
-                _taskData getOrDefault ["missionFired", false]
-            }]
-        ]]];
-        
         _self call ["_registerPrimitive", [createHashMapFromArray [
             ["id", "prim_call_cas_coord"],
             ["description", "Call CAS on specific coordinate"],

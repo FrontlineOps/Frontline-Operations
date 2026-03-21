@@ -2297,31 +2297,6 @@ private _executor = createHashMapObject [[
             true
         }]];
         
-        // prim_call_artillery_coord
-        _self call ["_registerHandler", ["prim_call_artillery_coord", {
-            params ["_ctx"];
-            private _params = _ctx get "params";
-            private _targetPos = _params param [0, [0,0,0]];
-            
-            if (_targetPos isEqualTo [0,0,0]) exitWith { false };
-            
-            // 4 rounds, standard accuracy
-            private _result = FLO_GTNArtilleryManager call ["_requestFireMission", [_targetPos, 4, 100, _self get "_ownSide", ""]];
-            
-            if (_result) then {
-                ["GTN", 3, format["Artillery interdiction fired at %1", _targetPos]] call FLO_fnc_log;
-                _ctx set ["status", "SUCCESS"];
-                
-                // Mark success in primitive data
-                private _taskNode = _ctx get "taskNode";
-                private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-                _primData set ["missionFired", true];
-                _taskNode set ["primitiveData", _primData];
-            };
-            
-            _result
-        }]];
-
         // prim_call_cas_coord
         _self call ["_registerHandler", ["prim_call_cas_coord", {
             params ["_ctx"];

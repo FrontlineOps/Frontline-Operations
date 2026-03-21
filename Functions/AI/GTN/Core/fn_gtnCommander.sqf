@@ -46,6 +46,7 @@ private _planner = [_goalLibrary, _worldState] call FLO_fnc_gtnPlanner;
 private _executor = [_commander, _sideContext] call FLO_fnc_gtnExecutor;
 private _monitor = [_planner, _worldState] call FLO_fnc_gtnMonitor;
 private _capabilityAnalyzer = call FLO_fnc_gtnCapabilityAnalyzer;
+private _artilleryManager = call FLO_fnc_gtnArtilleryManager;
 
 private _attackTrackCount = FLO_GTN_AttackLaneHandle get "value";
 private _defenseCoverage = FLO_GTN_DefenseCoverageHandle get "value";
@@ -99,6 +100,7 @@ private _gtnCommander = createHashMapObject [[
     ["_executor", _executor],
     ["_monitor", _monitor],
     ["_capabilityAnalyzer", _capabilityAnalyzer],
+    ["_artilleryManager", _artilleryManager],
     
     // State (using 0/1 for booleans to avoid parsing issues)
     ["_isRunning", 0],
@@ -1943,22 +1945,6 @@ private _gtnCommander = createHashMapObject [[
 
         ["GTN", 3, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
         true
-    }],
-
-    // Request artillery fire using the artillery asset manager
-    ["_requestArtillery", {
-        params ["_pos", "_missionType", "_rounds", ["_objectiveId", ""]];
-
-        private _manager = call FLO_fnc_gtnArtilleryManager;
-        private _success = _manager call ["_requestFireMission", [_pos, _rounds, -1, _self get "_ownSide", _objectiveId]];
-
-        if (_success) then {
-            ["GTN", 3, format["Artillery %1 mission fired at %2 (%3 rounds)", _missionType, _pos, _rounds]] call FLO_fnc_log;
-        } else {
-            ["GTN", 2, format["Artillery request failed - no available assets"]] call FLO_fnc_log;
-        };
-
-        _success
     }],
 
     // Request CAS using the GTN air support system
