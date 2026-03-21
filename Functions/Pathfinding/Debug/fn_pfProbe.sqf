@@ -24,6 +24,8 @@ private _activeStartNodeIndex = if (isNil "_currentItem") then { "" } else { _cu
 private _activeEndNodeIndex = if (isNil "_currentItem") then { "" } else { _currentItem get "EndNodeIndex" };
 private _activeStartNodeType = if (isNil "_currentItem") then { "" } else { _currentItem get "StartNodeType" };
 private _activeEndNodeType = if (isNil "_currentItem") then { "" } else { _currentItem get "EndNodeType" };
+private _activeStartComponentId = if (isNil "_currentItem") then { -1 } else { _currentItem getOrDefault ["StartComponentId", -1] };
+private _activeEndComponentId = if (isNil "_currentItem") then { -1 } else { _currentItem getOrDefault ["EndComponentId", -1] };
 private _activeRequestAgeMs = if (isNil "_currentItem") then { 0 } else { (diag_tickTime - (_currentItem get "SubmittedAt")) * 1000 };
 
 [
@@ -65,6 +67,8 @@ private _activeRequestAgeMs = if (isNil "_currentItem") then { 0 } else { (diag_
     ["activeEndNodeIndex", _activeEndNodeIndex],
     ["activeStartNodeType", _activeStartNodeType],
     ["activeEndNodeType", _activeEndNodeType],
+    ["activeStartComponentId", _activeStartComponentId],
+    ["activeEndComponentId", _activeEndComponentId],
     ["graphBuildMs", _perf get "graphBuildMs"],
     ["roadCount", _perf get "roadCount"],
     ["cacheHits", _perf get "cacheHits"]

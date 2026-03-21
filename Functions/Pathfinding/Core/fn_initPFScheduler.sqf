@@ -100,7 +100,10 @@ XPS_typ_JobScheduler = [
     ["finalizeCurrent", compileFinal {
         private _item = _self get "CurrentItem";
         private _status = _item get "Status";
-        private _resolvedPath = _item call ["SmoothPath"];
+        private _resolvedPath = _item getOrDefault ["ForcedPath", []];
+        if (count _resolvedPath isEqualTo 0) then {
+            _resolvedPath = _item call ["SmoothPath"];
+        };
         private _resolvedWaypointCount = count _resolvedPath;
         private _resolvedNodeSteps = _item get "NodeSteps";
         private _resolvedMs = if (isNil { _item get "SubmittedAt" }) then {
@@ -229,6 +232,26 @@ XPS_typ_JobScheduler = [
                     _item get "RequestEndPos"
                 ];
                 _item set ["RunawayLogNextNodeSteps", _nextRunawayLogAt + (_perf get "runawayNodeStepsLogInterval")];
+            };
+
+            private _sourceTag = _item get "SourceTag";
+            if (_sourceTag isEqualTo "LOGI_REINF" && {_nodeSteps >= (_perf get "logiReinfMaxNodeSteps")}) exitWith {
+                _item set ["ForcedPath", [+(_item get "RequestEndPos")]];
+                _item set ["Status", "PARTIAL"];
+                diag_log format [
+                    "[FLO][PERF] Pathfinding fallback source=%1 doctrine=%2 nodes=%3 requestDist=%4 startSnap=%5 endSnap=%6 startNode=%7(%8) endNode=%9(%10)",
+                    _sourceTag,
+                    _item get "DoctrineName",
+                    _nodeSteps,
+                    _item get "RequestDistance",
+                    _item get "StartSnapDistance",
+                    _item get "EndSnapDistance",
+                    _item get "StartNodeIndex",
+                    _item get "StartNodeType",
+                    _item get "EndNodeIndex",
+                    _item get "EndNodeType"
+                ];
+                _self call ["finalizeCurrent"];
             };
 
             private _done = _item call ["ProcessNextNode"];

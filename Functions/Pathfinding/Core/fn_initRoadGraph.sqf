@@ -103,6 +103,8 @@ XPS_PF_typ_RoadGraph = [
 		_self set ["_graphMarkers",[]];
 		_self set ["_nodeLookupCache", createHashMap];
 		_self set ["_searchEdgeCache", createHashMap];
+		_self set ["_componentCacheByMode", createHashMap];
+		_self set ["_componentCountByMode", createHashMap];
 		_self call ["buildGraph"];
 	}],
 	["Roads",createhashmap],
@@ -192,6 +194,58 @@ XPS_PF_typ_RoadGraph = [
 
 		_cache set [_cacheKey, _edges];
 		_edges;
+	}],
+	["BuildComponentCache",compileFinal {
+		params [["_allowedTypes",["MAIN ROAD","ROAD","TRACK","TRAIL"],[[]]]];
+
+		private _modeKey = _allowedTypes joinString "|";
+		private _componentCacheByMode = _self get "_componentCacheByMode";
+		if (_modeKey in _componentCacheByMode) exitWith {
+			_componentCacheByMode get _modeKey;
+		};
+
+		private _componentMap = createHashMap;
+		private _componentCount = 0;
+		private _roads = _self get "Roads";
+
+		{
+			private _node = _x;
+			if !((_node get "Type") in _allowedTypes) then { continue };
+
+			private _nodeIndex = _node get "Index";
+			if (_nodeIndex in _componentMap) then { continue };
+
+			private _queue = [_node];
+			_componentMap set [_nodeIndex, _componentCount];
+
+			while {count _queue > 0} do {
+				private _current = _queue deleteAt ((count _queue) - 1);
+				{
+					private _neighborNode = _roads get (str _x);
+					if (isNil "_neighborNode") then { continue };
+					if !((_neighborNode get "Type") in _allowedTypes) then { continue };
+
+					private _neighborIndex = _neighborNode get "Index";
+					if (_neighborIndex in _componentMap) then { continue };
+
+					_componentMap set [_neighborIndex, _componentCount];
+					_queue pushBack _neighborNode;
+				} forEach (values (_current get "ConnectedTo"));
+			};
+
+			_componentCount = _componentCount + 1;
+		} forEach (values _roads);
+
+		_componentCacheByMode set [_modeKey, _componentMap];
+		(_self get "_componentCountByMode") set [_modeKey, _componentCount];
+		_componentMap;
+	}],
+	["GetNodeComponentId",compileFinal {
+		params [["_node",nil,[createhashmap]],["_allowedTypes",["MAIN ROAD","ROAD","TRACK","TRAIL"],[[]]]];
+		if (isNil "_node") exitWith { -1 };
+
+		private _componentMap = _self call ["BuildComponentCache", [_allowedTypes]];
+		_componentMap getOrDefault [_node get "Index", -1];
 	}],
 	["GetCost",compileFinal {
 		params [["_current",nil,[createhashmap]],["_next",nil,[createhashmap]]];

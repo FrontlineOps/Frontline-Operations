@@ -187,6 +187,9 @@ private _startNode = _search get "StartNode";
 private _endNode = _search get "EndNode";
 private _startNodePos = +(_startNode get "PosASL");
 private _endNodePos = +(_endNode get "PosASL");
+private _allowedTypes = _doctrine get "RoadTypes";
+private _startComponentId = FLO_PF_RoadGraph call ["GetNodeComponentId", [_startNode, _allowedTypes]];
+private _endComponentId = FLO_PF_RoadGraph call ["GetNodeComponentId", [_endNode, _allowedTypes]];
 
 _search set ["StartNodeIndex", _startNode get "Index"];
 _search set ["EndNodeIndex", _endNode get "Index"];
@@ -198,6 +201,26 @@ private _startSnapDistance = _startPos distance2D _startNodePos;
 private _endSnapDistance = _endPos distance2D _endNodePos;
 _search set ["StartSnapDistance", _startSnapDistance];
 _search set ["EndSnapDistance", _endSnapDistance];
+_search set ["StartComponentId", _startComponentId];
+_search set ["EndComponentId", _endComponentId];
+
+if (_startComponentId != _endComponentId) exitWith {
+    diag_log format [
+        "[FLO][PERF] Pathfinding fallback source=%1 doctrine=%2 requestDist=%3 reason=DISCONNECTED startNode=%4(%5) endNode=%6(%7) startComp=%8 endComp=%9 startSnap=%10 endSnap=%11",
+        _sourceTag,
+        _doctrineName,
+        _dist,
+        _search get "StartNodeIndex",
+        _search get "StartNodeType",
+        _search get "EndNodeIndex",
+        _search get "EndNodeType",
+        _startComponentId,
+        _endComponentId,
+        _startSnapDistance,
+        _endSnapDistance
+    ];
+    [true, [+_endPos], [_routeKey]] call _dispatch;
+};
 
 if (_sourceTag == "LOGI_REINF") then {
     private _maxSnapDistance = if (_dist <= 900) then { 180 } else { 260 };
