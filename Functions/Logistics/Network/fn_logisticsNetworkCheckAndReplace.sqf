@@ -22,6 +22,14 @@ private _perf = createHashMapFromArray [
     ["batchSize", 0],
     ["attempted", 0],
     ["created", 0],
+    ["failNoTargetPool", 0],
+    ["failCantAfford", 0],
+    ["failNoTargetObj", 0],
+    ["failNoSpawnPos", 0],
+    ["failSpendResources", 0],
+    ["failCreateReplacement", 0],
+    ["resourcesBefore", 0],
+    ["resourcesAfter", 0],
     ["refreshMs", 0],
     ["compositionMs", 0],
     ["reconcileMs", 0],
@@ -106,6 +114,7 @@ if (time < _nextDispatchAt) exitWith {
 
 _phaseT0 = diag_tickTime;
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
+_perf set ["resourcesBefore", _resources get "_resources"];
 private _targets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
 
 if (count _targets == 0) then {
@@ -153,17 +162,20 @@ for "_i" from 1 to _batchSize do {
     };
 
     if (count _targetPool == 0) then {
+        _perf set ["failNoTargetPool", (_perf get "failNoTargetPool") + 1];
         _queue pushBack _groupType;
         continue;
     };
 
     if !(_resources call ["canAfford", [_cost, "reinforcement"]]) then {
+        _perf set ["failCantAfford", (_perf get "failCantAfford") + 1];
         _queue pushBack _groupType;
         continue;
     };
 
     private _targetObj = [_net, _targetPool, _groupType, []] call FLO_fnc_logisticsNetworkPickBestTarget;
     if (_targetObj == "") then {
+        _perf set ["failNoTargetObj", (_perf get "failNoTargetObj") + 1];
         _queue pushBack _groupType;
         continue;
     };
@@ -172,6 +184,7 @@ for "_i" from 1 to _batchSize do {
     private _spawnPos = _spawnData select 0;
     private _sourceObjId = _spawnData select 1;
     if (_spawnPos isEqualTo [0, 0, 0]) then {
+        _perf set ["failNoSpawnPos", (_perf get "failNoSpawnPos") + 1];
         _queue pushBack _groupType;
         continue;
     };
@@ -191,12 +204,18 @@ for "_i" from 1 to _batchSize do {
                 _targetObj,
                 _cost
             ]] call FLO_fnc_log;
+        } else {
+            _perf set ["failCreateReplacement", (_perf get "failCreateReplacement") + 1];
         };
+    } else {
+        _perf set ["failSpendResources", (_perf get "failSpendResources") + 1];
+        _queue pushBack _groupType;
     };
 };
 _perf set ["dispatchMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["attempted", _attempted];
 _perf set ["created", _replaced];
+_perf set ["resourcesAfter", _resources get "_resources"];
 
 _net set ["_reinforcementQueue", _queue];
 

@@ -67,7 +67,7 @@ _net set ["_loopStarted", true];
                                 _perf = createHashMap;
                             };
                             diag_log format [
-                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reconcile=%6 targets=%7 dispatch=%8 | needed=%9 batch=%10 attempted=%11 created=%12 status=%13",
+                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reconcile=%6 targets=%7 dispatch=%8 | needed=%9 batch=%10 attempted=%11 created=%12 status=%13 | failPool=%14 failFunds=%15 failTarget=%16 failSpawn=%17 failSpend=%18 failCreate=%19 | res=%20->%21",
                                 _net get "_managedSideKey",
                                 count (_net get "_reinforcementQueue"),
                                 _dt * 1000,
@@ -80,7 +80,15 @@ _net set ["_loopStarted", true];
                                 _perf getOrDefault ["batchSize", 0],
                                 _perf getOrDefault ["attempted", 0],
                                 _perf getOrDefault ["created", 0],
-                                _perf getOrDefault ["status", "UNKNOWN"]
+                                _perf getOrDefault ["status", "UNKNOWN"],
+                                _perf getOrDefault ["failNoTargetPool", 0],
+                                _perf getOrDefault ["failCantAfford", 0],
+                                _perf getOrDefault ["failNoTargetObj", 0],
+                                _perf getOrDefault ["failNoSpawnPos", 0],
+                                _perf getOrDefault ["failSpendResources", 0],
+                                _perf getOrDefault ["failCreateReplacement", 0],
+                                _perf getOrDefault ["resourcesBefore", 0],
+                                _perf getOrDefault ["resourcesAfter", 0]
                             ];
                         };
                     };

@@ -30,21 +30,21 @@ private _sideResourceClass = [
     ["#type", "SideResources"],
 
     ["RESOURCE_VALUES", createHashMapFromArray [
-        ["capital", 14],
-        ["city", 9],
-        ["marine", 8],
-        ["local", 6],
-        ["village", 3],
-        ["cluster", 1]
+        ["capital", 28],
+        ["city", 18],
+        ["marine", 16],
+        ["local", 12],
+        ["village", 6],
+        ["cluster", 2]
     ]],
 
     ["STARTING_VALUES", createHashMapFromArray [
-        ["capital", 75],
-        ["city", 45],
-        ["marine", 38],
-        ["local", 28],
-        ["village", 14],
-        ["cluster", 6]
+        ["capital", 131],
+        ["city", 79],
+        ["marine", 67],
+        ["local", 49],
+        ["village", 25],
+        ["cluster", 11]
     ]],
 
     ["CONTEST_MODIFIERS", createHashMapFromArray [
@@ -64,7 +64,7 @@ private _sideResourceClass = [
         ["transport", [0.5, 15, 0.02]]
     ]],
 
-    ["UPDATE_INTERVAL", 300],
+    ["UPDATE_INTERVAL", 180],
 
     ["_side", east],
     ["_sideKey", "EAST"],
