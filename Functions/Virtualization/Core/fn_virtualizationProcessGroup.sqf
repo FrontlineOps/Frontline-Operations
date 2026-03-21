@@ -30,6 +30,7 @@ private _position = _groupData get "position";
 private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
 private _realGroup = _groupData get "realGroup";
+private _tracksAssets = [_groupType] call FLO_fnc_virtualizationUsesAssetStrength;
 private _onMission = _groupData get "onMission";
 private _inCombat = _groupData get "inCombat";
 private _forceVirtual = _groupData get "forceVirtual";
@@ -301,7 +302,14 @@ if (_isActive && !isNull _realGroup) then {
     // Check for eliminated group
     private _lastChange = _groupData getOrDefault ["lastStateChangeTime", 0];
     if (_now - _lastChange > 5) then {
-        if ({alive _x} count units _realGroup == 0) then {
+        private _eliminated = false;
+        if (_tracksAssets) then {
+            _eliminated = count ([_groupData, _realGroup] call FLO_fnc_virtualizationGetRealAssetVehicles) == 0;
+        } else {
+            _eliminated = ({alive _x} count units _realGroup) == 0;
+        };
+
+        if (_eliminated) then {
             ["VIRTUALIZATION", 3, format["Group %1 eliminated - removing", _groupId]] call FLO_fnc_log;
             ["cleanup", _groupId] call FLO_fnc_virtualizationDebugManager;
             [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");

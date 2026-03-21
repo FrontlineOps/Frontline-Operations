@@ -182,6 +182,8 @@ class FLO {
         class getRoadParkingPos       {};
         class getSafeLandPos          {};
         class getSafeUnvirtualizePos  {};
+        class virtualizationGetRealAssetVehicles {};
+        class virtualizationUsesAssetStrength {};
         class validateGroupPosition   {};
         class setSide                 {};
     };

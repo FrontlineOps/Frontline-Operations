@@ -119,52 +119,12 @@ _groupData set ["comp", _comp];
 // --- SYNC VIRTUAL STRENGTH FROM REAL BATTLE OUTCOME ---
 private _groupType = _groupData get "groupType";
 private _aliveUnitCount = { alive _x } count units _realGroup;
-
-// Track surviving vehicle assets from alive crew/operators.
-// assignedVehicle catches dismounted crew that still own a live vehicle.
-private _assetVehicles = [];
-{
-    if (!alive _x) then { continue };
-
-    private _veh = vehicle _x;
-    if (_veh == _x) then {
-        _veh = assignedVehicle _x;
-    };
-
-    if (!isNull _veh && {_veh != _x} && {alive _veh}) then {
-        _assetVehicles pushBackUnique _veh;
-    };
-} forEach units _realGroup;
-
-private _syncedCount = switch (_groupType) do {
-    case "motorized";
-    case "mechanized";
-    case "armor";
-    case "helicopter";
-    case "jet";
-    case "air";
-    case "artillery";
-    case "mobile_aa";
-    case "civilianVehicle";
-    case "civ_car": {
-        count _assetVehicles
-    };
-
-    case "static_aa": {
-        private _side = _groupData get "side";
-        private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
-        private _catalog = FLO_FactionCatalog get _sideKey;
-        private _radarTypes = _catalog get "radar";
-
-        {
-            private _vehType = typeOf _x;
-            !(_vehType in _radarTypes)
-        } count _assetVehicles
-    };
-
-    default {
-        _aliveUnitCount
-    };
+private _tracksAssets = [_groupType] call FLO_fnc_virtualizationUsesAssetStrength;
+private _assetVehicles = [_groupData, _realGroup] call FLO_fnc_virtualizationGetRealAssetVehicles;
+private _syncedCount = if (_tracksAssets) then {
+    count _assetVehicles
+} else {
+    _aliveUnitCount
 };
 
 _groupData set ["unitCount", _syncedCount];
@@ -173,24 +133,10 @@ _groupData set ["unitCount", _syncedCount];
 // Keep composition aligned with surviving real assets/units so next activation
 // recreates what actually survived.
 private _aliveUnits = units _realGroup select { alive _x };
-private _syncedComp = switch (_groupType) do {
-    case "motorized";
-    case "mechanized";
-    case "armor";
-    case "helicopter";
-    case "jet";
-    case "air";
-    case "artillery";
-    case "mobile_aa";
-    case "static_aa";
-    case "civilianVehicle";
-    case "civ_car": {
-        _assetVehicles apply { typeOf _x }
-    };
-
-    default {
-        _aliveUnits apply { typeOf _x }
-    };
+private _syncedComp = if (_tracksAssets) then {
+    _assetVehicles apply { typeOf _x }
+} else {
+    _aliveUnits apply { typeOf _x }
 };
 
 _groupData set ["comp", _syncedComp];
@@ -228,6 +174,12 @@ private _vehiclesToDelete = [];
 } forEach units _realGroup;
 
 deleteGroup _realGroup;
+
+if (_tracksAssets && {_syncedCount <= 0}) exitWith {
+    ["VIRTUALIZATION", 3, format["Deactivated vehicle-backed group %1 lost all %2 assets - removing", _groupId, _groupType]] call FLO_fnc_log;
+    [FLO_virtualGroups, _groupId] call (FLO_virtualGroups get "_removeGroup");
+    true
+};
 
 // Update virtualization state
 _groupData set ["realGroup", grpNull];
