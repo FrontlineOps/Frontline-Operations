@@ -204,6 +204,8 @@ _search set ["EndSnapDistance", _endSnapDistance];
 _search set ["StartComponentId", _startComponentId];
 _search set ["EndComponentId", _endComponentId];
 
+// Confirmed issue with how logistics is picking targets
+// FUCKING FIX ME!!!!
 if (_startComponentId != _endComponentId) exitWith {
     diag_log format [
         "[FLO][PERF] Pathfinding fallback source=%1 doctrine=%2 requestDist=%3 reason=DISCONNECTED startNode=%4(%5) endNode=%6(%7) startComp=%8 endComp=%9 startSnap=%10 endSnap=%11",
