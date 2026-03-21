@@ -347,8 +347,8 @@ XPS_PF_typ_RoadGraphSearch = [
 			["_graph",nil,[createhashmap]],
 			["_startKey",nil,[]],
 			["_endKey",nil,[]],
-			["_doctrine",nil,[createhashmap]],
-			["_reversePath",true,[true]]
+			["_reversePath",true,[true]],
+			["_doctrine",nil,[createhashmap]]
 		];
 		_self set ["_workingGraph",_graph];
 		_self set ["_workingStartKey",_startKey];

@@ -169,7 +169,7 @@ private _dispatch = {
     } forEach _waiters;
 };
 
-private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos, _doctrine]];
+private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos, true, _doctrine]];
 _search set ["Doctrine", _doctrine];
 _search set ["Callback", _dispatch];
 _search set ["CallbackArgs", [_routeKey]];
