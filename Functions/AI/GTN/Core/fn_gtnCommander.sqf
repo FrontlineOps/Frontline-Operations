@@ -126,12 +126,13 @@ private _gtnCommander = createHashMapObject [[
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
-        ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of friendly frontage links
+        ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of direct friendly frontage links
+        ["attackGroupsPerReserveObjective", 2], // Rear connected friendly objectives raise attack cap, but less than direct frontage links
         ["attackMinGroupCap", 8], // Never commit less than a meaningful assault package to one objective
         ["attackMaxGroupCap", 18], // Hard cap to stop theater-wide dogpiles on one objective
         ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
-        ["attackReserveGraphDepth", 2], // Attack reserve pulls follow friendly objective graph rings instead of theater-wide meter gates
+        ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
         ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
         ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
         ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
@@ -1237,11 +1238,7 @@ private _gtnCommander = createHashMapObject [[
             };
             private _attackCap = _attackCapByObjective getOrDefault [_objId, -1];
             if (_attackCap < 0) then {
-                private _frontLinks = count ((_objectives get _objId) get "linkedObjectives" select {
-                    private _linkedObj = _allObjectives get _x;
-                    !isNil "_linkedObj" && {(_linkedObj get "owner") == _ownSide}
-                });
-                _attackCap = (((_frontLinks max 1) * (_config get "attackGroupsPerFrontLink")) max (_config get "attackMinGroupCap")) min (_config get "attackMaxGroupCap");
+                _attackCap = _self call ["_getAttackCapForObjective", [_objId]];
                 _attackCapByObjective set [_objId, _attackCap];
             };
             private _committed = _reserved + _activeAttackers;
@@ -1567,9 +1564,13 @@ private _gtnCommander = createHashMapObject [[
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { 0 };
 
-        private _frontLinks = _self call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
+        private _sourceObjectives = _self call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
         private _config = _self get "_config";
-        private _cap = ((count _frontLinks) max 1) * (_config get "attackGroupsPerFrontLink");
+        private _reserveBands = [_self, _sourceObjectives, (_config get "attackReserveGraphDepth")] call FLO_fnc_gtnBuildObjectiveReserveBands;
+        private _sourceCount = count _sourceObjectives;
+        private _reserveObjectiveCount = ((count (keys _reserveBands)) - _sourceCount) max 0;
+        private _cap = (_sourceCount * (_config get "attackGroupsPerFrontLink"))
+            + (_reserveObjectiveCount * (_config get "attackGroupsPerReserveObjective"));
 
         _cap = (_cap max (_config get "attackMinGroupCap")) min (_config get "attackMaxGroupCap");
         _cap
