@@ -2071,17 +2071,13 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
     }],
 
     // Get air asset status across all air groups
-    // Returns HashMap with CAS, SEAD, bomber availability and ordnance status
+    // Returns HashMap with CAS/helo availability and ordnance status
     ["_getAirAssetStatus", {
         params [["_side", east]];
 
         private _result = createHashMapFromArray [
             ["casTotal", 0],
             ["casAvailable", 0],
-            ["seadTotal", 0],
-            ["seadAvailable", 0],
-            ["bomberTotal", 0],
-            ["bomberAvailable", 0],
             ["heloTotal", 0],
             ["heloAvailable", 0],
             ["totalOrdnance", 0],  // Weapons load estimate
@@ -2116,11 +2112,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
             // Categorize and count
             private _typeKey = switch (_gType) do {
-                case "cas": { "cas" };
-                case "sead": { "sead" };
-                case "bomber": { "bomber" };
                 case "helicopter": { "helo" };
-                default { "cas" };  // Generic air = CAS
+                default { "cas" };  // Generic or specialized strike air = CAS
             };
 
             _result set [_typeKey + "Total", (_result get (_typeKey + "Total")) + 1];

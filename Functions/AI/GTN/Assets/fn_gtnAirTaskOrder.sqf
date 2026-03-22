@@ -7,9 +7,8 @@
     available the task is skipped.
 
     Mission Types and Durations:
-    - CAS/BOMB/LASER: 5 minutes (combat missions, engage and leave)
+    - CAS: 5 minutes (combat missions, engage and leave)
     - CAP: 10 minutes (patrol missions, sustained presence)
-    - SAD: 8 minutes (search and destroy, extended engagement)
 
     Returns:
     HashMap - ATO object with methods:
@@ -28,10 +27,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
             params ["_missionType"];
             switch (toUpper _missionType) do {
                 case "CAP": { 600 };      // 10 minutes for patrol
-                case "SAD": { 480 };      // 8 minutes for search & destroy
                 case "CAS": { 300 };      // 5 minutes for close air support
-                case "BOMB": { 300 };     // 5 minutes for bombing runs
-                case "LASER": { 300 };    // 5 minutes for precision strikes
                 default { 300 };          // 5 minutes default
             };
         }],
@@ -147,7 +143,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                             private _cycleWp = _grp addWaypoint [_pos, 100];
                             _cycleWp setWaypointType "CYCLE";
                         } else {
-                            // CAS/SAD: Single seek and destroy waypoint on target
+                            // CAS: Single seek and destroy waypoint on target
                             private _wp = _grp addWaypoint [_pos, 100];
                             _wp setWaypointType "SAD";
                             _wp setWaypointBehaviour "COMBAT";

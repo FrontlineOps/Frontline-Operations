@@ -115,6 +115,8 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
     ["_attackObjectiveReservations", createHashMap],
+    ["_frontlineCAPLocks", createHashMap],
+    ["_frontlineCASLocks", createHashMap],
     
     // Configuration
     ["_config", createHashMapFromArray [
@@ -136,6 +138,13 @@ private _gtnCommander = createHashMapObject [[
         ["attackLocalReserveSpacingMultiplier", 1.5], // Sparse fronts can widen local reserve pulls based on source-objective spacing
         ["attackMaxPullSpacingMultiplier", 2.5], // Sparse fronts can widen maximum attack pulls beyond the dense-map floor
         ["attackDynamicPullCapMeters", 9000], // Hard stop so sparse-map scaling does not drag attack groups across the theater
+        ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
+        ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
+        ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
+        ["frontlineCAPObjectiveLockSeconds", 720], // CAP missions loiter for a while; keep sectors locked longer than CAS
+        ["frontlineCASMinAttackers", 4], // Do not spend CAS on token attacks with no meaningful committed assault package
+        ["frontlineCASMinScore", 80], // Prevent trivial objectives from consuming air support
+        ["frontlineCASObjectiveLockSeconds", 420], // Cooldown per objective so repeated cycles do not spam CAS on the same target
         ["defenseLocalReserveMeters", 2000], // Prefer defenders already tied to the threatened objective or adjacent sectors
         ["defenseMaxPullDistanceMeters", 3500], // Keep defense pulls local unless no better option exists
         ["defenseLocalReserveSpacingMultiplier", 1.25], // Threatened sectors can widen local reserve pulls based on nearby objective spacing
@@ -169,6 +178,8 @@ private _gtnCommander = createHashMapObject [[
             ["attackAssignments", 0],
             ["allocateTracks", 0],
             ["executeTracks", 0],
+            ["frontlineCAP", 0],
+            ["frontlineCAS", 0],
             ["defenseLeases", 0],
             ["staticAA", 0],
             ["forcePreservation", 0]
@@ -224,6 +235,8 @@ private _gtnCommander = createHashMapObject [[
             ["attackAssignments", 0],
             ["allocateTracks", 0],
             ["executeTracks", 0],
+            ["frontlineCAP", 0],
+            ["frontlineCAS", 0],
             ["defenseLeases", 0],
             ["staticAA", 0],
             ["forcePreservation", 0]
@@ -275,6 +288,16 @@ private _gtnCommander = createHashMapObject [[
         private _executeMetrics = _self call ["_executeAllTracks", []];
         _phaseMs set ["executeTracks", (diag_tickTime - _tPhase) * 1000];
 
+        // Request one opportunistic CAP mission for the most threatened friendly frontline sector.
+        _tPhase = diag_tickTime;
+        private _frontlineCAPMetrics = [_self] call FLO_fnc_gtnRequestFrontlineCAP;
+        _phaseMs set ["frontlineCAP", (diag_tickTime - _tPhase) * 1000];
+
+        // Request one opportunistic CAS mission for the strongest active frontline attack.
+        _tPhase = diag_tickTime;
+        private _frontlineCASMetrics = [_self] call FLO_fnc_gtnRequestFrontlineCAS;
+        _phaseMs set ["frontlineCAS", (diag_tickTime - _tPhase) * 1000];
+
         // Release DEFEND-tasked groups that sat idle too long in low-pressure sectors.
         _tPhase = diag_tickTime;
         private _leaseMetrics = _self call ["_manageDefenseLeases", []];
@@ -307,6 +330,8 @@ private _gtnCommander = createHashMapObject [[
             ["attackAssignments", _attackAssignmentMetrics],
             ["allocation", _allocationMetrics],
             ["execute", _executeMetrics],
+            ["frontlineCAP", _frontlineCAPMetrics],
+            ["frontlineCAS", _frontlineCASMetrics],
             ["defenseLeases", _leaseMetrics],
             ["staticAA", _staticAAMetrics],
             ["forcePreservation", _forcePreservationMetrics]
@@ -322,7 +347,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 execute=%13 defense=%14 staticAA=%15 preserve=%16",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 execute=%13 cap=%14 cas=%15 defense=%16 staticAA=%17 preserve=%18",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -336,6 +361,8 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "attackAssignments",
                 _phaseMs get "allocateTracks",
                 _phaseMs get "executeTracks",
+                _phaseMs get "frontlineCAP",
+                _phaseMs get "frontlineCAS",
                 _phaseMs get "defenseLeases",
                 _phaseMs get "staticAA",
                 _phaseMs get "forcePreservation"
@@ -411,6 +438,31 @@ private _gtnCommander = createHashMapObject [[
                 _forcePreservationMetrics get "replenishTicks",
                 _forcePreservationMetrics get "returnedToDuty",
                 _forcePreservationMetrics get "vehicleRespawns"
+            ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 frontlineCAP | asset=%2 contacts=%3 candidates=%4 eligible=%5 locked=%6 requested=%7 objective=%8 score=%9",
+                _self get "_sideKey",
+                _frontlineCAPMetrics get "assetAvailable",
+                _frontlineCAPMetrics get "airContactCount",
+                _frontlineCAPMetrics get "candidateCount",
+                _frontlineCAPMetrics get "eligibleCount",
+                _frontlineCAPMetrics get "lockedCount",
+                _frontlineCAPMetrics get "requestedCount",
+                _frontlineCAPMetrics get "selectedObjective",
+                _frontlineCAPMetrics get "selectedScore"
+            ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 frontlineCAS | asset=%2 candidates=%3 eligible=%4 locked=%5 requested=%6 objective=%7 score=%8",
+                _self get "_sideKey",
+                _frontlineCASMetrics get "assetAvailable",
+                _frontlineCASMetrics get "candidateCount",
+                _frontlineCASMetrics get "eligibleCount",
+                _frontlineCASMetrics get "lockedCount",
+                _frontlineCASMetrics get "requestedCount",
+                _frontlineCASMetrics get "selectedObjective",
+                _frontlineCASMetrics get "selectedScore"
             ];
         };
         
@@ -2017,26 +2069,37 @@ private _gtnCommander = createHashMapObject [[
         true
     }],
 
-    // Request CAS using the GTN air support system
-    ["_requestCAS", {
+    // Request an air mission using the GTN air support system.
+    ["_requestAirMission", {
         params ["_pos", ["_missionType", "CAS"]];
         private _ownSide = _self get "_ownSide";
 
-        // Use the Air Tasking Order system
         private _ato = call FLO_fnc_gtnAirTaskOrder;
-        private _altitude = if (_missionType in ["BOMB", "LASER"]) then { 300 } else { 150 };
+        private _altitude = 150;
 
         _ato call ["_addTask", [_pos, _missionType, "", _altitude, _ownSide]];
         private _assignedCount = _ato call ["_processTasks", []];
         private _success = _assignedCount > 0;
 
         if (_success) then {
-            ["GTN", 3, format["CAS mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+            ["GTN", 3, format["Air mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
         } else {
-            ["GTN", 2, format["CAS request failed - no available air assets for %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+            ["GTN", 2, format["Air mission request failed - no available air assets for %1 at %2", _missionType, _pos]] call FLO_fnc_log;
         };
 
         _success
+    }],
+
+    // Request CAS using the GTN air support system
+    ["_requestCAS", {
+        params ["_pos", ["_missionType", "CAS"]];
+        _self call ["_requestAirMission", [_pos, _missionType]]
+    }],
+
+    // Request CAP using the GTN air support system
+    ["_requestCAP", {
+        params ["_pos"];
+        _self call ["_requestAirMission", [_pos, "CAP"]]
     }],
 
     // Check if groups have arrived at a position (within threshold)

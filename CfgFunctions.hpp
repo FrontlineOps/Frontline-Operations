@@ -27,9 +27,6 @@ class FLO {
     class GTNCore {
         file = "Functions\AI\GTN\Core";
 
-        class gtnAllocateFrontlineAttacks {};
-        class gtnAllocateFrontlineDefense {};
-        class gtnGetObjectiveReserveDistances {};
         class gtnSideContext        {};
         class gtnWorldState         {};
         class gtnGoalLibrary        {};
@@ -39,6 +36,21 @@ class FLO {
         class gtnCommander          {};
         class gtnCapabilityAnalyzer {};
         class gtnReleaseCompletedAttackAssignments {};
+    };
+
+    class GTNCoreActions {
+        file = "Functions\AI\GTN\Core\Actions";
+
+        class gtnAllocateFrontlineAttacks {};
+        class gtnAllocateFrontlineDefense {};
+        class gtnRequestFrontlineCAP {};
+        class gtnRequestFrontlineCAS {};
+    };
+
+    class GTNCoreLogic {
+        file = "Functions\AI\GTN\Core\Logic";
+
+        class gtnGetObjectiveReserveDistances {};
     };
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
