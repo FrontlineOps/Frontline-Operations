@@ -11,7 +11,9 @@
  *   0: Logistics network object <HASHMAP>
  *   1: Candidate objective IDs <ARRAY>
  *   2: Group type <STRING> - Default infantry
- *   3: Spawn anchor position <ARRAY> - Default []
+ *   3: Inbound requested-objective counts <HASHMAP> - Default empty map
+ *   4: Recent dispatch counts <HASHMAP> - Default empty map
+ *   5: Batch requested-objective counts <HASHMAP> - Default empty map
  *
  * Return Value:
  *   STRING - Selected objective ID or empty string
@@ -21,7 +23,6 @@ params [
     "_net",
     "_candidates",
     ["_groupType", "infantry"],
-    ["_spawnPos", []],
     ["_inboundCounts", createHashMap],
     ["_recentDispatchCounts", createHashMap],
     ["_batchDispatchCounts", createHashMap]
@@ -85,9 +86,6 @@ _available = _available select {
 };
 if (count _available == 0) exitWith { "" };
 
-private _useAnchorPos = _spawnPos isEqualType [] && {count _spawnPos >= 2};
-private _anchorPos = if (_useAnchorPos) then { _spawnPos } else { [] };
-
 private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
@@ -98,13 +96,10 @@ private _lastTargetPenalty = _net get "REINFORCEMENT_LAST_TARGET_PENALTY";
 
 private _bestTarget = "";
 private _bestScore = 1e12;
-private _bestDist = 1e12;
 
 {
     private _objId = _x;
     private _objData = FLO_Objectives get _objId;
-    private _objPos = _objData get "position";
-    private _dist = if (_useAnchorPos) then { _objPos distance2D _anchorPos } else { 0 };
     private _friendlyCount = _objData get _friendlyCountKey;
     private _enemyCount = _objData get _enemyCountKey;
     private _pressure = ((_enemyCount * 2) - _friendlyCount) max 0;
@@ -112,8 +107,7 @@ private _bestDist = 1e12;
     private _batchCount = _batchDispatchCounts getOrDefault [_objId, 0];
     private _inboundCount = _inboundCounts getOrDefault [_objId, 0];
     private _recentCount = _recentDispatchCounts getOrDefault [_objId, 0];
-    private _score = _dist
-        + (_batchCount * _batchPenalty)
+    private _score = (_batchCount * _batchPenalty)
         + (_inboundCount * _inboundPenalty)
         + (_recentCount * _recentPenalty)
         - (_pressure * 450)
@@ -123,10 +117,9 @@ private _bestDist = 1e12;
         _score = _score + _lastTargetPenalty;
     };
 
-    if (_score < _bestScore || {_score == _bestScore && {_dist < _bestDist}}) then {
+    if (_score < _bestScore) then {
         _bestTarget = _objId;
         _bestScore = _score;
-        _bestDist = _dist;
     };
 } forEach _available;
 

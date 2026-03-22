@@ -58,8 +58,6 @@ private _logisticsClass = [
     ["_stats", nil],
     ["_enabled", true],
     ["_lastReinforcementTarget", ""],
-    ["_reinforcementTargetCycle", []],
-    ["_reinforcementCycleIndex", 0],
     ["_recentReinforcementDispatches", []],
     ["_sideContext", sideUnknown],
     ["_managedSide", east],
@@ -173,8 +171,6 @@ private _logisticsClass = [
             ["initialComposition", _self get "_initialComposition"],
             ["stats", _self get "_stats"],
             ["lastReinforcementTarget", _self get "_lastReinforcementTarget"],
-            ["reinforcementTargetCycle", _self get "_reinforcementTargetCycle"],
-            ["reinforcementCycleIndex", _self get "_reinforcementCycleIndex"],
             ["reinforcementQueue", _self get "_reinforcementQueue"],
             ["nextDispatchAt", _self get "_nextDispatchAt"]
         ]

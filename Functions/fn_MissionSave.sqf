@@ -423,7 +423,6 @@ try {
                         ["onMission", _gData getOrDefault ["onMission", false]],
                         ["isReinforcing", _gData getOrDefault ["isReinforcing", false]],
                         ["reinforcementTargetPos", _reinforcementTargetPos],
-                        ["reinforcementTargetObjective", _gData getOrDefault ["reinforcementTargetObjective", ""]],
                         ["reinforcementRequestedObjective", _gData getOrDefault ["reinforcementRequestedObjective", ""]],
                         ["reinforcementDeliveryObjective", _gData getOrDefault ["reinforcementDeliveryObjective", ""]],
                         ["pathRequestTarget", _pathRequestTarget],

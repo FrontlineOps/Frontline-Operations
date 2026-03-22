@@ -68,8 +68,7 @@ for "_i" from 1 to _attackTrackCount do {
         ["status", "IDLE"],
         ["groupPool", []],
         ["frontSectorObjectives", []],
-        ["frontSectorAnchorPos", []],
-        ["dynamicMaxPullDistanceMeters", 0]
+        ["frontSectorAnchorPos", []]
     ]);
 };
 
@@ -82,8 +81,7 @@ for "_i" from 1 to _defenseTrackCount do {
         ["status", "IDLE"],
         ["groupPool", []],
         ["frontSectorObjectives", []],
-        ["frontSectorAnchorPos", []],
-        ["dynamicMaxPullDistanceMeters", 0]
+        ["frontSectorAnchorPos", []]
     ]);
 };
 
@@ -133,11 +131,7 @@ private _gtnCommander = createHashMapObject [[
         ["attackMaxGroupCap", 18], // Hard cap to stop theater-wide dogpiles on one objective
         ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
-        ["attackLocalReserveMeters", 2500], // Prefer groups already in the local sector before pulling wider reserves
-        ["attackMaxPullDistanceMeters", 4000], // Do not drag attack groups from the other side of the map
-        ["attackLocalReserveSpacingMultiplier", 1.5], // Sparse fronts can widen local reserve pulls based on source-objective spacing
-        ["attackMaxPullSpacingMultiplier", 2.5], // Sparse fronts can widen maximum attack pulls beyond the dense-map floor
-        ["attackDynamicPullCapMeters", 9000], // Hard stop so sparse-map scaling does not drag attack groups across the theater
+        ["attackReserveGraphDepth", 2], // Attack reserve pulls follow friendly objective graph rings instead of theater-wide meter gates
         ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
         ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
         ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
@@ -145,11 +139,7 @@ private _gtnCommander = createHashMapObject [[
         ["frontlineCASMinAttackers", 4], // Do not spend CAS on token attacks with no meaningful committed assault package
         ["frontlineCASMinScore", 80], // Prevent trivial objectives from consuming air support
         ["frontlineCASObjectiveLockSeconds", 420], // Cooldown per objective so repeated cycles do not spam CAS on the same target
-        ["defenseLocalReserveMeters", 2000], // Prefer defenders already tied to the threatened objective or adjacent sectors
-        ["defenseMaxPullDistanceMeters", 3500], // Keep defense pulls local unless no better option exists
-        ["defenseLocalReserveSpacingMultiplier", 1.25], // Threatened sectors can widen local reserve pulls based on nearby objective spacing
-        ["defenseMaxPullSpacingMultiplier", 2.0], // Sparse defensive fronts can pull wider than the dense-map floor
-        ["defenseDynamicPullCapMeters", 7000], // Hard stop so defense still stays materially local on sparse fronts
+        ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
         ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
         ["garrisonDispatchMinGroups", 3], // Minimum garrison package once an objective is selected
@@ -648,7 +638,6 @@ private _gtnCommander = createHashMapObject [[
             _x set ["groupPool", []];
             _x set ["frontSectorObjectives", []];
             _x set ["frontSectorAnchorPos", []];
-            _x set ["dynamicMaxPullDistanceMeters", 0];
         } forEach _tracks;
         
         if (_totalCount == 0) exitWith {
@@ -663,30 +652,24 @@ private _gtnCommander = createHashMapObject [[
         private _allObjectives = _ws call ["_getObjectives", []];
         private _frontSectors = _self call ["_buildAttackTrackSectors", [_attackTracks]];
         _metrics set ["frontSectorCount", count (keys _frontSectors)];
+        private _attackReserveGraphDepth = ((_self get "_config") get "attackReserveGraphDepth");
+        private _trackReserveBands = createHashMap;
+
+        {
+            private _sectorObjectives = _x get "frontSectorObjectives";
+            private _reserveBands = createHashMap;
+            if ((count _sectorObjectives) > 0) then {
+                _reserveBands = [_self, _sectorObjectives, _attackReserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+            };
+
+            _trackReserveBands set [_x get "id", _reserveBands];
+        } forEach _attackTracks;
 
         // Front-aware allocation to tracks.
         private _tRoundRobin = diag_tickTime;
         private _ownSide = _self get "_ownSide";
         private _allGroups = FLO_virtualGroups get "_groups";
-        private _frontlineEnemyObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
-        private _baseAttackMaxPullDistanceMeters = ((_self get "_config") get "attackMaxPullDistanceMeters");
-
-        {
-            private _trackMaxPullDistanceMeters = _baseAttackMaxPullDistanceMeters;
-            private _sectorObjectives = _x get "frontSectorObjectives";
-
-            if ((count _sectorObjectives) > 0) then {
-                {
-                    private _frontObjective = _frontlineEnemyObjectives get _x;
-                    if ((count ((_frontObjective get "linkedObjectives") arrayIntersect _sectorObjectives)) == 0) then { continue };
-
-                    private _reserveDistances = [_self, _x, "attack"] call FLO_fnc_gtnGetObjectiveReserveDistances;
-                    _trackMaxPullDistanceMeters = _trackMaxPullDistanceMeters max (_reserveDistances select 1);
-                } forEach (keys _frontlineEnemyObjectives);
-            };
-
-            _x set ["dynamicMaxPullDistanceMeters", _trackMaxPullDistanceMeters];
-        } forEach _attackTracks;
+        private _fallbackAttackBand = _attackReserveGraphDepth + 1;
 
         {
             private _groupId = _x;
@@ -694,7 +677,7 @@ private _gtnCommander = createHashMapObject [[
             if (isNil "_gData") then { continue };
 
             private _assignedTrack = nil;
-            private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+            private _homeObjective = _gData get "homeObjective";
             private _currentOrder = _gData get "currentOrder";
             private _groupPos = _gData get "position";
 
@@ -718,28 +701,11 @@ private _gtnCommander = createHashMapObject [[
                 private _bestPool = 1000000;
 
                 {
-                    private _sectorObjectives = _x get "frontSectorObjectives";
                     private _anchorPos = _x get "frontSectorAnchorPos";
-                    private _trackMaxPullDistanceMeters = _x get "dynamicMaxPullDistanceMeters";
-                    private _band = 3;
-
-                    if (_homeObjective != "" && {_homeObjective in _sectorObjectives}) then {
-                        _band = 0;
-                    } else {
-                        if (_homeObjective != "" && {_homeObjective in _allObjectives}) then {
-                            private _homeObj = _allObjectives get _homeObjective;
-                            if ((count ((_homeObj get "linkedObjectives") arrayIntersect _sectorObjectives)) > 0) then {
-                                _band = 1;
-                            } else {
-                                if ((count _anchorPos) >= 2 && {((_homeObj get "position") distance2D _anchorPos) <= _trackMaxPullDistanceMeters}) then {
-                                    _band = 2;
-                                };
-                            };
-                        } else {
-                            if ((count _anchorPos) >= 2 && {_groupPos distance2D _anchorPos <= _trackMaxPullDistanceMeters}) then {
-                                _band = 2;
-                            };
-                        };
+                    private _reserveBands = _trackReserveBands get (_x get "id");
+                    private _band = _fallbackAttackBand;
+                    if (_homeObjective in _reserveBands) then {
+                        _band = _reserveBands get _homeObjective;
                     };
 
                     private _dist = if ((count _anchorPos) >= 2) then { _groupPos distance2D _anchorPos } else { 1e12 };
@@ -791,12 +757,11 @@ private _gtnCommander = createHashMapObject [[
         // Log allocation
         {
             private _track = _x;
-            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4 dynMaxPull=%5)",
+            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
                 _track get "id",
                 _track get "goal",
                 count (_track get "groupPool"),
-                count (_track get "frontSectorObjectives"),
-                _track get "dynamicMaxPullDistanceMeters"
+                count (_track get "frontSectorObjectives")
             ]] call FLO_fnc_log;
         } forEach _tracks;
 

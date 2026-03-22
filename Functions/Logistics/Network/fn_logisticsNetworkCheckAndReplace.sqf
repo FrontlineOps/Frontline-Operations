@@ -179,7 +179,7 @@ for "_i" from 1 to _batchSize do {
         continue;
     };
 
-    private _requestedObjectiveId = [_net, _targetPool, _groupType, [], _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
+    private _requestedObjectiveId = [_net, _targetPool, _groupType, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
     if (_requestedObjectiveId == "") then {
         if (_groupType isEqualTo "static_aa") then {
             _perf set ["failNoTargetObj", (_perf get "failNoTargetObj") + 1];
@@ -188,7 +188,7 @@ for "_i" from 1 to _batchSize do {
         };
 
         if (count _rearTargets > 0) then {
-            _requestedObjectiveId = [_net, _rearTargets, _groupType, [], _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
+            _requestedObjectiveId = [_net, _rearTargets, _groupType, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
         };
 
         if (_requestedObjectiveId == "") then {

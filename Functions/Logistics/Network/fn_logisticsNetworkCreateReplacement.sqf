@@ -55,7 +55,6 @@ _groupData set ["isReinforcing", true];
 _groupData set ["onMission", true];
 _groupData set ["currentOrder", "REINFORCE"];
 _groupData set ["reinforcementTargetPos", _targetPos];
-_groupData set ["reinforcementTargetObjective", _deliveryObjectiveId];
 _groupData set ["reinforcementRequestedObjective", _requestedObjectiveId];
 _groupData set ["reinforcementDeliveryObjective", _deliveryObjectiveId];
 

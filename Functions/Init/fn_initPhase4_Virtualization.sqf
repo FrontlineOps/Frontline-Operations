@@ -68,14 +68,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                             private _currentOrder = _groupData getOrDefault ["currentOrder", ""];
                             private _aaDeployState = _groupData getOrDefault ["aaDeployState", ""];
                             private _isReinforcing = (_groupData getOrDefault ["isReinforcing", false]) || {_currentOrder == "REINFORCE"} || {_currentOrder == "AA_DEPLOY" && {_aaDeployState == "MOVING"}};
-                            private _reinforcementTargetObjective = _groupData get "reinforcementTargetObjective";
                             private _reinforcementRequestedObjective = _groupData get "reinforcementRequestedObjective";
                             private _reinforcementDeliveryObjective = _groupData get "reinforcementDeliveryObjective";
                             private _reinforcementTargetPos = _groupData getOrDefault ["reinforcementTargetPos", []];
                             if !(_reinforcementTargetPos isEqualType [] && {count _reinforcementTargetPos >= 2}) then {
                                 _reinforcementTargetPos = [];
-                                if (_reinforcementTargetObjective != "" && {_reinforcementTargetObjective in FLO_Objectives}) then {
-                                    private _targetObjective = FLO_Objectives get _reinforcementTargetObjective;
+                                if (_reinforcementDeliveryObjective != "" && {_reinforcementDeliveryObjective in FLO_Objectives}) then {
+                                    private _targetObjective = FLO_Objectives get _reinforcementDeliveryObjective;
                                     _reinforcementTargetPos = _targetObjective get "position";
                                 };
                             };
@@ -108,7 +107,6 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                             _newData set ["onMission", _isReinforcing];
                             _newData set ["isReinforcing", _isReinforcing];
                             _newData set ["reinforcementTargetPos", _reinforcementTargetPos];
-                            _newData set ["reinforcementTargetObjective", _reinforcementTargetObjective];
                             _newData set ["reinforcementRequestedObjective", _reinforcementRequestedObjective];
                             _newData set ["reinforcementDeliveryObjective", _reinforcementDeliveryObjective];
                             _newData set ["pathRequestTarget", _pathRequestTarget];

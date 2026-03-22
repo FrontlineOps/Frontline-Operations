@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- * Fill threatened friendly objectives with sticky defenders using a local-first, round-robin allocator.
+ * Fill threatened friendly objectives with sticky defenders using a graph-local, round-robin allocator.
  *
  * Arguments:
  * 0: GTN Commander <HASHMAP>
@@ -39,6 +39,8 @@ private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
 private _groups = FLO_virtualGroups get "_groups";
 private _objectives = _ws call ["_getObjectives", []];
+private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
+private _fallbackBand = _reserveGraphDepth + 1;
 
 private _candidateObjectives = [];
 {
@@ -80,14 +82,12 @@ private _candidateObjectives = [];
     };
 
     private _pressure = ((_enemyCount - (_objective get "friendlyCount")) max 0) + (if (_underAttack) then { 4 } else { 0 });
-    private _reserveDistances = [_cmdr, _objectiveId, "defense"] call FLO_fnc_gtnGetObjectiveReserveDistances;
+    private _reserveBands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
-        ["linkedObjectives", _objective get "linkedObjectives"],
-        ["localReserveMeters", _reserveDistances select 0],
-        ["maxPullDistanceMeters", _reserveDistances select 1],
+        ["reserveBands", _reserveBands],
         ["priority", _objective get "priority"],
         ["pressureBand", _pressureBand],
         ["pressure", _pressure],
@@ -123,9 +123,7 @@ while {_continueAllocation && {(count _pool) > 0}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
-        private _linkedObjectives = _x get "linkedObjectives";
-        private _localReserveMeters = _x get "localReserveMeters";
-        private _maxPullDistanceMeters = _x get "maxPullDistanceMeters";
+        private _reserveBands = _x get "reserveBands";
 
         private _bestGroupId = "";
         private _bestBand = 10;
@@ -139,26 +137,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             if !((_gData get "groupType") in ["infantry", "recon", "motorized", "mechanized", "armor"]) then { continue };
 
             private _groupPos = _gData get "position";
-            private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+            private _homeObjective = _gData get "homeObjective";
             private _distToObjective = _groupPos distance2D _objectivePos;
-            private _band = 4;
-
-            if (_homeObjective == _objectiveId) then {
-                _band = 0;
-            } else {
-                if (_homeObjective in _linkedObjectives) then {
-                    _band = 1;
-                } else {
-                    if (_distToObjective <= _localReserveMeters) then {
-                        _band = 2;
-                    } else {
-                        if (_distToObjective <= _maxPullDistanceMeters) then {
-                            _band = 3;
-                        } else {
-                            continue;
-                        };
-                    };
-                };
+            private _band = _fallbackBand;
+            if (_homeObjective in _reserveBands) then {
+                _band = _reserveBands get _homeObjective;
             };
 
             if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {

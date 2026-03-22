@@ -50,7 +50,7 @@ class FLO {
     class GTNCoreLogic {
         file = "Functions\AI\GTN\Core\Logic";
 
-        class gtnGetObjectiveReserveDistances {};
+        class gtnBuildObjectiveReserveBands {};
     };
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
