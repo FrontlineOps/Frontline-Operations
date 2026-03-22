@@ -65,6 +65,7 @@ private _sideResourceClass = [
     ]],
 
     ["UPDATE_INTERVAL", 180],
+    ["OBJECTIVE_CAPTURE_REWARD", 200],
 
     ["_side", east],
     ["_sideKey", "EAST"],

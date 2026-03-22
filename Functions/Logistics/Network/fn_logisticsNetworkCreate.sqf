@@ -35,8 +35,7 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_initialComposition", _savedStateOverride getOrDefault ["initialComposition", createHashMap]];
     _net set ["_stats", _stats];
     _net set ["_lastReinforcementTarget", _savedStateOverride getOrDefault ["lastReinforcementTarget", ""]];
-    _net set ["_reinforcementTargetCycle", _savedStateOverride getOrDefault ["reinforcementTargetCycle", []]];
-    _net set ["_reinforcementCycleIndex", _savedStateOverride getOrDefault ["reinforcementCycleIndex", 0]];
+    _net set ["_recentReinforcementDispatches", []];
     _net set ["_reinforcementQueue", _savedStateOverride getOrDefault ["reinforcementQueue", []]];
 
     private _savedNextDispatchAt = _savedStateOverride getOrDefault ["nextDispatchAt", -1];
@@ -62,8 +61,7 @@ if (_savedStateOverride isEqualType createHashMap) then {
         ["byType", createHashMap]
     ]];
     _net set ["_lastReinforcementTarget", ""];
-    _net set ["_reinforcementTargetCycle", []];
-    _net set ["_reinforcementCycleIndex", 0];
+    _net set ["_recentReinforcementDispatches", []];
     _net set ["_reinforcementQueue", []];
 
     private _minInterval = _net get "DISPATCH_MIN_INTERVAL";

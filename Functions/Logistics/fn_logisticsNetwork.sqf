@@ -41,14 +41,24 @@ private _logisticsClass = [
     ["DISPATCH_MAX_INTERVAL", 90],
     ["DISPATCH_BATCH_MIN", 12],
     ["DISPATCH_BATCH_MAX", 64],
+    ["REINFORCEMENT_RECENT_TARGET_WINDOW", 300],
+    ["REINFORCEMENT_BATCH_TARGET_PENALTY", 2400],
+    ["REINFORCEMENT_INBOUND_TARGET_PENALTY", 1800],
+    ["REINFORCEMENT_RECENT_TARGET_PENALTY", 1400],
+    ["REINFORCEMENT_LAST_TARGET_PENALTY", 900],
+    ["REINFORCEMENT_OBJECTIVE_SECURE_RATIO", 1.75],
+    ["REINFORCEMENT_OBJECTIVE_PRESSURE_PER_GROUP", 10],
+    ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MIN", 1],
+    ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MAX", 4],
+    ["REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX", 2],
+    ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
     ["_stats", nil],
     ["_enabled", true],
     ["_lastReinforcementTarget", ""],
-    ["_reinforcementTargetCycle", []],
-    ["_reinforcementCycleIndex", 0],
+    ["_recentReinforcementDispatches", []],
     ["_sideContext", sideUnknown],
     ["_managedSide", east],
     ["_managedSideKey", "EAST"],
@@ -94,6 +104,22 @@ private _logisticsClass = [
         ([_self] + _this) call FLO_fnc_logisticsNetworkPickBestTarget;
     }],
 
+    ["_buildInboundObjectiveCounts", {
+        [_self] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
+    }],
+
+    ["_buildRecentDispatchCounts", {
+        [_self] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
+    }],
+
+    ["_canDispatchToObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkCanDispatchToObjective;
+    }],
+
+    ["_pickDeliveryObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkPickDeliveryObjective;
+    }],
+
     ["_pickSpawnSourceObjective", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkPickSpawnSourceObjective;
     }],
@@ -112,6 +138,10 @@ private _logisticsClass = [
 
     ["_recordReplacement", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkRecordReplacement;
+    }],
+
+    ["_recordTargetDispatch", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkRecordTargetDispatch;
     }],
 
     ["_startMainLoop", {
@@ -141,8 +171,6 @@ private _logisticsClass = [
             ["initialComposition", _self get "_initialComposition"],
             ["stats", _self get "_stats"],
             ["lastReinforcementTarget", _self get "_lastReinforcementTarget"],
-            ["reinforcementTargetCycle", _self get "_reinforcementTargetCycle"],
-            ["reinforcementCycleIndex", _self get "_reinforcementCycleIndex"],
             ["reinforcementQueue", _self get "_reinforcementQueue"],
             ["nextDispatchAt", _self get "_nextDispatchAt"]
         ]

@@ -224,11 +224,8 @@ if (isNil "FLO_GTNAirAssetManager") then {
             params ["_missionType"];
             switch (toUpper _missionType) do {
                 case "CAP": { 600 };
-                case "SAD": { 480 };
                 case "RECON": { 180 };
-                case "CAS";
-                case "BOMB";
-                case "LASER": { 300 };
+                case "CAS": { 300 };
                 default { 300 };
             };
         }],
@@ -240,9 +237,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _groups = FLO_virtualGroups get "_groups";
             private _radius = switch (toUpper _missionType) do {
                 case "CAP": { 1800 };
-                case "SAD": { 1000 };
-                case "BOMB";
-                case "LASER": { 900 };
                 default { 800 };
             };
 
@@ -265,17 +259,11 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             private _targetsToHit = switch (toUpper _missionType) do {
                 case "CAP": { 1 };
-                case "SAD": { 2 };
-                case "BOMB";
-                case "LASER": { 2 };
                 default { 1 };
             };
 
             private _lossFactor = switch (toUpper _missionType) do {
                 case "CAP": { 0.20 };
-                case "SAD": { 0.30 };
-                case "BOMB";
-                case "LASER": { 0.40 };
                 default { 0.25 };
             };
 

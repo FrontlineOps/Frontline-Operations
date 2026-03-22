@@ -113,6 +113,8 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
     ["_attackObjectiveReservations", createHashMap],
+    ["_frontlineCAPLocks", createHashMap],
+    ["_frontlineCASLocks", createHashMap],
     
     // Configuration
     ["_config", createHashMapFromArray [
@@ -124,15 +126,21 @@ private _gtnCommander = createHashMapObject [[
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
-        ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of friendly frontage links
+        ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of direct friendly frontage links
+        ["attackGroupsPerReserveObjective", 2], // Rear connected friendly objectives raise attack cap, but less than direct frontage links
         ["attackMinGroupCap", 8], // Never commit less than a meaningful assault package to one objective
         ["attackMaxGroupCap", 18], // Hard cap to stop theater-wide dogpiles on one objective
         ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
-        ["attackLocalReserveMeters", 2500], // Prefer groups already in the local sector before pulling wider reserves
-        ["attackMaxPullDistanceMeters", 4000], // Do not drag attack groups from the other side of the map
-        ["defenseLocalReserveMeters", 2000], // Prefer defenders already tied to the threatened objective or adjacent sectors
-        ["defenseMaxPullDistanceMeters", 3500], // Keep defense pulls local unless no better option exists
+        ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
+        ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
+        ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
+        ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
+        ["frontlineCAPObjectiveLockSeconds", 720], // CAP missions loiter for a while; keep sectors locked longer than CAS
+        ["frontlineCASMinAttackers", 4], // Do not spend CAS on token attacks with no meaningful committed assault package
+        ["frontlineCASMinScore", 80], // Prevent trivial objectives from consuming air support
+        ["frontlineCASObjectiveLockSeconds", 420], // Cooldown per objective so repeated cycles do not spam CAS on the same target
+        ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
         ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
         ["garrisonDispatchMinGroups", 3], // Minimum garrison package once an objective is selected
@@ -161,6 +169,8 @@ private _gtnCommander = createHashMapObject [[
             ["attackAssignments", 0],
             ["allocateTracks", 0],
             ["executeTracks", 0],
+            ["frontlineCAP", 0],
+            ["frontlineCAS", 0],
             ["defenseLeases", 0],
             ["staticAA", 0],
             ["forcePreservation", 0]
@@ -216,6 +226,8 @@ private _gtnCommander = createHashMapObject [[
             ["attackAssignments", 0],
             ["allocateTracks", 0],
             ["executeTracks", 0],
+            ["frontlineCAP", 0],
+            ["frontlineCAS", 0],
             ["defenseLeases", 0],
             ["staticAA", 0],
             ["forcePreservation", 0]
@@ -267,6 +279,16 @@ private _gtnCommander = createHashMapObject [[
         private _executeMetrics = _self call ["_executeAllTracks", []];
         _phaseMs set ["executeTracks", (diag_tickTime - _tPhase) * 1000];
 
+        // Request one opportunistic CAP mission for the most threatened friendly frontline sector.
+        _tPhase = diag_tickTime;
+        private _frontlineCAPMetrics = [_self] call FLO_fnc_gtnRequestFrontlineCAP;
+        _phaseMs set ["frontlineCAP", (diag_tickTime - _tPhase) * 1000];
+
+        // Request one opportunistic CAS mission for the strongest active frontline attack.
+        _tPhase = diag_tickTime;
+        private _frontlineCASMetrics = [_self] call FLO_fnc_gtnRequestFrontlineCAS;
+        _phaseMs set ["frontlineCAS", (diag_tickTime - _tPhase) * 1000];
+
         // Release DEFEND-tasked groups that sat idle too long in low-pressure sectors.
         _tPhase = diag_tickTime;
         private _leaseMetrics = _self call ["_manageDefenseLeases", []];
@@ -299,6 +321,8 @@ private _gtnCommander = createHashMapObject [[
             ["attackAssignments", _attackAssignmentMetrics],
             ["allocation", _allocationMetrics],
             ["execute", _executeMetrics],
+            ["frontlineCAP", _frontlineCAPMetrics],
+            ["frontlineCAS", _frontlineCASMetrics],
             ["defenseLeases", _leaseMetrics],
             ["staticAA", _staticAAMetrics],
             ["forcePreservation", _forcePreservationMetrics]
@@ -314,7 +338,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 execute=%13 defense=%14 staticAA=%15 preserve=%16",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 execute=%13 cap=%14 cas=%15 defense=%16 staticAA=%17 preserve=%18",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -328,6 +352,8 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "attackAssignments",
                 _phaseMs get "allocateTracks",
                 _phaseMs get "executeTracks",
+                _phaseMs get "frontlineCAP",
+                _phaseMs get "frontlineCAS",
                 _phaseMs get "defenseLeases",
                 _phaseMs get "staticAA",
                 _phaseMs get "forcePreservation"
@@ -404,6 +430,31 @@ private _gtnCommander = createHashMapObject [[
                 _forcePreservationMetrics get "returnedToDuty",
                 _forcePreservationMetrics get "vehicleRespawns"
             ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 frontlineCAP | asset=%2 contacts=%3 candidates=%4 eligible=%5 locked=%6 requested=%7 objective=%8 score=%9",
+                _self get "_sideKey",
+                _frontlineCAPMetrics get "assetAvailable",
+                _frontlineCAPMetrics get "airContactCount",
+                _frontlineCAPMetrics get "candidateCount",
+                _frontlineCAPMetrics get "eligibleCount",
+                _frontlineCAPMetrics get "lockedCount",
+                _frontlineCAPMetrics get "requestedCount",
+                _frontlineCAPMetrics get "selectedObjective",
+                _frontlineCAPMetrics get "selectedScore"
+            ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 frontlineCAS | asset=%2 candidates=%3 eligible=%4 locked=%5 requested=%6 objective=%7 score=%8",
+                _self get "_sideKey",
+                _frontlineCASMetrics get "assetAvailable",
+                _frontlineCASMetrics get "candidateCount",
+                _frontlineCASMetrics get "eligibleCount",
+                _frontlineCASMetrics get "lockedCount",
+                _frontlineCASMetrics get "requestedCount",
+                _frontlineCASMetrics get "selectedObjective",
+                _frontlineCASMetrics get "selectedScore"
+            ];
         };
         
         // Log decision summary for debugging
@@ -461,7 +512,12 @@ private _gtnCommander = createHashMapObject [[
                 if (isNil "_sourceObj") then { continue };
                 if ((_sourceObj get "owner") != _ownSide) then { continue };
 
-                _sourceScores set [_x, (_sourceScores getOrDefault [_x, 0]) + _scoreAdd];
+                private _sourceScore = if (_x in _sourceScores) then {
+                    _sourceScores get _x
+                } else {
+                    0
+                };
+                _sourceScores set [_x, _sourceScore + _scoreAdd];
                 _sourcePositions set [_x, _sourceObj get "position"];
             } forEach (_enemyObj get "linkedObjectives");
         } forEach (keys _frontlineEnemyObjectives);
@@ -597,12 +653,24 @@ private _gtnCommander = createHashMapObject [[
         private _allObjectives = _ws call ["_getObjectives", []];
         private _frontSectors = _self call ["_buildAttackTrackSectors", [_attackTracks]];
         _metrics set ["frontSectorCount", count (keys _frontSectors)];
+        private _attackReserveGraphDepth = ((_self get "_config") get "attackReserveGraphDepth");
+        private _trackReserveBands = createHashMap;
+
+        {
+            private _sectorObjectives = _x get "frontSectorObjectives";
+            private _reserveBands = createHashMap;
+            if ((count _sectorObjectives) > 0) then {
+                _reserveBands = [_self, _sectorObjectives, _attackReserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+            };
+
+            _trackReserveBands set [_x get "id", _reserveBands];
+        } forEach _attackTracks;
 
         // Front-aware allocation to tracks.
         private _tRoundRobin = diag_tickTime;
         private _ownSide = _self get "_ownSide";
         private _allGroups = FLO_virtualGroups get "_groups";
-        private _maxPullDistanceMeters = ((_self get "_config") get "attackMaxPullDistanceMeters");
+        private _fallbackAttackBand = _attackReserveGraphDepth + 1;
 
         {
             private _groupId = _x;
@@ -610,7 +678,7 @@ private _gtnCommander = createHashMapObject [[
             if (isNil "_gData") then { continue };
 
             private _assignedTrack = nil;
-            private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+            private _homeObjective = _gData get "homeObjective";
             private _currentOrder = _gData get "currentOrder";
             private _groupPos = _gData get "position";
 
@@ -634,27 +702,11 @@ private _gtnCommander = createHashMapObject [[
                 private _bestPool = 1000000;
 
                 {
-                    private _sectorObjectives = _x get "frontSectorObjectives";
                     private _anchorPos = _x get "frontSectorAnchorPos";
-                    private _band = 3;
-
-                    if (_homeObjective != "" && {_homeObjective in _sectorObjectives}) then {
-                        _band = 0;
-                    } else {
-                        if (_homeObjective != "" && {_homeObjective in _allObjectives}) then {
-                            private _homeObj = _allObjectives get _homeObjective;
-                            if ((count ((_homeObj get "linkedObjectives") arrayIntersect _sectorObjectives)) > 0) then {
-                                _band = 1;
-                            } else {
-                                if ((count _anchorPos) >= 2 && {((_homeObj get "position") distance2D _anchorPos) <= _maxPullDistanceMeters}) then {
-                                    _band = 2;
-                                };
-                            };
-                        } else {
-                            if ((count _anchorPos) >= 2 && {_groupPos distance2D _anchorPos <= _maxPullDistanceMeters}) then {
-                                _band = 2;
-                            };
-                        };
+                    private _reserveBands = _trackReserveBands get (_x get "id");
+                    private _band = _fallbackAttackBand;
+                    if (_homeObjective in _reserveBands) then {
+                        _band = _reserveBands get _homeObjective;
                     };
 
                     private _dist = if ((count _anchorPos) >= 2) then { _groupPos distance2D _anchorPos } else { 1e12 };
@@ -1113,7 +1165,12 @@ private _gtnCommander = createHashMapObject [[
             private _attackObjective = _gData getOrDefault ["attackObjective", ""];
             if (_attackObjective == "") then { continue };
 
-            _activeAttackCounts set [_attackObjective, (_activeAttackCounts getOrDefault [_attackObjective, 0]) + 1];
+            private _activeAttackCount = if (_attackObjective in _activeAttackCounts) then {
+                _activeAttackCounts get _attackObjective
+            } else {
+                0
+            };
+            _activeAttackCounts set [_attackObjective, _activeAttackCount + 1];
         } forEach (FLO_virtualGroups get "_groups");
 
         private _config = _self get "_config";
@@ -1169,15 +1226,19 @@ private _gtnCommander = createHashMapObject [[
         {
             _x params ["_objId", "_priority", "_routeDist"];
 
-            private _reserved = _reservations getOrDefault [_objId, 0];
-            private _activeAttackers = _activeAttackCounts getOrDefault [_objId, 0];
+            private _reserved = if (_objId in _reservations) then {
+                _reservations get _objId
+            } else {
+                0
+            };
+            private _activeAttackers = if (_objId in _activeAttackCounts) then {
+                _activeAttackCounts get _objId
+            } else {
+                0
+            };
             private _attackCap = _attackCapByObjective getOrDefault [_objId, -1];
             if (_attackCap < 0) then {
-                private _frontLinks = count ((_objectives get _objId) get "linkedObjectives" select {
-                    private _linkedObj = _allObjectives get _x;
-                    !isNil "_linkedObj" && {(_linkedObj get "owner") == _ownSide}
-                });
-                _attackCap = (((_frontLinks max 1) * (_config get "attackGroupsPerFrontLink")) max (_config get "attackMinGroupCap")) min (_config get "attackMaxGroupCap");
+                _attackCap = _self call ["_getAttackCapForObjective", [_objId]];
                 _attackCapByObjective set [_objId, _attackCap];
             };
             private _committed = _reserved + _activeAttackers;
@@ -1503,9 +1564,13 @@ private _gtnCommander = createHashMapObject [[
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { 0 };
 
-        private _frontLinks = _self call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
+        private _sourceObjectives = _self call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
         private _config = _self get "_config";
-        private _cap = ((count _frontLinks) max 1) * (_config get "attackGroupsPerFrontLink");
+        private _reserveBands = [_self, _sourceObjectives, (_config get "attackReserveGraphDepth")] call FLO_fnc_gtnBuildObjectiveReserveBands;
+        private _sourceCount = count _sourceObjectives;
+        private _reserveObjectiveCount = ((count (keys _reserveBands)) - _sourceCount) max 0;
+        private _cap = (_sourceCount * (_config get "attackGroupsPerFrontLink"))
+            + (_reserveObjectiveCount * (_config get "attackGroupsPerReserveObjective"));
 
         _cap = (_cap max (_config get "attackMinGroupCap")) min (_config get "attackMaxGroupCap");
         _cap
@@ -1970,26 +2035,37 @@ private _gtnCommander = createHashMapObject [[
         true
     }],
 
-    // Request CAS using the GTN air support system
-    ["_requestCAS", {
+    // Request an air mission using the GTN air support system.
+    ["_requestAirMission", {
         params ["_pos", ["_missionType", "CAS"]];
         private _ownSide = _self get "_ownSide";
 
-        // Use the Air Tasking Order system
         private _ato = call FLO_fnc_gtnAirTaskOrder;
-        private _altitude = if (_missionType in ["BOMB", "LASER"]) then { 300 } else { 150 };
+        private _altitude = 150;
 
         _ato call ["_addTask", [_pos, _missionType, "", _altitude, _ownSide]];
         private _assignedCount = _ato call ["_processTasks", []];
         private _success = _assignedCount > 0;
 
         if (_success) then {
-            ["GTN", 3, format["CAS mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+            ["GTN", 3, format["Air mission queued: %1 at %2", _missionType, _pos]] call FLO_fnc_log;
         } else {
-            ["GTN", 2, format["CAS request failed - no available air assets for %1 at %2", _missionType, _pos]] call FLO_fnc_log;
+            ["GTN", 2, format["Air mission request failed - no available air assets for %1 at %2", _missionType, _pos]] call FLO_fnc_log;
         };
 
         _success
+    }],
+
+    // Request CAS using the GTN air support system
+    ["_requestCAS", {
+        params ["_pos", ["_missionType", "CAS"]];
+        _self call ["_requestAirMission", [_pos, _missionType]]
+    }],
+
+    // Request CAP using the GTN air support system
+    ["_requestCAP", {
+        params ["_pos"];
+        _self call ["_requestAirMission", [_pos, "CAP"]]
     }],
 
     // Check if groups have arrived at a position (within threshold)
@@ -2436,7 +2512,12 @@ private _gtnCommander = createHashMapObject [[
             
             // Track order distribution
             private _orderKey = if (_currentOrder == "") then { "IDLE" } else { _currentOrder };
-            _orderBreakdown set [_orderKey, (_orderBreakdown getOrDefault [_orderKey, 0]) + 1];
+            private _orderCount = if (_orderKey in _orderBreakdown) then {
+                _orderBreakdown get _orderKey
+            } else {
+                0
+            };
+            _orderBreakdown set [_orderKey, _orderCount + 1];
             
             // Check filters
             if (_side != _ownSide) exitWith { _stats set ["wrongSide", (_stats get "wrongSide") + 1] };

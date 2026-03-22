@@ -25,6 +25,8 @@ private _perf = createHashMapFromArray [
     ["failNoTargetPool", 0],
     ["failCantAfford", 0],
     ["failNoTargetObj", 0],
+    ["failSaturatedTarget", 0],
+    ["failNoDeliveryObjective", 0],
     ["failNoSpawnPos", 0],
     ["failSpendResources", 0],
     ["failCreateReplacement", 0],
@@ -115,24 +117,19 @@ if (time < _nextDispatchAt) exitWith {
 _phaseT0 = diag_tickTime;
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
 _perf set ["resourcesBefore", _resources get "_resources"];
-private _targets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
+private _pressureTargets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
+private _rearTargets = [_net, 3000] call FLO_fnc_logisticsNetworkFindRearObjectives;
 
-if (count _targets == 0) then {
+if (count _pressureTargets == 0) then {
     ["LOGISTICS", 3, format [
         "Queue dispatch: no objectives under pressure - checking rear objectives (%1 pending)",
         count _queue
     ]] call FLO_fnc_log;
-
-    private _managedObjectives = [_net, 3000] call FLO_fnc_logisticsNetworkFindRearObjectives;
-
-    if (count _managedObjectives > 0) then {
-        _targets = [selectRandom _managedObjectives];
-    };
 };
 _perf set ["targetMs", (diag_tickTime - _phaseT0) * 1000];
-_perf set ["targetCount", count _targets];
+_perf set ["targetCount", (count _pressureTargets) + (count _rearTargets)];
 
-if (count _targets == 0) then {
+if ((count _pressureTargets) + (count _rearTargets) == 0) then {
     ["LOGISTICS", 3, "No pressure/rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
 };
 
@@ -146,6 +143,9 @@ _perf set ["batchSize", _batchSize];
 
 private _replaced = 0;
 private _attempted = 0;
+private _inboundCounts = [_net] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
+private _recentDispatchCounts = [_net] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
+private _batchDispatchCounts = createHashMap;
 
 _phaseT0 = diag_tickTime;
 for "_i" from 1 to _batchSize do {
@@ -158,7 +158,13 @@ for "_i" from 1 to _batchSize do {
     private _targetPool = if (_groupType isEqualTo "static_aa") then {
         [_net] call FLO_fnc_logisticsNetworkGetRearAATargets
     } else {
-        _targets
+        _pressureTargets
+    };
+
+    if (count _targetPool == 0) then {
+        if !(_groupType isEqualTo "static_aa") then {
+            _targetPool = _rearTargets;
+        };
     };
 
     if (count _targetPool == 0) then {
@@ -173,14 +179,36 @@ for "_i" from 1 to _batchSize do {
         continue;
     };
 
-    private _targetObj = [_net, _targetPool, _groupType, []] call FLO_fnc_logisticsNetworkPickBestTarget;
-    if (_targetObj == "") then {
-        _perf set ["failNoTargetObj", (_perf get "failNoTargetObj") + 1];
+    private _requestedObjectiveId = [_net, _targetPool, _groupType, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
+    if (_requestedObjectiveId == "") then {
+        if (_groupType isEqualTo "static_aa") then {
+            _perf set ["failNoTargetObj", (_perf get "failNoTargetObj") + 1];
+            _queue pushBack _groupType;
+            continue;
+        };
+
+        if (count _rearTargets > 0) then {
+            _requestedObjectiveId = [_net, _rearTargets, _groupType, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickBestTarget;
+        };
+
+        if (_requestedObjectiveId == "") then {
+            _perf set ["failSaturatedTarget", (_perf get "failSaturatedTarget") + 1];
+            _queue pushBack _groupType;
+            continue;
+        };
+    };
+
+    private _deliveryObjectiveId = _requestedObjectiveId;
+    if !(_groupType isEqualTo "static_aa") then {
+        _deliveryObjectiveId = [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkPickDeliveryObjective;
+    };
+    if (_deliveryObjectiveId == "") then {
+        _perf set ["failNoDeliveryObjective", (_perf get "failNoDeliveryObjective") + 1];
         _queue pushBack _groupType;
         continue;
     };
 
-    private _spawnData = [_net, _targetObj, _targets] call FLO_fnc_logisticsNetworkFindSpawnPosition;
+    private _spawnData = [_net, _deliveryObjectiveId, _pressureTargets] call FLO_fnc_logisticsNetworkFindSpawnPosition;
     private _spawnPos = _spawnData select 0;
     private _sourceObjId = _spawnData select 1;
     if (_spawnPos isEqualTo [0, 0, 0]) then {
@@ -189,19 +217,22 @@ for "_i" from 1 to _batchSize do {
         continue;
     };
 
-    _net set ["_lastReinforcementTarget", _targetObj];
-
     if (_resources call ["spendResources", [_cost, "reinforcement"]]) then {
-        private _newId = [_net, _groupType, _spawnPos, _targetObj, _sourceObjId] call FLO_fnc_logisticsNetworkCreateReplacement;
+        private _newId = [_net, _groupType, _spawnPos, _deliveryObjectiveId, _sourceObjId, _requestedObjectiveId] call FLO_fnc_logisticsNetworkCreateReplacement;
         if (_newId != "") then {
             [_net, _groupType, _cost] call FLO_fnc_logisticsNetworkRecordReplacement;
+            [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkRecordTargetDispatch;
             _replaced = _replaced + 1;
+            _inboundCounts set [_requestedObjectiveId, (_inboundCounts getOrDefault [_requestedObjectiveId, 0]) + 1];
+            _recentDispatchCounts set [_requestedObjectiveId, (_recentDispatchCounts getOrDefault [_requestedObjectiveId, 0]) + 1];
+            _batchDispatchCounts set [_requestedObjectiveId, (_batchDispatchCounts getOrDefault [_requestedObjectiveId, 0]) + 1];
 
             ["LOGISTICS", 3, format [
-                "Created %1 reinforcement %2 -> %3 (cost: %4)",
+                "Created %1 reinforcement %2 -> %3 (requested %4, cost: %5)",
                 _groupType,
                 _sourceObjId,
-                _targetObj,
+                _deliveryObjectiveId,
+                _requestedObjectiveId,
                 _cost
             ]] call FLO_fnc_log;
         } else {

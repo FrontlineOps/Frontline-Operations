@@ -58,9 +58,7 @@ private _worldState = createHashMapObject [[
         ["artilleryCooldown", 0],
         ["artilleryAmmo", 0],
         ["casAvailable", false],
-        ["casCooldown", 0],
-        ["seadAvailable", false],
-        ["bombingAvailable", false]
+        ["casCooldown", 0]
     ]],
     
     // Enemy intel
@@ -303,21 +301,16 @@ private _worldState = createHashMapObject [[
 
         // Check air assets using Capability Analyzer for accurate status
         private _casAvailable = false;
-        private _seadAvailable = false;
-        private _bombAvailable = false;
         private _casOrdnance = 0;
 
         if (!isNil "FLO_GTN_CapabilityAnalyzer") then {
             private _airStatus = FLO_GTN_CapabilityAnalyzer call ["_getAirAssetStatus", [_ownSide]];
             _casAvailable = (_airStatus get "casAvailable") > 0 || (_airStatus get "heloAvailable") > 0;
-            _seadAvailable = (_airStatus get "seadAvailable") > 0;
-            _bombAvailable = (_airStatus get "bomberAvailable") > 0;
             _casOrdnance = _airStatus get "totalOrdnance";
 
-            ["GTN", 4, format["Air sense: CAS=%1/%2, SEAD=%3/%4, Bomber=%5/%6, ordnance=%7",
+            ["GTN", 4, format["Air sense: CAS=%1/%2, Helo=%3/%4, ordnance=%5",
                 _airStatus get "casAvailable", _airStatus get "casTotal",
-                _airStatus get "seadAvailable", _airStatus get "seadTotal",
-                _airStatus get "bomberAvailable", _airStatus get "bomberTotal",
+                _airStatus get "heloAvailable", _airStatus get "heloTotal",
                 _casOrdnance]] call FLO_fnc_log;
         } else {
             // Fallback if analyzer not initialized
@@ -328,20 +321,13 @@ private _worldState = createHashMapObject [[
                 if (_gData get "onMission") then { continue };
                 private _gType = _gData get "groupType";
                 if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
-                    switch (_gType) do {
-                        case "cas": { _casAvailable = true };
-                        case "sead": { _seadAvailable = true };
-                        case "bomber": { _bombAvailable = true };
-                        default { _casAvailable = true };
-                    };
+                    _casAvailable = true;
                 };
             } forEach (keys _groups);
-            ["GTN", 4, format["Air sense (fallback): CAS=%1, SEAD=%2, Bomber=%3", _casAvailable, _seadAvailable, _bombAvailable]] call FLO_fnc_log;
+            ["GTN", 4, format["Air sense (fallback): CAS=%1", _casAvailable]] call FLO_fnc_log;
         };
 
         _assets set ["casAvailable", _casAvailable];
-        _assets set ["seadAvailable", _seadAvailable];
-        _assets set ["bombingAvailable", _bombAvailable];
         _assets set ["casOrdnance", _casOrdnance];
 
         _self set ["_supportAssets", _assets];
@@ -704,8 +690,7 @@ private _worldState = createHashMapObject [[
         switch (toLower _assetType) do {
             case "artillery": { _assets get "artilleryAvailable" };
             case "cas": { _assets get "casAvailable" };
-            case "sead": { _assets get "seadAvailable" };
-            case "bombing": { _assets get "bombingAvailable" };
+            case "cap": { _assets get "casAvailable" };
             default { false };
         }
     }],

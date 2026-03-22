@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- * Fill threatened friendly objectives with sticky defenders using a local-first, round-robin allocator.
+ * Fill threatened friendly objectives with sticky defenders using a graph-local, round-robin allocator.
  *
  * Arguments:
  * 0: GTN Commander <HASHMAP>
@@ -37,9 +37,10 @@ if ((count _pool) == 0) exitWith { _metrics };
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
-private _config = _cmdr get "_config";
 private _groups = FLO_virtualGroups get "_groups";
 private _objectives = _ws call ["_getObjectives", []];
+private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
+private _fallbackBand = _reserveGraphDepth + 1;
 
 private _candidateObjectives = [];
 {
@@ -81,11 +82,12 @@ private _candidateObjectives = [];
     };
 
     private _pressure = ((_enemyCount - (_objective get "friendlyCount")) max 0) + (if (_underAttack) then { 4 } else { 0 });
+    private _reserveBands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
-        ["linkedObjectives", _objective get "linkedObjectives"],
+        ["reserveBands", _reserveBands],
         ["priority", _objective get "priority"],
         ["pressureBand", _pressureBand],
         ["pressure", _pressure],
@@ -109,8 +111,6 @@ private _rankedCandidates = [];
 _rankedCandidates sort true;
 _candidateObjectives = _rankedCandidates apply { _x select 3 };
 
-private _localReserveMeters = _config get "defenseLocalReserveMeters";
-private _maxPullDistanceMeters = _config get "defenseMaxPullDistanceMeters";
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
@@ -123,7 +123,7 @@ while {_continueAllocation && {(count _pool) > 0}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
-        private _linkedObjectives = _x get "linkedObjectives";
+        private _reserveBands = _x get "reserveBands";
 
         private _bestGroupId = "";
         private _bestBand = 10;
@@ -137,26 +137,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             if !((_gData get "groupType") in ["infantry", "recon", "motorized", "mechanized", "armor"]) then { continue };
 
             private _groupPos = _gData get "position";
-            private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+            private _homeObjective = _gData get "homeObjective";
             private _distToObjective = _groupPos distance2D _objectivePos;
-            private _band = 4;
-
-            if (_homeObjective == _objectiveId) then {
-                _band = 0;
-            } else {
-                if (_homeObjective in _linkedObjectives) then {
-                    _band = 1;
-                } else {
-                    if (_distToObjective <= _localReserveMeters) then {
-                        _band = 2;
-                    } else {
-                        if (_distToObjective <= _maxPullDistanceMeters) then {
-                            _band = 3;
-                        } else {
-                            continue;
-                        };
-                    };
-                };
+            private _band = _fallbackBand;
+            if (_homeObjective in _reserveBands) then {
+                _band = _reserveBands get _homeObjective;
             };
 
             if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {
@@ -174,7 +159,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
 
-            private _assignedHere = _assignedByObjective getOrDefault [_objectiveId, 0];
+            private _assignedHere = if (_objectiveId in _assignedByObjective) then {
+                _assignedByObjective get _objectiveId
+            } else {
+                0
+            };
             if (_assignedHere == 0) then {
                 if ((_x get "activeDefenders") > 0) then {
                     _metrics set ["reinforcedObjectives", (_metrics get "reinforcedObjectives") + 1];

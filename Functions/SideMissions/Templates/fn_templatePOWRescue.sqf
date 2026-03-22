@@ -115,19 +115,8 @@ private _template = createHashMapFromArray [
                     
                     // Join group LOCALLY (Group Owner is Client)
                     [_target] join (group _caller);
-                    
-                    // Release unit REMOTELY (Unit Owner is Server)
-                    [
-                        _target,
-                        {
-                            if (!alive _this) exitWith {};
-                            _this setCaptive false;
-                            _this enableAI "PATH";
-                            _this enableAI "MOVE";
-                            _this enableAI "ANIM";
-                            _this switchMove "";
-                        }
-                    ] remoteExec ["call", owner _target];
+
+                    [_missionId, _target] remoteExecCall ["FLO_fnc_sideMissionHandleRescue", 2];
                     
                     // Remove action locally and globally
                     [_target, _actionId] remoteExec ["BIS_fnc_holdActionRemove", 0];
@@ -145,6 +134,7 @@ private _template = createHashMapFromArray [
         
         _data set ["pows", _pows];
         _data set ["initialCount", count _pows];
+        _data set ["rescuedUnits", []];
         
         // Spawn intel composition
         ["Intel_01", selectRandom _buildingPos, [0,0,0], 0, false, false, true] call LARs_fnc_spawnComp;
@@ -193,21 +183,11 @@ private _template = createHashMapFromArray [
     // Success - at least half POWs rescued
     ["fnc_checkSuccess", {
         params ["_missionId", "_instance"];
-        private _friendlySide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
-        if !(_friendlySide in [east, west]) then { _friendlySide = west };
         private _data = _instance get "data";
-        private _pows = _data getOrDefault ["pows", []];
         private _initialCount = _data getOrDefault ["initialCount", 1];
-        
-        private _rescued = {
-            private _pow = _x;
-            alive _pow && {!captive _pow} && {
-                private _nearFriendlyPlayer = (allPlayers findIf { _x distance _pow < 50 }) >= 0;
-                _nearFriendlyPlayer || {vehicle _pow != _pow && {side vehicle _pow == _friendlySide}}
-            }
-        } count _pows;
-        
-        _rescued >= (_initialCount / 2)
+        private _rescuedUnits = _data getOrDefault ["rescuedUnits", []];
+
+        (count _rescuedUnits) >= ceil (_initialCount / 2)
     }],
     
     // Fail - all POWs killed

@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- * Fill attack deficits across frontline objectives using a local-first, round-robin allocator.
+ * Fill attack deficits across frontline objectives using a graph-local, round-robin allocator.
  * Existing attackers stay sticky on their current objective. Only currently available groups are assigned.
  *
  * Arguments:
@@ -37,9 +37,7 @@ if ((count _pool) == 0) exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
-private _config = _cmdr get "_config";
 private _groups = FLO_virtualGroups get "_groups";
-private _allObjectives = _ws call ["_getObjectives", []];
 private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
 if ((count (keys _frontlineObjectives)) == 0) then {
     _frontlineObjectives = _ws call ["_getEnemyObjectives", []];
@@ -48,6 +46,8 @@ if ((count (keys _frontlineObjectives)) == 0) exitWith { _metrics };
 
 private _trackSectorObjectives = _track get "frontSectorObjectives";
 private _trackAnchorPos = +(_track get "frontSectorAnchorPos");
+private _reserveGraphDepth = ((_cmdr get "_config") get "attackReserveGraphDepth");
+private _fallbackBand = _reserveGraphDepth + 1;
 
 private _activeAttackCounts = createHashMap;
 {
@@ -58,7 +58,12 @@ private _activeAttackCounts = createHashMap;
     private _attackObjective = _gData get "attackObjective";
     if (_attackObjective == "") then { continue };
 
-    _activeAttackCounts set [_attackObjective, (_activeAttackCounts getOrDefault [_attackObjective, 0]) + 1];
+    private _activeAttackCount = if (_attackObjective in _activeAttackCounts) then {
+        _activeAttackCounts get _attackObjective
+    } else {
+        0
+    };
+    _activeAttackCounts set [_attackObjective, _activeAttackCount + 1];
 } forEach _groups;
 
 private _candidateObjectives = [];
@@ -68,22 +73,16 @@ private _candidateObjectives = [];
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
     if (_attackCap <= 0) then { continue };
 
-    private _activeAttackers = _activeAttackCounts getOrDefault [_objectiveId, 0];
+    private _activeAttackers = if (_objectiveId in _activeAttackCounts) then {
+        _activeAttackCounts get _objectiveId
+    } else {
+        0
+    };
     private _deficit = (_attackCap - _activeAttackers) max 0;
     if (_deficit <= 0) then { continue };
 
     private _sourceObjectives = _cmdr call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
     if ((count _sourceObjectives) == 0) then { continue };
-
-    private _supportObjectives = +_sourceObjectives;
-    {
-        private _sourceObjective = _allObjectives get _x;
-        {
-            private _linkedObjective = _allObjectives get _x;
-            if ((_linkedObjective get "owner") != _ownSide) then { continue };
-            _supportObjectives pushBackUnique _x;
-        } forEach (_sourceObjective get "linkedObjectives");
-    } forEach _sourceObjectives;
 
     private _selectionDist = if ((count _trackAnchorPos) >= 2) then {
         _trackAnchorPos distance2D (_objective get "position")
@@ -94,12 +93,12 @@ private _candidateObjectives = [];
     private _sectorMatch = (count _trackSectorObjectives) == 0
         || { (count ((_objective get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0 };
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
+    private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
-        ["sourceObjectives", _sourceObjectives],
-        ["supportObjectives", _supportObjectives],
+        ["reserveBands", _reserveBands],
         ["sectorMatch", _sectorMatch],
         ["selectionDist", _selectionDist],
         ["priority", _objective get "priority"],
@@ -125,8 +124,6 @@ private _rankedCandidates = [];
 _rankedCandidates sort true;
 _candidateObjectives = _rankedCandidates apply { _x select 4 };
 
-private _localReserveMeters = _config get "attackLocalReserveMeters";
-private _maxPullDistanceMeters = _config get "attackMaxPullDistanceMeters";
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
@@ -139,8 +136,7 @@ while {_continueAllocation && {(count _pool) > 0}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
-        private _sourceObjectives = _x get "sourceObjectives";
-        private _supportObjectives = _x get "supportObjectives";
+        private _reserveBands = _x get "reserveBands";
 
         private _bestGroupId = "";
         private _bestBand = 10;
@@ -154,26 +150,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             if !((_gData get "groupType") in ["infantry", "recon", "motorized", "mechanized", "armor"]) then { continue };
 
             private _groupPos = _gData get "position";
-            private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+            private _homeObjective = _gData get "homeObjective";
             private _distToObjective = _groupPos distance2D _objectivePos;
-            private _band = 4;
-
-            if (_homeObjective in _sourceObjectives) then {
-                _band = 0;
-            } else {
-                if (_homeObjective in _supportObjectives) then {
-                    _band = 1;
-                } else {
-                    if (_distToObjective <= _localReserveMeters) then {
-                        _band = 2;
-                    } else {
-                        if (_distToObjective <= _maxPullDistanceMeters) then {
-                            _band = 3;
-                        } else {
-                            continue;
-                        };
-                    };
-                };
+            private _band = _fallbackBand;
+            if (_homeObjective in _reserveBands) then {
+                _band = _reserveBands get _homeObjective;
             };
 
             if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {
@@ -191,7 +172,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
 
-            private _assignedHere = _assignedByObjective getOrDefault [_objectiveId, 0];
+            private _assignedHere = if (_objectiveId in _assignedByObjective) then {
+                _assignedByObjective get _objectiveId
+            } else {
+                0
+            };
             if (_assignedHere == 0) then {
                 if ((_x get "activeAttackers") > 0) then {
                     _metrics set ["reinforcedObjectives", (_metrics get "reinforcedObjectives") + 1];

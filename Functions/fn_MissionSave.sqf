@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 3;
+private _saveVersion = 4;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -423,7 +423,8 @@ try {
                         ["onMission", _gData getOrDefault ["onMission", false]],
                         ["isReinforcing", _gData getOrDefault ["isReinforcing", false]],
                         ["reinforcementTargetPos", _reinforcementTargetPos],
-                        ["reinforcementTargetObjective", _gData getOrDefault ["reinforcementTargetObjective", ""]],
+                        ["reinforcementRequestedObjective", _gData getOrDefault ["reinforcementRequestedObjective", ""]],
+                        ["reinforcementDeliveryObjective", _gData getOrDefault ["reinforcementDeliveryObjective", ""]],
                         ["pathRequestTarget", _pathRequestTarget],
                         ["pathRequestTrails", _gData getOrDefault ["pathRequestTrails", false]],
                         ["pathRequestSource", _gData getOrDefault ["pathRequestSource", ""]],

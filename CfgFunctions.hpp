@@ -27,8 +27,6 @@ class FLO {
     class GTNCore {
         file = "Functions\AI\GTN\Core";
 
-        class gtnAllocateFrontlineAttacks {};
-        class gtnAllocateFrontlineDefense {};
         class gtnSideContext        {};
         class gtnWorldState         {};
         class gtnGoalLibrary        {};
@@ -40,12 +38,29 @@ class FLO {
         class gtnReleaseCompletedAttackAssignments {};
     };
 
+    class GTNCoreActions {
+        file = "Functions\AI\GTN\Core\Actions";
+
+        class gtnAllocateFrontlineAttacks {};
+        class gtnAllocateFrontlineDefense {};
+        class gtnRequestFrontlineCAP {};
+        class gtnRequestFrontlineCAS {};
+    };
+
+    class GTNCoreLogic {
+        file = "Functions\AI\GTN\Core\Logic";
+
+        class gtnBuildObjectiveReserveBands {};
+    };
+
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
 
     class GTNTasks {
         file = "Functions\AI\GTN\Tasks";
 
         class gtnPlayerTaskBridge {};
+        class gtnTaskScoreObjectiveForPlayers {};
+        class gtnTaskCollectDestroyTargets {};
     };
 
     class GTNResourceManager {
@@ -297,6 +312,7 @@ class FLO {
         class sideMissionTemplate       {};
         class sideMissionManager        {};
         class sideMissionEntityTracker  {};
+        class sideMissionHandleRescue   {};
         class sideMissionTaskCreate     {};
         class sideMissionTaskUpdate     {};
         class sideMissionTaskCleanup    {};

@@ -73,7 +73,8 @@ private _groupData = createHashMapFromArray [
     ["onMission", false],         // Whether this group is on an active mission (prevents virtualization)
     ["isReinforcing", false],
     ["reinforcementTargetPos", []],
-    ["reinforcementTargetObjective", ""],
+    ["reinforcementRequestedObjective", ""],
+    ["reinforcementDeliveryObjective", ""],
     ["forceVirtual", false],      // Keep group virtual regardless of player proximity
     ["currentOrder", ""],         // Current order type (MOVE, ATTACK, DEFEND, etc.)
     ["aaDeployState", ""],        // "", "MOVING", "DEPLOYED"

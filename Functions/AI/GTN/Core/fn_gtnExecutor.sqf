@@ -998,30 +998,10 @@ private _executor = createHashMapObject [[
             };
 
             private _ws = _cmdr get "_worldState";
-            private _ownSide = _cmdr get "_ownSide";
-            private _enemySide = _cmdr get "_enemySide";
-            private _allObjectives = _ws call ["_getObjectives", []];
             private _sourceObjectives = _cmdr call ["_getFriendlyAttackSourceObjectives", [_objId]];
-            private _sourceObjectiveSet = createHashMap;
-            { _sourceObjectiveSet set [_x, true]; } forEach _sourceObjectives;
-
-            private _supportObjectives = +_sourceObjectives;
-            {
-                private _sourceObj = _allObjectives get _x;
-                if (isNil "_sourceObj") then { continue };
-
-                {
-                    private _linkedObj = _allObjectives get _x;
-                    if (isNil "_linkedObj") then { continue };
-                    if ((_linkedObj get "owner") != _ownSide) then { continue };
-                    _supportObjectives pushBackUnique _x;
-                } forEach (_sourceObj get "linkedObjectives");
-            } forEach _sourceObjectives;
-
-            private _supportObjectiveSet = createHashMap;
-            { _supportObjectiveSet set [_x, true]; } forEach _supportObjectives;
-            private _localReserveMeters = (_cmdr get "_config") get "attackLocalReserveMeters";
-            private _maxPullDistanceMeters = (_cmdr get "_config") get "attackMaxPullDistanceMeters";
+            private _reserveGraphDepth = ((_cmdr get "_config") get "attackReserveGraphDepth");
+            private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+            private _fallbackBand = _reserveGraphDepth + 1;
             private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_objId]];
             private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objId]];
             private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
@@ -1092,28 +1072,14 @@ private _executor = createHashMapObject [[
                     private _gType = _gData get "groupType";
                     if !(_gType in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
 
-                    private _homeObjective = _gData getOrDefault ["homeObjective", ""];
+                    private _homeObjective = _gData get "homeObjective";
                     private _distToObjective = (_gData get "position") distance2D _objPos;
-                    private _sourceBand = 4;
-                    if (_sourceObjectiveSet getOrDefault [_homeObjective, false]) then {
-                        _sourceBand = 0;
-                    } else {
-                        if (_supportObjectiveSet getOrDefault [_homeObjective, false]) then {
-                            _sourceBand = 1;
-                        } else {
-                            if (_distToObjective <= _localReserveMeters) then {
-                                _sourceBand = 2;
-                            } else {
-                                if (_distToObjective <= _maxPullDistanceMeters) then {
-                                    _sourceBand = 3;
-                                } else {
-                                    continue;
-                                };
-                            };
-                        };
+                    private _sourceBand = _fallbackBand;
+                    if (_homeObjective in _reserveBands) then {
+                        _sourceBand = _reserveBands get _homeObjective;
                     };
 
-                    _candidateMeta pushBack [_sourceBand, if (_trackPoolSet getOrDefault [_gId, false]) then { 0 } else { 1 }, _distToObjective, _gId];
+                    _candidateMeta pushBack [_sourceBand, if (_gId in _trackPoolSet) then { 0 } else { 1 }, _distToObjective, _gId];
                 } forEach _candidateIds;
 
                 _candidateMeta sort true;
