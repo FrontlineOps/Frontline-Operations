@@ -58,15 +58,6 @@ private _fnc_taskTypeFromKind = {
     }
 };
 
-private _fnc_targetLabelFromIntel = {
-    params ["_intel"];
-    if (_intel get "hasArmor") exitWith { "armor" };
-    if ((_intel get "hasAA") && {_intel get "hasStatic"}) exitWith { "static AA" };
-    if (_intel get "hasAA") exitWith { "air-defense" };
-    if (_intel get "hasStatic") exitWith { "static weapons" };
-    "assets"
-};
-
 private _fnc_taskTitle = {
     params ["_kind", "_objId", "_objData", ["_meta", createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]]]];
     private _name = _objData get "name";
@@ -161,7 +152,7 @@ private _fnc_publishTask = {
     private _title = [_kind, _objId, _objData, _meta] call _fnc_taskTitle;
     private _desc = [_kind, _objId, _objData, _meta] call _fnc_taskDesc;
     private _taskType = [_kind] call _fnc_taskTypeFromKind;
-    private _pos = _objData get "position";
+    private _pos = _meta getOrDefault ["taskPos", _objData get "position"];
 
     [
         _ownerSide,
@@ -189,27 +180,6 @@ private _fnc_markTaskSucceeded = {
     };
 };
 
-private _fnc_collectDestroyTargets = {
-    params ["_objData", "_enemySide"];
-    private _pos = _objData get "position";
-    private _targets = [];
-    {
-        if (!alive _x) then { continue };
-        private _tSide = side _x;
-        if (isPlayer _x) then {
-            _tSide = side group _x;
-        };
-        if !(_tSide isEqualTo _enemySide) then { continue };
-
-        private _valuable = (_x isKindOf "Tank") || (_x isKindOf "Wheeled_APC_F") || (_x isKindOf "Tracked_APC_F") || (_x isKindOf "StaticWeapon");
-
-        if (_valuable) then {
-            _targets pushBackUnique _x;
-        };
-    } forEach (_pos nearEntities [["LandVehicle", "StaticWeapon"], 900]);
-    _targets
-};
-
 private _fnc_countAliveTargets = {
     params ["_targets", "_enemySide"];
     {
@@ -223,14 +193,13 @@ private _fnc_countAliveTargets = {
     } count _targets
 };
 
-[ _interval, _fnc_sideKey, _fnc_enemySide, _fnc_normalizeSide, _fnc_taskTypeFromKind, _fnc_targetLabelFromIntel, _fnc_taskTitle, _fnc_taskDesc, _fnc_deleteTaskIfPresent, _fnc_taskMissing, _fnc_clearPrimaryTaskState, _fnc_clearSecondaryTaskState, _fnc_restoreLegacyRefState, _fnc_publishTask, _fnc_markTaskSucceeded, _fnc_collectDestroyTargets, _fnc_countAliveTargets ] spawn {
+[ _interval, _fnc_sideKey, _fnc_enemySide, _fnc_normalizeSide, _fnc_taskTypeFromKind, _fnc_taskTitle, _fnc_taskDesc, _fnc_deleteTaskIfPresent, _fnc_taskMissing, _fnc_clearPrimaryTaskState, _fnc_clearSecondaryTaskState, _fnc_restoreLegacyRefState, _fnc_publishTask, _fnc_markTaskSucceeded, _fnc_countAliveTargets ] spawn {
     params [
         "_interval",
         "_fnc_sideKey",
         "_fnc_enemySide",
         "_fnc_normalizeSide",
         "_fnc_taskTypeFromKind",
-        "_fnc_targetLabelFromIntel",
         "_fnc_taskTitle",
         "_fnc_taskDesc",
         "_fnc_deleteTaskIfPresent",
@@ -240,7 +209,6 @@ private _fnc_countAliveTargets = {
         "_fnc_restoreLegacyRefState",
         "_fnc_publishTask",
         "_fnc_markTaskSucceeded",
-        "_fnc_collectDestroyTargets",
         "_fnc_countAliveTargets"
     ];
 
@@ -258,11 +226,25 @@ private _fnc_countAliveTargets = {
 
         private _enemySide = [_activeSide] call _fnc_enemySide;
         private _stateKey = [_activeSide] call _fnc_sideKey;
+        private _playerPositions = [];
+        {
+            if (!alive _x) then { continue };
+            if ((side group _x) != _activeSide) then { continue };
+            _playerPositions pushBack (getPosATL _x);
+        } forEach allPlayers;
+
+        if (count _playerPositions == 0) then {
+            sleep _interval;
+            continue;
+        };
+
         private _worldState = nil;
+        private _worldObjectives = nil;
         if (!isNil "FLO_GTN_ResourceManager") then {
             private _cmdr = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_activeSide]];
             if (!isNil "_cmdr") then {
                 _worldState = _cmdr get "_worldState";
+                _worldObjectives = _worldState call ["_getObjectives", []];
             };
         };
 
@@ -299,8 +281,10 @@ private _fnc_countAliveTargets = {
             if !(_legacyObjId isEqualTo "") then {
                 private _legacyObjData = FLO_Objectives get _legacyObjId;
                 if (!isNil "_legacyObjData") then {
-                    private _legacyTargets = [_legacyObjData, _enemySide] call _fnc_collectDestroyTargets;
-                    _state set ["secondaryTargets", _legacyTargets];
+                    private _legacyDestroyInfo = [_legacyObjId, _legacyObjData, _enemySide] call FLO_fnc_gtnTaskCollectDestroyTargets;
+                    if ((count (keys _legacyDestroyInfo)) > 0) then {
+                        _state set ["secondaryTargets", _legacyDestroyInfo get "targets"];
+                    };
                 };
             };
         };
@@ -378,38 +362,30 @@ private _fnc_countAliveTargets = {
             } else {
                 _objData get "opforCount"
             };
+            private _objectiveState = nil;
+            if (!isNil "_worldObjectives") then {
+                _objectiveState = _worldObjectives get _objId;
+            };
 
             if (_owner isEqualTo _enemySide) then {
-                _captureCandidates pushBack [_objId, _priority, _objData];
+                private _captureScore = [_objId, _objData, _playerPositions, "capture", _objectiveState, _worldState] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
+                _captureCandidates pushBack [_objId, _captureScore, _objData];
 
-                if (!isNil "_worldState") then {
-                    private _intel = _worldState call ["_getObjectiveIntel", [_objId]];
-                    private _intelQuality = _intel get "intelQuality";
-                    private _intelFresh = _worldState call ["_isIntelFresh", [_objId, 900]];
-                    if (_intelFresh && {_intelQuality >= 0.5}) then {
-                        private _power = _intel get "totalCombatPower";
-                        private _hasArmor = _intel get "hasArmor";
-                        private _hasAA = _intel get "hasAA";
-                        private _hasStatic = _intel get "hasStatic";
-                        if (_hasArmor || _hasAA || _hasStatic || {_power >= 250}) then {
-                            private _score = _priority + (_power / 25) + (_intelQuality * 20);
-                            if (_hasArmor) then { _score = _score + 35 };
-                            if (_hasAA) then { _score = _score + 30 };
-                            if (_hasStatic) then { _score = _score + 20 };
-
-                            private _targetLabel = [_intel] call _fnc_targetLabelFromIntel;
-                            private _meta = createHashMapFromArray [
-                                ["targetLabel", _targetLabel],
-                                ["targetCount", 0]
-                            ];
-                            _destroyCandidates pushBack [_objId, _score, _objData, _meta];
-                        };
-                    };
+                private _destroyInfo = [_objId, _objData, _enemySide] call FLO_fnc_gtnTaskCollectDestroyTargets;
+                if ((count (keys _destroyInfo)) > 0) then {
+                    private _destroyScore = ([_objId, _objData, _playerPositions, "destroy", _objectiveState, _worldState] call FLO_fnc_gtnTaskScoreObjectiveForPlayers) + (_destroyInfo get "typeBonus");
+                    private _meta = createHashMapFromArray [
+                        ["targetLabel", _destroyInfo get "targetLabel"],
+                        ["targetCount", _destroyInfo get "targetCount"],
+                        ["taskPos", _destroyInfo get "taskPos"]
+                    ];
+                    _destroyCandidates pushBack [_objId, _destroyScore, _objData, _meta, _destroyInfo get "targets"];
                 };
             };
 
             if (_owner isEqualTo _activeSide && {_enemyCount > 0 || {_enemyCount > _friendlyCount}}) then {
-                _defendCandidates pushBack [_objId, (_enemyCount * 10) + _priority, _objData];
+                private _defendScore = [_objId, _objData, _playerPositions, "defend", _objectiveState, _worldState] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
+                _defendCandidates pushBack [_objId, _defendScore, _objData];
             };
         } forEach (keys FLO_Objectives);
 
@@ -447,6 +423,7 @@ private _fnc_countAliveTargets = {
         private _secondaryObjId = "";
         private _secondaryData = nil;
         private _secondaryMeta = createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]];
+        private _secondaryTargets = [];
 
         // Secondary prefers known high-value assets from commander intel.
         {
@@ -458,20 +435,9 @@ private _fnc_countAliveTargets = {
                 _secondaryObjId = _objId;
                 _secondaryData = _objData;
                 _secondaryMeta = _meta;
+                _secondaryTargets = _x select 4;
             };
         } forEach _destroyCandidates;
-
-        // Fallback: generic destroy objective if we have no confirmed high-value intel.
-        {
-            if (_secondaryObjId != "") exitWith {};
-            private _objId = _x select 0;
-            private _objData = _x select 2;
-            if (_objId != _primaryObjId) exitWith {
-                _secondaryKind = "destroy";
-                _secondaryObjId = _objId;
-                _secondaryData = _objData;
-            };
-        } forEach _captureCandidates;
 
         // Update primary task slot.
         private _newPrimaryRef = if (_primaryObjId != "") then { _primaryKind + "_" + _primaryObjId } else { "" };
@@ -500,14 +466,9 @@ private _fnc_countAliveTargets = {
             [_state] call _fnc_clearSecondaryTaskState;
 
             if (_newSecondaryRef != "" && {!isNil "_secondaryData"}) then {
-                private _markedTargets = if (_secondaryKind isEqualTo "destroy") then {
-                    [_secondaryData, _enemySide] call _fnc_collectDestroyTargets
-                } else {
-                    []
-                };
+                private _markedTargets = _secondaryTargets;
 
                 if ((_secondaryKind != "destroy") || {(count _markedTargets) > 0}) then {
-                    _secondaryMeta set ["targetCount", count _markedTargets];
                     private _newSecondaryId = [_activeSide, "SECONDARY", _secondaryKind, _secondaryObjId, _secondaryData, _secondaryMeta] call _fnc_publishTask;
                     _state set ["secondaryTaskId", _newSecondaryId];
                     _state set ["secondaryRef", _newSecondaryRef];

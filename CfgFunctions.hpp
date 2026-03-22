@@ -47,6 +47,8 @@ class FLO {
         file = "Functions\AI\GTN\Tasks";
 
         class gtnPlayerTaskBridge {};
+        class gtnTaskScoreObjectiveForPlayers {};
+        class gtnTaskCollectDestroyTargets {};
     };
 
     class GTNResourceManager {
