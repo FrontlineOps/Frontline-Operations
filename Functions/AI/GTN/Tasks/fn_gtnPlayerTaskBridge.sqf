@@ -362,8 +362,8 @@ private _fnc_countAliveTargets = {
             } else {
                 _objData get "opforCount"
             };
-            private _objectiveState = nil;
-            if (!isNil "_worldObjectives") then {
+            private _objectiveState = createHashMap;
+            if (!isNil "_worldObjectives" && {_objId in _worldObjectives}) then {
                 _objectiveState = _worldObjectives get _objId;
             };
 

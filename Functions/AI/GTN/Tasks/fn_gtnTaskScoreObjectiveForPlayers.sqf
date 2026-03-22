@@ -11,7 +11,7 @@
  *   1: Objective Data <HASHMAP>
  *   2: Player Positions <ARRAY>
  *   3: Role <STRING> - "capture", "defend", "destroy"
- *   4: Objective World State Data <HASHMAP|NIL>
+ *   4: Objective World State Data <HASHMAP>
  *   5: World State <HASHMAP|NIL>
  *
  * Return Value:
@@ -23,7 +23,7 @@ params [
     ["_objectiveData", createHashMap, [createHashMap]],
     ["_playerPositions", [], [[]]],
     ["_role", "capture", [""]],
-    ["_objectiveState", nil],
+    ["_objectiveState", createHashMap, [createHashMap]],
     ["_worldState", nil]
 ];
 
@@ -48,7 +48,7 @@ private _enemyCount = 0;
 private _underAttack = false;
 private _contested = false;
 
-if (!isNil "_objectiveState") then {
+if (count _objectiveState > 0) then {
     _friendlyCount = _objectiveState get "friendlyCount";
     _enemyCount = _objectiveState get "enemyCount";
     _underAttack = _objectiveState get "underAttack";
