@@ -176,7 +176,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
 
-            private _assignedHere = _assignedByObjective getOrDefault [_objectiveId, 0];
+            private _assignedHere = if (_objectiveId in _assignedByObjective) then {
+                _assignedByObjective get _objectiveId
+            } else {
+                0
+            };
             if (_assignedHere == 0) then {
                 if ((_x get "activeDefenders") > 0) then {
                     _metrics set ["reinforcedObjectives", (_metrics get "reinforcedObjectives") + 1];

@@ -469,7 +469,12 @@ private _gtnCommander = createHashMapObject [[
                 if (isNil "_sourceObj") then { continue };
                 if ((_sourceObj get "owner") != _ownSide) then { continue };
 
-                _sourceScores set [_x, (_sourceScores getOrDefault [_x, 0]) + _scoreAdd];
+                private _sourceScore = if (_x in _sourceScores) then {
+                    _sourceScores get _x
+                } else {
+                    0
+                };
+                _sourceScores set [_x, _sourceScore + _scoreAdd];
                 _sourcePositions set [_x, _sourceObj get "position"];
             } forEach (_enemyObj get "linkedObjectives");
         } forEach (keys _frontlineEnemyObjectives);
@@ -1142,7 +1147,12 @@ private _gtnCommander = createHashMapObject [[
             private _attackObjective = _gData getOrDefault ["attackObjective", ""];
             if (_attackObjective == "") then { continue };
 
-            _activeAttackCounts set [_attackObjective, (_activeAttackCounts getOrDefault [_attackObjective, 0]) + 1];
+            private _activeAttackCount = if (_attackObjective in _activeAttackCounts) then {
+                _activeAttackCounts get _attackObjective
+            } else {
+                0
+            };
+            _activeAttackCounts set [_attackObjective, _activeAttackCount + 1];
         } forEach (FLO_virtualGroups get "_groups");
 
         private _config = _self get "_config";
@@ -1198,8 +1208,16 @@ private _gtnCommander = createHashMapObject [[
         {
             _x params ["_objId", "_priority", "_routeDist"];
 
-            private _reserved = _reservations getOrDefault [_objId, 0];
-            private _activeAttackers = _activeAttackCounts getOrDefault [_objId, 0];
+            private _reserved = if (_objId in _reservations) then {
+                _reservations get _objId
+            } else {
+                0
+            };
+            private _activeAttackers = if (_objId in _activeAttackCounts) then {
+                _activeAttackCounts get _objId
+            } else {
+                0
+            };
             private _attackCap = _attackCapByObjective getOrDefault [_objId, -1];
             if (_attackCap < 0) then {
                 private _frontLinks = count ((_objectives get _objId) get "linkedObjectives" select {
@@ -2465,7 +2483,12 @@ private _gtnCommander = createHashMapObject [[
             
             // Track order distribution
             private _orderKey = if (_currentOrder == "") then { "IDLE" } else { _currentOrder };
-            _orderBreakdown set [_orderKey, (_orderBreakdown getOrDefault [_orderKey, 0]) + 1];
+            private _orderCount = if (_orderKey in _orderBreakdown) then {
+                _orderBreakdown get _orderKey
+            } else {
+                0
+            };
+            _orderBreakdown set [_orderKey, _orderCount + 1];
             
             // Check filters
             if (_side != _ownSide) exitWith { _stats set ["wrongSide", (_stats get "wrongSide") + 1] };

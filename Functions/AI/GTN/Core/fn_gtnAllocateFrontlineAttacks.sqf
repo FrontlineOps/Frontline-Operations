@@ -57,7 +57,12 @@ private _activeAttackCounts = createHashMap;
     private _attackObjective = _gData get "attackObjective";
     if (_attackObjective == "") then { continue };
 
-    _activeAttackCounts set [_attackObjective, (_activeAttackCounts getOrDefault [_attackObjective, 0]) + 1];
+    private _activeAttackCount = if (_attackObjective in _activeAttackCounts) then {
+        _activeAttackCounts get _attackObjective
+    } else {
+        0
+    };
+    _activeAttackCounts set [_attackObjective, _activeAttackCount + 1];
 } forEach _groups;
 
 private _candidateObjectives = [];
@@ -67,7 +72,11 @@ private _candidateObjectives = [];
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
     if (_attackCap <= 0) then { continue };
 
-    private _activeAttackers = _activeAttackCounts getOrDefault [_objectiveId, 0];
+    private _activeAttackers = if (_objectiveId in _activeAttackCounts) then {
+        _activeAttackCounts get _objectiveId
+    } else {
+        0
+    };
     private _deficit = (_attackCap - _activeAttackers) max 0;
     if (_deficit <= 0) then { continue };
 
@@ -193,7 +202,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
 
-            private _assignedHere = _assignedByObjective getOrDefault [_objectiveId, 0];
+            private _assignedHere = if (_objectiveId in _assignedByObjective) then {
+                _assignedByObjective get _objectiveId
+            } else {
+                0
+            };
             if (_assignedHere == 0) then {
                 if ((_x get "activeAttackers") > 0) then {
                     _metrics set ["reinforcedObjectives", (_metrics get "reinforcedObjectives") + 1];
