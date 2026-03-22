@@ -46,6 +46,12 @@ private _logisticsClass = [
     ["REINFORCEMENT_INBOUND_TARGET_PENALTY", 1800],
     ["REINFORCEMENT_RECENT_TARGET_PENALTY", 1400],
     ["REINFORCEMENT_LAST_TARGET_PENALTY", 900],
+    ["REINFORCEMENT_OBJECTIVE_SECURE_RATIO", 1.75],
+    ["REINFORCEMENT_OBJECTIVE_PRESSURE_PER_GROUP", 10],
+    ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MIN", 1],
+    ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MAX", 4],
+    ["REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX", 2],
+    ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
@@ -106,6 +112,14 @@ private _logisticsClass = [
 
     ["_buildRecentDispatchCounts", {
         [_self] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
+    }],
+
+    ["_canDispatchToObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkCanDispatchToObjective;
+    }],
+
+    ["_pickDeliveryObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkPickDeliveryObjective;
     }],
 
     ["_pickSpawnSourceObjective", {

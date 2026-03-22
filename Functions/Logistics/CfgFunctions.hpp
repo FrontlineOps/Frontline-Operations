@@ -27,6 +27,7 @@ class LogisticsNetwork {
 
     class logisticsNetworkBuildInboundObjectiveCounts {};
     class logisticsNetworkBuildRecentDispatchCounts {};
+    class logisticsNetworkCanDispatchToObjective {};
     class logisticsNetworkCheckAndReplace {};
     class logisticsNetworkCreate {};
     class logisticsNetworkCreateReplacement {};
@@ -37,6 +38,7 @@ class LogisticsNetwork {
     class logisticsNetworkGetRearAATargets {};
     class logisticsNetworkObjectiveHasStaticAA {};
     class logisticsNetworkPickBestTarget {};
+    class logisticsNetworkPickDeliveryObjective {};
     class logisticsNetworkPickSpawnSourceObjective {};
     class logisticsNetworkRecordReplacement {};
     class logisticsNetworkRecordTargetDispatch {};

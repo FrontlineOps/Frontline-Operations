@@ -3,8 +3,9 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Selects the best reinforcement target from a candidate objective set.
- *   Static AA uses priority scoring; maneuver reinforcements rotate among the
- *   nearest eligible objectives to keep pressure distributed.
+ *   Static AA uses priority scoring; maneuver reinforcements first pass hard
+ *   saturation gates, then score the remaining objectives by pressure,
+ *   priority, and anti-dogpile penalties.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -79,11 +80,13 @@ if (_groupType isEqualTo "static_aa") exitWith {
     selectRandom _bestCandidates
 };
 
-private _anchorPos = if (_spawnPos isEqualType [] && {count _spawnPos >= 2}) then {
-    _spawnPos
-} else {
-    (FLO_Objectives get (_available select 0)) get "position"
+_available = _available select {
+    [_net, _x, _groupType, _inboundCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkCanDispatchToObjective
 };
+if (count _available == 0) exitWith { "" };
+
+private _useAnchorPos = _spawnPos isEqualType [] && {count _spawnPos >= 2};
+private _anchorPos = if (_useAnchorPos) then { _spawnPos } else { [] };
 
 private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
@@ -101,7 +104,7 @@ private _bestDist = 1e12;
     private _objId = _x;
     private _objData = FLO_Objectives get _objId;
     private _objPos = _objData get "position";
-    private _dist = _objPos distance2D _anchorPos;
+    private _dist = if (_useAnchorPos) then { _objPos distance2D _anchorPos } else { 0 };
     private _friendlyCount = _objData get _friendlyCountKey;
     private _enemyCount = _objData get _enemyCountKey;
     private _pressure = ((_enemyCount * 2) - _friendlyCount) max 0;

@@ -8,16 +8,20 @@
  *   0: Logistics network object <HASHMAP>
  *   1: Group type <STRING>
  *   2: Spawn position <ARRAY>
- *   3: Target objective ID <STRING>
+ *   3: Delivery objective ID <STRING>
  *   4: Source objective ID <STRING> - Default ""
+ *   5: Requested objective ID <STRING> - Default delivery objective
  *
  * Return Value:
  *   STRING - New virtual group ID or empty string
  */
 
-params ["_net", "_groupType", "_spawnPos", "_targetObjId", ["_sourceObjId", ""]];
+params ["_net", "_groupType", "_spawnPos", "_deliveryObjectiveId", ["_sourceObjId", ""], ["_requestedObjectiveId", ""]];
 
 private _managedSide = _net get "_managedSide";
+if (_requestedObjectiveId == "") then {
+    _requestedObjectiveId = _deliveryObjectiveId;
+};
 
 if !(_spawnPos isEqualType [] && {count _spawnPos >= 2} && {((_spawnPos select 0) > 100) || {(_spawnPos select 1) > 100}}) exitWith {
     ["LOGISTICS", 1, format ["Invalid spawn position %1 for %2 reinforcement", _spawnPos, _groupType]] call FLO_fnc_log;
@@ -25,22 +29,22 @@ if !(_spawnPos isEqualType [] && {count _spawnPos >= 2} && {((_spawnPos select 0
 };
 
 private _targetPos = _spawnPos;
-if (_targetObjId != "") then {
-    private _objData = FLO_Objectives get _targetObjId;
+if (_deliveryObjectiveId != "") then {
+    private _objData = FLO_Objectives get _deliveryObjectiveId;
     if ((_objData get "owner") isNotEqualTo _managedSide) exitWith {
-        ["LOGISTICS", 2, format ["Target objective %1 no longer owned by managed side", _targetObjId]] call FLO_fnc_log;
+        ["LOGISTICS", 2, format ["Delivery objective %1 no longer owned by managed side", _deliveryObjectiveId]] call FLO_fnc_log;
         ""
     };
     _targetPos = _objData get "position";
 };
 
 if !(_targetPos isEqualType [] && {count _targetPos >= 2} && {((_targetPos select 0) > 100) || {(_targetPos select 1) > 100}}) exitWith {
-    ["LOGISTICS", 1, format ["Invalid target position %1 for %2 reinforcement to %3", _targetPos, _groupType, _targetObjId]] call FLO_fnc_log;
+    ["LOGISTICS", 1, format ["Invalid target position %1 for %2 reinforcement to %3", _targetPos, _groupType, _deliveryObjectiveId]] call FLO_fnc_log;
     ""
 };
 
 private _unitCount = [_groupType, _managedSide] call FLO_fnc_getGroupTypeCount;
-private _newGroupId = [_spawnPos, _groupType, nil, _targetObjId, _unitCount, _managedSide] call FLO_fnc_createVirtualGroup;
+private _newGroupId = [_spawnPos, _groupType, nil, _deliveryObjectiveId, _unitCount, _managedSide] call FLO_fnc_createVirtualGroup;
 if (_newGroupId == "") exitWith { "" };
 
 private _groups = FLO_virtualGroups get "_groups";
@@ -51,7 +55,9 @@ _groupData set ["isReinforcing", true];
 _groupData set ["onMission", true];
 _groupData set ["currentOrder", "REINFORCE"];
 _groupData set ["reinforcementTargetPos", _targetPos];
-_groupData set ["reinforcementTargetObjective", _targetObjId];
+_groupData set ["reinforcementTargetObjective", _deliveryObjectiveId];
+_groupData set ["reinforcementRequestedObjective", _requestedObjectiveId];
+_groupData set ["reinforcementDeliveryObjective", _deliveryObjectiveId];
 
 if (_groupType isEqualTo "static_aa") then {
     _groupData set ["forceVirtual", true];
@@ -60,9 +66,9 @@ if (_groupType isEqualTo "static_aa") then {
     _groupData set ["currentOrder", "AA_DEPLOY"];
     _groupData set ["aaDeployState", "MOVING"];
     _groupData set ["aaDeployTargetPos", _targetPos];
-    _groupData set ["aaDeployTargetObjective", _targetObjId];
+    _groupData set ["aaDeployTargetObjective", _deliveryObjectiveId];
     _groupData set ["isStrategicAA", true];
-    _groupData set ["homeObjective", _targetObjId];
+    _groupData set ["homeObjective", _deliveryObjectiveId];
     _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80]];
 };
 

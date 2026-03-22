@@ -22,6 +22,8 @@ _groupData set ["onMission", false];
 _groupData set ["currentOrder", ""];
 _groupData set ["reinforcementTargetPos", []];
 _groupData set ["reinforcementTargetObjective", ""];
+_groupData set ["reinforcementRequestedObjective", ""];
+_groupData set ["reinforcementDeliveryObjective", ""];
 
 ["VIRTUALIZATION", 3, format ["Group %1 reached destination - clearing reinforcement flags", _groupId]] call FLO_fnc_log;
 

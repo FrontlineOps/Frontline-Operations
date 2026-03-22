@@ -2,8 +2,9 @@
  * Function: FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts
  * Author: Frontline Operations Development Group
  * Description:
- *   Counts currently reinforcing virtual groups by their destination objective
- *   so target selection can avoid repeatedly overfilling the same sector.
+ *   Counts currently reinforcing virtual groups by their requested objective
+ *   so saturation gates operate on the actual pressured sector rather than the
+ *   staging objective where the group is currently headed.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -23,10 +24,7 @@ private _counts = createHashMap;
     if ((_groupData get "side") != _managedSide) then { continue };
     if !(_groupData get "isReinforcing") then { continue };
 
-    private _objectiveId = _groupData get "reinforcementTargetObjective";
-    if (_objectiveId == "") then {
-        _objectiveId = _groupData get "homeObjective";
-    };
+    private _objectiveId = _groupData get "reinforcementRequestedObjective";
     if (_objectiveId == "") then { continue };
 
     _counts set [_objectiveId, (_counts getOrDefault [_objectiveId, 0]) + 1];
