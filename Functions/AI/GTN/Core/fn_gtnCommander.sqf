@@ -68,7 +68,8 @@ for "_i" from 1 to _attackTrackCount do {
         ["status", "IDLE"],
         ["groupPool", []],
         ["frontSectorObjectives", []],
-        ["frontSectorAnchorPos", []]
+        ["frontSectorAnchorPos", []],
+        ["dynamicMaxPullDistanceMeters", 0]
     ]);
 };
 
@@ -81,7 +82,8 @@ for "_i" from 1 to _defenseTrackCount do {
         ["status", "IDLE"],
         ["groupPool", []],
         ["frontSectorObjectives", []],
-        ["frontSectorAnchorPos", []]
+        ["frontSectorAnchorPos", []],
+        ["dynamicMaxPullDistanceMeters", 0]
     ]);
 };
 
@@ -589,6 +591,7 @@ private _gtnCommander = createHashMapObject [[
             _x set ["groupPool", []];
             _x set ["frontSectorObjectives", []];
             _x set ["frontSectorAnchorPos", []];
+            _x set ["dynamicMaxPullDistanceMeters", 0];
         } forEach _tracks;
         
         if (_totalCount == 0) exitWith {
@@ -608,7 +611,25 @@ private _gtnCommander = createHashMapObject [[
         private _tRoundRobin = diag_tickTime;
         private _ownSide = _self get "_ownSide";
         private _allGroups = FLO_virtualGroups get "_groups";
-        private _maxPullDistanceMeters = ((_self get "_config") get "attackMaxPullDistanceMeters");
+        private _frontlineEnemyObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+        private _baseAttackMaxPullDistanceMeters = ((_self get "_config") get "attackMaxPullDistanceMeters");
+
+        {
+            private _trackMaxPullDistanceMeters = _baseAttackMaxPullDistanceMeters;
+            private _sectorObjectives = _x get "frontSectorObjectives";
+
+            if ((count _sectorObjectives) > 0) then {
+                {
+                    private _frontObjective = _frontlineEnemyObjectives get _x;
+                    if ((count ((_frontObjective get "linkedObjectives") arrayIntersect _sectorObjectives)) == 0) then { continue };
+
+                    private _reserveDistances = [_self, _x, "attack"] call FLO_fnc_gtnGetObjectiveReserveDistances;
+                    _trackMaxPullDistanceMeters = _trackMaxPullDistanceMeters max (_reserveDistances select 1);
+                } forEach (keys _frontlineEnemyObjectives);
+            };
+
+            _x set ["dynamicMaxPullDistanceMeters", _trackMaxPullDistanceMeters];
+        } forEach _attackTracks;
 
         {
             private _groupId = _x;
@@ -642,6 +663,7 @@ private _gtnCommander = createHashMapObject [[
                 {
                     private _sectorObjectives = _x get "frontSectorObjectives";
                     private _anchorPos = _x get "frontSectorAnchorPos";
+                    private _trackMaxPullDistanceMeters = _x get "dynamicMaxPullDistanceMeters";
                     private _band = 3;
 
                     if (_homeObjective != "" && {_homeObjective in _sectorObjectives}) then {
@@ -652,12 +674,12 @@ private _gtnCommander = createHashMapObject [[
                             if ((count ((_homeObj get "linkedObjectives") arrayIntersect _sectorObjectives)) > 0) then {
                                 _band = 1;
                             } else {
-                                if ((count _anchorPos) >= 2 && {((_homeObj get "position") distance2D _anchorPos) <= _maxPullDistanceMeters}) then {
+                                if ((count _anchorPos) >= 2 && {((_homeObj get "position") distance2D _anchorPos) <= _trackMaxPullDistanceMeters}) then {
                                     _band = 2;
                                 };
                             };
                         } else {
-                            if ((count _anchorPos) >= 2 && {_groupPos distance2D _anchorPos <= _maxPullDistanceMeters}) then {
+                            if ((count _anchorPos) >= 2 && {_groupPos distance2D _anchorPos <= _trackMaxPullDistanceMeters}) then {
                                 _band = 2;
                             };
                         };
@@ -712,11 +734,12 @@ private _gtnCommander = createHashMapObject [[
         // Log allocation
         {
             private _track = _x;
-            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
+            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4 dynMaxPull=%5)",
                 _track get "id",
                 _track get "goal",
                 count (_track get "groupPool"),
-                count (_track get "frontSectorObjectives")
+                count (_track get "frontSectorObjectives"),
+                _track get "dynamicMaxPullDistanceMeters"
             ]] call FLO_fnc_log;
         } forEach _tracks;
 
