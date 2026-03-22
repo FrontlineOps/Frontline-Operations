@@ -298,6 +298,7 @@ class FLO {
         class sideMissionTemplate       {};
         class sideMissionManager        {};
         class sideMissionEntityTracker  {};
+        class sideMissionHandleRescue   {};
         class sideMissionTaskCreate     {};
         class sideMissionTaskUpdate     {};
         class sideMissionTaskCleanup    {};

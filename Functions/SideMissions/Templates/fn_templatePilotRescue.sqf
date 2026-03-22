@@ -117,19 +117,8 @@ private _template = createHashMapFromArray [
                 
                 // Join group LOCALLY (Group Owner is Client)
                 [_target] join (group _caller);
-                
-                // Release unit REMOTELY (Unit Owner is Server)
-                [
-                    _target,
-                    {
-                        if (!alive _this) exitWith {};
-                        _this setCaptive false;
-                        _this enableAI "PATH";
-                        _this enableAI "MOVE";
-                        _this enableAI "ANIM";
-                        _this switchMove "";
-                    }
-                ] remoteExec ["call", owner _target];
+
+                [_missionId, _target] remoteExecCall ["FLO_fnc_sideMissionHandleRescue", 2];
                 
                 // Remove action locally and globally
                 [_target, _actionId] remoteExec ["BIS_fnc_holdActionRemove", 0];
@@ -147,6 +136,7 @@ private _template = createHashMapFromArray [
         // Store pilot reference for success check
         private _data = _instance get "data";
         _data set ["pilot", _pilot];
+        _data set ["pilotRescued", false];
         _data set ["house", _house];
         
         // Spawn garrison guards
@@ -187,24 +177,8 @@ private _template = createHashMapFromArray [
     // Success condition - pilot rescued (in friendly vehicle or at base)
     ["fnc_checkSuccess", {
         params ["_missionId", "_instance"];
-        private _friendlySide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
-        if !(_friendlySide in [east, west]) then { _friendlySide = west };
         private _data = _instance get "data";
-        private _pilot = _data getOrDefault ["pilot", objNull];
-        
-        if (isNull _pilot || !alive _pilot) exitWith { false };
-        
-        // Check if pilot is in a friendly vehicle
-        private _veh = vehicle _pilot;
-        if (_veh != _pilot && {side _veh == _friendlySide}) exitWith { true };
-        
-        // Check if pilot is near any player and not captive
-        if (!captive _pilot) then {
-            private _nearPlayer = (allPlayers findIf { _x distance _pilot < 10 }) >= 0;
-            if (_nearPlayer) exitWith { true };
-        };
-        
-        false
+        _data getOrDefault ["pilotRescued", false]
     }],
     
     // Fail condition - pilot killed

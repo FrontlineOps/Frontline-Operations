@@ -158,6 +158,7 @@ private _template = createHashMapFromArray [
                                 if (!isNil "_inst") then {
                                     private _d = _inst get "data";
                                     _d set ["intelCollected", true];
+                                    ["complete", [_mid, true, "Intel collected"]] call FLO_fnc_sideMissionManager;
                                     ["SIDE_MISSION", 3, format["Intel collected for mission %1 (synced)", _mid]] call FLO_fnc_log;
                                 };
                             }

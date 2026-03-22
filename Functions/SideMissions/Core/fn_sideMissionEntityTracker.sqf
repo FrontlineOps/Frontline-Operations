@@ -68,6 +68,19 @@ switch (toLower _operation) do {
         ["addEntities", [_missionId, units _group]] call FLO_fnc_sideMissionEntityTracker;
         _result = true;
     };
+
+    // Remove a tracked entity so mission cleanup does not delete it.
+    case "removeentity": {
+        _args params [["_missionId", ""], ["_entity", objNull]];
+
+        private _instance = [_missionId] call _getInstance;
+        if (isNil "_instance") exitWith { _result = false; };
+        if (isNull _entity) exitWith { _result = false; };
+
+        private _entities = _instance get "entities";
+        _instance set ["entities", _entities - [_entity]];
+        _result = true;
+    };
     
     // Add a marker to tracking
     case "addmarker": {
@@ -157,4 +170,3 @@ switch (toLower _operation) do {
 };
 
 _result
-
