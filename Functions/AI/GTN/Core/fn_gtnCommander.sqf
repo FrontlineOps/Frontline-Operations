@@ -117,6 +117,7 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCacheDirty", true],
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
+    ["_forceBaselineTotalGroups", 0],
     ["_attackObjectiveReservations", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
     ["_frontlineCASLocks", createHashMap],
@@ -139,7 +140,12 @@ private _gtnCommander = createHashMapObject [[
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
         ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
-        ["attackLaneMaxStagingSeconds", 360], // Prevent staging from stalling forever if only a small reserve package is available
+        ["attackLaneStagingGoalFraction", 0.6], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
+        ["attackLaneCautiousStrengthRatio", 0.75], // Below this theater-wide force ratio, attacks become harder to launch even if one lane has local groups
+        ["attackLaneExhaustedStrengthRatio", 0.5], // Below this ratio, the side is too depleted to begin new assaults
+        ["attackLaneCautiousGoalMultiplier", 1.25], // Cautious posture needs a larger reserve package before opening an assault
+        ["attackLaneTimeoutAssaultFraction", 0.75], // Timeout can only force an assault once most of the staged package is actually ready
+        ["attackLaneMaxStagingSeconds", 360], // After this window, staging may assault with a reduced-but-still-meaningful package
         ["attackLaneAssaultDurationSeconds", 240], // Assault windows stay open long enough for one burst of committed attacks
         ["attackLaneSpentDurationSeconds", 540], // Cooldown after an assault so reserves and logistics can catch up
         ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
@@ -411,14 +417,18 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 trackPhases | quiet=%2 staging=%3 assault=%4 spent=%5 transitions=%6 selected=%7",
+                "[FLO][PERF] GTN commander %1 trackPhases | quiet=%2 staging=%3 assault=%4 spent=%5 transitions=%6 selected=%7 posture=%8 strength=%9 baseline=%10 current=%11",
                 _self get "_sideKey",
                 _trackPhaseMetrics get "quietCount",
                 _trackPhaseMetrics get "stagingCount",
                 _trackPhaseMetrics get "assaultCount",
                 _trackPhaseMetrics get "spentCount",
                 _trackPhaseMetrics get "transitionCount",
-                _trackPhaseMetrics get "selectedObjectiveCount"
+                _trackPhaseMetrics get "selectedObjectiveCount",
+                _trackPhaseMetrics get "posture",
+                _trackPhaseMetrics get "theaterStrengthRatio",
+                _trackPhaseMetrics get "baselineTotalGroups",
+                _trackPhaseMetrics get "currentTotalGroups"
             ];
 
             if (_wsRan) then {

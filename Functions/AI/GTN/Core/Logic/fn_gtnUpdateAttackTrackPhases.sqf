@@ -23,7 +23,11 @@ private _metrics = createHashMapFromArray [
     ["assaultCount", 0],
     ["spentCount", 0],
     ["transitionCount", 0],
-    ["selectedObjectiveCount", 0]
+    ["selectedObjectiveCount", 0],
+    ["currentTotalGroups", 0],
+    ["baselineTotalGroups", 0],
+    ["theaterStrengthRatio", 1],
+    ["posture", "normal"]
 ];
 
 if (isNil "_cmdr") exitWith { _metrics };
@@ -37,9 +41,43 @@ private _enemyObjectives = _ws call ["_getEnemyObjectives", []];
 private _now = diag_tickTime;
 private _config = _cmdr get "_config";
 private _minStageGroups = _config get "attackLaneStagingMinGroups";
+private _stageGoalFraction = _config get "attackLaneStagingGoalFraction";
+private _cautiousStrengthRatio = _config get "attackLaneCautiousStrengthRatio";
+private _exhaustedStrengthRatio = _config get "attackLaneExhaustedStrengthRatio";
+private _cautiousGoalMultiplier = _config get "attackLaneCautiousGoalMultiplier";
+private _timeoutAssaultFraction = _config get "attackLaneTimeoutAssaultFraction";
 private _maxStageSeconds = _config get "attackLaneMaxStagingSeconds";
 private _assaultSeconds = _config get "attackLaneAssaultDurationSeconds";
 private _spentSeconds = _config get "attackLaneSpentDurationSeconds";
+private _maxDispatchGroups = _config get "attackDispatchMaxGroups";
+private _forces = _ws call ["_getForces", []];
+private _currentTotalGroups = _forces get "totalGroups";
+private _baselineTotalGroups = _cmdr get "_forceBaselineTotalGroups";
+
+if (_baselineTotalGroups <= 0 && _currentTotalGroups > 0) then {
+    _baselineTotalGroups = _currentTotalGroups;
+    _cmdr set ["_forceBaselineTotalGroups", _baselineTotalGroups];
+};
+
+private _theaterStrengthRatio = if (_baselineTotalGroups > 0) then {
+    _currentTotalGroups / _baselineTotalGroups
+} else {
+    1
+};
+
+private _posture = "normal";
+if (_theaterStrengthRatio < _exhaustedStrengthRatio) then {
+    _posture = "exhausted";
+} else {
+    if (_theaterStrengthRatio < _cautiousStrengthRatio) then {
+        _posture = "cautious";
+    };
+};
+
+_metrics set ["currentTotalGroups", _currentTotalGroups];
+_metrics set ["baselineTotalGroups", _baselineTotalGroups];
+_metrics set ["theaterStrengthRatio", _theaterStrengthRatio];
+_metrics set ["posture", _posture];
 
 private _setPhase = {
     params ["_track", "_phase", "_phaseUntil", "_phaseObjectiveId", "_phaseStagingGoal"];
@@ -71,12 +109,14 @@ private _setPhase = {
         _metrics set [_phaseCountKey, (_metrics get _phaseCountKey) + 1];
 
         ["GTN", 3, format [
-            "Track %1 phase=%2 objective=%3 pool=%4 staged=%5",
+            "Track %1 phase=%2 objective=%3 pool=%4 staged=%5 posture=%6 strength=%7",
             _trackId,
             _phase,
             _phaseObjectiveId,
             _poolCount,
-            _track get "phaseStagingGoal"
+            _track get "phaseStagingGoal",
+            _posture,
+            _theaterStrengthRatio toFixed 2
         ]] call FLO_fnc_log;
 
         continue;
@@ -108,12 +148,23 @@ private _setPhase = {
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_phaseObjectiveId]];
     private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_phaseObjectiveId]];
     private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
-    private _stagingGoal = (_minStageGroups min (_slotsRemaining max 1)) max 1;
+    private _maxRelevantSlots = (_slotsRemaining max 1) min _maxDispatchGroups;
+    private _scaledStagingGoal = ceil(_maxRelevantSlots * _stageGoalFraction);
+    private _stagingGoal = (_scaledStagingGoal max _minStageGroups) min _maxRelevantSlots;
+    if (_posture == "cautious") then {
+        _stagingGoal = ((ceil(_stagingGoal * _cautiousGoalMultiplier)) max 1) min _maxRelevantSlots;
+    };
+    private _timeoutAssaultAllowed = _posture == "normal";
+    private _timeoutAssaultGoal = if (_timeoutAssaultAllowed) then {
+        ((ceil(_stagingGoal * _timeoutAssaultFraction)) max 1) min _stagingGoal
+    } else {
+        -1
+    };
     _track set ["phaseStagingGoal", _stagingGoal];
 
     switch (_phase) do {
         case "quiet": {
-            if (_slotsRemaining > 0 && _poolCount > 0) then {
+            if (_posture != "exhausted" && {_slotsRemaining > 0} && {_poolCount > 0}) then {
                 [_track, "staging", _now + _maxStageSeconds, _phaseObjectiveId, _stagingGoal] call _setPhase;
                 _phase = "staging";
             };
@@ -124,9 +175,26 @@ private _setPhase = {
                 _phase = "quiet";
                 _phaseObjectiveId = "";
             } else {
-                if (_poolCount >= _stagingGoal || {_now >= _phaseUntil && _poolCount > 0}) then {
-                    [_track, "assault", _now + _assaultSeconds, _phaseObjectiveId, _stagingGoal] call _setPhase;
-                    _phase = "assault";
+                if (_posture == "exhausted") then {
+                    [_track, "quiet", 0, "", 0] call _setPhase;
+                    _phase = "quiet";
+                    _phaseObjectiveId = "";
+                } else {
+                    if (_poolCount >= _stagingGoal) then {
+                        [_track, "assault", _now + _assaultSeconds, _phaseObjectiveId, _stagingGoal] call _setPhase;
+                        _phase = "assault";
+                    } else {
+                        if (_timeoutAssaultAllowed && {_now >= _phaseUntil && _poolCount >= _timeoutAssaultGoal}) then {
+                            [_track, "assault", _now + _assaultSeconds, _phaseObjectiveId, _stagingGoal] call _setPhase;
+                            _phase = "assault";
+                        } else {
+                            if (_now >= _phaseUntil) then {
+                                [_track, "quiet", 0, "", 0] call _setPhase;
+                                _phase = "quiet";
+                                _phaseObjectiveId = "";
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -147,14 +215,17 @@ private _setPhase = {
     _metrics set [_phaseCountKey, (_metrics get _phaseCountKey) + 1];
 
     ["GTN", 3, format [
-        "Track %1 phase=%2 objective=%3 pool=%4 staged=%5 active=%6 cap=%7",
+        "Track %1 phase=%2 objective=%3 pool=%4 staged=%5 timeoutGoal=%6 active=%7 cap=%8 posture=%9 strength=%10",
         _trackId,
         _phase,
         _phaseObjectiveId,
         _poolCount,
         _track get "phaseStagingGoal",
+        _timeoutAssaultGoal,
         _activeAttackers,
-        _attackCap
+        _attackCap,
+        _posture,
+        _theaterStrengthRatio toFixed 2
     ]] call FLO_fnc_log;
 } forEach _tracks;
 
