@@ -51,6 +51,7 @@ class FLO {
         file = "Functions\AI\GTN\Core\Logic";
 
         class gtnBuildObjectiveReserveBands {};
+        class gtnUpdateAttackTrackPhases {};
     };
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"

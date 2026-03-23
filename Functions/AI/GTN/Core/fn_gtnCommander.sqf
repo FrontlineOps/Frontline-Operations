@@ -68,7 +68,12 @@ for "_i" from 1 to _attackTrackCount do {
         ["status", "IDLE"],
         ["groupPool", []],
         ["frontSectorObjectives", []],
-        ["frontSectorAnchorPos", []]
+        ["frontSectorAnchorPos", []],
+        ["phase", "quiet"],
+        ["phaseChangedAt", 0],
+        ["phaseUntil", 0],
+        ["phaseObjectiveId", ""],
+        ["phaseStagingGoal", 0]
     ]);
 };
 
@@ -133,6 +138,10 @@ private _gtnCommander = createHashMapObject [[
         ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
         ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
+        ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
+        ["attackLaneMaxStagingSeconds", 360], // Prevent staging from stalling forever if only a small reserve package is available
+        ["attackLaneAssaultDurationSeconds", 240], // Assault windows stay open long enough for one burst of committed attacks
+        ["attackLaneSpentDurationSeconds", 540], // Cooldown after an assault so reserves and logistics can catch up
         ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
         ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
         ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
@@ -225,6 +234,7 @@ private _gtnCommander = createHashMapObject [[
             ["worldState", 0],
             ["attackAssignments", 0],
             ["allocateTracks", 0],
+            ["trackPhases", 0],
             ["executeTracks", 0],
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
@@ -273,6 +283,11 @@ private _gtnCommander = createHashMapObject [[
         _tPhase = diag_tickTime;
         private _allocationMetrics = _self call ["_allocateGroupsToTracks", []];
         _phaseMs set ["allocateTracks", (diag_tickTime - _tPhase) * 1000];
+
+        // Update attack lane phases so assaults happen in bursts instead of every cycle.
+        _tPhase = diag_tickTime;
+        private _trackPhaseMetrics = [_self] call FLO_fnc_gtnUpdateAttackTrackPhases;
+        _phaseMs set ["trackPhases", (diag_tickTime - _tPhase) * 1000];
         
         // Execute all tracks in parallel
         _tPhase = diag_tickTime;
@@ -320,6 +335,7 @@ private _gtnCommander = createHashMapObject [[
             ["worldState", _wsPerf],
             ["attackAssignments", _attackAssignmentMetrics],
             ["allocation", _allocationMetrics],
+            ["trackPhases", _trackPhaseMetrics],
             ["execute", _executeMetrics],
             ["frontlineCAP", _frontlineCAPMetrics],
             ["frontlineCAS", _frontlineCASMetrics],
@@ -338,7 +354,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 execute=%13 cap=%14 cas=%15 defense=%16 staticAA=%17 preserve=%18",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 allocate=%12 phases=%13 execute=%14 cap=%15 cas=%16 defense=%17 staticAA=%18 preserve=%19",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -351,6 +367,7 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "worldState",
                 _phaseMs get "attackAssignments",
                 _phaseMs get "allocateTracks",
+                _phaseMs get "trackPhases",
                 _phaseMs get "executeTracks",
                 _phaseMs get "frontlineCAP",
                 _phaseMs get "frontlineCAS",
@@ -372,11 +389,12 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 tracks | idle=%2 running=%3 empty=%4 planCalls=%5 plans=%6 planTasks=%7 planMs=%8 execCalls=%9 execMs=%10 execFail=%11 checkCalls=%12 checkMs=%13 sync=%14 tasks=%15 complete=%16 failed=%17",
+                "[FLO][PERF] GTN commander %1 tracks | idle=%2 running=%3 empty=%4 phaseSkips=%5 planCalls=%6 plans=%7 planTasks=%8 planMs=%9 execCalls=%10 execMs=%11 execFail=%12 checkCalls=%13 checkMs=%14 sync=%15 tasks=%16 complete=%17 failed=%18",
                 _self get "_sideKey",
                 _executeMetrics get "idleTracks",
                 _executeMetrics get "runningTracks",
                 _executeMetrics get "emptyPoolSkips",
+                _executeMetrics get "phaseSkips",
                 _executeMetrics get "planCalls",
                 _executeMetrics get "plansCreated",
                 _executeMetrics get "planTaskTotal",
@@ -390,6 +408,17 @@ private _gtnCommander = createHashMapObject [[
                 _executeMetrics get "tasksExecuted",
                 _executeMetrics get "plansCompleted",
                 _executeMetrics get "plansFailed"
+            ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 trackPhases | quiet=%2 staging=%3 assault=%4 spent=%5 transitions=%6 selected=%7",
+                _self get "_sideKey",
+                _trackPhaseMetrics get "quietCount",
+                _trackPhaseMetrics get "stagingCount",
+                _trackPhaseMetrics get "assaultCount",
+                _trackPhaseMetrics get "spentCount",
+                _trackPhaseMetrics get "transitionCount",
+                _trackPhaseMetrics get "selectedObjectiveCount"
             ];
 
             if (_wsRan) then {
@@ -779,6 +808,7 @@ private _gtnCommander = createHashMapObject [[
             ["idleTracks", { (_x get "status") == "IDLE" } count _tracks],
             ["runningTracks", { (_x get "status") == "RUNNING" } count _tracks],
             ["emptyPoolSkips", 0],
+            ["phaseSkips", 0],
             ["planCalls", 0],
             ["plansCreated", 0],
             ["planTaskTotal", 0],
@@ -806,14 +836,23 @@ private _gtnCommander = createHashMapObject [[
         for "_offset" from 0 to (_trackCount - 1) do {
             private _idx = (_startIdx + _offset) mod _trackCount;
             private _track = _tracks select _idx;
-            if ((_track get "status") == "RUNNING" || { count (_track get "groupPool") > 0 }) exitWith {
+            private _trackGoal = _track get "goal";
+            private _trackReady = (_track get "status") == "RUNNING";
+
+            if (!_trackReady && {count (_track get "groupPool") > 0}) then {
+                if (_trackGoal == "capture_priority_objective") then {
+                    _trackReady = (_track get "phase") == "assault";
+                } else {
+                    _trackReady = true;
+                };
+            };
+
+            if (_trackReady) exitWith {
                 _selectedIdx = _idx;
             };
         };
 
-        if (_selectedIdx < 0) then {
-            _selectedIdx = _startIdx;
-        };
+        if (_selectedIdx < 0) exitWith { _metrics };
 
         _self set ["_nextTrackExecutionIndex", (_selectedIdx + 1) mod _trackCount];
 
@@ -825,6 +864,17 @@ private _gtnCommander = createHashMapObject [[
         _metrics set ["processedTrackId", _trackId];
 
         if (_status == "IDLE") then {
+            if (_goal == "capture_priority_objective" && {(_track get "phase") != "assault"}) exitWith {
+                _metrics set ["phaseSkips", 1];
+                ["GTN", 3, format[
+                    "Track %1 phase=%2 objective=%3 - holding attack execution",
+                    _trackId,
+                    _track get "phase",
+                    _track get "phaseObjectiveId"
+                ]] call FLO_fnc_log;
+                _metrics
+            };
+
             private _pool = _track get "groupPool";
             if ((count _pool) == 0) exitWith {
                 _metrics set ["emptyPoolSkips", 1];
@@ -1117,6 +1167,7 @@ private _gtnCommander = createHashMapObject [[
         private _crossSectorPenalty = ((_self get "_config") get "attackCrossSectorPenaltyMeters");
         private _trackAnchorPos = [];
         private _trackSectorObjectives = [];
+        private _phaseObjectiveId = "";
 
         if (count (keys _objectives) == 0) then {
             _objectives = _ws call ["_getEnemyObjectives", []];
@@ -1132,6 +1183,7 @@ private _gtnCommander = createHashMapObject [[
                     _trackPool = _x get "groupPool";
                     _trackSectorObjectives = _x get "frontSectorObjectives";
                     _trackAnchorPos = +(_x get "frontSectorAnchorPos");
+                    _phaseObjectiveId = _x get "phaseObjectiveId";
                 };
             } forEach _tracks;
 
@@ -1154,6 +1206,16 @@ private _gtnCommander = createHashMapObject [[
                     _trackAnchorPos = [_sumX / _count, _sumY / _count, 0];
                 };
             };
+        };
+
+        if (_phaseObjectiveId != "" && {_phaseObjectiveId in _objectives}) exitWith {
+            private _reserved = if (_phaseObjectiveId in _reservations) then {
+                _reservations get _phaseObjectiveId
+            } else {
+                0
+            };
+            _reservations set [_phaseObjectiveId, _reserved + 1];
+            _phaseObjectiveId
         };
 
         private _activeAttackCounts = createHashMap;
@@ -2459,6 +2521,8 @@ private _gtnCommander = createHashMapObject [[
             private _status = _track get "status";
             private _pool = count (_track get "groupPool");
             private _planner = _track get "planner";
+            private _phase = if (_goal == "capture_priority_objective") then { _track get "phase" } else { "-" };
+            private _phaseObjective = if (_goal == "capture_priority_objective") then { _track get "phaseObjectiveId" } else { "" };
             
             private _planStatus = if (!isNil "_planner") then {
                 _planner call ["_getPlanStatus", []]
@@ -2471,10 +2535,15 @@ private _gtnCommander = createHashMapObject [[
                 } else { "-" }
             } else { "-" };
             
-            // Short format: TRACK_1(capture):RUNNING|p=3|t=prim_attack
+            // Short format: TRACK_1(capture):RUNNING|ph=staging|p=3|t=prim_attack|o=obj
             private _shortGoal = _goal select [0, 12]; // First 12 chars
-            _summary pushBack format["%1(%2):%3|p=%4|t=%5", 
-                _trackId, _shortGoal, _planStatus, _pool, _taskInfo];
+            private _phaseInfo = if (_phaseObjective != "") then {
+                format ["|o=%1", _phaseObjective]
+            } else {
+                ""
+            };
+            _summary pushBack format["%1(%2):%3|ph=%4|p=%5|t=%6%7",
+                _trackId, _shortGoal, _planStatus, _phase, _pool, _taskInfo, _phaseInfo];
         } forEach _tracks;
         
         ["GTN", 3, format["DECISION[tasked=%1]: %2", count _tasked, _summary joinString " | "]] call FLO_fnc_log;

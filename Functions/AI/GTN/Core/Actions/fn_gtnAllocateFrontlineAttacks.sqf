@@ -20,6 +20,8 @@ params [
 ];
 
 private _metrics = createHashMapFromArray [
+    ["phase", ""],
+    ["phaseObjective", ""],
     ["poolCount", 0],
     ["candidateObjectives", 0],
     ["assignedGroups", 0],
@@ -30,10 +32,16 @@ private _metrics = createHashMapFromArray [
 
 if (isNil "_cmdr" || {isNil "_track"}) exitWith { _metrics };
 
+private _phase = _track get "phase";
+private _phaseObjectiveId = _track get "phaseObjectiveId";
+_metrics set ["phase", _phase];
+_metrics set ["phaseObjective", _phaseObjectiveId];
+
 private _pool = +(_track get "groupPool");
 _metrics set ["poolCount", count _pool];
 _metrics set ["remainingPool", count _pool];
 if ((count _pool) == 0) exitWith { _metrics };
+if (_phase != "assault") exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
@@ -69,6 +77,8 @@ private _activeAttackCounts = createHashMap;
 private _candidateObjectives = [];
 {
     private _objectiveId = _x;
+    if (_phaseObjectiveId != "" && {_objectiveId != _phaseObjectiveId}) then { continue };
+
     private _objective = _frontlineObjectives get _objectiveId;
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
     if (_attackCap <= 0) then { continue };
