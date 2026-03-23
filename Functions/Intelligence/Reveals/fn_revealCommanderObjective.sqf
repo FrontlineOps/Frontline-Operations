@@ -49,7 +49,7 @@ private _objectiveWeights = createHashMap;
 {
     private _gData = _y;
     if ((_gData get "side") != _enemySide) then { continue };
-    if ((_gData get "currentOrder") != "ATTACK") then { continue };
+    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
 
     private _objectiveId = _gData get "attackObjective";
     if (_objectiveId == "") then { continue };

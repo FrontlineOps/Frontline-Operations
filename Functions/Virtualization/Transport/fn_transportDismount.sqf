@@ -27,25 +27,26 @@ private _transData = _groups getOrDefault [_transportGroupId, nil];
 if (isNil "_transData") exitWith { false };
 
 // Check if this is a transport
-private _isTransport = _transData getOrDefault ["isTransport", false];
+private _isTransport = [_transData] call FLO_fnc_virtualizationIsTransportCarrier;
 if (!_isTransport) exitWith { false };
 
 // Check dismount waypoint
-private _dismountIdx = _transData getOrDefault ["dismountAtWaypoint", -1];
+private _dismountIdx = _transData get "dismountAtWaypoint";
 if (_dismountIdx < 0) exitWith { false };
 
-private _currentIdx = _transData getOrDefault ["currentWaypointIndex", 0];
+private _currentIdx = _transData get "currentWaypointIndex";
 if (_currentIdx < _dismountIdx) exitWith { false };
 
 // Get attached groups before detaching
-private _attachedIds = +(_transData getOrDefault ["attachedGroups", []]);
+private _attachedIds = +([_transData] call FLO_fnc_virtualizationGetTransportPassengers);
 
 // Detach all passengers
 private _detached = [_transportGroupId] call FLO_fnc_transportDetachAll;
 
 // Clear dismount config
 _transData set ["dismountAtWaypoint", -1];
-_transData set ["currentOrder", ""];
+[_transData] call FLO_fnc_virtualizationClearExecutionState;
+[_transData] call FLO_fnc_virtualizationClearMissionLock;
 
 // Release transport back to pool
 if (!isNil "FLO_TransportPool") then {
@@ -56,7 +57,7 @@ if (!isNil "FLO_TransportPool") then {
 {
     private _infData = _groups getOrDefault [_x, nil];
     if (!isNil "_infData") then {
-        private _postWp = _infData getOrDefault ["postDismountWaypoint", []];
+        private _postWp = _infData get "postDismountWaypoint";
         if (count _postWp > 0) then {
             _postWp params ["_targetPos", "_orderType"];
             

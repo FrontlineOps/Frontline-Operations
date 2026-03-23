@@ -89,8 +89,8 @@ private _waypoints = [
 
 // Configure for dismount
 _transData set ["dismountAtWaypoint", 0];
-_transData set ["currentOrder", "TRANSPORT"];
-_transData set ["isTransport", true];
+[_transData, "TRANSPORT", "TRANSPORT_REQUEST"] call FLO_fnc_virtualizationSetMissionLock;
+[_transData, "TRANSPORT"] call FLO_fnc_virtualizationSetExecutionState;
 
 ["TRANSPORT", 3, format["Request: Transport %1 assigned to carry %2 to destination (%3m)", 
     _transportId, _infantryGroupId, round _distance]] call FLO_fnc_log;

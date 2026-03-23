@@ -305,7 +305,8 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     private _groups = FLO_virtualGroups get "_groups";
                     if (_gid in _groups) then {
                         private _gData = _groups get _gid;
-                        _gData set ["onMission", false];
+                        [_gData] call FLO_fnc_virtualizationClearMissionLock;
+                        [_gData] call FLO_fnc_virtualizationClearExecutionState;
                     };
                 };
 
@@ -440,7 +441,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
             if (!_isLiveArea) exitWith {
-                _gdata set ["onMission", true];
+                [_gdata, "AIR", toUpper _missionType] call FLO_fnc_virtualizationSetMissionLock;
                 (_self get "missions") set [_gid, "VIRTUAL"];
 
                 private _duration = _self call ["_getVirtualMissionDuration", [_missionType]];
@@ -502,9 +503,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 []
             };
             
-            // Mark group as on mission to prevent deactivation
-            _gdata set ["onMission", true];
-            ["GTN Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
+            // Mark group as mission-locked to prevent deactivation
+            [_gdata, "AIR", toUpper _missionType] call FLO_fnc_virtualizationSetMissionLock;
+            ["GTN Air Asset Manager", 3, format["Marked group %1 with AIR mission lock", _gid]] call FLO_fnc_log;
 
             // Clear any existing waypoints
             [_realGroup] call CBA_fnc_clearWaypoints;
@@ -570,10 +571,12 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _groups = FLO_virtualGroups get "_groups";
                 if (_gid in _groups) then {
                     private _data = _groups get _gid;
-                    _data set ["onMission", false];
+                    [_data] call FLO_fnc_virtualizationClearMissionLock;
                     if !(_missionState isEqualTo "VIRTUAL") then {
                         _self call ["_sendToRTB", [_gid]];
                         _sentRTB = true;
+                    } else {
+                        [_data] call FLO_fnc_virtualizationClearExecutionState;
                     };
                     _released = true;
                 } else {
@@ -651,7 +654,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 ["GTN Air Asset Manager", 3, format["Virtual RTB waypoints for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             };
 
-            _gData set ["currentOrder", "RTB"];
+            [_gData, "RTB"] call FLO_fnc_virtualizationSetExecutionState;
             true
         }],
 

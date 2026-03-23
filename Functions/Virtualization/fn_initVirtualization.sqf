@@ -103,7 +103,7 @@ FLO_virtualGroups = createHashMapObject [[
                 private _oldPosition = _groupData get "position";
                 private _groupType = _groupData get "groupType";
                 private _side = _groupData get "side";
-                private _trackCombatSeed = (_side in [east, west]) && {(_groupData get "attachedTo") == ""} && {_groupType in ["infantry", "motorized", "mechanized", "armor", "mobile_aa"]};
+                private _trackCombatSeed = (_side in [east, west]) && {([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) == ""} && {_groupType in ["infantry", "motorized", "mechanized", "armor", "mobile_aa"]};
                 private _seedCellSize = if (isNil "FLO_GTN_CombatState") then { 150 } else { FLO_GTN_CombatState get "classificationSeedCellSize" };
 
                 _groupData set ["position", _newPosition];
@@ -136,12 +136,11 @@ FLO_virtualGroups = createHashMapObject [[
         private _groupData = (_self get "_groups") getOrDefault [_groupId, nil];
 
         if (!isNil "_groupData") then {
-            _groupData set ["onMission", true];
-            _groupData set ["missionType", _missionType];
-            _groupData set ["state", "reserved"];
+            [_groupData, "VIRTUALIZATION", _missionType] call FLO_fnc_virtualizationSetMissionLock;
+            [_groupData, "reserved"] call FLO_fnc_virtualizationSetRuntimeState;
             if (
                 (_groupData get "side") in [east, west]
-                && {(_groupData get "attachedTo") == ""}
+                && {([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) == ""}
                 && {[(_groupData get "groupType")] call FLO_fnc_gtnCombatIsSupportProvider}
             ) then {
                 [false] call FLO_fnc_gtnCombatMarkClassificationDirty;
@@ -160,12 +159,11 @@ FLO_virtualGroups = createHashMapObject [[
         private _groupData = (_self get "_groups") getOrDefault [_groupId, nil];
 
         if (!isNil "_groupData") then {
-            _groupData set ["onMission", false];
-            _groupData set ["missionType", ""];
-            _groupData set ["state", "idle"];
+            [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+            [_groupData, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
             if (
                 (_groupData get "side") in [east, west]
-                && {(_groupData get "attachedTo") == ""}
+                && {([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) == ""}
                 && {[(_groupData get "groupType")] call FLO_fnc_gtnCombatIsSupportProvider}
             ) then {
                 [false] call FLO_fnc_gtnCombatMarkClassificationDirty;

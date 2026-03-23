@@ -350,11 +350,11 @@ switch (toLower _mode) do {
                     _stats set ["lastSlowGroupMs", _groupMs];
                     _perf set ["nextSlowGroupLogAt", _now + (_perf get "logCooldownSec")];
                     diag_log format [
-                        "[FLO][PERF] Virtualization group %1 type=%2 active=%3 onMission=%4 in %5 ms",
+                        "[FLO][PERF] Virtualization group %1 type=%2 active=%3 missionLock=%4 in %5 ms",
                         _groupId,
                         _groupData get "groupType",
                         _groupData get "isActive",
-                        _groupData get "onMission",
+                        _groupData get "missionLock",
                         _groupMs
                     ];
                 };

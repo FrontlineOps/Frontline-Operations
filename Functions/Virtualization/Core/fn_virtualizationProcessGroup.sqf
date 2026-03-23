@@ -31,11 +31,11 @@ private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
 private _realGroup = _groupData get "realGroup";
 private _tracksAssets = [_groupType] call FLO_fnc_virtualizationUsesAssetStrength;
-private _onMission = _groupData get "onMission";
+private _missionLock = _groupData get "missionLock";
 private _inCombat = _groupData get "inCombat";
 private _forceVirtual = _groupData get "forceVirtual";
-private _attachedTo = _groupData get "attachedTo";
-private _isReinforcing = _groupData getOrDefault ["isReinforcing", false];
+private _attachedTo = [_groupData] call FLO_fnc_virtualizationGetTransportAttachment;
+private _replacementState = _groupData get "replacementState";
 
 // ============================================================================
 // DISTANCE CHECK & TIERED UPDATE
@@ -44,7 +44,7 @@ private _nearestDist = [_position] call FLO_VirtUpdate_getNearestPlayerDist;
 private _lastGroupUpdate = _groupUpdateTimes getOrDefault [_groupId, -1];
 
 // Deterministic phase offset per group to avoid synchronized update spikes.
-private _updatePhase = _groupData getOrDefault ["updatePhase", -1];
+private _updatePhase = _groupData get "updatePhase";
 if (_updatePhase < 0) then {
     private _seed = 0;
     { _seed = (_seed + _x) mod 997; } forEach toArray _groupId;
@@ -95,15 +95,15 @@ if (_attachedTo != "") exitWith {
 // ============================================================================
 if (!_isActive && !_inCombat) then {
     private _waypoints = _groupData get "waypoints";
-    private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
+    private _currentWpIdx = _groupData get "currentWaypointIndex";
     
     if (count _waypoints > 0 && _currentWpIdx < count _waypoints) then {
         private _wp = _waypoints select _currentWpIdx;
         private _wpPos = _wp select 0;
         private _wpType = _wp select 1;
         
-        private _virtualSpeed = _groupData getOrDefault ["virtualSpeed", 10];
-        private _lastMove = _groupData getOrDefault ["lastMoveTime", _now];
+        private _virtualSpeed = _groupData get "virtualSpeed";
+        private _lastMove = _groupData get "lastMoveTime";
         private _timeDelta = _now - _lastMove;
         private _distToWp = _position distance2D _wpPos;
 
@@ -119,7 +119,7 @@ if (!_isActive && !_inCombat) then {
 
             [FLO_virtualGroups, _groupId, _newPos] call (FLO_virtualGroups get "_updateGroupPosition");
             _groupData set ["lastMoveTime", _now];
-            _groupData set ["state", "moving"];
+            [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
             _virtStats set ["virtualMovesTotal", (_virtStats get "virtualMovesTotal") + 1];
             _virtStats set ["virtualMovesThisBatch", (_virtStats get "virtualMovesThisBatch") + 1];
         } else {
@@ -133,8 +133,7 @@ if (!_isActive && !_inCombat) then {
     } else {
         // No waypoints - assign patrol waypoints for idle groups
         if ((_groupData get "state" == "idle") &&
-            !(_groupData getOrDefault ["autoPatrol", false]) &&
-            !(_groupData getOrDefault ["state", ""] == "planning")) then {
+            !(_groupData get "autoPatrol")) then {
 
             // Generate patrol waypoints around current position or objective
             private _patrolCenter = _position;
@@ -198,7 +197,7 @@ if (!_isActive && !_inCombat) then {
                 // Store patrol config for use when activating
                 _groupData set ["patrolConfig", [_offsetCenter, (_minDist + _maxDist) / 2, count _patrolWaypoints, "AWARE", "LIMITED"]];
                 _groupData set ["autoPatrol", true];
-                _groupData set ["state", "moving"];
+                [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
                 _virtStats set ["patrolAssignmentsTotal", (_virtStats get "patrolAssignmentsTotal") + 1];
                 _virtStats set ["patrolAssignmentsThisBatch", (_virtStats get "patrolAssignmentsThisBatch") + 1];
 
@@ -221,8 +220,8 @@ if (!_forceVirtual && _nearestDist <= _activationDist && !_isActive) then {
 } else {
     if (_nearestDist > _activationDist && _isActive) then {
         // DEACTIVATE - player moved away
-        private _alwaysActive = _groupData getOrDefault ["alwaysActive", false];
-        if ((_onMission && !_isReinforcing) || _alwaysActive) then {
+        private _alwaysActive = _groupData get "alwaysActive";
+        if ((_missionLock != "" && _replacementState == "") || _alwaysActive) then {
             // Skip deactivation for non-reinforcement mission groups or always-active groups.
             _virtStats set ["missionHoldSkipsTotal", (_virtStats get "missionHoldSkipsTotal") + 1];
             _virtStats set ["missionHoldSkipsThisBatch", (_virtStats get "missionHoldSkipsThisBatch") + 1];
@@ -248,18 +247,17 @@ if (_isActive && !isNull _realGroup) then {
             _virtStats set ["activePositionSyncsThisBatch", (_virtStats get "activePositionSyncsThisBatch") + 1];
         };
 
-        if (_isReinforcing) then {
-            private _reinforcementTargetPos = _groupData getOrDefault ["reinforcementTargetPos", []];
+        if (_replacementState == "REINFORCE") then {
+            private _reinforcementTargetPos = _groupData get "reinforcementTargetPos";
             if (count _reinforcementTargetPos >= 2 && {_realPos distance2D _reinforcementTargetPos <= 120}) then {
                 [_groupId, _groupData] call FLO_fnc_virtualizationFinalizeReinforcement;
-                _isReinforcing = false;
             };
         };
 
         // Check if active group has no waypoints and needs patrol
         private _realWaypoints = waypoints _realGroup;
         private _state = _groupData get "state";
-        private _hasAutoPatrol = _groupData getOrDefault ["autoPatrol", false];
+        private _hasAutoPatrol = _groupData get "autoPatrol";
 
         if (count _realWaypoints <= 1 && !_hasAutoPatrol && _state == "idle") then {
             // Active group is idle with no waypoints - assign randomized patrol
@@ -291,7 +289,7 @@ if (_isActive && !isNull _realGroup) then {
             // Store config in groupData for virtualization
             _groupData set ["patrolConfig", [_offsetCenter, _patrolRadius, _numWps, "AWARE", "LIMITED"]];
             _groupData set ["autoPatrol", true];
-            _groupData set ["state", "moving"];
+            [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
             _virtStats set ["patrolAssignmentsTotal", (_virtStats get "patrolAssignmentsTotal") + 1];
             _virtStats set ["patrolAssignmentsThisBatch", (_virtStats get "patrolAssignmentsThisBatch") + 1];
 
@@ -300,7 +298,7 @@ if (_isActive && !isNull _realGroup) then {
     };
 
     // Check for eliminated group
-    private _lastChange = _groupData getOrDefault ["lastStateChangeTime", 0];
+    private _lastChange = _groupData get "lastStateChangeTime";
     if (_now - _lastChange > 5) then {
         private _eliminated = false;
         if (_tracksAssets) then {

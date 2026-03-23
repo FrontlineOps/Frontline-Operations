@@ -47,6 +47,21 @@ if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {
         _captureReward,
         _objectiveId
     ]] call FLO_fnc_log;
+
+    if (!isNil "FLO_Logistics_Networks" && {_sideKey in FLO_Logistics_Networks}) then {
+        private _net = FLO_Logistics_Networks get _sideKey;
+        private _forceGrowth = [_net, _objectiveId] call FLO_fnc_logisticsNetworkApplyObjectiveCaptureGrowth;
+
+        if (_forceGrowth > 0 && {!isNil "FLO_GTN_ResourceManager"}) then {
+            private _cmdr = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_newOwner]];
+            if (!isNil "_cmdr") then {
+                private _baselineTotalGroups = _cmdr get "_forceBaselineTotalGroups";
+                if (_baselineTotalGroups > 0) then {
+                    _cmdr set ["_forceBaselineTotalGroups", _baselineTotalGroups + _forceGrowth];
+                };
+            };
+        };
+    };
 };
 
 // Update marker using centralized function

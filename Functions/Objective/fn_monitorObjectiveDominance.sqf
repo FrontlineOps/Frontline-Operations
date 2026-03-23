@@ -113,7 +113,7 @@ while {true} do {
             private _gData = _x;
             if (_gData get "isActive") then { continue };
             if ((_gData get "unitCount") <= 0) then { continue };
-            if ((_gData get "attachedTo") != "") then { continue };
+            if (([_gData] call FLO_fnc_virtualizationGetTransportAttachment) != "") then { continue };
             if !([_gData get "groupType"] call FLO_fnc_gtnCombatIsDirectCombatGroup) then { continue };
 
             private _gPos = _gData get "position";

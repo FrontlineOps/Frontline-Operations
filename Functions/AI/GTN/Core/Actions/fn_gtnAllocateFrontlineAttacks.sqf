@@ -61,7 +61,7 @@ private _activeAttackCounts = createHashMap;
 {
     private _gData = _y;
     if ((_gData get "side") != _ownSide) then { continue };
-    if ((_gData get "currentOrder") != "ATTACK") then { continue };
+    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
 
     private _attackObjective = _gData get "attackObjective";
     if (_attackObjective == "") then { continue };

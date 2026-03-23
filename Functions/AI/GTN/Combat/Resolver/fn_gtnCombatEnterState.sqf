@@ -21,4 +21,3 @@ if !(_gData get "inCombat") then {
 };
 
 _gData set ["inCombat", true];
-_gData set ["state", if ((_gData get "groupType") == "static_aa") then { "defending" } else { "inCombat" }];

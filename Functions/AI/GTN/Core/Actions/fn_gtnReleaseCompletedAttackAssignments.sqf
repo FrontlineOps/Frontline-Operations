@@ -37,7 +37,7 @@ private _releaseIds = [];
     private _groupId = _x;
     private _gData = _groups get _groupId;
     if (isNil "_gData") then { continue };
-    if ((_gData get "currentOrder") != "ATTACK") then { continue };
+    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
 
     private _objectiveId = _gData get "attackObjective";
     if (_objectiveId == "") then {
@@ -61,7 +61,7 @@ if ((count _releaseIds) == 0) exitWith { _metrics };
 {
     private _gData = _groups get _x;
     if (isNil "_gData") then { continue };
-    _gData set ["onMission", false];
+    [_gData] call FLO_fnc_virtualizationClearMissionLock;
 } forEach _releaseIds;
 
 _cmdr call ["_releaseGroups", [_releaseIds, ""]];

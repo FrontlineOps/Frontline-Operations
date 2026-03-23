@@ -27,6 +27,8 @@
  * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
  * FLO_IDC_FACTION_COMBO_OBJ_SIZE = 1964
  * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
+ * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
+ * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -60,6 +62,8 @@ private _defenseCoverage = [1962] call _fnc_getSelection;
 private _tempo = [1963] call _fnc_getSelection;
 private _objectiveSize = [1964] call _fnc_getSelection;
 private _virtualizationDistance = [1965] call _fnc_getSelection;
+private _forceGrowth = [1966] call _fnc_getSelection;
+private _garrison = [1967] call _fnc_getSelection;
 
 // Validate selections
 if (_playerFaction isEqualTo "" || 
@@ -72,7 +76,9 @@ if (_playerFaction isEqualTo "" ||
     _defenseCoverage isEqualTo "" ||
     _tempo isEqualTo "" ||
     _objectiveSize isEqualTo "" ||
-    _virtualizationDistance isEqualTo "") exitWith {
+    _virtualizationDistance isEqualTo "" ||
+    _forceGrowth isEqualTo "" ||
+    _garrison isEqualTo "") exitWith {
 	
 	["UI", 2, "Faction dialog validation failed - empty selections"] call FLO_fnc_log;
 	hint "Please select all options before starting the mission.";
@@ -87,8 +93,8 @@ _display closeDisplay 1;
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _attackLanes, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackLanes", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance"];
+[_playerFaction, _enemyFaction, _civilianFaction, _attackLanes, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance, _forceGrowth, _garrison] spawn {
+	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackLanes", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance", "_forceGrowth", "_garrison"];
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -138,6 +144,62 @@ _display closeDisplay 1;
 		case "20s": {20};
 		case "28s": {28};
 		default {20};
+	};
+
+	private _forceGrowthValue = switch (_forceGrowth) do {
+		case "None _ 0 Groups Per Capture": {0};
+		case "Low _ 1 Group Per Capture": {1};
+		case "Standard _ 2 Groups Per Capture": {2};
+		case "High _ 3 Groups Per Capture": {3};
+		default {2};
+	};
+
+	private _garrisonHandle = switch (_garrison) do {
+		case "Light _ 1 Rear / 2 Front": {
+			createHashMapFromArray [
+				["name", _garrison],
+				["rearBaseGroups", 1],
+				["frontlineBaseGroups", 2],
+				["priorityBonusGroups", 1],
+				["hotBonusGroups", 1]
+			]
+		};
+		case "Standard _ 2 Rear / 4 Front": {
+			createHashMapFromArray [
+				["name", _garrison],
+				["rearBaseGroups", 2],
+				["frontlineBaseGroups", 4],
+				["priorityBonusGroups", 1],
+				["hotBonusGroups", 2]
+			]
+		};
+		case "Heavy _ 3 Rear / 5 Front": {
+			createHashMapFromArray [
+				["name", _garrison],
+				["rearBaseGroups", 3],
+				["frontlineBaseGroups", 5],
+				["priorityBonusGroups", 1],
+				["hotBonusGroups", 2]
+			]
+		};
+		case "Fortified _ 4 Rear / 6 Front": {
+			createHashMapFromArray [
+				["name", _garrison],
+				["rearBaseGroups", 4],
+				["frontlineBaseGroups", 6],
+				["priorityBonusGroups", 1],
+				["hotBonusGroups", 3]
+			]
+		};
+		default {
+			createHashMapFromArray [
+				["name", "Standard _ 2 Rear / 4 Front"],
+				["rearBaseGroups", 2],
+				["frontlineBaseGroups", 4],
+				["priorityBonusGroups", 1],
+				["hotBonusGroups", 2]
+			]
+		};
 	};
 
 	private _objectiveSizeThreshold = _objectiveSize;
@@ -197,6 +259,8 @@ _display closeDisplay 1;
 		["gtnAttackLaneHandle", createHashMapFromArray [["value", _attackOpsValue], ["name", _attackLanes]]],
 		["gtnDefenseCoverageHandle", createHashMapFromArray [["value", _defenseOpsValue], ["name", _defenseCoverage]]],
 		["gtnTempoHandle", createHashMapFromArray [["value", _tempoValue], ["name", _tempo]]],
+		["gtnForceGrowthHandle", createHashMapFromArray [["value", _forceGrowthValue], ["name", _forceGrowth]]],
+		["gtnGarrisonHandle", _garrisonHandle],
 		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
 		["enemyPresence", _enemyPresence],
 		["objectiveSizeThreshold", _objectiveSizeThreshold],

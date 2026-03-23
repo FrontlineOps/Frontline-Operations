@@ -31,6 +31,8 @@ if (_savedStateOverride isEqualType createHashMap) then {
     if !("totalReplacements" in _stats) then { _stats set ["totalReplacements", 0]; };
     if !("resourcesSpent" in _stats) then { _stats set ["resourcesSpent", 0]; };
     if !("byType" in _stats) then { _stats set ["byType", createHashMap]; };
+    if !("captureGrowthAppliedGroups" in _stats) then { _stats set ["captureGrowthAppliedGroups", 0]; };
+    if !("captureGrowthEvents" in _stats) then { _stats set ["captureGrowthEvents", 0]; };
 
     _net set ["_initialComposition", _savedStateOverride getOrDefault ["initialComposition", createHashMap]];
     _net set ["_stats", _stats];
@@ -58,7 +60,9 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_stats", createHashMapFromArray [
         ["totalReplacements", 0],
         ["resourcesSpent", 0],
-        ["byType", createHashMap]
+        ["byType", createHashMap],
+        ["captureGrowthAppliedGroups", 0],
+        ["captureGrowthEvents", 0]
     ]];
     _net set ["_lastReinforcementTarget", ""];
     _net set ["_recentReinforcementDispatches", []];

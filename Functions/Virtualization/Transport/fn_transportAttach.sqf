@@ -42,7 +42,7 @@ if (isNil "_infData" || isNil "_transData") exitWith {
 };
 
 // Check if already attached
-private _currentAttach = _infData getOrDefault ["attachedTo", ""];
+private _currentAttach = [_infData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_currentAttach != "") exitWith {
     ["TRANSPORT", 2, format["Attach failed: %1 already attached to %2", 
         _infantryGroupId, _currentAttach]] call FLO_fnc_log;
@@ -59,7 +59,7 @@ private _capacity = if (_vehicleType != "") then {
 };
 
 // Calculate current load
-private _attachedGroups = _transData getOrDefault ["attachedGroups", []];
+private _attachedGroups = [_transData] call FLO_fnc_virtualizationGetTransportPassengers;
 private _currentLoad = 0;
 {
     private _gData = _groups getOrDefault [_x, nil];
@@ -77,14 +77,11 @@ if (_currentLoad + _infUnitCount > _capacity) exitWith {
 };
 
 // Perform attachment
-_infData set ["attachedTo", _transportGroupId];
-_infData set ["attachedType", if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}];
+[_infData, _transportGroupId, if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}] call FLO_fnc_virtualizationSetTransportAttachment;
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 [FLO_virtualGroups, _infantryGroupId, _transData get "position"] call (FLO_virtualGroups get "_updateGroupPosition");
 
-_attachedGroups pushBack _infantryGroupId;
-_transData set ["attachedGroups", _attachedGroups];
-_transData set ["isTransport", true];
+[_transData, _infantryGroupId] call FLO_fnc_virtualizationAddTransportPassenger;
 
 ["TRANSPORT", 3, format["Attached %1 (%2 units) to transport %3 (load: %4/%5)", 
     _infantryGroupId, _infUnitCount, _transportGroupId, _currentLoad + _infUnitCount, _capacity]] call FLO_fnc_log;

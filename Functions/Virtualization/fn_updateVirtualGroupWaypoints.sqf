@@ -66,14 +66,11 @@ private _effectiveUsePathfinding = _usePathfinding;
 // If no waypoints or using direct assignment (no pathfinding)
 if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
     // Clear path request metadata when assigning direct waypoints.
-    _groupData set ["pathRequestToken", -1];
-    _groupData set ["pathRequestTarget", []];
-    _groupData set ["pathRequestTrails", false];
-    _groupData set ["pathRequestStartedAt", -1];
+    [_groupData] call FLO_fnc_virtualizationClearPathRequest;
 
     // Store the waypoints and initialize tracking for both virtual and physical movement
     _groupData set ["waypoints", _sanitizedWaypoints];
-    _groupData set ["pathRequestSource", _sourceTag];
+    _groupData set ["pathSource", _sourceTag];
 
     // Clear patrol state - Commander is giving new orders, overrides auto-patrol
     _groupData set ["patrolConfig", []];
@@ -82,7 +79,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
     // Add or update virtual waypoint data
     if (count _sanitizedWaypoints > 0) then {
         // Set group state to moving
-        _groupData set ["state", "moving"];
+        [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
 
         // Initialize virtual waypoint tracking
         _groupData set ["currentWaypointIndex", 0];
@@ -154,17 +151,16 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
         if (count _pathEnd > 2) then { _pathEnd resize 2; };
 
         // Keep existing request if it's already pending for the same destination + trails mode.
-        private _existingToken = _groupData get "pathRequestToken";
-        private _existingTarget = _groupData get "pathRequestTarget";
-        private _existingTrails = _groupData get "pathRequestTrails";
+        private _existingToken = _groupData get "pathToken";
+        private _existingTarget = _groupData get "pathTargetPos";
+        private _existingTrails = _groupData get "pathAllowTrails";
         private _sameRoutePending = _existingToken >= 0 && {count _existingTarget >= 2} && {_existingTarget distance2D _pathEnd < 25} && {_existingTrails isEqualTo _allowTrails};
         if (_sameRoutePending) exitWith {
             ["VIRTUALIZATION", 4, format["Path request already pending for group %1 to %2", _groupId, _pathEnd]] call FLO_fnc_log;
         };
 
         // Invalidate previous request only when replacing it with a new route target.
-        _groupData set ["pathRequestToken", -1];
-        _groupData set ["pathRequestStartedAt", -1];
+        [_groupData] call FLO_fnc_virtualizationClearPathRequest;
         private _directBootstrapAllowed = _isNavalGroup || {_groupType in ["helicopter", "air", "jet"]};
 
         private _wpType = _firstWaypoint select 1;
@@ -196,13 +192,13 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
         _groupData set ["waypoints", if (_directBootstrapAllowed) then { [_firstWaypoint] } else { [] }];
         _groupData set ["patrolConfig", []];
         _groupData set ["autoPatrol", false];
-        _groupData set ["state", if (_directBootstrapAllowed) then { "moving" } else { "planning" }];
+        [_groupData, if (_directBootstrapAllowed) then { "moving" } else { "planning" }] call FLO_fnc_virtualizationSetRuntimeState;
         _groupData set ["currentWaypointIndex", 0];
         _groupData set ["lastMoveTime", diag_tickTime];
         _groupData set ["virtualSpeed", _speedMPS * _speedMultiplier];
 
         // Keep metadata for debugging/inspection.
-        _groupData set ["tempWaypointSettings", _firstWaypoint];
+        _groupData set ["pathWaypointSettings", _firstWaypoint];
         _groupData set ["tempWaypointCount", if (_directBootstrapAllowed) then { 1 } else { 0 }];
 
         // If active, apply immediate bootstrap waypoint only when allowed; otherwise hold for route.
@@ -224,11 +220,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
 
         private _requestToken = floor (diag_tickTime * 1000) + floor random 100000;
         private _requestTime = diag_tickTime;
-        _groupData set ["pathRequestToken", _requestToken];
-        _groupData set ["pathRequestTarget", _pathEnd];
-        _groupData set ["pathRequestTrails", _allowTrails];
-        _groupData set ["pathRequestStartedAt", _requestTime];
-        _groupData set ["pathRequestSource", _sourceTag];
+        [_groupData, _requestToken, _pathEnd, _allowTrails, _requestTime, _sourceTag, _firstWaypoint] call FLO_fnc_virtualizationSetPendingPathRequest;
         
         // Path callback
         private _callbackCode = {
@@ -237,7 +229,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
 
             private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
             if (isNil "_groupData") exitWith {};
-            if ((_groupData get "pathRequestToken") != _requestToken) exitWith {};
+            if ((_groupData get "pathToken") != _requestToken) exitWith {};
             
             // Extract waypoint settings
             private _wpType = _waypointSettings select 1;
@@ -269,7 +261,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
             _groupData set ["autoPatrol", false];
 
             // Set group state to moving
-            _groupData set ["state", "moving"];
+            [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
 
             // Initialize virtual waypoint tracking
             _groupData set ["currentWaypointIndex", 0];
@@ -297,10 +289,7 @@ if (count _sanitizedWaypoints == 0 || !_effectiveUsePathfinding) then {
             };
             
             _groupData set ["virtualSpeed", _speedMPS * _speedMultiplier];
-            _groupData set ["pathRequestToken", -1];
-            _groupData set ["pathRequestTarget", []];
-            _groupData set ["pathRequestTrails", false];
-            _groupData set ["pathRequestStartedAt", -1];
+            [_groupData] call FLO_fnc_virtualizationClearPathRequest;
 
             ["VIRTUALIZATION", 3, format["Pathfinding resolved for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
 

@@ -45,7 +45,7 @@ private _bestTypeBonus = 0;
     private _groupData = _groups get _groupId;
 
     if !(_groupData get "isActive") then { continue };
-    if ((_groupData get "attachedTo") != "") then { continue };
+    if (([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) != "") then { continue };
 
     private _groupType = _groupData get "groupType";
     if !(_groupType in ["armor", "mechanized", "motorized", "mobile_aa", "static_aa", "artillery"]) then { continue };

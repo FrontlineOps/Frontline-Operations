@@ -221,9 +221,9 @@ private _worldState = createHashMapObject [[
             };
             _counts set [_typeKey, (_counts get _typeKey) + 1];
 
-            // Count by status using currentOrder
-            private _currentOrder = _gData getOrDefault ["currentOrder", ""];
-            private _onMission = _gData getOrDefault ["onMission", false];
+            // Count by status using commanderOrder
+            private _currentOrder = _gData get "commanderOrder";
+            private _missionLock = _gData get "missionLock";
 
             switch (_currentOrder) do {
                 case "ATTACK": { _counts set ["attacking", (_counts get "attacking") + 1]; };
@@ -233,7 +233,7 @@ private _worldState = createHashMapObject [[
             };
 
             // A group is "available" if it's not on an active mission
-            if !(_onMission) then {
+            if (_missionLock == "") then {
                 if !(_currentOrder in ["ATTACK", "DEFEND", "MOVE"]) then {
                     _counts set ["available", (_counts get "available") + 1];
                 };
@@ -318,7 +318,7 @@ private _worldState = createHashMapObject [[
             {
                 private _gData = _groups get _x;
                 if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
-                if (_gData get "onMission") then { continue };
+                if ((_gData get "missionLock") != "") then { continue };
                 private _gType = _gData get "groupType";
                 if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
                     _casAvailable = true;

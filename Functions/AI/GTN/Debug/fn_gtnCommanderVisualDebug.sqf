@@ -279,15 +279,15 @@ private _fnc_clearAll = {
                 if (isNil "_gData") then { continue };
                 if ((_gData get "side") != _ownSide) then { continue };
 
-                private _isReinforcing = _gData getOrDefault ["isReinforcing", false];
-                private _isAAMoving = (_gData get "aaDeployState") == "MOVING";
+                private _isReinforcing = (_gData get "replacementState") == "REINFORCE";
+                private _isAAMoving = (_gData get "replacementState") == "AA_DEPLOY";
                 if !(_isReinforcing || _isAAMoving) then { continue };
 
                 private _groupPos = _gData get "position";
                 private _groupType = _gData get "groupType";
                 private _groupUnits = _gData get "unitCount";
                 private _targetObjective = if (_isAAMoving) then {
-                    _gData get "aaDeployTargetObjective"
+                    [_gData] call FLO_fnc_virtualizationGetAATargetObjective
                 } else {
                     _gData get "homeObjective"
                 };
@@ -308,7 +308,7 @@ private _fnc_clearAll = {
                     _reinforcingObjectiveCounts set [_targetObjective, (_reinforcingObjectiveCounts getOrDefault [_targetObjective, 0]) + 1];
                 } else {
                     if (_isAAMoving) then {
-                        private _targetPos = _gData get "aaDeployTargetPos";
+                        private _targetPos = [_gData] call FLO_fnc_virtualizationGetAATargetPos;
                         if (count _targetPos >= 2) then {
                             private _aaTargetMarkerId = format ["FLO_GTN_DBG_%1_REINF_AA_TGT_%2", _cmdSideKey, _groupId];
                             _activeIds pushBack _aaTargetMarkerId;
@@ -333,8 +333,8 @@ private _fnc_clearAll = {
                 if (isNil "_gData") then { continue };
 
                 private _groupPos = _gData get "position";
-                private _groupOrder = _gData get "currentOrder";
-                private _groupState = _gData get "state";
+                private _groupOrder = _gData get "commanderOrder";
+                private _groupState = [_gData] call FLO_fnc_virtualizationGetEffectiveState;
                 private _groupUnits = _gData get "unitCount";
                 private _groupType = _gData get "groupType";
                 private _shortId = if ((count _groupId) > 7) then { _groupId select [7] } else { _groupId };

@@ -51,22 +51,13 @@ private _groups = FLO_virtualGroups get "_groups";
 private _groupData = _groups get _newGroupId;
 private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
 
-_groupData set ["isReinforcing", true];
-_groupData set ["onMission", true];
-_groupData set ["currentOrder", "REINFORCE"];
-_groupData set ["reinforcementTargetPos", _targetPos];
-_groupData set ["reinforcementRequestedObjective", _requestedObjectiveId];
-_groupData set ["reinforcementDeliveryObjective", _deliveryObjectiveId];
+[_groupData, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkReinforcementTransit;
 
 if (_groupType isEqualTo "static_aa") then {
     _groupData set ["forceVirtual", true];
     _groupData set ["alwaysActive", false];
     _groupData set ["noWaypoints", false];
-    _groupData set ["currentOrder", "AA_DEPLOY"];
-    _groupData set ["aaDeployState", "MOVING"];
-    _groupData set ["aaDeployTargetPos", _targetPos];
-    _groupData set ["aaDeployTargetObjective", _deliveryObjectiveId];
-    _groupData set ["isStrategicAA", true];
+    [_groupData, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkStaticAAReplacementTransit;
     _groupData set ["homeObjective", _deliveryObjectiveId];
     _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80]];
 };

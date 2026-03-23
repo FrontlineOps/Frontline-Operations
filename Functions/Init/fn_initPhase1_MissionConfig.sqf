@@ -35,6 +35,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_GTN_AttackLaneHandle = _configData get "gtnAttackLaneHandle";
         FLO_GTN_DefenseCoverageHandle = _configData get "gtnDefenseCoverageHandle";
         FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
+        FLO_GTN_ForceGrowthHandle = _configData get "gtnForceGrowthHandle";
+        FLO_GTN_GarrisonHandle = _configData get "gtnGarrisonHandle";
         FLO_MoneyHandle = _configData get "moneyHandle";
         EnemyPrec = _configData get "enemyPrec";
         FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
@@ -48,6 +50,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "FLO_GTN_AttackLaneHandle";
         publicVariable "FLO_GTN_DefenseCoverageHandle";
         publicVariable "FLO_GTN_TempoHandle";
+        publicVariable "FLO_GTN_ForceGrowthHandle";
+        publicVariable "FLO_GTN_GarrisonHandle";
         publicVariable "FLO_MoneyHandle";
         publicVariable "EnemyPrec";
         publicVariable "FLO_ObjectiveSizeThreshold";
@@ -110,6 +114,8 @@ private _requiredFields = [
     "gtnAttackLaneHandle",
     "gtnDefenseCoverageHandle",
     "gtnTempoHandle",
+    "gtnForceGrowthHandle",
+    "gtnGarrisonHandle",
     "moneyHandle",
     "enemyPresence",
     "objectiveSizeThreshold",
@@ -140,6 +146,8 @@ FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
 FLO_GTN_AttackLaneHandle = FLO_MissionConfig get "gtnAttackLaneHandle";
 FLO_GTN_DefenseCoverageHandle = FLO_MissionConfig get "gtnDefenseCoverageHandle";
 FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
+FLO_GTN_ForceGrowthHandle = FLO_MissionConfig get "gtnForceGrowthHandle";
+FLO_GTN_GarrisonHandle = FLO_MissionConfig get "gtnGarrisonHandle";
 FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
 EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
@@ -148,6 +156,8 @@ publicVariable "FLO_DifficultyHandle";
 publicVariable "FLO_GTN_AttackLaneHandle";
 publicVariable "FLO_GTN_DefenseCoverageHandle";
 publicVariable "FLO_GTN_TempoHandle";
+publicVariable "FLO_GTN_ForceGrowthHandle";
+publicVariable "FLO_GTN_GarrisonHandle";
 publicVariable "FLO_MoneyHandle";
 publicVariable "EnemyPrec";
 

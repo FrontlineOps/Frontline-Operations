@@ -26,7 +26,7 @@ private _transData = _groups getOrDefault [_transportGroupId, nil];
 
 if (isNil "_transData") exitWith { 0 };
 
-private _attached = _transData getOrDefault ["attachedGroups", []];
+private _attached = [_transData] call FLO_fnc_virtualizationGetTransportPassengers;
 private _count = count _attached;
 
 if (_count == 0) exitWith { 0 };

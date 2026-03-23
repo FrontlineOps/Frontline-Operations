@@ -24,22 +24,23 @@ private _resumed = 0;
 
     if (count _waypoints > 0) then { continue };
 
-    private _pendingTarget = _groupData get "pathRequestTarget";
-    private _allowTrails = _groupData get "pathRequestTrails";
-    private _source = _groupData get "pathRequestSource";
-    private _waypointSettings = _groupData get "tempWaypointSettings";
+    private _pendingTarget = _groupData get "pathTargetPos";
+    private _allowTrails = _groupData get "pathAllowTrails";
+    private _source = _groupData get "pathSource";
+    private _waypointSettings = _groupData get "pathWaypointSettings";
+    private _replacementState = _groupData get "replacementState";
 
     private _needsResume = count _pendingTarget >= 2 && {count _waypointSettings >= 7};
 
-    if (!_needsResume && {_groupData get "isReinforcing"}) then {
+    if (!_needsResume && {_replacementState != ""}) then {
         private _reinforcementTargetPos = _groupData get "reinforcementTargetPos";
         if (count _reinforcementTargetPos >= 2) then {
             private _groupType = _groupData get "groupType";
-            private _completionRadius = if (_groupType isEqualTo "static_aa") then { 80 } else { 20 };
+            private _completionRadius = if (_replacementState == "AA_DEPLOY") then { 80 } else { 20 };
 
             _pendingTarget = _reinforcementTargetPos;
             _allowTrails = _groupType in ["infantry"];
-            _source = if (_groupType isEqualTo "static_aa") then { "LOGI_STATIC_AA" } else { "LOGI_REINF" };
+            _source = if (_replacementState == "AA_DEPLOY") then { "LOGI_STATIC_AA" } else { "LOGI_REINF" };
             _waypointSettings = [_pendingTarget, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", _completionRadius];
             _needsResume = true;
         };
@@ -50,11 +51,7 @@ private _resumed = 0;
     private _resumeWaypoint = +_waypointSettings;
     _resumeWaypoint set [0, _pendingTarget];
 
-    // The original async callback died with the save. Reissue a fresh request.
-    _groupData set ["pathRequestToken", -1];
-    _groupData set ["pathRequestStartedAt", -1];
-    _groupData set ["pathRequestTarget", []];
-    _groupData set ["pathRequestTrails", false];
+    [_groupData] call FLO_fnc_virtualizationClearPathRequest;
 
     [_groupId, [_resumeWaypoint], true, _allowTrails, _source] call FLO_fnc_updateVirtualGroupWaypoints;
     _resumed = _resumed + 1;

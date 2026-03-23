@@ -58,25 +58,44 @@ private _groupData = createHashMapFromArray [
     ["unitCount", _unitCount],
     ["side", _side],
     ["isActive", false],
+    ["alwaysActive", false],
     ["realGroup", grpNull],
-    ["state", "idle"],
+    ["state", "idle"],          // Low-level runtime state: idle, moving, planning, holding, reserved
+    ["lastStateChangeTime", diag_tickTime],
     ["inCombat", false],         // True while the virtual combat resolver has this group engaged
     ["waypoints", []],
     ["currentWaypointIndex", 0],
-    ["pathRequestToken", -1],
-    ["pathRequestTarget", []],
-    ["pathRequestTrails", false],
-    ["pathRequestStartedAt", -1],
-    ["pathRequestSource", ""],
-    ["tempWaypointSettings", []],
+    ["autoPatrol", false],
+    ["patrolConfig", []],
+    ["noWaypoints", false],
+    ["virtualSpeed", 0],
+    ["lastMoveTime", -1],
+    ["lastSentryTime", 0],
+    ["loiterStartTime", 0],
+    ["tempWaypointCount", 0],
+    ["updatePhase", -1],
+    ["pathToken", -1],
+    ["pathTargetPos", []],
+    ["pathAllowTrails", false],
+    ["pathStartedAt", -1],
+    ["pathSource", ""],
+    ["pathWaypointSettings", []],
     ["comp", []],
-    ["onMission", false],         // Whether this group is on an active mission (prevents virtualization)
-    ["isReinforcing", false],
+    ["missionLock", ""],          // Owning subsystem lock preventing deactivation / reassignment
+    ["missionType", ""],          // Context string for the current mission lock
+    ["replacementState", ""],     // "", "REINFORCE", "AA_DEPLOY" for logistics-created transit state
     ["reinforcementTargetPos", []],
     ["reinforcementRequestedObjective", ""],
     ["reinforcementDeliveryObjective", ""],
     ["forceVirtual", false],      // Keep group virtual regardless of player proximity
-    ["currentOrder", ""],         // Current order type (MOVE, ATTACK, DEFEND, etc.)
+    ["commanderOrder", ""],       // GTN commander intent (MOVE, ATTACK, DEFEND, PATROL, GARRISON)
+    ["executionState", ""],       // Non-commander runtime state (RTB, TRANSPORT, etc.)
+    ["orderTargetPos", []],       // Commander order target position
+    ["orderMode", ""],            // Commander order mode/context
+    ["attackObjective", ""],      // Commander attack objective
+    ["defendObjective", ""],      // Commander defend objective
+    ["defendLeaseIssuedAt", -1],  // Commander defend lease start
+    ["defendLeaseUntil", -1],     // Commander defend lease end
     ["aaDeployState", ""],        // "", "MOVING", "DEPLOYED"
     ["aaDeployTargetPos", []],    // Final deployment position for commander-built static AA
     ["aaDeployTargetObjective", ""],
@@ -88,7 +107,10 @@ private _groupData = createHashMapFromArray [
     ["attachedType", ""],         // "GROUND" or "AIR"
     ["isTransport", false],       // Whether this group can carry others
     ["dismountAtWaypoint", -1],   // Waypoint index to auto-dismount (-1 = never)
-    ["mountedIn", ""]             // GroupId of transport when spawned mounted
+    ["postDismountWaypoint", []],
+    ["mountedIn", ""],            // GroupId of transport when spawned mounted
+    ["garrisonPosition", _position],
+    ["garrisonObjective", ""]
 ];
 
 // Add group to virtualization system

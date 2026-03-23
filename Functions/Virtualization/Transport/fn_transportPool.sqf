@@ -96,12 +96,13 @@ FLO_fnc_transportPoolFindExisting = {
         if (!(_groupType in ["motorized", "mechanized"])) then { continue };
         
         // Skip if already carrying passengers
-        private _attachedGroups = _gData getOrDefault ["attachedGroups", []];
+        private _attachedGroups = [_gData] call FLO_fnc_virtualizationGetTransportPassengers;
         if (count _attachedGroups > 0) then { continue };
         
         // Skip if on critical mission
-        private _currentOrder = _gData getOrDefault ["currentOrder", ""];
-        if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "GARRISON", "DEFEND", ""])}) then { continue };
+        if ((_gData get "missionLock") != "") then { continue };
+        private _commanderOrder = _gData get "commanderOrder";
+        if (_commanderOrder != "" && {!(_commanderOrder in ["PATROL", "DEFEND", ""])}) then { continue };
         
         // Get capacity from config or estimate
         private _vehicleType = _gData getOrDefault ["vehicleType", ""];

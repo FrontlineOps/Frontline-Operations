@@ -31,25 +31,18 @@ private _infData = _groups getOrDefault [_infantryGroupId, nil];
 
 if (isNil "_infData") exitWith { false };
 
-private _transportId = _infData getOrDefault ["attachedTo", ""];
+private _transportId = [_infData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_transportId == "") exitWith { false };
 
 private _transData = _groups getOrDefault [_transportId, nil];
 
 // Remove from transport's attached list
 if (!isNil "_transData") then {
-    private _attached = _transData getOrDefault ["attachedGroups", []];
-    _attached = _attached - [_infantryGroupId];
-    _transData set ["attachedGroups", _attached];
-    
-    if (count _attached == 0) then {
-        _transData set ["isTransport", false];
-    };
+    [_transData, _infantryGroupId] call FLO_fnc_virtualizationRemoveTransportPassenger;
 };
 
 // Clear infantry attachment
-_infData set ["attachedTo", ""];
-_infData set ["attachedType", ""];
+[_infData] call FLO_fnc_virtualizationClearTransportAttachment;
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 
 // Offset position from transport

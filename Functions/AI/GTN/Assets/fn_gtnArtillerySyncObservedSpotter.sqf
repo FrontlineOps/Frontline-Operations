@@ -37,12 +37,12 @@ if !(_groupData get "isActive") exitWith {
     false
 };
 
-if ((_groupData get "attachedTo") != "") exitWith {
+if (([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) != "") exitWith {
     _spotters deleteAt _groupId;
     false
 };
 
-if ((_groupData getOrDefault ["mountedIn", ""]) != "") exitWith {
+if (([_groupData] call FLO_fnc_virtualizationGetMountedTransport) != "") exitWith {
     _spotters deleteAt _groupId;
     false
 };

@@ -148,7 +148,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                     private _groups = FLO_virtualGroups get "_groups";
                     if (_gid in _groups) then {
                         private _gData = _groups get _gid;
-                        _gData set ["onMission", false];
+                        [_gData] call FLO_fnc_virtualizationClearMissionLock;
                     };
                 };
 
@@ -394,7 +394,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             // Non-live area: keep support entirely virtual.
             if (!_isLiveArea) exitWith {
-                _gdata set ["onMission", true];
+                [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
                 (_self get "missions") set [_gid, diag_tickTime];
                 if (_cooldownKey != "") then {
                     (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
@@ -421,7 +421,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
             private _realGroup = _gdata get "realGroup";
 
             // Mark as on mission to prevent virtualization
-            _gdata set ["onMission", true];
+            [_gdata, "ARTILLERY", "LIVE_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
 
             // Register mission
             (_self get "missions") set [_gid, diag_tickTime];
@@ -473,10 +473,10 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 private _gdata = _groups get _gid;
                 if (!isNil "_gdata") then {
                     // Clear mission flag
-                    _gdata set ["onMission", false];
+                    [_gdata] call FLO_fnc_virtualizationClearMissionLock;
 
                     // Reset state to idle so virtualization can assign new patrol
-                    _gdata set ["state", "idle"];
+                    [_gdata, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
                     _gdata set ["autoPatrol", false];  // Allow patrol to be reassigned
 
                     // Deactivate (virtualize) the group

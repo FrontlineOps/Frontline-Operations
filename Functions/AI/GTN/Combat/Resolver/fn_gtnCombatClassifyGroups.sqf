@@ -47,9 +47,9 @@ private _cellKeyStride = (_cellKeyBase * 2) + 1;
     private _side = _gData get "side";
     private _groupType = _gData get "groupType";
     if !(_side in [east, west]) then { continue };
-    if ((_gData get "attachedTo") != "") then { continue };
+    if (([_gData] call FLO_fnc_virtualizationGetTransportAttachment) != "") then { continue };
 
-    if !(_gData get "onMission") then {
+    if ((_gData get "missionLock") == "") then {
         private _sideKey = if (_side isEqualTo east) then { "EAST" } else { "WEST" };
 
         if (_groupType isEqualTo "artillery") then {

@@ -44,7 +44,7 @@ private _vehicles = [];
 
 if (count _vehicles == 0) exitWith {
     ["GTN Artillery", 1, format["Artillery %1 - no valid vehicles found in group of %2 units", _gid, count units _realGroup]] call FLO_fnc_log;
-    _gdata set ["onMission", false];
+    [_gdata] call FLO_fnc_virtualizationClearMissionLock;
     (_mgr get "missions") deleteAt _gid;
 };
 
@@ -162,4 +162,3 @@ waitUntil {
 // === PHASE 6: Cleanup ===
 // Pass objNull as vehicle since we handled multiple. Cleanup will use leader for scoot origin.
 _mgr call ["_cleanupMission", [_gid, objNull]];
-

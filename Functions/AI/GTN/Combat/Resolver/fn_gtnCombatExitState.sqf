@@ -18,5 +18,5 @@ params ["_groupId", "_gData", "_resumeStates"];
 
 private _resumeState = _resumeStates getOrDefault [_groupId, ""];
 _gData set ["inCombat", false];
-_gData set ["state", [_gData, _resumeState] call FLO_fnc_gtnCombatDerivePostCombatState];
+[_gData, [_gData, _resumeState] call FLO_fnc_gtnCombatDerivePostCombatState] call FLO_fnc_virtualizationSetRuntimeState;
 _resumeStates deleteAt _groupId;

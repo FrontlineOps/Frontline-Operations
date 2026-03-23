@@ -21,7 +21,7 @@ params ["_groupId", "_groupData"];
 if (!isServer) exitWith {false};
 
 // Check if this group is attached to a transport
-private _attachedTo = _groupData get "attachedTo"; 
+private _attachedTo = [_groupData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_attachedTo != "") then {
     ["VIRTUALIZATION", 2, format["WARNING: Activating group %1 which claims to be attached to %2. This implies logic failure upstream.", _groupId, _attachedTo]] call FLO_fnc_log;
 };
@@ -104,8 +104,8 @@ private _waypoints = if (_currentWpIdx > 0 && _currentWpIdx < count _allWaypoint
 _groupData set ["currentWaypointIndex", 0];
 
 // Check if this is a transport with attached groups
-private _isTransport = _groupData get "isTransport";
-private _attachedGroups = _groupData get "attachedGroups";
+private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
+private _attachedGroups = [_groupData] call FLO_fnc_virtualizationGetTransportPassengers;
 
 // Ensure we don't spawn on top of players.
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
@@ -431,7 +431,7 @@ if !(_groupType in ["civilian", "civilianVehicle"]) then {
 };
 
 // Set the real group in the group data
-_groupData set ["realGroup", _realGroup];
+[_groupData, _realGroup] call FLO_fnc_virtualizationSetRealGroup;
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 _realGroup setVariable ["FLO_virtualGroupId", _groupId];
@@ -508,10 +508,10 @@ if (_isTransport && count _attachedGroups > 0) then {
             };
 
             // Mark attached group as active with its own real group
-            _attachedData set ["realGroup", _infGroup];
+            [_attachedData, _infGroup] call FLO_fnc_virtualizationSetRealGroup;
             _attachedData set ["isActive", true];
             _attachedData set ["lastStateChangeTime", diag_tickTime];
-            _attachedData set ["mountedIn", _groupId]; // Track that they're mounted
+            [_attachedData, _groupId] call FLO_fnc_virtualizationSetMountedIn;
             _infGroup setVariable ["FLO_virtualGroupId", _attachedId];
 
             ["VIRTUALIZATION", 3, format["Loaded attached group %1 (%2 units) into transport %3",
@@ -530,7 +530,7 @@ if (_homeObjective isEqualTo "civ_building") then {
 };
 
 // Check if group has patrol config - use taskPatrol instead of CYCLE waypoints
-private _patrolConfig = _groupData getOrDefault ["patrolConfig", []];
+private _patrolConfig = _groupData get "patrolConfig";
 if (_patrolConfig isNotEqualTo []) then {
     // Use taskPatrol for looping patrols - avoids CYCLE waypoint bugs
     _patrolConfig params ["_patrolCenter", "_patrolRadius", "_wpCount", "_behavior", "_speed"];
@@ -541,7 +541,7 @@ if (_patrolConfig isNotEqualTo []) then {
     // NOTE: SAD, DESTROY, and GUARD waypoints NEVER complete in Arma's waypoint system
     // We convert these to MOVE + aggressive combat settings so groups reach destination
     // Skip if group is marked as static defense (noWaypoints)
-    private _noWaypoints = _groupData getOrDefault ["noWaypoints", false];
+    private _noWaypoints = _groupData get "noWaypoints";
     if (!_noWaypoints && {count _waypoints > 0}) then {
         // Safety check: if first waypoint is CYCLE, that's invalid for Arma
         private _firstWpType = (_waypoints select 0) select 1;

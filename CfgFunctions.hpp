@@ -35,14 +35,15 @@ class FLO {
         class gtnMonitor            {};
         class gtnCommander          {};
         class gtnCapabilityAnalyzer {};
-        class gtnReleaseCompletedAttackAssignments {};
     };
 
     class GTNCoreActions {
         file = "Functions\AI\GTN\Core\Actions";
 
+        class gtnAllocateBaselineGarrisons {};
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
+        class gtnReleaseCompletedAttackAssignments {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
     };
@@ -138,71 +139,7 @@ class FLO {
         class taskPatrol {};
     };
 
-    class Virtualization {
-        file = "Functions\Virtualization";
-
-        class initVirtualization              {};
-        class activateVirtualGroup            {};
-        class deactivateVirtualGroup          {};
-        class createVirtualGroup              {};
-        class updateVirtualGroupWaypoints     {};
-        class initializeObjectiveGroups       {};
-        class distributeVirtualGroups         {};
-        class activateSavedVirtualGroup       {};
-    };
-
-    // Virtualization Transport
-    class VirtualizationTransport {
-        file = "Functions\Virtualization\Transport";
-
-        class transportConfig       {};
-        class transportGetCapacity  {};
-        class transportGetSpeed     {};
-        class transportPool         {};
-        class transportAttach       {};
-        class transportDetach       {};
-        class transportDetachAll    {};
-        class transportRequest      {};
-        class transportDismount     {};
-        class transportMapEdge      {};
-    };
-
-    // Virtualization Core - PFH-based update system
-    class VirtualizationCore {
-        file = "Functions\Virtualization\Core";
-
-        class virtualizationUpdatePFH       {};
-        class virtualizationProcessGroup    {};
-        class virtualizationAdvanceWaypoint {};
-        class virtualizationFinalizeReinforcement {};
-        class virtualizationResumeSavedRoutes {};
-        class virtualizationSpatialIndex    {};
-        class virtualizationEvents          {};
-    };
-
-    // Virtualization Debug - Async debug visualization
-    class VirtualizationDebug {
-        file = "Functions\Virtualization\Debug";
-
-        class virtualizationDebugManager      {};
-        class virtualizationProbe             {};
-        class virtualizationDebugUpdateMarker {};
-        class testVirtualizationSystem        {};
-    };
-
-    class VirtualizationUtilities {
-        file = "Functions\Virtualization\Utilities";
-
-        class filterNonCivGroups      {};
-        class getGroupTypeCount       {};
-        class getRoadParkingPos       {};
-        class getSafeLandPos          {};
-        class getSafeUnvirtualizePos  {};
-        class virtualizationGetRealAssetVehicles {};
-        class virtualizationUsesAssetStrength {};
-        class validateGroupPosition   {};
-        class setSide                 {};
-    };
+    #include "Functions\Virtualization\CfgFunctions.hpp"
 
     class Objective {
         file = "Functions\Objective";

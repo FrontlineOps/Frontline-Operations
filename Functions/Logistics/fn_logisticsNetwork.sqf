@@ -19,6 +19,7 @@ if (!isServer) exitWith {};
 if (!isNil "FLO_Logistics_Networks" && {FLO_Logistics_Networks isEqualType createHashMap} && {count (keys FLO_Logistics_Networks) > 0}) exitWith {};
 
 FLO_Logistics_Networks = createHashMap;
+private _groupsPerObjectiveCapture = FLO_GTN_ForceGrowthHandle get "value";
 
 private _logisticsClass = [
     ["#type", "LogisticsNetwork"],
@@ -52,6 +53,7 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MAX", 4],
     ["REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX", 2],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
+    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
@@ -98,6 +100,10 @@ private _logisticsClass = [
 
     ["_getCurrentComposition", {
         [_self] call FLO_fnc_logisticsNetworkGetComposition;
+    }],
+
+    ["_applyObjectiveCaptureGrowth", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkApplyObjectiveCaptureGrowth;
     }],
 
     ["_pickBestTarget", {

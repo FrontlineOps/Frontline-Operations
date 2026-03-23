@@ -1,0 +1,61 @@
+/*
+ * Function: FLO_fnc_virtualizationSerializeGroup
+ * Author: Frontline Operations Development Group
+ * Description:
+ *   Serializes the canonical virtual-group schema for persistence.
+ *
+ * Arguments:
+ * 0: Group data <HASHMAP>
+ *
+ * Return Value:
+ * HASHMAP - Serialized group record
+ */
+
+params ["_groupData"];
+
+createHashMapFromArray [
+    ["position", _groupData get "position"],
+    ["groupType", _groupData get "groupType"],
+    ["homeObjective", _groupData get "homeObjective"],
+    ["unitCount", _groupData get "unitCount"],
+    ["side", _groupData get "side"],
+    ["state", _groupData get "state"],
+    ["waypoints", _groupData get "waypoints"],
+    ["currentWaypointIndex", _groupData get "currentWaypointIndex"],
+    ["missionLock", _groupData get "missionLock"],
+    ["missionType", _groupData get "missionType"],
+    ["replacementState", _groupData get "replacementState"],
+    ["reinforcementTargetPos", _groupData get "reinforcementTargetPos"],
+    ["reinforcementRequestedObjective", _groupData get "reinforcementRequestedObjective"],
+    ["reinforcementDeliveryObjective", _groupData get "reinforcementDeliveryObjective"],
+    ["pathToken", _groupData get "pathToken"],
+    ["pathTargetPos", _groupData get "pathTargetPos"],
+    ["pathAllowTrails", _groupData get "pathAllowTrails"],
+    ["pathStartedAt", _groupData get "pathStartedAt"],
+    ["pathSource", _groupData get "pathSource"],
+    ["pathWaypointSettings", _groupData get "pathWaypointSettings"],
+    ["alwaysActive", _groupData get "alwaysActive"],
+    ["commanderOrder", _groupData get "commanderOrder"],
+    ["executionState", _groupData get "executionState"],
+    ["orderTargetPos", _groupData get "orderTargetPos"],
+    ["orderMode", _groupData get "orderMode"],
+    ["attackObjective", _groupData get "attackObjective"],
+    ["defendObjective", _groupData get "defendObjective"],
+    ["defendLeaseIssuedAt", _groupData get "defendLeaseIssuedAt"],
+    ["defendLeaseUntil", _groupData get "defendLeaseUntil"],
+    ["noWaypoints", _groupData get "noWaypoints"],
+    ["forceVirtual", _groupData get "forceVirtual"],
+    ["aaDeployState", _groupData get "aaDeployState"],
+    ["aaDeployTargetPos", _groupData get "aaDeployTargetPos"],
+    ["aaDeployTargetObjective", _groupData get "aaDeployTargetObjective"],
+    ["isStrategicAA", _groupData get "isStrategicAA"],
+    ["attachedTo", _groupData get "attachedTo"],
+    ["attachedGroups", _groupData get "attachedGroups"],
+    ["attachedType", _groupData get "attachedType"],
+    ["isTransport", _groupData get "isTransport"],
+    ["dismountAtWaypoint", _groupData get "dismountAtWaypoint"],
+    ["mountedIn", _groupData get "mountedIn"],
+    ["garrisonPosition", _groupData get "garrisonPosition"],
+    ["garrisonObjective", _groupData get "garrisonObjective"]
+]
+

@@ -15,14 +15,9 @@
 
 params ["_groupId", "_groupData"];
 
-if !(_groupData getOrDefault ["isReinforcing", false]) exitWith { false };
+if ((_groupData get "replacementState") != "REINFORCE") exitWith { false };
 
-_groupData set ["isReinforcing", false];
-_groupData set ["onMission", false];
-_groupData set ["currentOrder", ""];
-_groupData set ["reinforcementTargetPos", []];
-_groupData set ["reinforcementRequestedObjective", ""];
-_groupData set ["reinforcementDeliveryObjective", ""];
+[_groupData, ""] call FLO_fnc_virtualizationClearReplacementTransit;
 
 ["VIRTUALIZATION", 3, format ["Group %1 reached destination - clearing reinforcement flags", _groupId]] call FLO_fnc_log;
 

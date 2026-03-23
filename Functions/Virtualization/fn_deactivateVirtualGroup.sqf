@@ -83,13 +83,13 @@ private _leaderBehavior = behaviour (leader _realGroup);
 private _leaderCommand = currentCommand (leader _realGroup);
 
 if (_leaderBehavior isEqualTo "COMBAT") then {
-    _state = "attacking";
+    _state = "holding";
 } else {
     if (_leaderCommand isEqualTo "MOVE") then {
         _state = "moving";
     };
 };
-_groupData set ["state", _state];
+[_groupData, _state] call FLO_fnc_virtualizationSetRuntimeState;
 
 // --- SAVE COMPOSITION ---
 private _comp = [];
@@ -182,7 +182,7 @@ if (_tracksAssets && {_syncedCount <= 0}) exitWith {
 };
 
 // Update virtualization state
-_groupData set ["realGroup", grpNull];
+[_groupData] call FLO_fnc_virtualizationClearRealGroup;
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 

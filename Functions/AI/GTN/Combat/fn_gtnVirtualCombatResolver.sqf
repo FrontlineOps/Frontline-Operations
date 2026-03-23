@@ -223,7 +223,7 @@ private _pfhId = [{
         if (_engagedNow getOrDefault [_groupId, false]) then { continue };
 
         [_groupId, _gData, _resumeStates] call FLO_fnc_gtnCombatExitState;
-        ["GTN_COMBAT", 3, format ["Group %1 disengaged and resumed %2", _groupId, _gData get "state"]] call FLO_fnc_log;
+        ["GTN_COMBAT", 3, format ["Group %1 disengaged and resumed %2", _groupId, [_gData] call FLO_fnc_virtualizationGetEffectiveState]] call FLO_fnc_log;
     } forEach (keys _groups);
 
     call FLO_fnc_gtnCombatCleanupMarkers;

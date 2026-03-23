@@ -76,6 +76,8 @@ private _handleKeys = [
     ["gtnAttackLaneHandle", "FLO_GTN_AttackLaneHandle"],
     ["gtnDefenseCoverageHandle", "FLO_GTN_DefenseCoverageHandle"],
     ["gtnTempoHandle", "FLO_GTN_TempoHandle"],
+    ["gtnForceGrowthHandle", "FLO_GTN_ForceGrowthHandle"],
+    ["gtnGarrisonHandle", "FLO_GTN_GarrisonHandle"],
     ["moneyHandle", "FLO_MoneyHandle"],
     ["reputationHandle", "FLO_ReputationHandle"]
 ];
@@ -88,6 +90,8 @@ private _requiredConfigKeys = [
     "gtnAttackLaneHandle",
     "gtnDefenseCoverageHandle",
     "gtnTempoHandle",
+    "gtnForceGrowthHandle",
+    "gtnGarrisonHandle",
     "moneyHandle",
     "reputationHandle",
     "objectiveSizeThreshold",
@@ -127,12 +131,12 @@ publicVariable "FLO_SavedGameData";
 
 // Create FLO_MissionConfig equivalent for Phase Manager
 private _missionConfig = createHashMapFromArray [
-    ["bluforFaction", _savedConfig getOrDefault ["FLO_FriendlyHandle", 1]],
-    ["opforFaction", _savedConfig getOrDefault ["FLO_EnemyHandle", 1]],
-    ["civFaction", _savedConfig getOrDefault ["FLO_CivilianHandle", 1]],
-    ["difficulty", _savedConfig getOrDefault ["FLO_DifficultyHandle", 2]],
-    ["startingFunds", _savedConfig getOrDefault ["FLO_MoneyHandle", 5000]],
-    ["startingReputation", _savedConfig getOrDefault ["FLO_ReputationHandle", 50]],
+    ["bluforFaction", _savedConfig get "FLO_FriendlyHandle"],
+    ["opforFaction", _savedConfig get "FLO_EnemyHandle"],
+    ["civFaction", _savedConfig get "FLO_CivilianHandle"],
+    ["difficulty", _savedConfig get "FLO_DifficultyHandle"],
+    ["startingFunds", _savedConfig get "FLO_MoneyHandle"],
+    ["startingReputation", _savedConfig get "FLO_ReputationHandle"],
     ["isLoadedSave", true]  // Flag to indicate this is from a save
 ];
 
