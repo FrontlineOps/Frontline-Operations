@@ -60,6 +60,28 @@ private _setPhase = {
     private _phaseObjectiveId = _track get "phaseObjectiveId";
     private _poolCount = count (_track get "groupPool");
 
+    if (_phase == "spent") then {
+        if (_now >= _phaseUntil) then {
+            [_track, "quiet", 0, "", 0] call _setPhase;
+            _phase = "quiet";
+            _phaseObjectiveId = "";
+        };
+
+        private _phaseCountKey = format ["%1Count", _phase];
+        _metrics set [_phaseCountKey, (_metrics get _phaseCountKey) + 1];
+
+        ["GTN", 3, format [
+            "Track %1 phase=%2 objective=%3 pool=%4 staged=%5",
+            _trackId,
+            _phase,
+            _phaseObjectiveId,
+            _poolCount,
+            _track get "phaseStagingGoal"
+        ]] call FLO_fnc_log;
+
+        continue;
+    };
+
     if (_phaseObjectiveId != "" && !(_phaseObjectiveId in _enemyObjectives)) then {
         _phaseObjectiveId = "";
         _track set ["phaseObjectiveId", ""];
@@ -112,13 +134,6 @@ private _setPhase = {
             if (_now >= _phaseUntil || {_slotsRemaining <= 0 && _poolCount == 0}) then {
                 [_track, "spent", _now + _spentSeconds, _phaseObjectiveId, _stagingGoal] call _setPhase;
                 _phase = "spent";
-            };
-        };
-        case "spent": {
-            if (_now >= _phaseUntil) then {
-                [_track, "quiet", 0, "", 0] call _setPhase;
-                _phase = "quiet";
-                _phaseObjectiveId = "";
             };
         };
         default {
