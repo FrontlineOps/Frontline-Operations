@@ -150,9 +150,9 @@ private _gtnCommander = createHashMapObject [[
         ["attackLaneExhaustedStrengthRatio", 0.5], // Below this ratio, the side is too depleted to begin new assaults
         ["attackLaneCautiousGoalMultiplier", 1.25], // Cautious posture needs a larger reserve package before opening an assault
         ["attackLaneTimeoutAssaultFraction", 0.75], // Timeout can only force an assault once most of the staged package is actually ready
-        ["attackLaneMaxStagingSeconds", 360], // After this window, staging may assault with a reduced-but-still-meaningful package
-        ["attackLaneAssaultDurationSeconds", 240], // Assault windows stay open long enough for one burst of committed attacks
-        ["attackLaneSpentDurationSeconds", 540], // Cooldown after an assault so reserves and logistics can catch up
+        ["attackLaneMaxStagingSeconds", 480], // After this window, staging may assault with a reduced-but-still-meaningful package
+        ["attackLaneAssaultDurationSeconds", 360], // Assault windows stay open long enough for one burst of committed attacks
+        ["attackLaneSpentDurationSeconds", 240], // Cooldown after an assault so reserves and logistics can catch up
         ["garrisonRearBaseGroups", _garrisonRearBaseGroups], // Minimum standing rear garrison on owned quiet objectives
         ["garrisonFrontlineBaseGroups", _garrisonFrontlineBaseGroups], // Minimum standing garrison on owned objectives exposed to enemy adjacency
         ["garrisonPriorityBonusThreshold", 60], // Important objectives receive one extra standing garrison group
