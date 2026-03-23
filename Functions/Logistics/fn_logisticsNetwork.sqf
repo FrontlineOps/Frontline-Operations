@@ -25,15 +25,15 @@ private _logisticsClass = [
     ["#type", "LogisticsNetwork"],
 
     ["GROUP_COSTS", createHashMapFromArray [
-        ["infantry", 4],
-        ["motorized", 9],
-        ["mechanized", 12],
-        ["armor", 16],
-        ["helicopter", 19],
-        ["air", 24],
-        ["jet", 24],
-        ["artillery", 14],
-        ["static_aa", 18]
+        ["infantry", 6],
+        ["motorized", 12],
+        ["mechanized", 24],
+        ["armor", 32],
+        ["helicopter", 24],
+        ["air", 32],
+        ["jet", 36],
+        ["artillery", 42],
+        ["static_aa", 64]
     ]],
 
     ["CHECK_INTERVAL", 60],
