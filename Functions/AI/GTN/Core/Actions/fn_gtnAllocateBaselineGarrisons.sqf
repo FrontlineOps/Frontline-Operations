@@ -19,9 +19,12 @@ private _metrics = createHashMapFromArray [
     ["existingGarrisons", 0],
     ["releasedGroups", 0],
     ["candidateObjectives", 0],
+    ["eligibleGroups", 0],
     ["assignedGroups", 0],
     ["openedObjectives", 0],
-    ["reinforcedObjectives", 0]
+    ["reinforcedObjectives", 0],
+    ["reserveBandBuilds", 0],
+    ["assignmentPasses", 0]
 ];
 
 if (isNil "_cmdr") exitWith { _metrics };
@@ -32,10 +35,13 @@ if ((count _objectives) == 0) exitWith { _metrics };
 
 private _groups = FLO_virtualGroups get "_groups";
 private _ownSide = _cmdr get "_ownSide";
+private _enemySide = _cmdr get "_enemySide";
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
+private _assignableGroupTypes = ["infantry", "recon", "motorized", "mechanized", "armor"];
 
 private _garrisonGroupsByObjective = createHashMap;
+private _garrisonPositionsByObjective = createHashMap;
 private _releaseIds = [];
 
 {
@@ -66,6 +72,18 @@ private _releaseIds = [];
     };
     _bucket pushBack _groupId;
     _garrisonGroupsByObjective set [_objectiveId, _bucket];
+
+    private _positionBucket = if (_objectiveId in _garrisonPositionsByObjective) then {
+        _garrisonPositionsByObjective get _objectiveId
+    } else {
+        []
+    };
+    private _garrisonPos = _gData get "garrisonPosition";
+    if !(_garrisonPos isEqualType [] && {count _garrisonPos >= 2}) then {
+        _garrisonPos = _gData get "position";
+    };
+    _positionBucket pushBack _garrisonPos;
+    _garrisonPositionsByObjective set [_objectiveId, _positionBucket];
 } forEach _groups;
 
 {
@@ -92,6 +110,22 @@ private _releaseIds = [];
     } forEach _garrisonIds;
     _ranked sort true;
 
+    private _keptIds = [];
+    private _keptPositions = [];
+    for "_i" from 0 to (_cap - 1) do {
+        private _keptId = (_ranked select _i) select 2;
+        _keptIds pushBack _keptId;
+
+        private _keptGroup = _groups get _keptId;
+        private _keptPos = _keptGroup get "garrisonPosition";
+        if !(_keptPos isEqualType [] && {count _keptPos >= 2}) then {
+            _keptPos = _keptGroup get "position";
+        };
+        _keptPositions pushBack _keptPos;
+    };
+    _garrisonGroupsByObjective set [_objectiveId, _keptIds];
+    _garrisonPositionsByObjective set [_objectiveId, _keptPositions];
+
     for "_i" from _cap to ((count _ranked) - 1) do {
         _releaseIds pushBackUnique ((_ranked select _i) select 2);
     };
@@ -112,7 +146,14 @@ if (_cmdr get "_availabilityCacheDirty") then {
     _cmdr call ["_rebuildAvailabilityCache", []];
 };
 
-private _available = (_cmdr get "_availabilityCandidates") apply { _x select 0 };
+private _available = [];
+{
+    _x params ["_groupId", "_gData"];
+    if !((_gData get "groupType") in _assignableGroupTypes) then { continue };
+    _available pushBack [_groupId, _gData, _gData get "homeObjective", _gData get "position"];
+} forEach (_cmdr get "_availabilityCandidates");
+
+_metrics set ["eligibleGroups", count _available];
 if ((count _available) == 0) exitWith { _metrics };
 
 private _candidateObjectives = [];
@@ -124,7 +165,11 @@ private _candidateObjectives = [];
     private _cap = _cmdr call ["_getGarrisonCapForObjective", [_objectiveId]];
     if (_cap <= 0) then { continue };
 
-    private _assigned = _cmdr call ["_countObjectiveGarrisons", [_objectiveId]];
+    private _assigned = if (_objectiveId in _garrisonGroupsByObjective) then {
+        count (_garrisonGroupsByObjective get _objectiveId)
+    } else {
+        0
+    };
     private _deficit = (_cap - _assigned) max 0;
     if (_deficit <= 0) then { continue };
 
@@ -132,7 +177,7 @@ private _candidateObjectives = [];
     {
         private _linkedObjective = _objectives get _x;
         if (isNil "_linkedObjective") then { continue };
-        if ((_linkedObjective get "owner") == (_cmdr get "_enemySide")) then {
+        if ((_linkedObjective get "owner") == _enemySide) then {
             _enemyLinkedCount = _enemyLinkedCount + 1;
         };
     } forEach (_objective get "linkedObjectives");
@@ -151,12 +196,10 @@ private _candidateObjectives = [];
     private _pressure = (_enemyLinkedCount * 2)
         + (if (_underAttack) then { 4 } else { 0 })
         + (if (_contested) then { 2 } else { 0 });
-    private _reserveBands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
-        ["reserveBands", _reserveBands],
         ["pressureBand", _pressureBand],
         ["pressure", _pressure],
         ["priority", _objective get "priority"],
@@ -185,6 +228,7 @@ private _continueAllocation = true;
 
 while {_continueAllocation && {(count _available) > 0}} do {
     _continueAllocation = false;
+    _metrics set ["assignmentPasses", (_metrics get "assignmentPasses") + 1];
 
     {
         private _deficit = _x get "deficit";
@@ -192,21 +236,22 @@ while {_continueAllocation && {(count _available) > 0}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
-        private _reserveBands = _x get "reserveBands";
+        private _reserveBands = if ("reserveBands" in _x) then {
+            _x get "reserveBands"
+        } else {
+            private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+            _x set ["reserveBands", _bands];
+            _metrics set ["reserveBandBuilds", (_metrics get "reserveBandBuilds") + 1];
+            _bands
+        };
 
         private _bestGroupId = "";
+        private _bestIndex = -1;
         private _bestBand = 10;
         private _bestDist = 1e12;
 
-        {
-            private _groupId = _x;
-            private _gData = _groups get _groupId;
-            if (isNil "_gData") then { continue };
-            if ((_gData get "side") != _ownSide) then { continue };
-            if !((_gData get "groupType") in ["infantry", "recon", "motorized", "mechanized", "armor"]) then { continue };
-
-            private _groupPos = _gData get "position";
-            private _homeObjective = _gData get "homeObjective";
+        for "_i" from 0 to ((count _available) - 1) do {
+            (_available select _i) params ["_groupId", "_gData", "_homeObjective", "_groupPos"];
             private _band = _fallbackBand;
             if (_homeObjective in _reserveBands) then {
                 _band = _reserveBands get _homeObjective;
@@ -215,18 +260,28 @@ while {_continueAllocation && {(count _available) > 0}} do {
             private _distToObjective = _groupPos distance2D _objectivePos;
             if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {
                 _bestGroupId = _groupId;
+                _bestIndex = _i;
                 _bestBand = _band;
                 _bestDist = _distToObjective;
             };
-        } forEach _available;
+        };
 
         if (_bestGroupId == "") then { continue };
 
-        if (_cmdr call ["_orderGroupGarrison", [_bestGroupId, _objectivePos, _objectiveId]]) then {
-            _available = _available - [_bestGroupId];
+        private _claimedPositions = if (_objectiveId in _garrisonPositionsByObjective) then {
+            _garrisonPositionsByObjective get _objectiveId
+        } else {
+            []
+        };
+        private _garrisonPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
+
+        if (_cmdr call ["_orderGroupGarrison", [_bestGroupId, _garrisonPos, _objectiveId]]) then {
+            _available deleteAt _bestIndex;
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
+            _claimedPositions pushBack _garrisonPos;
+            _garrisonPositionsByObjective set [_objectiveId, _claimedPositions];
 
             private _assignedHere = if (_objectiveId in _assignedByObjective) then {
                 _assignedByObjective get _objectiveId
@@ -244,18 +299,21 @@ while {_continueAllocation && {(count _available) > 0}} do {
 
             _assignedByObjective set [_objectiveId, _assignedHere + 1];
         } else {
-            _available = _available - [_bestGroupId];
+            _available deleteAt _bestIndex;
         };
     } forEach _candidateObjectives;
 };
 
 ["GTN", 3, format [
-    "Baseline garrison allocation: released=%1 assigned=%2 opened=%3 reinforced=%4 candidates=%5",
+    "Baseline garrison allocation: released=%1 assigned=%2 opened=%3 reinforced=%4 candidates=%5 eligible=%6 reserveBands=%7 passes=%8",
     _metrics get "releasedGroups",
     _metrics get "assignedGroups",
     _metrics get "openedObjectives",
     _metrics get "reinforcedObjectives",
-    _metrics get "candidateObjectives"
+    _metrics get "candidateObjectives",
+    _metrics get "eligibleGroups",
+    _metrics get "reserveBandBuilds",
+    _metrics get "assignmentPasses"
 ]] call FLO_fnc_log;
 
 _metrics

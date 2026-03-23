@@ -450,14 +450,17 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 garrisons | existing=%2 released=%3 candidates=%4 assigned=%5 opened=%6 reinforced=%7",
+                "[FLO][PERF] GTN commander %1 garrisons | existing=%2 released=%3 candidates=%4 eligible=%5 assigned=%6 opened=%7 reinforced=%8 reserveBands=%9 passes=%10",
                 _self get "_sideKey",
                 _garrisonMetrics get "existingGarrisons",
                 _garrisonMetrics get "releasedGroups",
                 _garrisonMetrics get "candidateObjectives",
+                _garrisonMetrics get "eligibleGroups",
                 _garrisonMetrics get "assignedGroups",
                 _garrisonMetrics get "openedObjectives",
-                _garrisonMetrics get "reinforcedObjectives"
+                _garrisonMetrics get "reinforcedObjectives",
+                _garrisonMetrics get "reserveBandBuilds",
+                _garrisonMetrics get "assignmentPasses"
             ];
 
             if (_wsRan) then {
@@ -2189,10 +2192,13 @@ private _gtnCommander = createHashMapObject [[
         };
 
         private _hasRouteContext = (count (_gData get "waypoints") > 0) || {(_gData get "pathToken") >= 0};
+        private _currentGarrisonPos = _gData get "garrisonPosition";
+        private _sameHoldPos = _currentGarrisonPos isEqualType [] && {count _currentGarrisonPos >= 2} && {(_currentGarrisonPos distance2D _pos) < 20};
         if (
             (_gData get "commanderOrder") == "GARRISON"
             && {(_gData get "garrisonObjective") == _objectiveId}
             && {_hasRouteContext}
+            && {_sameHoldPos}
         ) exitWith {
             if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
             FLO_GTN_OrderNoOps set ["GARRISON", (FLO_GTN_OrderNoOps getOrDefault ["GARRISON", 0]) + 1];
