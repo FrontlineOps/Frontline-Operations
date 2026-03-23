@@ -52,6 +52,7 @@ class FLO {
         file = "Functions\AI\GTN\Core\Logic";
 
         class gtnBuildObjectiveReserveBands {};
+        class gtnExecuteTrackCycle {};
         class gtnPickObjectiveGarrisonPosition {};
         class gtnUpdateAttackTrackPhases {};
     };
