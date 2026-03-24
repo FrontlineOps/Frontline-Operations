@@ -36,6 +36,14 @@ private _friendlyCount = _objective get _friendlyCountKey;
 private _enemyCount = _objective get _enemyCountKey;
 if (_enemyCount <= 0) exitWith { true };
 
+private _inboundCount = if (_objectiveId in _inboundCounts) then { _inboundCounts get _objectiveId } else { 0 };
+if ((_objective get "contested")) then {
+    private _forceRatio = _friendlyCount / _enemyCount;
+    if (_forceRatio < (_net get "REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO")) then {
+        if (_inboundCount >= (_net get "REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP")) exitWith { false };
+    };
+};
+
 private _secureRatio = _net get "REINFORCEMENT_OBJECTIVE_SECURE_RATIO";
 if (_friendlyCount >= ceil (_enemyCount * _secureRatio)) exitWith { false };
 
@@ -48,7 +56,6 @@ private _inboundCapMax = _net get "REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MAX";
 if (_inboundCap < _inboundCapMin) then { _inboundCap = _inboundCapMin; };
 if (_inboundCap > _inboundCapMax) then { _inboundCap = _inboundCapMax; };
 
-private _inboundCount = if (_objectiveId in _inboundCounts) then { _inboundCounts get _objectiveId } else { 0 };
 if (_inboundCount >= _inboundCap) exitWith { false };
 
 private _batchCap = _inboundCap min (_net get "REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX");

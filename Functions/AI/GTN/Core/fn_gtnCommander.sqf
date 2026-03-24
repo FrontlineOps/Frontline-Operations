@@ -168,6 +168,8 @@ private _gtnCommander = createHashMapObject [[
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
         ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
+        ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
+        ["defenseContestedCollapseCap", 8], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
         ["garrisonDispatchMinGroups", 2], // Minimum garrison package once an objective is selected
         ["garrisonDispatchMaxGroups", 6], // Upper bound per garrison assignment pass
         ["maxTrackTasksPerCycle", 2], // Primitive burst cap per track per commander update
@@ -1584,7 +1586,8 @@ private _gtnCommander = createHashMapObject [[
         private _friendlyCount = _obj get "friendlyCount";
         private _underAttack = _obj get "underAttack";
         private _contested = _obj get "contested";
-        private _coverage = (_self get "_config") get "defenseCoverageMultiplier";
+        private _config = _self get "_config";
+        private _coverage = _config get "defenseCoverageMultiplier";
 
         private _cap = (4 max (ceil (_enemyCount * 1.25))) min 24;
         if (_underAttack) then { _cap = (_cap + 4) min 32; };
@@ -1597,6 +1600,13 @@ private _gtnCommander = createHashMapObject [[
 
         _cap = ceil (_cap * _coverage);
         _cap = (_cap max 4) min 32;
+
+        if (_contested && {_enemyCount > 0}) then {
+            private _forceRatio = _friendlyCount / _enemyCount;
+            if (_forceRatio < (_config get "defenseContestedCollapseForceRatio")) then {
+                _cap = _cap min (_config get "defenseContestedCollapseCap");
+            };
+        };
 
         _cap
     }],
