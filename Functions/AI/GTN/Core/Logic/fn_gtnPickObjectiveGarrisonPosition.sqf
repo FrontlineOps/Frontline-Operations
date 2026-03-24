@@ -22,8 +22,7 @@ params [
 ];
 
 private _ws = _cmdr get "_worldState";
-private _objectives = _ws call ["_getObjectives", []];
-private _objective = _objectives get _objectiveId;
+private _objective = FLO_Objectives get _objectiveId;
 private _center = _objective get "position";
 private _radius = _objective get "radius";
 

@@ -19,12 +19,7 @@ params [["_transportGroupId", "", [""]]];
 
 if (_transportGroupId == "") exitWith { false };
 
-if (isNil "FLO_virtualGroups") exitWith { false };
-
-private _groups = FLO_virtualGroups get "_groups";
-private _transData = _groups getOrDefault [_transportGroupId, nil];
-
-if (isNil "_transData") exitWith { false };
+private _transData = [_transportGroupId] call FLO_fnc_transportGetTrackedGroup;
 
 // Check if this is a transport
 private _isTransport = [_transData] call FLO_fnc_virtualizationIsTransportCarrier;
@@ -48,28 +43,22 @@ _transData set ["dismountAtWaypoint", -1];
 [_transData] call FLO_fnc_virtualizationClearExecutionState;
 [_transData] call FLO_fnc_virtualizationClearMissionLock;
 
-// Release transport back to pool
-if (!isNil "FLO_TransportPool") then {
-    [_transportGroupId] call FLO_fnc_transportPoolRelease;
-};
+[_transportGroupId] call FLO_fnc_transportPoolRelease;
 
 // Apply post-dismount waypoints to infantry
 {
-    private _infData = _groups getOrDefault [_x, nil];
-    if (!isNil "_infData") then {
-        private _postWp = _infData get "postDismountWaypoint";
-        if (count _postWp > 0) then {
-            _postWp params ["_targetPos", "_orderType"];
-            
-            // Set infantry waypoints after dismount
-            private _waypoints = [
-                [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 50]
-            ];
-            [_x, _waypoints, false, true, "TRANSPORT_DISMOUNT"] call FLO_fnc_updateVirtualGroupWaypoints;
-            _infData set ["postDismountWaypoint", []];
-            
-            ["TRANSPORT", 3, format["Set post-dismount %1 waypoint for %2", _orderType, _x]] call FLO_fnc_log;
-        };
+    private _infData = [_x] call FLO_fnc_transportGetTrackedGroup;
+    private _postWp = _infData get "postDismountWaypoint";
+    if (count _postWp > 0) then {
+        _postWp params ["_targetPos", "_orderType"];
+
+        private _waypoints = [
+            [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 50]
+        ];
+        [_x, _waypoints, false, true, "TRANSPORT_DISMOUNT"] call FLO_fnc_updateVirtualGroupWaypoints;
+        _infData set ["postDismountWaypoint", []];
+
+        ["TRANSPORT", 3, format["Set post-dismount %1 waypoint for %2", _orderType, _x]] call FLO_fnc_log;
     };
 } forEach _attachedIds;
 

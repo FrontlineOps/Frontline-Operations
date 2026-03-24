@@ -366,14 +366,27 @@ private _fnc_countAliveTargets = {
             if (!isNil "_worldObjectives" && {_objId in _worldObjectives}) then {
                 _objectiveState = _worldObjectives get _objId;
             };
+            if ((count _objectiveState) > 0) then {
+                private _frontlineEnemy = false;
+                if (_owner isEqualTo _enemySide) then {
+                    {
+                        if !(_x in _worldObjectives) then { continue };
+                        private _linkedObjective = _worldObjectives get _x;
+                        if ((_linkedObjective get "owner") isEqualTo _activeSide) exitWith {
+                            _frontlineEnemy = true;
+                        };
+                    } forEach (_objectiveState get "linkedObjectives");
+                };
+                _objectiveState set ["frontlineEnemy", _frontlineEnemy];
+            };
 
             if (_owner isEqualTo _enemySide) then {
-                private _captureScore = [_objId, _objData, _playerPositions, "capture", _objectiveState, _worldState] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
+                private _captureScore = [_objId, _objData, _playerPositions, "capture", _objectiveState, nil] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
                 _captureCandidates pushBack [_objId, _captureScore, _objData];
 
                 private _destroyInfo = [_objId, _objData, _enemySide] call FLO_fnc_gtnTaskCollectDestroyTargets;
                 if ((count (keys _destroyInfo)) > 0) then {
-                    private _destroyScore = ([_objId, _objData, _playerPositions, "destroy", _objectiveState, _worldState] call FLO_fnc_gtnTaskScoreObjectiveForPlayers) + (_destroyInfo get "typeBonus");
+                    private _destroyScore = ([_objId, _objData, _playerPositions, "destroy", _objectiveState, nil] call FLO_fnc_gtnTaskScoreObjectiveForPlayers) + (_destroyInfo get "typeBonus");
                     private _meta = createHashMapFromArray [
                         ["targetLabel", _destroyInfo get "targetLabel"],
                         ["targetCount", _destroyInfo get "targetCount"],
@@ -384,7 +397,7 @@ private _fnc_countAliveTargets = {
             };
 
             if (_owner isEqualTo _activeSide && {_enemyCount > 0 || {_enemyCount > _friendlyCount}}) then {
-                private _defendScore = [_objId, _objData, _playerPositions, "defend", _objectiveState, _worldState] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
+                private _defendScore = [_objId, _objData, _playerPositions, "defend", _objectiveState, nil] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
                 _defendCandidates pushBack [_objId, _defendScore, _objData];
             };
         } forEach (keys FLO_Objectives);

@@ -23,10 +23,10 @@ if (isNil "FLO_VirtDebug") exitWith {};
 if !(FLO_VirtDebug get "enabled") exitWith {};
 
 // Extract group data
-private _position = _groupData getOrDefault ["position", [0,0,0]];
-private _groupType = _groupData getOrDefault ["groupType", "infantry"];
+private _position = _groupData get "position";
+private _groupType = _groupData get "groupType";
 private _state = [_groupData] call FLO_fnc_virtualizationGetEffectiveState;
-private _isActive = _groupData getOrDefault ["isActive", false];
+private _isActive = _groupData get "isActive";
 private _missionLock = _groupData get "missionLock";
 
 // Skip invalid positions
@@ -95,7 +95,7 @@ _markerName setMarkerColorLocal _markerColor;
 _markerName setMarkerAlphaLocal (if (_isActive) then { 1 } else { 0.5 });
 
 // Set marker text - show key info
-private _unitCount = _groupData getOrDefault ["unitCount", 0];
+private _unitCount = _groupData get "unitCount";
 private _text = if (_isActive) then {
     format ["%1 [A]", _groupId]
 } else {
@@ -104,8 +104,8 @@ private _text = if (_isActive) then {
 _markerName setMarkerTextLocal _text;
 
 // Update waypoint markers if group has waypoints
-private _waypoints = _groupData getOrDefault ["waypoints", []];
-private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
+private _waypoints = _groupData get "waypoints";
+private _currentWpIdx = _groupData get "currentWaypointIndex";
 
 private _wpMarkers = FLO_VirtDebug get "wpMarkerNames";
 private _existingWpMarkers = _wpMarkers getOrDefault [_groupId, []];

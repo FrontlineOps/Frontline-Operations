@@ -26,5 +26,8 @@ if (isClass _cfg) exitWith {
     getNumber (_cfg >> "transportSoldier")
 };
 
-// Fall back to group type estimates
-FLO_Transport_CapacityEstimates getOrDefault [_classOrType, 0]
+if !(_classOrType in FLO_Transport_CapacityEstimates) then {
+    throw format ["[TRANSPORT] Missing capacity estimate for %1", _classOrType];
+};
+
+FLO_Transport_CapacityEstimates get _classOrType

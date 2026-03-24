@@ -26,20 +26,10 @@ params [
 if (_infantryGroupId == "") exitWith { "" };
 if (_destinationPos isEqualTo [0,0,0]) exitWith { "" };
 
-if (isNil "FLO_virtualGroups") exitWith { "" };
-if (isNil "FLO_TransportPool") exitWith { "" };
+private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
 
-private _groups = FLO_virtualGroups get "_groups";
-private _infData = _groups getOrDefault [_infantryGroupId, nil];
-
-if (isNil "_infData") exitWith {
-    ["TRANSPORT", 2, format["Request failed: infantry group %1 not found", _infantryGroupId]] call FLO_fnc_log;
-    ""
-};
-
-// Get infantry data
 private _currentPos = _infData get "position";
-private _unitCount = _infData getOrDefault ["unitCount", 4];
+private _unitCount = _infData get "unitCount";
 private _side = _infData get "side";
 
 // Check distance threshold
@@ -75,8 +65,7 @@ if (!_attached) exitWith {
     ""
 };
 
-// Get transport data
-private _transData = _groups get _transportId;
+private _transData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
 
 // Calculate dismount position (100m from destination)
 private _dismountPos = _destinationPos getPos [100, _destinationPos getDir _currentPos];

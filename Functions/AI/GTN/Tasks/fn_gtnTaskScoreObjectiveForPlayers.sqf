@@ -93,13 +93,22 @@ private _subtypeScore = switch (_role) do {
 
 private _distanceScore = linearConversion [600, 7000, _nearestPlayerDist, 52, 0, true];
 private _frontlineBonus = 0;
+private _frontlineEnemy = false;
 
-if (!isNil "_worldState") then {
+if ((count _objectiveState) > 0 && {!isNil {_objectiveState get "frontlineEnemy"}}) then {
+    _frontlineEnemy = _objectiveState get "frontlineEnemy";
+};
+
+if (!_frontlineEnemy && {!isNil "_worldState"}) then {
     if (_role in ["capture", "destroy"]) then {
         if (_worldState call ["_isFrontlineEnemyObjective", [_objectiveId]]) then {
-            _frontlineBonus = 30;
+            _frontlineEnemy = true;
         };
     };
+};
+
+if (_frontlineEnemy) then {
+    _frontlineBonus = 30;
 };
 
 private _pressureBonus = switch (_role) do {

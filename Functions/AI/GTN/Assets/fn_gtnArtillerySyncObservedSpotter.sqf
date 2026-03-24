@@ -48,6 +48,10 @@ if (([_groupData] call FLO_fnc_virtualizationGetMountedTransport) != "") exitWit
 };
 
 private _realGroup = _groupData get "realGroup";
+if (isNil "_realGroup") exitWith {
+    _spotters deleteAt _groupId;
+    false
+};
 if (isNull _realGroup) exitWith {
     _spotters deleteAt _groupId;
     false

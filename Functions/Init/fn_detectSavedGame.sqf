@@ -47,7 +47,7 @@ if !(_saveData isEqualType createHashMap) exitWith {
 };
 
 // Check for required keys to validate save integrity
-private _requiredKeys = ["time", "markers"];
+private _requiredKeys = ["time", "markers", "saveVersion"];
 private _hasRequired = true;
 {
     if !(_x in _saveData) then {
@@ -58,6 +58,17 @@ private _hasRequired = true;
 
 if (!_hasRequired) exitWith {
     ["SAVE_DETECT", 2, "Save data incomplete - treating as fresh start"] call FLO_fnc_log;
+    [false, nil]
+};
+
+private _expectedSaveVersion = 9;
+private _saveVersion = _saveData get "saveVersion";
+if (_saveVersion != _expectedSaveVersion) exitWith {
+    [
+        "SAVE_DETECT",
+        2,
+        format ["Save version %1 does not match mission schema %2 - treating as fresh start", _saveVersion, _expectedSaveVersion]
+    ] call FLO_fnc_log;
     [false, nil]
 };
 

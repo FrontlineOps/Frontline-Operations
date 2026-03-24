@@ -282,7 +282,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _newCount = _currentCount - _loss;
                 if (_newCount <= 0) then {
                     _gData set ["unitCount", 0];
-                    [FLO_virtualGroups, _gid] call (FLO_virtualGroups get "_removeGroup");
+                    [FLO_virtualGroups, _gid] call FLO_fnc_virtualizationRemoveGroup;
                 } else {
                     _gData set ["unitCount", _newCount];
                     _groups set [_gid, _gData];

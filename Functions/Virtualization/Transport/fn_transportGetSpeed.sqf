@@ -16,4 +16,8 @@
 
 params [["_groupType", "", [""]]];
 
-FLO_Transport_Speeds getOrDefault [_groupType, 5]
+if !(_groupType in FLO_Transport_Speeds) then {
+    throw format ["[TRANSPORT] Missing virtual speed for %1", _groupType];
+};
+
+FLO_Transport_Speeds get _groupType

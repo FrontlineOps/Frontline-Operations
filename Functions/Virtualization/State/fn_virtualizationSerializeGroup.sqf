@@ -16,12 +16,15 @@ params ["_groupData"];
 createHashMapFromArray [
     ["position", _groupData get "position"],
     ["groupType", _groupData get "groupType"],
+    ["spawnClass", _groupData get "spawnClass"],
     ["homeObjective", _groupData get "homeObjective"],
     ["unitCount", _groupData get "unitCount"],
     ["side", _groupData get "side"],
     ["state", _groupData get "state"],
     ["waypoints", _groupData get "waypoints"],
     ["currentWaypointIndex", _groupData get "currentWaypointIndex"],
+    ["autoPatrol", _groupData get "autoPatrol"],
+    ["patrolConfig", _groupData get "patrolConfig"],
     ["missionLock", _groupData get "missionLock"],
     ["missionType", _groupData get "missionType"],
     ["replacementState", _groupData get "replacementState"],
@@ -54,6 +57,7 @@ createHashMapFromArray [
     ["attachedType", _groupData get "attachedType"],
     ["isTransport", _groupData get "isTransport"],
     ["dismountAtWaypoint", _groupData get "dismountAtWaypoint"],
+    ["postDismountWaypoint", _groupData get "postDismountWaypoint"],
     ["mountedIn", _groupData get "mountedIn"],
     ["garrisonPosition", _groupData get "garrisonPosition"],
     ["garrisonObjective", _groupData get "garrisonObjective"]

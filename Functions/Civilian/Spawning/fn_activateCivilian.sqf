@@ -2,7 +2,7 @@
  * Function: FLO_fnc_activateCivilian
  * Author: Frontline Operations Development Group  
  * Description:
- *   Handles activation of civilian virtual groups. Called by fn_activateVirtualGroup
+ *   Handles activation of civilian virtual groups. Called by FLO_fnc_activateVirtualGroup
  *   when a civilian group type is detected. All civilian-specific spawning logic
  *   lives in this file, keeping virtualization clean.
  *
@@ -21,6 +21,7 @@ if (!isServer) exitWith { grpNull };
 
 private _groupType = _groupData get "groupType";
 private _unitCount = _groupData get "unitCount";
+private _spawnClass = _groupData get "spawnClass";
 private _realGroup = grpNull;
 
 ["CIVILIAN", 3, format["Activating civilian group %1 (type: %2)", _groupId, _groupType]] call FLO_fnc_log;
@@ -39,14 +40,14 @@ switch (_groupType) do {
         if (_homeObjective isEqualTo "civ_building" || _groupType isEqualTo "civ_building") then {
             // Building civilians spawn at exact stored position
             for "_i" from 1 to _unitCount do {
-                private _unitType = selectRandom CivMenArray;
+                private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
                 private _unit = _realGroup createUnit [_unitType, _position, [], 0, "NONE"];
                 _civUnits pushBack _unit;
             };
         } else {
             // Pedestrians spawn nearby with safe positioning
             for "_i" from 1 to _unitCount do {
-                private _unitType = selectRandom CivMenArray;
+                private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
                 private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
                 private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
                 _civUnits pushBack _unit;
@@ -97,7 +98,7 @@ switch (_groupType) do {
         private _cargoPos = _crewPositions select {(_x select 1) == "cargo"};
 
         if (count _driverPos > 0) then {
-            private _unitType = selectRandom CivMenArray;
+            private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
             private _unit = _realGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
             _unit moveInDriver _vehicle;
         };
@@ -106,7 +107,7 @@ switch (_groupType) do {
         private _numPassengers = (count _cargoPos) min (floor random 3);
         for "_i" from 0 to (_numPassengers - 1) do {
             if (_i < count _cargoPos) then {
-                private _unitType = selectRandom CivMenArray;
+                private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
                 private _unit = _realGroup createUnit [_unitType, [0,0,0], [], 0, "NONE"];
                 _unit moveInCargo _vehicle;
             };
