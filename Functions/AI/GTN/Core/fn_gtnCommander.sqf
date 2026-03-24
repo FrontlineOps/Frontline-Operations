@@ -2098,8 +2098,11 @@ private _gtnCommander = createHashMapObject [[
         private _saturated = false;
         if (_objectiveId != "") then {
             private _hasRouteContext = (count (_gData get "waypoints") > 0) || {(_gData get "pathToken") >= 0};
-            _alreadyAssigned = ((_gData get "commanderOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId} && {_hasRouteContext};
-            if (!_alreadyAssigned) then {
+            private _sameObjectiveAssigned = ((_gData get "commanderOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId} && {_hasRouteContext};
+            private _currentDefendPos = _gData get "orderTargetPos";
+            private _sameHoldPos = _currentDefendPos isEqualType [] && {count _currentDefendPos >= 2} && {(_currentDefendPos distance2D _pos) < 20};
+            _alreadyAssigned = _sameObjectiveAssigned && {_sameHoldPos};
+            if (!_sameObjectiveAssigned) then {
                 private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
                 private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
                 if (_cap > 0 && {_assigned >= _cap}) then {
