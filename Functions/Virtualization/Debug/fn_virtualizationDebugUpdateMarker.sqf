@@ -96,10 +96,28 @@ _markerName setMarkerAlphaLocal (if (_isActive) then { 1 } else { 0.5 });
 
 // Set marker text - show key info
 private _unitCount = _groupData get "unitCount";
-private _text = if (_isActive) then {
+private _statusFlags = [];
+if (_groupData get "alwaysActive") then {
+    _statusFlags pushBack "AA";
+};
+if (_missionLock != "") then {
+    _statusFlags pushBack format ["ML:%1", _missionLock];
+};
+private _replacementState = _groupData get "replacementState";
+if (_replacementState != "") then {
+    _statusFlags pushBack format ["RS:%1", _replacementState];
+};
+
+private _baseText = if (_isActive) then {
     format ["%1 [A]", _groupId]
 } else {
     format ["%1 (%2)", _groupId, _unitCount]
+};
+
+private _text = if (count _statusFlags > 0) then {
+    format ["%1 %2", _baseText, _statusFlags joinString "|"]
+} else {
+    _baseText
 };
 _markerName setMarkerTextLocal _text;
 
