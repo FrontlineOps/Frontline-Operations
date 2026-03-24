@@ -15,6 +15,16 @@
 
 params ["_groupData", "_targetPos", "_mode"];
 
+private _missionLock = _groupData get "missionLock";
+private _replacementState = _groupData get "replacementState";
+if (_missionLock != "" || {_replacementState != ""}) then {
+    throw format [
+        "FLO_fnc_virtualizationAssignMoveOrder: cannot assign MOVE while missionLock='%1' replacementState='%2'",
+        _missionLock,
+        _replacementState
+    ];
+};
+
 [_groupData] call FLO_fnc_virtualizationClearCommanderOrder;
 [_groupData, "MOVE"] call FLO_fnc_virtualizationSetCommanderOrder;
 _groupData set ["orderTargetPos", _targetPos];

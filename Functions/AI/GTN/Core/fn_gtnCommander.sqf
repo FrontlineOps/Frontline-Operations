@@ -1450,6 +1450,8 @@ private _gtnCommander = createHashMapObject [[
             _ownSideGroupCount = _ownSideGroupCount + 1;
             if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
             if (_gData get "inCombat") then { continue };
+            if ((_gData get "missionLock") != "") then { continue };
+            if ((_gData get "replacementState") != "") then { continue };
             if (_taskedSet getOrDefault [_groupId, false]) then { continue };
 
             private _currentOrder = _gData get "commanderOrder";
