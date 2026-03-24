@@ -31,6 +31,7 @@ _groupData set ["forceVirtual", _savedData get "forceVirtual"];
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreAAState;
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreTransportState;
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreReplacementState;
+[_groupData, _savedData] call FLO_fnc_virtualizationRestoreEngagementState;
 
 true
 

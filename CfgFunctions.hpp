@@ -43,6 +43,7 @@ class FLO {
         class gtnAllocateBaselineGarrisons {};
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
+        class gtnManageOpportunisticEngagements {};
         class gtnReleaseCompletedAttackAssignments {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
@@ -51,9 +52,16 @@ class FLO {
     class GTNCoreLogic {
         file = "Functions\AI\GTN\Core\Logic";
 
+        class gtnApplyGroupEngagement {};
+        class gtnBuildEnemyEngagementPicture {};
         class gtnBuildObjectiveReserveBands {};
+        class gtnDistanceToSegment2D {};
+        class gtnEvaluateGroupEngagementTarget {};
         class gtnExecuteTrackCycle {};
+        class gtnIsEngagementRouteActive {};
         class gtnPickObjectiveGarrisonPosition {};
+        class gtnRestoreStrategicGroupRoute {};
+        class gtnSelectGroupEngagementTarget {};
         class gtnUpdateAttackTrackPhases {};
     };
 
