@@ -168,8 +168,8 @@ private _gtnCommander = createHashMapObject [[
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
         ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
-        ["garrisonDispatchMinGroups", 3], // Minimum garrison package once an objective is selected
-        ["garrisonDispatchMaxGroups", 10], // Upper bound per garrison assignment pass
+        ["garrisonDispatchMinGroups", 2], // Minimum garrison package once an objective is selected
+        ["garrisonDispatchMaxGroups", 6], // Upper bound per garrison assignment pass
         ["maxTrackTasksPerCycle", 2], // Primitive burst cap per track per commander update
         ["debugMode", false]          // Enable verbose logging
     ]],
@@ -689,6 +689,10 @@ private _gtnCommander = createHashMapObject [[
             ["ownSideGroups", _self get "_availabilityOwnSideTotal"],
             ["availableCount", 0],
             ["allocatedCount", 0],
+            ["defensePoolTarget", 0],
+            ["attackPoolTarget", 0],
+            ["defenseAllocated", 0],
+            ["attackAllocated", 0],
             ["trackCount", count _tracks],
             ["frontSectorCount", 0],
             ["scanMs", 0],
@@ -737,36 +741,93 @@ private _gtnCommander = createHashMapObject [[
             _trackReserveBands set [_x get "id", _reserveBands];
         } forEach _attackTracks;
 
-        // Front-aware allocation to tracks.
+        // Front-aware allocation to tracks with a reserved defense slice.
         private _tRoundRobin = diag_tickTime;
         private _ownSide = _self get "_ownSide";
+        private _enemySide = _self get "_enemySide";
         private _allGroups = FLO_virtualGroups get "_groups";
         private _fallbackAttackBand = _attackReserveGraphDepth + 1;
+        private _defenseShare = 0;
+        { _defenseShare = _defenseShare + (_x get "resourceShare"); } forEach _defenseTracks;
 
+        private _stickyDefenseCount = 0;
+        private _rankedDefenseCandidates = [];
         {
             private _groupId = _x;
             private _gData = _allGroups get _groupId;
             if (isNil "_gData") then { continue };
 
-            private _assignedTrack = nil;
             private _homeObjective = _gData get "homeObjective";
             private _currentOrder = _gData get "commanderOrder";
             private _groupPos = _gData get "position";
+            private _priorityBand = 3;
+            private _priorityDist = 1e12;
 
-            if (!isNil "_defenseTrack") then {
-                if (_currentOrder == "DEFEND") then {
-                    _assignedTrack = _defenseTrack;
-                };
+            if (_currentOrder == "DEFEND") then {
+                _priorityBand = 0;
+                _stickyDefenseCount = _stickyDefenseCount + 1;
+            };
 
-                if (isNil "_assignedTrack" && {_homeObjective != ""} && {_homeObjective in _allObjectives}) then {
-                    private _homeObj = _allObjectives get _homeObjective;
-                    if ((_homeObj get "owner") == _ownSide && {(_homeObj get "underAttack") || (_homeObj get "contested")}) then {
-                        _assignedTrack = _defenseTrack;
+            if (_homeObjective != "" && {_homeObjective in _allObjectives}) then {
+                private _homeObj = _allObjectives get _homeObjective;
+                if ((_homeObj get "owner") == _ownSide) then {
+                    _priorityDist = _groupPos distance2D (_homeObj get "position");
+
+                    if ((_homeObj get "underAttack") || (_homeObj get "contested")) then {
+                        _priorityBand = 0 min _priorityBand;
+                    } else {
+                        private _frontlineThreat = (_homeObj get "enemyCount") > 0;
+                        if (!_frontlineThreat) then {
+                            {
+                                private _linkedObjective = _allObjectives get _x;
+                                if ((_linkedObjective get "owner") == _enemySide) exitWith {
+                                    _frontlineThreat = true;
+                                };
+                            } forEach (_homeObj get "linkedObjectives");
+                        };
+
+                        if (_frontlineThreat) then {
+                            _priorityBand = 1 min _priorityBand;
+                        };
                     };
                 };
             };
 
-            if (isNil "_assignedTrack" && {(count _attackTracks) > 0}) then {
+            _rankedDefenseCandidates pushBack [_priorityBand, _priorityDist, _groupId];
+        } forEach _allAvailable;
+
+        _rankedDefenseCandidates sort true;
+
+        private _defensePoolTarget = 0;
+        if (!isNil "_defenseTrack") then {
+            _defensePoolTarget = ceil (_totalCount * _defenseShare);
+            _defensePoolTarget = (_defensePoolTarget max _stickyDefenseCount) min _totalCount;
+        };
+
+        private _assignedToDefense = createHashMap;
+        for "_i" from 0 to (_defensePoolTarget - 1) do {
+            private _groupId = (_rankedDefenseCandidates select _i) select 2;
+            private _pool = _defenseTrack get "groupPool";
+            _pool pushBack _groupId;
+            _defenseTrack set ["groupPool", _pool];
+            _assignedToDefense set [_groupId, true];
+        };
+
+        _metrics set ["defensePoolTarget", _defensePoolTarget];
+        _metrics set ["defenseAllocated", _defensePoolTarget];
+
+        {
+            private _groupId = _x;
+            if (_groupId in _assignedToDefense) then { continue };
+
+            private _gData = _allGroups get _groupId;
+            if (isNil "_gData") then { continue };
+
+            private _assignedTrack = nil;
+            private _homeObjective = _gData get "homeObjective";
+            private _groupPos = _gData get "position";
+
+            if ((count _attackTracks) > 0) then {
                 private _bestTrack = nil;
                 private _bestBand = 10;
                 private _bestDist = 1e12;
@@ -802,21 +863,6 @@ private _gtnCommander = createHashMapObject [[
                 _assignedTrack = _defenseTrack;
             };
 
-            if (isNil "_assignedTrack" && {(count _attackTracks) > 0}) then {
-                private _leastLoadedTrack = _attackTracks select 0;
-                private _leastLoadedCount = count (_leastLoadedTrack get "groupPool");
-
-                {
-                    private _poolCount = count (_x get "groupPool");
-                    if (_poolCount < _leastLoadedCount) then {
-                        _leastLoadedTrack = _x;
-                        _leastLoadedCount = _poolCount;
-                    };
-                } forEach _attackTracks;
-
-                _assignedTrack = _leastLoadedTrack;
-            };
-
             if (isNil "_assignedTrack") then { continue };
 
             private _pool = _assignedTrack get "groupPool";
@@ -825,6 +871,8 @@ private _gtnCommander = createHashMapObject [[
         } forEach _allAvailable;
         _metrics set ["roundRobinMs", (diag_tickTime - _tRoundRobin) * 1000];
         _metrics set ["allocatedCount", _totalCount];
+        _metrics set ["attackAllocated", _totalCount - _defensePoolTarget];
+        _metrics set ["attackPoolTarget", _totalCount - _defensePoolTarget];
         
         // Log allocation
         {
