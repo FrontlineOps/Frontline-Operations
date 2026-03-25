@@ -16,6 +16,15 @@
  */
 
 params ["_groupId", "_groupData"];
+
+if !(_groupData isEqualType createHashMap) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid deactivateVirtualGroup call for %1 - missing group data",
+        _groupId
+    ]] call FLO_fnc_log;
+    false
+};
+
 ["VIRTUALIZATION", 3, format["Deactivating virtual group %1", _groupId]] call FLO_fnc_log;
 
 private _realGroup = _groupData get "realGroup";

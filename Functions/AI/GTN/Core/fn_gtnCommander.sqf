@@ -2601,7 +2601,7 @@ private _gtnCommander = createHashMapObject [[
                             if (_needsRespawn) then {
                                 _metrics set ["vehicleRespawns", (_metrics get "vehicleRespawns") + 1];
                                 ["GTN", 3, format["Group %1 fully replenished but needs vehicle. Deactivating to respawn.", _gId]] call FLO_fnc_log;
-                                [_gId] call FLO_fnc_deactivateVirtualGroup;
+                                [_gId, _gData] call FLO_fnc_deactivateVirtualGroup;
                                 _gData set ["preservationState", "ACTIVE"]; 
                                 [_gData] call FLO_fnc_virtualizationClearMissionLock;
                                 [_gData] call FLO_fnc_virtualizationClearCommanderOrder;
