@@ -147,6 +147,7 @@ class VirtualizationCore {
     class virtualizationApplyTieredUpdateWindow {};
     class virtualizationProcessAttachedGroup {};
     class virtualizationProcessInactiveMovement {};
+    class virtualizationComputeDeferredActivationPos {};
     class virtualizationProcessActivationState {};
     class virtualizationProcessActiveState {};
     class virtualizationProcessGroup    {};
@@ -237,6 +238,8 @@ class VirtualizationUtilities {
     class getRoadParkingPos       {};
     class getSafeLandPos          {};
     class getSafeUnvirtualizePos  {};
+    class virtualizationEstimateVehicleCrewCount {};
+    class virtualizationGetGroupUnitLoad {};
     class virtualizationGetRealAssetVehicles {};
     class virtualizationUsesAssetStrength {};
     class validateGroupPosition   {};

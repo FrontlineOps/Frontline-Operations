@@ -61,7 +61,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 13;
+private _expectedSaveVersion = 14;
 private _saveVersion = _saveData get "saveVersion";
 if (_saveVersion != _expectedSaveVersion) exitWith {
     [
@@ -107,6 +107,7 @@ private _requiredConfigKeys = [
     "reputationHandle",
     "objectiveSizeThreshold",
     "virtualizationDistance",
+    "virtualizationUnitCap",
     "enemyPrec"
 ];
 

@@ -17,7 +17,7 @@
 
 // Dialog dimensions
 #define FACTION_DIALOG_W            (58 * GUI_GRID_W)
-#define FACTION_DIALOG_H            (22 * GUI_GRID_H)
+#define FACTION_DIALOG_H            (24.2 * GUI_GRID_H)
 #define FACTION_DIALOG_X            (safeZoneX + safeZoneW/2 - FACTION_DIALOG_W/2)
 #define FACTION_DIALOG_Y            (safeZoneY + safeZoneH/2 - FACTION_DIALOG_H/2)
 
@@ -38,7 +38,7 @@
 // Card heights
 #define FACTION_CARD_FACTIONS_H     (4.4 * GUI_GRID_H)
 #define FACTION_CARD_COMMANDER_H    (6.8 * GUI_GRID_H)
-#define FACTION_CARD_MISC_H         (4.4 * GUI_GRID_H)
+#define FACTION_CARD_MISC_H         (6.8 * GUI_GRID_H)
 
 // Card positions
 #define FACTION_CARD_FACTIONS_Y     (FACTION_CONTENT_Y)
@@ -524,6 +524,25 @@ class FLO_FactionSelectDialog
 			y = FACTION_CARD_MISC_Y + (2.4 * GUI_GRID_H);
 			w = FACTION_HALF_FIELD_W;
 			tooltip = "Distance at which virtual groups physically spawn";
+		};
+
+		class LabelVirtualizationUnitCap: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Active AI Cap";
+			x = FACTION_HALF_X2;
+			y = FACTION_CARD_MISC_Y + (4.1 * GUI_GRID_H);
+			w = FACTION_HALF_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboVirtualizationUnitCap: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP;
+			x = FACTION_HALF_X2;
+			y = FACTION_CARD_MISC_Y + (4.8 * GUI_GRID_H);
+			w = FACTION_HALF_W;
+			tooltip = "Maximum non-player AI that may stay physically spawned before additional groups are held at the virtualization edge";
 		};
 
 		class StartButton: FLO_RscButton_Primary

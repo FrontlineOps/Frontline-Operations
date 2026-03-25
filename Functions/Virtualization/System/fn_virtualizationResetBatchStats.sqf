@@ -9,6 +9,7 @@ params ["_stats"];
 } forEach (createHashMapFromArray [
     ["groupsProcessedThisBatch", 0],
     ["activationsThisBatch", 0],
+    ["activationBlocksThisBatch", 0],
     ["deactivationsThisBatch", 0],
     ["virtualMovesThisBatch", 0],
     ["activePositionSyncsThisBatch", 0],

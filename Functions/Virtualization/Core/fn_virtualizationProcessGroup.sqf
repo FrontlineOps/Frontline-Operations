@@ -31,6 +31,7 @@ private _missionLock = _groupData get "missionLock";
 private _inCombat = _groupData get "inCombat";
 private _forceVirtual = _groupData get "forceVirtual";
 private _replacementState = _groupData get "replacementState";
+private _activationDeferred = _groupData get "activationDeferred";
 
 private _tierResult = [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes, _virtStats] call FLO_fnc_virtualizationApplyTieredUpdateWindow;
 _tierResult params ["_shouldProcess", "_nearestDist"];
@@ -38,11 +39,11 @@ if (!_shouldProcess) exitWith {};
 
 if ([_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup) exitWith {};
 
-if (!_isActive && {!_inCombat}) then {
+if (!_isActive && {!_inCombat} && {!_activationDeferred}) then {
     [_groupId, _groupData, _now, _virtStats] call FLO_fnc_virtualizationProcessInactiveMovement;
 };
 
-[_groupId, _groupData, _activationDist, _nearestDist, _forceVirtual, _missionLock, _replacementState, _virtStats] call FLO_fnc_virtualizationProcessActivationState;
+[_groupId, _groupData, _activationDist, _nearestDist, _forceVirtual, _missionLock, _replacementState, _inCombat, _virtStats] call FLO_fnc_virtualizationProcessActivationState;
 
 _isActive = _groupData get "isActive";
 _realGroup = _groupData get "realGroup";

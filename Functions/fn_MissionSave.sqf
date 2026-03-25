@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 13;
+private _saveVersion = 14;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -86,6 +86,7 @@ try {
     _cfg set ["gtnGarrisonHandle", FLO_GTN_GarrisonHandle];
     _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
+    _cfg set ["virtualizationUnitCap", FLO_VirtualizationUnitCap];
     _cfg set ["enemyPrec", EnemyPrec];
     if (!isNil "F_HQ_01") then { _cfg set ["fobType", F_HQ_01]; };
     if (!isNil "F_HQ_C_01") then { _cfg set ["fobContainerType", F_HQ_C_01]; };

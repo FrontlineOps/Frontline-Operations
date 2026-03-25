@@ -12,6 +12,8 @@
 if (!isServer) exitWith { false };
 
 diag_log "[FLO_INIT_P1] Waiting for mission configuration...";
+FLO_VirtualizationUnitCap = 200;
+publicVariable "FLO_VirtualizationUnitCap";
 
 // Check if this is a saved game (FLO_IsLoadedSave flag set by Phase 0)
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
@@ -41,6 +43,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         EnemyPrec = _configData get "enemyPrec";
         FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
         FLO_VirtualizationDistance = _configData get "virtualizationDistance";
+        FLO_VirtualizationUnitCap = _configData get "virtualizationUnitCap";
 
         publicVariable "FLO_FriendlyHandle";
         publicVariable "FLO_EnemyHandle";
@@ -56,6 +59,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "EnemyPrec";
         publicVariable "FLO_ObjectiveSizeThreshold";
         publicVariable "FLO_VirtualizationDistance";
+        publicVariable "FLO_VirtualizationUnitCap";
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
             FLO_FriendlyHandle get "name",
@@ -63,7 +67,12 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         ];
     };
 
-    diag_log format ["[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m", FLO_ObjectiveSizeThreshold, FLO_VirtualizationDistance];
+    diag_log format [
+        "[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3",
+        FLO_ObjectiveSizeThreshold,
+        FLO_VirtualizationDistance,
+        FLO_VirtualizationUnitCap
+    ];
 
     // Mark starting location as done for saved games
     StartingLocationDone = true;
@@ -120,6 +129,7 @@ private _requiredFields = [
     "enemyPresence",
     "objectiveSizeThreshold",
     "virtualizationDistance",
+    "virtualizationUnitCap",
     "startPosition"
 ];
 private _missingFields = _requiredFields select { !(_x in FLO_MissionConfig) };
@@ -168,7 +178,15 @@ publicVariable "FLO_ObjectiveSizeThreshold";
 private _virtualizationDistance = FLO_MissionConfig get "virtualizationDistance";
 FLO_VirtualizationDistance = _virtualizationDistance;
 publicVariable "FLO_VirtualizationDistance";
-diag_log format ["[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m", FLO_ObjectiveSizeThreshold, FLO_VirtualizationDistance];
+private _virtualizationUnitCap = FLO_MissionConfig get "virtualizationUnitCap";
+FLO_VirtualizationUnitCap = _virtualizationUnitCap;
+publicVariable "FLO_VirtualizationUnitCap";
+diag_log format [
+    "[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3",
+    FLO_ObjectiveSizeThreshold,
+    FLO_VirtualizationDistance,
+    FLO_VirtualizationUnitCap
+];
 
 // Mark starting location as done
 StartingLocationDone = true;

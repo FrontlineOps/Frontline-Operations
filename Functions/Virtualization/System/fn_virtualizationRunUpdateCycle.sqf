@@ -13,10 +13,14 @@ private _batchStartTime = diag_tickTime;
 private _groups = FLO_virtualGroups get "_groups";
 if ((count _groups) == 0) exitWith {
     FLO_VirtUpdate set ["cachedGroupIds", []];
+    FLO_VirtUpdate set ["activeUnitCount", 0];
     FLO_VirtUpdate set ["currentBatchIndex", 0];
     _stats set ["totalGroupsLast", 0];
     _stats set ["activeGroupsLast", 0];
     _stats set ["inactiveGroupsLast", 0];
+    _stats set ["activeUnitsLast", 0];
+    _stats set ["deferredGroupsLast", 0];
+    _stats set ["activationCapLast", FLO_virtualGroups get "_activationUnitCap"];
     _stats set ["lastBatchStart", 0];
     _stats set ["lastBatchEnd", -1];
     _stats set ["lastBatchMs", (diag_tickTime - _batchStartTime) * 1000];

@@ -10,6 +10,7 @@ private _requiredKeys = [
     "lastGroupCacheTime",
     "cachedPlayerPositions",
     "cachedGroupIds",
+    "activeUnitCount",
     "currentBatchIndex",
     "batchSize",
     "playerCacheInterval",

@@ -28,6 +28,7 @@
  * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
  * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
  * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
+ * FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP = 1968
  */
 
 disableSerialization;
@@ -215,6 +216,15 @@ private _virtualizationDistanceCombo = _display displayCtrl 1965;
 private _virtualizationDistanceOptions = ["1000", "1500", "2000", "2500", "3000"];
 
 [_virtualizationDistanceCombo, _virtualizationDistanceOptions, 2] call _fnc_addItems;
+
+// ============================================================================
+// ACTIVE AI CAP (IDC 1968)
+// ============================================================================
+
+private _virtualizationUnitCapCombo = _display displayCtrl 1968;
+private _virtualizationUnitCapOptions = ["100", "150", "200", "250", "300", "350", "400"];
+
+[_virtualizationUnitCapCombo, _virtualizationUnitCapOptions, 2] call _fnc_addItems;
 
 // ============================================================================
 // COMMANDER FORCE GROWTH (IDC 1966)

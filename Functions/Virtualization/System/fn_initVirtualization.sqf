@@ -8,17 +8,21 @@
  *
  * Arguments:
  * 0: Activation Distance <NUMBER> - Distance at which virtual groups activate (default 2000m)
+ * 1: Active Unit Cap <NUMBER> - Max live non-player AI before further activations are deferred (default 200)
  *
  * Return Value:
  * Virtual Groups HashMap <HASHMAP>
  *
  * Example:
- * [2000] call FLO_fnc_initVirtualization;
+ * [2000, 200] call FLO_fnc_initVirtualization;
  */
 
-params [["_activationDistance", 2000, [0]]];
+params [
+    ["_activationDistance", 2000, [0]],
+    ["_activationUnitCap", 200, [0]]
+];
 
-["VIRTUALIZATION", 3, format["Initializing Virtualization System (activation: %1m)", _activationDistance]] call FLO_fnc_log;
+["VIRTUALIZATION", 3, format["Initializing Virtualization System (activation: %1m cap: %2)", _activationDistance, _activationUnitCap]] call FLO_fnc_log;
 
 // ============================================================================
 // CREATE MAIN DATA STRUCTURE
@@ -26,6 +30,8 @@ params [["_activationDistance", 2000, [0]]];
 FLO_virtualGroups = createHashMapFromArray [
     ["_groups", createHashMap],
     ["_activationDistance", _activationDistance],
+    ["_activationUnitCap", _activationUnitCap],
+    ["_activationResumeCap", ((_activationUnitCap - 20) max 0)],
     ["_enabled", true],
     ["_debugMode", false]
 ];

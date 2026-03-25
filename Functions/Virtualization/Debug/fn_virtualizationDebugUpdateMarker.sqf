@@ -100,6 +100,9 @@ private _statusFlags = [];
 if (_groupData get "alwaysActive") then {
     _statusFlags pushBack "AA";
 };
+if (_groupData get "activationDeferred") then {
+    _statusFlags pushBack "CAP";
+};
 if (_missionLock != "") then {
     _statusFlags pushBack format ["ML:%1", _missionLock];
 };
