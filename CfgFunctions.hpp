@@ -65,6 +65,28 @@ class FLO {
         class gtnUpdateAttackTrackPhases {};
     };
 
+    class GTNIntel {
+        file = "Functions\AI\GTN\Intel";
+
+        class gtnBuildCommanderIntelPicture {};
+        class gtnCommanderIntelMarkerType {};
+        class gtnInjectCombatEventContacts {};
+        class gtnPublishCommanderIntel {};
+        class gtnSyncCommanderIntelMarkers {};
+    };
+
+    class GTNAlerts {
+        file = "Functions\AI\GTN\Alerts";
+
+        class gtnCanSideObserveArea {};
+        class gtnCanSideDetectAirThreat {};
+        class gtnPublishAlert {};
+        class gtnSyncAlertMarkers {};
+        class gtnAlertIncomingArtillery {};
+        class gtnAlertIncomingAircraft {};
+        class gtnAlertCivilianReport {};
+    };
+
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
 
     class GTNTasks {
@@ -93,6 +115,8 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnCollectArtilleryVehicles {};
+        class gtnBuildArtilleryFirePlan {};
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
@@ -178,30 +202,6 @@ class FLO {
 
     #include "Functions\Logistics\CfgFunctions.hpp"
 
-    // === INTELLIGENCE SYSTEM ===
-    class IntelCore {
-        file = "Functions\Intelligence\Core";
-
-        class intelSystem {};
-    };
-
-    class IntelReveals {
-        file = "Functions\Intelligence\Reveals";
-
-        class revealRandomEnemyGroup    {};
-        class revealArtilleryBattery    {};
-        class revealCommanderObjective  {};
-        class incomingAircraftAlert     {};
-    };
-
-    class IntelSources {
-        file = "Functions\Intelligence\Sources";
-
-        class militaryIntel    {};
-        class civilianIntel    {};
-        class backgroundEvents {};
-    };
-
     class Arsenal {
         file = "Functions\Arsenal";
 
@@ -251,44 +251,6 @@ class FLO {
         class placeVehicleWithCrew      {};
     };
 
-    // === SIDE MISSIONS - CORE SYSTEM ===
-    class SideMissionCore {
-        file = "Functions\SideMissions\Core";
-
-        class sideMissionState          {};
-        class sideMissionRegistry       {};
-        class sideMissionTemplate       {};
-        class sideMissionManager        {};
-        class sideMissionEntityTracker  {};
-        class sideMissionHandleRescue   {};
-        class sideMissionTaskCreate     {};
-        class sideMissionTaskUpdate     {};
-        class sideMissionTaskCleanup    {};
-        class sideMissionTemplatesInit  {};
-        class startSideMission          {};
-    };
-
-    // === SIDE MISSIONS - TEMPLATES ===
-    class SideMissionTemplates {
-        file = "Functions\SideMissions\Templates";
-
-        class templatePilotRescue       {};
-        class templateSquadRescue       {};
-        class templateConvoyInterdiction {};
-        class templateHVTConvoy         {};
-        class templatePatrolSweep       {};
-        class templatePOWRescue         {};
-        class templateIntelGathering    {};
-    };
-
-    class SideMissionUtilities {
-        file = "Functions\SideMissions\Utilities";
-
-        class addIntelItems      {};
-        class findMissionHouse   {};
-        class convoyController   {};
-    };
-    
     class Misc {
         file = "Functions\Misc";
 

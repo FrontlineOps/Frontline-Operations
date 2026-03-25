@@ -118,7 +118,9 @@ private _fnc_investigate = {
         FLO_MoneyHandle set ["value", _money - 5];
         publicVariable "FLO_MoneyHandle";
         
-        [] call FLO_fnc_civilianIntel;
+        private _reportSide = missionNamespace getVariable ["FLO_ActivePlayerSide", west];
+        if !(_reportSide in [east, west]) then { _reportSide = west; };
+        [_civilian, _reportSide] call FLO_fnc_gtnAlertCivilianReport;
         
         private _okLines = [
             "Sure, Let me Show you the way!",

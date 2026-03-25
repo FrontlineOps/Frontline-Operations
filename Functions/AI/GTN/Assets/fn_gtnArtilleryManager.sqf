@@ -383,6 +383,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
             } else {
                 "ANY"
             };
+            private _targetSide = if (_requestSide isEqualTo east) then {
+                west
+            } else {
+                if (_requestSide isEqualTo west) then { east } else { sideUnknown };
+            };
             private _cooldownKey = if (_objectiveId != "") then {
                 format ["%1:%2", _sideKey, _objectiveId]
             } else {
@@ -419,6 +424,19 @@ if (isNil "FLO_GTNArtilleryManager") then {
             };
 
             private _realGroup = _gdata get "realGroup";
+            private _firePlan = [_realGroup, _targetPos, _rounds, _accuracy] call FLO_fnc_gtnBuildArtilleryFirePlan;
+
+            if (_targetSide in [east, west]) then {
+                private _alertPayload = [];
+                if (count (keys _firePlan) > 0) then {
+                    _alertPayload = [
+                        _firePlan get "etaMin",
+                        _firePlan get "etaMax",
+                        _firePlan get "impactPoints"
+                    ];
+                };
+                [_targetPos, _rounds, _accuracy, _targetSide, _alertPayload] call FLO_fnc_gtnAlertIncomingArtillery;
+            };
 
             // Mark as on mission to prevent virtualization
             [_gdata, "ARTILLERY", "LIVE_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
@@ -430,7 +448,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
             };
 
             // Spawn the fire mission process
-            [_gid, _gdata, _realGroup, _targetPos, _rounds, _accuracy, _self] spawn FLO_fnc_gtnArtilleryFireMission;
+            [_gid, _gdata, _realGroup, _targetPos, _rounds, _accuracy, _firePlan, _self] spawn FLO_fnc_gtnArtilleryFireMission;
 
             true
         }],

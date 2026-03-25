@@ -262,8 +262,10 @@ private _fnc_createTriggers = {
                 if (_civilian getUnitTrait 'engineer') then {
                     [50, 'STR_FLO_INSURGENT'] call FLO_fnc_sendRewardNotification;
                     [50] call FLO_fnc_addReward;
+                    private _reportSide = missionNamespace getVariable ['FLO_ActivePlayerSide', west];
+                    if !(_reportSide in [east, west]) then { _reportSide = west; };
+                    [_civilian, _reportSide] call FLO_fnc_gtnAlertCivilianReport;
                     deleteVehicle _civilian;
-                    [] call FLO_fnc_civilianIntel;
                     [0.35, 'increase'] call FLO_fnc_adjustReputation;
                 } else {
                     [0, 'STR_FLO_CIVILIAN'] call FLO_fnc_sendRewardNotification;

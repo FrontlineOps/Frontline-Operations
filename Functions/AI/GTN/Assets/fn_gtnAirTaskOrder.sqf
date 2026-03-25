@@ -60,6 +60,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 private _air = objNull;
                 private _gid = "";
                 private _mode = "";
+                private _targetSide = sideUnknown;
 
                 // Extract aircraft and group ID from asset result
                 if (count _asset > 0) then {
@@ -67,6 +68,13 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     _gid = _asset select 1;
                     _mode = _asset select 2;
                     _assignedCount = _assignedCount + 1;
+
+                    _targetSide = if (_requestSide isEqualTo east) then {
+                        west
+                    } else {
+                        if (_requestSide isEqualTo west) then { east } else { sideUnknown };
+                    };
+
                     if (_mode isEqualTo "REAL") then {
                         _air flyInHeight _alt;
                         ["GTN ATO", 3, format["Aircraft assigned: %1 (type: %2), group ID: %3", _air, typeOf _air, _gid]] call FLO_fnc_log;
@@ -158,17 +166,28 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     }, [[_gid, _air, _pos, _mission, _patrolRadius]], 1] call CBA_fnc_waitAndExecute;
 
                     // Mission timer: wait for aircraft to reach target, then run mission duration
-                    [_air, _gid, _missionDuration, _mission, _pos] spawn {
-                        params ["_a", "_gid", "_duration", "_missionType", "_targetPos"];
+                    [_air, _gid, _missionDuration, _mission, _pos, _targetSide] spawn {
+                        params ["_a", "_gid", "_duration", "_missionType", "_targetPos", "_targetSide"];
 
                         private _arrivalRadius = 1000; // Consider "arrived" within 1km
                         private _maxTravelTime = 600;  // Max 10 min to reach target
                         private _travelStart = time;
+                        private _alertSent = false;
 
                         // Wait for aircraft to reach target area (or timeout/destroyed)
                         waitUntil {
                             sleep 5;
                             if (!alive _a) exitWith { true };
+
+                            if (
+                                !_alertSent &&
+                                {_targetSide in [east, west]} &&
+                                {[_a, _targetPos, _targetSide] call FLO_fnc_gtnCanSideDetectAirThreat}
+                            ) then {
+                                [_targetPos, _missionType, _targetSide] call FLO_fnc_gtnAlertIncomingAircraft;
+                                _alertSent = true;
+                            };
+
                             private _dist = (getPos _a) distance2D _targetPos;
                             (_dist < _arrivalRadius) || (time - _travelStart > _maxTravelTime)
                         };
@@ -178,6 +197,15 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                             if (!isNil "_gid" && {_gid != ""}) then {
                                 (call FLO_fnc_gtnAirAssetManager) call ["_releaseAirAsset", [_gid]];
                             };
+                        };
+
+                        if (
+                            !_alertSent &&
+                            {_targetSide in [east, west]} &&
+                            {[_a, _targetPos, _targetSide] call FLO_fnc_gtnCanSideDetectAirThreat}
+                        ) then {
+                            [_targetPos, _missionType, _targetSide] call FLO_fnc_gtnAlertIncomingAircraft;
+                            _alertSent = true;
                         };
 
                         ["GTN ATO", 3, format["Aircraft %1 on station, mission timer started: %2s", _gid, _duration]] call FLO_fnc_log;

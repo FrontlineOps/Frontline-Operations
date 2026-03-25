@@ -201,6 +201,7 @@ private _gtnCommander = createHashMapObject [[
         ["lastPhaseMs", createHashMapFromArray [
             ["normalizeTasked", 0],
             ["worldState", 0],
+            ["intelPublish", 0],
             ["attackAssignments", 0],
             ["garrisons", 0],
             ["allocateTracks", 0],
@@ -261,6 +262,7 @@ private _gtnCommander = createHashMapObject [[
         private _phaseMs = createHashMapFromArray [
             ["normalizeTasked", 0],
             ["worldState", 0],
+            ["intelPublish", 0],
             ["attackAssignments", 0],
             ["garrisons", 0],
             ["allocateTracks", 0],
@@ -301,6 +303,11 @@ private _gtnCommander = createHashMapObject [[
             _situation get "momentum",
             count (keys _enemyObjs)
         ]] call FLO_fnc_log;
+
+        // Publish the maintained commander COP to players as non-debug local intel markers.
+        _tPhase = diag_tickTime;
+        private _intelPublishMetrics = [_self] call FLO_fnc_gtnPublishCommanderIntel;
+        _phaseMs set ["intelPublish", (diag_tickTime - _tPhase) * 1000];
 
         // Reset per-cycle attack objective reservations so tracks spread within the same cycle.
         _self set ["_attackObjectiveReservations", createHashMap];
@@ -374,6 +381,7 @@ private _gtnCommander = createHashMapObject [[
             ["normalize", _normalizeMetrics],
             ["worldStateRan", _wsRan],
             ["worldState", _wsPerf],
+            ["intelPublish", _intelPublishMetrics],
             ["attackAssignments", _attackAssignmentMetrics],
             ["garrisons", _garrisonMetrics],
             ["allocation", _allocationMetrics],
@@ -397,7 +405,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 attack=%11 garrisons=%12 allocate=%13 phases=%14 execute=%15 engage=%16 cap=%17 cas=%18 defense=%19 staticAA=%20 preserve=%21",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 allocate=%14 phases=%15 execute=%16 engage=%17 cap=%18 cas=%19 defense=%20 staticAA=%21 preserve=%22",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -408,6 +416,7 @@ private _gtnCommander = createHashMapObject [[
                 _dtMs,
                 _phaseMs get "normalizeTasked",
                 _phaseMs get "worldState",
+                _phaseMs get "intelPublish",
                 _phaseMs get "attackAssignments",
                 _phaseMs get "garrisons",
                 _phaseMs get "allocateTracks",
@@ -419,6 +428,14 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "defenseLeases",
                 _phaseMs get "staticAA",
                 _phaseMs get "forcePreservation"
+            ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 intel | published=%2 groups=%3 concentrations=%4",
+                _self get "_sideKey",
+                _intelPublishMetrics get "published",
+                _intelPublishMetrics get "groupCount",
+                _intelPublishMetrics get "concentrationCount"
             ];
 
             diag_log format [
@@ -488,7 +505,7 @@ private _gtnCommander = createHashMapObject [[
                 private _wsPhase = _wsPerf get "lastPhaseMs";
                 private _wsMeta = _wsPerf get "lastMeta";
                 diag_log format [
-                    "[FLO][PERF] GTN commander %1 worldState | total=%2 objectives=%3 forces=%4 support=%5 intel=%6 tactical=%7 | objCount=%8 available=%9 contacts=%10 concentrations=%11 engagementGroups=%12 engagementObjectives=%13 supportRan=%14 intelRan=%15",
+                    "[FLO][PERF] GTN commander %1 worldState | total=%2 objectives=%3 forces=%4 support=%5 intel=%6 tactical=%7 | objCount=%8 available=%9 contacts=%10 combatContacts=%11 concentrations=%12 engagementGroups=%13 engagementObjectives=%14 supportRan=%15 intelRan=%16",
                     _self get "_sideKey",
                     _wsPerf get "lastUpdateMs",
                     _wsPhase get "objectives",
@@ -499,6 +516,7 @@ private _gtnCommander = createHashMapObject [[
                     _wsMeta get "objectiveCount",
                     _wsMeta get "availableGroups",
                     _wsMeta get "contactCount",
+                    _wsMeta get "combatContactCount",
                     _wsMeta get "concentrationCount",
                     _wsMeta get "engagementGroupCount",
                     _wsMeta get "engagementObjectiveCount",

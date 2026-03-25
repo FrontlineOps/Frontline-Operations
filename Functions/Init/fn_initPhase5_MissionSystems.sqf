@@ -2,7 +2,7 @@
  * Function: FLO_fnc_initPhase5_MissionSystems
  * Author: Frontline Operations Development Group
  * Description:
- *   Phase 5: Start all mission systems (side missions, AI commander, etc.)
+ *   Phase 5: Start all active mission systems (AI commander, startup systems, etc.)
  *   This runs AFTER objectives are indexed and virtualization is complete.
  *   Also handles MissionStartup (FOBs, OPs, etc.) and entity restoration from saves.
  *
@@ -485,6 +485,13 @@ if (!isNil "FLO_fnc_logisticsNetwork") then {
 // ============================================
 // GTN Resource Manager
 // ============================================
+if (isNil "FLO_GTN_CombatEvents") then {
+    FLO_GTN_CombatEvents = [];
+};
+if (isNil "FLO_GTN_CombatLastByObjective") then {
+    FLO_GTN_CombatLastByObjective = createHashMap;
+};
+
 diag_log "[FLO_INIT_P5] Starting GTN Resource Manager...";
 if (!isNil "FLO_fnc_gtnResourceManager") then {
     if (isNil "FLO_GTN_ResourceManager") then {
@@ -538,34 +545,7 @@ if (!isNil "FLO_fnc_gtnCommanderVisualDebug" && {FLO_GTN_CommanderDebugEnabled})
     };
 };
 
-// ============================================
-// Side Mission System
-// ============================================
-diag_log "[FLO_INIT_P5] Initializing side mission system...";
-
-if (!isNil "FLO_fnc_sideMissionManager") then {
-    // Initialize the mission manager (sets up state, registry, template storage)
-    ["init"] call FLO_fnc_sideMissionManager;
-    diag_log "[FLO_INIT_P5] Side mission manager initialized";
-
-    // Register all templates via the templates init function
-    if (!isNil "FLO_fnc_sideMissionTemplatesInit") then {
-        private _templatesOk = [] call FLO_fnc_sideMissionTemplatesInit;
-        if (_templatesOk) then {
-            diag_log "[FLO_INIT_P5] Side mission templates registered successfully";
-        } else {
-            diag_log "[FLO_INIT_P5] WARNING: Some side mission templates failed to register";
-        };
-    } else {
-        diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_sideMissionTemplatesInit not found";
-    };
-
-    // Start the mission manager loop
-    ["start"] call FLO_fnc_sideMissionManager;
-    diag_log "[FLO_INIT_P5] Side mission manager started";
-} else {
-    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_sideMissionManager not found";
-};
+diag_log "[FLO_INIT_P5] Legacy mission content retired";
 
 // ============================================
 // Civilian System (Config + Manager)
@@ -593,16 +573,7 @@ if (!isNil "FLO_fnc_civilianMissionManager") then {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_civilianMissionManager not found";
 };
 
-// ============================================
-// Intel System
-// ============================================
-diag_log "[FLO_INIT_P5] Starting intel system...";
-if (!isNil "FLO_fnc_intelSystem") then {
-    [] spawn FLO_fnc_intelSystem;
-    diag_log "[FLO_INIT_P5] Intel system started";
-} else {
-    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_intelSystem not found";
-};
+diag_log "[FLO_INIT_P5] Legacy intel reveal system retired";
 
 // ============================================
 // Config Cache (if not already initialized)

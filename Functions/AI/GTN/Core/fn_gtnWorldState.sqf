@@ -98,6 +98,9 @@ private _worldState = createHashMapObject [[
     ["_enemyIntelScanCursor", 0],
     ["_enemyIntelScanBudget", 24], // Max leaders to scan per intel pass
     ["_enemyEngagementFreshSeconds", 180],
+    ["_combatIntelFreshSeconds", 240],
+    ["_combatIntelLastProcessedAt", -1],
+    ["_lastCombatIntelAdded", 0],
     ["_sideContext", _sideContext],
     ["_ownSide", _ownSide],
     ["_enemySide", _enemySide],
@@ -118,6 +121,7 @@ private _worldState = createHashMapObject [[
             ["objectiveCount", 0],
             ["availableGroups", 0],
             ["contactCount", 0],
+            ["combatContactCount", 0],
             ["concentrationCount", 0],
             ["engagementGroupCount", 0],
             ["engagementObjectiveCount", 0],
@@ -351,6 +355,7 @@ private _worldState = createHashMapObject [[
         private _intel = _self get "_enemyIntel";
         private _contacts = _intel get "contactReports";
         private _newContacts = [];
+        private _combatIntelAdded = 0;
         
         // Remove old contacts
         private _cutoffTime = diag_tickTime - 900;
@@ -429,6 +434,11 @@ private _worldState = createHashMapObject [[
         };
 
         _self set ["_enemyIntelScanCursor", _scanCursor];
+
+        private _combatIntelResult = [_self, _contacts] call FLO_fnc_gtnInjectCombatEventContacts;
+        _contacts = _combatIntelResult select 0;
+        _combatIntelAdded = _combatIntelResult select 1;
+        _self set ["_lastCombatIntelAdded", _combatIntelAdded];
         
         // Cluster contacts into concentrations using 150m spatial buckets.
         // This keeps complexity near O(n) instead of O(n^2) during large fights.
@@ -474,8 +484,9 @@ private _worldState = createHashMapObject [[
         } forEach _buckets;
 
         // Log significant new contacts
-        if (count _newContacts > 0) then {
-             ["GTN", 3, format["New enemy contacts reported: %1", count _newContacts]] call FLO_fnc_log;
+        private _newContactTotal = (count _newContacts) + _combatIntelAdded;
+        if (_newContactTotal > 0) then {
+             ["GTN", 3, format["New enemy contacts reported: %1 (observed=%2 combat=%3)", _newContactTotal, count _newContacts, _combatIntelAdded]] call FLO_fnc_log;
         };
 
         _intel set ["contactReports", _contacts];
@@ -876,6 +887,7 @@ private _worldState = createHashMapObject [[
             ["objectiveCount", 0],
             ["availableGroups", 0],
             ["contactCount", 0],
+            ["combatContactCount", 0],
             ["concentrationCount", 0],
             ["engagementGroupCount", 0],
             ["engagementObjectiveCount", 0],
@@ -915,6 +927,7 @@ private _worldState = createHashMapObject [[
         _meta set ["objectiveCount", count (keys (_self get "_objectives"))];
         _meta set ["availableGroups", ((_self get "_ownForces") get "availableGroups")];
         _meta set ["contactCount", count ((_self get "_enemyIntel") get "contactReports")];
+        _meta set ["combatContactCount", _self get "_lastCombatIntelAdded"];
         _meta set ["concentrationCount", count ((_self get "_enemyIntel") get "concentrations")];
         private _engagementPicture = (_self get "_enemyIntel") get "engagementPicture";
         _meta set ["engagementGroupCount", _engagementPicture get "groupCount"];

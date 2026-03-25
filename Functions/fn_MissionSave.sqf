@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 12;
+private _saveVersion = 13;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -331,18 +331,6 @@ try {
         ["SAVE", 3, format ["Side resources saved for %1 sides", count (keys _sideResData)]] call FLO_fnc_log;
     };
 } catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };
-
-// ============================================================================
-// SAVE: INTEL SYSTEM
-// ============================================================================
-
-try {
-    if (!isNil "FLO_Intel_System") then {
-        private _intelData = FLO_Intel_System call ["serialize", []];
-        _data set ["intelSystem", _intelData];
-        ["SAVE", 3, format ["Intel System: %1", _intelData getOrDefault ["intelLevel", 0]]] call FLO_fnc_log;
-    };
-} catch { ["SAVE", 1, format ["Intel failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // SAVE: LOGISTICS NETWORK
