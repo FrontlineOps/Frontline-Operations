@@ -17,6 +17,7 @@ params ["_groupData", "_savedData"];
 
 [_groupData, _savedData get "state"] call FLO_fnc_virtualizationSetRuntimeState;
 _groupData set ["spawnClass", _savedData get "spawnClass"];
+[_groupData, _savedData get "comp"] call FLO_fnc_virtualizationSetAssetComposition;
 _groupData set ["waypoints", _savedData get "waypoints"];
 _groupData set ["currentWaypointIndex", _savedData get "currentWaypointIndex"];
 _groupData set ["autoPatrol", _savedData get "autoPatrol"];
@@ -24,6 +25,8 @@ _groupData set ["patrolConfig", _savedData get "patrolConfig"];
 _groupData set ["alwaysActive", _savedData get "alwaysActive"];
 _groupData set ["noWaypoints", _savedData get "noWaypoints"];
 _groupData set ["forceVirtual", _savedData get "forceVirtual"];
+_groupData set ["organicPackageRole", _savedData get "organicPackageRole"];
+_groupData set ["organicPackageParentGroupId", _savedData get "organicPackageParentGroupId"];
 
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreMissionState;
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreCommanderState;

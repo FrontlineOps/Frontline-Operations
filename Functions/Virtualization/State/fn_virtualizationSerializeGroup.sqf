@@ -44,6 +44,7 @@ createHashMapFromArray [
     ["pathStartedAt", _groupData get "pathStartedAt"],
     ["pathSource", _groupData get "pathSource"],
     ["pathWaypointSettings", _groupData get "pathWaypointSettings"],
+    ["comp", _groupData get "comp"],
     ["alwaysActive", _groupData get "alwaysActive"],
     ["commanderOrder", _groupData get "commanderOrder"],
     ["executionState", _groupData get "executionState"],
@@ -66,6 +67,8 @@ createHashMapFromArray [
     ["dismountAtWaypoint", _groupData get "dismountAtWaypoint"],
     ["postDismountWaypoint", _groupData get "postDismountWaypoint"],
     ["mountedIn", _groupData get "mountedIn"],
+    ["organicPackageRole", _groupData get "organicPackageRole"],
+    ["organicPackageParentGroupId", _groupData get "organicPackageParentGroupId"],
     ["garrisonPosition", _groupData get "garrisonPosition"],
     ["garrisonObjective", _groupData get "garrisonObjective"]
 ]

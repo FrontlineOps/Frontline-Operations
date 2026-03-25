@@ -8,29 +8,23 @@ private _sideKey = _pools get "sideKey";
 private _unitPool = _pools get "units";
 [_unitPool, "units", _sideKey, _groupType] call FLO_fnc_virtualizationRequirePoolEntries;
 
-private _vehiclePool = switch (_groupType) do {
-    case "motorized": { _pools get "groundLight" };
-    case "mechanized";
-    case "armor": { _pools get "groundHeavy" };
-    case "mobile_aa": { _pools get "mobileAA" };
-    default { [] };
-};
-
-private _vehiclePoolName = switch (_groupType) do {
-    case "motorized": { "groundLight" };
-    case "mechanized";
-    case "armor": { "groundHeavy" };
-    case "mobile_aa": { "mobileAA" };
-    default { _groupType };
-};
-
+private _poolData = [_groupType, _pools] call FLO_fnc_virtualizationGetGroundCombatVehiclePool;
+_poolData params ["_vehiclePool", "_vehiclePoolName"];
 [_vehiclePool, _vehiclePoolName, _sideKey, _groupType] call FLO_fnc_virtualizationRequirePoolEntries;
+
+private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+private _composition = _groupData get "comp";
+if (_composition isEqualTo []) then {
+    _composition = [_groupType, _unitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;
+    [_groupData, _composition] call FLO_fnc_virtualizationSetAssetComposition;
+};
 
 private _realGroup = createGroup [_side, true];
 
-for "_i" from 1 to _unitCount do {
-    private _vehicleType = selectRandom _vehiclePool;
-    private _minDist = 10 + (20 * _i);
+{
+    private _vehicleType = _x;
+    private _carrierIndex = _forEachIndex + 1;
+    private _minDist = 10 + (20 * _carrierIndex);
     private _spawnPos = [
         _groupId,
         _position,
@@ -43,6 +37,6 @@ for "_i" from 1 to _unitCount do {
     ] call FLO_fnc_virtualizationResolveGroundSpawnPos;
     private _crewType = [_vehicleType, _unitPool, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
     [_realGroup, _vehicleType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
-};
+} forEach _composition;
 
 _realGroup

@@ -33,7 +33,7 @@ if (_resolvedUnitCount <= 0) then {
     };
 };
 
-createHashMapFromArray [
+private _groupData = createHashMapFromArray [
     ["position", _position],
     ["spawnPosition", _position],
     ["groupType", _groupType],
@@ -65,6 +65,7 @@ createHashMapFromArray [
     ["pathStartedAt", -1],
     ["pathSource", ""],
     ["pathWaypointSettings", []],
+    ["vehicleType", ""],
     ["comp", []],
     ["missionLock", ""],
     ["missionType", ""],
@@ -100,6 +101,15 @@ createHashMapFromArray [
     ["dismountAtWaypoint", -1],
     ["postDismountWaypoint", []],
     ["mountedIn", ""],
+    ["organicPackageRole", ""],
+    ["organicPackageParentGroupId", ""],
     ["garrisonPosition", _position],
     ["garrisonObjective", ""]
-]
+];
+
+private _initialAssetComposition = [_groupType, _resolvedUnitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;
+if (_initialAssetComposition isNotEqualTo []) then {
+    [_groupData, _initialAssetComposition] call FLO_fnc_virtualizationSetAssetComposition;
+};
+
+_groupData

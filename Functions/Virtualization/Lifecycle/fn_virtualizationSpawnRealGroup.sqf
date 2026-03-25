@@ -12,10 +12,6 @@ private _unitCount = _groupData get "unitCount";
 private _realGroup = grpNull;
 
 switch (true) do {
-    case (_comp isNotEqualTo []): {
-        _realGroup = [_side, _groupType, _position, _comp] call FLO_fnc_virtualizationSpawnFromComposition;
-    };
-
     case (_groupType isEqualTo "infantry"): {
         _realGroup = [_position, _side, _groupCfg, _unitCount, _pools get "units", _pools get "sideKey"] call FLO_fnc_virtualizationSpawnInfantryGroup;
     };
@@ -26,6 +22,10 @@ switch (true) do {
 
     case (_groupType in ["motorized", "mechanized", "armor", "mobile_aa"]): {
         _realGroup = [_groupId, _position, _side, _unitCount, _groupType, _pools] call FLO_fnc_virtualizationSpawnGroundCombatGroup;
+    };
+
+    case (_comp isNotEqualTo []): {
+        _realGroup = [_side, _groupType, _position, _comp] call FLO_fnc_virtualizationSpawnFromComposition;
     };
 
     case (_groupType in ["helicopter", "jet", "air"]): {

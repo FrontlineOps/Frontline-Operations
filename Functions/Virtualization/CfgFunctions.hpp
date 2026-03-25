@@ -37,6 +37,9 @@ class VirtualizationRegistry {
     class createVirtualGroup              {};
     class virtualizationGenerateGroupId   {};
     class virtualizationBuildGroupData    {};
+    class virtualizationSelectInitialAssetComposition {};
+    class virtualizationGetOrganicPackageInfantryCount {};
+    class virtualizationCreateOrganicPackageDismount {};
     class virtualizationSetEnabled       {};
     class virtualizationGetGroup         {};
     class virtualizationAddGroup         {};
@@ -76,6 +79,7 @@ class VirtualizationLifecycle {
     class virtualizationCaptureRealGroupWaypoints {};
     class virtualizationDeleteRealGroupAssets {};
     class virtualizationRequirePoolEntries {};
+    class virtualizationGetGroundCombatVehiclePool {};
     class virtualizationResolveCrewType    {};
     class virtualizationResolveGroundSpawnPos {};
     class virtualizationSyncRealGroupOutcome {};
@@ -158,6 +162,7 @@ class VirtualizationState {
     file = "Functions\Virtualization\State";
 
     class virtualizationGetEffectiveState {};
+    class virtualizationSetAssetComposition {};
     class virtualizationClearCommanderOrder {};
     class virtualizationSetCommanderOrder {};
     class virtualizationAssignMoveOrder {};

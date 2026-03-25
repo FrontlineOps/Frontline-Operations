@@ -35,6 +35,9 @@ private _transData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
 
 // Clear infantry attachment
 [_infData] call FLO_fnc_virtualizationClearTransportAttachment;
+if ((_infData get "missionLock") == "ORGANIC_PACKAGE") then {
+    [_infData] call FLO_fnc_virtualizationClearMissionLock;
+};
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 
 // Offset position from transport

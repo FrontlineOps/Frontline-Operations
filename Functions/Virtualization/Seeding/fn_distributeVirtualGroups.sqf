@@ -117,6 +117,14 @@ for "_i" from 1 to _remainingGroups do {
     private _groupId = [_safePos, _groupType, _groupCfg, _objective, -1, _side] call FLO_fnc_createVirtualGroup;
     _createdGroups pushBack _groupId;
 
+    if (_groupType in ["motorized", "mechanized"]) then {
+        private _carrierData = (FLO_virtualGroups get "_groups") get _groupId;
+        private _dismountGroupId = [_groupId, _carrierData, true] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
+        if (_dismountGroupId != "") then {
+            _createdGroups pushBack _dismountGroupId;
+        };
+    };
+
     // Log creation
     ["VIRTUALIZATION", 3, format["Distributed %1 group at %2 - position: %3", _groupType, _markerName, _safePos]] call FLO_fnc_log;
 };

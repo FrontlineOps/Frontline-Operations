@@ -61,7 +61,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 10;
+private _expectedSaveVersion = 12;
 private _saveVersion = _saveData get "saveVersion";
 if (_saveVersion != _expectedSaveVersion) exitWith {
     [

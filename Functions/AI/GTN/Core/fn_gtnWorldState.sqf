@@ -246,7 +246,7 @@ private _worldState = createHashMapObject [[
 
             // A group is "available" if it's not on an active mission
             if (_missionLock == "") then {
-                if !(_currentOrder in ["ATTACK", "DEFEND", "MOVE"]) then {
+                if ((_gData get "attachedTo") == "" && {(_gData get "mountedIn") == ""} && {!(_currentOrder in ["ATTACK", "DEFEND", "MOVE"])}) then {
                     _counts set ["available", (_counts get "available") + 1];
                 };
             };

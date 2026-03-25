@@ -22,7 +22,7 @@ private _syncedComp = if (_tracksAssets) then {
 };
 
 _groupData set ["unitCount", _syncedCount];
-_groupData set ["comp", _syncedComp];
+[_groupData, _syncedComp] call FLO_fnc_virtualizationSetAssetComposition;
 
 ["VIRTUALIZATION", 4, format ["Synced unitCount for %1 (%2): %3", _groupId, _groupType, _syncedCount]] call FLO_fnc_log;
 ["VIRTUALIZATION", 4, format ["Synced comp for %1 (%2): %3 entries", _groupId, _groupType, count _syncedComp]] call FLO_fnc_log;

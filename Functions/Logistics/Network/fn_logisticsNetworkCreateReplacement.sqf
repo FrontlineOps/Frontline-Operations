@@ -53,6 +53,10 @@ private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
 
 [_groupData, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkReinforcementTransit;
 
+if (_groupType in ["motorized", "mechanized"]) then {
+    [_newGroupId, _groupData, true, _targetPos] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
+};
+
 if (_groupType isEqualTo "static_aa") then {
     _groupData set ["forceVirtual", true];
     _groupData set ["alwaysActive", false];
