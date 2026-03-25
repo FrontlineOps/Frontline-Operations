@@ -44,6 +44,11 @@ private _poolUnits = _pools get "units";
         };
     };
 
+    private _attachedSide = _attachedData get "side";
+    if (!isNull _infGroup && {_attachedSide in [east, west, independent]} && {_attachedSide != civilian}) then {
+        _infGroup = [_infGroup, _attachedSide] call FLO_fnc_setSide;
+    };
+
     if (count _transportVehicles > 0) then {
         private _vehicleIndex = 0;
         {
