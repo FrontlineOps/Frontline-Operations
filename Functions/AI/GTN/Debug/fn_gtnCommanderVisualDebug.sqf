@@ -97,7 +97,8 @@ private _fnc_clearAll = {
             private _situation = _worldState call ["_getTacticalSituation", []];
             private _friendlyObjectives = _worldState call ["_getFriendlyObjectives", []];
             private _enemyObjectivesAll = _worldState call ["_getEnemyObjectives", []];
-            private _enemyObjectives = _worldState call ["_getFrontlineEnemyObjectives", []];
+            private _strictFrontlineEnemyObjectives = _worldState call ["_getFrontlineEnemyObjectives", []];
+            private _enemyObjectives = _cmd call ["_getAttackFrontlineEnemyObjectives", []];
 
             private _stats = _cmd get "_stats";
             private _tracks = _cmd get "_tracks";
@@ -127,7 +128,7 @@ private _fnc_clearAll = {
             private _summaryId = format ["FLO_GTN_DBG_%1_SUMMARY", _cmdSideKey];
             _activeIds pushBack _summaryId;
             private _summaryText = format [
-                "GTN %1 | cyc:%2 tasked:%3 avail:%4 atk:%5 def:%6 enemyObj:%7 front:%8 mom:%9",
+                "GTN %1 | cyc:%2 tasked:%3 avail:%4 atk:%5 def:%6 enemyObj:%7 atkFront:%8 strictFront:%9 mom:%10",
                 _cmdSideKey,
                 _stats get "cyclesRun",
                 count _taskedGroups,
@@ -136,6 +137,7 @@ private _fnc_clearAll = {
                 _forces get "defendingGroups",
                 count (keys _enemyObjectivesAll),
                 count (keys _enemyObjectives),
+                count (keys _strictFrontlineEnemyObjectives),
                 round (_situation get "momentum")
             ];
             [_summaryId, _anchorPos, "mil_flag", _ownColor, _summaryText, [0.95, 0.95], 1] call _fnc_upsertMarker;
@@ -279,15 +281,15 @@ private _fnc_clearAll = {
                 if (isNil "_gData") then { continue };
                 if ((_gData get "side") != _ownSide) then { continue };
 
-                private _isReinforcing = _gData getOrDefault ["isReinforcing", false];
-                private _isAAMoving = (_gData get "aaDeployState") == "MOVING";
+                private _isReinforcing = (_gData get "replacementState") == "REINFORCE";
+                private _isAAMoving = (_gData get "replacementState") == "AA_DEPLOY";
                 if !(_isReinforcing || _isAAMoving) then { continue };
 
                 private _groupPos = _gData get "position";
                 private _groupType = _gData get "groupType";
                 private _groupUnits = _gData get "unitCount";
                 private _targetObjective = if (_isAAMoving) then {
-                    _gData get "aaDeployTargetObjective"
+                    [_gData] call FLO_fnc_virtualizationGetAATargetObjective
                 } else {
                     _gData get "homeObjective"
                 };
@@ -308,7 +310,7 @@ private _fnc_clearAll = {
                     _reinforcingObjectiveCounts set [_targetObjective, (_reinforcingObjectiveCounts getOrDefault [_targetObjective, 0]) + 1];
                 } else {
                     if (_isAAMoving) then {
-                        private _targetPos = _gData get "aaDeployTargetPos";
+                        private _targetPos = [_gData] call FLO_fnc_virtualizationGetAATargetPos;
                         if (count _targetPos >= 2) then {
                             private _aaTargetMarkerId = format ["FLO_GTN_DBG_%1_REINF_AA_TGT_%2", _cmdSideKey, _groupId];
                             _activeIds pushBack _aaTargetMarkerId;
@@ -327,14 +329,48 @@ private _fnc_clearAll = {
                 [_reinfTargetMarkerId, _objPos, "mil_dot", _ownColor, format ["%1 REINF INBOUND %2 x%3", _cmdSideKey, _objId, _count], [0.6, 0.6], 0.8] call _fnc_upsertMarker;
             } forEach (keys _reinforcingObjectiveCounts);
 
+            private _taskedSet = createHashMap;
+            { _taskedSet set [_x, true]; } forEach _taskedGroups;
+
+            {
+                private _groupId = _x;
+                private _gData = _allGroups get _groupId;
+                if (isNil "_gData") then { continue };
+                if ((_gData get "side") != _ownSide) then { continue };
+                if !(_gData get "isActive") then { continue };
+                if !(isNil { _taskedSet get _groupId }) then { continue };
+
+                private _mountedIn = _gData get "mountedIn";
+                if (_mountedIn == "") then { continue };
+
+                private _groupPos = _gData get "position";
+                private _groupState = [_gData] call FLO_fnc_virtualizationGetEffectiveState;
+                private _groupUnits = _gData get "unitCount";
+                private _groupType = _gData get "groupType";
+                private _shortId = if ((count _groupId) > 7) then { _groupId select [7] } else { _groupId };
+                private _carrierShortId = if ((count _mountedIn) > 7) then { _mountedIn select [7] } else { _mountedIn };
+
+                private _mountedMarkerId = format ["FLO_GTN_DBG_%1_MOUNTED_%2", _cmdSideKey, _groupId];
+                _activeIds pushBack _mountedMarkerId;
+                [_mountedMarkerId, _groupPos, "mil_dot", _ownColor, format [
+                    "%1 %2 mounted:%3 st:%4 u%5 %6",
+                    _cmdSideKey,
+                    _shortId,
+                    _carrierShortId,
+                    _groupState,
+                    _groupUnits,
+                    _groupType
+                ], [0.45, 0.45], 0.55] call _fnc_upsertMarker;
+            } forEach (keys _allGroups);
+
             {
                 private _groupId = _x;
                 private _gData = _allGroups get _groupId;
                 if (isNil "_gData") then { continue };
 
                 private _groupPos = _gData get "position";
-                private _groupOrder = _gData get "currentOrder";
-                private _groupState = _gData get "state";
+                private _groupOrder = _gData get "commanderOrder";
+                private _groupState = [_gData] call FLO_fnc_virtualizationGetEffectiveState;
                 private _groupUnits = _gData get "unitCount";
                 private _groupType = _gData get "groupType";
                 private _shortId = if ((count _groupId) > 7) then { _groupId select [7] } else { _groupId };

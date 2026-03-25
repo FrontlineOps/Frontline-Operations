@@ -16,11 +16,11 @@ params ["_groupData"];
 
 private _side = _groupData get "side";
 if !(_side in [east, west]) exitWith { false };
-if ((_groupData get "attachedTo") != "") exitWith { false };
+if (([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) != "") exitWith { false };
 
 private _groupType = _groupData get "groupType";
 if ([_groupType] call FLO_fnc_gtnCombatIsDirectCombatGroup) exitWith {
     (_groupData get "unitCount") > 0
 };
 
-([_groupType] call FLO_fnc_gtnCombatIsSupportProvider) && { !(_groupData get "onMission") }
+([_groupType] call FLO_fnc_gtnCombatIsSupportProvider) && { (_groupData get "missionLock") == "" }

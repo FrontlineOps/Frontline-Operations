@@ -3,9 +3,9 @@
 
     Description:
     Manages artillery groups that exist in the virtualization system.
-    For live areas (players/active groups nearby), the manager unvirtualizes
-    and executes a real fire mission.
-    For non-live areas, the manager keeps artillery virtual and applies a
+    For target areas inside the shared virtualization activation bubble, the
+    manager unvirtualizes and executes a real fire mission.
+    For remote areas, the manager keeps artillery virtual and applies a
     virtual combat effect instead of spawning real assets.
 
     Firing pattern inspired by LAMBS Danger fnc_doArtillery:
@@ -54,32 +54,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["observedFireDeactivatedEh", -1],
         ["observedFireRemovedEh", -1],
 
-        // Area is "live" when players or already-active groups are nearby.
-        // In non-live areas, artillery stays virtual.
+        // A target area is "live" only when it is inside the shared player
+        // activation bubble. Remote batteries stay virtual.
         ["_isLiveArea", {
             params ["_targetPos", ["_radius", -1]];
 
-            if (_radius < 0) then { _radius = FLO_VirtualizationDistance; };
-
-            private _playersNear = {
-                alive _x &&
-                {side group _x in [east, west]} &&
-                {(getPosATL _x) distance2D _targetPos <= _radius}
-            } count allPlayers;
-            if (_playersNear > 0) exitWith { true };
-
-            private _groups = FLO_virtualGroups get "_groups";
-            private _activeGroupsNear = 0;
-            {
-                private _gData = _y;
-                private _gType = _gData get "groupType";
-                if (_gType in ["static_aa", "radar"]) then { continue };
-                if !(_gData get "isActive") then { continue };
-                if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
-                _activeGroupsNear = _activeGroupsNear + 1;
-            } forEach _groups;
-
-            _activeGroupsNear > 0
+            [_targetPos, _radius] call FLO_fnc_virtualizationIsPositionWithinActivationRange
         }],
 
         // Applies virtual artillery damage to nearby enemy virtual groups.
@@ -125,7 +105,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 private _newCount = _currentCount - _loss;
                 if (_newCount <= 0) then {
                     _gData set ["unitCount", 0];
-                    [FLO_virtualGroups, _gid] call (FLO_virtualGroups get "_removeGroup");
+                    [FLO_virtualGroups, _gid] call FLO_fnc_virtualizationRemoveGroup;
                 } else {
                     _gData set ["unitCount", _newCount];
                     _groups set [_gid, _gData];
@@ -148,7 +128,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                     private _groups = FLO_virtualGroups get "_groups";
                     if (_gid in _groups) then {
                         private _gData = _groups get _gid;
-                        _gData set ["onMission", false];
+                        [_gData] call FLO_fnc_virtualizationClearMissionLock;
                     };
                 };
 
@@ -383,6 +363,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
             } else {
                 "ANY"
             };
+            private _targetSide = if (_requestSide isEqualTo east) then {
+                west
+            } else {
+                if (_requestSide isEqualTo west) then { east } else { sideUnknown };
+            };
             private _cooldownKey = if (_objectiveId != "") then {
                 format ["%1:%2", _sideKey, _objectiveId]
             } else {
@@ -394,7 +379,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             // Non-live area: keep support entirely virtual.
             if (!_isLiveArea) exitWith {
-                _gdata set ["onMission", true];
+                [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
                 (_self get "missions") set [_gid, diag_tickTime];
                 if (_cooldownKey != "") then {
                     (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
@@ -419,9 +404,22 @@ if (isNil "FLO_GTNArtilleryManager") then {
             };
 
             private _realGroup = _gdata get "realGroup";
+            private _firePlan = [_realGroup, _targetPos, _rounds, _accuracy] call FLO_fnc_gtnBuildArtilleryFirePlan;
+
+            if (_targetSide in [east, west]) then {
+                private _alertPayload = [];
+                if (count (keys _firePlan) > 0) then {
+                    _alertPayload = [
+                        _firePlan get "etaMin",
+                        _firePlan get "etaMax",
+                        _firePlan get "impactPoints"
+                    ];
+                };
+                [_targetPos, _rounds, _accuracy, _targetSide, _alertPayload] call FLO_fnc_gtnAlertIncomingArtillery;
+            };
 
             // Mark as on mission to prevent virtualization
-            _gdata set ["onMission", true];
+            [_gdata, "ARTILLERY", "LIVE_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
 
             // Register mission
             (_self get "missions") set [_gid, diag_tickTime];
@@ -430,7 +428,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
             };
 
             // Spawn the fire mission process
-            [_gid, _gdata, _realGroup, _targetPos, _rounds, _accuracy, _self] spawn FLO_fnc_gtnArtilleryFireMission;
+            [_gid, _gdata, _realGroup, _targetPos, _rounds, _accuracy, _firePlan, _self] spawn FLO_fnc_gtnArtilleryFireMission;
 
             true
         }],
@@ -473,10 +471,10 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 private _gdata = _groups get _gid;
                 if (!isNil "_gdata") then {
                     // Clear mission flag
-                    _gdata set ["onMission", false];
+                    [_gdata] call FLO_fnc_virtualizationClearMissionLock;
 
                     // Reset state to idle so virtualization can assign new patrol
-                    _gdata set ["state", "idle"];
+                    [_gdata, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
                     _gdata set ["autoPatrol", false];  // Allow patrol to be reassigned
 
                     // Deactivate (virtualize) the group

@@ -20,6 +20,8 @@ params [
 ];
 
 private _metrics = createHashMapFromArray [
+    ["phase", ""],
+    ["phaseObjective", ""],
     ["poolCount", 0],
     ["candidateObjectives", 0],
     ["assignedGroups", 0],
@@ -30,15 +32,21 @@ private _metrics = createHashMapFromArray [
 
 if (isNil "_cmdr" || {isNil "_track"}) exitWith { _metrics };
 
+private _phase = _track get "phase";
+private _phaseObjectiveId = _track get "phaseObjectiveId";
+_metrics set ["phase", _phase];
+_metrics set ["phaseObjective", _phaseObjectiveId];
+
 private _pool = +(_track get "groupPool");
 _metrics set ["poolCount", count _pool];
 _metrics set ["remainingPool", count _pool];
 if ((count _pool) == 0) exitWith { _metrics };
+if (_phase != "assault") exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _groups = FLO_virtualGroups get "_groups";
-private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 if ((count (keys _frontlineObjectives)) == 0) then {
     _frontlineObjectives = _ws call ["_getEnemyObjectives", []];
 };
@@ -53,7 +61,7 @@ private _activeAttackCounts = createHashMap;
 {
     private _gData = _y;
     if ((_gData get "side") != _ownSide) then { continue };
-    if ((_gData get "currentOrder") != "ATTACK") then { continue };
+    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
 
     private _attackObjective = _gData get "attackObjective";
     if (_attackObjective == "") then { continue };
@@ -69,6 +77,8 @@ private _activeAttackCounts = createHashMap;
 private _candidateObjectives = [];
 {
     private _objectiveId = _x;
+    if (_phaseObjectiveId != "" && {_objectiveId != _phaseObjectiveId}) then { continue };
+
     private _objective = _frontlineObjectives get _objectiveId;
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
     if (_attackCap <= 0) then { continue };
@@ -91,7 +101,7 @@ private _candidateObjectives = [];
     };
 
     private _sectorMatch = (count _trackSectorObjectives) == 0
-        || { (count ((_objective get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0 };
+        || { (count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0 };
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
     private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
 

@@ -56,13 +56,16 @@ private _sideResourceClass = [
 
     ["SPENDING_TYPES", createHashMapFromArray [
         ["garrison", [1.0, 10, 0.05]],
-        ["reinforcement", [1.0, 20, 0.03]],
+        ["reinforcement", [1.0, 20, 0.02]],
         ["qrf", [1.5, 100, 0.08]],
         ["offensiveops", [4.0, 500, 0.15]],
         ["air_support", [2.0, 250, 0.12]],
         ["artillery", [3.0, 150, 0.07]],
         ["transport", [0.5, 15, 0.02]]
     ]],
+
+    ["EFFICIENCY_FLOOR", 0.35],
+    ["EFFICIENCY_RECOVERY", 0.02],
 
     ["UPDATE_INTERVAL", 180],
     ["OBJECTIVE_CAPTURE_REWARD", 200],

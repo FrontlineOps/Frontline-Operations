@@ -12,6 +12,8 @@
 if (!isServer) exitWith { false };
 
 diag_log "[FLO_INIT_P1] Waiting for mission configuration...";
+FLO_VirtualizationUnitCap = 200;
+publicVariable "FLO_VirtualizationUnitCap";
 
 // Check if this is a saved game (FLO_IsLoadedSave flag set by Phase 0)
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
@@ -35,10 +37,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_GTN_AttackLaneHandle = _configData get "gtnAttackLaneHandle";
         FLO_GTN_DefenseCoverageHandle = _configData get "gtnDefenseCoverageHandle";
         FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
+        FLO_GTN_ForceGrowthHandle = _configData get "gtnForceGrowthHandle";
+        FLO_GTN_GarrisonHandle = _configData get "gtnGarrisonHandle";
         FLO_MoneyHandle = _configData get "moneyHandle";
         EnemyPrec = _configData get "enemyPrec";
         FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
         FLO_VirtualizationDistance = _configData get "virtualizationDistance";
+        FLO_VirtualizationUnitCap = _configData get "virtualizationUnitCap";
 
         publicVariable "FLO_FriendlyHandle";
         publicVariable "FLO_EnemyHandle";
@@ -48,10 +53,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "FLO_GTN_AttackLaneHandle";
         publicVariable "FLO_GTN_DefenseCoverageHandle";
         publicVariable "FLO_GTN_TempoHandle";
+        publicVariable "FLO_GTN_ForceGrowthHandle";
+        publicVariable "FLO_GTN_GarrisonHandle";
         publicVariable "FLO_MoneyHandle";
         publicVariable "EnemyPrec";
         publicVariable "FLO_ObjectiveSizeThreshold";
         publicVariable "FLO_VirtualizationDistance";
+        publicVariable "FLO_VirtualizationUnitCap";
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
             FLO_FriendlyHandle get "name",
@@ -59,7 +67,12 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         ];
     };
 
-    diag_log format ["[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m", FLO_ObjectiveSizeThreshold, FLO_VirtualizationDistance];
+    diag_log format [
+        "[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3",
+        FLO_ObjectiveSizeThreshold,
+        FLO_VirtualizationDistance,
+        FLO_VirtualizationUnitCap
+    ];
 
     // Mark starting location as done for saved games
     StartingLocationDone = true;
@@ -110,10 +123,13 @@ private _requiredFields = [
     "gtnAttackLaneHandle",
     "gtnDefenseCoverageHandle",
     "gtnTempoHandle",
+    "gtnForceGrowthHandle",
+    "gtnGarrisonHandle",
     "moneyHandle",
     "enemyPresence",
     "objectiveSizeThreshold",
     "virtualizationDistance",
+    "virtualizationUnitCap",
     "startPosition"
 ];
 private _missingFields = _requiredFields select { !(_x in FLO_MissionConfig) };
@@ -140,6 +156,8 @@ FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
 FLO_GTN_AttackLaneHandle = FLO_MissionConfig get "gtnAttackLaneHandle";
 FLO_GTN_DefenseCoverageHandle = FLO_MissionConfig get "gtnDefenseCoverageHandle";
 FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
+FLO_GTN_ForceGrowthHandle = FLO_MissionConfig get "gtnForceGrowthHandle";
+FLO_GTN_GarrisonHandle = FLO_MissionConfig get "gtnGarrisonHandle";
 FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
 EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
@@ -148,6 +166,8 @@ publicVariable "FLO_DifficultyHandle";
 publicVariable "FLO_GTN_AttackLaneHandle";
 publicVariable "FLO_GTN_DefenseCoverageHandle";
 publicVariable "FLO_GTN_TempoHandle";
+publicVariable "FLO_GTN_ForceGrowthHandle";
+publicVariable "FLO_GTN_GarrisonHandle";
 publicVariable "FLO_MoneyHandle";
 publicVariable "EnemyPrec";
 
@@ -158,7 +178,15 @@ publicVariable "FLO_ObjectiveSizeThreshold";
 private _virtualizationDistance = FLO_MissionConfig get "virtualizationDistance";
 FLO_VirtualizationDistance = _virtualizationDistance;
 publicVariable "FLO_VirtualizationDistance";
-diag_log format ["[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m", FLO_ObjectiveSizeThreshold, FLO_VirtualizationDistance];
+private _virtualizationUnitCap = FLO_MissionConfig get "virtualizationUnitCap";
+FLO_VirtualizationUnitCap = _virtualizationUnitCap;
+publicVariable "FLO_VirtualizationUnitCap";
+diag_log format [
+    "[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3",
+    FLO_ObjectiveSizeThreshold,
+    FLO_VirtualizationDistance,
+    FLO_VirtualizationUnitCap
+];
 
 // Mark starting location as done
 StartingLocationDone = true;

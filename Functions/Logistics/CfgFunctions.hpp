@@ -25,6 +25,7 @@ class LogisticsSideResources {
 class LogisticsNetwork {
     file = "Functions\Logistics\Network";
 
+    class logisticsNetworkApplyObjectiveCaptureGrowth {};
     class logisticsNetworkBuildInboundObjectiveCounts {};
     class logisticsNetworkBuildRecentDispatchCounts {};
     class logisticsNetworkCanDispatchToObjective {};

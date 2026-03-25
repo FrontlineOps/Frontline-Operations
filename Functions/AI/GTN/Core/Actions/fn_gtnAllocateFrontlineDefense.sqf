@@ -41,6 +41,39 @@ private _groups = FLO_virtualGroups get "_groups";
 private _objectives = _ws call ["_getObjectives", []];
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
+private _claimedPositionsByObjective = createHashMap;
+
+{
+    private _gData = _y;
+    if ((_gData get "side") != _ownSide) then { continue };
+    if ((_gData get "groupType") == "static_aa") then { continue };
+
+    private _objectiveId = "";
+    private _claimPos = [];
+    private _order = _gData get "commanderOrder";
+
+    if (_order == "DEFEND") then {
+        _objectiveId = _gData get "defendObjective";
+        _claimPos = _gData get "orderTargetPos";
+    } else {
+        if (_order != "GARRISON") then { continue };
+        _objectiveId = _gData get "garrisonObjective";
+        _claimPos = _gData get "garrisonPosition";
+    };
+
+    if (_objectiveId == "" || {!(_objectiveId in _objectives)}) then { continue };
+    if !(_claimPos isEqualType [] && {count _claimPos >= 2}) then {
+        _claimPos = _gData get "position";
+    };
+
+    private _bucket = if (_objectiveId in _claimedPositionsByObjective) then {
+        _claimedPositionsByObjective get _objectiveId
+    } else {
+        []
+    };
+    _bucket pushBack _claimPos;
+    _claimedPositionsByObjective set [_objectiveId, _bucket];
+} forEach _groups;
 
 private _candidateObjectives = [];
 {
@@ -153,11 +186,20 @@ while {_continueAllocation && {(count _pool) > 0}} do {
 
         if (_bestGroupId == "") then { continue };
 
-        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _objectivePos, _objectiveId]]) then {
+        private _claimedPositions = if (_objectiveId in _claimedPositionsByObjective) then {
+            _claimedPositionsByObjective get _objectiveId
+        } else {
+            []
+        };
+        private _defendPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
+
+        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId]]) then {
             _pool = _pool - [_bestGroupId];
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
+            _claimedPositions pushBack _defendPos;
+            _claimedPositionsByObjective set [_objectiveId, _claimedPositions];
 
             private _assignedHere = if (_objectiveId in _assignedByObjective) then {
                 _assignedByObjective get _objectiveId

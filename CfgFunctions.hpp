@@ -35,14 +35,16 @@ class FLO {
         class gtnMonitor            {};
         class gtnCommander          {};
         class gtnCapabilityAnalyzer {};
-        class gtnReleaseCompletedAttackAssignments {};
     };
 
     class GTNCoreActions {
         file = "Functions\AI\GTN\Core\Actions";
 
+        class gtnAllocateBaselineGarrisons {};
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
+        class gtnManageOpportunisticEngagements {};
+        class gtnReleaseCompletedAttackAssignments {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
     };
@@ -50,7 +52,43 @@ class FLO {
     class GTNCoreLogic {
         file = "Functions\AI\GTN\Core\Logic";
 
+        class gtnAdjustEngagementTargetAssignment {};
+        class gtnApplyGroupEngagement {};
+        class gtnBuildAttackReachability {};
+        class gtnBuildEnemyEngagementPicture {};
         class gtnBuildObjectiveReserveBands {};
+        class gtnDistanceToSegment2D {};
+        class gtnEstimateEngagementTargetLoad {};
+        class gtnEvaluateGroupEngagementTarget {};
+        class gtnExecuteTrackCycle {};
+        class gtnGetEngagementTargetAssignmentCap {};
+        class gtnIsEngagementRouteActive {};
+        class gtnPickObjectiveGarrisonPosition {};
+        class gtnRestoreStrategicGroupRoute {};
+        class gtnSelectGroupEngagementTarget {};
+        class gtnUpdateAttackTrackPhases {};
+    };
+
+    class GTNIntel {
+        file = "Functions\AI\GTN\Intel";
+
+        class gtnBuildCommanderIntelPicture {};
+        class gtnCommanderIntelMarkerType {};
+        class gtnInjectCombatEventContacts {};
+        class gtnPublishCommanderIntel {};
+        class gtnSyncCommanderIntelMarkers {};
+    };
+
+    class GTNAlerts {
+        file = "Functions\AI\GTN\Alerts";
+
+        class gtnCanSideObserveArea {};
+        class gtnCanSideDetectAirThreat {};
+        class gtnPublishAlert {};
+        class gtnSyncAlertMarkers {};
+        class gtnAlertIncomingArtillery {};
+        class gtnAlertIncomingAircraft {};
+        class gtnAlertCivilianReport {};
     };
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
@@ -81,6 +119,8 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnCollectArtilleryVehicles {};
+        class gtnBuildArtilleryFirePlan {};
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
@@ -137,71 +177,7 @@ class FLO {
         class taskPatrol {};
     };
 
-    class Virtualization {
-        file = "Functions\Virtualization";
-
-        class initVirtualization              {};
-        class activateVirtualGroup            {};
-        class deactivateVirtualGroup          {};
-        class createVirtualGroup              {};
-        class updateVirtualGroupWaypoints     {};
-        class initializeObjectiveGroups       {};
-        class distributeVirtualGroups         {};
-        class activateSavedVirtualGroup       {};
-    };
-
-    // Virtualization Transport
-    class VirtualizationTransport {
-        file = "Functions\Virtualization\Transport";
-
-        class transportConfig       {};
-        class transportGetCapacity  {};
-        class transportGetSpeed     {};
-        class transportPool         {};
-        class transportAttach       {};
-        class transportDetach       {};
-        class transportDetachAll    {};
-        class transportRequest      {};
-        class transportDismount     {};
-        class transportMapEdge      {};
-    };
-
-    // Virtualization Core - PFH-based update system
-    class VirtualizationCore {
-        file = "Functions\Virtualization\Core";
-
-        class virtualizationUpdatePFH       {};
-        class virtualizationProcessGroup    {};
-        class virtualizationAdvanceWaypoint {};
-        class virtualizationFinalizeReinforcement {};
-        class virtualizationResumeSavedRoutes {};
-        class virtualizationSpatialIndex    {};
-        class virtualizationEvents          {};
-    };
-
-    // Virtualization Debug - Async debug visualization
-    class VirtualizationDebug {
-        file = "Functions\Virtualization\Debug";
-
-        class virtualizationDebugManager      {};
-        class virtualizationProbe             {};
-        class virtualizationDebugUpdateMarker {};
-        class testVirtualizationSystem        {};
-    };
-
-    class VirtualizationUtilities {
-        file = "Functions\Virtualization\Utilities";
-
-        class filterNonCivGroups      {};
-        class getGroupTypeCount       {};
-        class getRoadParkingPos       {};
-        class getSafeLandPos          {};
-        class getSafeUnvirtualizePos  {};
-        class virtualizationGetRealAssetVehicles {};
-        class virtualizationUsesAssetStrength {};
-        class validateGroupPosition   {};
-        class setSide                 {};
-    };
+    #include "Functions\Virtualization\CfgFunctions.hpp"
 
     class Objective {
         file = "Functions\Objective";
@@ -229,30 +205,6 @@ class FLO {
     };
 
     #include "Functions\Logistics\CfgFunctions.hpp"
-
-    // === INTELLIGENCE SYSTEM ===
-    class IntelCore {
-        file = "Functions\Intelligence\Core";
-
-        class intelSystem {};
-    };
-
-    class IntelReveals {
-        file = "Functions\Intelligence\Reveals";
-
-        class revealRandomEnemyGroup    {};
-        class revealArtilleryBattery    {};
-        class revealCommanderObjective  {};
-        class incomingAircraftAlert     {};
-    };
-
-    class IntelSources {
-        file = "Functions\Intelligence\Sources";
-
-        class militaryIntel    {};
-        class civilianIntel    {};
-        class backgroundEvents {};
-    };
 
     class Arsenal {
         file = "Functions\Arsenal";
@@ -301,46 +253,11 @@ class FLO {
     class UtilitiesVehicle {
         file = "Functions\Utilities\Vehicle";
         class placeVehicleWithCrew      {};
+        class vehicleCleanupManager     {};
+        class vehicleCleanupRun         {};
+        class vehicleShouldCleanup      {};
     };
 
-    // === SIDE MISSIONS - CORE SYSTEM ===
-    class SideMissionCore {
-        file = "Functions\SideMissions\Core";
-
-        class sideMissionState          {};
-        class sideMissionRegistry       {};
-        class sideMissionTemplate       {};
-        class sideMissionManager        {};
-        class sideMissionEntityTracker  {};
-        class sideMissionHandleRescue   {};
-        class sideMissionTaskCreate     {};
-        class sideMissionTaskUpdate     {};
-        class sideMissionTaskCleanup    {};
-        class sideMissionTemplatesInit  {};
-        class startSideMission          {};
-    };
-
-    // === SIDE MISSIONS - TEMPLATES ===
-    class SideMissionTemplates {
-        file = "Functions\SideMissions\Templates";
-
-        class templatePilotRescue       {};
-        class templateSquadRescue       {};
-        class templateConvoyInterdiction {};
-        class templateHVTConvoy         {};
-        class templatePatrolSweep       {};
-        class templatePOWRescue         {};
-        class templateIntelGathering    {};
-    };
-
-    class SideMissionUtilities {
-        file = "Functions\SideMissions\Utilities";
-
-        class addIntelItems      {};
-        class findMissionHouse   {};
-        class convoyController   {};
-    };
-    
     class Misc {
         file = "Functions\Misc";
 

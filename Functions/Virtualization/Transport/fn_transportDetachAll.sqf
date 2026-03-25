@@ -19,14 +19,9 @@ params [["_transportGroupId", "", [""]]];
 
 if (_transportGroupId == "") exitWith { 0 };
 
-if (isNil "FLO_virtualGroups") exitWith { 0 };
+private _transData = [_transportGroupId] call FLO_fnc_transportGetTrackedGroup;
 
-private _groups = FLO_virtualGroups get "_groups";
-private _transData = _groups getOrDefault [_transportGroupId, nil];
-
-if (isNil "_transData") exitWith { 0 };
-
-private _attached = _transData getOrDefault ["attachedGroups", []];
+private _attached = [_transData] call FLO_fnc_virtualizationGetTransportPassengers;
 private _count = count _attached;
 
 if (_count == 0) exitWith { 0 };

@@ -22,7 +22,7 @@ private _counts = createHashMap;
 {
     private _groupData = _y;
     if ((_groupData get "side") != _managedSide) then { continue };
-    if !(_groupData get "isReinforcing") then { continue };
+    if ((_groupData get "replacementState") != "REINFORCE") then { continue };
 
     private _objectiveId = _groupData get "reinforcementRequestedObjective";
     if (_objectiveId == "") then { continue };

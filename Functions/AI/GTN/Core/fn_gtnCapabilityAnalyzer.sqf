@@ -1798,7 +1798,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         private _groups = FLO_virtualGroups get "_groups";
         private _isTaskAvailable = {
             params ["_gData"];
-            private _order = _gData get "currentOrder";
+            private _order = _gData get "commanderOrder";
             (_order == "" || {_order in ["PATROL", "GARRISON", "DEFEND"]})
         };
 
@@ -1810,7 +1810,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["helicopter", "jet"]) then {
-                        if !(_gData get "onMission") then {
+                        if ((_gData get "missionLock") == "") then {
                             (_result get "availableAssets") pushBack _x;
                         };
                     };
@@ -1828,7 +1828,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 {
                     private _gData = _y;
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
-                    if ((_gData get "groupType") == "artillery" && {!(_gData getOrDefault ["onMission", false])}) then {
+                    if ((_gData get "groupType") == "artillery" && {(_gData get "missionLock") == ""}) then {
                         (_result get "availableAssets") pushBack _x;
                     };
                 } forEach _groups;
@@ -1948,7 +1948,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 _summary set ["activeGroups", (_summary get "activeGroups") + 1];
             };
 
-            if (_gData get "onMission") then {
+            if ((_gData get "missionLock") != "") then {
                 _summary set ["groupsOnMission", (_summary get "groupsOnMission") + 1];
             } else {
                 _summary set ["groupsAvailable", (_summary get "groupsAvailable") + 1];
@@ -2010,17 +2010,17 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             private _batteryInfo = createHashMapFromArray [
                 ["groupId", _gId],
                 ["isActive", false],
-                ["onMission", false],
+                ["missionLock", ""],
                 ["rounds", 0],
                 ["position", _gData get "position"]
             ];
 
             _result set ["totalBatteries", (_result get "totalBatteries") + 1];
 
-            private _onMission = _gId in _missions;
-            _batteryInfo set ["onMission", _onMission];
+            private _missionLocked = _gId in _missions;
+            _batteryInfo set ["missionLock", if (_missionLocked) then { "ARTILLERY" } else { "" }];
 
-            if !(_onMission) then {
+            if (!_missionLocked) then {
                 _result set ["availableBatteries", (_result get "availableBatteries") + 1];
             };
 
@@ -2101,14 +2101,14 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 ["groupId", _gId],
                 ["type", _gType],
                 ["isActive", false],
-                ["onMission", false],
+                ["missionLock", ""],
                 ["ordnance", 0],
                 ["ammoStatus", 1.0],
                 ["position", _gData get "position"]
             ];
 
-            private _onMission = _gData get "onMission";
-            _assetInfo set ["onMission", _onMission];
+            private _missionLock = _gData get "missionLock";
+            _assetInfo set ["missionLock", _missionLock];
 
             // Categorize and count
             private _typeKey = switch (_gType) do {
@@ -2117,7 +2117,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             };
 
             _result set [_typeKey + "Total", (_result get (_typeKey + "Total")) + 1];
-            if !(_onMission) then {
+            if (_missionLock == "") then {
                 _result set [_typeKey + "Available", (_result get (_typeKey + "Available")) + 1];
             };
 

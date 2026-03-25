@@ -13,7 +13,7 @@
  *   2: Factions - Load faction scripts based on config
  *   3: Objectives - Index objectives OR restore from save
  *   4: Virtualization - Setup virtualization OR restore from save
- *   5: Mission Systems - Start side missions, AI commander, startup systems
+ *   5: Mission Systems - Start AI commander, startup systems
  *
  * Global Variables Set:
  *   FLO_InitPhase - Current phase number (0-5, 99=complete, -1=error)

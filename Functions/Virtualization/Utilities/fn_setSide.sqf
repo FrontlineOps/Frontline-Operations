@@ -75,7 +75,7 @@ if (!isNull _oldGroup && {!isNil "FLO_virtualGroups"}) then {
             
             if (!isNil "_trackedGroup" && {_trackedGroup isEqualTo _oldGroup}) then {
                 // Update tracking to point to new group
-                _groupData set ["realGroup", _newGroup];
+                [_groupData, _newGroup] call FLO_fnc_virtualizationSetRealGroup;
                 _groupData set ["side", _side];
                 
                 ["VIRTUALIZATION", 3, format["setSide: Updated tracking for %1 from old group to new %2 group", _groupId, _side]] call FLO_fnc_log;

@@ -3,9 +3,9 @@
 
     Description:
     Manages air groups that exist in the virtualization system.
-    For live areas (players/active groups nearby), the manager unvirtualizes
-    and assigns a real aircraft.
-    For non-live areas, the manager keeps aircraft virtual and applies a
+    For target areas inside the shared virtualization activation bubble, the
+    manager unvirtualizes and assigns a real aircraft.
+    For remote areas, the manager keeps aircraft virtual and applies a
     virtual combat effect instead of spawning real assets.
 
     Returns:
@@ -160,36 +160,21 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
         }],
 
-        // Area is "live" when players or already-active groups are nearby.
-        // In non-live areas, air support stays virtual.
+        // A target area is "live" only when it is inside the shared player
+        // activation bubble. Remote air support stays virtual.
         ["_isLiveArea", {
             params ["_targetPos", ["_radius", -1]];
 
             private _t0 = diag_tickTime;
-
-            if (_radius < 0) then { _radius = FLO_VirtualizationDistance; };
-
-            private _playersNear = {
-                alive _x &&
-                {side group _x in [east, west]} &&
-                {(getPosATL _x) distance2D _targetPos <= _radius}
-            } count allPlayers;
-            private _activeGroupsNear = 0;
-            private _result = _playersNear > 0;
-
-            if (!_result) then {
-                private _groups = FLO_virtualGroups get "_groups";
-                {
-                    private _gData = _y;
-                    private _gType = _gData get "groupType";
-                    if (_gType in ["static_aa", "radar"]) then { continue };
-                    if !(_gData get "isActive") then { continue };
-                    if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
-                    _activeGroupsNear = _activeGroupsNear + 1;
-                } forEach _groups;
-
-                _result = _activeGroupsNear > 0;
+            if (_radius < 0) then {
+                _radius = FLO_virtualGroups get "_activationDistance";
             };
+            if ((FLO_VirtUpdate get "lastPlayerCacheTime") <= 0) then {
+                call FLO_fnc_virtualizationCachePlayers;
+            };
+
+            private _nearestPlayerDist = [_targetPos] call FLO_fnc_virtualizationGetNearestCachedPlayerDistance;
+            private _result = [_targetPos, _radius] call FLO_fnc_virtualizationIsPositionWithinActivationRange;
 
             private _dtMs = (diag_tickTime - _t0) * 1000;
             private _perf = _self get "_perf";
@@ -200,17 +185,15 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             _perf set ["lastLiveCheckInfo", createHashMapFromArray [
                 ["radius", _radius],
-                ["playersNear", _playersNear],
-                ["activeGroupsNear", _activeGroupsNear],
+                ["nearestPlayerDist", _nearestPlayerDist],
                 ["result", _result]
             ]];
 
             if (_dtMs >= (_perf get "liveCheckSlowThresholdMs")) then {
                 _perf set ["slowLiveCheckCount", (_perf get "slowLiveCheckCount") + 1];
                 diag_log format [
-                    "[FLO][PERF] Air asset manager liveArea players=%1 activeGroups=%2 radius=%3 result=%4 in %5 ms",
-                    _playersNear,
-                    _activeGroupsNear,
+                    "[FLO][PERF] Air asset manager liveArea nearestPlayer=%1 radius=%2 result=%3 in %4 ms",
+                    round _nearestPlayerDist,
                     _radius,
                     _result,
                     _dtMs
@@ -282,7 +265,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _newCount = _currentCount - _loss;
                 if (_newCount <= 0) then {
                     _gData set ["unitCount", 0];
-                    [FLO_virtualGroups, _gid] call (FLO_virtualGroups get "_removeGroup");
+                    [FLO_virtualGroups, _gid] call FLO_fnc_virtualizationRemoveGroup;
                 } else {
                     _gData set ["unitCount", _newCount];
                     _groups set [_gid, _gData];
@@ -305,7 +288,8 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     private _groups = FLO_virtualGroups get "_groups";
                     if (_gid in _groups) then {
                         private _gData = _groups get _gid;
-                        _gData set ["onMission", false];
+                        [_gData] call FLO_fnc_virtualizationClearMissionLock;
+                        [_gData] call FLO_fnc_virtualizationClearExecutionState;
                     };
                 };
 
@@ -440,7 +424,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
             if (!_isLiveArea) exitWith {
-                _gdata set ["onMission", true];
+                [_gdata, "AIR", toUpper _missionType] call FLO_fnc_virtualizationSetMissionLock;
                 (_self get "missions") set [_gid, "VIRTUAL"];
 
                 private _duration = _self call ["_getVirtualMissionDuration", [_missionType]];
@@ -502,9 +486,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 []
             };
             
-            // Mark group as on mission to prevent deactivation
-            _gdata set ["onMission", true];
-            ["GTN Air Asset Manager", 3, format["Marked group %1 as onMission=true to prevent deactivation", _gid]] call FLO_fnc_log;
+            // Mark group as mission-locked to prevent deactivation
+            [_gdata, "AIR", toUpper _missionType] call FLO_fnc_virtualizationSetMissionLock;
+            ["GTN Air Asset Manager", 3, format["Marked group %1 with AIR mission lock", _gid]] call FLO_fnc_log;
 
             // Clear any existing waypoints
             [_realGroup] call CBA_fnc_clearWaypoints;
@@ -570,10 +554,12 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _groups = FLO_virtualGroups get "_groups";
                 if (_gid in _groups) then {
                     private _data = _groups get _gid;
-                    _data set ["onMission", false];
+                    [_data] call FLO_fnc_virtualizationClearMissionLock;
                     if !(_missionState isEqualTo "VIRTUAL") then {
                         _self call ["_sendToRTB", [_gid]];
                         _sentRTB = true;
+                    } else {
+                        [_data] call FLO_fnc_virtualizationClearExecutionState;
                     };
                     _released = true;
                 } else {
@@ -651,7 +637,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 ["GTN Air Asset Manager", 3, format["Virtual RTB waypoints for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             };
 
-            _gData set ["currentOrder", "RTB"];
+            [_gData, "RTB"] call FLO_fnc_virtualizationSetExecutionState;
             true
         }],
 

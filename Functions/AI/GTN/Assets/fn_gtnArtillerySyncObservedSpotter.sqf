@@ -37,17 +37,21 @@ if !(_groupData get "isActive") exitWith {
     false
 };
 
-if ((_groupData get "attachedTo") != "") exitWith {
+if (([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) != "") exitWith {
     _spotters deleteAt _groupId;
     false
 };
 
-if ((_groupData getOrDefault ["mountedIn", ""]) != "") exitWith {
+if (([_groupData] call FLO_fnc_virtualizationGetMountedTransport) != "") exitWith {
     _spotters deleteAt _groupId;
     false
 };
 
 private _realGroup = _groupData get "realGroup";
+if (isNil "_realGroup") exitWith {
+    _spotters deleteAt _groupId;
+    false
+};
 if (isNull _realGroup) exitWith {
     _spotters deleteAt _groupId;
     false

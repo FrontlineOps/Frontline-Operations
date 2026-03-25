@@ -3,7 +3,8 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Server-side radar data link system.
- *   Detects enemy aircraft and reveals them to all OPFOR groups.
+ *   Detects enemy aircraft and reveals them to active friendly groups on both
+ *   main sides when they are under radar coverage.
  *   Should be spawned once on server init.
  *
  * Arguments: None
@@ -26,53 +27,64 @@ while {FLO_GTN_RadarDataLinkRunning} do {
 
     if (isNil "FLO_virtualGroups") then { continue };
     
-    // Find all active static_aa groups (which include radars)
-    private _activeRadars = [];
+    // Build active radar coverage by side.
+    private _activeRadarsBySide = createHashMapFromArray [
+        ["EAST", []],
+        ["WEST", []]
+    ];
     private _groups = FLO_virtualGroups get "_groups";
     {
         private _groupData = _y;
-        if ((_groupData get "groupType") == "static_aa" && {_groupData getOrDefault ["alwaysActive", false]}) then {
-            _activeRadars pushBack (_groupData get "position");
-        };
-    } forEach _groups;
-    
-    if (count _activeRadars == 0) then { continue; };
-    
-    // Detect aircraft within radar range (50km per radar)
-    private _detectedAircraft = [];
-    {
-        private _radarPos = _x;
-        private _aircraft = _radarPos nearEntities [["Air"], 50000];
-        {
-            if (side _x == west && {alive _x}) then {
-                _detectedAircraft pushBackUnique _x;
-            };
-        } forEach _aircraft;
-    } forEach _activeRadars;
-    
-    if (count _detectedAircraft == 0) then { continue; };
+        private _groupType = _groupData get "groupType";
+        if !(_groupType in ["static_aa", "radar", "mobile_aa"]) then { continue };
+        if !((_groupData get "alwaysActive") || { _groupData get "isActive" }) then { continue };
 
-    private _eastLeaders = [];
-    {
-        private _gData = _y;
-        if ((_gData get "side") != east) then { continue };
-        if !(_gData get "isActive") then { continue };
-        private _realGroup = _gData get "realGroup";
-        if (isNull _realGroup) then { continue };
-        private _leader = leader _realGroup;
-        if (isNull _leader || {!alive _leader}) then { continue };
-        _eastLeaders pushBackUnique _leader;
+        private _sideKey = if ((_groupData get "side") isEqualTo west) then { "WEST" } else { "EAST" };
+        private _radars = _activeRadarsBySide get _sideKey;
+        _radars pushBack (_groupData get "position");
+        _activeRadarsBySide set [_sideKey, _radars];
     } forEach _groups;
 
-    if (count _eastLeaders == 0) then { continue };
-    
-    // Reveal detected aircraft to active OPFOR leaders
     {
-        private _aircraft = _x;
+        private _friendlySide = if (_x == "WEST") then { west } else { east };
+        private _enemySide = if (_friendlySide isEqualTo west) then { east } else { west };
+        private _radars = _y;
+        if (count _radars == 0) then { continue };
+
+        private _detectedAircraft = [];
         {
-            _x reveal [_aircraft, 1];
-        } forEach _eastLeaders;
-    } forEach _detectedAircraft;
-    
-    ["RADAR", 4, format["Data link: %1 radars detected %2 aircraft", count _activeRadars, count _detectedAircraft]] call FLO_fnc_log;
+            private _radarPos = _x;
+            private _aircraft = _radarPos nearEntities [["Air"], 50000];
+            {
+                if (alive _x && {side _x == _enemySide}) then {
+                    _detectedAircraft pushBackUnique _x;
+                };
+            } forEach _aircraft;
+        } forEach _radars;
+
+        if (count _detectedAircraft == 0) then { continue };
+
+        private _friendlyLeaders = [];
+        {
+            private _gData = _y;
+            if ((_gData get "side") != _friendlySide) then { continue };
+            if !(_gData get "isActive") then { continue };
+            private _realGroup = _gData get "realGroup";
+            if (isNull _realGroup) then { continue };
+            private _leader = leader _realGroup;
+            if (isNull _leader || {!alive _leader}) then { continue };
+            _friendlyLeaders pushBackUnique _leader;
+        } forEach _groups;
+
+        if (count _friendlyLeaders == 0) then { continue };
+
+        {
+            private _aircraft = _x;
+            {
+                _x reveal [_aircraft, 1];
+            } forEach _friendlyLeaders;
+        } forEach _detectedAircraft;
+
+        ["RADAR", 4, format["Data link %1: %2 radars detected %3 aircraft", _x, count _radars, count _detectedAircraft]] call FLO_fnc_log;
+    } forEach _activeRadarsBySide;
 };

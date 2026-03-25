@@ -17,5 +17,5 @@ params ["_gridPos"];
 
 if !(isServer) exitwith {};
 
-FLO_Intel_System call ["addIntel", [5, "intel_item"]];
 [["STR_FLO_INTEL_MIL", _gridPos], "info"] call FLO_fnc_sendNotification;
+["INTEL", 3, format ["Legacy addIntelServer invoked for grid %1 - converted to notification only", _gridPos]] call FLO_fnc_log;

@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 4;
+private _saveVersion = 14;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -82,8 +82,11 @@ try {
     _cfg set ["gtnAttackLaneHandle", FLO_GTN_AttackLaneHandle];
     _cfg set ["gtnDefenseCoverageHandle", FLO_GTN_DefenseCoverageHandle];
     _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle];
+    _cfg set ["gtnForceGrowthHandle", FLO_GTN_ForceGrowthHandle];
+    _cfg set ["gtnGarrisonHandle", FLO_GTN_GarrisonHandle];
     _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
+    _cfg set ["virtualizationUnitCap", FLO_VirtualizationUnitCap];
     _cfg set ["enemyPrec", EnemyPrec];
     if (!isNil "F_HQ_01") then { _cfg set ["fobType", F_HQ_01]; };
     if (!isNil "F_HQ_C_01") then { _cfg set ["fobContainerType", F_HQ_C_01]; };
@@ -331,18 +334,6 @@ try {
 } catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
-// SAVE: INTEL SYSTEM
-// ============================================================================
-
-try {
-    if (!isNil "FLO_Intel_System") then {
-        private _intelData = FLO_Intel_System call ["serialize", []];
-        _data set ["intelSystem", _intelData];
-        ["SAVE", 3, format ["Intel System: %1", _intelData getOrDefault ["intelLevel", 0]]] call FLO_fnc_log;
-    };
-} catch { ["SAVE", 1, format ["Intel failed: %1", _exception]] call FLO_fnc_log; };
-
-// ============================================================================
 // SAVE: LOGISTICS NETWORK
 // ============================================================================
 
@@ -372,74 +363,7 @@ try {
             {
                 private _gData = _y;
                 if (!isNil "_gData" && { _gData isEqualType createHashMap }) then {
-                    // Position must exist - let it error if missing so we find the bug
-                    private _pos = _gData get "position";
-
-                    // Get garrison position with validation
-                    private _garrisonPos = _gData getOrDefault ["garrisonPosition", []];
-                    if !(_garrisonPos isEqualType []) then { _garrisonPos = []; };
-
-                    // Validate waypoints before saving - filter out corrupt data
-                    private _rawWaypoints = _gData getOrDefault ["waypoints", []];
-                    private _validWaypoints = [];
-                    if (_rawWaypoints isEqualType []) then {
-                        {
-                            if (_x isEqualType [] && {count _x >= 2}) then {
-                                private _wpPos = _x select 0;
-                                private _wpType = _x select 1;
-                                if (_wpPos isEqualType [] && {count _wpPos >= 2} && {_wpType isEqualType ""}) then {
-                                    _validWaypoints pushBack _x;
-                                };
-                            };
-                        } forEach _rawWaypoints;
-                    };
-                    private _reinforcementTargetPos = _gData getOrDefault ["reinforcementTargetPos", []];
-                    if !(_reinforcementTargetPos isEqualType [] && {count _reinforcementTargetPos >= 2}) then {
-                        _reinforcementTargetPos = [];
-                    };
-                    private _pathRequestTarget = _gData getOrDefault ["pathRequestTarget", []];
-                    if !(_pathRequestTarget isEqualType [] && {count _pathRequestTarget >= 2}) then {
-                        _pathRequestTarget = [];
-                    };
-                    private _tempWaypointSettings = _gData getOrDefault ["tempWaypointSettings", []];
-                    if !(_tempWaypointSettings isEqualType [] && {count _tempWaypointSettings >= 7}) then {
-                        _tempWaypointSettings = [];
-                    };
-                    private _homeObjective = if ("homeObjective" in _gData) then {
-                        _gData get "homeObjective"
-                    } else {
-                        _gData getOrDefault ["objective", ""]
-                    };
-
-                    _vgHash set [_x, createHashMapFromArray [
-                        ["position", _pos],
-                        ["groupType", _gData getOrDefault ["groupType", "infantry_squad"]],
-                        ["homeObjective", _homeObjective],
-                        ["unitCount", _gData getOrDefault ["unitCount", 4]],
-                        ["side", _gData getOrDefault ["side", east]],
-                        ["state", _gData getOrDefault ["state", "idle"]],
-                        ["waypoints", _validWaypoints],
-                        ["currentWaypointIndex", _gData getOrDefault ["currentWaypointIndex", 0]],
-                        ["onMission", _gData getOrDefault ["onMission", false]],
-                        ["isReinforcing", _gData getOrDefault ["isReinforcing", false]],
-                        ["reinforcementTargetPos", _reinforcementTargetPos],
-                        ["reinforcementRequestedObjective", _gData getOrDefault ["reinforcementRequestedObjective", ""]],
-                        ["reinforcementDeliveryObjective", _gData getOrDefault ["reinforcementDeliveryObjective", ""]],
-                        ["pathRequestTarget", _pathRequestTarget],
-                        ["pathRequestTrails", _gData getOrDefault ["pathRequestTrails", false]],
-                        ["pathRequestSource", _gData getOrDefault ["pathRequestSource", ""]],
-                        ["tempWaypointSettings", _tempWaypointSettings],
-                        ["alwaysActive", _gData getOrDefault ["alwaysActive", false]],
-                        ["currentOrder", _gData getOrDefault ["currentOrder", ""]],
-                        ["noWaypoints", _gData getOrDefault ["noWaypoints", false]],
-                        ["forceVirtual", _gData getOrDefault ["forceVirtual", false]],
-                        ["aaDeployState", _gData getOrDefault ["aaDeployState", ""]],
-                        ["aaDeployTargetPos", _gData getOrDefault ["aaDeployTargetPos", []]],
-                        ["aaDeployTargetObjective", _gData getOrDefault ["aaDeployTargetObjective", ""]],
-                        ["isStrategicAA", _gData getOrDefault ["isStrategicAA", false]],
-                        ["garrisonPosition", _garrisonPos],
-                        ["garrisonObjective", _gData getOrDefault ["garrisonObjective", ""]]
-                    ]];
+                    _vgHash set [_x, [_gData] call FLO_fnc_virtualizationSerializeGroup];
                 };
             } forEach _groups;
         };

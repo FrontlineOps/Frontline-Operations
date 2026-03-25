@@ -19,20 +19,21 @@ if (!isServer) exitWith {};
 if (!isNil "FLO_Logistics_Networks" && {FLO_Logistics_Networks isEqualType createHashMap} && {count (keys FLO_Logistics_Networks) > 0}) exitWith {};
 
 FLO_Logistics_Networks = createHashMap;
+private _groupsPerObjectiveCapture = FLO_GTN_ForceGrowthHandle get "value";
 
 private _logisticsClass = [
     ["#type", "LogisticsNetwork"],
 
     ["GROUP_COSTS", createHashMapFromArray [
-        ["infantry", 4],
-        ["motorized", 9],
-        ["mechanized", 12],
-        ["armor", 16],
-        ["helicopter", 19],
-        ["air", 24],
-        ["jet", 24],
-        ["artillery", 14],
-        ["static_aa", 18]
+        ["infantry", 6],
+        ["motorized", 12],
+        ["mechanized", 24],
+        ["armor", 32],
+        ["helicopter", 24],
+        ["air", 32],
+        ["jet", 36],
+        ["artillery", 42],
+        ["static_aa", 64]
     ]],
 
     ["CHECK_INTERVAL", 60],
@@ -51,7 +52,10 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MIN", 1],
     ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MAX", 4],
     ["REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX", 2],
+    ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO", 0.65],
+    ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
+    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
@@ -98,6 +102,10 @@ private _logisticsClass = [
 
     ["_getCurrentComposition", {
         [_self] call FLO_fnc_logisticsNetworkGetComposition;
+    }],
+
+    ["_applyObjectiveCaptureGrowth", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkApplyObjectiveCaptureGrowth;
     }],
 
     ["_pickBestTarget", {

@@ -60,6 +60,9 @@ class CfgRemoteExec
 		class enableSimulationGlobal { allowedTargets = 0;jip = 1; };
 		class FLO_fnc_displayNotification { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_addIntelServer { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_gtnAlertCivilianReport { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_gtnSyncAlertMarkers { allowedTargets = 0; jip = 0; };
+		class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
 	};	
 };
 

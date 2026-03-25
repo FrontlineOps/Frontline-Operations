@@ -26,50 +26,22 @@ if (_infantryGroupId == "" || _transportGroupId == "") exitWith {
     false 
 };
 
-if (isNil "FLO_virtualGroups") exitWith {
-    ["TRANSPORT", 1, "Attach failed: virtualization not initialized"] call FLO_fnc_log;
-    false
-};
-
-private _groups = FLO_virtualGroups get "_groups";
-private _infData = _groups getOrDefault [_infantryGroupId, nil];
-private _transData = _groups getOrDefault [_transportGroupId, nil];
-
-if (isNil "_infData" || isNil "_transData") exitWith {
-    ["TRANSPORT", 2, format["Attach failed: group not found (inf: %1, trans: %2)", 
-        _infantryGroupId, _transportGroupId]] call FLO_fnc_log;
-    false
-};
+private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
+private _transData = [_transportGroupId] call FLO_fnc_transportGetTrackedGroup;
 
 // Check if already attached
-private _currentAttach = _infData getOrDefault ["attachedTo", ""];
+private _currentAttach = [_infData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_currentAttach != "") exitWith {
     ["TRANSPORT", 2, format["Attach failed: %1 already attached to %2", 
         _infantryGroupId, _currentAttach]] call FLO_fnc_log;
     false
 };
 
-// Get transport capacity
-private _vehicleType = _transData getOrDefault ["vehicleType", ""];
 private _groupType = _transData get "groupType";
-private _capacity = if (_vehicleType != "") then {
-    [_vehicleType] call FLO_fnc_transportGetCapacity
-} else {
-    [_groupType] call FLO_fnc_transportGetCapacity
-};
+private _capacity = [_transData] call FLO_fnc_transportGetGroupCapacity;
+private _currentLoad = [_transData] call FLO_fnc_transportGetPassengerLoad;
 
-// Calculate current load
-private _attachedGroups = _transData getOrDefault ["attachedGroups", []];
-private _currentLoad = 0;
-{
-    private _gData = _groups getOrDefault [_x, nil];
-    if (!isNil "_gData") then {
-        _currentLoad = _currentLoad + (_gData getOrDefault ["unitCount", 0]);
-    };
-} forEach _attachedGroups;
-
-// Check capacity
-private _infUnitCount = _infData getOrDefault ["unitCount", 4];
+private _infUnitCount = _infData get "unitCount";
 if (_currentLoad + _infUnitCount > _capacity) exitWith {
     ["TRANSPORT", 2, format["Attach failed: capacity exceeded (%1+%2 > %3)", 
         _currentLoad, _infUnitCount, _capacity]] call FLO_fnc_log;
@@ -77,14 +49,11 @@ if (_currentLoad + _infUnitCount > _capacity) exitWith {
 };
 
 // Perform attachment
-_infData set ["attachedTo", _transportGroupId];
-_infData set ["attachedType", if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}];
+[_infData, _transportGroupId, if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}] call FLO_fnc_virtualizationSetTransportAttachment;
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
-[FLO_virtualGroups, _infantryGroupId, _transData get "position"] call (FLO_virtualGroups get "_updateGroupPosition");
+[FLO_virtualGroups, _infantryGroupId, _transData get "position"] call FLO_fnc_virtualizationUpdateGroupPosition;
 
-_attachedGroups pushBack _infantryGroupId;
-_transData set ["attachedGroups", _attachedGroups];
-_transData set ["isTransport", true];
+[_transData, _infantryGroupId] call FLO_fnc_virtualizationAddTransportPassenger;
 
 ["TRANSPORT", 3, format["Attached %1 (%2 units) to transport %3 (load: %4/%5)", 
     _infantryGroupId, _infUnitCount, _transportGroupId, _currentLoad + _infUnitCount, _capacity]] call FLO_fnc_log;

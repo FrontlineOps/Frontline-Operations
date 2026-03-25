@@ -20,6 +20,7 @@ private _composition = createHashMap;
 {
     private _gData = _y;
     if ((_gData get "side") isNotEqualTo _managedSide) then { continue };
+    if ((_gData get "organicPackageRole") == "dismount") then { continue };
 
     private _groupType = _gData get "groupType";
     _composition set [_groupType, (_composition getOrDefault [_groupType, 0]) + 1];

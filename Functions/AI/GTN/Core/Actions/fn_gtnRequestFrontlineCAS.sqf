@@ -32,8 +32,21 @@ private _ws = _cmdr get "_worldState";
 if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { _metrics };
 _metrics set ["assetAvailable", true];
 
-private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 if ((count (keys _frontlineObjectives)) == 0) exitWith { _metrics };
+
+private _assaultObjectives = [];
+{
+    if ((_x get "goal") != "capture_priority_objective") then { continue };
+    if ((_x get "phase") != "assault") then { continue };
+
+    private _objectiveId = _x get "phaseObjectiveId";
+    if (_objectiveId != "") then {
+        _assaultObjectives pushBackUnique _objectiveId;
+    };
+} forEach (_cmdr get "_tracks");
+
+if ((count _assaultObjectives) == 0) exitWith { _metrics };
 
 private _groups = FLO_virtualGroups get "_groups";
 private _ownSide = _cmdr get "_ownSide";
@@ -42,7 +55,7 @@ private _activeAttackCounts = createHashMap;
 {
     private _gData = _y;
     if ((_gData get "side") != _ownSide) then { continue };
-    if ((_gData get "currentOrder") != "ATTACK") then { continue };
+    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
 
     private _attackObjective = _gData get "attackObjective";
     if (_attackObjective == "") then { continue };
@@ -78,6 +91,8 @@ private _bestScore = -1e12;
 
 {
     private _objectiveId = _x;
+    if !(_objectiveId in _assaultObjectives) then { continue };
+
     _metrics set ["candidateCount", (_metrics get "candidateCount") + 1];
 
     if !(_objectiveId in _activeAttackCounts) then { continue };

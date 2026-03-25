@@ -68,7 +68,15 @@ private _worldState = createHashMapObject [[
         ["estimatedStrength", 0],
         ["lastContactTime", 0],
         ["threatLevel", 0],
-        ["concentrations", []]
+        ["concentrations", []],
+        ["engagementPicture", createHashMapFromArray [
+            ["groups", createHashMap],
+            ["objectiveGroups", createHashMap],
+            ["freshContactCount", 0],
+            ["groupCount", 0],
+            ["objectiveCount", 0],
+            ["builtAt", -1]
+        ]]
     ]],
     
     // Tactical situation
@@ -89,6 +97,10 @@ private _worldState = createHashMapObject [[
     ["_enemyIntelSenseInterval", 30],
     ["_enemyIntelScanCursor", 0],
     ["_enemyIntelScanBudget", 24], // Max leaders to scan per intel pass
+    ["_enemyEngagementFreshSeconds", 180],
+    ["_combatIntelFreshSeconds", 240],
+    ["_combatIntelLastProcessedAt", -1],
+    ["_lastCombatIntelAdded", 0],
     ["_sideContext", _sideContext],
     ["_ownSide", _ownSide],
     ["_enemySide", _enemySide],
@@ -109,7 +121,10 @@ private _worldState = createHashMapObject [[
             ["objectiveCount", 0],
             ["availableGroups", 0],
             ["contactCount", 0],
+            ["combatContactCount", 0],
             ["concentrationCount", 0],
+            ["engagementGroupCount", 0],
+            ["engagementObjectiveCount", 0],
             ["supportSenseRan", false],
             ["enemyIntelSenseRan", false]
         ]]
@@ -164,6 +179,7 @@ private _worldState = createHashMapObject [[
 
             private _objState = createHashMapFromArray [
                 ["position", _pos],
+                ["radius", _data getOrDefault ["radius", 50]],
                 ["priority", _priority],
                 ["owner", _owner],
                 ["enemyCount", if (_owner == _ownSide) then {_nearEnemy} else {_nearFriendly}],
@@ -221,9 +237,9 @@ private _worldState = createHashMapObject [[
             };
             _counts set [_typeKey, (_counts get _typeKey) + 1];
 
-            // Count by status using currentOrder
-            private _currentOrder = _gData getOrDefault ["currentOrder", ""];
-            private _onMission = _gData getOrDefault ["onMission", false];
+            // Count by status using commanderOrder
+            private _currentOrder = _gData get "commanderOrder";
+            private _missionLock = _gData get "missionLock";
 
             switch (_currentOrder) do {
                 case "ATTACK": { _counts set ["attacking", (_counts get "attacking") + 1]; };
@@ -233,8 +249,8 @@ private _worldState = createHashMapObject [[
             };
 
             // A group is "available" if it's not on an active mission
-            if !(_onMission) then {
-                if !(_currentOrder in ["ATTACK", "DEFEND", "MOVE"]) then {
+            if (_missionLock == "") then {
+                if ((_gData get "attachedTo") == "" && {(_gData get "mountedIn") == ""} && {!(_currentOrder in ["ATTACK", "DEFEND", "MOVE"])}) then {
                     _counts set ["available", (_counts get "available") + 1];
                 };
             };
@@ -318,7 +334,7 @@ private _worldState = createHashMapObject [[
             {
                 private _gData = _groups get _x;
                 if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
-                if (_gData get "onMission") then { continue };
+                if ((_gData get "missionLock") != "") then { continue };
                 private _gType = _gData get "groupType";
                 if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
                     _casAvailable = true;
@@ -339,6 +355,7 @@ private _worldState = createHashMapObject [[
         private _intel = _self get "_enemyIntel";
         private _contacts = _intel get "contactReports";
         private _newContacts = [];
+        private _combatIntelAdded = 0;
         
         // Remove old contacts
         private _cutoffTime = diag_tickTime - 900;
@@ -417,6 +434,11 @@ private _worldState = createHashMapObject [[
         };
 
         _self set ["_enemyIntelScanCursor", _scanCursor];
+
+        private _combatIntelResult = [_self, _contacts] call FLO_fnc_gtnInjectCombatEventContacts;
+        _contacts = _combatIntelResult select 0;
+        _combatIntelAdded = _combatIntelResult select 1;
+        _self set ["_lastCombatIntelAdded", _combatIntelAdded];
         
         // Cluster contacts into concentrations using 150m spatial buckets.
         // This keeps complexity near O(n) instead of O(n^2) during large fights.
@@ -462,8 +484,9 @@ private _worldState = createHashMapObject [[
         } forEach _buckets;
 
         // Log significant new contacts
-        if (count _newContacts > 0) then {
-             ["GTN", 3, format["New enemy contacts reported: %1", count _newContacts]] call FLO_fnc_log;
+        private _newContactTotal = (count _newContacts) + _combatIntelAdded;
+        if (_newContactTotal > 0) then {
+             ["GTN", 3, format["New enemy contacts reported: %1 (observed=%2 combat=%3)", _newContactTotal, count _newContacts, _combatIntelAdded]] call FLO_fnc_log;
         };
 
         _intel set ["contactReports", _contacts];
@@ -476,6 +499,15 @@ private _worldState = createHashMapObject [[
         // Threat level (0-10)
         private _threatLevel = ((count _contacts) / 5) min 10;
         _intel set ["threatLevel", _threatLevel];
+        _intel set [
+            "engagementPicture",
+            [
+                _contacts,
+                _self get "_objectives",
+                _enemySide,
+                _self get "_enemyEngagementFreshSeconds"
+            ] call FLO_fnc_gtnBuildEnemyEngagementPicture
+        ];
 
         _self set ["_enemyIntel", _intel];
         _intel
@@ -725,6 +757,10 @@ private _worldState = createHashMapObject [[
         _self get "_enemyIntel"
     }],
 
+    ["_getEnemyEngagementPicture", {
+        (_self get "_enemyIntel") get "engagementPicture"
+    }],
+
     ["_getSupportAssets", {
         _self get "_supportAssets"
     }],
@@ -851,7 +887,10 @@ private _worldState = createHashMapObject [[
             ["objectiveCount", 0],
             ["availableGroups", 0],
             ["contactCount", 0],
+            ["combatContactCount", 0],
             ["concentrationCount", 0],
+            ["engagementGroupCount", 0],
+            ["engagementObjectiveCount", 0],
             ["supportSenseRan", false],
             ["enemyIntelSenseRan", false]
         ];
@@ -888,7 +927,11 @@ private _worldState = createHashMapObject [[
         _meta set ["objectiveCount", count (keys (_self get "_objectives"))];
         _meta set ["availableGroups", ((_self get "_ownForces") get "availableGroups")];
         _meta set ["contactCount", count ((_self get "_enemyIntel") get "contactReports")];
+        _meta set ["combatContactCount", _self get "_lastCombatIntelAdded"];
         _meta set ["concentrationCount", count ((_self get "_enemyIntel") get "concentrations")];
+        private _engagementPicture = (_self get "_enemyIntel") get "engagementPicture";
+        _meta set ["engagementGroupCount", _engagementPicture get "groupCount"];
+        _meta set ["engagementObjectiveCount", _engagementPicture get "objectiveCount"];
 
         private _dtMs = (diag_tickTime - _cycleStart) * 1000;
         _perf set ["lastUpdateMs", _dtMs];

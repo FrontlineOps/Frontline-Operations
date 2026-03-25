@@ -1535,7 +1535,7 @@ private _executor = createHashMapObject [[
             // Get vulnerable objectives
             private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
             if (count (keys _vulnObjs) == 0) exitWith { false };
-            private _frontlineEnemyObjs = _ws call ["_getFrontlineEnemyObjectives", []];
+            private _frontlineEnemyObjs = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
             private _frontlineVulnIds = (keys _vulnObjs) select { _x in (keys _frontlineEnemyObjs) };
             if (count _frontlineVulnIds == 0) exitWith { false };
             private _ownSide = _cmdr get "_ownSide";
@@ -2352,13 +2352,13 @@ private _executor = createHashMapObject [[
                 private _gData = _y;
                 if ((_gData get "side") != _ownSide) then { continue };
                 if ((_gData get "groupType") == "static_aa") then { continue };
-                if ((_gData get "currentOrder") != "DEFEND") then { continue };
+                if ((_gData get "commanderOrder") != "GARRISON") then { continue };
 
-                private _defendObjective = _gData get "defendObjective";
-                if (_defendObjective == "") then { continue };
+                private _garrisonObjective = _gData get "garrisonObjective";
+                if (_garrisonObjective == "") then { continue };
 
-                private _defenderCount = _defenderCounts getOrDefault [_defendObjective, 0];
-                _defenderCounts set [_defendObjective, _defenderCount + 1];
+                private _defenderCount = _defenderCounts getOrDefault [_garrisonObjective, 0];
+                _defenderCounts set [_garrisonObjective, _defenderCount + 1];
             } forEach _groups;
 
             // Analyze each objective for garrison priority
@@ -2369,7 +2369,7 @@ private _executor = createHashMapObject [[
                 private _pos = _objData get "position";
 
                 private _assigned = _defenderCounts getOrDefault [_objId, 0];
-                private _cap = _gtnCmdr call ["_getDefenseCapForObjective", [_objId]];
+                private _cap = _gtnCmdr call ["_getGarrisonCapForObjective", [_objId]];
                 if (_cap > 0 && {_assigned >= _cap}) then { continue };
 
                 private _underAttack = _objData get "underAttack";
@@ -2482,7 +2482,7 @@ private _executor = createHashMapObject [[
             // Order groups to defend
             private _assigned = 0;
             {
-                if (_cmdr call ["_orderGroupDefend", [_x, _targetPos, _objId]]) then {
+                if (_cmdr call ["_orderGroupGarrison", [_x, _targetPos, _objId]]) then {
                     _assigned = _assigned + 1;
                 };
             } forEach _toAssign;

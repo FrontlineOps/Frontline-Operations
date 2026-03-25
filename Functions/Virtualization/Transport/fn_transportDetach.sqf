@@ -24,39 +24,27 @@ params [
 
 if (_infantryGroupId == "") exitWith { false };
 
-if (isNil "FLO_virtualGroups") exitWith { false };
-
 private _groups = FLO_virtualGroups get "_groups";
-private _infData = _groups getOrDefault [_infantryGroupId, nil];
+private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
 
-if (isNil "_infData") exitWith { false };
-
-private _transportId = _infData getOrDefault ["attachedTo", ""];
+private _transportId = [_infData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_transportId == "") exitWith { false };
 
-private _transData = _groups getOrDefault [_transportId, nil];
-
-// Remove from transport's attached list
-if (!isNil "_transData") then {
-    private _attached = _transData getOrDefault ["attachedGroups", []];
-    _attached = _attached - [_infantryGroupId];
-    _transData set ["attachedGroups", _attached];
-    
-    if (count _attached == 0) then {
-        _transData set ["isTransport", false];
-    };
-};
+private _transData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+[_transData, _infantryGroupId] call FLO_fnc_virtualizationRemoveTransportPassenger;
 
 // Clear infantry attachment
-_infData set ["attachedTo", ""];
-_infData set ["attachedType", ""];
+[_infData] call FLO_fnc_virtualizationClearTransportAttachment;
+if ((_infData get "missionLock") == "ORGANIC_PACKAGE") then {
+    [_infData] call FLO_fnc_virtualizationClearMissionLock;
+};
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 
 // Offset position from transport
 private _pos = _infData get "position";
 if (_offsetDir < 0) then { _offsetDir = random 360; };
 private _newPos = _pos getPos [30, _offsetDir];
-[FLO_virtualGroups, _infantryGroupId, _newPos] call (FLO_virtualGroups get "_updateGroupPosition");
+[FLO_virtualGroups, _infantryGroupId, _newPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
 ["TRANSPORT", 3, format["Detached %1 from transport %2", _infantryGroupId, _transportId]] call FLO_fnc_log;
 

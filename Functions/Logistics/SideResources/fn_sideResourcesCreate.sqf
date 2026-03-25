@@ -21,6 +21,7 @@ params ["_resourceObj", ["_side", east], ["_savedPayload", objNull]];
 
 private _sideContext = [_side] call FLO_fnc_gtnSideContext;
 private _spendingTypes = _resourceObj get "SPENDING_TYPES";
+private _efficiencyFloor = _resourceObj get "EFFICIENCY_FLOOR";
 private _efficiencies = createHashMap;
 {
     _efficiencies set [_x, 1.0];
@@ -34,7 +35,7 @@ if !(_savedPayload isEqualTo objNull) then {
     private _savedEfficiencies = _savedPayload get "efficiencies";
     {
         if (_x in _efficiencies) then {
-            _efficiencies set [_x, _savedEfficiencies get _x];
+            _efficiencies set [_x, (_savedEfficiencies get _x) max _efficiencyFloor];
         };
     } forEach (keys _savedEfficiencies);
 

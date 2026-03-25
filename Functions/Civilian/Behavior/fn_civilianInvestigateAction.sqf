@@ -46,7 +46,7 @@ if (random 1 < _chance) then {
     FLO_MoneyHandle set ["value", _money - 5];
     publicVariable "FLO_MoneyHandle";
     
-    [] call FLO_fnc_civilianIntel;
+    [_civilian, side group _caller] call FLO_fnc_gtnAlertCivilianReport;
     
     private _okLines = [
         "Sure, Let me Show you the way!",

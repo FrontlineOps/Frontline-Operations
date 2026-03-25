@@ -40,28 +40,6 @@ private _lastTick = FLO_NotificationDedup getOrDefault [_dedupeKey, -999];
 if ((_nowTick - _lastTick) < 0.5) exitWith {};
 FLO_NotificationDedup set [_dedupeKey, _nowTick];
 
-// IF SERVER - check intel levels
-if (isServer) then {
-    private _intelLevel = if (!isNil "FLO_Intel_System") then {
-        FLO_Intel_System call ["getIntelLevel", []]
-    } else {
-        if (!isNil "FLO_Intel_Level") then { FLO_Intel_Level } else { 0 }
-    };
-
-    private _requiredIntel = switch (_type) do {
-        case "warning": { 50 };
-        case "intel": { 25 };
-        case "success": { 0 };
-        case "info": { 0 };
-        default { 25 };
-    };
-
-    if (_intelLevel < _requiredIntel) exitWith {
-        ["Notification", 3, format ["Notification not shown: intel %1 < required %2", _intelLevel, _requiredIntel]] call FLO_fnc_log;
-        nil
-    };
-};
-
 private _target = _targetFilter;
 if (_target isEqualTo objNull) then {
     _target = FLO_ActivePlayerSide;

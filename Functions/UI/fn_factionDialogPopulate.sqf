@@ -26,6 +26,9 @@
  * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
  * FLO_IDC_FACTION_COMBO_OBJ_SIZE = 1964
  * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
+ * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
+ * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
+ * FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP = 1968
  */
 
 disableSerialization;
@@ -213,6 +216,43 @@ private _virtualizationDistanceCombo = _display displayCtrl 1965;
 private _virtualizationDistanceOptions = ["1000", "1500", "2000", "2500", "3000"];
 
 [_virtualizationDistanceCombo, _virtualizationDistanceOptions, 2] call _fnc_addItems;
+
+// ============================================================================
+// ACTIVE AI CAP (IDC 1968)
+// ============================================================================
+
+private _virtualizationUnitCapCombo = _display displayCtrl 1968;
+private _virtualizationUnitCapOptions = ["100", "150", "200", "250", "300", "350", "400"];
+
+[_virtualizationUnitCapCombo, _virtualizationUnitCapOptions, 2] call _fnc_addItems;
+
+// ============================================================================
+// COMMANDER FORCE GROWTH (IDC 1966)
+// ============================================================================
+
+private _forceGrowthCombo = _display displayCtrl 1966;
+private _forceGrowthOptions = [
+    "None _ 0 Groups Per Capture",
+    "Low _ 1 Group Per Capture",
+    "Standard _ 2 Groups Per Capture",
+    "High _ 3 Groups Per Capture"
+];
+
+[_forceGrowthCombo, _forceGrowthOptions, 2] call _fnc_addItems;
+
+// ============================================================================
+// BASELINE GARRISON (IDC 1967)
+// ============================================================================
+
+private _garrisonCombo = _display displayCtrl 1967;
+private _garrisonOptions = [
+    "Light _ 1 Rear / 2 Front",
+    "Standard _ 2 Rear / 4 Front",
+    "Heavy _ 3 Rear / 5 Front",
+    "Fortified _ 4 Rear / 6 Front"
+];
+
+[_garrisonCombo, _garrisonOptions, 1] call _fnc_addItems;
 
 ["UI", 3, "Faction dialog dropdowns populated"] call FLO_fnc_log;
 

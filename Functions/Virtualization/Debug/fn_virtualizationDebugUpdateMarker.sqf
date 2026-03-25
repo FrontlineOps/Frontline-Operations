@@ -23,11 +23,11 @@ if (isNil "FLO_VirtDebug") exitWith {};
 if !(FLO_VirtDebug get "enabled") exitWith {};
 
 // Extract group data
-private _position = _groupData getOrDefault ["position", [0,0,0]];
-private _groupType = _groupData getOrDefault ["groupType", "infantry"];
-private _state = _groupData getOrDefault ["state", "idle"];
-private _isActive = _groupData getOrDefault ["isActive", false];
-private _onMission = _groupData getOrDefault ["onMission", false];
+private _position = _groupData get "position";
+private _groupType = _groupData get "groupType";
+private _state = [_groupData] call FLO_fnc_virtualizationGetEffectiveState;
+private _isActive = _groupData get "isActive";
+private _missionLock = _groupData get "missionLock";
 
 // Skip invalid positions
 if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {};
@@ -66,15 +66,19 @@ private _markerType = switch (_groupType) do {
 _markerName setMarkerTypeLocal _markerType;
 
 // Set marker color based on state and mission status
-private _markerColor = if (_onMission) then {
+private _markerColor = if (_missionLock != "") then {
     "ColorOrange"  // On mission - orange
 } else {
     switch (_state) do {
         case "idle": { "ColorBlack" };
         case "moving": { "ColorBlue" };
+        case "planning": { "ColorKhaki" };
         case "attacking": { "ColorRed" };
         case "defending": { "ColorYellow" };
         case "reinforcing": { "ColorGreen" };
+        case "holding": { "ColorYellow" };
+        case "aaDeploy": { "ColorOrange" };
+        case "inCombat": { "ColorRed" };
         case "reserved": { "ColorPink" };
         default {
             if (_groupType in ["civilian", "civilianVehicle"]) then {
@@ -91,17 +95,38 @@ _markerName setMarkerColorLocal _markerColor;
 _markerName setMarkerAlphaLocal (if (_isActive) then { 1 } else { 0.5 });
 
 // Set marker text - show key info
-private _unitCount = _groupData getOrDefault ["unitCount", 0];
-private _text = if (_isActive) then {
+private _unitCount = _groupData get "unitCount";
+private _statusFlags = [];
+if (_groupData get "alwaysActive") then {
+    _statusFlags pushBack "AA";
+};
+if (_groupData get "activationDeferred") then {
+    _statusFlags pushBack "CAP";
+};
+if (_missionLock != "") then {
+    _statusFlags pushBack format ["ML:%1", _missionLock];
+};
+private _replacementState = _groupData get "replacementState";
+if (_replacementState != "") then {
+    _statusFlags pushBack format ["RS:%1", _replacementState];
+};
+
+private _baseText = if (_isActive) then {
     format ["%1 [A]", _groupId]
 } else {
     format ["%1 (%2)", _groupId, _unitCount]
 };
+
+private _text = if (count _statusFlags > 0) then {
+    format ["%1 %2", _baseText, _statusFlags joinString "|"]
+} else {
+    _baseText
+};
 _markerName setMarkerTextLocal _text;
 
 // Update waypoint markers if group has waypoints
-private _waypoints = _groupData getOrDefault ["waypoints", []];
-private _currentWpIdx = _groupData getOrDefault ["currentWaypointIndex", 0];
+private _waypoints = _groupData get "waypoints";
+private _currentWpIdx = _groupData get "currentWaypointIndex";
 
 private _wpMarkers = FLO_VirtDebug get "wpMarkerNames";
 private _existingWpMarkers = _wpMarkers getOrDefault [_groupId, []];
@@ -144,4 +169,3 @@ if (count _existingWpMarkers != count _waypoints) then {
 
 // Store updated waypoint marker list
 _wpMarkers set [_groupId, _existingWpMarkers];
-
