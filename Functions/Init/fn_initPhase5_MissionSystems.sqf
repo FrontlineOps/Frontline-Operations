@@ -556,7 +556,7 @@ if (!isNil "FLO_fnc_vehicleCleanupManager") then {
     diag_log "[FLO_INIT_P5] Abandoned vehicle cleanup started";
 } else {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_vehicleCleanupManager not found";
-}
+};
 
 // ============================================
 // Civilian System (Config + Manager)
