@@ -3,9 +3,9 @@
 
     Description:
     Manages artillery groups that exist in the virtualization system.
-    For live areas (players/active groups nearby), the manager unvirtualizes
-    and executes a real fire mission.
-    For non-live areas, the manager keeps artillery virtual and applies a
+    For target areas inside the shared virtualization activation bubble, the
+    manager unvirtualizes and executes a real fire mission.
+    For remote areas, the manager keeps artillery virtual and applies a
     virtual combat effect instead of spawning real assets.
 
     Firing pattern inspired by LAMBS Danger fnc_doArtillery:
@@ -54,32 +54,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["observedFireDeactivatedEh", -1],
         ["observedFireRemovedEh", -1],
 
-        // Area is "live" when players or already-active groups are nearby.
-        // In non-live areas, artillery stays virtual.
+        // A target area is "live" only when it is inside the shared player
+        // activation bubble. Remote batteries stay virtual.
         ["_isLiveArea", {
             params ["_targetPos", ["_radius", -1]];
 
-            if (_radius < 0) then { _radius = FLO_VirtualizationDistance; };
-
-            private _playersNear = {
-                alive _x &&
-                {side group _x in [east, west]} &&
-                {(getPosATL _x) distance2D _targetPos <= _radius}
-            } count allPlayers;
-            if (_playersNear > 0) exitWith { true };
-
-            private _groups = FLO_virtualGroups get "_groups";
-            private _activeGroupsNear = 0;
-            {
-                private _gData = _y;
-                private _gType = _gData get "groupType";
-                if (_gType in ["static_aa", "radar"]) then { continue };
-                if !(_gData get "isActive") then { continue };
-                if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
-                _activeGroupsNear = _activeGroupsNear + 1;
-            } forEach _groups;
-
-            _activeGroupsNear > 0
+            [_targetPos, _radius] call FLO_fnc_virtualizationIsPositionWithinActivationRange
         }],
 
         // Applies virtual artillery damage to nearby enemy virtual groups.

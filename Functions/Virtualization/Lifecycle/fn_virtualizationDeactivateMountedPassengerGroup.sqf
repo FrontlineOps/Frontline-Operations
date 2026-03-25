@@ -30,7 +30,8 @@ if (!isNull _realGroup) then {
     [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupPosition;
     [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupWaypoints;
     [_groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupRuntimeState;
-    [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationSyncRealGroupOutcome;
+    private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationSyncRealGroupOutcome;
+    _syncResult params ["", "_syncedCount"];
 
     {
         _x hideObjectGlobal true;
@@ -38,6 +39,16 @@ if (!isNull _realGroup) then {
     } forEach units _realGroup;
 
     deleteGroup _realGroup;
+
+    if (_syncedCount <= 0) exitWith {
+        [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+        ["VIRTUALIZATION", 3, format [
+            "Mounted passenger group %1 from carrier %2 had zero remaining strength after sync - removing",
+            _groupId,
+            _carrierGroupId
+        ]] call FLO_fnc_log;
+        true
+    };
 };
 
 [_groupData] call FLO_fnc_virtualizationClearRealGroup;

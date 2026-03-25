@@ -3,9 +3,9 @@
 
     Description:
     Manages air groups that exist in the virtualization system.
-    For live areas (players/active groups nearby), the manager unvirtualizes
-    and assigns a real aircraft.
-    For non-live areas, the manager keeps aircraft virtual and applies a
+    For target areas inside the shared virtualization activation bubble, the
+    manager unvirtualizes and assigns a real aircraft.
+    For remote areas, the manager keeps aircraft virtual and applies a
     virtual combat effect instead of spawning real assets.
 
     Returns:
@@ -160,36 +160,21 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
         }],
 
-        // Area is "live" when players or already-active groups are nearby.
-        // In non-live areas, air support stays virtual.
+        // A target area is "live" only when it is inside the shared player
+        // activation bubble. Remote air support stays virtual.
         ["_isLiveArea", {
             params ["_targetPos", ["_radius", -1]];
 
             private _t0 = diag_tickTime;
-
-            if (_radius < 0) then { _radius = FLO_VirtualizationDistance; };
-
-            private _playersNear = {
-                alive _x &&
-                {side group _x in [east, west]} &&
-                {(getPosATL _x) distance2D _targetPos <= _radius}
-            } count allPlayers;
-            private _activeGroupsNear = 0;
-            private _result = _playersNear > 0;
-
-            if (!_result) then {
-                private _groups = FLO_virtualGroups get "_groups";
-                {
-                    private _gData = _y;
-                    private _gType = _gData get "groupType";
-                    if (_gType in ["static_aa", "radar"]) then { continue };
-                    if !(_gData get "isActive") then { continue };
-                    if ((_gData get "position") distance2D _targetPos > _radius) then { continue };
-                    _activeGroupsNear = _activeGroupsNear + 1;
-                } forEach _groups;
-
-                _result = _activeGroupsNear > 0;
+            if (_radius < 0) then {
+                _radius = FLO_virtualGroups get "_activationDistance";
             };
+            if ((FLO_VirtUpdate get "lastPlayerCacheTime") <= 0) then {
+                call FLO_fnc_virtualizationCachePlayers;
+            };
+
+            private _nearestPlayerDist = [_targetPos] call FLO_fnc_virtualizationGetNearestCachedPlayerDistance;
+            private _result = [_targetPos, _radius] call FLO_fnc_virtualizationIsPositionWithinActivationRange;
 
             private _dtMs = (diag_tickTime - _t0) * 1000;
             private _perf = _self get "_perf";
@@ -200,17 +185,15 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             _perf set ["lastLiveCheckInfo", createHashMapFromArray [
                 ["radius", _radius],
-                ["playersNear", _playersNear],
-                ["activeGroupsNear", _activeGroupsNear],
+                ["nearestPlayerDist", _nearestPlayerDist],
                 ["result", _result]
             ]];
 
             if (_dtMs >= (_perf get "liveCheckSlowThresholdMs")) then {
                 _perf set ["slowLiveCheckCount", (_perf get "slowLiveCheckCount") + 1];
                 diag_log format [
-                    "[FLO][PERF] Air asset manager liveArea players=%1 activeGroups=%2 radius=%3 result=%4 in %5 ms",
-                    _playersNear,
-                    _activeGroupsNear,
+                    "[FLO][PERF] Air asset manager liveArea nearestPlayer=%1 radius=%2 result=%3 in %4 ms",
+                    round _nearestPlayerDist,
                     _radius,
                     _result,
                     _dtMs

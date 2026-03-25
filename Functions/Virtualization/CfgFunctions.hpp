@@ -13,6 +13,7 @@ class VirtualizationSystem {
     class virtualizationRefreshPlayerCache {};
     class virtualizationRefreshCachedGroups {};
     class virtualizationGetNearestCachedPlayerDistance {};
+    class virtualizationIsPositionWithinActivationRange {};
     class virtualizationIsValidPosition {};
     class virtualizationRegisterEventHandlers {};
     class virtualizationRemoveEventHandlers {};

@@ -35,8 +35,8 @@ _syncResult params ["_tracksAssets", "_syncedCount"];
 [_groupData, _realGroup] call FLO_fnc_virtualizationDeleteRealGroupAssets;
 private _groupType = _groupData get "groupType";
 
-if (_tracksAssets && {_syncedCount <= 0}) exitWith {
-    ["VIRTUALIZATION", 3, format["Deactivated vehicle-backed group %1 lost all %2 assets - removing", _groupId, _groupType]] call FLO_fnc_log;
+if (_syncedCount <= 0) exitWith {
+    ["VIRTUALIZATION", 3, format["Deactivated group %1 lost all remaining %2 strength - removing", _groupId, _groupType]] call FLO_fnc_log;
     [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
     true
 };

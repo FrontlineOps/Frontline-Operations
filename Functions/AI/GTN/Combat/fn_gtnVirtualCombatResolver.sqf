@@ -89,7 +89,6 @@ private _pfhId = [{
     private _engagedNow = createHashMap;
     private _eventsChanged = false;
     private _liveAreaRadius = FLO_virtualGroups get "_activationDistance";
-    private _players = allPlayers select { alive _x && {side group _x in [east, west]} };
 
     {
         _x params ["_eastRefs", "_westRefs", "_zonePos", "_contactDist"];
@@ -100,7 +99,7 @@ private _pfhId = [{
             [_groupId, _gData, _resumeStates] call FLO_fnc_gtnCombatEnterState;
         } forEach (_eastRefs + _westRefs);
 
-        private _liveArea = [_zonePos, _players, _liveAreaRadius] call FLO_fnc_gtnCombatIsLiveArea;
+        private _liveArea = [_zonePos, _liveAreaRadius] call FLO_fnc_gtnCombatIsLiveArea;
         if (_liveArea) then {
             {
                 _x params ["_groupId", "_gData"];

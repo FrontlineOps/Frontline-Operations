@@ -33,6 +33,16 @@ private _poolUnits = _pools get "units";
     private _infGroup = createGroup [_attachedData get "side", true];
     private _infComp = _attachedData get "comp";
     private _infUnitCount = _attachedData get "unitCount";
+    if (_infUnitCount <= 0 && {_infComp isEqualTo []}) then {
+        ["VIRTUALIZATION", 1, format [
+            "Transport %1 encountered zero-strength attached group %2 - removing stale passenger record",
+            _groupId,
+            _attachedId
+        ]] call FLO_fnc_log;
+        [FLO_virtualGroups, _attachedId] call FLO_fnc_virtualizationRemoveGroup;
+        deleteGroup _infGroup;
+        continue;
+    };
 
     if (_infComp isNotEqualTo []) then {
         {

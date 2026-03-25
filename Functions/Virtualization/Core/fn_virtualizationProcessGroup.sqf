@@ -32,6 +32,16 @@ private _inCombat = _groupData get "inCombat";
 private _forceVirtual = _groupData get "forceVirtual";
 private _replacementState = _groupData get "replacementState";
 private _activationDeferred = _groupData get "activationDeferred";
+private _unitCount = _groupData get "unitCount";
+
+if (!_isActive && {_unitCount <= 0}) exitWith {
+    ["VIRTUALIZATION", 2, format [
+        "Removing stale inactive zero-strength group %1 (%2)",
+        _groupId,
+        _groupType
+    ]] call FLO_fnc_log;
+    [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+};
 
 private _tierResult = [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes, _virtStats] call FLO_fnc_virtualizationApplyTieredUpdateWindow;
 _tierResult params ["_shouldProcess", "_nearestDist"];
