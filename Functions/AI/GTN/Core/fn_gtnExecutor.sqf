@@ -1535,7 +1535,7 @@ private _executor = createHashMapObject [[
             // Get vulnerable objectives
             private _vulnObjs = _ws call ["_getVulnerableObjectives", []];
             if (count (keys _vulnObjs) == 0) exitWith { false };
-            private _frontlineEnemyObjs = _ws call ["_getFrontlineEnemyObjectives", []];
+            private _frontlineEnemyObjs = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
             private _frontlineVulnIds = (keys _vulnObjs) select { _x in (keys _frontlineEnemyObjs) };
             if (count _frontlineVulnIds == 0) exitWith { false };
             private _ownSide = _cmdr get "_ownSide";

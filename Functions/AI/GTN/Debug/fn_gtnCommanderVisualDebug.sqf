@@ -97,7 +97,8 @@ private _fnc_clearAll = {
             private _situation = _worldState call ["_getTacticalSituation", []];
             private _friendlyObjectives = _worldState call ["_getFriendlyObjectives", []];
             private _enemyObjectivesAll = _worldState call ["_getEnemyObjectives", []];
-            private _enemyObjectives = _worldState call ["_getFrontlineEnemyObjectives", []];
+            private _strictFrontlineEnemyObjectives = _worldState call ["_getFrontlineEnemyObjectives", []];
+            private _enemyObjectives = _cmd call ["_getAttackFrontlineEnemyObjectives", []];
 
             private _stats = _cmd get "_stats";
             private _tracks = _cmd get "_tracks";
@@ -127,7 +128,7 @@ private _fnc_clearAll = {
             private _summaryId = format ["FLO_GTN_DBG_%1_SUMMARY", _cmdSideKey];
             _activeIds pushBack _summaryId;
             private _summaryText = format [
-                "GTN %1 | cyc:%2 tasked:%3 avail:%4 atk:%5 def:%6 enemyObj:%7 front:%8 mom:%9",
+                "GTN %1 | cyc:%2 tasked:%3 avail:%4 atk:%5 def:%6 enemyObj:%7 atkFront:%8 strictFront:%9 mom:%10",
                 _cmdSideKey,
                 _stats get "cyclesRun",
                 count _taskedGroups,
@@ -136,6 +137,7 @@ private _fnc_clearAll = {
                 _forces get "defendingGroups",
                 count (keys _enemyObjectivesAll),
                 count (keys _enemyObjectives),
+                count (keys _strictFrontlineEnemyObjectives),
                 round (_situation get "momentum")
             ];
             [_summaryId, _anchorPos, "mil_flag", _ownColor, _summaryText, [0.95, 0.95], 1] call _fnc_upsertMarker;

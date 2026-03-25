@@ -32,7 +32,7 @@ private _ws = _cmdr get "_worldState";
 if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { _metrics };
 _metrics set ["assetAvailable", true];
 
-private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 if ((count (keys _frontlineObjectives)) == 0) exitWith { _metrics };
 
 private _assaultObjectives = [];

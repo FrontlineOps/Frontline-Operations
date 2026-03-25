@@ -123,6 +123,8 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
     ["_forceBaselineTotalGroups", 0],
+    ["_attackReachability", createHashMap],
+    ["_attackFrontlineObjectives", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
     ["_frontlineCASLocks", createHashMap],
@@ -139,6 +141,8 @@ private _gtnCommander = createHashMapObject [[
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
         ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of direct friendly frontage links
         ["attackGroupsPerReserveObjective", 2], // Rear connected friendly objectives raise attack cap, but less than direct frontage links
+        ["attackExtendedFrontlineEnemyDepth", 2], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
+        ["attackExtendedFrontlineMaxRouteMeters", 7000], // Extended-frontline expansion must still be land-connected and operationally local
         ["attackMinGroupCap", 8], // Never commit less than a meaningful assault package to one objective
         ["attackMaxGroupCap", 18], // Hard cap to stop theater-wide dogpiles on one objective
         ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
@@ -306,6 +310,8 @@ private _gtnCommander = createHashMapObject [[
             _situation get "momentum",
             count (keys _enemyObjs)
         ]] call FLO_fnc_log;
+
+        _self call ["_refreshAttackReachability", []];
 
         // Publish the maintained commander COP to players as non-debug local intel markers.
         _tPhase = diag_tickTime;
@@ -623,10 +629,8 @@ private _gtnCommander = createHashMapObject [[
 
         if ((count _attackTracks) == 0) exitWith { createHashMap };
 
-        private _ws = _self get "_worldState";
         private _ownSide = _self get "_ownSide";
-        private _allObjectives = _ws call ["_getObjectives", []];
-        private _frontlineEnemyObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+        private _frontlineEnemyObjectives = _self call ["_getAttackFrontlineEnemyObjectives", []];
         private _sourceScores = createHashMap;
         private _sourcePositions = createHashMap;
 
@@ -638,18 +642,14 @@ private _gtnCommander = createHashMapObject [[
                 + (if (_enemyObj get "contested") then { 20 } else { 0 });
 
             {
-                private _sourceObj = _allObjectives get _x;
-                if (isNil "_sourceObj") then { continue };
-                if ((_sourceObj get "owner") != _ownSide) then { continue };
-
                 private _sourceScore = if (_x in _sourceScores) then {
                     _sourceScores get _x
                 } else {
                     0
                 };
                 _sourceScores set [_x, _sourceScore + _scoreAdd];
-                _sourcePositions set [_x, _sourceObj get "position"];
-            } forEach (_enemyObj get "linkedObjectives");
+                _sourcePositions set [_x, ((FLO_Objectives get _x) get "position")];
+            } forEach (_self call ["_getFriendlyAttackSourceObjectives", [_x]]);
         } forEach (keys _frontlineEnemyObjectives);
 
         if ((count (keys _sourceScores)) == 0) exitWith { createHashMap };
@@ -1228,7 +1228,7 @@ private _gtnCommander = createHashMapObject [[
         private _ws = _self get "_worldState";
         private _ownSide = _self get "_ownSide";
         private _allObjectives = _ws call ["_getObjectives", []];
-        private _objectives = _ws call ["_getFrontlineEnemyObjectives", []];
+        private _objectives = _self call ["_getAttackFrontlineEnemyObjectives", []];
         private _reservations = _self get "_attackObjectiveReservations";
         private _spreadMeters = ((_self get "_config") get "attackReservationSpreadMeters");
         private _crossSectorPenalty = ((_self get "_config") get "attackCrossSectorPenaltyMeters");
@@ -1238,7 +1238,7 @@ private _gtnCommander = createHashMapObject [[
 
         if (count (keys _objectives) == 0) then {
             _objectives = _ws call ["_getEnemyObjectives", []];
-            ["GTN", 3, "No frontline enemy objectives; falling back to all enemy objectives"] call FLO_fnc_log;
+            ["GTN", 3, "No attack-frontline enemy objectives; falling back to all enemy objectives"] call FLO_fnc_log;
         };
         if (count (keys _objectives) == 0) exitWith { "" };
 
@@ -1375,8 +1375,9 @@ private _gtnCommander = createHashMapObject [[
             if (count _trackAnchorPos >= 2) then {
                 _selectionDist = _trackAnchorPos distance2D ((_objectives get _objId) get "position");
             };
+            private _sourceObjectives = _self call ["_getFriendlyAttackSourceObjectives", [_objId]];
             private _sectorMatch = (count _trackSectorObjectives == 0)
-                || { (count (((_objectives get _objId) get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0 };
+                || { (count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0 };
             private _effectiveDist = _selectionDist + (_committed * _spreadMeters);
             if (!_sectorMatch) then {
                 _effectiveDist = _effectiveDist + _crossSectorPenalty;
@@ -1710,27 +1711,48 @@ private _gtnCommander = createHashMapObject [[
         (_cap max 0) min _defenseCap
     }],
 
-    // Friendly-held objectives that directly front the enemy objective.
+    // Friendly-held source objectives that can support the enemy objective through the shallow land-connected attack frontier.
     ["_getFriendlyAttackSourceObjectives", {
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { [] };
 
-        private _ws = _self get "_worldState";
-        private _objectives = _ws call ["_getObjectives", []];
-        if !(_objectiveId in _objectives) exitWith { [] };
+        private _reachability = _self get "_attackReachability";
+        if (_objectiveId in _reachability) exitWith {
+            (_reachability get _objectiveId) get "sourceObjectives"
+        };
 
-        private _obj = _objectives get _objectiveId;
-        private _ownSide = _self get "_ownSide";
-        private _sources = [];
+        []
+    }],
+
+    ["_refreshAttackReachability", {
+        private _ws = _self get "_worldState";
+        private _enemyObjectives = _ws call ["_getEnemyObjectives", []];
+        private _strictFrontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+        private _reachability = [_self] call FLO_fnc_gtnBuildAttackReachability;
+        private _attackFrontlineObjectives = createHashMap;
 
         {
-            private _linkedObj = _objectives get _x;
-            if (isNil "_linkedObj") then { continue };
-            if ((_linkedObj get "owner") != _ownSide) then { continue };
-            _sources pushBackUnique _x;
-        } forEach (_obj get "linkedObjectives");
+            private _objectiveId = _x;
+            if !(_objectiveId in _enemyObjectives) then { continue };
+            _attackFrontlineObjectives set [_objectiveId, _enemyObjectives get _objectiveId];
+        } forEach (keys _reachability);
 
-        _sources
+        _self set ["_attackReachability", _reachability];
+        _self set ["_attackFrontlineObjectives", _attackFrontlineObjectives];
+
+        if ((count (keys _attackFrontlineObjectives)) > (count (keys _strictFrontlineObjectives))) then {
+            ["GTN", 3, format [
+                "Extended attack frontline widened from %1 to %2 objectives",
+                count (keys _strictFrontlineObjectives),
+                count (keys _attackFrontlineObjectives)
+            ]] call FLO_fnc_log;
+        };
+
+        _attackFrontlineObjectives
+    }],
+
+    ["_getAttackFrontlineEnemyObjectives", {
+        _self get "_attackFrontlineObjectives"
     }],
 
     // Dynamic cap for how many groups should actively attack a single objective.

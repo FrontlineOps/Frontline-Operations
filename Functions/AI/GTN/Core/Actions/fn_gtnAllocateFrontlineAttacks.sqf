@@ -46,7 +46,7 @@ if (_phase != "assault") exitWith { _metrics };
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _groups = FLO_virtualGroups get "_groups";
-private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
+private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 if ((count (keys _frontlineObjectives)) == 0) then {
     _frontlineObjectives = _ws call ["_getEnemyObjectives", []];
 };
@@ -101,7 +101,7 @@ private _candidateObjectives = [];
     };
 
     private _sectorMatch = (count _trackSectorObjectives) == 0
-        || { (count ((_objective get "linkedObjectives") arrayIntersect _trackSectorObjectives)) > 0 };
+        || { (count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0 };
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
     private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
 
