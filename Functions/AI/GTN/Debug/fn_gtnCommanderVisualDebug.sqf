@@ -327,6 +327,40 @@ private _fnc_clearAll = {
                 [_reinfTargetMarkerId, _objPos, "mil_dot", _ownColor, format ["%1 REINF INBOUND %2 x%3", _cmdSideKey, _objId, _count], [0.6, 0.6], 0.8] call _fnc_upsertMarker;
             } forEach (keys _reinforcingObjectiveCounts);
 
+            private _taskedSet = createHashMap;
+            { _taskedSet set [_x, true]; } forEach _taskedGroups;
+
+            {
+                private _groupId = _x;
+                private _gData = _allGroups get _groupId;
+                if (isNil "_gData") then { continue };
+                if ((_gData get "side") != _ownSide) then { continue };
+                if !(_gData get "isActive") then { continue };
+                if !(isNil { _taskedSet get _groupId }) then { continue };
+
+                private _mountedIn = _gData get "mountedIn";
+                if (_mountedIn == "") then { continue };
+
+                private _groupPos = _gData get "position";
+                private _groupState = [_gData] call FLO_fnc_virtualizationGetEffectiveState;
+                private _groupUnits = _gData get "unitCount";
+                private _groupType = _gData get "groupType";
+                private _shortId = if ((count _groupId) > 7) then { _groupId select [7] } else { _groupId };
+                private _carrierShortId = if ((count _mountedIn) > 7) then { _mountedIn select [7] } else { _mountedIn };
+
+                private _mountedMarkerId = format ["FLO_GTN_DBG_%1_MOUNTED_%2", _cmdSideKey, _groupId];
+                _activeIds pushBack _mountedMarkerId;
+                [_mountedMarkerId, _groupPos, "mil_dot", _ownColor, format [
+                    "%1 %2 mounted:%3 st:%4 u%5 %6",
+                    _cmdSideKey,
+                    _shortId,
+                    _carrierShortId,
+                    _groupState,
+                    _groupUnits,
+                    _groupType
+                ], [0.45, 0.45], 0.55] call _fnc_upsertMarker;
+            } forEach (keys _allGroups);
+
             {
                 private _groupId = _x;
                 private _gData = _allGroups get _groupId;

@@ -2,18 +2,23 @@
  * Function: FLO_fnc_virtualizationDeleteRealGroupAssets
  */
 
-params ["_realGroup"];
+params ["_groupData", "_realGroup"];
 
-private _vehiclesToDelete = [];
+private _vehiclesToDelete = +(_groupData get "realVehicles");
 {
     private _veh = vehicle _x;
-    if (!isNull _veh && {_veh != _x}) then {
+    if (_veh == _x) then {
+        _veh = assignedVehicle _x;
+    };
+
+    if (!isNull _veh) then {
         _vehiclesToDelete pushBackUnique _veh;
     };
 } forEach units _realGroup;
 
 {
     private _veh = _x;
+    if (isNull _veh) then { continue };
     _veh hideObjectGlobal true;
     {
         _x hideObjectGlobal true;

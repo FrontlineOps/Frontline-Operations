@@ -65,6 +65,7 @@ if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civi
 
 // Set the real group in the group data
 [_groupData, _realGroup] call FLO_fnc_virtualizationSetRealGroup;
+[ _groupData, [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles ] call FLO_fnc_virtualizationSetRealVehicles;
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 _realGroup setVariable ["FLO_virtualGroupId", _groupId];

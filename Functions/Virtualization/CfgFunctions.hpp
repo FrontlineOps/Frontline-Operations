@@ -74,6 +74,9 @@ class VirtualizationLifecycle {
     class activateVirtualGroup             {};
     class deactivateVirtualGroup           {};
     class activateSavedVirtualGroup        {};
+    class virtualizationCollectRealGroupVehicles {};
+    class virtualizationDeactivateMountedPassengerGroup {};
+    class virtualizationDeactivateMountedPassengers {};
     class virtualizationCaptureRealGroupPosition {};
     class virtualizationCaptureRealGroupRuntimeState {};
     class virtualizationCaptureRealGroupWaypoints {};
@@ -179,6 +182,8 @@ class VirtualizationState {
     class virtualizationSetRuntimeState {};
     class virtualizationSetRealGroup {};
     class virtualizationClearRealGroup {};
+    class virtualizationSetRealVehicles {};
+    class virtualizationClearRealVehicles {};
     class virtualizationSetAADeployState {};
     class virtualizationClearAADeployState {};
     class virtualizationGetAADeployState {};
@@ -220,6 +225,7 @@ class VirtualizationDebug {
     class virtualizationDebugManager      {};
     class virtualizationDebugRunBatch      {};
     class virtualizationProbe             {};
+    class virtualizationProbeOwnership    {};
     class virtualizationDebugUpdateMarker {};
 };
 

@@ -249,6 +249,9 @@ class FLO {
     class UtilitiesVehicle {
         file = "Functions\Utilities\Vehicle";
         class placeVehicleWithCrew      {};
+        class vehicleCleanupManager     {};
+        class vehicleCleanupRun         {};
+        class vehicleShouldCleanup      {};
     };
 
     class Misc {

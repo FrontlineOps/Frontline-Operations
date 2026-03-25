@@ -31,7 +31,8 @@ if (isNull _realGroup) exitWith {
 private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationSyncRealGroupOutcome;
 _syncResult params ["_tracksAssets", "_syncedCount"];
 
-[_realGroup] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+[_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
+[_groupData, _realGroup] call FLO_fnc_virtualizationDeleteRealGroupAssets;
 private _groupType = _groupData get "groupType";
 
 if (_tracksAssets && {_syncedCount <= 0}) exitWith {
@@ -42,6 +43,7 @@ if (_tracksAssets && {_syncedCount <= 0}) exitWith {
 
 // Update virtualization state
 [_groupData] call FLO_fnc_virtualizationClearRealGroup;
+[_groupData] call FLO_fnc_virtualizationClearRealVehicles;
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 

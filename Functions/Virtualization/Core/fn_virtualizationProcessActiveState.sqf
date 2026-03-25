@@ -40,8 +40,8 @@ if (_now - _lastChange > 5) then {
     };
 
     if (_eliminated) then {
-        ["VIRTUALIZATION", 3, format["Group %1 eliminated - removing", _groupId]] call FLO_fnc_log;
-        [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+        ["VIRTUALIZATION", 3, format["Group %1 eliminated - deactivating for cleanup", _groupId]] call FLO_fnc_log;
+        [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
         _virtStats set ["eliminatedGroupsTotal", (_virtStats get "eliminatedGroupsTotal") + 1];
         _virtStats set ["eliminatedGroupsThisBatch", (_virtStats get "eliminatedGroupsThisBatch") + 1];
     };

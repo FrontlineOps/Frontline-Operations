@@ -548,6 +548,17 @@ if (!isNil "FLO_fnc_gtnCommanderVisualDebug" && {FLO_GTN_CommanderDebugEnabled})
 diag_log "[FLO_INIT_P5] Legacy mission content retired";
 
 // ============================================
+// Abandoned Vehicle Cleanup
+// ============================================
+diag_log "[FLO_INIT_P5] Starting abandoned vehicle cleanup...";
+if (!isNil "FLO_fnc_vehicleCleanupManager") then {
+    ["start"] call FLO_fnc_vehicleCleanupManager;
+    diag_log "[FLO_INIT_P5] Abandoned vehicle cleanup started";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_vehicleCleanupManager not found";
+}
+
+// ============================================
 // Civilian System (Config + Manager)
 // ============================================
 diag_log "[FLO_INIT_P5] Initializing civilian system...";

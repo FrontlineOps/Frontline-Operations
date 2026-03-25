@@ -19,19 +19,10 @@ params ["_groupData", "_realGroup"];
 private _groupType = _groupData get "groupType";
 if !([_groupType] call FLO_fnc_virtualizationUsesAssetStrength) exitWith { [] };
 
-private _assetVehicles = [];
-{
-    if (!alive _x) then { continue };
-
-    private _veh = vehicle _x;
-    if (_veh == _x) then {
-        _veh = assignedVehicle _x;
-    };
-
-    if (!isNull _veh && {_veh != _x} && {alive _veh}) then {
-        _assetVehicles pushBackUnique _veh;
-    };
-} forEach units _realGroup;
+private _assetVehicles = (_groupData get "realVehicles") select { !isNull _x && {alive _x} };
+if (count _assetVehicles == 0 && {!isNull _realGroup}) then {
+    _assetVehicles = ([_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles) select { alive _x };
+};
 
 if (_groupType isEqualTo "static_aa") then {
     private _side = _groupData get "side";

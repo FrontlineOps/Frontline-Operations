@@ -45,6 +45,7 @@ private _groupData = createHashMapFromArray [
     ["isActive", false],
     ["alwaysActive", false],
     ["realGroup", grpNull],
+    ["realVehicles", []],
     ["state", "idle"],
     ["lastStateChangeTime", diag_tickTime],
     ["inCombat", false],
