@@ -178,6 +178,9 @@ private _gtnCommander = createHashMapObject [[
         ["attackEngagementLeashMeters", 450], // Attack groups do not chase confirmed targets too far off their approach
         ["defenseEngagementLeashMeters", 250], // Defenders only engage confirmed targets local to their defended objective
         ["garrisonEngagementLeashMeters", 200], // Garrisons only engage confirmed targets local to their held objective
+        ["engagementTargetLoadMultiplier", 1.25], // Known contacts only attract a limited friendly load before selection starts spreading to other valid targets
+        ["engagementReservationPenaltyPerGroup", 16], // Each committed friendly group reduces the score of the same target for later groups that cycle
+        ["engagementSaturationPenalty", 30], // Targets already saturated by current commitments become much less attractive than other valid contacts
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
         ["maxTrackTasksPerCycle", 2], // Primitive burst cap per track per commander update

@@ -35,9 +35,23 @@ private _engagementGroups = _engagementPicture get "groups";
 private _config = _gtnCommander get "_config";
 private _groups = FLO_virtualGroups get "_groups";
 private _ownSide = _gtnCommander get "_ownSide";
+private _assignmentState = createHashMap;
 
 _metrics set ["pictureGroups", _engagementPicture get "groupCount"];
 _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
+
+{
+    private _groupData = _y;
+    if ((_groupData get "side") != _ownSide) then { continue };
+    if !(_groupData get "engagementActive") then { continue };
+
+    private _targetGroupId = _groupData get "engagementTargetGroupId";
+    if (_targetGroupId == "") then { continue };
+    if !(_targetGroupId in (keys _engagementGroups)) then { continue };
+
+    private _groupLoad = [_groupData, false] call FLO_fnc_virtualizationGetGroupUnitLoad;
+    [_assignmentState, _targetGroupId, 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
+} forEach _groups;
 
 {
     private _groupId = _x;
@@ -54,6 +68,7 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
 
     private _order = _groupData get "commanderOrder";
     if !(_order in ["ATTACK", "DEFEND", "GARRISON"]) then { continue };
+    private _groupLoad = [_groupData, false] call FLO_fnc_virtualizationGetGroupUnitLoad;
 
     _metrics set ["eligibleGroups", (_metrics get "eligibleGroups") + 1];
 
@@ -95,6 +110,7 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
             };
         };
 
+        [_assignmentState, _targetGroupId, -1, -_groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
         if ([_gtnCommander, _groupId, _groupData] call FLO_fnc_gtnRestoreStrategicGroupRoute) then {
             _metrics set ["restoredCount", (_metrics get "restoredCount") + 1];
         } else {
@@ -103,10 +119,11 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
         continue;
     };
 
-    private _target = [_groupData, _engagementPicture, _config] call FLO_fnc_gtnSelectGroupEngagementTarget;
+    private _target = [_groupData, _engagementPicture, _config, _assignmentState] call FLO_fnc_gtnSelectGroupEngagementTarget;
     if (count (keys _target) == 0) then { continue };
 
     if ([_groupId, _groupData, _target, _config] call FLO_fnc_gtnApplyGroupEngagement) then {
+        [_assignmentState, _target get "targetGroupId", 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
         _metrics set ["appliedCount", (_metrics get "appliedCount") + 1];
     };
 } forEach _groups;

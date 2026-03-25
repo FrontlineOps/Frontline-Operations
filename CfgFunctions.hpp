@@ -52,12 +52,15 @@ class FLO {
     class GTNCoreLogic {
         file = "Functions\AI\GTN\Core\Logic";
 
+        class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
         class gtnBuildEnemyEngagementPicture {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};
+        class gtnEstimateEngagementTargetLoad {};
         class gtnEvaluateGroupEngagementTarget {};
         class gtnExecuteTrackCycle {};
+        class gtnGetEngagementTargetAssignmentCap {};
         class gtnIsEngagementRouteActive {};
         class gtnPickObjectiveGarrisonPosition {};
         class gtnRestoreStrategicGroupRoute {};
