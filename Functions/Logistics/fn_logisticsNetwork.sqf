@@ -43,10 +43,6 @@ private _logisticsClass = [
     ["DISPATCH_BATCH_MIN", 12],
     ["DISPATCH_BATCH_MAX", 64],
     ["REINFORCEMENT_RECENT_TARGET_WINDOW", 300],
-    ["REINFORCEMENT_BATCH_TARGET_PENALTY", 2400],
-    ["REINFORCEMENT_INBOUND_TARGET_PENALTY", 1800],
-    ["REINFORCEMENT_RECENT_TARGET_PENALTY", 1400],
-    ["REINFORCEMENT_LAST_TARGET_PENALTY", 900],
     ["REINFORCEMENT_OBJECTIVE_SECURE_RATIO", 1.75],
     ["REINFORCEMENT_OBJECTIVE_PRESSURE_PER_GROUP", 10],
     ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MIN", 1],
@@ -55,6 +51,10 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO", 0.65],
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
+    ["SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS", 14000],
+    ["SUPPLY_NODE_MIN_DELIVERIES", 1],
+    ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
+    ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
     ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
 
     ["_initialComposition", nil],
@@ -71,6 +71,11 @@ private _logisticsClass = [
     ["_nextDispatchAt", 0],
     ["_loopStarted", false],
     ["_loopPfhId", -1],
+    ["_hqObjectiveId", ""],
+    ["_supplyNodeDeliveries", createHashMap],
+    ["_supplyRouteInfo", createHashMap],
+    ["_activeSupplyNodes", createHashMap],
+    ["_lastSupplyNodeSignature", ""],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkCreate;
@@ -112,6 +117,22 @@ private _logisticsClass = [
         ([_self] + _this) call FLO_fnc_logisticsNetworkPickBestTarget;
     }],
 
+    ["_pickHQObjective", {
+        [_self] call FLO_fnc_logisticsNetworkPickHQObjective;
+    }],
+
+    ["_refreshSupplyChain", {
+        [_self] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+    }],
+
+    ["_describeObjectiveSupplyRole", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    }],
+
+    ["_findSupplyAdvanceObjectives", {
+        [_self] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
+    }],
+
     ["_buildInboundObjectiveCounts", {
         [_self] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
     }],
@@ -132,6 +153,10 @@ private _logisticsClass = [
         ([_self] + _this) call FLO_fnc_logisticsNetworkPickSpawnSourceObjective;
     }],
 
+    ["_findSupplySourceObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkFindSupplySourceObjective;
+    }],
+
     ["_findSpawnPosition", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkFindSpawnPosition;
     }],
@@ -150,6 +175,10 @@ private _logisticsClass = [
 
     ["_recordTargetDispatch", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkRecordTargetDispatch;
+    }],
+
+    ["_recordDelivery", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkRecordDelivery;
     }],
 
     ["_startMainLoop", {
@@ -180,7 +209,9 @@ private _logisticsClass = [
             ["stats", _self get "_stats"],
             ["lastReinforcementTarget", _self get "_lastReinforcementTarget"],
             ["reinforcementQueue", _self get "_reinforcementQueue"],
-            ["nextDispatchAt", _self get "_nextDispatchAt"]
+            ["nextDispatchAt", _self get "_nextDispatchAt"],
+            ["hqObjectiveId", _self get "_hqObjectiveId"],
+            ["supplyNodeDeliveries", _self get "_supplyNodeDeliveries"]
         ]
     }]
 ];

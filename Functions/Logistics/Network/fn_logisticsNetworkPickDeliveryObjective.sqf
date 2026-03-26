@@ -25,6 +25,15 @@ private _managedSide = _net get "_managedSide";
 private _enemySide = _net get "_enemySide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
+private _requestedRole = [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+
+if (
+    (_requestedRole get "isAdvanceCandidate")
+    && {!(_requestedObjective get "contested")}
+    && {(_requestedObjective get _enemyCountKey) <= 0}
+) exitWith {
+    _requestedObjectiveId
+};
 
 private _candidateIds = [];
 {

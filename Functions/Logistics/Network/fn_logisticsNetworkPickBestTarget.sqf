@@ -4,8 +4,8 @@
  * Description:
  *   Selects the best reinforcement target from a candidate objective set.
  *   Static AA uses priority scoring; maneuver reinforcements first pass hard
- *   saturation gates, then score the remaining objectives by pressure,
- *   priority, and anti-dogpile penalties.
+ *   saturation gates, then choose by explicit target role:
+ *   pressure first, then supply advance, then rear fallback.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -87,40 +87,34 @@ _available = _available select {
 if (count _available == 0) exitWith { "" };
 
 private _managedSide = _net get "_managedSide";
-private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
-private _batchPenalty = _net get "REINFORCEMENT_BATCH_TARGET_PENALTY";
-private _inboundPenalty = _net get "REINFORCEMENT_INBOUND_TARGET_PENALTY";
-private _recentPenalty = _net get "REINFORCEMENT_RECENT_TARGET_PENALTY";
-private _lastTargetPenalty = _net get "REINFORCEMENT_LAST_TARGET_PENALTY";
-
-private _bestTarget = "";
-private _bestScore = 1e12;
+private _pressureCandidates = [];
+private _advanceCandidates = [];
+private _rearCandidates = [];
 
 {
-    private _objId = _x;
-    private _objData = FLO_Objectives get _objId;
-    private _friendlyCount = _objData get _friendlyCountKey;
-    private _enemyCount = _objData get _enemyCountKey;
-    private _pressure = ((_enemyCount * 2) - _friendlyCount) max 0;
-    private _priority = _objData get "priority";
-    private _batchCount = _batchDispatchCounts getOrDefault [_objId, 0];
-    private _inboundCount = _inboundCounts getOrDefault [_objId, 0];
-    private _recentCount = _recentDispatchCounts getOrDefault [_objId, 0];
-    private _score = (_batchCount * _batchPenalty)
-        + (_inboundCount * _inboundPenalty)
-        + (_recentCount * _recentPenalty)
-        - (_pressure * 450)
-        - (_priority * 120);
+    private _objectiveId = _x;
+    private _objective = FLO_Objectives get _objectiveId;
 
-    if ((count _available) > 1 && {_objId isEqualTo _lastTarget}) then {
-        _score = _score + _lastTargetPenalty;
+    if ((_objective get _enemyCountKey) > 0) then {
+        _pressureCandidates pushBack _objectiveId;
+        continue;
     };
 
-    if (_score < _bestScore) then {
-        _bestTarget = _objId;
-        _bestScore = _score;
+    private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    if (_role get "isAdvanceCandidate") then {
+        _advanceCandidates pushBack _objectiveId;
+    } else {
+        _rearCandidates pushBack _objectiveId;
     };
 } forEach _available;
 
-_bestTarget
+if (count _pressureCandidates > 0) exitWith {
+    [_net, _pressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
+};
+
+if (count _advanceCandidates > 0) exitWith {
+    [_net, _advanceCandidates] call FLO_fnc_logisticsNetworkPickAdvanceTarget
+};
+
+[_net, _rearCandidates] call FLO_fnc_logisticsNetworkPickRearTarget
