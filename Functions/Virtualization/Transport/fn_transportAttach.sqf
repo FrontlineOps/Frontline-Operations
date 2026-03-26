@@ -40,6 +40,8 @@ if (_currentAttach != "") exitWith {
 private _groupType = _transData get "groupType";
 private _capacity = [_transData] call FLO_fnc_transportGetGroupCapacity;
 private _currentLoad = [_transData] call FLO_fnc_transportGetPassengerLoad;
+private _infIsActive = _infData get "isActive";
+private _transIsActive = _transData get "isActive";
 
 private _infUnitCount = _infData get "unitCount";
 if (_currentLoad + _infUnitCount > _capacity) exitWith {
@@ -48,9 +50,6 @@ if (_currentLoad + _infUnitCount > _capacity) exitWith {
     false
 };
 
-// Perform attachment
-[_infData, _transportGroupId, if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}] call FLO_fnc_virtualizationSetTransportAttachment;
-[true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 private _transportPos = _transData get "position";
 if !([_transportPos, true, format [
     "transportAttach infantry=%1 transport=%2 transportType=%3",
@@ -60,6 +59,30 @@ if !([_transportPos, true, format [
 ]] call FLO_fnc_validateGroupPosition) exitWith {
     false
 };
+
+if (_infIsActive != _transIsActive) exitWith {
+    ["TRANSPORT", 2, format [
+        "Attach failed: activation state mismatch for %1 (active=%2) and %3 (active=%4)",
+        _infantryGroupId,
+        _infIsActive,
+        _transportGroupId,
+        _transIsActive
+    ]] call FLO_fnc_log;
+    false
+};
+
+if (_infIsActive && {!([_infantryGroupId, _infData, _transportGroupId, _transData] call FLO_fnc_transportMountActivePassengerGroup)}) exitWith {
+    ["TRANSPORT", 2, format [
+        "Attach failed: could not coherently mount active passenger %1 into active carrier %2",
+        _infantryGroupId,
+        _transportGroupId
+    ]] call FLO_fnc_log;
+    false
+};
+
+// Perform attachment
+[_infData, _transportGroupId, if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}] call FLO_fnc_virtualizationSetTransportAttachment;
+[true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 [FLO_virtualGroups, _infantryGroupId, _transportPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
 [_transData, _infantryGroupId] call FLO_fnc_virtualizationAddTransportPassenger;

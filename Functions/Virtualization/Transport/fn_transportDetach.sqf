@@ -24,13 +24,19 @@ params [
 
 if (_infantryGroupId == "") exitWith { false };
 
-private _groups = FLO_virtualGroups get "_groups";
 private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
 
 private _transportId = [_infData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_transportId == "") exitWith { false };
 
 private _transData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+private _infRealGroup = _infData get "realGroup";
+private _transRealGroup = _transData get "realGroup";
+private _transportVehicles = if (!isNull _transRealGroup) then {
+    ([_transRealGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles) select { !isNull _x && {alive _x} }
+} else {
+    []
+};
 [_transData, _infantryGroupId] call FLO_fnc_virtualizationRemoveTransportPassenger;
 
 // Clear infantry attachment
@@ -40,10 +46,24 @@ if ((_infData get "missionLock") == "ORGANIC_PACKAGE") then {
 };
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 
+private _basePos = _infData get "position";
+if (!isNull _infRealGroup) then {
+    {
+        private _veh = vehicle _x;
+        if (_veh != _x && {_veh in _transportVehicles}) then {
+            moveOut _x;
+        };
+    } forEach units _infRealGroup;
+
+    private _leader = leader _infRealGroup;
+    if (!isNull _leader && {alive _leader}) then {
+        _basePos = getPosATL _leader;
+    };
+};
+
 // Offset position from transport
-private _pos = _infData get "position";
 if (_offsetDir < 0) then { _offsetDir = random 360; };
-private _newPos = _pos getPos [30, _offsetDir];
+private _newPos = _basePos getPos [30, _offsetDir];
 [FLO_virtualGroups, _infantryGroupId, _newPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
 ["TRANSPORT", 3, format["Detached %1 from transport %2", _infantryGroupId, _transportId]] call FLO_fnc_log;

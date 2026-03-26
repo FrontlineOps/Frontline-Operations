@@ -119,24 +119,26 @@ class VirtualizationTransport {
     file = "Functions\Virtualization\Transport";
 
     class transportConfig       {};
-    class transportGetBestEdgeSpawnPos {};
     class transportGetCapacity  {};
-    class transportGetMapEdgePositions {};
     class transportGetGroupCapacity {};
     class transportGetPassengerLoad {};
-    class transportGetSpeed     {};
     class transportGetTrackedGroup {};
+    class transportHasKnownEnemyNearby {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportPoolFind     {};
     class transportPoolFindExisting {};
     class transportPoolRelease  {};
     class transportAttach       {};
+    class transportApplyPostDismountWaypoint {};
     class transportDetach       {};
     class transportDetachAll    {};
+    class transportProcessActiveCarrier {};
+    class transportMountActivePassengerGroup {};
     class transportRequest      {};
     class transportDismount     {};
-    class transportMapEdge      {};
+    class transportShouldThreatDismount {};
+    class transportSyncActivePassengerGroup {};
 };
 
 class VirtualizationCore {
