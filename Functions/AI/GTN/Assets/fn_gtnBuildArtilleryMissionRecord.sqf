@@ -12,6 +12,7 @@
  *   3: Number of rounds <NUMBER>
  *   4: Accuracy / dispersion meters <NUMBER>
  *   5: Deterministic fire plan <HASHMAP>
+ *   6: Request kind <STRING>
  *
  * Return Value:
  *   HASHMAP - Artillery mission record
@@ -23,7 +24,8 @@ params [
     ["_targetPos", [0, 0, 0], [[]], [3]],
     ["_rounds", 0, [0]],
     ["_accuracy", 100, [0]],
-    ["_firePlan", createHashMap]
+    ["_firePlan", createHashMap],
+    ["_requestKind", "GENERAL", [""]]
 ];
 
 private _impactPoints = [];
@@ -83,6 +85,7 @@ createHashMapFromArray [
     ["targetPos", _targetPos],
     ["rounds", _rounds],
     ["accuracy", _accuracy],
+    ["requestKind", _requestKind],
     ["radius", _radius],
     ["impactPoints", _impactPoints],
     ["etaMin", _etaMin],

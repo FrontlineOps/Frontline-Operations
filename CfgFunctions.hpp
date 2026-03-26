@@ -122,14 +122,18 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnBroadcastArtilleryRadio {};
         class gtnBuildArtilleryMissionRecord {};
         class gtnCollectArtilleryVehicles {};
         class gtnBuildArtilleryFirePlan {};
+        class gtnCommanderRadioMessage {};
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
         class gtnArtilleryFireMission   {};
         class gtnArtilleryProcessObservedFireRequests {};
+        class gtnProcessCounterBatteryRequests {};
+        class gtnRecordCounterBatteryExposure {};
         class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
         class gtnRadarDataLink          {};
