@@ -11,6 +11,7 @@ class VirtualizationSystem {
     class virtualizationGetUpdatePerfDefaults {};
     class virtualizationCachePlayers  {};
     class virtualizationRefreshPlayerCache {};
+    class virtualizationReconcileTransportState {};
     class virtualizationRefreshCachedGroups {};
     class virtualizationGetNearestCachedPlayerDistance {};
     class virtualizationIsPositionWithinActivationRange {};

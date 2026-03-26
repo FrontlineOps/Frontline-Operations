@@ -21,6 +21,20 @@ private _fnc_startRadarDataLink = {
     [] spawn FLO_fnc_gtnRadarDataLink;
 };
 
+if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
+    diag_log "[FLO_INIT_P4] Virtualization already initialized";
+
+    if !(FLO_VirtUpdate get "running") then {
+        diag_log "[FLO_INIT_P4] Restarting virtualization PFH";
+        ["start"] call FLO_fnc_virtualizationUpdatePFH;
+    };
+
+    call _fnc_startRadarDataLink;
+    true
+};
+
+private _initializedFromSave = false;
+
 // Check if loading from saved game with virtual groups
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
     private _savedData = FLO_SavedGameData;
@@ -29,7 +43,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         diag_log "[FLO_INIT_P4] Loading virtual groups from save...";
 
         // Initialize virtualization system first
-        [_activationDistance, _activationUnitCap] call FLO_fnc_initVirtualization;
+        [_activationDistance, _activationUnitCap, false] call FLO_fnc_initVirtualization;
 
         private _savedGroups = _savedData get "virtualGroups";
         private _loadedCount = 0;
@@ -73,28 +87,21 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
             diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save (skipped %2 invalid)", _loadedCount, _skippedCount];
         };
 
+        [] call FLO_fnc_virtualizationReconcileTransportState;
+
         // Mark as initialized and start PFH
         InitializationOG = true;
         publicVariable "InitializationOG";
 
         ["start"] call FLO_fnc_virtualizationUpdatePFH;
+        _initializedFromSave = true;
 
         diag_log "[FLO_INIT_P4] Virtualization loaded from save - complete";
     };
 };
 
-// Check if already initialized (from save load above or previous run)
-if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
-    diag_log "[FLO_INIT_P4] Virtualization already initialized";
-
-    // Restart PFH if not running
-    if (isNil "FLO_VirtualizationPFH_Handle") then {
-        diag_log "[FLO_INIT_P4] Restarting virtualization PFH";
-        ["start"] call FLO_fnc_virtualizationUpdatePFH;
-    };
-
+if (_initializedFromSave) exitWith {
     call _fnc_startRadarDataLink;
-
     true
 };
 
@@ -116,7 +123,7 @@ if (isNil "FLO_FactionCatalog") exitWith {
 
 // Initialize the virtualization system
 diag_log "[FLO_INIT_P4] Calling FLO_fnc_initVirtualization...";
-[_activationDistance, _activationUnitCap] call FLO_fnc_initVirtualization;
+[_activationDistance, _activationUnitCap, false] call FLO_fnc_initVirtualization;
 
 // Initialize objective groups for both sides
 diag_log "[FLO_INIT_P4] Creating objective groups for EAST/WEST...";
@@ -141,18 +148,10 @@ private _groupCount = if (!isNil "FLO_virtualGroups") then {
 } else { 0 };
 diag_log format ["[FLO_INIT_P4] Created %1 virtual groups", _groupCount];
 
-// Ensure PFH update loop is running (started by initVirtualization, but verify)
-if (isNil "FLO_VirtUpdate" || {!(FLO_VirtUpdate get "running")}) then {
-    diag_log "[FLO_INIT_P4] Starting virtualization PFH...";
-    ["start"] call FLO_fnc_virtualizationUpdatePFH;
-} else {
-    diag_log "[FLO_INIT_P4] Virtualization PFH already running";
-};
+[] call FLO_fnc_virtualizationReconcileTransportState;
 
-// Initialize virtual transport system
-diag_log "[FLO_INIT_P4] Initializing virtual transport system...";
-[] call FLO_fnc_transportConfig;
-[] call FLO_fnc_transportPool;
+diag_log "[FLO_INIT_P4] Starting virtualization PFH...";
+["start"] call FLO_fnc_virtualizationUpdatePFH;
 
 call _fnc_startRadarDataLink;
 
