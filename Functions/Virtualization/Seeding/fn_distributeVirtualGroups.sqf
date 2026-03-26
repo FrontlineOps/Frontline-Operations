@@ -119,10 +119,10 @@ for "_i" from 1 to _remainingGroups do {
 
     if (_groupType in ["motorized", "mechanized"]) then {
         private _carrierData = (FLO_virtualGroups get "_groups") get _groupId;
-        private _dismountGroupId = [_groupId, _carrierData, true] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
-        if (_dismountGroupId != "") then {
-            _createdGroups pushBack _dismountGroupId;
-        };
+        private _dismountGroupIds = [_groupId, _carrierData, true] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
+        {
+            _createdGroups pushBack _x;
+        } forEach _dismountGroupIds;
     };
 
     // Log creation

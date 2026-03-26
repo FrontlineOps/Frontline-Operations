@@ -40,7 +40,9 @@ class VirtualizationRegistry {
     class virtualizationBuildGroupData    {};
     class virtualizationSelectInitialAssetComposition {};
     class virtualizationGetOrganicPackageInfantryCount {};
+    class virtualizationGetOrganicPackageInfantryCounts {};
     class virtualizationCreateOrganicPackageDismount {};
+    class virtualizationRollbackOrganicPackageCreation {};
     class virtualizationSetEnabled       {};
     class virtualizationGetGroup         {};
     class virtualizationAddGroup         {};
@@ -134,6 +136,7 @@ class VirtualizationTransport {
     class transportDetach       {};
     class transportDetachAll    {};
     class transportProcessActiveCarrier {};
+    class transportProcessVirtualCarrier {};
     class transportMountActivePassengerGroup {};
     class transportRequest      {};
     class transportDismount     {};

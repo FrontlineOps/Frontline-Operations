@@ -28,6 +28,8 @@ if (count _waypoints > 0 && {_currentWpIdx < count _waypoints}) then {
         [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
         _virtStats set ["virtualMovesTotal", (_virtStats get "virtualMovesTotal") + 1];
         _virtStats set ["virtualMovesThisBatch", (_virtStats get "virtualMovesThisBatch") + 1];
+
+        [_groupId, _groupData, _newPos] call FLO_fnc_transportProcessVirtualCarrier;
     } else {
         if (_distToWp <= _completionRadius) then {
             [_groupId, _groupData, _currentWpIdx, _waypoints] call FLO_fnc_virtualizationAdvanceWaypoint;
