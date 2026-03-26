@@ -9,12 +9,19 @@
  *   0: GTN world state <HASHMAPOBJECT>
  *
  * Return Value:
- *   ARRAY [groupMarkers, concentrationMarkers]
+ *   HASHMAP - Normalized commander picture
  */
 
 params [["_worldState", nil]];
 
-if (isNil "_worldState") exitWith { [[], []] };
+if (isNil "_worldState") exitWith {
+    createHashMapFromArray [
+        ["enemyGroups", []],
+        ["enemyConcentrations", []],
+        ["friendlyGroups", []],
+        ["supportMarkers", []]
+    ]
+};
 
 private _sideKey = _worldState get "_sideKey";
 private _enemySide = _worldState get "_enemySide";
@@ -24,7 +31,7 @@ private _engagementGroups = _engagementPicture get "groups";
 private _freshSeconds = _worldState get "_enemyEngagementFreshSeconds";
 private _enemyColor = if (_enemySide isEqualTo east) then { "ColorOPFOR" } else { "ColorBLUFOR" };
 
-private _groupMarkers = [];
+private _enemyGroupMarkers = [];
 {
     private _groupId = _x;
     private _entry = _y;
@@ -59,7 +66,7 @@ private _groupMarkers = [];
         _label = "ENY CONTACT";
     };
 
-    _groupMarkers pushBack [
+    _enemyGroupMarkers pushBack [
         format ["FLO_GTN_INTEL_%1_GRP_%2", _sideKey, _groupId],
         _entry get "position",
         _markerType,
@@ -70,7 +77,7 @@ private _groupMarkers = [];
     ];
 } forEach _engagementGroups;
 
-private _concentrationMarkers = [];
+private _enemyConcentrationMarkers = [];
 private _concentrationFreshSeconds = _freshSeconds * 2;
 {
     private _lastSeen = _x get "lastSeen";
@@ -84,7 +91,7 @@ private _concentrationFreshSeconds = _freshSeconds * 2;
     private _radius = 150 + ((_strength min 12) * 25);
     if (_radius > 450) then { _radius = 450; };
 
-    _concentrationMarkers pushBack [
+    _enemyConcentrationMarkers pushBack [
         format ["FLO_GTN_INTEL_%1_CON_%2", _sideKey, _forEachIndex],
         _x get "position",
         [_radius, _radius],
@@ -94,4 +101,9 @@ private _concentrationFreshSeconds = _freshSeconds * 2;
     ];
 } forEach (_enemyIntel get "concentrations");
 
-[_groupMarkers, _concentrationMarkers]
+createHashMapFromArray [
+    ["enemyGroups", _enemyGroupMarkers],
+    ["enemyConcentrations", _enemyConcentrationMarkers],
+    ["friendlyGroups", [_worldState] call FLO_fnc_gtnBuildFriendlyCommanderGroupMarkers],
+    ["supportMarkers", [_worldState] call FLO_fnc_gtnBuildFriendlySupportMarkers]
+]

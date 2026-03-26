@@ -440,11 +440,13 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 intel | published=%2 groups=%3 concentrations=%4",
+                "[FLO][PERF] GTN commander %1 intel | published=%2 enemyGroups=%3 concentrations=%4 friendlyGroups=%5 support=%6",
                 _self get "_sideKey",
                 _intelPublishMetrics get "published",
                 _intelPublishMetrics get "groupCount",
-                _intelPublishMetrics get "concentrationCount"
+                _intelPublishMetrics get "concentrationCount",
+                _intelPublishMetrics get "friendlyGroupCount",
+                _intelPublishMetrics get "supportMarkerCount"
             ];
 
             diag_log format [

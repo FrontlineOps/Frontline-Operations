@@ -380,7 +380,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
             // Non-live area: keep support entirely virtual.
             if (!_isLiveArea) exitWith {
                 [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
-                (_self get "missions") set [_gid, diag_tickTime];
+                private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, createHashMap] call FLO_fnc_gtnBuildArtilleryMissionRecord;
+                (_self get "missions") set [_gid, _missionRecord];
                 if (_cooldownKey != "") then {
                     (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
                 };
@@ -422,7 +423,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
             [_gdata, "ARTILLERY", "LIVE_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
 
             // Register mission
-            (_self get "missions") set [_gid, diag_tickTime];
+            private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, _firePlan] call FLO_fnc_gtnBuildArtilleryMissionRecord;
+            (_self get "missions") set [_gid, _missionRecord];
             if (_cooldownKey != "") then {
                 (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
             };

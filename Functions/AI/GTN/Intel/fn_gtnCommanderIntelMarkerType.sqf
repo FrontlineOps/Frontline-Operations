@@ -6,7 +6,7 @@
  *
  * Arguments:
  *   0: Group type <STRING>
- *   1: Enemy side <SIDE>
+ *   1: Marker side <SIDE>
  *
  * Return Value:
  *   Marker type <STRING>
@@ -14,10 +14,10 @@
 
 params [
     ["_groupType", "", [""]],
-    ["_enemySide", east]
+    ["_markerSide", east]
 ];
 
-private _prefix = if (_enemySide isEqualTo east) then { "o" } else { "b" };
+private _prefix = if (_markerSide isEqualTo east) then { "o" } else { "b" };
 
 switch (_groupType) do {
     case "armor": { format ["%1_armor", _prefix] };

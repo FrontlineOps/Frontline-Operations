@@ -72,7 +72,10 @@ class FLO {
     class GTNIntel {
         file = "Functions\AI\GTN\Intel";
 
+        class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
+        class gtnBuildFriendlyCommanderGroupMarkers {};
+        class gtnBuildFriendlySupportMarkers {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
@@ -119,6 +122,7 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnBuildArtilleryMissionRecord {};
         class gtnCollectArtilleryVehicles {};
         class gtnBuildArtilleryFirePlan {};
         class gtnArtilleryGetAvailableGroups {};
