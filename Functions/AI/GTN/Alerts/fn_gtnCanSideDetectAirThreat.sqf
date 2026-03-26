@@ -38,5 +38,6 @@ private _radarGroupIds = ["queryRadius", [_airPos, 50000, _detectingSide, true]]
     private _groupType = _groupData get "groupType";
     if !(_groupType in ["static_aa", "radar", "mobile_aa"]) exitWith { false };
 
-    (_groupData get "alwaysActive") || { _groupData get "isActive" }
+    private _isDetecting = (_groupData get "alwaysActive") || (_groupData get "isActive");
+    _isDetecting
 }) >= 0
