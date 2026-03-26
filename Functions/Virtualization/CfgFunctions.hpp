@@ -239,6 +239,7 @@ class VirtualizationUtilities {
     class getRoadParkingPos       {};
     class getSafeLandPos          {};
     class getSafeUnvirtualizePos  {};
+    class virtualizationNormalizePosition {};
     class virtualizationEstimateVehicleCrewCount {};
     class virtualizationGetGroupUnitLoad {};
     class virtualizationGetRealAssetVehicles {};

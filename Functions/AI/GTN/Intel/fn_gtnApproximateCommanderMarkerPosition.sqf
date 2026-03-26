@@ -20,6 +20,8 @@ params [
     ["_precision", 0, [0]]
 ];
 
+_position = [_position] call FLO_fnc_virtualizationNormalizePosition;
+if ((count _position) < 3) exitWith { _position };
 if (_precision <= 0 || {_markerKey isEqualTo ""}) exitWith { _position };
 
 private _chars = toArray _markerKey;

@@ -6,6 +6,7 @@ params ["_virt", "_groupId", "_newPosition"];
 
 private _groupData = (_virt get "_groups") get _groupId;
 if (isNil "_groupData") exitWith { false };
+_newPosition = [_newPosition] call FLO_fnc_virtualizationNormalizePosition;
 if ((_newPosition select 0) <= 100 && (_newPosition select 1) <= 100) exitWith { false };
 
 private _oldPosition = _groupData get "position";
