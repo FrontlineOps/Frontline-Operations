@@ -52,6 +52,7 @@ class FLO {
     class GTNCoreLogic {
         file = "Functions\AI\GTN\Core\Logic";
 
+        class gtnAllocateAttackTrackPools {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
         class gtnBuildAttackReachability {};
@@ -65,6 +66,7 @@ class FLO {
         class gtnIsEngagementRouteActive {};
         class gtnPickObjectiveGarrisonPosition {};
         class gtnRestoreStrategicGroupRoute {};
+        class gtnSelectBestReserveGroupForTrack {};
         class gtnSelectGroupEngagementTarget {};
         class gtnUpdateAttackTrackPhases {};
     };
