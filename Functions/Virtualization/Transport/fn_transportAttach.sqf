@@ -51,7 +51,16 @@ if (_currentLoad + _infUnitCount > _capacity) exitWith {
 // Perform attachment
 [_infData, _transportGroupId, if (_groupType in ["helicopter"]) then {"AIR"} else {"GROUND"}] call FLO_fnc_virtualizationSetTransportAttachment;
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
-[FLO_virtualGroups, _infantryGroupId, _transData get "position"] call FLO_fnc_virtualizationUpdateGroupPosition;
+private _transportPos = _transData get "position";
+if !([_transportPos, true, format [
+    "transportAttach infantry=%1 transport=%2 transportType=%3",
+    _infantryGroupId,
+    _transportGroupId,
+    _groupType
+]] call FLO_fnc_validateGroupPosition) exitWith {
+    false
+};
+[FLO_virtualGroups, _infantryGroupId, _transportPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
 [_transData, _infantryGroupId] call FLO_fnc_virtualizationAddTransportPassenger;
 

@@ -20,6 +20,14 @@ private _homeObjective = _carrierData get "homeObjective";
 private _side = _carrierData get "side";
 
 private _dismountGroupId = [_position, "infantry", nil, _homeObjective, _dismountCount, _side] call FLO_fnc_createVirtualGroup;
+if (_dismountGroupId == "") then {
+    throw format [
+        "FLO_fnc_virtualizationCreateOrganicPackageDismount: failed to create organic dismount for %1 due to invalid carrier position %2",
+        _carrierGroupId,
+        _position
+    ];
+};
+
 private _groups = FLO_virtualGroups get "_groups";
 private _dismountData = _groups get _dismountGroupId;
 
