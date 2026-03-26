@@ -397,7 +397,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 if (_targetSide in [east, west]) then {
                     [_self, _gid, _gdata, _targetSide, _missionRecord] call FLO_fnc_gtnRecordCounterBatteryExposure;
                 };
-                [_requestSide, _targetPos, _rounds, _missionRecord get "etaMin", _missionRecord get "etaMax", _requestKind] call FLO_fnc_gtnBroadcastArtilleryRadio;
+                [_requestSide, _missionRecord] call FLO_fnc_gtnBroadcastArtilleryRadio;
 
                 private _losses = _self call ["_applyVirtualFireEffect", [_gdata get "side", _targetPos, _rounds, _accuracy]];
                 private _missionDuration = (40 + (_rounds * 4)) min 180;
@@ -444,7 +444,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
             if (_targetSide in [east, west]) then {
                 [_self, _gid, _gdata, _targetSide, _missionRecord] call FLO_fnc_gtnRecordCounterBatteryExposure;
             };
-            [_requestSide, _targetPos, _rounds, _missionRecord get "etaMin", _missionRecord get "etaMax", _requestKind] call FLO_fnc_gtnBroadcastArtilleryRadio;
+            [_requestSide, _missionRecord] call FLO_fnc_gtnBroadcastArtilleryRadio;
 
             // Spawn the fire mission process
             [_gid, _gdata, _realGroup, _targetPos, _rounds, _accuracy, _firePlan, _self] spawn FLO_fnc_gtnArtilleryFireMission;

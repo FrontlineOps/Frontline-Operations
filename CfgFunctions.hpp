@@ -129,6 +129,8 @@ class FLO {
         class gtnCollectArtilleryVehicles {};
         class gtnBuildArtilleryFirePlan {};
         class gtnCommanderRadioMessage {};
+        class gtnProcessArtilleryRadioQueue {};
+        class gtnQueueArtilleryRadioMission {};
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};

@@ -71,6 +71,7 @@ if (count (keys _firePlan) > 0) then {
 };
 
 private _issuedAt = diag_tickTime;
+private _missionId = [] call FLO_fnc_createUUID;
 private _etaEnd = _etaMax;
 if (_etaEnd < _etaMin) then {
     _etaEnd = _etaMin;
@@ -80,6 +81,7 @@ if (_etaEnd < 0) then {
 };
 
 createHashMapFromArray [
+    ["missionId", _missionId],
     ["groupId", _groupId],
     ["side", _groupData get "side"],
     ["targetPos", _targetPos],
