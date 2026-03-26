@@ -64,11 +64,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                             [_newData, _groupData] call FLO_fnc_virtualizationRestoreSavedGroup;
                             _loadedCount = _loadedCount + 1;
                         };
+                    } else {
+                        _skippedCount = _skippedCount + 1;
                     };
                 };
             } forEach (keys _savedGroups);
 
-            // diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save (skipped %2 invalid)", _loadedCount, _skippedCount];
+            diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save (skipped %2 invalid)", _loadedCount, _skippedCount];
         };
 
         // Mark as initialized and start PFH
