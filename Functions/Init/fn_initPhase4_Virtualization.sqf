@@ -22,12 +22,7 @@ private _fnc_startRadarDataLink = {
 };
 
 if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
-    diag_log "[FLO_INIT_P4] Virtualization already initialized";
-
-    if !(FLO_VirtUpdate get "running") then {
-        diag_log "[FLO_INIT_P4] Restarting virtualization PFH";
-        ["start"] call FLO_fnc_virtualizationUpdatePFH;
-    };
+    diag_log "[FLO_INIT_P4] Virtualization already initialized (PFH start deferred to Phase 5)";
 
     call _fnc_startRadarDataLink;
     true
@@ -89,11 +84,10 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         [] call FLO_fnc_virtualizationReconcileTransportState;
 
-        // Mark as initialized and start PFH
+        // Mark as initialized; PFH start is deferred to Phase 5 so startup
+        // work does not compete with virtualization updates.
         InitializationOG = true;
         publicVariable "InitializationOG";
-
-        ["start"] call FLO_fnc_virtualizationUpdatePFH;
         _initializedFromSave = true;
 
         diag_log "[FLO_INIT_P4] Virtualization loaded from save - complete";
@@ -149,9 +143,6 @@ private _groupCount = if (!isNil "FLO_virtualGroups") then {
 diag_log format ["[FLO_INIT_P4] Created %1 virtual groups", _groupCount];
 
 [] call FLO_fnc_virtualizationReconcileTransportState;
-
-diag_log "[FLO_INIT_P4] Starting virtualization PFH...";
-["start"] call FLO_fnc_virtualizationUpdatePFH;
 
 call _fnc_startRadarDataLink;
 
