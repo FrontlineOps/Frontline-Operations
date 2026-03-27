@@ -109,27 +109,25 @@ private _pfhId = [{
                 };
             } forEach (_eastRefs + _westRefs);
 
-            if ((_activationDemand + (FLO_VirtUpdate get "activeUnitCount")) > (FLO_virtualGroups get "_activationUnitCap")) then {
+            if ((_activationDemand + (FLO_VirtUpdate get "activeUnitCount")) <= (FLO_virtualGroups get "_activationUnitCap")) then {
+                {
+                    _x params ["_groupId", "_gData"];
+                    if !(_gData get "isActive") then {
+                        if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                            continue;
+                        };
+                    };
+                    [_gData] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
+                } forEach (_eastRefs + _westRefs);
+
+                ["GTN_COMBAT", 3, format [
+                    "Live combat handoff near %1m for %2 EAST groups vs %3 WEST groups",
+                    round _contactDist,
+                    count _eastRefs,
+                    count _westRefs
+                ]] call FLO_fnc_log;
                 continue;
             };
-
-            {
-                _x params ["_groupId", "_gData"];
-                if !(_gData get "isActive") then {
-                    if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
-                        continue;
-                    };
-                };
-                [_gData] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
-            } forEach (_eastRefs + _westRefs);
-
-            ["GTN_COMBAT", 3, format [
-                "Live combat handoff near %1m for %2 EAST groups vs %3 WEST groups",
-                round _contactDist,
-                count _eastRefs,
-                count _westRefs
-            ]] call FLO_fnc_log;
-            continue;
         };
 
         private _eastStats = [_eastRefs] call FLO_fnc_gtnCombatSidePower;

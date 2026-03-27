@@ -2076,7 +2076,6 @@ private _gtnCommander = createHashMapObject [[
             _gData set ["forceVirtual", false];
             _gData set ["waypoints", []];
             _gData set ["currentWaypointIndex", 0];
-            _gData set ["alwaysActive", true];
             _gData set ["noWaypoints", true];
             [_gData, "DEPLOYED", _targetPos, [_gData] call FLO_fnc_virtualizationGetAATargetObjective, _gData get "isStrategicAA"] call FLO_fnc_virtualizationSetAADeployState;
 
@@ -2084,11 +2083,13 @@ private _gtnCommander = createHashMapObject [[
                 if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
                     continue;
                 };
-            } else {
-                private _realGroup = _gData get "realGroup";
-                if (!isNull _realGroup) then {
-                    [_realGroup] call CBA_fnc_clearWaypoints;
-                };
+            };
+
+            _gData set ["alwaysActive", true];
+
+            private _realGroup = _gData get "realGroup";
+            if (!isNull _realGroup) then {
+                [_realGroup] call CBA_fnc_clearWaypoints;
             };
 
             ["GTN", 3, format[

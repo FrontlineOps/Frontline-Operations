@@ -67,11 +67,11 @@ private _allObjectives = keys FLO_Objectives;
             [_groupId, _groupData] call FLO_fnc_virtualizationAssignAutoPatrol;
 
             if ((_groupData get "groupType") == "static_aa") then {
-                _groupData set ["alwaysActive", true]; // Prevent deactivation
                 if ([_groupId, _groupData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                    _groupData set ["alwaysActive", true]; // Prevent deactivation once truly live
                     ["VIRTUALIZATION", 3, format["Static AA %1 activated immediately (always-on)", _groupId]] call FLO_fnc_log;
                 } else {
-                    ["VIRTUALIZATION", 3, format["Static AA %1 flagged always-on but deferred by activation cap", _groupId]] call FLO_fnc_log;
+                    ["VIRTUALIZATION", 3, format["Static AA %1 deferred by activation cap", _groupId]] call FLO_fnc_log;
                 };
             };
         } forEach _objectiveGroups;
