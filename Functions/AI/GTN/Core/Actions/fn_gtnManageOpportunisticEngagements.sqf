@@ -32,10 +32,12 @@ private _metrics = createHashMapFromArray [
 private _ws = _gtnCommander get "_worldState";
 private _engagementPicture = _ws call ["_getEnemyEngagementPicture", []];
 private _engagementGroups = _engagementPicture get "groups";
+private _attackCandidateIds = keys _engagementGroups;
 private _config = _gtnCommander get "_config";
 private _groups = FLO_virtualGroups get "_groups";
 private _ownSide = _gtnCommander get "_ownSide";
 private _assignmentState = createHashMap;
+private _assignmentCapCache = createHashMap;
 
 _metrics set ["pictureGroups", _engagementPicture get "groupCount"];
 _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
@@ -47,7 +49,8 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
 
     private _targetGroupId = _groupData get "engagementTargetGroupId";
     if (_targetGroupId == "") then { continue };
-    if !(_targetGroupId in (keys _engagementGroups)) then { continue };
+    private _targetData = _engagementGroups get _targetGroupId;
+    if (isNil "_targetData") then { continue };
 
     private _groupLoad = [_groupData, false] call FLO_fnc_virtualizationGetGroupUnitLoad;
     [_assignmentState, _targetGroupId, 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
@@ -77,14 +80,16 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
         continue;
     };
 
+    private _groupContext = [_groupData, _config] call FLO_fnc_gtnBuildGroupEngagementContext;
+
     if (_groupData get "engagementActive") then {
         _metrics set ["activeEngagements", (_metrics get "activeEngagements") + 1];
 
         private _targetGroupId = _groupData get "engagementTargetGroupId";
-        private _targetData = _engagementGroups getOrDefault [_targetGroupId, createHashMap];
-        if (count (keys _targetData) > 0) then {
-            private _evaluation = [_groupData, _targetData, _config] call FLO_fnc_gtnEvaluateGroupEngagementTarget;
-            if (count (keys _evaluation) > 0) then {
+        private _targetData = _engagementGroups get _targetGroupId;
+        if !(isNil "_targetData") then {
+            private _evaluation = [_groupData, _targetData, _config, _groupContext] call FLO_fnc_gtnEvaluateGroupEngagementTarget;
+            if (count _evaluation > 0) then {
                 _groupData set ["engagementExpiresAt", diag_tickTime + (_config get "engagementDurationSeconds")];
 
                 private _targetPos = _targetData get "position";
@@ -98,9 +103,9 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
                     ["targetGroupId", _targetGroupId],
                     ["targetPos", _targetPos],
                     ["targetObjective", if (_order == "DEFEND") then { _groupData get "defendObjective" } else { if (_order == "GARRISON") then { _groupData get "garrisonObjective" } else { _groupData get "attackObjective" } }],
-                    ["reason", _evaluation get "reason"],
-                    ["leashMeters", _evaluation get "leashMeters"],
-                    ["score", _evaluation get "score"]
+                    ["reason", _evaluation select 1],
+                    ["leashMeters", _evaluation select 2],
+                    ["score", _evaluation select 0]
                 ];
 
                 if ([_groupId, _groupData, _target, _config] call FLO_fnc_gtnApplyGroupEngagement) then {
@@ -119,8 +124,17 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
         continue;
     };
 
-    private _target = [_groupData, _engagementPicture, _config, _assignmentState] call FLO_fnc_gtnSelectGroupEngagementTarget;
-    if (count (keys _target) == 0) then { continue };
+    private _target = [
+        _groupData,
+        _engagementPicture,
+        _config,
+        _assignmentState,
+        _groupContext,
+        _attackCandidateIds,
+        _assignmentCapCache
+    ] call FLO_fnc_gtnSelectGroupEngagementTarget;
+    private _targetGroupId = _target get "targetGroupId";
+    if (isNil "_targetGroupId" || {_targetGroupId == ""}) then { continue };
 
     if ([_groupId, _groupData, _target, _config] call FLO_fnc_gtnApplyGroupEngagement) then {
         [_assignmentState, _target get "targetGroupId", 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;

@@ -56,6 +56,7 @@ class FLO {
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
         class gtnBuildEnemyEngagementPicture {};
+        class gtnBuildGroupEngagementContext {};
         class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};

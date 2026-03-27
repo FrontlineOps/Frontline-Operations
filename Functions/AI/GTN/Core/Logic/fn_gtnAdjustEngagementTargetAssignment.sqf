@@ -19,24 +19,14 @@ params ["_assignmentState", "_targetGroupId", "_countDelta", "_loadDelta"];
 
 if (_targetGroupId == "") exitWith { false };
 
-private _entry = if (_targetGroupId in (keys _assignmentState)) then {
-    _assignmentState get _targetGroupId
-} else {
-    createHashMapFromArray [
-        ["count", 0],
-        ["load", 0]
-    ]
-};
-
-private _newCount = ((_entry get "count") + _countDelta) max 0;
-private _newLoad = ((_entry get "load") + _loadDelta) max 0;
+private _entry = _assignmentState getOrDefault [_targetGroupId, [0, 0]];
+private _newCount = ((_entry select 0) + _countDelta) max 0;
+private _newLoad = ((_entry select 1) + _loadDelta) max 0;
 
 if (_newCount <= 0 && {_newLoad <= 0}) then {
     _assignmentState deleteAt _targetGroupId;
 } else {
-    _entry set ["count", _newCount];
-    _entry set ["load", _newLoad];
-    _assignmentState set [_targetGroupId, _entry];
+    _assignmentState set [_targetGroupId, [_newCount, _newLoad]];
 };
 
 true
