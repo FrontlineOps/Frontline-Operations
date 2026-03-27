@@ -58,6 +58,14 @@ private _poolUnits = _pools get "units";
     if (!isNull _infGroup && {_attachedSide in [east, west, independent]} && {_attachedSide != civilian}) then {
         _infGroup = [_infGroup, _attachedSide] call FLO_fnc_setSide;
     };
+    if (isNull _infGroup) then {
+        ["VIRTUALIZATION", 1, format [
+            "Transport %1 failed to activate attached group %2 - side correction returned null group",
+            _groupId,
+            _attachedId
+        ]] call FLO_fnc_log;
+        continue;
+    };
 
     [_attachedData, _infGroup] call FLO_fnc_virtualizationSetRealGroup;
     [_attachedData] call FLO_fnc_virtualizationClearRealVehicles;

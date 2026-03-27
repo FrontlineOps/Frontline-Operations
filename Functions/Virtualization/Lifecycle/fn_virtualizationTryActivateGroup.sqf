@@ -4,7 +4,19 @@
 
 params ["_groupId", "_groupData"];
 
-if (_groupData get "isActive") exitWith { true };
+if (_groupData get "isActive") exitWith {
+    private _realGroup = _groupData get "realGroup";
+    if (isNull _realGroup) then {
+        ["VIRTUALIZATION", 1, format [
+            "Activation invariant violated for %1 (%2): group marked active with null realGroup",
+            _groupId,
+            _groupData get "groupType"
+        ]] call FLO_fnc_log;
+        false
+    } else {
+        true
+    }
+};
 
 private _activeUnitCount = FLO_VirtUpdate get "activeUnitCount";
 private _activationLoad = [_groupData, true] call FLO_fnc_virtualizationGetGroupUnitLoad;

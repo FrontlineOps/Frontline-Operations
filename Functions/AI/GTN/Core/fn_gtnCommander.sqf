@@ -2078,14 +2078,13 @@ private _gtnCommander = createHashMapObject [[
             _gData set ["currentWaypointIndex", 0];
             _gData set ["noWaypoints", true];
             [_gData, "DEPLOYED", _targetPos, [_gData] call FLO_fnc_virtualizationGetAATargetObjective, _gData get "isStrategicAA"] call FLO_fnc_virtualizationSetAADeployState;
+            _gData set ["alwaysActive", true];
 
             if !(_gData get "isActive") then {
                 if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
                     continue;
                 };
             };
-
-            _gData set ["alwaysActive", true];
 
             private _realGroup = _gData get "realGroup";
             if (!isNull _realGroup) then {

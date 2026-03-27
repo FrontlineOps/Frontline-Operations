@@ -102,9 +102,12 @@ private _pfhId = [{
         private _liveArea = [_zonePos, _liveAreaRadius] call FLO_fnc_gtnCombatIsLiveArea;
         if (_liveArea) then {
             private _activationDemand = 0;
+            private _activeRefs = [];
             {
                 _x params ["_groupId", "_gData"];
-                if !(_gData get "isActive") then {
+                if (_gData get "isActive") then {
+                    _activeRefs pushBack _x;
+                } else {
                     _activationDemand = _activationDemand + ([_gData, true] call FLO_fnc_virtualizationGetGroupUnitLoad);
                 };
             } forEach (_eastRefs + _westRefs);
@@ -128,6 +131,20 @@ private _pfhId = [{
                 ]] call FLO_fnc_log;
                 continue;
             };
+
+            {
+                [_x select 1] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
+            } forEach _activeRefs;
+
+            ["GTN_COMBAT", 3, format [
+                "Live combat near %1m could not fully hand off: demand=%2 activeUnits=%3 cap=%4 activeGroups=%5 - skipping virtual resolution",
+                round _contactDist,
+                _activationDemand,
+                FLO_VirtUpdate get "activeUnitCount",
+                FLO_virtualGroups get "_activationUnitCap",
+                count _activeRefs
+            ]] call FLO_fnc_log;
+            continue;
         };
 
         private _eastStats = [_eastRefs] call FLO_fnc_gtnCombatSidePower;
