@@ -176,6 +176,9 @@ for "_i" from 1 to _batchSize do {
     _attempted = _attempted + 1;
 
     private _cost = _groupCosts get _groupType;
+    if !(_cost isEqualType 0) then {
+        throw format ["[LOGISTICS] Missing numeric reinforcement cost for group type %1", _groupType];
+    };
     private _targetPool = if (_groupType isEqualTo "static_aa") then {
         [_net] call FLO_fnc_logisticsNetworkGetRearAATargets
     } else {

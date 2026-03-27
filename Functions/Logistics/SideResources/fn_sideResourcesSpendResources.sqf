@@ -25,6 +25,9 @@ private _efficiencyFloor = _resourceObj get "EFFICIENCY_FLOOR";
 private _efficiencyRecovery = _resourceObj get "EFFICIENCY_RECOVERY";
 
 private _current = _resourceObj get "_resources";
+if !(_current isEqualType 0) then {
+    throw format ["[SIDE_RES] Invalid resource total before spending %1: %2", _type, _current];
+};
 if (_current < _threshold) exitWith { false };
 if (_current < _cost) exitWith { false };
 
