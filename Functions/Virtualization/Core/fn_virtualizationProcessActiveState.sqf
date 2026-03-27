@@ -33,20 +33,17 @@ if (!isNull _leader && {alive _leader}) then {
     };
 };
 
-private _lastChange = _groupData get "lastStateChangeTime";
-if (_now - _lastChange > 5) then {
-    private _eliminated = if (_tracksAssets) then {
-        count ([_groupData, _realGroup] call FLO_fnc_virtualizationGetRealAssetVehicles) == 0
-    } else {
-        ({alive _x} count units _realGroup) == 0
-    };
+private _eliminated = if (_tracksAssets) then {
+    count ([_groupData, _realGroup] call FLO_fnc_virtualizationGetRealAssetVehicles) == 0
+} else {
+    ({alive _x} count units _realGroup) == 0
+};
 
-    if (_eliminated) then {
-        ["VIRTUALIZATION", 3, format["Group %1 eliminated - deactivating for cleanup", _groupId]] call FLO_fnc_log;
-        [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
-        _virtStats set ["eliminatedGroupsTotal", (_virtStats get "eliminatedGroupsTotal") + 1];
-        _virtStats set ["eliminatedGroupsThisBatch", (_virtStats get "eliminatedGroupsThisBatch") + 1];
-    };
+if (_eliminated) then {
+    ["VIRTUALIZATION", 3, format["Group %1 eliminated - deactivating for cleanup", _groupId]] call FLO_fnc_log;
+    [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
+    _virtStats set ["eliminatedGroupsTotal", (_virtStats get "eliminatedGroupsTotal") + 1];
+    _virtStats set ["eliminatedGroupsThisBatch", (_virtStats get "eliminatedGroupsThisBatch") + 1];
 };
 
 true
