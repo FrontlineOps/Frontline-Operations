@@ -133,7 +133,7 @@ private _rankedCandidates = [];
     ];
 } forEach _candidateObjectives;
 _rankedCandidates sort true;
-_candidateObjectives = _rankedCandidates apply { _x select 4 };
+_candidateObjectives = _rankedCandidates apply { _x select 5 };
 
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
