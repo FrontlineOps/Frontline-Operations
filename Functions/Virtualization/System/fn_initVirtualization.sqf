@@ -45,8 +45,8 @@ FLO_virtualGroups = createHashMapFromArray [
 // Initialize spatial index for fast proximity queries
 [500] call FLO_fnc_virtualizationSpatialInit;
 
-// Initialize shared update/budget state before any pre-PFH activations occur.
-call FLO_fnc_virtualizationEnsureUpdateState;
+// Rebuild ephemeral update state for each mission init
+[25, 1, true] call FLO_fnc_virtualizationEnsureUpdateState;
 
 // Register CBA event handlers for GTN/AI Commander integration
 ["init"] call FLO_fnc_virtualizationEvents;
