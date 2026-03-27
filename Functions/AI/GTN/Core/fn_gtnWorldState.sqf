@@ -64,7 +64,7 @@ private _worldState = createHashMapObject [[
     // Enemy intel
     ["_enemyIntel", createHashMapFromArray [
         ["knownPositions", []],
-        ["contactReports", []],    // [Pos, Time, Strength, Type, Confidence]
+        ["contactReports", []],    // [Pos, Time, Strength, Type, Confidence, SourceObject?]
         ["estimatedStrength", 0],
         ["lastContactTime", 0],
         ["threatLevel", 0],
@@ -420,8 +420,8 @@ private _worldState = createHashMapObject [[
                         } forEach _contacts;
 
                         if (_isNew) then {
-                            // Create contact report: [Pos, Time, Strength(1), Type, Confidence]
-                            _contacts pushBack [_pos, diag_tickTime, 1, _type, _acc];
+                            // Create contact report: [Pos, Time, Strength(1), Type, Confidence, SourceObject]
+                            _contacts pushBack [_pos, diag_tickTime, 1, _type, _acc, _obj];
                             _newContacts pushBack [_pos, _type];
                         };
                     };

@@ -28,6 +28,7 @@ if (count _targetPos < 2) exitWith { _result };
 private _targetOrder = _targetData get "commanderOrder";
 private _targetType = _targetData get "groupType";
 private _objectiveIds = _targetData get "objectiveIds";
+private _isPlayerControlled = _targetData get "isPlayerControlled";
 private _ageSeconds = diag_tickTime - (_targetData get "lastSeen");
 private _targetOrderBonus = switch (_targetOrder) do {
     case "GARRISON": { 22 };
@@ -46,6 +47,7 @@ private _targetTypeBonus = switch (_targetType) do {
     default { 8 };
 };
 private _freshnessBonus = ((_config get "engagementFreshSeconds") - (_ageSeconds min (_config get "engagementFreshSeconds"))) / 12;
+private _playerBonus = if (_isPlayerControlled) then { 12 } else { 0 };
 
 switch (_order) do {
     case "ATTACK": {
@@ -95,7 +97,7 @@ switch (_order) do {
         };
 
         _result = createHashMapFromArray [
-            ["score", 20 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _objectiveBonus + _proximityScore + ((_targetData get "contactCount") * 3)],
+            ["score", 20 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _playerBonus + _objectiveBonus + _proximityScore + ((_targetData get "contactCount") * 3)],
             ["reason", _reason],
             ["leashMeters", _config get "attackEngagementLeashMeters"]
         ];
@@ -121,7 +123,7 @@ switch (_order) do {
         };
 
         _result = createHashMapFromArray [
-            ["score", 15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25)],
+            ["score", 15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _playerBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25)],
             ["reason", "DEFEND_OBJECTIVE"],
             ["leashMeters", _leashMeters]
         ];
@@ -147,7 +149,7 @@ switch (_order) do {
         };
 
         _result = createHashMapFromArray [
-            ["score", 15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25)],
+            ["score", 15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _playerBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25)],
             ["reason", "GARRISON_OBJECTIVE"],
             ["leashMeters", _leashMeters]
         ];
