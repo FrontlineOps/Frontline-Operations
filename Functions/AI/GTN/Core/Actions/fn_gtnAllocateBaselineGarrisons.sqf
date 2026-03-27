@@ -38,7 +38,7 @@ private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
-private _assignableGroupTypes = ["infantry", "recon", "motorized", "mechanized", "armor"];
+private _assignableGroupTypes = ["infantry", "motorized", "mechanized", "armor"];
 
 private _garrisonGroupsByObjective = createHashMap;
 private _garrisonPositionsByObjective = createHashMap;

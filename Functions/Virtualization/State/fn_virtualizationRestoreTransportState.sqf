@@ -4,6 +4,20 @@
 
 params ["_groupData", "_savedData"];
 
+private _savedTransportRole = false;
+if ("transportRole" in _savedData) then {
+    _savedTransportRole = _savedData get "transportRole";
+};
+if !(_savedTransportRole isEqualType true) then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportRole type for %1: %2",
+        _groupData get "groupType",
+        typeName _savedTransportRole
+    ]] call FLO_fnc_log;
+    _savedTransportRole = false;
+};
+_groupData set ["transportRole", _savedTransportRole];
+
 private _savedIsTransport = false;
 if ("isTransport" in _savedData) then {
     _savedIsTransport = _savedData get "isTransport";

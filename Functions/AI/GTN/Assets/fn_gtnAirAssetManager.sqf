@@ -336,6 +336,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _gData = _y;
                 private _gType = _gData get "groupType";
                 if (_gType in ["helicopter", "jet", "air"]) then {
+                    if (_gData get "transportRole") then { continue };
                     if (_requestSide in [east, west] && {(_gData get "side") != _requestSide}) then {
                         continue;
                     };
@@ -654,6 +655,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _gData = _y;
                 private _gType = _gData get "groupType";
                 if (_gType in ["helicopter", "jet", "air"]) then {
+                    if (_gData get "transportRole") then { continue };
                     if !(_x in _missions) then {
                         _available pushBack _x;
                     };

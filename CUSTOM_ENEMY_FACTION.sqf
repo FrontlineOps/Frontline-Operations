@@ -9,22 +9,34 @@
  * These arrays define what types of units and vehicles can spawn in the mission.
 */
 
-// Predefined Groups from the config
-// Used as the primary groups for the virtualization system
-East_Groups = [
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSentry"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons")
+// Mixed infantry source. Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSentry"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons"),
+    "I_soldier_F", "I_soldier_F", "I_soldier_F", "I_soldier_F",
+    "I_Soldier_AR_F", "I_Soldier_AR_F",
+    "I_Soldier_CQ_F", "I_Soldier_CQ_F",
+    "I_Soldier_GL_F", "I_Soldier_GL_F",
+    "I_medic_F", "I_medic_F",
+    "I_Soldier_MG_F", "I_Soldier_MG_F",
+    "I_Soldier_M_F",
+    "I_Soldier_A_F",
+    "I_Soldier_LAT_F",
+    "I_Soldier_LAT2_F",
+    "I_Soldier_AT_F",
+    "I_Soldier_AA_F"
 ];
-// Ambient/Civilian-Like Ground Vehicles
-East_Ground_Vehicles_Ambient = ["I_MRAP_03_F"]; 
-// Light Military Ground Vehicles
-East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_APC_Wheeled_03_cannon_F"];
-// Heavy Ground Vehicles and Tanks
-East_Ground_Vehicles_Heavy = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F", "I_LT_01_AA_F", "I_APC_tracked_03_cannon_v2_F"]; 
+East_Ground_SpecOps = [];
+// Light wheeled combat vehicles
+East_Ground_Motorized = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F"];
+// APCs and IFVs
+East_Ground_Mechanized = ["I_APC_Wheeled_03_cannon_F", "I_APC_tracked_03_cannon_v2_F"];
+// Tanks and assault armor
+East_Ground_Armor = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F"];
 // Transport Ground Vehicles
 East_Ground_Transport = ["I_MRAP_03_F", "I_Truck_02_transport_F", "I_Truck_02_covered_F"]; 
 // Transport Air Vehicles
@@ -43,30 +55,8 @@ East_Mobile_AA = ["I_LT_01_AA_F"];
 East_Static_AA = ["O_SAM_System_04_F"];
 // Radar Systems
 East_Radar = ["O_Radar_System_02_F"];
-// Individual Infantry Units
-East_Units = [
-    // Regular infantry (high frequency)
-    "I_soldier_F", "I_soldier_F", "I_soldier_F", "I_soldier_F",  // Regular rifleman
-    "I_Soldier_AR_F", "I_Soldier_AR_F",                          // Autorifleman
-    "I_Soldier_CQ_F", "I_Soldier_CQ_F",                          // CQB specialist
-    "I_Soldier_GL_F", "I_Soldier_GL_F",                          // Grenadier
-    
-    // Support roles (medium frequency)
-    "I_medic_F", "I_medic_F",                                    // Medic
-    "I_Soldier_MG_F", "I_Soldier_MG_F",              // Machine gunner
-    "I_Soldier_M_F",                                             // Marksman
-    "I_Soldier_A_F",                                             // Ammo bearer
-    
-    // Specialists (low frequency)
-    "I_Soldier_LAT_F",                                           // Light AT
-    "I_Soldier_LAT2_F",                                          // Light AT
-    "I_Soldier_AT_F",                                            // AT Specialist
-    "I_Soldier_AA_F"                                             // AA Specialist
-];
 // Fire Observer Units for Artillery
 East_FireObserver = ["I_RadioOperator_F"];
-// Officer Units
-East_Units_Officers = ["I_officer_F"];
 
 /*
  * OPFOR Virtualization Objective Configuration

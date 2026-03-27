@@ -158,6 +158,52 @@ F_DVR_TEAM = [F_Diver_TL, F_Diver_Eod, F_Diver_Rfl, F_Diver_Eod];
 
 F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 
+// Normalized commander/virtualization faction schema
+West_Ground_Infantry = [
+    F_Assault_Eng,
+    F_Assault_TL,
+    F_Assault_SL,
+    F_Assault_Eod,
+    F_Assault_Mrk,
+    F_Assault_AT,
+    F_Assault_Amm,
+    F_Assault_Mg,
+    F_Assault_Med,
+    F_Assault_Uav
+];
+
+West_Ground_SpecOps = [
+    F_Recon_Snp,
+    F_Recon_Sct,
+    F_Recon_TL,
+    F_Recon_Mrk,
+    F_Recon_AT,
+    F_Recon_Mg,
+    F_Recon_Eod,
+    F_Recon_Med,
+    F_Recon_Eng,
+    F_Diver_TL,
+    F_Diver_Eod,
+    F_Diver_Rfl
+];
+
+West_Ground_Motorized = F_Car_List + F_MRAP_List;
+West_Ground_Mechanized = F_APC_List;
+West_Ground_Armor = F_Tank_List;
+West_Ground_Transport = F_Truck_List;
+West_Ground_Artillery = F_Artillery_List;
+West_Air_Heli = F_Heli_Gunship_List;
+West_Air_Jet = F_Plane_List;
+West_Air_Transport = F_Heli_List + F_Heli_Respawn_List;
+West_Air_Drone = F_UAV_List;
+West_Ground_Drone = F_UGV_List;
+West_Mobile_AA = [
+    ["B_APC_Tracked_01_AA_F", 200]
+];
+West_Static_AA = F_SAM_List;
+West_Radar = [F_RADAR];
+West_Boat = F_Boat_List;
+
 /*
  * BLUFOR Virtualization Objective Configuration
  * This section defines how many of each unit type should spawn at different

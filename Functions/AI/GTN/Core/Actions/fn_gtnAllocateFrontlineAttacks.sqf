@@ -158,7 +158,7 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             private _gData = _groups get _groupId;
             if (isNil "_gData") then { continue };
             if ((_gData get "side") != _ownSide) then { continue };
-            if !((_gData get "groupType") in ["infantry", "recon", "motorized", "mechanized", "armor"]) then { continue };
+            if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
 
             private _groupPos = _gData get "position";
             private _homeObjective = _gData get "homeObjective";

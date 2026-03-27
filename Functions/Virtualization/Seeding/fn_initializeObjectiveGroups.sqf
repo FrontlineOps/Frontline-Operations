@@ -80,6 +80,9 @@ private _allObjectives = keys FLO_Objectives;
     };
 } forEach _allObjectives;
 
+private _transportReserveGroups = [_side] call FLO_fnc_initializeTransportReserveGroups;
+_allCreatedGroups append _transportReserveGroups;
+
 // Spawn civilians once after first side pass.
 if (isNil "FLO_CiviliansInitialized" || {!FLO_CiviliansInitialized}) then {
     [] call FLO_fnc_spawnCivilians;

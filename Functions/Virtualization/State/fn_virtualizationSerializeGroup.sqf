@@ -63,6 +63,7 @@ createHashMapFromArray [
     ["attachedTo", _groupData get "attachedTo"],
     ["attachedGroups", _groupData get "attachedGroups"],
     ["attachedType", _groupData get "attachedType"],
+    ["transportRole", _groupData get "transportRole"],
     ["isTransport", _groupData get "isTransport"],
     ["dismountAtWaypoint", _groupData get "dismountAtWaypoint"],
     ["postDismountWaypoint", _groupData get "postDismountWaypoint"],

@@ -103,6 +103,7 @@ private _groupData = createHashMapFromArray [
     ["attachedTo", ""],
     ["attachedGroups", []],
     ["attachedType", ""],
+    ["transportRole", false],
     ["isTransport", false],
     ["dismountAtWaypoint", -1],
     ["postDismountWaypoint", []],

@@ -5,7 +5,10 @@
 params [
     ["_requiredCapacity", 1, [0]],
     ["_nearPos", [0,0,0], [[]]],
-    ["_maxDistance", 3000, [0]]
+    ["_maxDistance", 3000, [0]],
+    ["_requiredActivation", "ANY", [""]],
+    ["_allowedGroupTypes", [], [[]]],
+    ["_requireTransportRole", false, [false]]
 ];
 
 private _available = FLO_TransportPool get "available";
@@ -14,9 +17,32 @@ private _bestDist = _maxDistance + 1;
 
 {
     private _groupId = _x;
-    _y params ["_capacity", "_position"];
+    _y params ["_capacity", "_position", ["_groupType", ""], ["_transportRole", false]];
 
     if (_capacity < _requiredCapacity) then { continue };
+
+    private _groupData = createHashMap;
+    if (
+        _requiredActivation != "ANY"
+        || {count _allowedGroupTypes > 0}
+        || {_requireTransportRole}
+        || {_groupType == ""}
+    ) then {
+        _groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
+        if (_groupType == "") then {
+            _groupType = _groupData get "groupType";
+        };
+        if (!_transportRole) then {
+            _transportRole = _groupData get "transportRole";
+        };
+    };
+
+    if (count _allowedGroupTypes > 0 && {!(_groupType in _allowedGroupTypes)}) then { continue };
+    if (_requireTransportRole && {!_transportRole}) then { continue };
+
+    if (_requiredActivation != "ANY") then {
+        if ((_groupData get "isActive") != (_requiredActivation == "ACTIVE")) then { continue };
+    };
 
     private _dist = _position distance2D _nearPos;
     if (_dist < _bestDist) then {

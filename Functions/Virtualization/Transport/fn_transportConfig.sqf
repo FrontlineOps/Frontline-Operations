@@ -18,8 +18,17 @@ if (!isServer) exitWith {};
 // Minimum distance (meters) to warrant transport request
 FLO_Transport_MinDistance = 500;
 
+// Minimum reassignment distance for foot infantry to request pickup
+FLO_Transport_ReassignmentPickupMinDistance = 1500;
+
 // Maximum search radius (meters) for finding transports
 FLO_Transport_SearchRadius = 5000;
+
+// Minimum long-haul distance (meters) before airlift is considered
+FLO_Transport_AirPickupMinDistance = 4000;
+
+// Maximum search radius (meters) for dedicated transport helicopters
+FLO_Transport_AirSearchRadius = 12000;
 
 // Default dismount standoff (meters) from the final destination
 FLO_Transport_DismountDistance = 400;

@@ -31,6 +31,10 @@ private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
 private _currentPos = _infData get "position";
 private _unitCount = _infData get "unitCount";
 private _side = _infData get "side";
+private _infantryIsActive = _infData get "isActive";
+private _requiredActivation = if (_infantryIsActive) then { "ACTIVE" } else { "VIRTUAL" };
+private _groundCarrierTypes = ["motorized", "mechanized"];
+private _airCarrierTypes = ["helicopter"];
 
 // Check distance threshold
 private _distance = _currentPos distance2D _destinationPos;
@@ -40,12 +44,191 @@ if (!_forceTransport && _distance < FLO_Transport_MinDistance) exitWith {
     ""
 };
 
-// Try to find transport in pool first
-private _transportId = [_unitCount, _currentPos, 3000] call FLO_fnc_transportPoolFind;
+private _transportId = "";
+private _transportData = createHashMap;
+private _hasTransportData = false;
 
-// If not found, search for existing vehicle groups
+// Prefer dedicated reserve carriers first in the passenger's current activation state.
+if (_infantryIsActive) then {
+    _transportId = [
+        _unitCount,
+        _currentPos,
+        3000,
+        "ACTIVE",
+        _groundCarrierTypes,
+        true
+    ] call FLO_fnc_transportPoolFind;
+
+    if (_transportId == "") then {
+        _transportId = [
+            _unitCount,
+            _currentPos,
+            _side,
+            FLO_Transport_SearchRadius,
+            "ACTIVE",
+            _groundCarrierTypes,
+            true
+        ] call FLO_fnc_transportPoolFindExisting;
+    };
+} else {
+    _transportId = [
+        _unitCount,
+        _currentPos,
+        3000,
+        "VIRTUAL",
+        _groundCarrierTypes,
+        true
+    ] call FLO_fnc_transportPoolFind;
+
+    if (_transportId == "") then {
+        _transportId = [
+            _unitCount,
+            _currentPos,
+            _side,
+            FLO_Transport_SearchRadius,
+            "VIRTUAL",
+            _groundCarrierTypes,
+            true
+        ] call FLO_fnc_transportPoolFindExisting;
+    };
+};
+
+// Active squads can activate a virtual reserve carrier on demand.
+if (_transportId == "" && {_infantryIsActive}) then {
+    _transportId = [
+        _unitCount,
+        _currentPos,
+        3000,
+        "VIRTUAL",
+        _groundCarrierTypes,
+        true
+    ] call FLO_fnc_transportPoolFind;
+
+    if (_transportId == "") then {
+        _transportId = [
+            _unitCount,
+            _currentPos,
+            _side,
+            FLO_Transport_SearchRadius,
+            "VIRTUAL",
+            _groundCarrierTypes,
+            true
+        ] call FLO_fnc_transportPoolFindExisting;
+    };
+
+    if (_transportId != "") then {
+        _transportData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+        _hasTransportData = true;
+        if !([_transportId, _transportData, _infantryGroupId, _infData] call FLO_fnc_transportPrepareCarrierForPickup) then {
+            _transportId = "";
+            _transportData = createHashMap;
+            _hasTransportData = false;
+        };
+    };
+};
+
+// Fall back to any available ground carrier, including organic combat vehicles.
 if (_transportId == "") then {
-    _transportId = [_unitCount, _currentPos, _side, FLO_Transport_SearchRadius] call FLO_fnc_transportPoolFindExisting;
+    _transportId = [
+        _unitCount,
+        _currentPos,
+        3000,
+        _requiredActivation,
+        _groundCarrierTypes,
+        false
+    ] call FLO_fnc_transportPoolFind;
+};
+
+if (_transportId == "") then {
+    _transportId = [
+        _unitCount,
+        _currentPos,
+        _side,
+        FLO_Transport_SearchRadius,
+        _requiredActivation,
+        _groundCarrierTypes,
+        false
+    ] call FLO_fnc_transportPoolFindExisting;
+};
+
+// Long-haul fallback: request dedicated airlift if no ground carrier is available.
+if (_transportId == "" && {_distance >= FLO_Transport_AirPickupMinDistance}) then {
+    if (_infantryIsActive) then {
+        _transportId = [
+            _unitCount,
+            _currentPos,
+            FLO_Transport_AirSearchRadius,
+            "ACTIVE",
+            _airCarrierTypes,
+            true
+        ] call FLO_fnc_transportPoolFind;
+
+        if (_transportId == "") then {
+            _transportId = [
+                _unitCount,
+                _currentPos,
+                _side,
+                FLO_Transport_AirSearchRadius,
+                "ACTIVE",
+                _airCarrierTypes,
+                true
+            ] call FLO_fnc_transportPoolFindExisting;
+        };
+    } else {
+        _transportId = [
+            _unitCount,
+            _currentPos,
+            FLO_Transport_AirSearchRadius,
+            "VIRTUAL",
+            _airCarrierTypes,
+            true
+        ] call FLO_fnc_transportPoolFind;
+
+        if (_transportId == "") then {
+            _transportId = [
+                _unitCount,
+                _currentPos,
+                _side,
+                FLO_Transport_AirSearchRadius,
+                "VIRTUAL",
+                _airCarrierTypes,
+                true
+            ] call FLO_fnc_transportPoolFindExisting;
+        };
+    };
+};
+
+if (_transportId == "" && {_distance >= FLO_Transport_AirPickupMinDistance} && {_infantryIsActive}) then {
+    _transportId = [
+        _unitCount,
+        _currentPos,
+        FLO_Transport_AirSearchRadius,
+        "VIRTUAL",
+        _airCarrierTypes,
+        true
+    ] call FLO_fnc_transportPoolFind;
+
+    if (_transportId == "") then {
+        _transportId = [
+            _unitCount,
+            _currentPos,
+            _side,
+            FLO_Transport_AirSearchRadius,
+            "VIRTUAL",
+            _airCarrierTypes,
+            true
+        ] call FLO_fnc_transportPoolFindExisting;
+    };
+
+    if (_transportId != "") then {
+        _transportData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+        _hasTransportData = true;
+        if !([_transportId, _transportData, _infantryGroupId, _infData] call FLO_fnc_transportPrepareCarrierForPickup) then {
+            _transportId = "";
+            _transportData = createHashMap;
+            _hasTransportData = false;
+        };
+    };
 };
 
 // No transport available
@@ -65,7 +248,10 @@ if (!_attached) exitWith {
     ""
 };
 
-private _transData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+if (!_hasTransportData) then {
+    _transportData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+};
+private _transportType = _transportData get "groupType";
 
 // Calculate dismount position short of the destination
 private _dismountPos = _destinationPos getPos [FLO_Transport_DismountDistance, _destinationPos getDir _currentPos];
@@ -77,12 +263,12 @@ private _waypoints = [
 [_transportId, _waypoints, false, true, "TRANSPORT_REQUEST"] call FLO_fnc_updateVirtualGroupWaypoints;
 
 // Configure for dismount
-_transData set ["dismountAtWaypoint", 0];
-[_transData, "TRANSPORT", "TRANSPORT_REQUEST"] call FLO_fnc_virtualizationSetMissionLock;
-[_transData, "TRANSPORT"] call FLO_fnc_virtualizationSetExecutionState;
+_transportData set ["dismountAtWaypoint", 0];
+[_transportData, "TRANSPORT", "TRANSPORT_REQUEST"] call FLO_fnc_virtualizationSetMissionLock;
+[_transportData, "TRANSPORT"] call FLO_fnc_virtualizationSetExecutionState;
 _infData set ["postDismountWaypoint", [_destinationPos, "TRANSPORT_REQUEST"]];
 
-["TRANSPORT", 3, format["Request: Transport %1 assigned to carry %2 to destination (%3m)", 
-    _transportId, _infantryGroupId, round _distance]] call FLO_fnc_log;
+["TRANSPORT", 3, format["Request: Transport %1 (%2) assigned to carry %3 to destination (%4m)",
+    _transportId, _transportType, _infantryGroupId, round _distance]] call FLO_fnc_log;
 
 _transportId

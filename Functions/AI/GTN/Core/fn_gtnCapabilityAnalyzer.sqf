@@ -1884,12 +1884,12 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             };
 
             case "RECON": {
-                // Need UAV or recon infantry
+                // Need UAV reconnaissance assets
                 {
                     private _gData = _y;
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
-                    if (_gType in ["uav", "recon"]) then {
+                    if (_gType == "uav") then {
                         if ([_gData] call _isTaskAvailable) then {
                             (_result get "availableAssets") pushBack _x;
                         };
@@ -1899,7 +1899,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 if (count (_result get "availableAssets") > 0) then {
                     _result set ["feasible", true];
                 } else {
-                    _result set ["reason", "No recon assets available"];
+                    _result set ["reason", "No UAV reconnaissance assets available"];
                 };
             };
 

@@ -30,6 +30,7 @@ class VirtualizationSeeding {
     file = "Functions\Virtualization\Seeding";
 
     class initializeObjectiveGroups {};
+    class initializeTransportReserveGroups {};
     class distributeVirtualGroups   {};
 };
 
@@ -140,6 +141,8 @@ class VirtualizationTransport {
     class transportProcessActiveCarrier {};
     class transportProcessVirtualCarrier {};
     class transportMountActivePassengerGroup {};
+    class transportPrepareCarrierForPickup {};
+    class transportMaybeRequestReassignmentPickup {};
     class transportRequest      {};
     class transportDismount     {};
     class transportShouldThreatDismount {};

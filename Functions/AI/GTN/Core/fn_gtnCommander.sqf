@@ -1337,6 +1337,7 @@ private _gtnCommander = createHashMapObject [[
             private _groupType = _gData get "groupType";
             if ((_gData get "side") != _ownSide) then { continue };
             _ownSideGroupCount = _ownSideGroupCount + 1;
+            if (_gData get "transportRole") then { continue };
             if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
             if (_gData get "inCombat") then { continue };
             if ((_gData get "missionLock") != "") then { continue };
@@ -1827,6 +1828,7 @@ private _gtnCommander = createHashMapObject [[
 
         [_groupId, _waypoints, false, true, "GTN_MOVE"] call FLO_fnc_updateVirtualGroupWaypoints;
         [_gData, _pos, _mode] call FLO_fnc_virtualizationAssignMoveOrder;
+        [_groupId, _gData, _pos, "MOVE"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -1887,6 +1889,7 @@ private _gtnCommander = createHashMapObject [[
 
         [_groupId, _waypoints, false, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
         [_gData, _attackPos, _objectiveId] call FLO_fnc_virtualizationAssignAttackOrder;
+        [_groupId, _gData, _attackPos, "ATTACK"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -1956,6 +1959,7 @@ private _gtnCommander = createHashMapObject [[
         [_groupId, _waypoints, false, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
         private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
         [_gData, _pos, _objectiveId, diag_tickTime, diag_tickTime + _leaseSeconds] call FLO_fnc_virtualizationAssignDefendOrder;
+        [_groupId, _gData, _pos, "DEFEND"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -2005,6 +2009,7 @@ private _gtnCommander = createHashMapObject [[
 
         [_groupId, _waypoints, false, true, "GTN_GARRISON"] call FLO_fnc_updateVirtualGroupWaypoints;
         [_gData, _pos, _objectiveId] call FLO_fnc_virtualizationAssignGarrisonOrder;
+        [_groupId, _gData, _pos, "GARRISON"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
 
         _self call ["_taskGroups", [[_groupId]]];
 

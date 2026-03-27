@@ -14,6 +14,7 @@ class FLO {
         file = "Functions\Init";
 
         class detectSavedGame       {};
+        class initFactionSplitMixedInfantryPool {};
         class initPhaseManager      {};
         class initPhase1_MissionConfig {};
         class initPhase2_Factions   {};

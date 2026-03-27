@@ -13,5 +13,5 @@
 
 params ["_groupData"];
 
-_groupData get "isTransport"
+(_groupData get "transportRole") || { _groupData get "isTransport" }
 
