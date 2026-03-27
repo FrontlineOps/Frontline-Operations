@@ -101,10 +101,24 @@ private _pfhId = [{
 
         private _liveArea = [_zonePos, _liveAreaRadius] call FLO_fnc_gtnCombatIsLiveArea;
         if (_liveArea) then {
+            private _activationDemand = 0;
             {
                 _x params ["_groupId", "_gData"];
                 if !(_gData get "isActive") then {
-                    [_groupId, _gData] call FLO_fnc_activateVirtualGroup;
+                    _activationDemand = _activationDemand + ([_gData, true] call FLO_fnc_virtualizationGetGroupUnitLoad);
+                };
+            } forEach (_eastRefs + _westRefs);
+
+            if ((_activationDemand + (FLO_VirtUpdate get "activeUnitCount")) > (FLO_virtualGroups get "_activationUnitCap")) then {
+                continue;
+            };
+
+            {
+                _x params ["_groupId", "_gData"];
+                if !(_gData get "isActive") then {
+                    if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                        continue;
+                    };
                 };
                 [_gData] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
             } forEach (_eastRefs + _westRefs);

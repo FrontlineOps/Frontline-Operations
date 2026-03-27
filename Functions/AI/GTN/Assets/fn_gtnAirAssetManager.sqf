@@ -423,6 +423,15 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _isLiveArea = _self call ["_isLiveArea", [_targetPos]];
             _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
+            if (_isLiveArea && {!(_gdata get "isActive")}) then {
+                private _tActivate = diag_tickTime;
+                _activated = [_gid, _gdata] call FLO_fnc_virtualizationTryActivateGroup;
+                _phaseActivateMs = (diag_tickTime - _tActivate) * 1000;
+                if (!_activated) then {
+                    _isLiveArea = false;
+                };
+            };
+
             if (!_isLiveArea) exitWith {
                 [_gdata, "AIR", toUpper _missionType] call FLO_fnc_virtualizationSetMissionLock;
                 (_self get "missions") set [_gid, "VIRTUAL"];
@@ -458,13 +467,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 ]];
 
                 [objNull, _gid, "VIRTUAL"]
-            };
-
-            if !(_gdata get "isActive") then {
-                private _tActivate = diag_tickTime;
-                [_gid, _gdata] call FLO_fnc_activateVirtualGroup;
-                _phaseActivateMs = (diag_tickTime - _tActivate) * 1000;
-                _activated = true;
             };
 
             private _realGroup = _gdata get "realGroup";

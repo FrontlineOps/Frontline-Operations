@@ -383,6 +383,10 @@ if (isNil "FLO_GTNArtilleryManager") then {
             };
             private _cooldownSeconds = _self get "objectiveCooldownSeconds";
 
+            if (_isLiveArea && {!(_gdata get "isActive")} && {!([_gid, _gdata] call FLO_fnc_virtualizationTryActivateGroup)}) then {
+                _isLiveArea = false;
+            };
+
             ["GTN Artillery", 3, format["Selected group %1, isActive: %2, liveArea: %3", _gid, _gdata get "isActive", _isLiveArea]] call FLO_fnc_log;
 
             // Non-live area: keep support entirely virtual.
@@ -411,10 +415,6 @@ if (isNil "FLO_GTNArtilleryManager") then {
                     round _missionDuration
                 ]] call FLO_fnc_log;
                 true
-            };
-
-            if !(_gdata get "isActive") then {
-                [_gid, _gdata] call FLO_fnc_activateVirtualGroup;
             };
 
             private _realGroup = _gdata get "realGroup";

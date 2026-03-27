@@ -2081,7 +2081,9 @@ private _gtnCommander = createHashMapObject [[
             [_gData, "DEPLOYED", _targetPos, [_gData] call FLO_fnc_virtualizationGetAATargetObjective, _gData get "isStrategicAA"] call FLO_fnc_virtualizationSetAADeployState;
 
             if !(_gData get "isActive") then {
-                [_groupId, _gData] call FLO_fnc_activateVirtualGroup;
+                if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                    continue;
+                };
             } else {
                 private _realGroup = _gData get "realGroup";
                 if (!isNull _realGroup) then {
