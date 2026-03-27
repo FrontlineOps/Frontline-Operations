@@ -138,8 +138,8 @@ private _gtnCommander = createHashMapObject [[
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
-        ["attackExtendedFrontlineEnemyDepth", 2], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
-        ["attackExtendedFrontlineMaxRouteMeters", 7000], // Extended-frontline expansion must still be land-connected and operationally local
+        ["attackExtendedFrontlineEnemyDepth", 1], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
+        ["attackExtendedFrontlineMaxRouteMeters", 3500], // Extended-frontline expansion must still be land-connected and operationally local
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
         ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
         ["attackLaneStagingGoalFraction", 0.6], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
