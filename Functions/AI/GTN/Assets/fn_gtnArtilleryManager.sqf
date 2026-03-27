@@ -496,8 +496,9 @@ if (isNil "FLO_GTNArtilleryManager") then {
                     [_gdata, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
                     _gdata set ["autoPatrol", false];  // Allow patrol to be reassigned
 
-                    // Deactivate (virtualize) the group
-                    [_gid, _gdata] call FLO_fnc_deactivateVirtualGroup;
+                    if ((_gdata get "isActive") && {!isNull (_gdata get "realGroup")}) then {
+                        [_gid, _gdata] call FLO_fnc_deactivateVirtualGroup;
+                    };
                 };
 
                 if (!isNil "FLO_GTNArtilleryManager") then {
