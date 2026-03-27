@@ -112,7 +112,7 @@ _metrics set ["meaningfulTrackCount", _meaningfulTrackCount];
 private _seedTracks = [];
 for "_i" from 0 to (_meaningfulTrackCount - 1) do {
     _seedTracks pushBack (_viableTracks select _i);
-}
+};
 _metrics set ["seededTrackCount", count _seedTracks];
 
 private _remainingGroups = +_candidateGroupIds;
