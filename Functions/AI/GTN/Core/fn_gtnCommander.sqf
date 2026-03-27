@@ -123,7 +123,6 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
     ["_forceBaselineTotalGroups", 0],
-    ["_attackReachability", createHashMap],
     ["_attackFrontlineObjectives", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
@@ -138,8 +137,6 @@ private _gtnCommander = createHashMapObject [[
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
-        ["attackExtendedFrontlineEnemyDepth", 1], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
-        ["attackExtendedFrontlineMaxRouteMeters", 3500], // Extended-frontline expansion must still be land-connected and operationally local
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
         ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
         ["attackLaneStagingGoalFraction", 0.6], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
@@ -297,7 +294,7 @@ private _gtnCommander = createHashMapObject [[
             count (keys _enemyObjs)
         ]] call FLO_fnc_log;
 
-        _self call ["_refreshAttackReachability", []];
+        _self call ["_refreshAttackFrontline", []];
 
         // Publish the maintained commander COP to players as non-debug local intel markers.
         _tPhase = diag_tickTime;
@@ -1540,44 +1537,26 @@ private _gtnCommander = createHashMapObject [[
         (_cap max 0) min _defenseCap
     }],
 
-    // Friendly-held source objectives that can support the enemy objective through the shallow land-connected attack frontier.
+    // Friendly-held linked objectives that can directly source an attack on this enemy objective.
     ["_getFriendlyAttackSourceObjectives", {
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { [] };
 
-        private _reachability = _self get "_attackReachability";
-        if (_objectiveId in _reachability) exitWith {
-            (_reachability get _objectiveId) get "sourceObjectives"
-        };
+        private _ws = _self get "_worldState";
+        private _objectives = _ws get "_objectives";
+        private _objective = _objectives get _objectiveId;
+        private _ownSide = _self get "_ownSide";
 
-        []
+        (_objective get "linkedObjectives") select {
+            ((_objectives get _x) get "owner") isEqualTo _ownSide
+        }
     }],
 
-    ["_refreshAttackReachability", {
+    ["_refreshAttackFrontline", {
         private _ws = _self get "_worldState";
-        private _enemyObjectives = _ws call ["_getEnemyObjectives", []];
         private _strictFrontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
-        private _reachability = [_self] call FLO_fnc_gtnBuildAttackReachability;
-        private _attackFrontlineObjectives = createHashMap;
-
-        {
-            private _objectiveId = _x;
-            if !(_objectiveId in _enemyObjectives) then { continue };
-            _attackFrontlineObjectives set [_objectiveId, _enemyObjectives get _objectiveId];
-        } forEach (keys _reachability);
-
-        _self set ["_attackReachability", _reachability];
-        _self set ["_attackFrontlineObjectives", _attackFrontlineObjectives];
-
-        if ((count (keys _attackFrontlineObjectives)) > (count (keys _strictFrontlineObjectives))) then {
-            ["GTN", 3, format [
-                "Extended attack frontline widened from %1 to %2 objectives",
-                count (keys _strictFrontlineObjectives),
-                count (keys _attackFrontlineObjectives)
-            ]] call FLO_fnc_log;
-        };
-
-        _attackFrontlineObjectives
+        _self set ["_attackFrontlineObjectives", _strictFrontlineObjectives];
+        _strictFrontlineObjectives
     }],
 
     ["_getAttackFrontlineEnemyObjectives", {

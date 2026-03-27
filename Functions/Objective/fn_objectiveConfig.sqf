@@ -50,7 +50,7 @@ if (isNil "FLO_ObjectiveConfig") then {
         ]],
         
         // Objective linking
-        ["linkDistance", 5000],  // Max distance for linked objectives
+        ["linkDistance", 5000],  // Base radius for adjacency before sparse-map continuity links bridge disconnected components
         
         // Capture/dominance settings
         ["captureTime", 20],      // Seconds to capture

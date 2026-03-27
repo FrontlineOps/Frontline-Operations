@@ -55,7 +55,6 @@ class FLO {
         class gtnAllocateAttackTrackPools {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
-        class gtnBuildAttackReachability {};
         class gtnBuildEnemyEngagementPicture {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};
@@ -194,6 +193,7 @@ class FLO {
         file = "Functions\Objective";
 
         class objectiveConfig           {};
+        class buildObjectiveLinks       {};
         class objectiveIndexer          {};
         class dbscanCluster             {};
         class buildObjectiveGraph       {};
