@@ -123,7 +123,6 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
     ["_forceBaselineTotalGroups", 0],
-    ["_attackReachability", createHashMap],
     ["_attackFrontlineObjectives", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
@@ -138,8 +137,6 @@ private _gtnCommander = createHashMapObject [[
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
-        ["attackExtendedFrontlineEnemyDepth", 1], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
-        ["attackExtendedFrontlineMaxRouteMeters", 3500], // Extended-frontline expansion must still be land-connected and operationally local
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
         ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
         ["attackLaneStagingGoalFraction", 0.6], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
@@ -166,11 +163,11 @@ private _gtnCommander = createHashMapObject [[
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
         ["defenseContestedCollapseCap", 8], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
         ["engagementFreshSeconds", 180], // Fresh commander contact window used for exact opportunistic engagement targets
-        ["attackEngagementSearchRadius", 700], // Attack groups may engage confirmed enemies near their current position
-        ["attackEngagementCorridorRadius", 300], // Attack groups may peel off to confirmed enemies close to their assigned route
+        ["attackEngagementSearchRadius", 1000], // Attack groups may engage confirmed enemies near their current position
+        ["attackEngagementCorridorRadius", 500], // Attack groups may peel off to confirmed enemies close to their assigned route
         ["attackEngagementLeashMeters", 450], // Attack groups do not chase confirmed targets too far off their approach
-        ["defenseEngagementLeashMeters", 250], // Defenders only engage confirmed targets local to their defended objective
-        ["garrisonEngagementLeashMeters", 200], // Garrisons only engage confirmed targets local to their held objective
+        ["defenseEngagementLeashMeters", 750], // Defenders only engage confirmed targets local to their defended objective
+        ["garrisonEngagementLeashMeters", 500], // Garrisons only engage confirmed targets local to their held objective
         ["engagementTargetLoadMultiplier", 1.25], // Known contacts only attract a limited friendly load before selection starts spreading to other valid targets
         ["engagementReservationPenaltyPerGroup", 16], // Each committed friendly group reduces the score of the same target for later groups that cycle
         ["engagementSaturationPenalty", 30], // Targets already saturated by current commitments become much less attractive than other valid contacts
@@ -297,7 +294,7 @@ private _gtnCommander = createHashMapObject [[
             count (keys _enemyObjs)
         ]] call FLO_fnc_log;
 
-        _self call ["_refreshAttackReachability", []];
+        _self call ["_refreshAttackFrontline", []];
 
         // Publish the maintained commander COP to players as non-debug local intel markers.
         _tPhase = diag_tickTime;
@@ -1540,44 +1537,26 @@ private _gtnCommander = createHashMapObject [[
         (_cap max 0) min _defenseCap
     }],
 
-    // Friendly-held source objectives that can support the enemy objective through the shallow land-connected attack frontier.
+    // Friendly-held linked objectives that can directly source an attack on this enemy objective.
     ["_getFriendlyAttackSourceObjectives", {
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { [] };
 
-        private _reachability = _self get "_attackReachability";
-        if (_objectiveId in _reachability) exitWith {
-            (_reachability get _objectiveId) get "sourceObjectives"
-        };
+        private _ws = _self get "_worldState";
+        private _objectives = _ws get "_objectives";
+        private _objective = _objectives get _objectiveId;
+        private _ownSide = _self get "_ownSide";
 
-        []
+        (_objective get "linkedObjectives") select {
+            ((_objectives get _x) get "owner") isEqualTo _ownSide
+        }
     }],
 
-    ["_refreshAttackReachability", {
+    ["_refreshAttackFrontline", {
         private _ws = _self get "_worldState";
-        private _enemyObjectives = _ws call ["_getEnemyObjectives", []];
         private _strictFrontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
-        private _reachability = [_self] call FLO_fnc_gtnBuildAttackReachability;
-        private _attackFrontlineObjectives = createHashMap;
-
-        {
-            private _objectiveId = _x;
-            if !(_objectiveId in _enemyObjectives) then { continue };
-            _attackFrontlineObjectives set [_objectiveId, _enemyObjectives get _objectiveId];
-        } forEach (keys _reachability);
-
-        _self set ["_attackReachability", _reachability];
-        _self set ["_attackFrontlineObjectives", _attackFrontlineObjectives];
-
-        if ((count (keys _attackFrontlineObjectives)) > (count (keys _strictFrontlineObjectives))) then {
-            ["GTN", 3, format [
-                "Extended attack frontline widened from %1 to %2 objectives",
-                count (keys _strictFrontlineObjectives),
-                count (keys _attackFrontlineObjectives)
-            ]] call FLO_fnc_log;
-        };
-
-        _attackFrontlineObjectives
+        _self set ["_attackFrontlineObjectives", _strictFrontlineObjectives];
+        _strictFrontlineObjectives
     }],
 
     ["_getAttackFrontlineEnemyObjectives", {
@@ -2097,17 +2076,19 @@ private _gtnCommander = createHashMapObject [[
             _gData set ["forceVirtual", false];
             _gData set ["waypoints", []];
             _gData set ["currentWaypointIndex", 0];
-            _gData set ["alwaysActive", true];
             _gData set ["noWaypoints", true];
             [_gData, "DEPLOYED", _targetPos, [_gData] call FLO_fnc_virtualizationGetAATargetObjective, _gData get "isStrategicAA"] call FLO_fnc_virtualizationSetAADeployState;
+            _gData set ["alwaysActive", true];
 
             if !(_gData get "isActive") then {
-                [_groupId, _gData] call FLO_fnc_activateVirtualGroup;
-            } else {
-                private _realGroup = _gData get "realGroup";
-                if (!isNull _realGroup) then {
-                    [_realGroup] call CBA_fnc_clearWaypoints;
+                if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                    continue;
                 };
+            };
+
+            private _realGroup = _gData get "realGroup";
+            if (!isNull _realGroup) then {
+                [_realGroup] call CBA_fnc_clearWaypoints;
             };
 
             ["GTN", 3, format[

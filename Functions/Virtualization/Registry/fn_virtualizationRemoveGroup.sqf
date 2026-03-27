@@ -8,22 +8,39 @@ private _groups = _virt get "_groups";
 private _groupData = _groups get _groupId;
 if (isNil "_groupData") exitWith { false };
 
+private _detachIndex = 0;
+
 {
     private _otherId = _x;
     private _otherData = _y;
     if (_otherId == _groupId) then { continue };
 
-    if (([_otherData] call FLO_fnc_virtualizationGetTransportAttachment) == _groupId || {([_otherData] call FLO_fnc_virtualizationGetMountedTransport) == _groupId}) then {
+    private _attachedTo = [_otherData] call FLO_fnc_virtualizationGetTransportAttachment;
+    if (_attachedTo == _groupId) then {
+        private _offsetDir = (_detachIndex * 45) mod 360;
+        if ([_otherId, _offsetDir] call FLO_fnc_transportDetach) then {
+            _detachIndex = _detachIndex + 1;
+        } else {
+            ["VIRTUALIZATION", 2, format [
+                "Clearing stale transport attachment on %1 while removing carrier %2",
+                _otherId,
+                _groupId
+            ]] call FLO_fnc_log;
+            [_otherData] call FLO_fnc_virtualizationClearTransportAttachment;
+            [_otherData] call FLO_fnc_virtualizationClearMountedIn;
+            if ((_otherData get "missionLock") == "ORGANIC_PACKAGE") then {
+                [_otherData] call FLO_fnc_virtualizationClearMissionLock;
+            };
+        };
+    };
+
+    if (([_otherData] call FLO_fnc_virtualizationGetMountedTransport) == _groupId) then {
         ["VIRTUALIZATION", 2, format [
-            "Clearing stale transport linkage on %1 while removing carrier %2",
+            "Clearing stale mounted transport marker on %1 while removing carrier %2",
             _otherId,
             _groupId
         ]] call FLO_fnc_log;
-        [_otherData] call FLO_fnc_virtualizationClearTransportAttachment;
         [_otherData] call FLO_fnc_virtualizationClearMountedIn;
-        if ((_otherData get "missionLock") == "ORGANIC_PACKAGE") then {
-            [_otherData] call FLO_fnc_virtualizationClearMissionLock;
-        };
     };
 
     private _attachedGroups = _otherData get "attachedGroups";

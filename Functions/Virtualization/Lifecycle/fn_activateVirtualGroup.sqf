@@ -52,9 +52,6 @@ if (_unitCount <= 0) exitWith {
 // This ensures groups that traveled virtually don't re-get completed waypoints
 private _waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx] call FLO_fnc_virtualizationGetRemainingWaypoints;
 
-// Reset currentWaypointIndex since we're now using real waypoints
-_groupData set ["currentWaypointIndex", 0];
-
 // Check if this is a transport with attached groups
 private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
 
@@ -62,6 +59,15 @@ private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrie
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
 [FLO_virtualGroups, _groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition;
 _realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtualizationSpawnRealGroup;
+if (isNull _realGroup) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "Failed to spawn real group for %1 (%2) at %3",
+        _groupId,
+        _groupType,
+        _position
+    ]] call FLO_fnc_log;
+    false
+};
 
 // ========================================================================
 // SIDE FIX - Ensure all units are on the correct side
@@ -71,8 +77,19 @@ _realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtual
 if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civilian}) then {
     _realGroup = [_realGroup, _side] call FLO_fnc_setSide;
 };
+if (isNull _realGroup) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "Failed to apply side correction for %1 (%2)",
+        _groupId,
+        _groupType
+    ]] call FLO_fnc_log;
+    false
+};
 
 [_groupType, _realGroup] call FLO_fnc_virtualizationDistributeIntelItems;
+
+// Reset currentWaypointIndex only after activation succeeded.
+_groupData set ["currentWaypointIndex", 0];
 
 // Set the real group in the group data
 [_groupData, _realGroup] call FLO_fnc_virtualizationSetRealGroup;

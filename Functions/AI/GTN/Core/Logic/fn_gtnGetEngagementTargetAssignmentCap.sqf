@@ -11,10 +11,7 @@
  * 1: Commander config <HASHMAP>
  *
  * Return Value:
- * HASHMAP with:
- *   "targetLoad" <NUMBER>
- *   "maxGroups" <NUMBER>
- *   "maxLoad" <NUMBER>
+ * ARRAY - [targetLoad, maxGroups, maxLoad]
  */
 
 params ["_targetData", "_config"];
@@ -23,8 +20,4 @@ private _targetLoad = [_targetData] call FLO_fnc_gtnEstimateEngagementTargetLoad
 private _maxGroups = ((ceil (_targetLoad / 8)) max 1) min 3;
 private _maxLoad = ceil ((_targetLoad max 4) * (_config get "engagementTargetLoadMultiplier"));
 
-createHashMapFromArray [
-    ["targetLoad", _targetLoad],
-    ["maxGroups", _maxGroups],
-    ["maxLoad", _maxLoad]
-]
+[_targetLoad, _maxGroups, _maxLoad]

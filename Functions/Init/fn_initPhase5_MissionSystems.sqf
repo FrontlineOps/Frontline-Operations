@@ -656,5 +656,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_fnc_virtuali
     };
 };
 
+diag_log "[FLO_INIT_P5] Starting virtualization PFH...";
+if (!isNil "FLO_fnc_virtualizationUpdatePFH") then {
+    ["start"] call FLO_fnc_virtualizationUpdatePFH;
+    diag_log "[FLO_INIT_P5] Virtualization PFH started";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_virtualizationUpdatePFH not found";
+};
+
 diag_log "[FLO_INIT_P5] Mission systems phase complete";
 true

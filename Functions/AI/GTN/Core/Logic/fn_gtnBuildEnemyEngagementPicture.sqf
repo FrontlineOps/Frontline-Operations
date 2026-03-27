@@ -3,9 +3,10 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Resolves a commander-usable exact enemy-group picture from fresh contact
- *   reports using the maintained virtualization spatial index. This is the
- *   exact-target bridge between sensed commander intel and tactical group
- *   engagement behavior.
+ *   reports using the maintained virtualization spatial index. When no
+ *   virtual enemy group resolves, actually observed player-led enemy groups
+ *   are normalized into the same target picture so opportunistic engagement
+ *   stays intel-driven instead of silently dropping those contacts.
  *
  * Arguments:
  * 0: Contact reports <ARRAY>
@@ -38,12 +39,13 @@ private _reportResolutionRadius = 220;
 private _freshContactCount = 0;
 
 {
-    _x params ["_contactPos", "_contactTime", "_contactStrength", "_contactType", "_contactConfidence"];
+    _x params ["_contactPos", "_contactTime", "_contactStrength", "_contactType", "_contactConfidence", ["_sourceObject", objNull, [objNull]]];
     if (_contactTime < _cutoffTime) then { continue };
 
     _freshContactCount = _freshContactCount + 1;
 
     private _candidateIds = ["queryRadius", [_contactPos, _reportResolutionRadius, _enemySide, true]] call FLO_fnc_virtualizationSpatialIndex;
+    private _resolvedAny = false;
     {
         private _groupId = _x;
         private _groupData = _groups get _groupId;
@@ -67,7 +69,8 @@ private _freshContactCount = 0;
                 ["groupType", _groupType],
                 ["unitCount", _groupData get "unitCount"],
                 ["commanderOrder", _groupData get "commanderOrder"],
-                ["objectiveIds", []]
+                ["objectiveIds", []],
+                ["isPlayerControlled", false]
             ]
         };
 
@@ -75,6 +78,7 @@ private _freshContactCount = 0;
         _entry set ["groupType", _groupType];
         _entry set ["unitCount", _groupData get "unitCount"];
         _entry set ["commanderOrder", _groupData get "commanderOrder"];
+        _entry set ["isPlayerControlled", false];
         _entry set ["contactCount", (_entry get "contactCount") + 1];
         if (_contactTime > (_entry get "lastSeen")) then {
             _entry set ["lastSeen", _contactTime];
@@ -84,7 +88,36 @@ private _freshContactCount = 0;
         };
 
         _resolvedGroups set [_groupId, _entry];
+        _resolvedAny = true;
     } forEach _candidateIds;
+
+    if (_resolvedAny) then { continue };
+    if (isNull _sourceObject) then { continue };
+
+    private _realTarget = [_sourceObject, _contactPos, _contactTime, _contactStrength, _contactConfidence] call FLO_fnc_gtnBuildObservedRealEnemyTarget;
+    if (count (keys _realTarget) == 0) then { continue };
+
+    private _realGroupId = _realTarget get "groupId";
+    private _realEntry = if (_realGroupId in (keys _resolvedGroups)) then {
+        _resolvedGroups get _realGroupId
+    } else {
+        _realTarget
+    };
+
+    _realEntry set ["position", _realTarget get "position"];
+    _realEntry set ["groupType", _realTarget get "groupType"];
+    _realEntry set ["unitCount", _realTarget get "unitCount"];
+    _realEntry set ["commanderOrder", _realTarget get "commanderOrder"];
+    _realEntry set ["isPlayerControlled", true];
+    _realEntry set ["contactCount", (_realEntry get "contactCount") + 1];
+    if (_contactTime > (_realEntry get "lastSeen")) then {
+        _realEntry set ["lastSeen", _contactTime];
+    };
+    if (_contactConfidence > (_realEntry get "confidence")) then {
+        _realEntry set ["confidence", _contactConfidence];
+    };
+
+    _resolvedGroups set [_realGroupId, _realEntry];
 } forEach _contacts;
 
 {

@@ -101,19 +101,48 @@ private _pfhId = [{
 
         private _liveArea = [_zonePos, _liveAreaRadius] call FLO_fnc_gtnCombatIsLiveArea;
         if (_liveArea) then {
+            private _activationDemand = 0;
+            private _activeRefs = [];
             {
                 _x params ["_groupId", "_gData"];
-                if !(_gData get "isActive") then {
-                    [_groupId, _gData] call FLO_fnc_activateVirtualGroup;
+                if (_gData get "isActive") then {
+                    _activeRefs pushBack _x;
+                } else {
+                    _activationDemand = _activationDemand + ([_gData, true] call FLO_fnc_virtualizationGetGroupUnitLoad);
                 };
-                [_gData] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
             } forEach (_eastRefs + _westRefs);
 
+            if ((_activationDemand + (FLO_VirtUpdate get "activeUnitCount")) <= (FLO_virtualGroups get "_activationUnitCap")) then {
+                {
+                    _x params ["_groupId", "_gData"];
+                    if !(_gData get "isActive") then {
+                        if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                            continue;
+                        };
+                    };
+                    [_gData] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
+                } forEach (_eastRefs + _westRefs);
+
+                ["GTN_COMBAT", 3, format [
+                    "Live combat handoff near %1m for %2 EAST groups vs %3 WEST groups",
+                    round _contactDist,
+                    count _eastRefs,
+                    count _westRefs
+                ]] call FLO_fnc_log;
+                continue;
+            };
+
+            {
+                [_x select 1] call FLO_fnc_gtnCombatPrepareRealGroupForCombat;
+            } forEach _activeRefs;
+
             ["GTN_COMBAT", 3, format [
-                "Live combat handoff near %1m for %2 EAST groups vs %3 WEST groups",
+                "Live combat near %1m could not fully hand off: demand=%2 activeUnits=%3 cap=%4 activeGroups=%5 - skipping virtual resolution",
                 round _contactDist,
-                count _eastRefs,
-                count _westRefs
+                _activationDemand,
+                FLO_VirtUpdate get "activeUnitCount",
+                FLO_virtualGroups get "_activationUnitCap",
+                count _activeRefs
             ]] call FLO_fnc_log;
             continue;
         };

@@ -76,6 +76,7 @@ class VirtualizationLifecycle {
     file = "Functions\Virtualization\Lifecycle";
 
     class activateVirtualGroup             {};
+    class virtualizationTryActivateGroup   {};
     class deactivateVirtualGroup           {};
     class activateSavedVirtualGroup        {};
     class virtualizationCollectRealGroupVehicles {};

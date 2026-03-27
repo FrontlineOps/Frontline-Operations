@@ -28,6 +28,7 @@ private _logisticsClass = [
         ["infantry", 6],
         ["motorized", 12],
         ["mechanized", 24],
+        ["mobile_aa", 28],
         ["armor", 32],
         ["helicopter", 24],
         ["air", 32],

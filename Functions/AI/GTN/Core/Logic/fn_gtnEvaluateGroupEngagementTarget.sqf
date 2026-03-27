@@ -12,14 +12,13 @@
  * 2: Commander config <HASHMAP>
  *
  * Return Value:
- * HASHMAP - Empty when invalid, otherwise contains:
- *   "score", "reason", "leashMeters"
+ * ARRAY - Empty when invalid, otherwise [score, reason, leashMeters]
  */
 
-params ["_groupData", "_targetData", "_config"];
+params ["_groupData", "_targetData", "_config", ["_groupContext", createHashMap, [createHashMap]]];
 
-private _result = createHashMap;
-private _order = _groupData get "commanderOrder";
+private _result = [];
+private _order = _groupContext getOrDefault ["order", _groupData get "commanderOrder"];
 if !(_order in ["ATTACK", "DEFEND", "GARRISON"]) exitWith { _result };
 
 private _targetPos = _targetData get "position";
@@ -28,6 +27,7 @@ if (count _targetPos < 2) exitWith { _result };
 private _targetOrder = _targetData get "commanderOrder";
 private _targetType = _targetData get "groupType";
 private _objectiveIds = _targetData get "objectiveIds";
+private _isPlayerControlled = _targetData get "isPlayerControlled";
 private _ageSeconds = diag_tickTime - (_targetData get "lastSeen");
 private _targetOrderBonus = switch (_targetOrder) do {
     case "GARRISON": { 22 };
@@ -46,32 +46,17 @@ private _targetTypeBonus = switch (_targetType) do {
     default { 8 };
 };
 private _freshnessBonus = ((_config get "engagementFreshSeconds") - (_ageSeconds min (_config get "engagementFreshSeconds"))) / 12;
+private _playerBonus = if (_isPlayerControlled) then { 12 } else { 0 };
 
 switch (_order) do {
     case "ATTACK": {
-        private _groupPos = _groupData get "position";
+        private _groupPos = _groupContext getOrDefault ["groupPos", _groupData get "position"];
         private _directDist = _groupPos distance2D _targetPos;
-        private _searchRadius = _config get "attackEngagementSearchRadius";
-        private _corridorRadius = _config get "attackEngagementCorridorRadius";
-        private _attackObjective = _groupData get "attackObjective";
+        private _searchRadius = _groupContext getOrDefault ["searchRadius", _config get "attackEngagementSearchRadius"];
+        private _corridorRadius = _groupContext getOrDefault ["corridorRadius", _config get "attackEngagementCorridorRadius"];
+        private _attackObjective = _groupContext getOrDefault ["attackObjective", _groupData get "attackObjective"];
         private _inAttackObjective = _attackObjective != "" && {_attackObjective in _objectiveIds};
-
-        private _routePoints = [+_groupPos];
-        private _waypoints = _groupData get "waypoints";
-        private _currentWaypointIndex = (_groupData get "currentWaypointIndex") max 0;
-        if (_currentWaypointIndex < count _waypoints) then {
-            private _lastWaypointIndex = ((count _waypoints) - 1) min (_currentWaypointIndex + 4);
-            for "_i" from _currentWaypointIndex to _lastWaypointIndex do {
-                _routePoints pushBack (((_waypoints select _i) select 0));
-            };
-        };
-
-        if (count _routePoints < 2) then {
-            private _orderTargetPos = _groupData get "orderTargetPos";
-            if (count _orderTargetPos >= 2) then {
-                _routePoints pushBack _orderTargetPos;
-            };
-        };
+        private _routePoints = _groupContext getOrDefault ["routePoints", []];
 
         private _routeDist = _directDist;
         if (count _routePoints > 1) then {
@@ -94,23 +79,19 @@ switch (_order) do {
             if (_routeDist <= _corridorRadius) then { "ATTACK_ROUTE" } else { "ATTACK_LOCAL" };
         };
 
-        _result = createHashMapFromArray [
-            ["score", 20 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _objectiveBonus + _proximityScore + ((_targetData get "contactCount") * 3)],
-            ["reason", _reason],
-            ["leashMeters", _config get "attackEngagementLeashMeters"]
+        _result = [
+            20 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _playerBonus + _objectiveBonus + _proximityScore + ((_targetData get "contactCount") * 3),
+            _reason,
+            _config get "attackEngagementLeashMeters"
         ];
     };
 
     case "DEFEND": {
-        private _objectiveId = _groupData get "defendObjective";
+        private _objectiveId = _groupContext getOrDefault ["objectiveId", _groupData get "defendObjective"];
         if (_objectiveId == "" || {!(_objectiveId in _objectiveIds)}) exitWith { _result };
 
-        private _holdPos = _groupData get "orderTargetPos";
-        if (count _holdPos < 2) then {
-            _holdPos = _groupData get "position";
-        };
-
-        private _leashMeters = _config get "defenseEngagementLeashMeters";
+        private _holdPos = _groupContext getOrDefault ["holdPos", _groupData get "position"];
+        private _leashMeters = _groupContext getOrDefault ["leashMeters", _config get "defenseEngagementLeashMeters"];
         private _holdDist = _holdPos distance2D _targetPos;
         if (_holdDist > _leashMeters) exitWith { _result };
 
@@ -120,23 +101,19 @@ switch (_order) do {
             default { 0 };
         };
 
-        _result = createHashMapFromArray [
-            ["score", 15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25)],
-            ["reason", "DEFEND_OBJECTIVE"],
-            ["leashMeters", _leashMeters]
+        _result = [
+            15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _playerBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25),
+            "DEFEND_OBJECTIVE",
+            _leashMeters
         ];
     };
 
     case "GARRISON": {
-        private _objectiveId = _groupData get "garrisonObjective";
+        private _objectiveId = _groupContext getOrDefault ["objectiveId", _groupData get "garrisonObjective"];
         if (_objectiveId == "" || {!(_objectiveId in _objectiveIds)}) exitWith { _result };
 
-        private _holdPos = _groupData get "garrisonPosition";
-        if (count _holdPos < 2) then {
-            _holdPos = _groupData get "position";
-        };
-
-        private _leashMeters = _config get "garrisonEngagementLeashMeters";
+        private _holdPos = _groupContext getOrDefault ["holdPos", _groupData get "position"];
+        private _leashMeters = _groupContext getOrDefault ["leashMeters", _config get "garrisonEngagementLeashMeters"];
         private _holdDist = _holdPos distance2D _targetPos;
         if (_holdDist > _leashMeters) exitWith { _result };
 
@@ -146,10 +123,10 @@ switch (_order) do {
             default { 0 };
         };
 
-        _result = createHashMapFromArray [
-            ["score", 15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25)],
-            ["reason", "GARRISON_OBJECTIVE"],
-            ["leashMeters", _leashMeters]
+        _result = [
+            15 + _targetOrderBonus + _targetTypeBonus + _freshnessBonus + _playerBonus + _localThreatBonus + ((_leashMeters - _holdDist) / 25),
+            "GARRISON_OBJECTIVE",
+            _leashMeters
         ];
     };
 };

@@ -122,7 +122,7 @@ if (time < _nextDispatchAt) exitWith {
 
 _phaseT0 = diag_tickTime;
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
-_perf set ["resourcesBefore", _resources get "_resources"];
+_perf set ["resourcesBefore", _resources call ["getResources", []]];
 private _pressureTargets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
 private _advanceTargets = [_net] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
 private _rearTargets = [_net, 3000] call FLO_fnc_logisticsNetworkFindRearObjectives;
@@ -176,6 +176,9 @@ for "_i" from 1 to _batchSize do {
     _attempted = _attempted + 1;
 
     private _cost = _groupCosts get _groupType;
+    if !(_cost isEqualType 0) then {
+        throw format ["[LOGISTICS] Missing numeric reinforcement cost for group type %1", _groupType];
+    };
     private _targetPool = if (_groupType isEqualTo "static_aa") then {
         [_net] call FLO_fnc_logisticsNetworkGetRearAATargets
     } else {
@@ -267,7 +270,7 @@ for "_i" from 1 to _batchSize do {
 _perf set ["dispatchMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["attempted", _attempted];
 _perf set ["created", _replaced];
-_perf set ["resourcesAfter", _resources get "_resources"];
+_perf set ["resourcesAfter", _resources call ["getResources", []]];
 
 _net set ["_reinforcementQueue", _queue];
 

@@ -43,15 +43,19 @@ if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWit
         _virtStats set ["activeUnitsLast", _activeUnitCount];
     } else {
         ["VIRTUALIZATION", 3, format["Activating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
-        [_groupId, _groupData] call FLO_fnc_activateVirtualGroup;
-        FLO_VirtUpdate set ["activeUnitCount", _projectedUnitCount];
-        _groupData set ["activationDeferred", false];
-        _groupData set ["activationDeferredAt", -1];
-        _groupData set ["activationDeferredPos", []];
-        _virtStats set ["activationsTotal", (_virtStats get "activationsTotal") + 1];
-        _virtStats set ["activationsThisBatch", (_virtStats get "activationsThisBatch") + 1];
-        _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
-        _virtStats set ["deferredGroupsLast", ((_virtStats get "deferredGroupsLast") - (if (_activationDeferred) then { 1 } else { 0 })) max 0];
+        if ([_groupId, _groupData] call FLO_fnc_virtualizationTryActivateGroup) then {
+            _groupData set ["activationDeferred", false];
+            _groupData set ["activationDeferredAt", -1];
+            _groupData set ["activationDeferredPos", []];
+            _virtStats set ["activationsTotal", (_virtStats get "activationsTotal") + 1];
+            _virtStats set ["activationsThisBatch", (_virtStats get "activationsThisBatch") + 1];
+            _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
+            _virtStats set ["deferredGroupsLast", ((_virtStats get "deferredGroupsLast") - (if (_activationDeferred) then { 1 } else { 0 })) max 0];
+        } else {
+            _virtStats set ["activationBlocksTotal", (_virtStats get "activationBlocksTotal") + 1];
+            _virtStats set ["activationBlocksThisBatch", (_virtStats get "activationBlocksThisBatch") + 1];
+            _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
+        };
     };
 
     true
@@ -65,11 +69,12 @@ if (_nearestDist > _activationDist && {_isActive}) then {
     } else {
         private _deactivationLoad = [_groupData, true] call FLO_fnc_virtualizationGetGroupUnitLoad;
         ["VIRTUALIZATION", 3, format["Deactivating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
-        [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
-        FLO_VirtUpdate set ["activeUnitCount", ((_activeUnitCount - _deactivationLoad) max 0)];
-        _virtStats set ["deactivationsTotal", (_virtStats get "deactivationsTotal") + 1];
-        _virtStats set ["deactivationsThisBatch", (_virtStats get "deactivationsThisBatch") + 1];
-        _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
+        if ([_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup) then {
+            FLO_VirtUpdate set ["activeUnitCount", ((_activeUnitCount - _deactivationLoad) max 0)];
+            _virtStats set ["deactivationsTotal", (_virtStats get "deactivationsTotal") + 1];
+            _virtStats set ["deactivationsThisBatch", (_virtStats get "deactivationsThisBatch") + 1];
+            _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
+        };
     };
 };
 
