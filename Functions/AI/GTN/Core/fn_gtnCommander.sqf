@@ -48,13 +48,13 @@ private _monitor = [_planner, _worldState] call FLO_fnc_gtnMonitor;
 private _capabilityAnalyzer = call FLO_fnc_gtnCapabilityAnalyzer;
 private _artilleryManager = call FLO_fnc_gtnArtilleryManager;
 
-private _attackTrackCount = FLO_GTN_AttackLaneHandle get "value";
+// Defense & Offensive Data
+private _tempoInterval = FLO_GTN_TempoHandle get "value";
+private _attackCoverage = FLO_GTN_AttackCoverageHandle get "value";
+private _attackTrackCount = 1;
 private _defenseCoverage = FLO_GTN_DefenseCoverageHandle get "value";
 private _defenseTrackCount = 1;
-private _tempoInterval = FLO_GTN_TempoHandle get "value";
-private _difficultyValue = FLO_DifficultyHandle get "value";
 private _garrisonHandle = FLO_GTN_GarrisonHandle;
-private _aggressionValue = _difficultyValue / 1.5;
 private _garrisonRearBaseGroups = _garrisonHandle get "rearBaseGroups";
 private _garrisonFrontlineBaseGroups = _garrisonHandle get "frontlineBaseGroups";
 private _garrisonPriorityBonusGroups = _garrisonHandle get "priorityBonusGroups";
@@ -131,22 +131,15 @@ private _gtnCommander = createHashMapObject [[
     
     // Configuration
     ["_config", createHashMapFromArray [
-        ["aggressiveness", _aggressionValue],      // 0-1, affects offensive vs defensive posture
-        ["riskTolerance", _aggressionValue],       // 0-1, affects willingness to attack with lower ratios
         ["replanInterval", 60],       // Minimum seconds between replans
         ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
         ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
+        ["attackCoverageMultiplier", _attackCoverage], // Scales per-objective attack caps without multiplying ATK tracks
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
-        ["attackGroupsPerFrontLink", 6], // Scale live attack cap by number of direct friendly frontage links
-        ["attackGroupsPerReserveObjective", 2], // Rear connected friendly objectives raise attack cap, but less than direct frontage links
-        ["attackExtendedFrontlineEnemyDepth", 2], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
-        ["attackExtendedFrontlineMaxRouteMeters", 7000], // Extended-frontline expansion must still be land-connected and operationally local
-        ["attackMinGroupCap", 8], // Never commit less than a meaningful assault package to one objective
-        ["attackMaxGroupCap", 18], // Hard cap to stop theater-wide dogpiles on one objective
-        ["attackDispatchMinGroups", 6], // Minimum group pull when opening an assault package
-        ["attackDispatchMaxGroups", 14], // Upper bound per attack pull so one primitive does not consume the whole theater
+        ["attackExtendedFrontlineEnemyDepth", 1], // Sparse maps may project the attack frontier deeper than the strict frontline when land-connected lanes stay operationally local
+        ["attackExtendedFrontlineMaxRouteMeters", 3500], // Extended-frontline expansion must still be land-connected and operationally local
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
         ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
         ["attackLaneStagingGoalFraction", 0.6], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
@@ -170,12 +163,8 @@ private _gtnCommander = createHashMapObject [[
         ["frontlineCASMinScore", 80], // Prevent trivial objectives from consuming air support
         ["frontlineCASObjectiveLockSeconds", 420], // Cooldown per objective so repeated cycles do not spam CAS on the same target
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
-        ["defenseDispatchMinGroups", 4], // Minimum groups to commit when reinforcing a pressured sector
-        ["defenseDispatchMaxGroups", 12], // Upper bound per defense pull; repeated tasks can still fill the cap
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
         ["defenseContestedCollapseCap", 8], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
-        ["garrisonDispatchMinGroups", 2], // Minimum garrison package once an objective is selected
-        ["garrisonDispatchMaxGroups", 6], // Upper bound per garrison assignment pass
         ["engagementFreshSeconds", 180], // Fresh commander contact window used for exact opportunistic engagement targets
         ["attackEngagementSearchRadius", 700], // Attack groups may engage confirmed enemies near their current position
         ["attackEngagementCorridorRadius", 300], // Attack groups may peel off to confirmed enemies close to their assigned route
@@ -187,8 +176,7 @@ private _gtnCommander = createHashMapObject [[
         ["engagementSaturationPenalty", 30], // Targets already saturated by current commitments become much less attractive than other valid contacts
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
-        ["maxTrackTasksPerCycle", 2], // Primitive burst cap per track per commander update
-        ["debugMode", false]          // Enable verbose logging
+        ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
     ]],
     
     // Statistics
@@ -218,8 +206,7 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
             ["defenseLeases", 0],
-            ["staticAA", 0],
-            ["forcePreservation", 0]
+            ["staticAA", 0]
         ]],
         ["lastMetrics", createHashMap]
     ]],
@@ -279,8 +266,7 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
             ["defenseLeases", 0],
-            ["staticAA", 0],
-            ["forcePreservation", 0]
+            ["staticAA", 0]
         ];
         private _cycleStart = diag_tickTime;
         private _tPhase = diag_tickTime;
@@ -371,11 +357,6 @@ private _gtnCommander = createHashMapObject [[
         private _staticAAMetrics = _self call ["_manageStaticAANetwork", []];
         _phaseMs set ["staticAA", (diag_tickTime - _tPhase) * 1000];
 
-        // Manage force preservation (Retreats & Replenishment)
-        _tPhase = diag_tickTime;
-        private _forcePreservationMetrics = _self call ["_manageForcePreservation", []];
-        _phaseMs set ["forcePreservation", (diag_tickTime - _tPhase) * 1000];
-
         private _groups = FLO_virtualGroups get "_groups";
         private _registryGroupCount = count (keys _groups);
         private _dtMs = (diag_tickTime - _cycleStart) * 1000;
@@ -400,8 +381,7 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAP", _frontlineCAPMetrics],
             ["frontlineCAS", _frontlineCASMetrics],
             ["defenseLeases", _leaseMetrics],
-            ["staticAA", _staticAAMetrics],
-            ["forcePreservation", _forcePreservationMetrics]
+            ["staticAA", _staticAAMetrics]
         ];
 
         _perf set ["lastCycleMs", _dtMs];
@@ -414,7 +394,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 allocate=%14 phases=%15 execute=%16 engage=%17 cap=%18 cas=%19 defense=%20 staticAA=%21 preserve=%22",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 allocate=%14 phases=%15 execute=%16 engage=%17 cap=%18 cas=%19 defense=%20 staticAA=%21",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -435,20 +415,21 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "frontlineCAP",
                 _phaseMs get "frontlineCAS",
                 _phaseMs get "defenseLeases",
-                _phaseMs get "staticAA",
-                _phaseMs get "forcePreservation"
+                _phaseMs get "staticAA"
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 intel | published=%2 groups=%3 concentrations=%4",
+                "[FLO][PERF] GTN commander %1 intel | published=%2 enemyGroups=%3 concentrations=%4 friendlyGroups=%5 support=%6",
                 _self get "_sideKey",
                 _intelPublishMetrics get "published",
                 _intelPublishMetrics get "groupCount",
-                _intelPublishMetrics get "concentrationCount"
+                _intelPublishMetrics get "concentrationCount",
+                _intelPublishMetrics get "friendlyGroupCount",
+                _intelPublishMetrics get "supportMarkerCount"
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 availability | cacheDirty=%2 registry=%3 own=%4 available=%5 scanMs=%6 roundRobinMs=%7 normalizeChanged=%8",
+                "[FLO][PERF] GTN commander %1 availability | cacheDirty=%2 registry=%3 own=%4 available=%5 scanMs=%6 roundRobinMs=%7 atkViable=%8 atkMeaningful=%9 atkSeeded=%10 atkStaged=%11 floor=%12 normalizeChanged=%13",
                 _self get "_sideKey",
                 (_allocationMetrics get "cacheDirty"),
                 _allocationMetrics get "totalGroups",
@@ -456,6 +437,11 @@ private _gtnCommander = createHashMapObject [[
                 _allocationMetrics get "availableCount",
                 _allocationMetrics get "scanMs",
                 _allocationMetrics get "roundRobinMs",
+                _allocationMetrics get "attackViableTrackCount",
+                _allocationMetrics get "attackMeaningfulTrackCount",
+                _allocationMetrics get "attackSeededTrackCount",
+                _allocationMetrics get "attackStagedTrackCount",
+                _allocationMetrics get "attackStagingFloor",
                 _normalizeMetrics get "changed"
             ];
 
@@ -550,7 +536,7 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 defenseLost=%5 attackReleased=%6 aaMoving=%7 aaDeployed=%8 preserveScanned=%9 retreats=%10 arrivals=%11 replenishTicks=%12 returned=%13 vehicleRespawns=%14",
+                "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 defenseLost=%5 attackReleased=%6 aaMoving=%7 aaDeployed=%8",
                 _self get "_sideKey",
                 _leaseMetrics get "releasedCount",
                 _leaseMetrics get "trimmedExcess",
@@ -558,13 +544,7 @@ private _gtnCommander = createHashMapObject [[
                 _leaseMetrics get "lostObjectiveReleaseCount",
                 _attackAssignmentMetrics get "releasedCount",
                 _staticAAMetrics get "movingStaticAACount",
-                _staticAAMetrics get "deployedCount",
-                _forcePreservationMetrics get "groupCount",
-                _forcePreservationMetrics get "retreatOrders",
-                _forcePreservationMetrics get "retreatArrivals",
-                _forcePreservationMetrics get "replenishTicks",
-                _forcePreservationMetrics get "returnedToDuty",
-                _forcePreservationMetrics get "vehicleRespawns"
+                _staticAAMetrics get "deployedCount"
             ];
 
             diag_log format [
@@ -618,7 +598,7 @@ private _gtnCommander = createHashMapObject [[
         } forEach _tracks;
     }],
     
-    // Assign attack tracks to distinct frontline source sectors before pool allocation.
+    // Build the shared offensive track's local frontage context from maintained attack reachability.
     ["_buildAttackTrackSectors", {
         params [["_attackTracks", []]];
 
@@ -628,113 +608,36 @@ private _gtnCommander = createHashMapObject [[
         } forEach _attackTracks;
 
         if ((count _attackTracks) == 0) exitWith { createHashMap };
-
-        private _ownSide = _self get "_ownSide";
         private _frontlineEnemyObjectives = _self call ["_getAttackFrontlineEnemyObjectives", []];
-        private _sourceScores = createHashMap;
-        private _sourcePositions = createHashMap;
+        private _sectorMap = createHashMap;
+
+        if ((count (keys _frontlineEnemyObjectives)) == 0) exitWith { _sectorMap };
+
+        private _sourceObjectives = [];
+        private _sourcePositions = [];
 
         {
-            private _enemyObj = _frontlineEnemyObjectives get _x;
-            private _scoreAdd = (_enemyObj get "priority")
-                + ((_enemyObj get "enemyCount") * 2)
-                + (_enemyObj get "friendlyCount")
-                + (if (_enemyObj get "contested") then { 20 } else { 0 });
-
             {
-                private _sourceScore = if (_x in _sourceScores) then {
-                    _sourceScores get _x
-                } else {
-                    0
-                };
-                _sourceScores set [_x, _sourceScore + _scoreAdd];
-                _sourcePositions set [_x, ((FLO_Objectives get _x) get "position")];
+                if (_x in _sourceObjectives) then { continue };
+                _sourceObjectives pushBack _x;
+                _sourcePositions pushBack ((FLO_Objectives get _x) get "position");
             } forEach (_self call ["_getFriendlyAttackSourceObjectives", [_x]]);
         } forEach (keys _frontlineEnemyObjectives);
 
-        if ((count (keys _sourceScores)) == 0) exitWith { createHashMap };
+        if ((count _sourceObjectives) == 0) exitWith { _sectorMap };
 
-        private _rankedSources = [];
+        private _sumX = 0;
+        private _sumY = 0;
         {
-            _rankedSources pushBack [-( _sourceScores get _x), _x];
-        } forEach (keys _sourceScores);
-        _rankedSources sort true;
+            _sumX = _sumX + (_x select 0);
+            _sumY = _sumY + (_x select 1);
+        } forEach _sourcePositions;
+        private _anchorPos = [_sumX / (count _sourcePositions), _sumY / (count _sourcePositions), 0];
 
-        private _trackAssignments = [];
-        {
-            _trackAssignments pushBack [_x, []];
-        } forEach _attackTracks;
-
-        for "_i" from 0 to ((count _rankedSources) - 1) do {
-            private _sourceObjId = (_rankedSources select _i) select 1;
-            private _sourcePos = _sourcePositions get _sourceObjId;
-            private _selectedIdx = -1;
-
-            for "_j" from 0 to ((count _trackAssignments) - 1) do {
-                if ((count ((_trackAssignments select _j) select 1)) == 0) exitWith {
-                    _selectedIdx = _j;
-                };
-            };
-
-            if (_selectedIdx < 0) then {
-                private _bestDist = 1e12;
-                private _bestAssignedCount = 1000000;
-
-                for "_j" from 0 to ((count _trackAssignments) - 1) do {
-                    private _pair = _trackAssignments select _j;
-                    private _assignedSources = _pair select 1;
-                    private _sumX = 0;
-                    private _sumY = 0;
-
-                    {
-                        private _assignedPos = _sourcePositions get _x;
-                        _sumX = _sumX + (_assignedPos select 0);
-                        _sumY = _sumY + (_assignedPos select 1);
-                    } forEach _assignedSources;
-
-                    private _anchorPos = [_sumX / (count _assignedSources), _sumY / (count _assignedSources), 0];
-                    private _dist = _anchorPos distance2D _sourcePos;
-
-                    if (
-                        _dist < _bestDist
-                        || { _dist == _bestDist && { (count _assignedSources) < _bestAssignedCount } }
-                    ) then {
-                        _bestDist = _dist;
-                        _bestAssignedCount = count _assignedSources;
-                        _selectedIdx = _j;
-                    };
-                };
-            };
-
-            private _selectedPair = _trackAssignments select _selectedIdx;
-            private _selectedSources = _selectedPair select 1;
-            _selectedSources pushBack _sourceObjId;
-            _selectedPair set [1, _selectedSources];
-            _trackAssignments set [_selectedIdx, _selectedPair];
-        };
-
-        private _sectorMap = createHashMap;
-        {
-            _x params ["_track", "_sectorObjectives"];
-
-            private _anchorPos = [];
-            if ((count _sectorObjectives) > 0) then {
-                private _sumX = 0;
-                private _sumY = 0;
-
-                {
-                    private _objPos = _sourcePositions get _x;
-                    _sumX = _sumX + (_objPos select 0);
-                    _sumY = _sumY + (_objPos select 1);
-                } forEach _sectorObjectives;
-
-                _anchorPos = [_sumX / (count _sectorObjectives), _sumY / (count _sectorObjectives), 0];
-            };
-
-            _track set ["frontSectorObjectives", _sectorObjectives];
-            _track set ["frontSectorAnchorPos", _anchorPos];
-            _sectorMap set [_track get "id", _sectorObjectives];
-        } forEach _trackAssignments;
+        private _track = _attackTracks select 0;
+        _track set ["frontSectorObjectives", _sourceObjectives];
+        _track set ["frontSectorAnchorPos", _anchorPos];
+        _sectorMap set [_track get "id", _sourceObjectives];
 
         _sectorMap
     }],
@@ -754,6 +657,11 @@ private _gtnCommander = createHashMapObject [[
             ["attackAllocated", 0],
             ["trackCount", count _tracks],
             ["frontSectorCount", 0],
+            ["attackViableTrackCount", 0],
+            ["attackMeaningfulTrackCount", 0],
+            ["attackSeededTrackCount", 0],
+            ["attackStagedTrackCount", 0],
+            ["attackStagingFloor", 0],
             ["scanMs", 0],
             ["roundRobinMs", 0]
         ];
@@ -787,25 +695,11 @@ private _gtnCommander = createHashMapObject [[
         private _allObjectives = _ws call ["_getObjectives", []];
         private _frontSectors = _self call ["_buildAttackTrackSectors", [_attackTracks]];
         _metrics set ["frontSectorCount", count (keys _frontSectors)];
-        private _attackReserveGraphDepth = ((_self get "_config") get "attackReserveGraphDepth");
-        private _trackReserveBands = createHashMap;
-
-        {
-            private _sectorObjectives = _x get "frontSectorObjectives";
-            private _reserveBands = createHashMap;
-            if ((count _sectorObjectives) > 0) then {
-                _reserveBands = [_self, _sectorObjectives, _attackReserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
-            };
-
-            _trackReserveBands set [_x get "id", _reserveBands];
-        } forEach _attackTracks;
-
         // Front-aware allocation to tracks with a reserved defense slice.
         private _tRoundRobin = diag_tickTime;
         private _ownSide = _self get "_ownSide";
         private _enemySide = _self get "_enemySide";
         private _allGroups = FLO_virtualGroups get "_groups";
-        private _fallbackAttackBand = _attackReserveGraphDepth + 1;
         private _defenseShare = 0;
         { _defenseShare = _defenseShare + (_x get "resourceShare"); } forEach _defenseTracks;
 
@@ -875,64 +769,24 @@ private _gtnCommander = createHashMapObject [[
         _metrics set ["defensePoolTarget", _defensePoolTarget];
         _metrics set ["defenseAllocated", _defensePoolTarget];
 
+        private _attackCandidates = [];
         {
-            private _groupId = _x;
-            if (_groupId in _assignedToDefense) then { continue };
-
-            private _gData = _allGroups get _groupId;
-            if (isNil "_gData") then { continue };
-
-            private _assignedTrack = nil;
-            private _homeObjective = _gData get "homeObjective";
-            private _groupPos = _gData get "position";
-
-            if ((count _attackTracks) > 0) then {
-                private _bestTrack = nil;
-                private _bestBand = 10;
-                private _bestDist = 1e12;
-                private _bestPool = 1000000;
-
-                {
-                    private _anchorPos = _x get "frontSectorAnchorPos";
-                    private _reserveBands = _trackReserveBands get (_x get "id");
-                    private _band = _fallbackAttackBand;
-                    if (_homeObjective in _reserveBands) then {
-                        _band = _reserveBands get _homeObjective;
-                    };
-
-                    private _dist = if ((count _anchorPos) >= 2) then { _groupPos distance2D _anchorPos } else { 1e12 };
-                    private _poolSize = count (_x get "groupPool");
-
-                    if (
-                        _band < _bestBand
-                        || { _band == _bestBand && { _dist < _bestDist } }
-                        || { _band == _bestBand && { _dist == _bestDist && { _poolSize < _bestPool } } }
-                    ) then {
-                        _bestTrack = _x;
-                        _bestBand = _band;
-                        _bestDist = _dist;
-                        _bestPool = _poolSize;
-                    };
-                } forEach _attackTracks;
-
-                _assignedTrack = _bestTrack;
-            };
-
-            if (isNil "_assignedTrack" && {!isNil "_defenseTrack"}) then {
-                _assignedTrack = _defenseTrack;
-            };
-
-            if (isNil "_assignedTrack") then { continue };
-
-            private _pool = _assignedTrack get "groupPool";
-            _pool pushBack _groupId;
-            _assignedTrack set ["groupPool", _pool];
+            if (_x in _assignedToDefense) then { continue };
+            _attackCandidates pushBack _x;
         } forEach _allAvailable;
+
+        private _attackMetrics = [_self, _attackTracks, _attackCandidates] call FLO_fnc_gtnAllocateAttackTrackPools;
+
+        _metrics set ["attackPoolTarget", count _attackCandidates];
+        _metrics set ["attackAllocated", _attackMetrics get "assignedCount"];
+        _metrics set ["attackViableTrackCount", _attackMetrics get "viableTrackCount"];
+        _metrics set ["attackMeaningfulTrackCount", _attackMetrics get "meaningfulTrackCount"];
+        _metrics set ["attackSeededTrackCount", _attackMetrics get "seededTrackCount"];
+        _metrics set ["attackStagedTrackCount", _attackMetrics get "stagedTrackCount"];
+        _metrics set ["attackStagingFloor", _attackMetrics get "stagingFloor"];
         _metrics set ["roundRobinMs", (diag_tickTime - _tRoundRobin) * 1000];
-        _metrics set ["allocatedCount", _totalCount];
-        _metrics set ["attackAllocated", _totalCount - _defensePoolTarget];
-        _metrics set ["attackPoolTarget", _totalCount - _defensePoolTarget];
-        
+        _metrics set ["allocatedCount", _defensePoolTarget + (_attackMetrics get "assignedCount")];
+
         // Log allocation
         {
             private _track = _x;
@@ -1131,23 +985,6 @@ private _gtnCommander = createHashMapObject [[
         } forEach _tracks;
     }],
 
-    // === GOAL MANAGEMENT ===
-
-    // Set a new strategic goal
-    ["_setGoal", {
-        params ["_goalId", ["_params", []]];
-
-        _self set ["_currentGoal", _goalId];
-
-        private _monitor = _self get "_monitor";
-        _monitor call ["_setCurrentGoal", [_goalId, _params]];
-
-        // Create new plan for new goal
-        _self call ["_createPlan", []];
-
-        ["GTN", 3, format["Goal set to: %1", _goalId]] call FLO_fnc_log;
-    }],
-
     // === CONFIGURATION ===
 
     ["_configure", {
@@ -1199,11 +1036,6 @@ private _gtnCommander = createHashMapObject [[
 
     ["_getEnemySide", {
         _self get "_enemySide"
-    }],
-
-    ["_getResourceObject", {
-        private _sideKey = _self get "_sideKey";
-        FLO_SideResources get _sideKey
     }],
 
     // === TACTICAL METHODS (used by executor handlers) ===
@@ -1601,9 +1433,6 @@ private _gtnCommander = createHashMapObject [[
             };
         } forEach (_self get "_tracks");
 
-        private _executor = _self get "_executor";
-        _executor call ["_pruneRemovedGroup", [_groupId]];
-
         _self set ["_availabilityCacheDirty", true];
     }],
 
@@ -1658,7 +1487,7 @@ private _gtnCommander = createHashMapObject [[
         };
 
         _cap = ceil (_cap * _coverage);
-        _cap = (_cap max 4) min 32;
+        _cap = (_cap max 4) min 12;
 
         if (_contested && {_enemyCount > 0}) then {
             private _forceRatio = _friendlyCount / _enemyCount;
@@ -1760,115 +1589,31 @@ private _gtnCommander = createHashMapObject [[
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { 0 };
 
-        private _sourceObjectives = _self call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
-        private _config = _self get "_config";
-        private _reserveBands = [_self, _sourceObjectives, (_config get "attackReserveGraphDepth")] call FLO_fnc_gtnBuildObjectiveReserveBands;
-        private _sourceCount = count _sourceObjectives;
-        private _reserveObjectiveCount = ((count (keys _reserveBands)) - _sourceCount) max 0;
-        private _cap = (_sourceCount * (_config get "attackGroupsPerFrontLink"))
-            + (_reserveObjectiveCount * (_config get "attackGroupsPerReserveObjective"));
-
-        _cap = (_cap max (_config get "attackMinGroupCap")) min (_config get "attackMaxGroupCap");
-        _cap
-    }],
-
-    // How many groups one attack primitive should pull right now for this objective.
-    ["_estimateAttackDispatchCount", {
-        params ["_objectiveId", ["_minimum", 0], ["_track", nil]];
-        if (_objectiveId == "") exitWith { 0 };
-
-        private _attackCap = _self call ["_getAttackCapForObjective", [_objectiveId]];
-        if (_attackCap <= 0) exitWith { 0 };
-
-        private _activeAttackers = _self call ["_countObjectiveAttackers", [_objectiveId]];
-        private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
-        if (_slotsRemaining <= 0) exitWith { 0 };
-
-        private _config = _self get "_config";
-        private _requestCount = ceil (_slotsRemaining * 0.75);
-        private _minDispatch = if (_minimum > 0) then { _minimum } else { _config get "attackDispatchMinGroups" };
-
-        if (_slotsRemaining > _minDispatch) then {
-            _requestCount = _requestCount max _minDispatch;
-        } else {
-            _requestCount = _slotsRemaining;
-        };
-
-        _requestCount = _requestCount min (_config get "attackDispatchMaxGroups");
-
-        if (!isNil "_track") then {
-            _requestCount = _requestCount min (count (_track get "groupPool"));
-        };
-
-        _requestCount min _slotsRemaining
-    }],
-
-    // How many groups one defense primitive should pull right now for this objective.
-    ["_estimateDefenseDispatchCount", {
-        params ["_objectiveId", ["_minimum", 0], ["_track", nil]];
-        if (_objectiveId == "") exitWith { 0 };
-
-        private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
-        if (_cap <= 0) exitWith { 0 };
-
-        private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
-        private _slotsRemaining = (_cap - _assigned) max 0;
-        if (_slotsRemaining <= 0) exitWith { 0 };
-
         private _ws = _self get "_worldState";
         private _objectives = _ws call ["_getObjectives", []];
         if !(_objectiveId in _objectives) exitWith { 0 };
 
         private _obj = _objectives get _objectiveId;
-        private _underAttack = _obj get "underAttack";
-        private _contested = _obj get "contested";
+        if ((_obj get "owner") == (_self get "_ownSide")) exitWith { 0 };
+
         private _enemyCount = _obj get "enemyCount";
         private _friendlyCount = _obj get "friendlyCount";
-        private _forceDeficit = (_enemyCount - _friendlyCount) max 0;
-        private _requestCount = ceil (_slotsRemaining * (if (_underAttack || _contested) then { 0.75 } else { 0.5 }));
+        private _underAttack = _obj get "underAttack";
+        private _contested = _obj get "contested";
         private _config = _self get "_config";
-        private _minDispatch = if (_minimum > 0) then { _minimum } else { _config get "defenseDispatchMinGroups" };
+        private _coverage = _config get "attackCoverageMultiplier";
+        private _cap = (4 max (ceil (_enemyCount * 1.25))) min 24;
+        if (_underAttack) then { _cap = (_cap + 4) min 32; };
+        if (_contested) then { _cap = (_cap + 2) min 32; };
 
-        if (_slotsRemaining > _minDispatch) then {
-            _requestCount = _requestCount max _minDispatch;
-        } else {
-            _requestCount = _slotsRemaining;
+        private _deficit = (_enemyCount - _friendlyCount) max 0;
+        if (_deficit > 0) then {
+            _cap = (_cap + (ceil (_deficit * 0.5))) min 32;
         };
 
-        _requestCount = _requestCount + ((ceil (_forceDeficit * 0.35)) min 3);
-        _requestCount = _requestCount min (_config get "defenseDispatchMaxGroups");
-
-        if (!isNil "_track") then {
-            _requestCount = _requestCount min (count (_track get "groupPool"));
-        };
-
-        _requestCount min _slotsRemaining
-    }],
-
-    // How many groups one garrison pass should commit to an owned objective.
-    ["_estimateGarrisonDispatchCount", {
-        params ["_objectiveId", ["_threatLevel", 0], ["_frontline", false], ["_track", nil]];
-        if (_objectiveId == "") exitWith { 0 };
-
-        private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
-        if (_cap <= 0) exitWith { 0 };
-
-        private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
-        private _slotsRemaining = (_cap - _assigned) max 0;
-        if (_slotsRemaining <= 0) exitWith { 0 };
-
-        private _config = _self get "_config";
-        private _requestCount = (ceil (_threatLevel / 1.5)) max (_config get "garrisonDispatchMinGroups");
-        if (_frontline) then {
-            _requestCount = _requestCount + 2;
-        };
-        _requestCount = _requestCount min (_config get "garrisonDispatchMaxGroups");
-
-        if (!isNil "_track") then {
-            _requestCount = _requestCount min (count (_track get "groupPool"));
-        };
-
-        _requestCount min _slotsRemaining
+        _cap = ceil (_cap * _coverage);
+        _cap = (_cap max 4) min 10;
+        _cap
     }],
 
     // Count current attackers assigned to a specific objective.
@@ -2321,57 +2066,6 @@ private _gtnCommander = createHashMapObject [[
         _self call ["_requestAirMission", [_pos, "CAP"]]
     }],
 
-    // Check if groups have arrived at a position (within threshold)
-    ["_checkGroupsArrived", {
-        params ["_groupIds", "_pos", ["_threshold", 100]];
-
-        if !(_pos isEqualType [] && {count _pos >= 2}) exitWith { false };
-
-        private _groups = FLO_virtualGroups get "_groups";
-        private _arrivedCount = 0;
-        private _validCount = 0;
-
-        {
-            private _gData = _groups get _x;
-            if (isNil "_gData") then { continue };
-            _validCount = _validCount + 1;
-
-            private _groupPos = _gData get "position";
-            if (_groupPos distance2D _pos <= _threshold) then {
-                _arrivedCount = _arrivedCount + 1;
-            };
-        } forEach _groupIds;
-
-        // All surviving groups must arrive (don't wait for dead/deleted groups)
-        if (_validCount == 0) exitWith { true };
-        _arrivedCount >= _validCount
-    }],
-
-    // Identify objective with weakest defense (for opportunistic attacks)
-    ["_identifyWeakSector", {
-        private _ws = _self get "_worldState";
-        private _enemyObjs = _ws call ["_getEnemyObjectives", []];
-
-        if (count (keys _enemyObjs) == 0) exitWith { "" };
-
-        // Find objective with lowest defense strength
-        private _weakest = "";
-        private _lowestStrength = 1000;
-
-        {
-            private _obj = _enemyObjs get _x;
-            private _strength = _obj getOrDefault ["defenseStrength", 50];
-
-            // Prefer lower strength
-            if (_strength < _lowestStrength) then {
-                _lowestStrength = _strength;
-                _weakest = _x;
-            };
-        } forEach (keys _enemyObjs);
-
-        _weakest
-    }],
-
     // Static AA deployment finalization
     // - Static AA groups are created by logistics network
     // - Commander only finalizes deployment when movers reach target
@@ -2426,275 +2120,6 @@ private _gtnCommander = createHashMapObject [[
         } forEach (keys _groups);
 
         _metrics
-    }],
-
-    // Force Preservation Management
-    // Handles retreating damaged groups, ordering dismounted pilots RTB, and replenishing forces.
-    ["_manageForcePreservation", {
-        private _groups = FLO_virtualGroups get "_groups";
-        private _replenishInterval = 300; // 5 minutes for replenishment tick
-        private _metrics = createHashMapFromArray [
-            ["groupCount", count (keys _groups)],
-            ["activeChecks", 0],
-            ["retreatOrders", 0],
-            ["retreatArrivals", 0],
-            ["replenishChecks", 0],
-            ["replenishTicks", 0],
-            ["returnedToDuty", 0],
-            ["vehicleRespawns", 0]
-        ];
-
-        {
-            private _gId = _x;
-            private _gData = _groups get _gId;   
-            private _currentOrder = _gData get "commanderOrder";
-            private _state = _gData getOrDefault ["preservationState", "ACTIVE"]; // ACTIVE, RETREATING, REPLENISHING
-            private _groupType = _gData get "groupType";
-
-            // === CHECK FOR RETREAT CRITERIA ===
-            if (_state == "ACTIVE") then {
-                _metrics set ["activeChecks", (_metrics get "activeChecks") + 1];
-                // Dismounted Pilot
-                // If group type was air but unit count > 0 and vehicle count == 0 (or all vehicles dead), treat as dismounted
-                private _isPilot = false;
-                if (_groupType in ["helicopter", "jet", "air"]) then {
-                     // Check if they are on foot
-                    private _realGroup = _gData get "realGroup";
-                    if (!isNull _realGroup) then {
-                        private _hasAirVehicle = false;
-                        {
-                            if (vehicle _x isKindOf "Air" && alive vehicle _x) then { _hasAirVehicle = true; };
-                        } forEach units _realGroup;
-                         
-                        if (!_hasAirVehicle && {count units _realGroup > 0}) then {
-                            _isPilot = true;
-                        };
-                    };
-                };
-
-                // Significant Damage (< 50% strength)
-                private _unitCount = _gData get "unitCount";
-                private _template = _gData getOrDefault ["template", []];
-                private _originalCount = count _template;
-                
-                // If template missing, assume current is original (fallback)
-                if (_originalCount == 0) then { _originalCount = _unitCount max 1; };
-
-                private _isDamaged = (_unitCount / _originalCount) < 0.5;
-
-                if (_isPilot || _isDamaged) then {
-                    _metrics set ["retreatOrders", (_metrics get "retreatOrders") + 1];
-                    ["GTN", 3, format["Force Preservation: Group %1 (%2) retreating. Pilot: %3, Damage: %4/%5", 
-                        _gId, _groupType, _isPilot, _unitCount, _originalCount]] call FLO_fnc_log;
-                    
-                    // Release from Air Manager so it doesn't crash if this group dies/deletes
-                    if (!isNil "FLO_GTNAirAssetManager") then {
-                         FLO_GTNAirAssetManager call ["_releaseAirAsset", [_gId]];
-                    };
-                    
-                    _gData set ["preservationState", "RETREATING"];
-                    [_gData, "PRESERVATION", "RETREAT"] call FLO_fnc_virtualizationSetMissionLock;
-                    [_gData] call FLO_fnc_virtualizationClearCommanderOrder;
-                    
-                    // Find nearest friendly objective
-                    private _ws = _self get "_worldState";
-                    private _friendlyObjs = _ws call ["_getFriendlyObjectives", []];
-                    private _gPos = _gData get "position";
-                    private _retreatObj = "";
-                    private _bestDist = 999999;
-                    
-                    {
-                        private _objPos = [_x] call FLO_fnc_getObjectivePosition;
-                        private _dist = _gPos distance2D _objPos;
-                        
-                        // Prioritize objectives > 5km away
-                        // If we find one > 5km, track the *nearest* of those deep objectives
-                        if (_dist > 5000) then {
-                            if (_dist < _bestDist) then {
-                                _bestDist = _dist;
-                                _retreatObj = _x;
-                            };
-                        };
-                    } forEach (keys _friendlyObjs);
-
-                    // Fallback: If no deep objective found, just go to the furthest one available (or nearest if map is small)
-                    // Actually, let's just go to the nearest friendly if no >5km option exists, to ensure safety
-                    if (_retreatObj == "") then {
-                         _bestDist = 999999;
-                         {
-                            private _objPos = [_x] call FLO_fnc_getObjectivePosition;
-                            private _dist = _gPos distance2D _objPos;
-                            if (_dist < _bestDist) then {
-                                _bestDist = _dist;
-                                _retreatObj = _x;
-                            };
-                        } forEach (keys _friendlyObjs);
-                    };
-
-                    if (_retreatObj != "") then {
-                        private _retreatPos = [_retreatObj] call FLO_fnc_getObjectivePosition;
-                        _gData set ["retreatPos", _retreatPos];
-                         
-                        private _retreatFormation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
-                        private _wps = [[_retreatPos, "MOVE", "SAFE", "FULL", _retreatFormation, "GREEN", 0]];
-                        [_gId, _wps, false, true, "GTN_RETREAT"] call FLO_fnc_updateVirtualGroupWaypoints;
-                    };
-                };
-            };
-            
-            // === HANDLE RETREATING MOVEMENT ===
-            if (_state == "RETREATING") then {
-                private _retreatPos = _gData getOrDefault ["retreatPos", []];
-                if (count _retreatPos == 0) exitWith { _gData set ["preservationState", "ACTIVE"]; };
-                
-                private _gPos = _gData get "position";
-                if (_gPos distance2D _retreatPos < 150) then {
-                    _metrics set ["retreatArrivals", (_metrics get "retreatArrivals") + 1];
-                    ["GTN", 3, format["Group %1 arrived at safe haven. Beginning replenishment.", _gId]] call FLO_fnc_log;
-                    _gData set ["preservationState", "REPLENISHING"];
-                    _gData set ["lastReplenishTime", diag_tickTime];
-                };
-            };
-
-            // === HANDLE REPLENISHMENT ===
-            if (_state == "REPLENISHING") then {
-                _metrics set ["replenishChecks", (_metrics get "replenishChecks") + 1];
-                private _lastRep = _gData getOrDefault ["lastReplenishTime", 0];
-                
-                if (diag_tickTime - _lastRep >= _replenishInterval) then {
-                    // Check resources before replenishing
-                    private _cost = 15;
-                    private _canAfford = true;
-                    private _resources = _self call ["_getResourceObject", []];
-                    
-                    if (isNil "_resources") then {
-                        _canAfford = false;
-                    } else {
-                        if !(_resources call ["canAfford", [_cost, "reinforcement"]]) then {
-                            _canAfford = false;
-                            ["GTN", 3, format["Group %1 replenishment paused - insufficient resources", _gId]] call FLO_fnc_log;
-                        };
-                    };
-
-                    if (_canAfford) then {
-                        _metrics set ["replenishTicks", (_metrics get "replenishTicks") + 1];
-                        // Dedect cost
-                        _resources call ["spendResources", [_cost, "reinforcement"]];
-                    
-                        // Trickle replenishment
-                        private _unitCount = _gData get "unitCount";
-                        private _template = _gData getOrDefault ["template", []];
-                        private _originalCount = count _template;
-                        
-                        if (_originalCount == 0) then { _originalCount = _unitCount max 1; }; // Fallback
-                        
-                        // Add 10% or 1 man, whichever is greater
-                        private _increase = ceil(_originalCount * 0.1) max 1;
-                        private _newCount = (_unitCount + _increase) min _originalCount;
-                        
-                        _gData set ["unitCount", _newCount];
-                        _gData set ["strength", _newCount / _originalCount]; // Update strength multiplier
-                        _gData set ["lastReplenishTime", diag_tickTime];
-                        
-                        ["GTN", 3, format["Group %1 replenish tick: %2 -> %3 (Target: %4)", _gId, _unitCount, _newCount, _originalCount]] call FLO_fnc_log;
-                        
-                        // Apply to real group if active
-                        if (_gData get "isActive") then {
-                            // Note: Spawning units into live group is complex (loadouts etc). 
-                            // For now, we simulate success by healing existing units.
-                            // Full respawn happens when revirtualized and activated again.
-                            private _realGroup = _gData get "realGroup";
-                            { _x setDamage 0; } forEach units _realGroup; 
-                        };
-
-                        if (_newCount >= _originalCount) then {
-                            // Check if we need to respawn vehicle (Air groups without vehicles)
-                            private _needsRespawn = false;
-                            if (_groupType in ["helicopter", "jet", "air"]) then {
-                                private _realGroup = _gData get "realGroup";
-                                if (!isNull _realGroup) then {
-                                    // Re-use logic: check if purely infantry
-                                    private _hasAirVehicle = false;
-                                    { if (vehicle _x isKindOf "Air") then { _hasAirVehicle = true; }; } forEach units _realGroup;
-                                    if (!_hasAirVehicle) then { _needsRespawn = true; };
-                                };
-                            };
-
-                            if (_needsRespawn) then {
-                                _metrics set ["vehicleRespawns", (_metrics get "vehicleRespawns") + 1];
-                                ["GTN", 3, format["Group %1 fully replenished but needs vehicle. Deactivating to respawn.", _gId]] call FLO_fnc_log;
-                                [_gId, _gData] call FLO_fnc_deactivateVirtualGroup;
-                                _gData set ["preservationState", "ACTIVE"]; 
-                                [_gData] call FLO_fnc_virtualizationClearMissionLock;
-                                [_gData] call FLO_fnc_virtualizationClearCommanderOrder;
-                            } else {
-                                _metrics set ["returnedToDuty", (_metrics get "returnedToDuty") + 1];
-                                ["GTN", 3, format["Group %1 fully replenished. Returning to duty.", _gId]] call FLO_fnc_log;
-                                _gData set ["preservationState", "ACTIVE"];
-                                [_gData] call FLO_fnc_virtualizationClearMissionLock;
-                                [_gData] call FLO_fnc_virtualizationClearCommanderOrder;
-                                // Also reset their behavior/combat mode if active
-                                if (_gData get "isActive") then {
-                                    private _realGroup = _gData get "realGroup";
-                                    _realGroup setBehaviour "AWARE";
-                                    _realGroup setCombatMode "YELLOW";
-                                };
-                            };
-                        };
-                    };
-                };
-            };
-            
-        } forEach (keys _groups);
-
-        _metrics
-    }],
-
-    // Get staging position for an objective (offset from target)
-    ["_getStagingPosition", {
-        params ["_objId"];
-
-        private _targetPos = [_objId] call FLO_fnc_getObjectivePosition;
-        if (isNil "_targetPos") exitWith { nil };
-
-        // Find nearest friendly (OPFOR) objective to stage at
-        private _ws = _self get "_worldState";
-        private _friendlyObjs = _ws call ["_getFriendlyObjectives", []];
-
-        if (count (keys _friendlyObjs) == 0) exitWith {
-            // No friendly objectives - fall back to offset from target
-            ["GTN", 2, "No friendly objectives for staging - using offset position"] call FLO_fnc_log;
-            private _offset = 500 + random 300;
-            private _dir = random 360;
-            _targetPos getPos [_offset, _dir]
-        };
-
-        // Find closest friendly objective to the target
-        private _bestObj = "";
-        private _bestDist = 999999;
-
-        {
-            private _objData = _friendlyObjs get _x;
-            private _objPos = [_x] call FLO_fnc_getObjectivePosition;
-            if (isNil "_objPos") then { continue };
-
-            private _dist = _objPos distance2D _targetPos;
-            if (_dist < _bestDist) then {
-                _bestDist = _dist;
-                _bestObj = _x;
-            };
-        } forEach (keys _friendlyObjs);
-
-        if (_bestObj == "") exitWith {
-            ["GTN", 2, "Could not find valid friendly objective for staging"] call FLO_fnc_log;
-            nil
-        };
-
-        private _stagingPos = [_bestObj] call FLO_fnc_getObjectivePosition;
-
-        ["GTN", 3, format["Staging at friendly objective %1 (%2m from target)", _bestObj, round _bestDist]] call FLO_fnc_log;
-
-        _stagingPos
     }],
 
     // === DEBUG ===

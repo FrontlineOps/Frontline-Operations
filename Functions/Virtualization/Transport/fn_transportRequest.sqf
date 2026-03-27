@@ -67,8 +67,8 @@ if (!_attached) exitWith {
 
 private _transData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
 
-// Calculate dismount position (100m from destination)
-private _dismountPos = _destinationPos getPos [100, _destinationPos getDir _currentPos];
+// Calculate dismount position short of the destination
+private _dismountPos = _destinationPos getPos [FLO_Transport_DismountDistance, _destinationPos getDir _currentPos];
 
 // Set transport waypoints
 private _waypoints = [
@@ -80,6 +80,7 @@ private _waypoints = [
 _transData set ["dismountAtWaypoint", 0];
 [_transData, "TRANSPORT", "TRANSPORT_REQUEST"] call FLO_fnc_virtualizationSetMissionLock;
 [_transData, "TRANSPORT"] call FLO_fnc_virtualizationSetExecutionState;
+_infData set ["postDismountWaypoint", [_destinationPos, "TRANSPORT_REQUEST"]];
 
 ["TRANSPORT", 3, format["Request: Transport %1 assigned to carry %2 to destination (%3m)", 
     _transportId, _infantryGroupId, round _distance]] call FLO_fnc_log;

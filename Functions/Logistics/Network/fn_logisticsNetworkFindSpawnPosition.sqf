@@ -28,7 +28,8 @@ if (_spawnPos isEqualTo [0, 0, 0]) then {
 };
 
 private _targetPos = (FLO_Objectives get _targetObjId) get "position";
+private _sourceObjectivePos = (FLO_Objectives get _sourceObjId) get "position";
 
-if ((_spawnPos distance2D _targetPos) > 4500) exitWith { [[0, 0, 0], ""] };
+if ((_sourceObjectivePos distance2D _targetPos) > (_net get "SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS")) exitWith { [[0, 0, 0], ""] };
 
 [_spawnPos, _sourceObjId]

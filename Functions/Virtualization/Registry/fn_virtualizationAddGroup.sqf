@@ -4,9 +4,12 @@
 
 params ["_virt", "_groupId", "_groupData"];
 
-(_virt get "_groups") set [_groupId, _groupData];
-
 private _pos = _groupData get "position";
+if !([_pos, true, format ["virtualizationAddGroup %1", _groupId]] call FLO_fnc_validateGroupPosition) exitWith {
+    false
+};
+
+(_virt get "_groups") set [_groupId, _groupData];
 [_groupId, _pos, _groupData get "side"] call FLO_fnc_virtualizationSpatialAdd;
 
 if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {

@@ -59,30 +59,33 @@ private _poolUnits = _pools get "units";
         _infGroup = [_infGroup, _attachedSide] call FLO_fnc_setSide;
     };
 
-    if (count _transportVehicles > 0) then {
-        private _vehicleIndex = 0;
-        {
-            private _vehicle = _transportVehicles select _vehicleIndex;
-            if (_vehicle emptyPositions "cargo" > 0) then {
-                _x moveInCargo _vehicle;
-            } else {
-                _vehicleIndex = (_vehicleIndex + 1) mod (count _transportVehicles);
-                private _nextVeh = _transportVehicles select _vehicleIndex;
-                if (_nextVeh emptyPositions "cargo" > 0) then {
-                    _x moveInCargo _nextVeh;
-                };
-            };
-        } forEach units _infGroup;
-    };
-
     [_attachedData, _infGroup] call FLO_fnc_virtualizationSetRealGroup;
     [_attachedData] call FLO_fnc_virtualizationClearRealVehicles;
     _attachedData set ["isActive", true];
     _attachedData set ["lastStateChangeTime", diag_tickTime];
-    [_attachedData, _groupId] call FLO_fnc_virtualizationSetMountedIn;
     _infGroup setVariable ["FLO_virtualGroupId", _attachedId];
 
-    ["VIRTUALIZATION", 3, format ["Loaded attached group %1 (%2 units) into transport %3", _attachedId, count units _infGroup, _groupId]] call FLO_fnc_log;
+    if ([_attachedId, _attachedData, _groupId, _groupData, _transportVehicles] call FLO_fnc_transportMountActivePassengerGroup) then {
+        ["VIRTUALIZATION", 3, format [
+            "Loaded attached group %1 (%2 units) into transport %3",
+            _attachedId,
+            count units _infGroup,
+            _groupId
+        ]] call FLO_fnc_log;
+    } else {
+        ["VIRTUALIZATION", 2, format [
+            "Attached group %1 failed coherent mount into transport %2 (%3/%4 mounted) - forcing detach repair",
+            _attachedId,
+            _groupId,
+            {
+                private _veh = vehicle _x;
+                _veh != _x && {_veh in _transportVehicles}
+            } count (units _infGroup select { alive _x }),
+            count (units _infGroup select { alive _x })
+        ]] call FLO_fnc_log;
+        [_attachedId, random 360] call FLO_fnc_transportDetach;
+        [_attachedId, "TRANSPORT_LOAD_REPAIR"] call FLO_fnc_transportApplyPostDismountWaypoint;
+    };
 } forEach _attachedGroups;
 
 true

@@ -11,6 +11,7 @@ class VirtualizationSystem {
     class virtualizationGetUpdatePerfDefaults {};
     class virtualizationCachePlayers  {};
     class virtualizationRefreshPlayerCache {};
+    class virtualizationReconcileTransportState {};
     class virtualizationRefreshCachedGroups {};
     class virtualizationGetNearestCachedPlayerDistance {};
     class virtualizationIsPositionWithinActivationRange {};
@@ -40,7 +41,9 @@ class VirtualizationRegistry {
     class virtualizationBuildGroupData    {};
     class virtualizationSelectInitialAssetComposition {};
     class virtualizationGetOrganicPackageInfantryCount {};
+    class virtualizationGetOrganicPackageInfantryCounts {};
     class virtualizationCreateOrganicPackageDismount {};
+    class virtualizationRollbackOrganicPackageCreation {};
     class virtualizationSetEnabled       {};
     class virtualizationGetGroup         {};
     class virtualizationAddGroup         {};
@@ -119,24 +122,27 @@ class VirtualizationTransport {
     file = "Functions\Virtualization\Transport";
 
     class transportConfig       {};
-    class transportGetBestEdgeSpawnPos {};
     class transportGetCapacity  {};
-    class transportGetMapEdgePositions {};
     class transportGetGroupCapacity {};
     class transportGetPassengerLoad {};
-    class transportGetSpeed     {};
     class transportGetTrackedGroup {};
+    class transportHasKnownEnemyNearby {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportPoolFind     {};
     class transportPoolFindExisting {};
     class transportPoolRelease  {};
     class transportAttach       {};
+    class transportApplyPostDismountWaypoint {};
     class transportDetach       {};
     class transportDetachAll    {};
+    class transportProcessActiveCarrier {};
+    class transportProcessVirtualCarrier {};
+    class transportMountActivePassengerGroup {};
     class transportRequest      {};
     class transportDismount     {};
-    class transportMapEdge      {};
+    class transportShouldThreatDismount {};
+    class transportSyncActivePassengerGroup {};
 };
 
 class VirtualizationCore {
@@ -239,6 +245,7 @@ class VirtualizationUtilities {
     class getRoadParkingPos       {};
     class getSafeLandPos          {};
     class getSafeUnvirtualizePos  {};
+    class virtualizationNormalizePosition {};
     class virtualizationEstimateVehicleCrewCount {};
     class virtualizationGetGroupUnitLoad {};
     class virtualizationGetRealAssetVehicles {};

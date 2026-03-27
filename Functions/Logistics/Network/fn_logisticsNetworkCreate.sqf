@@ -39,6 +39,15 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_lastReinforcementTarget", _savedStateOverride getOrDefault ["lastReinforcementTarget", ""]];
     _net set ["_recentReinforcementDispatches", []];
     _net set ["_reinforcementQueue", _savedStateOverride getOrDefault ["reinforcementQueue", []]];
+    private _supplyNodeDeliveries = _savedStateOverride getOrDefault ["supplyNodeDeliveries", createHashMap];
+    if !(_supplyNodeDeliveries isEqualType createHashMap) then {
+        _supplyNodeDeliveries = createHashMap;
+    };
+    _net set ["_hqObjectiveId", _savedStateOverride getOrDefault ["hqObjectiveId", ""]];
+    _net set ["_supplyNodeDeliveries", _supplyNodeDeliveries];
+    _net set ["_supplyRouteInfo", createHashMap];
+    _net set ["_activeSupplyNodes", createHashMap];
+    _net set ["_lastSupplyNodeSignature", ""];
 
     private _savedNextDispatchAt = _savedStateOverride getOrDefault ["nextDispatchAt", -1];
     private _maxAllowedDelay = _net get "DISPATCH_MAX_INTERVAL";
@@ -67,6 +76,11 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_lastReinforcementTarget", ""];
     _net set ["_recentReinforcementDispatches", []];
     _net set ["_reinforcementQueue", []];
+    _net set ["_hqObjectiveId", ""];
+    _net set ["_supplyNodeDeliveries", createHashMap];
+    _net set ["_supplyRouteInfo", createHashMap];
+    _net set ["_activeSupplyNodes", createHashMap];
+    _net set ["_lastSupplyNodeSignature", ""];
 
     private _minInterval = _net get "DISPATCH_MIN_INTERVAL";
     private _maxInterval = _net get "DISPATCH_MAX_INTERVAL";
@@ -74,4 +88,5 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_lastUpdate", time];
 };
 
+[_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
 [_net] call FLO_fnc_logisticsNetworkStartMainLoop;

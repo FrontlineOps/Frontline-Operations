@@ -275,7 +275,7 @@ class FLO_FactionSelectDialog
 		class LabelStartingZones: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Attack Lanes";
+			text = "Attack Coverage";
 			x = FACTION_THIRD_X1;
 			y = FACTION_CARD_COMMANDER_Y + (1.9 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
@@ -288,7 +288,7 @@ class FLO_FactionSelectDialog
 			x = FACTION_THIRD_X1;
 			y = FACTION_CARD_COMMANDER_Y + (2.6 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
-			tooltip = "Set how many concurrent offensive lanes each AI commander can maintain";
+			tooltip = "Set how heavily each AI commander fills per-objective attack caps across the frontline";
 		};
 
 		class LabelGTNDefenseOps: FLO_RscText_Label

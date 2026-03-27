@@ -30,6 +30,11 @@ params [
     ["_spawnClass", "", [""]]
 ];
 
+_position = [_position] call FLO_fnc_virtualizationNormalizePosition;
+if !([_position, true, format ["createVirtualGroup %1 home=%2 side=%3", _groupType, _homeObjective, _side]] call FLO_fnc_validateGroupPosition) exitWith {
+    ""
+};
+
 private _groupId = call FLO_fnc_virtualizationGenerateGroupId;
 private _groupData = [
     _position,
@@ -42,7 +47,9 @@ private _groupData = [
 ] call FLO_fnc_virtualizationBuildGroupData;
 
 // Add group to virtualization system
-[FLO_virtualGroups, _groupId, _groupData] call FLO_fnc_virtualizationAddGroup;
+if !([FLO_virtualGroups, _groupId, _groupData] call FLO_fnc_virtualizationAddGroup) exitWith {
+    ""
+};
 
 // Log creation
 ["VIRTUALIZATION", 3, format["Created virtual group %1 of type %2 at %3", _groupId, _groupType, _position]] call FLO_fnc_log;

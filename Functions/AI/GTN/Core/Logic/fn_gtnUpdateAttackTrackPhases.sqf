@@ -49,7 +49,6 @@ private _timeoutAssaultFraction = _config get "attackLaneTimeoutAssaultFraction"
 private _maxStageSeconds = _config get "attackLaneMaxStagingSeconds";
 private _assaultSeconds = _config get "attackLaneAssaultDurationSeconds";
 private _spentSeconds = _config get "attackLaneSpentDurationSeconds";
-private _maxDispatchGroups = _config get "attackDispatchMaxGroups";
 private _forces = _ws call ["_getForces", []];
 private _currentTotalGroups = _forces get "totalGroups";
 private _baselineTotalGroups = _cmdr get "_forceBaselineTotalGroups";
@@ -148,7 +147,7 @@ private _setPhase = {
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_phaseObjectiveId]];
     private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_phaseObjectiveId]];
     private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
-    private _maxRelevantSlots = (_slotsRemaining max 1) min _maxDispatchGroups;
+    private _maxRelevantSlots = _slotsRemaining max 1;
     private _scaledStagingGoal = ceil(_maxRelevantSlots * _stageGoalFraction);
     private _stagingGoal = (_scaledStagingGoal max _minStageGroups) min _maxRelevantSlots;
     if (_posture == "cautious") then {

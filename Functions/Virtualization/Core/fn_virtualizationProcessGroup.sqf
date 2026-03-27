@@ -33,6 +33,7 @@ private _forceVirtual = _groupData get "forceVirtual";
 private _replacementState = _groupData get "replacementState";
 private _activationDeferred = _groupData get "activationDeferred";
 private _unitCount = _groupData get "unitCount";
+private _position = _groupData get "position";
 
 if (!_isActive && {_unitCount <= 0}) exitWith {
     ["VIRTUALIZATION", 2, format [
@@ -41,6 +42,26 @@ if (!_isActive && {_unitCount <= 0}) exitWith {
         _groupType
     ]] call FLO_fnc_log;
     [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+};
+
+if !([_position] call FLO_fnc_validateGroupPosition) exitWith {
+    if (_isActive && {!isNull _realGroup}) then {
+        ["VIRTUALIZATION", 1, format [
+            "Active group %1 (%2) had invalid virtual position %3 - attempting real-group resync",
+            _groupId,
+            _groupType,
+            _position
+        ]] call FLO_fnc_log;
+        [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupPosition;
+    } else {
+        ["VIRTUALIZATION", 1, format [
+            "Removing group %1 (%2) with invalid virtual position %3",
+            _groupId,
+            _groupType,
+            _position
+        ]] call FLO_fnc_log;
+        [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+    };
 };
 
 private _tierResult = [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes, _virtStats] call FLO_fnc_virtualizationApplyTieredUpdateWindow;

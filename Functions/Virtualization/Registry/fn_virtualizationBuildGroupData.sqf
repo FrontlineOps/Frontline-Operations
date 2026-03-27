@@ -20,6 +20,8 @@ if (isNil "_spawnClass") then {
     _spawnClass = "";
 };
 
+_position = [_position] call FLO_fnc_virtualizationNormalizePosition;
+
 private _resolvedUnitCount = _unitCount;
 if (_resolvedUnitCount <= 0) then {
     if (_groupType in ["civilian", "civ_pedestrian", "civ_building"]) then {

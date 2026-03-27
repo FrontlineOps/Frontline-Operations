@@ -63,6 +63,7 @@ class CfgRemoteExec
 		class FLO_fnc_gtnAlertCivilianReport { allowedTargets = 2; jip = 0; };
 		class FLO_fnc_gtnSyncAlertMarkers { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
+		class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };
 	};	
 };
 

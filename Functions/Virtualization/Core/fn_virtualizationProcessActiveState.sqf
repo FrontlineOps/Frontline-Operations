@@ -13,9 +13,11 @@ if (!isNull _leader && {alive _leader}) then {
         _virtStats set ["activePositionSyncsThisBatch", (_virtStats get "activePositionSyncsThisBatch") + 1];
     };
 
+    [_groupId, _groupData, _realGroup] call FLO_fnc_transportProcessActiveCarrier;
+
     if (_replacementState == "REINFORCE") then {
         private _reinforcementTargetPos = _groupData get "reinforcementTargetPos";
-        if (count _reinforcementTargetPos >= 2 && {_realPos distance2D _reinforcementTargetPos <= 120}) then {
+        if (count _reinforcementTargetPos >= 2 && {_realPos distance2D _reinforcementTargetPos <= 300}) then {
             [_groupId, _groupData] call FLO_fnc_virtualizationFinalizeReinforcement;
         };
     };

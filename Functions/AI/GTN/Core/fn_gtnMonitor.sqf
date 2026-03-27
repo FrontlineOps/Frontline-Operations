@@ -37,7 +37,7 @@ private _monitor = createHashMapObject [[
     ["_planSnapshot", nil],
     
     // Current goal being pursued
-    ["_currentGoal", "control_ao"],
+    ["_currentGoal", ""],
     ["_currentGoalParams", []],
     
     // Replan throttling
@@ -231,6 +231,11 @@ private _monitor = createHashMapObject [[
         private _planner = _self get "_planner";
         private _goal = _self get "_currentGoal";
         private _params = _self get "_currentGoalParams";
+
+        if (_goal == "") exitWith {
+            ["GTN", 1, "Cannot trigger GTN replan - current goal is unset"] call FLO_fnc_log;
+            nil
+        };
 
         ["GTN", 3, format["Triggering replan for goal: %1", _goal]] call FLO_fnc_log;
 

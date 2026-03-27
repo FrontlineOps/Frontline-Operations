@@ -36,6 +36,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["observedSpotters", createHashMap],
         ["observedFireSpotterCooldowns", createHashMap],
         ["observedFireTargetCooldowns", createHashMap],
+        ["counterBatteryReports", createHashMap],
+        ["counterBatteryCooldowns", createHashMap],
         ["shootAndScootTime", 90],
         ["defaultRounds", 6],
         ["defaultAccuracy", 100],  // Dispersion in meters
@@ -47,6 +49,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["observedFireInterval", 5],
         ["observedFireBatchSize", 10],
         ["observedFireMaxPerSidePerCycle", 1],
+        ["counterBatteryExposureThreshold", 5],
+        ["counterBatteryMinMissionCount", 2],
+        ["counterBatteryWindowSeconds", 240],
+        ["counterBatteryCooldownSeconds", 300],
+        ["counterBatteryMaxPerSidePerCycle", 1],
         ["observedFireCursor", 0],
         ["observedFirePfhId", -1],
         ["observedFireAddedEh", -1],
@@ -265,6 +272,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             private _pfhId = [{
                 [FLO_GTNArtilleryManager] call FLO_fnc_gtnArtilleryProcessObservedFireRequests;
+                [FLO_GTNArtilleryManager] call FLO_fnc_gtnProcessCounterBatteryRequests;
             }, _self get "observedFireInterval", []] call CBA_fnc_addPerFrameHandler;
             _self set ["observedFirePfhId", _pfhId];
         }],
@@ -306,7 +314,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
         // Main entry point for artillery fire missions
         // =========================================================================
         ["_requestFireMission", {
-            params ["_targetPos", ["_rounds", -1], ["_accuracy", -1], ["_requestSide", sideUnknown], ["_objectiveId", ""]];
+            params ["_targetPos", ["_rounds", -1], ["_accuracy", -1], ["_requestSide", sideUnknown], ["_objectiveId", ""], ["_requestKind", "GENERAL"]];
 
             if (_rounds < 0) then { _rounds = _self get "defaultRounds"; };
             if (_accuracy < 0) then { _accuracy = _self get "defaultAccuracy"; };
@@ -380,10 +388,16 @@ if (isNil "FLO_GTNArtilleryManager") then {
             // Non-live area: keep support entirely virtual.
             if (!_isLiveArea) exitWith {
                 [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
-                (_self get "missions") set [_gid, diag_tickTime];
+                private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, createHashMap, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
+                (_self get "missions") set [_gid, _missionRecord];
                 if (_cooldownKey != "") then {
                     (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
                 };
+
+                if (_targetSide in [east, west]) then {
+                    [_self, _gid, _gdata, _targetSide, _missionRecord] call FLO_fnc_gtnRecordCounterBatteryExposure;
+                };
+                [_requestSide, _missionRecord] call FLO_fnc_gtnBroadcastArtilleryRadio;
 
                 private _losses = _self call ["_applyVirtualFireEffect", [_gdata get "side", _targetPos, _rounds, _accuracy]];
                 private _missionDuration = (40 + (_rounds * 4)) min 180;
@@ -422,10 +436,15 @@ if (isNil "FLO_GTNArtilleryManager") then {
             [_gdata, "ARTILLERY", "LIVE_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
 
             // Register mission
-            (_self get "missions") set [_gid, diag_tickTime];
+            private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, _firePlan, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
+            (_self get "missions") set [_gid, _missionRecord];
             if (_cooldownKey != "") then {
                 (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
             };
+            if (_targetSide in [east, west]) then {
+                [_self, _gid, _gdata, _targetSide, _missionRecord] call FLO_fnc_gtnRecordCounterBatteryExposure;
+            };
+            [_requestSide, _missionRecord] call FLO_fnc_gtnBroadcastArtilleryRadio;
 
             // Spawn the fire mission process
             [_gid, _gdata, _realGroup, _targetPos, _rounds, _accuracy, _firePlan, _self] spawn FLO_fnc_gtnArtilleryFireMission;

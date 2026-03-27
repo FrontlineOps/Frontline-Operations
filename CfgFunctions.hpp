@@ -52,6 +52,7 @@ class FLO {
     class GTNCoreLogic {
         file = "Functions\AI\GTN\Core\Logic";
 
+        class gtnAllocateAttackTrackPools {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
         class gtnBuildAttackReachability {};
@@ -72,7 +73,10 @@ class FLO {
     class GTNIntel {
         file = "Functions\AI\GTN\Intel";
 
+        class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
+        class gtnBuildFriendlyCommanderGroupMarkers {};
+        class gtnBuildFriendlySupportMarkers {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
@@ -119,13 +123,20 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnBroadcastArtilleryRadio {};
+        class gtnBuildArtilleryMissionRecord {};
         class gtnCollectArtilleryVehicles {};
         class gtnBuildArtilleryFirePlan {};
+        class gtnCommanderRadioMessage {};
+        class gtnProcessArtilleryRadioQueue {};
+        class gtnQueueArtilleryRadioMission {};
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
         class gtnArtilleryFireMission   {};
         class gtnArtilleryProcessObservedFireRequests {};
+        class gtnProcessCounterBatteryRequests {};
+        class gtnRecordCounterBatteryExposure {};
         class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
         class gtnRadarDataLink          {};

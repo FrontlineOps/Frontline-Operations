@@ -7,8 +7,10 @@
  *
  * Arguments:
  *   0: Side key <STRING>
- *   1: Group marker records <ARRAY>
- *   2: Concentration marker records <ARRAY>
+ *   1: Enemy group marker records <ARRAY>
+ *   2: Enemy concentration marker records <ARRAY>
+ *   3: Friendly group marker records <ARRAY>
+ *   4: Support marker records <ARRAY>
  *
  * Return Value:
  *   BOOL
@@ -18,8 +20,10 @@ if (!hasInterface) exitWith { false };
 
 params [
     ["_sideKey", "", [""]],
-    ["_groupMarkers", [], [[]]],
-    ["_concentrationMarkers", [], [[]]]
+    ["_enemyGroupMarkers", [], [[]]],
+    ["_enemyConcentrationMarkers", [], [[]]],
+    ["_friendlyGroupMarkers", [], [[]]],
+    ["_supportMarkers", [], [[]]]
 ];
 
 if (isNull player) exitWith { false };
@@ -35,12 +39,24 @@ if (isNil "FLO_GTN_CommanderIntelMarkers") then {
 private _registry = FLO_GTN_CommanderIntelMarkers;
 if (_localSideKey != _sideKey && {_sideKey in _registry}) then {
     private _staleRegistry = _registry get _sideKey;
+    private _staleEnemyGroups = if ("enemyGroups" in _staleRegistry) then { _staleRegistry get "enemyGroups" } else { _staleRegistry get "groups" };
+    private _staleEnemyConcentrations = if ("enemyConcentrations" in _staleRegistry) then { _staleRegistry get "enemyConcentrations" } else { _staleRegistry get "concentrations" };
     {
         deleteMarkerLocal _x;
-    } forEach (keys (_staleRegistry get "groups"));
+    } forEach (keys _staleEnemyGroups);
     {
         deleteMarkerLocal _x;
-    } forEach (keys (_staleRegistry get "concentrations"));
+    } forEach (keys _staleEnemyConcentrations);
+    if ("friendlyGroups" in _staleRegistry) then {
+        {
+            deleteMarkerLocal _x;
+        } forEach (keys (_staleRegistry get "friendlyGroups"));
+    };
+    if ("support" in _staleRegistry) then {
+        {
+            deleteMarkerLocal _x;
+        } forEach (keys (_staleRegistry get "support"));
+    };
     _registry deleteAt _sideKey;
     FLO_GTN_CommanderIntelMarkers = _registry;
 };
@@ -49,24 +65,52 @@ if (_localSideKey != _sideKey) exitWith { false };
 
 if !(_sideKey in _registry) then {
     _registry set [_sideKey, createHashMapFromArray [
-        ["groups", createHashMap],
-        ["concentrations", createHashMap]
+        ["enemyGroups", createHashMap],
+        ["enemyConcentrations", createHashMap],
+        ["friendlyGroups", createHashMap],
+        ["support", createHashMap]
     ]];
     FLO_GTN_CommanderIntelMarkers = _registry;
 };
 
 private _sideRegistry = _registry get _sideKey;
-private _groupRegistry = _sideRegistry get "groups";
-private _concentrationRegistry = _sideRegistry get "concentrations";
-private _seenGroups = [];
-private _seenConcentrations = [];
+if !("enemyGroups" in _sideRegistry) then {
+    private _legacyGroups = _sideRegistry get "groups";
+    if (!isNil "_legacyGroups") then {
+        {
+            deleteMarkerLocal _x;
+        } forEach (keys _legacyGroups);
+    };
+    private _legacyConcentrations = _sideRegistry get "concentrations";
+    if (!isNil "_legacyConcentrations") then {
+        {
+            deleteMarkerLocal _x;
+        } forEach (keys _legacyConcentrations);
+    };
+
+    _sideRegistry = createHashMapFromArray [
+        ["enemyGroups", createHashMap],
+        ["enemyConcentrations", createHashMap],
+        ["friendlyGroups", createHashMap],
+        ["support", createHashMap]
+    ];
+};
+
+private _enemyGroupRegistry = _sideRegistry get "enemyGroups";
+private _enemyConcentrationRegistry = _sideRegistry get "enemyConcentrations";
+private _friendlyGroupRegistry = _sideRegistry get "friendlyGroups";
+private _supportRegistry = _sideRegistry get "support";
+private _seenEnemyGroups = [];
+private _seenEnemyConcentrations = [];
+private _seenFriendlyGroups = [];
+private _seenSupport = [];
 
 {
     _x params ["_markerId", "_pos", "_type", "_size", "_alpha", "_text", "_color"];
 
-    if !(_markerId in _groupRegistry) then {
+    if !(_markerId in _enemyGroupRegistry) then {
         createMarkerLocal [_markerId, _pos];
-        _groupRegistry set [_markerId, true];
+        _enemyGroupRegistry set [_markerId, true];
     };
 
     _markerId setMarkerPosLocal _pos;
@@ -76,15 +120,15 @@ private _seenConcentrations = [];
     _markerId setMarkerColorLocal _color;
     _markerId setMarkerTextLocal _text;
     _markerId setMarkerAlphaLocal _alpha;
-    _seenGroups pushBack _markerId;
-} forEach _groupMarkers;
+    _seenEnemyGroups pushBack _markerId;
+} forEach _enemyGroupMarkers;
 
 {
     _x params ["_markerId", "_pos", "_size", "_alpha", "_text", "_color"];
 
-    if !(_markerId in _concentrationRegistry) then {
+    if !(_markerId in _enemyConcentrationRegistry) then {
         createMarkerLocal [_markerId, _pos];
-        _concentrationRegistry set [_markerId, true];
+        _enemyConcentrationRegistry set [_markerId, true];
     };
 
     _markerId setMarkerPosLocal _pos;
@@ -94,25 +138,81 @@ private _seenConcentrations = [];
     _markerId setMarkerColorLocal _color;
     _markerId setMarkerTextLocal _text;
     _markerId setMarkerAlphaLocal _alpha;
-    _seenConcentrations pushBack _markerId;
-} forEach _concentrationMarkers;
+    _seenEnemyConcentrations pushBack _markerId;
+} forEach _enemyConcentrationMarkers;
 
 {
-    if !(_x in _seenGroups) then {
-        deleteMarkerLocal _x;
-        _groupRegistry deleteAt _x;
+    _x params ["_markerId", "_pos", "_type", "_size", "_alpha", "_text", "_color"];
+
+    if !(_markerId in _friendlyGroupRegistry) then {
+        createMarkerLocal [_markerId, _pos];
+        _friendlyGroupRegistry set [_markerId, true];
     };
-} forEach (keys _groupRegistry);
+
+    _markerId setMarkerPosLocal _pos;
+    _markerId setMarkerShapeLocal "ICON";
+    _markerId setMarkerTypeLocal _type;
+    _markerId setMarkerSizeLocal _size;
+    _markerId setMarkerColorLocal _color;
+    _markerId setMarkerTextLocal _text;
+    _markerId setMarkerAlphaLocal _alpha;
+    _seenFriendlyGroups pushBack _markerId;
+} forEach _friendlyGroupMarkers;
 
 {
-    if !(_x in _seenConcentrations) then {
-        deleteMarkerLocal _x;
-        _concentrationRegistry deleteAt _x;
-    };
-} forEach (keys _concentrationRegistry);
+    _x params ["_markerId", "_shape", "_pos", "_type", "_size", "_alpha", "_text", "_color", "_brush"];
 
-_sideRegistry set ["groups", _groupRegistry];
-_sideRegistry set ["concentrations", _concentrationRegistry];
+    if !(_markerId in _supportRegistry) then {
+        createMarkerLocal [_markerId, _pos];
+        _supportRegistry set [_markerId, true];
+    };
+
+    _markerId setMarkerPosLocal _pos;
+    _markerId setMarkerShapeLocal _shape;
+    if (_shape == "ICON") then {
+        _markerId setMarkerTypeLocal _type;
+    } else {
+        _markerId setMarkerBrushLocal _brush;
+    };
+    _markerId setMarkerSizeLocal _size;
+    _markerId setMarkerColorLocal _color;
+    _markerId setMarkerTextLocal _text;
+    _markerId setMarkerAlphaLocal _alpha;
+    _seenSupport pushBack _markerId;
+} forEach _supportMarkers;
+
+{
+    if !(_x in _seenEnemyGroups) then {
+        deleteMarkerLocal _x;
+        _enemyGroupRegistry deleteAt _x;
+    };
+} forEach (keys _enemyGroupRegistry);
+
+{
+    if !(_x in _seenEnemyConcentrations) then {
+        deleteMarkerLocal _x;
+        _enemyConcentrationRegistry deleteAt _x;
+    };
+} forEach (keys _enemyConcentrationRegistry);
+
+{
+    if !(_x in _seenFriendlyGroups) then {
+        deleteMarkerLocal _x;
+        _friendlyGroupRegistry deleteAt _x;
+    };
+} forEach (keys _friendlyGroupRegistry);
+
+{
+    if !(_x in _seenSupport) then {
+        deleteMarkerLocal _x;
+        _supportRegistry deleteAt _x;
+    };
+} forEach (keys _supportRegistry);
+
+_sideRegistry set ["enemyGroups", _enemyGroupRegistry];
+_sideRegistry set ["enemyConcentrations", _enemyConcentrationRegistry];
+_sideRegistry set ["friendlyGroups", _friendlyGroupRegistry];
+_sideRegistry set ["support", _supportRegistry];
 _registry set [_sideKey, _sideRegistry];
 FLO_GTN_CommanderIntelMarkers = _registry;
 
