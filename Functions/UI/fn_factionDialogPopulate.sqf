@@ -123,18 +123,18 @@ private _civilianFactions = [
 [_civilianCombo, _civilianFactions, 0] call _fnc_addItems;
 
 // ============================================================================
-// AI COMMANDER ATTACK LANES (IDC 1958)
+// AI COMMANDER ATTACK COVERAGE (IDC 1958)
 // ============================================================================
 
-private _presenceCombo = _display displayCtrl 1958;
-private _presenceOptions = [
-	"Conservative",
-	"Balanced",
-	"Aggressive",
-	"Relentless"
+private _attackCoverageCombo = _display displayCtrl 1958;
+private _attackCoverageOptions = [
+	"Minimal Coverage",
+	"Balanced Coverage",
+	"Layered Coverage",
+	"Maximum Coverage"
 ];
 
-[_presenceCombo, _presenceOptions, 1] call _fnc_addItems;
+[_attackCoverageCombo, _attackCoverageOptions, 1] call _fnc_addItems;
 
 // ============================================================================
 // STARTING RESOURCES (IDC 1959)

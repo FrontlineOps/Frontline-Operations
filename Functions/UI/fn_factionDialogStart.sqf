@@ -55,7 +55,7 @@ private _fnc_getSelection = {
 private _playerFaction = [1955] call _fnc_getSelection;
 private _enemyFaction = [1956] call _fnc_getSelection;
 private _civilianFaction = [1957] call _fnc_getSelection;
-private _attackLanes = [1958] call _fnc_getSelection;
+private _attackCoverage = [1958] call _fnc_getSelection;
 private _resources = [1959] call _fnc_getSelection;
 private _reputation = [1960] call _fnc_getSelection;
 private _difficulty = [1961] call _fnc_getSelection;
@@ -68,12 +68,12 @@ private _garrison = [1967] call _fnc_getSelection;
 private _virtualizationUnitCap = [1968] call _fnc_getSelection;
 
 // Validate selections
-if (_playerFaction isEqualTo "" || 
-    _enemyFaction isEqualTo "" || 
-    _civilianFaction isEqualTo "" || 
-    _attackLanes isEqualTo "" || 
-    _resources isEqualTo "" || 
-    _reputation isEqualTo "" || 
+if (_playerFaction isEqualTo "" ||
+    _enemyFaction isEqualTo "" ||
+    _civilianFaction isEqualTo "" ||
+    _attackCoverage isEqualTo "" ||
+    _resources isEqualTo "" ||
+    _reputation isEqualTo "" ||
     _difficulty isEqualTo "" ||
     _defenseCoverage isEqualTo "" ||
     _tempo isEqualTo "" ||
@@ -92,12 +92,12 @@ if (_playerFaction isEqualTo "" ||
 _display closeDisplay 1;
 
 // Log selections
-["UI", 3, format["Mission starting with: Player=%1, Enemy=%2, Civilian=%3", 
+["UI", 3, format["Mission starting with: Player=%1, Enemy=%2, Civilian=%3",
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _attackLanes, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance, _forceGrowth, _garrison, _virtualizationUnitCap] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackLanes", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance", "_forceGrowth", "_garrison", "_virtualizationUnitCap"];
+[_playerFaction, _enemyFaction, _civilianFaction, _attackCoverage, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance, _forceGrowth, _garrison, _virtualizationUnitCap] spawn {
+	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackCoverage", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance", "_forceGrowth", "_garrison", "_virtualizationUnitCap"];
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -123,13 +123,13 @@ _display closeDisplay 1;
 	// Process resources
 	private _resourceValue = parseNumber _resources;
 
-	// Process GTN attack lanes and defense coverage.
-	private _attackOpsValue = switch (_attackLanes) do {
-		case "Conservative": {1};
-		case "Balanced": {2};
-		case "Aggressive": {3};
-		case "Relentless": {4};
-		default {2};
+	// Process GTN attack and defense coverage.
+	private _attackCoverageValue = switch (_attackCoverage) do {
+		case "Minimal Coverage": {0.75};
+		case "Balanced Coverage": {1};
+		case "Layered Coverage": {1.25};
+		case "Maximum Coverage": {1.5};
+		default {1};
 	};
 
 	private _defenseOpsValue = switch (_defenseCoverage) do {
@@ -260,7 +260,7 @@ _display closeDisplay 1;
 		["civilianHandle", createHashMapFromArray [["name", _civilianFaction]]],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["difficultyHandle", createHashMapFromArray [["value", _difficultyValue], ["name", _difficulty]]],
-		["gtnAttackLaneHandle", createHashMapFromArray [["value", _attackOpsValue], ["name", _attackLanes]]],
+		["gtnAttackCoverageHandle", createHashMapFromArray [["value", _attackCoverageValue], ["name", _attackCoverage]]],
 		["gtnDefenseCoverageHandle", createHashMapFromArray [["value", _defenseOpsValue], ["name", _defenseCoverage]]],
 		["gtnTempoHandle", createHashMapFromArray [["value", _tempoValue], ["name", _tempo]]],
 		["gtnForceGrowthHandle", createHashMapFromArray [["value", _forceGrowthValue], ["name", _forceGrowth]]],

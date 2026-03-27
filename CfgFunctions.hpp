@@ -66,7 +66,6 @@ class FLO {
         class gtnIsEngagementRouteActive {};
         class gtnPickObjectiveGarrisonPosition {};
         class gtnRestoreStrategicGroupRoute {};
-        class gtnSelectBestReserveGroupForTrack {};
         class gtnSelectGroupEngagementTarget {};
         class gtnUpdateAttackTrackPhases {};
     };

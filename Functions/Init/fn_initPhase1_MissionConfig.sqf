@@ -34,7 +34,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_CivilianHandle = _configData get "civilianHandle";
         FLO_ReputationHandle = _configData get "reputationHandle";
         FLO_DifficultyHandle = _configData get "difficultyHandle";
-        FLO_GTN_AttackLaneHandle = _configData get "gtnAttackLaneHandle";
+        FLO_GTN_AttackCoverageHandle = _configData get "gtnAttackCoverageHandle";
         FLO_GTN_DefenseCoverageHandle = _configData get "gtnDefenseCoverageHandle";
         FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
         FLO_GTN_ForceGrowthHandle = _configData get "gtnForceGrowthHandle";
@@ -50,7 +50,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "FLO_CivilianHandle";
         publicVariable "FLO_ReputationHandle";
         publicVariable "FLO_DifficultyHandle";
-        publicVariable "FLO_GTN_AttackLaneHandle";
+        publicVariable "FLO_GTN_AttackCoverageHandle";
         publicVariable "FLO_GTN_DefenseCoverageHandle";
         publicVariable "FLO_GTN_TempoHandle";
         publicVariable "FLO_GTN_ForceGrowthHandle";
@@ -120,7 +120,7 @@ private _requiredFields = [
     "civilianHandle",
     "reputationHandle",
     "difficultyHandle",
-    "gtnAttackLaneHandle",
+    "gtnAttackCoverageHandle",
     "gtnDefenseCoverageHandle",
     "gtnTempoHandle",
     "gtnForceGrowthHandle",
@@ -153,7 +153,7 @@ publicVariable "FLO_CivilianHandle";
 // Set required config values
 FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
 FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
-FLO_GTN_AttackLaneHandle = FLO_MissionConfig get "gtnAttackLaneHandle";
+FLO_GTN_AttackCoverageHandle = FLO_MissionConfig get "gtnAttackCoverageHandle";
 FLO_GTN_DefenseCoverageHandle = FLO_MissionConfig get "gtnDefenseCoverageHandle";
 FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
 FLO_GTN_ForceGrowthHandle = FLO_MissionConfig get "gtnForceGrowthHandle";
@@ -163,7 +163,7 @@ EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
 publicVariable "FLO_ReputationHandle";
 publicVariable "FLO_DifficultyHandle";
-publicVariable "FLO_GTN_AttackLaneHandle";
+publicVariable "FLO_GTN_AttackCoverageHandle";
 publicVariable "FLO_GTN_DefenseCoverageHandle";
 publicVariable "FLO_GTN_TempoHandle";
 publicVariable "FLO_GTN_ForceGrowthHandle";

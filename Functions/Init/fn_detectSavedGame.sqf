@@ -61,7 +61,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 14;
+private _expectedSaveVersion = 15;
 private _saveVersion = _saveData get "saveVersion";
 if (_saveVersion != _expectedSaveVersion) exitWith {
     [
@@ -84,7 +84,7 @@ private _handleKeys = [
     ["enemyHandle", "FLO_EnemyHandle"],
     ["civilianHandle", "FLO_CivilianHandle"],
     ["difficultyHandle", "FLO_DifficultyHandle"],
-    ["gtnAttackLaneHandle", "FLO_GTN_AttackLaneHandle"],
+    ["gtnAttackCoverageHandle", "FLO_GTN_AttackCoverageHandle"],
     ["gtnDefenseCoverageHandle", "FLO_GTN_DefenseCoverageHandle"],
     ["gtnTempoHandle", "FLO_GTN_TempoHandle"],
     ["gtnForceGrowthHandle", "FLO_GTN_ForceGrowthHandle"],
@@ -98,7 +98,7 @@ private _requiredConfigKeys = [
     "enemyHandle",
     "civilianHandle",
     "difficultyHandle",
-    "gtnAttackLaneHandle",
+    "gtnAttackCoverageHandle",
     "gtnDefenseCoverageHandle",
     "gtnTempoHandle",
     "gtnForceGrowthHandle",

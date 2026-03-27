@@ -77,8 +77,6 @@ private _activeAttackCounts = createHashMap;
 private _candidateObjectives = [];
 {
     private _objectiveId = _x;
-    if (_phaseObjectiveId != "" && {_objectiveId != _phaseObjectiveId}) then { continue };
-
     private _objective = _frontlineObjectives get _objectiveId;
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
     if (_attackCap <= 0) then { continue };
@@ -104,11 +102,13 @@ private _candidateObjectives = [];
         || { (count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0 };
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
     private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+    private _phasePreferred = _phaseObjectiveId != "" && {_objectiveId == _phaseObjectiveId};
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
         ["reserveBands", _reserveBands],
+        ["phasePreferred", _phasePreferred],
         ["sectorMatch", _sectorMatch],
         ["selectionDist", _selectionDist],
         ["priority", _objective get "priority"],
@@ -124,6 +124,7 @@ if ((count _candidateObjectives) == 0) exitWith { _metrics };
 private _rankedCandidates = [];
 {
     _rankedCandidates pushBack [
+        if (_x get "phasePreferred") then { 0 } else { 1 },
         if (_x get "sectorMatch") then { 0 } else { 1 },
         _x get "selectionDist",
         -(_x get "pressure"),

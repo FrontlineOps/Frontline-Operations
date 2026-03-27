@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 14;
+private _saveVersion = 15;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -79,7 +79,7 @@ try {
     _cfg set ["moneyHandle", FLO_MoneyHandle];
     _cfg set ["difficultyHandle", FLO_DifficultyHandle];
     _cfg set ["reputationHandle", FLO_ReputationHandle];
-    _cfg set ["gtnAttackLaneHandle", FLO_GTN_AttackLaneHandle];
+    _cfg set ["gtnAttackCoverageHandle", FLO_GTN_AttackCoverageHandle];
     _cfg set ["gtnDefenseCoverageHandle", FLO_GTN_DefenseCoverageHandle];
     _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle];
     _cfg set ["gtnForceGrowthHandle", FLO_GTN_ForceGrowthHandle];
