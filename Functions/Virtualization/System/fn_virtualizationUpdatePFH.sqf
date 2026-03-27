@@ -16,7 +16,30 @@ params [["_mode", "start", [""]]];
 #define BATCH_SIZE            25
 #define PLAYER_CACHE_INTERVAL 1
 
-[BATCH_SIZE, PLAYER_CACHE_INTERVAL] call FLO_fnc_virtualizationEnsureUpdateState;
+private _updateState = [BATCH_SIZE, PLAYER_CACHE_INTERVAL] call FLO_fnc_virtualizationEnsureUpdateState;
+
+if ((_updateState get "batchSize") != BATCH_SIZE) then {
+    ["VIRTUALIZATION", 2, format [
+        "Correcting stale virtualization batch size %1 -> %2 before PFH start",
+        _updateState get "batchSize",
+        BATCH_SIZE
+    ]] call FLO_fnc_log;
+    _updateState set ["batchSize", BATCH_SIZE];
+    _updateState set ["currentBatchIndex", 0];
+    _updateState set ["cachedGroupIds", []];
+    _updateState set ["lastGroupCacheTime", 0];
+};
+
+if ((_updateState get "playerCacheInterval") != PLAYER_CACHE_INTERVAL) then {
+    ["VIRTUALIZATION", 2, format [
+        "Correcting stale player cache interval %1 -> %2 before PFH start",
+        _updateState get "playerCacheInterval",
+        PLAYER_CACHE_INTERVAL
+    ]] call FLO_fnc_log;
+    _updateState set ["playerCacheInterval", PLAYER_CACHE_INTERVAL];
+    _updateState set ["cachedPlayerPositions", []];
+    _updateState set ["lastPlayerCacheTime", 0];
+};
 
 switch (toLower _mode) do {
     case "start": {
