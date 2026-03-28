@@ -16,8 +16,6 @@ createHashMapFromArray [
     ["groundInfantryUnits", _catalog get "groundInfantryUnits"],
     ["groundSpecOpsGroups", _catalog get "groundSpecOpsGroups"],
     ["groundSpecOpsUnits", _catalog get "groundSpecOpsUnits"],
-    ["groundLight", _catalog get "groundMotorized"],
-    ["groundHeavy", _catalog get "groundHeavy"],
     ["groundMotorized", _catalog get "groundMotorized"],
     ["groundMechanized", _catalog get "groundMechanized"],
     ["groundArmor", _catalog get "groundArmor"],

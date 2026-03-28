@@ -417,15 +417,6 @@ private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars
 private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
 private _westContainers = [["F_Container_List"]] call _fnc_buildPoolFromVars;
 
-private _eastLegacyHeavy = +_eastGroundMechanized;
-{
-    _eastLegacyHeavy pushBackUnique _x;
-} forEach _eastGroundArmor;
-private _westLegacyHeavy = +_westGroundMechanized;
-{
-    _westLegacyHeavy pushBackUnique _x;
-} forEach _westGroundArmor;
-
 private _eastOfficerUnits = if (!isNil "East_FireObserver") then {
     ["East_FireObserver"] call _fnc_getVarArray
 } else {
@@ -465,8 +456,6 @@ private _eastCatalog = createHashMapFromArray [
     ["groundInfantryUnits", _eastInfantryUnits],
     ["groundSpecOpsGroups", _eastSpecOpsGroups],
     ["groundSpecOpsUnits", _eastSpecOpsUnits],
-    ["groundLight", _eastGroundMotorized],
-    ["groundHeavy", _eastLegacyHeavy],
     ["groundMotorized", _eastGroundMotorized],
     ["groundMechanized", _eastGroundMechanized],
     ["groundArmor", _eastGroundArmor],
@@ -493,8 +482,6 @@ private _westCatalog = createHashMapFromArray [
     ["groundInfantryUnits", _westInfantryUnits],
     ["groundSpecOpsGroups", _westSpecOpsGroups],
     ["groundSpecOpsUnits", _westSpecOpsUnits],
-    ["groundLight", _westGroundMotorized],
-    ["groundHeavy", _westLegacyHeavy],
     ["groundMotorized", _westGroundMotorized],
     ["groundMechanized", _westGroundMechanized],
     ["groundArmor", _westGroundArmor],
