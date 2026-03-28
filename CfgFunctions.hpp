@@ -54,10 +54,12 @@ class FLO {
         file = "Functions\AI\GTN\Core\Logic";
 
         class gtnAllocateAttackTrackPools {};
+        class gtnBuildObjectiveAssignmentCache {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
         class gtnBuildEnemyEngagementPicture {};
         class gtnBuildGroupEngagementContext {};
+        class gtnGetCachedReserveBands {};
         class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};

@@ -35,7 +35,7 @@ FLO_PF_Perf = createHashMapFromArray [
     ["slowSearchThresholdMs", 35],
     ["runawayNodeStepsThreshold", 5000],
     ["runawayNodeStepsLogInterval", 25000],
-    ["logiReinfMaxNodeSteps", 5000],
+    ["logiReinfMaxNodeSteps", 384],
     ["logCooldownSec", 5],
     ["nextSlowFrameLogAt", 0],
     ["nextSlowSearchLogAt", 0]

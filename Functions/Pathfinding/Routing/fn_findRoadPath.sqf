@@ -92,6 +92,20 @@ if (_dist > 6000) then {
     };
 };
 
+if (_sourceTag == "LOGI_REINF") then {
+    // Strategic reinforcement transit does not need near-unique cache keys.
+    // Coarser buckets increase cache/pending reuse across repeated supply hops.
+    if (_dist > 5000) then {
+        if (_cellSize < 720) then { _cellSize = 720; };
+    } else {
+        if (_dist > 2500) then {
+            if (_cellSize < 540) then { _cellSize = 540; };
+        } else {
+            if (_cellSize < 360) then { _cellSize = 360; };
+        };
+    };
+};
+
 private _cellKey = {
     params ["_pos", "_size"];
     format ["%1_%2", round ((_pos select 0) / _size), round ((_pos select 1) / _size)]

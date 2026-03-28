@@ -38,42 +38,15 @@ private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
 private _groups = FLO_virtualGroups get "_groups";
+private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _objectives = _ws call ["_getObjectives", []];
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
 private _claimedPositionsByObjective = createHashMap;
-
 {
-    private _gData = _y;
-    if ((_gData get "side") != _ownSide) then { continue };
-    if ((_gData get "groupType") == "static_aa") then { continue };
-
-    private _objectiveId = "";
-    private _claimPos = [];
-    private _order = _gData get "commanderOrder";
-
-    if (_order == "DEFEND") then {
-        _objectiveId = _gData get "defendObjective";
-        _claimPos = _gData get "orderTargetPos";
-    } else {
-        if (_order != "GARRISON") then { continue };
-        _objectiveId = _gData get "garrisonObjective";
-        _claimPos = _gData get "garrisonPosition";
-    };
-
-    if (_objectiveId == "" || {!(_objectiveId in _objectives)}) then { continue };
-    if !(_claimPos isEqualType [] && {count _claimPos >= 2}) then {
-        _claimPos = _gData get "position";
-    };
-
-    private _bucket = if (_objectiveId in _claimedPositionsByObjective) then {
-        _claimedPositionsByObjective get _objectiveId
-    } else {
-        []
-    };
-    _bucket pushBack _claimPos;
-    _claimedPositionsByObjective set [_objectiveId, _bucket];
-} forEach _groups;
+    _claimedPositionsByObjective set [_x, +_y];
+} forEach (_assignmentCache get "claimedPositionsByObjective");
+private _defenderCounts = _assignmentCache get "defenderCounts";
 
 private _candidateObjectives = [];
 {
@@ -101,7 +74,11 @@ private _candidateObjectives = [];
     private _cap = _cmdr call ["_getDefenseCapForObjective", [_objectiveId]];
     if (_cap <= 0) then { continue };
 
-    private _activeDefenders = _cmdr call ["_countObjectiveDefenders", [_objectiveId]];
+    private _activeDefenders = if (_objectiveId in _defenderCounts) then {
+        _defenderCounts get _objectiveId
+    } else {
+        0
+    };
     private _deficit = (_cap - _activeDefenders) max 0;
     if (_deficit <= 0) then { continue };
 
@@ -115,7 +92,7 @@ private _candidateObjectives = [];
     };
 
     private _pressure = ((_enemyCount - (_objective get "friendlyCount")) max 0) + (if (_underAttack) then { 4 } else { 0 });
-    private _reserveBands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+    private _reserveBands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
@@ -144,10 +121,24 @@ private _rankedCandidates = [];
 _rankedCandidates sort true;
 _candidateObjectives = _rankedCandidates apply { _x select 3 };
 
+private _poolEntries = [];
+{
+    private _gData = _groups get _x;
+    if (isNil "_gData") then { continue };
+    if ((_gData get "side") != _ownSide) then { continue };
+    if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
+
+    _poolEntries pushBack [
+        _x,
+        _gData get "homeObjective",
+        _gData get "position"
+    ];
+} forEach _pool;
+
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
-while {_continueAllocation && {(count _pool) > 0}} do {
+while {_continueAllocation && {(count _poolEntries) > 0}} do {
     _continueAllocation = false;
 
     {
@@ -159,18 +150,12 @@ while {_continueAllocation && {(count _pool) > 0}} do {
         private _reserveBands = _x get "reserveBands";
 
         private _bestGroupId = "";
+        private _bestIndex = -1;
         private _bestBand = 10;
         private _bestDist = 1e12;
 
-        {
-            private _groupId = _x;
-            private _gData = _groups get _groupId;
-            if (isNil "_gData") then { continue };
-            if ((_gData get "side") != _ownSide) then { continue };
-            if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
-
-            private _groupPos = _gData get "position";
-            private _homeObjective = _gData get "homeObjective";
+        for "_i" from 0 to ((count _poolEntries) - 1) do {
+            (_poolEntries select _i) params ["_groupId", "_homeObjective", "_groupPos"];
             private _distToObjective = _groupPos distance2D _objectivePos;
             private _band = _fallbackBand;
             if (_homeObjective in _reserveBands) then {
@@ -179,10 +164,11 @@ while {_continueAllocation && {(count _pool) > 0}} do {
 
             if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {
                 _bestGroupId = _groupId;
+                _bestIndex = _i;
                 _bestBand = _band;
                 _bestDist = _distToObjective;
             };
-        } forEach _pool;
+        };
 
         if (_bestGroupId == "") then { continue };
 
@@ -193,8 +179,8 @@ while {_continueAllocation && {(count _pool) > 0}} do {
         };
         private _defendPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
 
-        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId]]) then {
-            _pool = _pool - [_bestGroupId];
+        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId, true]]) then {
+            _poolEntries deleteAt _bestIndex;
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
@@ -215,11 +201,12 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             };
             _assignedByObjective set [_objectiveId, _assignedHere + 1];
         } else {
-            _pool = _pool - [_bestGroupId];
+            _poolEntries deleteAt _bestIndex;
         };
     } forEach _candidateObjectives;
 };
 
+_pool = _poolEntries apply { _x select 0 };
 _track set ["groupPool", _pool];
 _metrics set ["remainingPool", count _pool];
 

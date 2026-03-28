@@ -119,54 +119,34 @@ private _assigned = createHashMap;
 
     if (count _eastCandidates == 0 || {count _westCandidates == 0}) then { continue };
 
-    private _eastRefs = _eastCandidates select {
-        private _candidatePos = (_x select 1) get "position";
-        private _hasEnemyContact = false;
-        {
-            if (_candidatePos distance2D ((_x select 1) get "position") <= _engagementDist) exitWith {
-                _hasEnemyContact = true;
-            };
-        } forEach _westCandidates;
-        _hasEnemyContact
-    };
-
-    if (count _eastRefs == 0) then { continue };
-
-    private _westRefs = _westCandidates select {
-        private _candidatePos = (_x select 1) get "position";
-        private _hasEnemyContact = false;
-        {
-            if (_candidatePos distance2D ((_x select 1) get "position") <= _engagementDist) exitWith {
-                _hasEnemyContact = true;
-            };
-        } forEach _eastRefs;
-        _hasEnemyContact
-    };
-
-    if (count _westRefs == 0) then { continue };
-
-    _eastRefs = _eastRefs select {
-        private _candidatePos = (_x select 1) get "position";
-        private _hasEnemyContact = false;
-        {
-            if (_candidatePos distance2D ((_x select 1) get "position") <= _engagementDist) exitWith {
-                _hasEnemyContact = true;
-            };
-        } forEach _westRefs;
-        _hasEnemyContact
-    };
-
-    if (count _eastRefs == 0) then { continue };
-
+    private _eastRefs = [];
+    private _westRefs = [];
+    private _eastSeen = createHashMap;
+    private _westSeen = createHashMap;
     private _minContactDist = 1e9;
     private _contactPos = _anchorPos;
 
     {
-        private _eastPos = (_x select 1) get "position";
+        private _eastRef = _x;
+        private _eastId = _eastRef select 0;
+        private _eastPos = (_eastRef select 1) get "position";
         {
-            private _westPos = (_x select 1) get "position";
+            private _westRef = _x;
+            private _westId = _westRef select 0;
+            private _westPos = (_westRef select 1) get "position";
             private _dist = _eastPos distance2D _westPos;
             if (_dist > _engagementDist) then { continue };
+
+            if !(_eastSeen getOrDefault [_eastId, false]) then {
+                _eastSeen set [_eastId, true];
+                _eastRefs pushBack _eastRef;
+            };
+
+            if !(_westSeen getOrDefault [_westId, false]) then {
+                _westSeen set [_westId, true];
+                _westRefs pushBack _westRef;
+            };
+
             if (_dist >= _minContactDist) then { continue };
 
             _minContactDist = _dist;
@@ -175,9 +155,10 @@ private _assigned = createHashMap;
                 ((_eastPos select 1) + (_westPos select 1)) * 0.5,
                 0
             ];
-        } forEach _westRefs;
-    } forEach _eastRefs;
+        } forEach _westCandidates;
+    } forEach _eastCandidates;
 
+    if (count _eastRefs == 0 || {count _westRefs == 0}) then { continue };
     if (_minContactDist > _engagementDist) then { continue };
 
     _zones pushBack [_eastRefs, _westRefs, _contactPos, _minContactDist];

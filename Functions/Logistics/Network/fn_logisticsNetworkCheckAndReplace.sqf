@@ -172,9 +172,14 @@ if ((count _maneuverTargets) + (count _rearTargets) == 0) then {
 
 private _batchMin = _net get "DISPATCH_BATCH_MIN";
 private _batchMax = _net get "DISPATCH_BATCH_MAX";
+private _batchHardCap = _net get "DISPATCH_MAX_PER_CHECK";
+private _dispatchTimeBudgetMs = _net get "DISPATCH_TIME_BUDGET_MS";
 private _batchSize = _batchMin + floor random ((_batchMax - _batchMin) + 1);
 if (_batchSize > count _queue) then {
     _batchSize = count _queue;
+};
+if (_batchSize > _batchHardCap) then {
+    _batchSize = _batchHardCap;
 };
 _perf set ["batchSize", _batchSize];
 
@@ -183,6 +188,7 @@ private _attempted = 0;
 private _inboundCounts = [_net] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
 private _recentDispatchCounts = [_net] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
 private _batchDispatchCounts = createHashMap;
+private _dispatchBudgetHit = false;
 
 _phaseT0 = diag_tickTime;
 for "_i" from 1 to _batchSize do {
@@ -282,6 +288,10 @@ for "_i" from 1 to _batchSize do {
         _perf set ["failSpendResources", (_perf get "failSpendResources") + 1];
         _queue pushBack _groupType;
     };
+
+    if (((diag_tickTime - _phaseT0) * 1000) >= _dispatchTimeBudgetMs) exitWith {
+        _dispatchBudgetHit = true;
+    };
 };
 _perf set ["dispatchMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["attempted", _attempted];
@@ -290,15 +300,21 @@ _perf set ["resourcesAfter", _resources call ["getResources", []]];
 
 _net set ["_reinforcementQueue", _queue];
 
-private _nextInterval = (_net get "DISPATCH_MIN_INTERVAL") + random ((_net get "DISPATCH_MAX_INTERVAL") - (_net get "DISPATCH_MIN_INTERVAL"));
+private _backlogContinuation = (count _queue) > 0 && {(_attempted >= _batchSize) || {_dispatchBudgetHit}};
+private _nextInterval = if (_backlogContinuation) then {
+    _net get "DISPATCH_BACKLOG_RETRY_INTERVAL"
+} else {
+    (_net get "DISPATCH_MIN_INTERVAL") + random ((_net get "DISPATCH_MAX_INTERVAL") - (_net get "DISPATCH_MIN_INTERVAL"))
+};
 _net set ["_nextDispatchAt", time + _nextInterval];
 
 ["LOGISTICS", 3, format [
-    "Dispatch window complete: attempted=%1 created=%2 queueRemaining=%3 nextIn=%4s",
+    "Dispatch window complete: attempted=%1 created=%2 queueRemaining=%3 nextIn=%4s budgetHit=%5",
     _attempted,
     _replaced,
     count _queue,
-    round _nextInterval
+    round _nextInterval,
+    _dispatchBudgetHit
 ]] call FLO_fnc_log;
 
 if (_replaced > 0) then {
@@ -312,5 +328,5 @@ if (_replaced > 0) then {
 };
 
 _net set ["_lastUpdate", time];
-_perf set ["status", "DISPATCHED"];
+_perf set ["status", if (_backlogContinuation) then { "DISPATCH_BACKLOG" } else { "DISPATCHED" }];
 _net set ["_lastPerf", _perf];

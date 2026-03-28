@@ -46,6 +46,7 @@ if (_phase != "assault") exitWith { _metrics };
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _groups = FLO_virtualGroups get "_groups";
+private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 if ((count (keys _frontlineObjectives)) == 0) then {
     _frontlineObjectives = _ws call ["_getEnemyObjectives", []];
@@ -56,23 +57,7 @@ private _trackSectorObjectives = _track get "frontSectorObjectives";
 private _trackAnchorPos = +(_track get "frontSectorAnchorPos");
 private _reserveGraphDepth = ((_cmdr get "_config") get "attackReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
-
-private _activeAttackCounts = createHashMap;
-{
-    private _gData = _y;
-    if ((_gData get "side") != _ownSide) then { continue };
-    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
-
-    private _attackObjective = _gData get "attackObjective";
-    if (_attackObjective == "") then { continue };
-
-    private _activeAttackCount = if (_attackObjective in _activeAttackCounts) then {
-        _activeAttackCounts get _attackObjective
-    } else {
-        0
-    };
-    _activeAttackCounts set [_attackObjective, _activeAttackCount + 1];
-} forEach _groups;
+private _activeAttackCounts = _assignmentCache get "attackCounts";
 
 private _candidateObjectives = [];
 {
@@ -101,7 +86,7 @@ private _candidateObjectives = [];
     private _sectorMatch = (count _trackSectorObjectives) == 0
         || { (count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0 };
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
-    private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+    private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
     private _phasePreferred = _phaseObjectiveId != "" && {_objectiveId == _phaseObjectiveId};
 
     _candidateObjectives pushBack (createHashMapFromArray [
@@ -135,10 +120,24 @@ private _rankedCandidates = [];
 _rankedCandidates sort true;
 _candidateObjectives = _rankedCandidates apply { _x select 5 };
 
+private _poolEntries = [];
+{
+    private _gData = _groups get _x;
+    if (isNil "_gData") then { continue };
+    if ((_gData get "side") != _ownSide) then { continue };
+    if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
+
+    _poolEntries pushBack [
+        _x,
+        _gData get "homeObjective",
+        _gData get "position"
+    ];
+} forEach _pool;
+
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
-while {_continueAllocation && {(count _pool) > 0}} do {
+while {_continueAllocation && {(count _poolEntries) > 0}} do {
     _continueAllocation = false;
 
     {
@@ -150,18 +149,12 @@ while {_continueAllocation && {(count _pool) > 0}} do {
         private _reserveBands = _x get "reserveBands";
 
         private _bestGroupId = "";
+        private _bestIndex = -1;
         private _bestBand = 10;
         private _bestDist = 1e12;
 
-        {
-            private _groupId = _x;
-            private _gData = _groups get _groupId;
-            if (isNil "_gData") then { continue };
-            if ((_gData get "side") != _ownSide) then { continue };
-            if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
-
-            private _groupPos = _gData get "position";
-            private _homeObjective = _gData get "homeObjective";
+        for "_i" from 0 to ((count _poolEntries) - 1) do {
+            (_poolEntries select _i) params ["_groupId", "_homeObjective", "_groupPos"];
             private _distToObjective = _groupPos distance2D _objectivePos;
             private _band = _fallbackBand;
             if (_homeObjective in _reserveBands) then {
@@ -170,15 +163,16 @@ while {_continueAllocation && {(count _pool) > 0}} do {
 
             if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {
                 _bestGroupId = _groupId;
+                _bestIndex = _i;
                 _bestBand = _band;
                 _bestDist = _distToObjective;
             };
-        } forEach _pool;
+        };
 
         if (_bestGroupId == "") then { continue };
 
         if (_cmdr call ["_orderGroupAttack", [_bestGroupId, _objectivePos, _objectiveId]]) then {
-            _pool = _pool - [_bestGroupId];
+            _poolEntries deleteAt _bestIndex;
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
             _continueAllocation = true;
@@ -197,11 +191,12 @@ while {_continueAllocation && {(count _pool) > 0}} do {
             };
             _assignedByObjective set [_objectiveId, _assignedHere + 1];
         } else {
-            _pool = _pool - [_bestGroupId];
+            _poolEntries deleteAt _bestIndex;
         };
     } forEach _candidateObjectives;
 };
 
+_pool = _poolEntries apply { _x select 0 };
 _track set ["groupPool", _pool];
 _metrics set ["remainingPool", count _pool];
 

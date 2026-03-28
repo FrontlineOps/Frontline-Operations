@@ -125,6 +125,13 @@ private _gtnCommander = createHashMapObject [[
     ["_forceBaselineTotalGroups", 0],
     ["_attackFrontlineObjectives", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
+    ["_objectiveAssignmentCache", createHashMapFromArray [
+        ["attackCounts", createHashMap],
+        ["garrisonCounts", createHashMap],
+        ["defenderCounts", createHashMap],
+        ["claimedPositionsByObjective", createHashMap]
+    ]],
+    ["_reserveBandsCache", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
     ["_frontlineCASLocks", createHashMap],
     
@@ -295,6 +302,7 @@ private _gtnCommander = createHashMapObject [[
         ]] call FLO_fnc_log;
 
         _self call ["_refreshAttackFrontline", []];
+        _self set ["_reserveBandsCache", createHashMap];
 
         // Publish the maintained commander COP to players as non-debug local intel markers.
         _tPhase = diag_tickTime;
@@ -308,6 +316,7 @@ private _gtnCommander = createHashMapObject [[
         _tPhase = diag_tickTime;
         private _attackAssignmentMetrics = _self call ["_manageCompletedAttackAssignments", []];
         _phaseMs set ["attackAssignments", (diag_tickTime - _tPhase) * 1000];
+        _self set ["_objectiveAssignmentCache", [_self] call FLO_fnc_gtnBuildObjectiveAssignmentCache];
 
         // Maintain standing garrisons before building mobile attack pools.
         _tPhase = diag_tickTime;
@@ -1891,6 +1900,17 @@ private _gtnCommander = createHashMapObject [[
         [_gData, _attackPos, _objectiveId] call FLO_fnc_virtualizationAssignAttackOrder;
         [_groupId, _gData, _attackPos, "ATTACK"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
 
+        if (_objectiveId != "") then {
+            private _assignmentCache = _self get "_objectiveAssignmentCache";
+            private _attackCounts = _assignmentCache get "attackCounts";
+            private _count = if (_objectiveId in _attackCounts) then {
+                _attackCounts get _objectiveId
+            } else {
+                0
+            };
+            _attackCounts set [_objectiveId, _count + 1];
+        };
+
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
@@ -1900,7 +1920,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Order group to defend using virtualization waypoints
     ["_orderGroupDefend", {
-        params ["_groupId", "_pos", ["_objectiveId", ""]];
+        params ["_groupId", "_pos", ["_objectiveId", ""], ["_skipSaturationCheck", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
@@ -1923,7 +1943,7 @@ private _gtnCommander = createHashMapObject [[
             private _currentDefendPos = _gData get "orderTargetPos";
             private _sameHoldPos = _currentDefendPos isEqualType [] && {count _currentDefendPos >= 2} && {(_currentDefendPos distance2D _pos) < 20};
             _alreadyAssigned = _sameObjectiveAssigned && {_sameHoldPos};
-            if (!_sameObjectiveAssigned) then {
+            if (!_sameObjectiveAssigned && {!_skipSaturationCheck}) then {
                 private _assigned = _self call ["_countObjectiveDefenders", [_objectiveId]];
                 private _cap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
                 if (_cap > 0 && {_assigned >= _cap}) then {
@@ -1960,6 +1980,27 @@ private _gtnCommander = createHashMapObject [[
         private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
         [_gData, _pos, _objectiveId, diag_tickTime, diag_tickTime + _leaseSeconds] call FLO_fnc_virtualizationAssignDefendOrder;
         [_groupId, _gData, _pos, "DEFEND"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
+
+        if (_objectiveId != "") then {
+            private _assignmentCache = _self get "_objectiveAssignmentCache";
+            private _defenderCounts = _assignmentCache get "defenderCounts";
+            private _claimedPositions = _assignmentCache get "claimedPositionsByObjective";
+
+            private _count = if (_objectiveId in _defenderCounts) then {
+                _defenderCounts get _objectiveId
+            } else {
+                0
+            };
+            _defenderCounts set [_objectiveId, _count + 1];
+
+            private _bucket = if (_objectiveId in _claimedPositions) then {
+                _claimedPositions get _objectiveId
+            } else {
+                []
+            };
+            _bucket pushBack _pos;
+            _claimedPositions set [_objectiveId, _bucket];
+        };
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -2010,6 +2051,35 @@ private _gtnCommander = createHashMapObject [[
         [_groupId, _waypoints, false, true, "GTN_GARRISON"] call FLO_fnc_updateVirtualGroupWaypoints;
         [_gData, _pos, _objectiveId] call FLO_fnc_virtualizationAssignGarrisonOrder;
         [_groupId, _gData, _pos, "GARRISON"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
+
+        if (_objectiveId != "") then {
+            private _assignmentCache = _self get "_objectiveAssignmentCache";
+            private _garrisonCounts = _assignmentCache get "garrisonCounts";
+            private _defenderCounts = _assignmentCache get "defenderCounts";
+            private _claimedPositions = _assignmentCache get "claimedPositionsByObjective";
+
+            private _garrisonCount = if (_objectiveId in _garrisonCounts) then {
+                _garrisonCounts get _objectiveId
+            } else {
+                0
+            };
+            _garrisonCounts set [_objectiveId, _garrisonCount + 1];
+
+            private _defenderCount = if (_objectiveId in _defenderCounts) then {
+                _defenderCounts get _objectiveId
+            } else {
+                0
+            };
+            _defenderCounts set [_objectiveId, _defenderCount + 1];
+
+            private _bucket = if (_objectiveId in _claimedPositions) then {
+                _claimedPositions get _objectiveId
+            } else {
+                []
+            };
+            _bucket pushBack _pos;
+            _claimedPositions set [_objectiveId, _bucket];
+        };
 
         _self call ["_taskGroups", [[_groupId]]];
 

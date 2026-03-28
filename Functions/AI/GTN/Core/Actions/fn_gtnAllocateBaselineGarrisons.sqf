@@ -239,7 +239,7 @@ while {_continueAllocation && {(count _available) > 0}} do {
         private _reserveBands = if ("reserveBands" in _x) then {
             _x get "reserveBands"
         } else {
-            private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+            private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
             _x set ["reserveBands", _bands];
             _metrics set ["reserveBandBuilds", (_metrics get "reserveBandBuilds") + 1];
             _bands
