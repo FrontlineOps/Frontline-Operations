@@ -4,8 +4,9 @@
  * Description:
  *   Selects the best reinforcement target from a candidate objective set.
  *   Static AA uses priority scoring; maneuver reinforcements first pass hard
- *   saturation gates, then choose by explicit target role:
- *   pressure first, then supply advance, then rear fallback.
+ *   saturation gates, then choose by doctrine:
+ *   collapse relief first, then supply-chain advance, then normal pressure,
+ *   then rear fallback.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -88,6 +89,7 @@ if (count _available == 0) exitWith { "" };
 
 private _managedSide = _net get "_managedSide";
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
+private _collapseCandidates = [];
 private _pressureCandidates = [];
 private _advanceCandidates = [];
 private _rearCandidates = [];
@@ -97,7 +99,11 @@ private _rearCandidates = [];
     private _objective = FLO_Objectives get _objectiveId;
 
     if ((_objective get _enemyCountKey) > 0) then {
-        _pressureCandidates pushBack _objectiveId;
+        if ([_net, _objectiveId] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure) then {
+            _collapseCandidates pushBack _objectiveId;
+        } else {
+            _pressureCandidates pushBack _objectiveId;
+        };
         continue;
     };
 
@@ -109,12 +115,16 @@ private _rearCandidates = [];
     };
 } forEach _available;
 
-if (count _pressureCandidates > 0) exitWith {
-    [_net, _pressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
+if (count _collapseCandidates > 0) exitWith {
+    [_net, _collapseCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
 };
 
 if (count _advanceCandidates > 0) exitWith {
     [_net, _advanceCandidates] call FLO_fnc_logisticsNetworkPickAdvanceTarget
+};
+
+if (count _pressureCandidates > 0) exitWith {
+    [_net, _pressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
 };
 
 [_net, _rearCandidates] call FLO_fnc_logisticsNetworkPickRearTarget

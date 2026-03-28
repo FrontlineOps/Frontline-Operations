@@ -53,6 +53,8 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
     ["SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS", 14000],
+    ["SUPPLY_ADVANCE_OBJECTIVE_INBOUND_CAP", 2],
+    ["SUPPLY_ADVANCE_OBJECTIVE_BATCH_CAP", 1],
     ["SUPPLY_NODE_MIN_DELIVERIES", 1],
     ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
     ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
@@ -96,6 +98,10 @@ private _logisticsClass = [
 
     ["_objectiveHasStaticAA", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkObjectiveHasStaticAA;
+    }],
+
+    ["_objectiveIsCollapsePressure", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure;
     }],
 
     ["_getRearAATargets", {

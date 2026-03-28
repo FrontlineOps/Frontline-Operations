@@ -18,6 +18,7 @@ private _perf = createHashMapFromArray [
     ["neededCount", 0],
     ["queueBefore", 0],
     ["queueAfter", 0],
+    ["collapseTargetCount", 0],
     ["targetCount", 0],
     ["advanceTargetCount", 0],
     ["hqObjective", ""],
@@ -126,6 +127,9 @@ _perf set ["resourcesBefore", _resources call ["getResources", []]];
 private _pressureTargets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
 private _advanceTargets = [_net] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
 private _rearTargets = [_net, 3000] call FLO_fnc_logisticsNetworkFindRearObjectives;
+private _collapseTargetCount = {
+    [_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure
+} count _pressureTargets;
 private _maneuverTargets = +_pressureTargets;
 {
     if !(_x in _maneuverTargets) then {
@@ -133,20 +137,32 @@ private _maneuverTargets = +_pressureTargets;
     };
 } forEach _advanceTargets;
 
-if (count _pressureTargets == 0) then {
+if (_collapseTargetCount > 0) then {
+    ["LOGISTICS", 3, format [
+        "Queue dispatch: collapse pressure overriding supply advance (%1 collapse, %2 advance, %3 pending)",
+        _collapseTargetCount,
+        count _advanceTargets,
+        count _queue
+    ]] call FLO_fnc_log;
+} else {
     if (count _advanceTargets > 0) then {
         ["LOGISTICS", 3, format [
-            "Queue dispatch: no pressured objectives - advancing supply chain (%1 pending)",
+            "Queue dispatch: prioritizing supply-chain advance (%1 advance, %2 non-critical pressure, %3 pending)",
+            count _advanceTargets,
+            (count _pressureTargets) - _collapseTargetCount,
             count _queue
         ]] call FLO_fnc_log;
     } else {
-        ["LOGISTICS", 3, format [
-            "Queue dispatch: no pressure or advance objectives - checking rear objectives (%1 pending)",
-            count _queue
-        ]] call FLO_fnc_log;
+        if (count _pressureTargets == 0) then {
+            ["LOGISTICS", 3, format [
+                "Queue dispatch: no pressure or advance objectives - checking rear objectives (%1 pending)",
+                count _queue
+            ]] call FLO_fnc_log;
+        };
     };
 };
 _perf set ["targetMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["collapseTargetCount", _collapseTargetCount];
 _perf set ["advanceTargetCount", count _advanceTargets];
 _perf set ["targetCount", (count _maneuverTargets) + (count _rearTargets)];
 

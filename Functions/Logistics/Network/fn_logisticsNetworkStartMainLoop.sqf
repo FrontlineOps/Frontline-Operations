@@ -67,7 +67,7 @@ _net set ["_loopStarted", true];
                                 _perf = createHashMap;
                             };
                             diag_log format [
-                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reconcile=%6 targets=%7 dispatch=%8 | needed=%9 batch=%10 attempted=%11 created=%12 status=%13 | failPool=%14 failFunds=%15 failTarget=%16 failSat=%17 failDelivery=%18 failSpawn=%19 failSpend=%20 failCreate=%21 | res=%22->%23",
+                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reconcile=%6 targets=%7 dispatch=%8 | collapse=%9 advance=%10 needed=%11 batch=%12 attempted=%13 created=%14 status=%15 | failPool=%16 failFunds=%17 failTarget=%18 failSat=%19 failDelivery=%20 failSpawn=%21 failSpend=%22 failCreate=%23 | res=%24->%25",
                                 _net get "_managedSideKey",
                                 count (_net get "_reinforcementQueue"),
                                 _dt * 1000,
@@ -76,6 +76,8 @@ _net set ["_loopStarted", true];
                                 _perf getOrDefault ["reconcileMs", 0],
                                 _perf getOrDefault ["targetMs", 0],
                                 _perf getOrDefault ["dispatchMs", 0],
+                                _perf getOrDefault ["collapseTargetCount", 0],
+                                _perf getOrDefault ["advanceTargetCount", 0],
                                 _perf getOrDefault ["neededCount", 0],
                                 _perf getOrDefault ["batchSize", 0],
                                 _perf getOrDefault ["attempted", 0],

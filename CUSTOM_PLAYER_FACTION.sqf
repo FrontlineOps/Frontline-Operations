@@ -1,6 +1,34 @@
 // Where are Classnames ? Right click on any Unit or Vehicle in the Editor and Select find in CFG viewer, Last Name in the [path] tab is the Classname,
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = F_Officer + all F_Assault_* roles
+ *   groundSpecOps    = all F_Recon_* + all F_Diver_* roles
+ *   groundMotorized  = F_Car_List + F_MRAP_List
+ *   groundMechanized = F_APC_List
+ *   groundArmor      = F_Tank_List
+ *   groundTransport  = F_Truck_List
+ *   groundArtillery  = F_Artillery_List
+ *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   airHeli          = F_Heli_Gunship_List
+ *   airJet           = F_Plane_List
+ *   airDrone         = F_UAV_List
+ *   groundDrone      = F_UGV_List
+ *   staticAA         = F_SAM_List
+ *   radar            = F_RADAR
+ *   boat             = F_Boat_List
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above. You do not need to define separate West_* pools here.
+ */
+
 // Default player faction units (Vanilla Arma 3 NATO)
+// F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
+// All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
 F_Officer = "B_officer_F";    // Officer 
 F_Assault_Eng = "B_engineer_F";    // Engineer
 F_Assault_TL = "B_Soldier_TL_F";    // Assault Squad Leader 
@@ -29,6 +57,7 @@ F_Diver_Rfl = "B_diver_F";    // Diver operator
 F_Diver_Eod = "B_diver_exp_F";    // Diver Explosive specialist
 
 // Default base objects and vehicles
+// F_RADAR feeds the commander radar pool.
 F_RADAR = "B_Radar_System_01_F";      // Use "I_E_Radar_System_01_F" for Woodland Camo   // "B_Radar_System_01_F" for Desert Camo
 
 F_HQ_01 = "Land_Cargo_HQ_V3_F";      // Use "Land_Cargo_HQ_V1_F" for Woodland Camo   // "Land_Cargo_HQ_V3_F" for Desert Camo
@@ -38,10 +67,12 @@ F_OP_01 = "Land_Cargo_House_V3_F";      // Use "Land_Cargo_House_V1_F" for Woodl
 F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";      // Use "Land_TripodScreen_01_dual_v2_F" for Woodland Camo   // "Land_TripodScreen_01_dual_v2_sand_F" for Desert Camo
 
 // Vehicle lists with custom prices
+// These same lists also feed commander/virtualization pools as described above.
 F_Bike_List = [
     ["B_Quadbike_01_F", 5]
 ];
 
+// groundMotorized
 F_Car_List = [
     ["B_LSV_01_unarmed_F", 25],
     ["B_LSV_01_light_F", 35],
@@ -49,11 +80,13 @@ F_Car_List = [
     ["B_LSV_01_armed_F", 50]
 ];
 
+// groundMotorized
 F_MRAP_List = [
     ["B_MRAP_01_hmg_F", 70],
     ["B_MRAP_01_gmg_F", 100]
 ];
 
+// groundTransport
 F_Truck_List = [
     ["B_Truck_01_covered_F", 65],
     ["B_Truck_01_transport_F", 65]
@@ -71,6 +104,7 @@ F_Truck_Respawn_List = [
     ["B_Truck_01_medical_F", 150]
 ];
 
+// groundMechanized
 F_APC_List = [
     ["B_APC_Tracked_01_AA_F", 200],
     ["B_APC_Tracked_01_CRV_F", 200],
@@ -78,45 +112,54 @@ F_APC_List = [
     ["B_APC_Wheeled_01_cannon_F", 350]
 ];
 
+// groundArmor
 F_Tank_List = [
     ["B_MBT_01_cannon_F", 500],
     ["B_MBT_01_TUSK_F", 650]
 ];
 
+// groundArtillery
 F_Artillery_List = [
     ["B_Mortar_01_F", 75],    
     ["B_MBT_01_arty_F", 400],
     ["B_MBT_01_mlrs_F", 500]
 ];
 
+// airTransport
 F_Heli_List = [
     ["B_Heli_Transport_01_F", 200],
     ["B_Heli_Transport_03_F", 400],
     ["B_Heli_Light_01_F", 250]
 ];
 
+// airTransport
 F_Heli_Respawn_List = [
     ["B_Heli_Transport_01_medevac_F", 550]
 ];
 
+// airHeli
 F_Heli_Gunship_List = [
     ["B_Heli_Attack_01_dynamicLoadout_F", 750]
 ];
 
+// airJet
 F_Plane_List = [
     ["B_T_VTOL_01_infantry_F", 1200],
     ["B_T_VTOL_01_vehicle_F", 1200],
     ["B_Plane_CAS_01_dynamicLoadout_F", 1500]
 ];
 
+// boat
 F_Boat_List = [];
 
+// airDrone
 F_UAV_List = [
     ["B_UAV_02_dynamicLoadout_F", 80],
     ["B_UAV_05_F", 80],
     ["B_T_UAV_03_dynamicLoadout_F", 80]
 ];
 
+// groundDrone
 F_UGV_List = [
     ["B_UGV_01_rcws_F", 55]
 ];
@@ -134,6 +177,7 @@ F_Turret_List = [
     ["B_static_AT_F", 35]
 ];
 
+// staticAA
 F_SAM_List = [
     ["B_SAM_System_01_F", 35],
     ["B_SAM_System_02_F", 35],
@@ -157,52 +201,6 @@ F_RCN_SQD = [F_Recon_TL, F_Recon_AT, F_Recon_Eod, F_Recon_Mg, F_Recon_Eng, F_Rec
 F_DVR_TEAM = [F_Diver_TL, F_Diver_Eod, F_Diver_Rfl, F_Diver_Eod];
 
 F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
-
-// Normalized commander/virtualization faction schema
-West_Ground_Infantry = [
-    F_Assault_Eng,
-    F_Assault_TL,
-    F_Assault_SL,
-    F_Assault_Eod,
-    F_Assault_Mrk,
-    F_Assault_AT,
-    F_Assault_Amm,
-    F_Assault_Mg,
-    F_Assault_Med,
-    F_Assault_Uav
-];
-
-West_Ground_SpecOps = [
-    F_Recon_Snp,
-    F_Recon_Sct,
-    F_Recon_TL,
-    F_Recon_Mrk,
-    F_Recon_AT,
-    F_Recon_Mg,
-    F_Recon_Eod,
-    F_Recon_Med,
-    F_Recon_Eng,
-    F_Diver_TL,
-    F_Diver_Eod,
-    F_Diver_Rfl
-];
-
-West_Ground_Motorized = F_Car_List + F_MRAP_List;
-West_Ground_Mechanized = F_APC_List;
-West_Ground_Armor = F_Tank_List;
-West_Ground_Transport = F_Truck_List;
-West_Ground_Artillery = F_Artillery_List;
-West_Air_Heli = F_Heli_Gunship_List;
-West_Air_Jet = F_Plane_List;
-West_Air_Transport = F_Heli_List + F_Heli_Respawn_List;
-West_Air_Drone = F_UAV_List;
-West_Ground_Drone = F_UGV_List;
-West_Mobile_AA = [
-    ["B_APC_Tracked_01_AA_F", 200]
-];
-West_Static_AA = F_SAM_List;
-West_Radar = [F_RADAR];
-West_Boat = F_Boat_List;
 
 /*
  * BLUFOR Virtualization Objective Configuration

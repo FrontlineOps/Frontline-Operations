@@ -40,6 +40,7 @@ class LogisticsNetwork {
     class logisticsNetworkFindSpawnPosition {};
     class logisticsNetworkGetComposition {};
     class logisticsNetworkGetRearAATargets {};
+    class logisticsNetworkObjectiveIsCollapsePressure {};
     class logisticsNetworkObjectiveHasStaticAA {};
     class logisticsNetworkPickAdvanceTarget {};
     class logisticsNetworkPickBestTarget {};

@@ -34,9 +34,33 @@ private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" }
 
 private _friendlyCount = _objective get _friendlyCountKey;
 private _enemyCount = _objective get _enemyCountKey;
-if (_enemyCount <= 0) exitWith { true };
-
 private _inboundCount = if (_objectiveId in _inboundCounts) then { _inboundCounts get _objectiveId } else { 0 };
+private _batchCount = if (_objectiveId in _batchDispatchCounts) then { _batchDispatchCounts get _objectiveId } else { 0 };
+
+if (_enemyCount <= 0) exitWith {
+    private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    if (_role get "isAdvanceCandidate") then {
+        private _deliveryCount = _role get "deliveryCount";
+        private _minDeliveries = _net get "SUPPLY_NODE_MIN_DELIVERIES";
+        private _minActiveFriendlyCount = _net get "SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT";
+        private _canAdvance = true;
+
+        if (_deliveryCount >= _minDeliveries && {_friendlyCount >= _minActiveFriendlyCount}) then {
+            _canAdvance = false;
+        };
+        if (_inboundCount >= (_net get "SUPPLY_ADVANCE_OBJECTIVE_INBOUND_CAP")) then {
+            _canAdvance = false;
+        };
+        if (_batchCount >= (_net get "SUPPLY_ADVANCE_OBJECTIVE_BATCH_CAP")) then {
+            _canAdvance = false;
+        };
+
+        _canAdvance
+    } else {
+        true
+    };
+};
+
 if ((_objective get "contested")) then {
     private _forceRatio = _friendlyCount / _enemyCount;
     if (_forceRatio < (_net get "REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO")) then {
@@ -59,7 +83,6 @@ if (_inboundCap > _inboundCapMax) then { _inboundCap = _inboundCapMax; };
 if (_inboundCount >= _inboundCap) exitWith { false };
 
 private _batchCap = _inboundCap min (_net get "REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX");
-private _batchCount = if (_objectiveId in _batchDispatchCounts) then { _batchDispatchCounts get _objectiveId } else { 0 };
 if (_batchCount >= _batchCap) exitWith { false };
 
 true

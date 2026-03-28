@@ -3,19 +3,39 @@
 // Syndikat paramilitary forces in woodland camouflage
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = East_Ground_Infantry
+ *   groundSpecOps    = East_Ground_SpecOps
+ *   groundMotorized  = East_Ground_Motorized
+ *   groundMechanized = East_Ground_Mechanized
+ *   groundArmor      = East_Ground_Armor
+ *   groundTransport  = East_Ground_Transport
+ *   groundArtillery  = East_Ground_Artillery
+ *   airTransport     = East_Air_Transport
+ *   airHeli          = East_Air_Heli
+ *   airJet           = East_Air_Jet
+ *   airDrone         = East_Air_Drone
+ *   mobileAA         = East_Mobile_AA
+ *   staticAA         = East_Static_AA
+ *   radar            = East_Radar
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above.
+ */
 // ============================================================================
-// INFANTRY GROUPS
+// INFANTRY
 // ============================================================================
-East_Groups = [
+// Mixed infantry source for groundInfantry.
+// Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
     (configfile >> "CfgGroups" >> "Indep" >> "IND_C_F" >> "Infantry" >> "ParaShockTeam"),
     (configfile >> "CfgGroups" >> "Indep" >> "IND_C_F" >> "Infantry" >> "ParaFireTeam"),
-    (configfile >> "CfgGroups" >> "Indep" >> "IND_C_F" >> "Infantry" >> "ParaCombatGroup")
-];
-
-// ============================================================================
-// INFANTRY UNITS
-// ============================================================================
-East_Units = [
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_C_F" >> "Infantry" >> "ParaCombatGroup"),
     "I_C_Soldier_Para_1_F", "I_C_Soldier_Para_1_F",
     "I_C_Soldier_Para_2_F", "I_C_Soldier_Para_2_F",
     "I_C_Soldier_Para_3_F", "I_C_Soldier_Para_3_F",
@@ -25,45 +45,56 @@ East_Units = [
     "I_C_Soldier_Para_7_F",
     "I_C_Soldier_Para_8_F"
 ];
+// groundSpecOps
+East_Ground_SpecOps = [];
 
-East_Units_Officers = ["I_C_Soldier_Para_4_F"];
+// Fire observer pool for artillery support logic.
 East_FireObserver = ["I_C_Soldier_Para_4_F"];
 
 // ============================================================================
 // VEHICLE ARRAYS
 // ============================================================================
-East_Ground_Vehicles_Ambient = [
-    "I_G_Offroad_01_armed_F", "I_C_Offroad_02_AT_F", "I_C_Offroad_02_LMG_F",
-    "I_C_Offroad_02_unarmed_F", "I_C_Van_01_transport_F",
-    "I_C_Van_02_transport_F", "O_T_Quadbike_01_ghex_F"
-];
-
-East_Ground_Vehicles_Light = [
+// groundMotorized
+East_Ground_Motorized = [
     "I_G_Offroad_01_armed_F", "I_C_Offroad_02_LMG_F", "I_C_Offroad_02_AT_F"
 ];
 
-East_Ground_Vehicles_Heavy = [
+// groundMechanized
+East_Ground_Mechanized = [
+    "I_E_APC_tracked_03_cannon_F", "I_C_Offroad_02_AT_F", "I_G_Offroad_01_armed_F"
+];
+// groundArmor
+East_Ground_Armor = [
     "I_E_APC_tracked_03_cannon_F", "I_C_Offroad_02_AT_F", "I_G_Offroad_01_armed_F"
 ];
 
+// groundTransport
 East_Ground_Transport = [
     "I_C_Van_01_transport_F", "I_C_Van_02_transport_F", "I_C_Offroad_02_unarmed_F"
 ];
 
+// groundArtillery
 East_Ground_Artillery = ["O_MBT_02_arty_F"];
 
+// airTransport
 East_Air_Transport = ["I_C_Heli_Light_01_civil_F"];
 
+// airHeli
 East_Air_Heli = ["I_C_Heli_Light_01_civil_F"];
 
+// airJet
 East_Air_Jet = ["I_C_Heli_Light_01_civil_F"];
 
+// airDrone
 East_Air_Drone = ["O_UAV_01_F"];
 
+// mobileAA
 East_Mobile_AA = ["I_LT_01_AA_F"];
 
+// staticAA
 East_Static_AA = ["O_SAM_System_04_F"];
 
+// radar
 East_Radar = ["O_Radar_System_02_F"];
 
 // ============================================================================

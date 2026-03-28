@@ -3,20 +3,40 @@
 // Islamic State insurgent forces
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = East_Ground_Infantry
+ *   groundSpecOps    = East_Ground_SpecOps
+ *   groundMotorized  = East_Ground_Motorized
+ *   groundMechanized = East_Ground_Mechanized
+ *   groundArmor      = East_Ground_Armor
+ *   groundTransport  = East_Ground_Transport
+ *   groundArtillery  = East_Ground_Artillery
+ *   airTransport     = East_Air_Transport
+ *   airHeli          = East_Air_Heli
+ *   airJet           = East_Air_Jet
+ *   airDrone         = East_Air_Drone
+ *   mobileAA         = East_Mobile_AA
+ *   staticAA         = East_Static_AA
+ *   radar            = East_Radar
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above.
+ */
 // ============================================================================
-// INFANTRY GROUPS
+// INFANTRY
 // ============================================================================
-East_Groups = [
+// Mixed infantry source for groundInfantry.
+// Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
     (configfile >> "CfgGroups" >> "East" >> "LOP_ISTS" >> "Infantry" >> "LOP_ISTS_Infantry_Patrol"),
     (configfile >> "CfgGroups" >> "East" >> "LOP_ISTS" >> "Infantry" >> "LOP_ISTS_Infantry_Squad"),
     (configfile >> "CfgGroups" >> "East" >> "LOP_ISTS" >> "Infantry" >> "LOP_ISTS_Infantry_ATTeam"),
-    (configfile >> "CfgGroups" >> "East" >> "LOP_ISTS" >> "Infantry" >> "LOP_ISTS_Infantry_AATeam")
-];
-
-// ============================================================================
-// INFANTRY UNITS
-// ============================================================================
-East_Units = [
+    (configfile >> "CfgGroups" >> "East" >> "LOP_ISTS" >> "Infantry" >> "LOP_ISTS_Infantry_AATeam"),
     "LOP_ISTS_Infantry_Rifleman", "LOP_ISTS_Infantry_Rifleman",
     "LOP_ISTS_Infantry_AR", "LOP_ISTS_Infantry_AR",
     "LOP_ISTS_Infantry_GL", "LOP_ISTS_Infantry_GL",
@@ -27,45 +47,57 @@ East_Units = [
     "LOP_ISTS_Infantry_AA",
     "LOP_ISTS_Infantry_Corpsman"
 ];
+// groundSpecOps
+East_Ground_SpecOps = [];
 
-East_Units_Officers = ["LOP_ISTS_Infantry_TL"];
+// Fire observer pool for artillery support logic.
 East_FireObserver = ["LOP_ISTS_Infantry_SL"];
 
 // ============================================================================
 // VEHICLE ARRAYS
 // ============================================================================
-East_Ground_Vehicles_Ambient = [
-    "LOP_ISTS_Landrover", "LOP_ISTS_Truck", "LOP_ISTS_M998_D_4DR",
-    "LOP_ISTS_Offroad", "LOP_ISTS_Landrover_M2", "LOP_ISTS_Offroad_M2", "LOP_ISTS_BMP2"
-];
-
-East_Ground_Vehicles_Light = [
+// groundMotorized
+East_Ground_Motorized = [
     "LOP_ISTS_Landrover_M2", "LOP_ISTS_Offroad_M2", "LOP_ISTS_M1025_W_M2",
     "LOP_ISTS_M1025_W_Mk19", "LOP_ISTS_BTR60", "LOP_ISTS_M113_W"
 ];
 
-East_Ground_Vehicles_Heavy = [
+// groundMechanized
+East_Ground_Mechanized = [
+    "LOP_ISTS_BMP1", "LOP_ISTS_BMP2", "LOP_ISTS_T72BA", "LOP_ISTS_T72BB", "LOP_ISTS_ZSU234"
+];
+// groundArmor
+East_Ground_Armor = [
     "LOP_ISTS_BMP1", "LOP_ISTS_BMP2", "LOP_ISTS_T72BA", "LOP_ISTS_T72BB", "LOP_ISTS_ZSU234"
 ];
 
+// groundTransport
 East_Ground_Transport = [
     "LOP_ISTS_Landrover", "LOP_ISTS_Truck", "LOP_ISTS_M998_D_4DR", "LOP_ISTS_Offroad"
 ];
 
+// groundArtillery
 East_Ground_Artillery = ["LOP_ISTS_BM21", "LOP_ISTS_2S1"];
 
+// airTransport
 East_Air_Transport = ["LOP_ISTS_Mi8MT_Cargo"];
 
+// airHeli
 East_Air_Heli = ["LOP_ISTS_Mi8MTV3_FAB", "LOP_ISTS_Mi8MTV3_UPK23"];
 
+// airJet
 East_Air_Jet = ["LOP_ISTS_Mi8MTV3_FAB"];
 
+// airDrone
 East_Air_Drone = ["O_UAV_01_F"];
 
+// mobileAA
 East_Mobile_AA = ["LOP_ISTS_ZSU234"];
 
+// staticAA
 East_Static_AA = ["O_SAM_System_04_F"];
 
+// radar
 East_Radar = ["O_Radar_System_02_F"];
 
 // ============================================================================
