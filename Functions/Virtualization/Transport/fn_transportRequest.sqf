@@ -8,7 +8,7 @@
  * Arguments:
  *   0: Infantry Group ID <STRING>
  *   1: Destination Position <ARRAY>
- *   2: Force transport (skip distance check) <BOOLEAN> - Optional
+ *   2: Force transport (skip distance check) <BOOLEAN> or request spec <HASHMAP> - Optional
  *
  * Return Value:
  *   Transport Group ID or "" if unavailable <STRING>
@@ -20,13 +20,40 @@
 params [
     ["_infantryGroupId", "", [""]],
     ["_destinationPos", [0,0,0], [[]]],
-    ["_forceTransport", false, [false]]
+    ["_transportRequest", false]
 ];
 
 if (_infantryGroupId == "") exitWith { "" };
 if (_destinationPos isEqualTo [0,0,0]) exitWith { "" };
 
 private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
+private _forceTransport = false;
+private _requestSpec = createHashMap;
+
+if (_transportRequest isEqualType true) then {
+    _forceTransport = _transportRequest;
+} else {
+    if !(_transportRequest isEqualType createHashMap) then {
+        throw format [
+            "[TRANSPORT] Invalid request payload type for %1: %2",
+            _infantryGroupId,
+            typeName _transportRequest
+        ];
+    };
+    _requestSpec = _transportRequest;
+    if ("forceTransport" in _requestSpec) then {
+        _forceTransport = _requestSpec get "forceTransport";
+    };
+};
+
+private _forcedMode = if ("forceMode" in _requestSpec) then {
+    toUpper (_requestSpec get "forceMode")
+} else {
+    ""
+};
+private _allowGroundTransport = !(_forcedMode in ["AIR_LAND", "AIR_DROP"]);
+private _allowAirTransport = _forcedMode != "GROUND";
+private _forceAirTransport = _forcedMode in ["AIR_LAND", "AIR_DROP"];
 
 private _currentPos = _infData get "position";
 private _unitCount = _infData get "unitCount";
@@ -49,7 +76,7 @@ private _transportData = createHashMap;
 private _hasTransportData = false;
 
 // Prefer dedicated reserve carriers first in the passenger's current activation state.
-if (_infantryIsActive) then {
+if (_allowGroundTransport && {_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
@@ -70,7 +97,8 @@ if (_infantryIsActive) then {
             true
         ] call FLO_fnc_transportPoolFindExisting;
     };
-} else {
+};
+if (_allowGroundTransport && {!_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
@@ -94,7 +122,7 @@ if (_infantryIsActive) then {
 };
 
 // Active squads can activate a virtual reserve carrier on demand.
-if (_transportId == "" && {_infantryIsActive}) then {
+if (_allowGroundTransport && {_transportId == ""} && {_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
@@ -128,7 +156,7 @@ if (_transportId == "" && {_infantryIsActive}) then {
 };
 
 // Fall back to any available ground carrier, including organic combat vehicles.
-if (_transportId == "") then {
+if (_allowGroundTransport && {_transportId == ""}) then {
     _transportId = [
         _unitCount,
         _currentPos,
@@ -139,7 +167,7 @@ if (_transportId == "") then {
     ] call FLO_fnc_transportPoolFind;
 };
 
-if (_transportId == "") then {
+if (_allowGroundTransport && {_transportId == ""}) then {
     _transportId = [
         _unitCount,
         _currentPos,
@@ -152,7 +180,7 @@ if (_transportId == "") then {
 };
 
 // Long-haul fallback: request dedicated airlift if no ground carrier is available.
-if (_transportId == "" && {_distance >= FLO_Transport_AirPickupMinDistance}) then {
+if (_allowAirTransport && {_transportId == ""} && {(_distance >= FLO_Transport_AirPickupMinDistance) || _forceAirTransport}) then {
     if (_infantryIsActive) then {
         _transportId = [
             _unitCount,
@@ -198,7 +226,7 @@ if (_transportId == "" && {_distance >= FLO_Transport_AirPickupMinDistance}) the
     };
 };
 
-if (_transportId == "" && {_distance >= FLO_Transport_AirPickupMinDistance} && {_infantryIsActive}) then {
+if (_allowAirTransport && {_transportId == ""} && {((_distance >= FLO_Transport_AirPickupMinDistance) || _forceAirTransport)} && {_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
@@ -237,6 +265,33 @@ if (_transportId == "") exitWith {
     ""
 };
 
+if (!_hasTransportData) then {
+    _transportData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+    _hasTransportData = true;
+};
+
+private _missionPlan = [
+    _infantryGroupId,
+    _infData,
+    _transportId,
+    _transportData,
+    _destinationPos,
+    _requestSpec
+] call FLO_fnc_transportBuildMissionPlan;
+if (count (keys _missionPlan) == 0) exitWith {
+    ["TRANSPORT", 2, format [
+        "Request failed: could not build mission plan for passenger %1 using carrier %2",
+        _infantryGroupId,
+        _transportId
+    ]] call FLO_fnc_log;
+    ""
+};
+
+private _insertMode = _missionPlan get "mode";
+private _insertPos = _missionPlan get "insertPos";
+private _completionRadius = _missionPlan get "completionRadius";
+private _orderTag = _missionPlan get "orderTag";
+
 // Claim transport
 [_transportId, _infantryGroupId] call FLO_fnc_transportPoolClaim;
 
@@ -248,27 +303,25 @@ if (!_attached) exitWith {
     ""
 };
 
-if (!_hasTransportData) then {
-    _transportData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
-};
 private _transportType = _transportData get "groupType";
-
-// Calculate dismount position short of the destination
-private _dismountPos = _destinationPos getPos [FLO_Transport_DismountDistance, _destinationPos getDir _currentPos];
 
 // Set transport waypoints
 private _waypoints = [
-    [_dismountPos, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 50]
+    [_insertPos, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", _completionRadius]
 ];
-[_transportId, _waypoints, false, true, "TRANSPORT_REQUEST"] call FLO_fnc_updateVirtualGroupWaypoints;
+[_transportId, _waypoints, false, true, _orderTag] call FLO_fnc_updateVirtualGroupWaypoints;
 
 // Configure for dismount
 _transportData set ["dismountAtWaypoint", 0];
-[_transportData, "TRANSPORT", "TRANSPORT_REQUEST"] call FLO_fnc_virtualizationSetMissionLock;
+_transportData set ["transportInsertMode", _insertMode];
+_transportData set ["transportInsertPos", _insertPos];
+_transportData set ["transportLandCommandIssued", false];
+[_transportData, "TRANSPORT", _insertMode] call FLO_fnc_virtualizationSetMissionLock;
 [_transportData, "TRANSPORT"] call FLO_fnc_virtualizationSetExecutionState;
-_infData set ["postDismountWaypoint", [_destinationPos, "TRANSPORT_REQUEST"]];
+[_infData, "TRANSPORT", _insertMode] call FLO_fnc_virtualizationSetMissionLock;
+_infData set ["postDismountWaypoint", [_destinationPos, _orderTag]];
 
-["TRANSPORT", 3, format["Request: Transport %1 (%2) assigned to carry %3 to destination (%4m)",
-    _transportId, _transportType, _infantryGroupId, round _distance]] call FLO_fnc_log;
+["TRANSPORT", 3, format["Request: Transport %1 (%2) assigned to carry %3 via %4 to destination (%5m)",
+    _transportId, _transportType, _infantryGroupId, _insertMode, round _distance]] call FLO_fnc_log;
 
 _transportId

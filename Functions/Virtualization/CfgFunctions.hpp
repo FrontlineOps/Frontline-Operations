@@ -129,6 +129,8 @@ class VirtualizationTransport {
     class transportGetPassengerLoad {};
     class transportGetTrackedGroup {};
     class transportHasKnownEnemyNearby {};
+    class transportBuildMissionPlan {};
+    class transportClearInsertState {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportPoolFind     {};
@@ -138,6 +140,7 @@ class VirtualizationTransport {
     class transportApplyPostDismountWaypoint {};
     class transportDetach       {};
     class transportDetachAll    {};
+    class transportParadropActivePassengerGroup {};
     class transportProcessActiveCarrier {};
     class transportProcessVirtualCarrier {};
     class transportMountActivePassengerGroup {};

@@ -41,7 +41,7 @@ private _transportVehicles = if (!isNull _transRealGroup) then {
 
 // Clear infantry attachment
 [_infData] call FLO_fnc_virtualizationClearTransportAttachment;
-if ((_infData get "missionLock") == "ORGANIC_PACKAGE") then {
+if ((_infData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
     [_infData] call FLO_fnc_virtualizationClearMissionLock;
 };
 [true] call FLO_fnc_gtnCombatMarkClassificationDirty;

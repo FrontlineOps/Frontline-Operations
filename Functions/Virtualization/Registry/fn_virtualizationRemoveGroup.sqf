@@ -30,7 +30,7 @@ private _detachIndex = 0;
             ]] call FLO_fnc_log;
             [_otherData] call FLO_fnc_virtualizationClearTransportAttachment;
             [_otherData] call FLO_fnc_virtualizationClearMountedIn;
-            if ((_otherData get "missionLock") == "ORGANIC_PACKAGE") then {
+            if ((_otherData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
                 [_otherData] call FLO_fnc_virtualizationClearMissionLock;
             };
         };
@@ -50,15 +50,13 @@ private _detachIndex = 0;
         [_otherData, _groupId] call FLO_fnc_virtualizationRemoveTransportPassenger;
 
         if (count ([_otherData] call FLO_fnc_virtualizationGetTransportPassengers) == 0) then {
-            if ((_otherData get "dismountAtWaypoint") >= 0) then {
+            if ((_otherData get "dismountAtWaypoint") >= 0 || {(_otherData get "transportInsertMode") != ""}) then {
                 ["TRANSPORT", 3, format [
                     "Clearing transport task state on %1 after passenger %2 was removed",
                     _otherId,
                     _groupId
                 ]] call FLO_fnc_log;
-                _otherData set ["dismountAtWaypoint", -1];
-                [_otherData] call FLO_fnc_virtualizationClearExecutionState;
-                [_otherData] call FLO_fnc_virtualizationClearMissionLock;
+                [_otherData] call FLO_fnc_transportClearInsertState;
             };
 
             if (_otherId in _activeTransports) then {

@@ -30,6 +30,12 @@ FLO_Transport_AirPickupMinDistance = 4000;
 // Maximum search radius (meters) for dedicated transport helicopters
 FLO_Transport_AirSearchRadius = 12000;
 
+// Altitude target (meters AGL) for active helicopter landing inserts
+FLO_Transport_AirLandAltitude = 35;
+
+// Altitude target (meters AGL) for active helicopter paradrops
+FLO_Transport_AirDropAltitude = 150;
+
 // Default dismount standoff (meters) from the final destination
 FLO_Transport_DismountDistance = 400;
 

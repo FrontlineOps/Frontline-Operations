@@ -30,7 +30,10 @@ if ((_groupData get "attachedTo") != "" || {(_groupData get "mountedIn") != ""})
 private _distance = (_groupData get "position") distance2D _targetPos;
 if (_distance < FLO_Transport_ReassignmentPickupMinDistance) exitWith { false };
 
-private _transportId = [_groupId, _targetPos] call FLO_fnc_transportRequest;
+private _requestSpec = createHashMapFromArray [
+    ["orderTag", _orderTag]
+];
+private _transportId = [_groupId, _targetPos, _requestSpec] call FLO_fnc_transportRequest;
 if (_transportId == "") exitWith { false };
 
 ["TRANSPORT", 3, format [

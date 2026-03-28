@@ -27,14 +27,12 @@ if !([_groupData] call FLO_fnc_virtualizationIsTransportCarrier) exitWith { fals
 
 private _attachedIds = +([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);
 if (count _attachedIds == 0) exitWith {
-    if ((_groupData get "dismountAtWaypoint") >= 0) then {
+    if ((_groupData get "dismountAtWaypoint") >= 0 || {(_groupData get "transportInsertMode") != ""}) then {
         ["TRANSPORT", 2, format [
             "Carrier %1 had stale dismount state with no attached passengers - clearing",
             _groupId
         ]] call FLO_fnc_log;
-        _groupData set ["dismountAtWaypoint", -1];
-        [_groupData] call FLO_fnc_virtualizationClearExecutionState;
-        [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+        [_groupData] call FLO_fnc_transportClearInsertState;
     };
     false
 };
@@ -57,14 +55,12 @@ private _groups = FLO_virtualGroups get "_groups";
 } forEach _attachedIds;
 
 if (count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers) == 0) exitWith {
-    if ((_groupData get "dismountAtWaypoint") >= 0) then {
+    if ((_groupData get "dismountAtWaypoint") >= 0 || {(_groupData get "transportInsertMode") != ""}) then {
         ["TRANSPORT", 2, format [
             "Carrier %1 has no surviving attached passengers after manifest cleanup - clearing dismount state",
             _groupId
         ]] call FLO_fnc_log;
-        _groupData set ["dismountAtWaypoint", -1];
-        [_groupData] call FLO_fnc_virtualizationClearExecutionState;
-        [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+        [_groupData] call FLO_fnc_transportClearInsertState;
     };
     true
 };
@@ -79,9 +75,7 @@ if (_dismountIdx >= count _waypoints) exitWith {
         _groupId,
         _dismountIdx
     ]] call FLO_fnc_log;
-    _groupData set ["dismountAtWaypoint", -1];
-    [_groupData] call FLO_fnc_virtualizationClearExecutionState;
-    [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+    [_groupData] call FLO_fnc_transportClearInsertState;
     true
 };
 
@@ -101,12 +95,37 @@ if ([_groupData, _carrierPos] call FLO_fnc_transportShouldThreatDismount) exitWi
 private _dismountWp = _waypoints select _dismountIdx;
 private _dismountPos = _dismountWp select 0;
 private _completionRadius = (_dismountWp param [6, 50]) max 35;
+private _insertMode = _groupData get "transportInsertMode";
 
 if ((_carrierPos distance2D _dismountPos) > _completionRadius) exitWith { true };
 
+if (_insertMode == "AIR_LAND") then {
+    private _carrierVehicle = vehicle _leader;
+    private _carrierAltitude = getPosATL _carrierVehicle select 2;
+    private _carrierSpeed = vectorMagnitude (velocity _carrierVehicle);
+
+    if !(_groupData get "transportLandCommandIssued") exitWith {
+        {
+            _x flyInHeight FLO_Transport_AirLandAltitude;
+            _x land "GET OUT";
+        } forEach _transportVehicles;
+        _groupData set ["transportLandCommandIssued", true];
+
+        ["TRANSPORT", 3, format [
+            "Active carrier %1 reached landing insert zone - issuing GET OUT landing",
+            _groupId
+        ]] call FLO_fnc_log;
+
+        true
+    };
+
+    if (_carrierAltitude > 10 || {_carrierSpeed > 35}) exitWith { true };
+};
+
 ["TRANSPORT", 3, format [
-    "Active carrier %1 reached dismount waypoint %2 - unloading passengers",
+    "Active carrier %1 reached %2 waypoint %3 - unloading passengers",
     _groupId,
+    if (_insertMode == "") then { "GROUND" } else { _insertMode },
     _dismountIdx
 ]] call FLO_fnc_log;
 
