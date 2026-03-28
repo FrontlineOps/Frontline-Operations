@@ -15,8 +15,10 @@
  *   groundMechanized = F_APC_List
  *   groundArmor      = F_Tank_List
  *   groundTransport  = F_Truck_List
+ *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
  *   groundArtillery  = F_Artillery_List
  *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   transportReserveAirCount = West_Transport_Reserve_Air_Count
  *   airHeli          = F_Heli_Gunship_List
  *   airJet           = F_Plane_List
  *   airDrone         = F_UAV_List
@@ -109,6 +111,7 @@ F_Truck_List = [
     ["vn_b_wheeled_m54_01_aus_army", 65],
     ["vn_b_wheeled_m54_03", 65]
 ];
+West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
     ["vn_b_wheeled_m54_ammo", 100]
@@ -150,6 +153,7 @@ F_Heli_List = [
     ["vn_b_air_uh1d_01_01", 300],
     ["vn_b_air_uh1c_02_01", 400]
 ];
+West_Transport_Reserve_Air_Count = 10;
 
 // airTransport
 F_Heli_Respawn_List = [];

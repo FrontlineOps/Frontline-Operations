@@ -15,8 +15,10 @@
  *   groundMechanized = F_APC_List
  *   groundArmor      = F_Tank_List
  *   groundTransport  = F_Truck_List
+ *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
  *   groundArtillery  = F_Artillery_List
  *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   transportReserveAirCount = West_Transport_Reserve_Air_Count
  *   airHeli          = F_Heli_Gunship_List
  *   airJet           = F_Plane_List
  *   airDrone         = F_UAV_List
@@ -111,6 +113,7 @@ F_MRAP_List = [
 F_Truck_List = [
     ["I_E_Truck_02_transport_F", 65]
 ];
+West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
     ["I_E_Truck_02_Ammo_F", 100]
@@ -145,6 +148,7 @@ F_Artillery_List = [
 F_Heli_List = [
     ["I_E_Heli_light_03_unarmed_F", 250]
 ];
+West_Transport_Reserve_Air_Count = 10;
 
 // airTransport
 F_Heli_Respawn_List = [];

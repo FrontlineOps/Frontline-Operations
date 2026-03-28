@@ -80,6 +80,7 @@ if (_allowGroundTransport && {_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
+        _side,
         3000,
         "ACTIVE",
         _groundCarrierTypes,
@@ -102,6 +103,7 @@ if (_allowGroundTransport && {!_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
+        _side,
         3000,
         "VIRTUAL",
         _groundCarrierTypes,
@@ -126,6 +128,7 @@ if (_allowGroundTransport && {_transportId == ""} && {_infantryIsActive}) then {
     _transportId = [
         _unitCount,
         _currentPos,
+        _side,
         3000,
         "VIRTUAL",
         _groundCarrierTypes,
@@ -160,6 +163,7 @@ if (_allowGroundTransport && {_transportId == ""}) then {
     _transportId = [
         _unitCount,
         _currentPos,
+        _side,
         3000,
         _requiredActivation,
         _groundCarrierTypes,
@@ -185,6 +189,7 @@ if (_allowAirTransport && {_transportId == ""} && {(_distance >= FLO_Transport_A
         _transportId = [
             _unitCount,
             _currentPos,
+            _side,
             FLO_Transport_AirSearchRadius,
             "ACTIVE",
             _airCarrierTypes,
@@ -206,6 +211,7 @@ if (_allowAirTransport && {_transportId == ""} && {(_distance >= FLO_Transport_A
         _transportId = [
             _unitCount,
             _currentPos,
+            _side,
             FLO_Transport_AirSearchRadius,
             "VIRTUAL",
             _airCarrierTypes,
@@ -230,6 +236,7 @@ if (_allowAirTransport && {_transportId == ""} && {((_distance >= FLO_Transport_
     _transportId = [
         _unitCount,
         _currentPos,
+        _side,
         FLO_Transport_AirSearchRadius,
         "VIRTUAL",
         _airCarrierTypes,

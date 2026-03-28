@@ -24,18 +24,20 @@ private _unitClasses = [];
     if (_entry isEqualType configNull) then {
         if (isClass _entry) then {
             _groupConfigs pushBack _entry;
-            private _groupUnits = configClasses _entry;
+            private _subclasses = "true" configClasses _entry;
             {
                 private _unitClass = getText (_x >> "vehicle");
-                if (_unitClass != "") then {
+                if !(_unitClass isEqualTo "") then {
                     _unitClasses pushBack _unitClass;
                 };
-            } forEach _groupUnits;
+            } forEach _subclasses;
         };
     };
 
-    if (_entry isEqualType "" && {_entry != ""}) then {
-        _unitClasses pushBack _entry;
+    if (_entry isEqualType "") then {
+        if !(_entry isEqualTo "") then {
+            _unitClasses pushBack _entry;
+        };
     };
 } forEach _entries;
 

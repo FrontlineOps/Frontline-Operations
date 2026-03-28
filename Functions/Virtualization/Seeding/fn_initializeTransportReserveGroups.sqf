@@ -22,6 +22,8 @@ private _sideKey = _sideCtx get "sideKey";
 private _catalog = FLO_FactionCatalog get _sideKey;
 private _rawGroundTransportPool = _catalog get "groundTransport";
 private _rawAirTransportPool = _catalog get "airTransport";
+private _groundReserveCount = _catalog get "transportReserveGroundCount";
+private _airReserveCount = _catalog get "transportReserveAirCount";
 
 private _groundTransportPool = _rawGroundTransportPool select {
     ([_x] call FLO_fnc_transportGetCapacity) > 0
@@ -82,8 +84,10 @@ private _createdGroups = [];
 private _availableTransports = FLO_TransportPool get "available";
 
 if (_groundTransportPool isNotEqualTo []) then {
-    private _groundGroupId = [_reservePos, "motorized", configNull, _reserveObjectiveId, 20, _side] call FLO_fnc_createVirtualGroup;
-    if (_groundGroupId != "") then {
+    for "_i" from 1 to _groundReserveCount do {
+        private _groundGroupId = [_reservePos, "motorized", configNull, _reserveObjectiveId, 1, _side] call FLO_fnc_createVirtualGroup;
+        if (_groundGroupId == "") then { continue };
+
         private _groundGroupData = (FLO_virtualGroups get "_groups") get _groundGroupId;
         [_groundGroupData, [selectRandom _groundTransportPool]] call FLO_fnc_virtualizationSetAssetComposition;
         _groundGroupData set ["transportRole", true];
@@ -92,13 +96,16 @@ if (_groundTransportPool isNotEqualTo []) then {
             [_groundGroupData] call FLO_fnc_transportGetGroupCapacity,
             _groundGroupData get "position",
             _groundGroupData get "groupType",
-            true
+            true,
+            _side
         ]];
         _createdGroups pushBack _groundGroupId;
 
         ["VIRTUALIZATION", 3, format [
-            "Seeded dedicated ground transport reserve %1 for %2 at %3",
+            "Seeded dedicated ground transport reserve %1 (%2/%3) for %4 at %5",
             _groundGroupId,
+            _i,
+            _groundReserveCount,
             _sideKey,
             _reserveObjectiveId
         ]] call FLO_fnc_log;
@@ -113,8 +120,10 @@ if (_groundTransportPool isNotEqualTo []) then {
 };
 
 if (_airTransportPool isNotEqualTo []) then {
-    private _airGroupId = [_reservePos, "helicopter", configNull, _reserveObjectiveId, 10, _side] call FLO_fnc_createVirtualGroup;
-    if (_airGroupId != "") then {
+    for "_i" from 1 to _airReserveCount do {
+        private _airGroupId = [_reservePos, "helicopter", configNull, _reserveObjectiveId, 1, _side] call FLO_fnc_createVirtualGroup;
+        if (_airGroupId == "") then { continue };
+
         private _airGroupData = (FLO_virtualGroups get "_groups") get _airGroupId;
         [_airGroupData, [selectRandom _airTransportPool]] call FLO_fnc_virtualizationSetAssetComposition;
         _airGroupData set ["transportRole", true];
@@ -123,13 +132,16 @@ if (_airTransportPool isNotEqualTo []) then {
             [_airGroupData] call FLO_fnc_transportGetGroupCapacity,
             _airGroupData get "position",
             _airGroupData get "groupType",
-            true
+            true,
+            _side
         ]];
         _createdGroups pushBack _airGroupId;
 
         ["VIRTUALIZATION", 3, format [
-            "Seeded dedicated air transport reserve %1 for %2 at %3",
+            "Seeded dedicated air transport reserve %1 (%2/%3) for %4 at %5",
             _airGroupId,
+            _i,
+            _airReserveCount,
             _sideKey,
             _reserveObjectiveId
         ]] call FLO_fnc_log;

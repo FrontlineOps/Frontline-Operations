@@ -58,6 +58,7 @@ private _trackAnchorPos = +(_track get "frontSectorAnchorPos");
 private _reserveGraphDepth = ((_cmdr get "_config") get "attackReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
 private _activeAttackCounts = _assignmentCache get "attackCounts";
+private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 
 private _candidateObjectives = [];
 {
@@ -124,8 +125,7 @@ private _poolEntries = [];
 {
     private _gData = _groups get _x;
     if (isNil "_gData") then { continue };
-    if ((_gData get "side") != _ownSide) then { continue };
-    if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
+    if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
 
     _poolEntries pushBack [
         _x,

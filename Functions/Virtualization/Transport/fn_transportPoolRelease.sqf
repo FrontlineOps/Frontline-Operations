@@ -19,7 +19,8 @@ _available set [_groupId, [
     _data select 0,
     _groupData get "position",
     _groupData get "groupType",
-    _groupData get "transportRole"
+    _groupData get "transportRole",
+    _groupData get "side"
 ]];
 
 ["TRANSPORT", 3, format ["Pool: Released transport %1 back to available", _groupId]] call FLO_fnc_log;

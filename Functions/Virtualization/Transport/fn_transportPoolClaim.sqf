@@ -16,7 +16,8 @@ if (_groupId in _available) then {
         _data select 0,
         _infantryId,
         _data param [2, ""],
-        _data param [3, false]
+        _data param [3, false],
+        _data param [4, sideUnknown]
     ]];
 } else {
     private _groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
@@ -25,7 +26,8 @@ if (_groupId in _available) then {
         _capacity,
         _infantryId,
         _groupData get "groupType",
-        _groupData get "transportRole"
+        _groupData get "transportRole",
+        _groupData get "side"
     ]];
 };
 

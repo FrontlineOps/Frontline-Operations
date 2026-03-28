@@ -5,6 +5,7 @@
 params [
     ["_requiredCapacity", 1, [0]],
     ["_nearPos", [0,0,0], [[]]],
+    ["_side", sideUnknown, [east]],
     ["_maxDistance", 3000, [0]],
     ["_requiredActivation", "ANY", [""]],
     ["_allowedGroupTypes", [], [[]]],
@@ -17,18 +18,23 @@ private _bestDist = _maxDistance + 1;
 
 {
     private _groupId = _x;
-    _y params ["_capacity", "_position", ["_groupType", ""], ["_transportRole", false]];
+    _y params ["_capacity", "_position", ["_groupType", ""], ["_transportRole", false], ["_entrySide", sideUnknown]];
 
     if (_capacity < _requiredCapacity) then { continue };
 
     private _groupData = createHashMap;
     if (
-        _requiredActivation != "ANY"
+        _side != sideUnknown
+        || {_entrySide == sideUnknown}
+        || {_requiredActivation != "ANY"}
         || {count _allowedGroupTypes > 0}
         || {_requireTransportRole}
         || {_groupType == ""}
     ) then {
         _groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
+        if (_entrySide == sideUnknown) then {
+            _entrySide = _groupData get "side";
+        };
         if (_groupType == "") then {
             _groupType = _groupData get "groupType";
         };
@@ -36,6 +42,8 @@ private _bestDist = _maxDistance + 1;
             _transportRole = _groupData get "transportRole";
         };
     };
+
+    if (_side != sideUnknown && {_entrySide != _side}) then { continue };
 
     if (count _allowedGroupTypes > 0 && {!(_groupType in _allowedGroupTypes)}) then { continue };
     if (_requireTransportRole && {!_transportRole}) then { continue };

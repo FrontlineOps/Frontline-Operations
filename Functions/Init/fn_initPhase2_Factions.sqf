@@ -337,6 +337,8 @@ private _eastMobileAA = [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } e
 private _eastStaticAA = [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call _fnc_extractVehicleClasses;
 private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call _fnc_extractVehicleClasses;
 private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses;
+private _eastTransportReserveGroundCount = if (!isNil "East_Transport_Reserve_Ground_Count") then { East_Transport_Reserve_Ground_Count } else { 20 };
+private _eastTransportReserveAirCount = if (!isNil "East_Transport_Reserve_Air_Count") then { East_Transport_Reserve_Air_Count } else { 10 };
 
 private _westGroundMotorized = if (!isNil "West_Ground_Motorized") then {
     [West_Ground_Motorized] call _fnc_extractVehicleClasses
@@ -412,6 +414,8 @@ private _westBoat = if (!isNil "West_Boat") then {
 } else {
     [["F_Boat_List"]] call _fnc_buildPoolFromVars
 };
+private _westTransportReserveGroundCount = if (!isNil "West_Transport_Reserve_Ground_Count") then { West_Transport_Reserve_Ground_Count } else { 20 };
+private _westTransportReserveAirCount = if (!isNil "West_Transport_Reserve_Air_Count") then { West_Transport_Reserve_Air_Count } else { 10 };
 private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
@@ -460,10 +464,12 @@ private _eastCatalog = createHashMapFromArray [
     ["groundMechanized", _eastGroundMechanized],
     ["groundArmor", _eastGroundArmor],
     ["groundTransport", _eastGroundTransport],
+    ["transportReserveGroundCount", _eastTransportReserveGroundCount],
     ["groundArtillery", _eastGroundArtillery],
     ["airHeli", _eastAirHeli],
     ["airJet", _eastAirJet],
     ["airTransport", _eastAirTransport],
+    ["transportReserveAirCount", _eastTransportReserveAirCount],
     ["airDrone", _eastAirDrone],
     ["groundDrone", _eastGroundDrone],
     ["mobileAA", _eastMobileAA],
@@ -486,10 +492,12 @@ private _westCatalog = createHashMapFromArray [
     ["groundMechanized", _westGroundMechanized],
     ["groundArmor", _westGroundArmor],
     ["groundTransport", _westGroundTransport],
+    ["transportReserveGroundCount", _westTransportReserveGroundCount],
     ["groundArtillery", _westGroundArtillery],
     ["airHeli", _westAirHeli],
     ["airJet", _westAirJet],
     ["airTransport", _westAirTransport],
+    ["transportReserveAirCount", _westTransportReserveAirCount],
     ["airDrone", _westAirDrone],
     ["groundDrone", _westGroundDrone],
     ["mobileAA", _westMobileAA],

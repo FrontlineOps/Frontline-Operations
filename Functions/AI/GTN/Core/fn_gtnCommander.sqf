@@ -937,13 +937,15 @@ private _gtnCommander = createHashMapObject [[
         private _pool = _track get "groupPool";
         private _allGroups = FLO_virtualGroups get "_groups";
         private _tasked = _self get "_gtnTaskedGroups";
+        private _ownSide = _self get "_ownSide";
+        private _assignableGroupTypes = ["infantry", "motorized", "mechanized", "armor"];
+        private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
         private _filteredPool = [];
         {
             private _gData = _allGroups get _x;
             if (isNil "_gData") then { continue };
             if (_x in _tasked) then { continue };
-            private _currentOrder = _gData get "commanderOrder";
-            if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "DEFEND", ""])}) then { continue };
+            if !([_gData, _ownSide, _assignableGroupTypes, _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
             _filteredPool pushBack _x;
         } forEach _pool;
         _pool = _filteredPool;
@@ -1338,24 +1340,17 @@ private _gtnCommander = createHashMapObject [[
         private _ownSide = _self get "_ownSide";
         private _available = [];
         private _ownSideGroupCount = 0;
+        private _assignableGroupTypes = ["infantry", "motorized", "mechanized", "armor"];
+        private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 
         {
             private _groupId = _x;
             private _gData = _y;
 
-            private _groupType = _gData get "groupType";
             if ((_gData get "side") != _ownSide) then { continue };
             _ownSideGroupCount = _ownSideGroupCount + 1;
-            if (_gData get "transportRole") then { continue };
-            if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa"]) then { continue };
-            if (_gData get "inCombat") then { continue };
-            if ((_gData get "missionLock") != "") then { continue };
-            if ((_gData get "replacementState") != "") then { continue };
-            if ((_gData get "attachedTo") != "" || {(_gData get "mountedIn") != ""}) then { continue };
             if (_taskedSet getOrDefault [_groupId, false]) then { continue };
-
-            private _currentOrder = _gData get "commanderOrder";
-            if (_currentOrder != "" && {!(_currentOrder in ["PATROL", "DEFEND", ""])}) then { continue };
+            if !([_gData, _ownSide, _assignableGroupTypes, _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
 
             _available pushBack [_groupId, _gData];
         } forEach _groups;
@@ -1862,6 +1857,21 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        private _ownSide = _self get "_ownSide";
+        if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], []] call FLO_fnc_gtnGroupIsStrategicallyAssignable) exitWith {
+            ["GTN", 2, format[
+                "Cannot order attack - group %1 not strategically assignable (type=%2 lock=%3 replacement=%4 transport=%5 attached=%6 mounted=%7)",
+                _groupId,
+                _gData get "groupType",
+                _gData get "missionLock",
+                _gData get "replacementState",
+                _gData get "transportRole",
+                _gData get "attachedTo",
+                _gData get "mountedIn"
+            ]] call FLO_fnc_log;
+            false
+        };
+
         private _attackPos = _pos;
         if (_objectiveId != "") then {
             private _randomAttackPos = [_objectiveId] call FLO_fnc_getRandomObjectivePos;
@@ -1931,6 +1941,21 @@ private _gtnCommander = createHashMapObject [[
 
         if !(_pos isEqualType [] && {count _pos >= 2}) exitWith {
             ["GTN", 2, format["Cannot order defend - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
+            false
+        };
+
+        private _ownSide = _self get "_ownSide";
+        if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], []] call FLO_fnc_gtnGroupIsStrategicallyAssignable) exitWith {
+            ["GTN", 2, format[
+                "Cannot order defend - group %1 not strategically assignable (type=%2 lock=%3 replacement=%4 transport=%5 attached=%6 mounted=%7)",
+                _groupId,
+                _gData get "groupType",
+                _gData get "missionLock",
+                _gData get "replacementState",
+                _gData get "transportRole",
+                _gData get "attachedTo",
+                _gData get "mountedIn"
+            ]] call FLO_fnc_log;
             false
         };
 
@@ -2022,6 +2047,21 @@ private _gtnCommander = createHashMapObject [[
 
         if !(_pos isEqualType [] && {count _pos >= 2}) exitWith {
             ["GTN", 2, format["Cannot order garrison - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
+            false
+        };
+
+        private _ownSide = _self get "_ownSide";
+        if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], []] call FLO_fnc_gtnGroupIsStrategicallyAssignable) exitWith {
+            ["GTN", 2, format[
+                "Cannot order garrison - group %1 not strategically assignable (type=%2 lock=%3 replacement=%4 transport=%5 attached=%6 mounted=%7)",
+                _groupId,
+                _gData get "groupType",
+                _gData get "missionLock",
+                _gData get "replacementState",
+                _gData get "transportRole",
+                _gData get "attachedTo",
+                _gData get "mountedIn"
+            ]] call FLO_fnc_log;
             false
         };
 

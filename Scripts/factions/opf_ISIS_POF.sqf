@@ -15,8 +15,10 @@
  *   groundMechanized = East_Ground_Mechanized
  *   groundArmor      = East_Ground_Armor
  *   groundTransport  = East_Ground_Transport
+ *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
  *   groundArtillery  = East_Ground_Artillery
  *   airTransport     = East_Air_Transport
+ *   transportReserveAirCount = East_Transport_Reserve_Air_Count
  *   airHeli          = East_Air_Heli
  *   airJet           = East_Air_Jet
  *   airDrone         = East_Air_Drone
@@ -75,12 +77,14 @@ East_Ground_Armor = [
 East_Ground_Transport = [
     "LOP_ISTS_Landrover", "LOP_ISTS_Truck", "LOP_ISTS_M998_D_4DR", "LOP_ISTS_Offroad"
 ];
+East_Transport_Reserve_Ground_Count = 20;
 
 // groundArtillery
 East_Ground_Artillery = ["LOP_ISTS_BM21", "LOP_ISTS_2S1"];
 
 // airTransport
 East_Air_Transport = ["LOP_ISTS_Mi8MT_Cargo"];
+East_Transport_Reserve_Air_Count = 10;
 
 // airHeli
 East_Air_Heli = ["LOP_ISTS_Mi8MTV3_FAB", "LOP_ISTS_Mi8MTV3_UPK23"];

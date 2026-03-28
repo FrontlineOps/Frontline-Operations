@@ -15,8 +15,10 @@
  *   groundMechanized = East_Ground_Mechanized
  *   groundArmor      = East_Ground_Armor
  *   groundTransport  = East_Ground_Transport
+ *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
  *   groundArtillery  = East_Ground_Artillery
  *   airTransport     = East_Air_Transport
+ *   transportReserveAirCount = East_Transport_Reserve_Air_Count
  *   airHeli          = East_Air_Heli
  *   airJet           = East_Air_Jet
  *   airDrone         = East_Air_Drone
@@ -77,12 +79,14 @@ East_Ground_Armor = [
 East_Ground_Transport = [
     "LOP_IRAN_UAZ", "LOP_IRAN_Ural", "LOP_IRAN_UAZ_Open", "LOP_IRAN_KAMAZ_Transport"
 ];
+East_Transport_Reserve_Ground_Count = 20;
 
 // groundArtillery
 East_Ground_Artillery = ["LOP_IRAN_BM21", "LOP_IRAN_2S1"];
 
 // airTransport
 East_Air_Transport = ["LOP_IRAN_CH47F", "LOP_IRAN_UH1Y"];
+East_Transport_Reserve_Air_Count = 10;
 
 // airHeli
 East_Air_Heli = ["LOP_IRAN_AH1Z_CS", "LOP_IRAN_AH1Z_GS", "LOP_IRAN_UH1Y_Armed"];

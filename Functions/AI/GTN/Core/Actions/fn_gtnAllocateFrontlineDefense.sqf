@@ -43,6 +43,7 @@ private _objectives = _ws call ["_getObjectives", []];
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
 private _claimedPositionsByObjective = createHashMap;
+private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 {
     _claimedPositionsByObjective set [_x, +_y];
 } forEach (_assignmentCache get "claimedPositionsByObjective");
@@ -125,8 +126,7 @@ private _poolEntries = [];
 {
     private _gData = _groups get _x;
     if (isNil "_gData") then { continue };
-    if ((_gData get "side") != _ownSide) then { continue };
-    if !((_gData get "groupType") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
+    if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
 
     _poolEntries pushBack [
         _x,
