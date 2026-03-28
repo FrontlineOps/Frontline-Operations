@@ -22,20 +22,17 @@ private _unitClasses = [];
     private _entry = _x;
 
     if (_entry isEqualType configNull) then {
-        if (!isClass _entry) then { continue };
-
-        _groupConfigs pushBack _entry;
-        {
-            private _unitClass = getText (_x >> "vehicle");
-            if (_unitClass != "") then {
-                _unitClasses pushBack _unitClass;
-            };
-        } forEach configClasses _entry;
-        continue;
-    };
-
-    if (_entry isEqualType "") then {
-        if (_entry != "") then {
+        if (isClass _entry) then {
+            _groupConfigs pushBack _entry;
+            {
+                private _unitClass = getText (_x >> "vehicle");
+                if (_unitClass != "") then {
+                    _unitClasses pushBack _unitClass;
+                };
+            } forEach configClasses _entry;
+        };
+    } else {
+        if (_entry isEqualType "" && {_entry != ""}) then {
             _unitClasses pushBack _entry;
         };
     };

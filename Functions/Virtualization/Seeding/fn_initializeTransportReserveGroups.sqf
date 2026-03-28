@@ -82,7 +82,7 @@ private _createdGroups = [];
 private _availableTransports = FLO_TransportPool get "available";
 
 if (_groundTransportPool isNotEqualTo []) then {
-    private _groundGroupId = [_reservePos, "motorized", configNull, _reserveObjectiveId, 1, _side] call FLO_fnc_createVirtualGroup;
+    private _groundGroupId = [_reservePos, "motorized", configNull, _reserveObjectiveId, 20, _side] call FLO_fnc_createVirtualGroup;
     if (_groundGroupId != "") then {
         private _groundGroupData = (FLO_virtualGroups get "_groups") get _groundGroupId;
         [_groundGroupData, [selectRandom _groundTransportPool]] call FLO_fnc_virtualizationSetAssetComposition;
@@ -113,7 +113,7 @@ if (_groundTransportPool isNotEqualTo []) then {
 };
 
 if (_airTransportPool isNotEqualTo []) then {
-    private _airGroupId = [_reservePos, "helicopter", configNull, _reserveObjectiveId, 1, _side] call FLO_fnc_createVirtualGroup;
+    private _airGroupId = [_reservePos, "helicopter", configNull, _reserveObjectiveId, 10, _side] call FLO_fnc_createVirtualGroup;
     if (_airGroupId != "") then {
         private _airGroupData = (FLO_virtualGroups get "_groups") get _airGroupId;
         [_airGroupData, [selectRandom _airTransportPool]] call FLO_fnc_virtualizationSetAssetComposition;
