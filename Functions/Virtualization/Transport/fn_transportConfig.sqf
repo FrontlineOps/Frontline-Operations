@@ -42,6 +42,15 @@ FLO_Transport_DismountDistance = 400;
 // Threat-driven unload radius (meters) around the carrier
 FLO_Transport_ThreatDismountRadius = 500;
 
+// Minimum maintained threat signals required before helicopters prefer paradrop
+// over a landing insert. Signals are enemy ownership, objective pressure, and
+// nearby enemy intel around the destination.
+FLO_Transport_AirDropMinThreatSignals = 2;
+
+// When true, helicopter paradrops require nearby enemy intel at the drop area
+// in addition to the minimum threat signal count.
+FLO_Transport_AirDropRequireEnemyNearby = true;
+
 // Fallback capacity estimates by group type
 FLO_Transport_CapacityEstimates = createHashMapFromArray [
     ["motorized", 8],

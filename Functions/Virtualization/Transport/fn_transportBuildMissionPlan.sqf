@@ -5,7 +5,8 @@
  *   Builds the concrete carrier insert plan for a transport request. Ground
  *   carriers use a standard standoff unload, while helicopters choose between
  *   landing inserts and paradrops using maintained objective ownership, fresh
- *   enemy contact intel, and AA analysis.
+ *   enemy contact intel, and AA analysis. Landing inserts are preferred unless
+ *   multiple maintained threat signals justify a paradrop.
  *
  * Arguments:
  *   0: Passenger group ID <STRING>
@@ -81,6 +82,7 @@ if (_carrierType != "helicopter") then {
     private _underPressure = false;
     private _hasAA = false;
     private _enemyNearby = [_side, _destinationPos, FLO_Transport_ThreatDismountRadius * 2] call FLO_fnc_transportHasKnownEnemyNearby;
+    private _airDropThreatSignals = 0;
     private _objectiveAnchorPos = if (_nearObjective) then { _objectivePos } else { _destinationPos };
 
     if (_nearObjective) then {
@@ -106,6 +108,10 @@ if (_carrierType != "helicopter") then {
         };
     };
 
+    if (_enemyOwned) then { _airDropThreatSignals = _airDropThreatSignals + 1; };
+    if (_underPressure) then { _airDropThreatSignals = _airDropThreatSignals + 1; };
+    if (_enemyNearby) then { _airDropThreatSignals = _airDropThreatSignals + 1; };
+
     if (_forcedMode != "") then {
         if !(_forcedMode in ["AIR_LAND", "AIR_DROP"]) then {
             throw format [
@@ -128,7 +134,12 @@ if (_carrierType != "helicopter") then {
         };
         _mode = _forcedMode;
     } else {
-        if (_allowAirDrop && {!_hasAA} && {(_enemyOwned || {_underPressure} || {_enemyNearby})}) then {
+        if (
+            _allowAirDrop
+            && {!_hasAA}
+            && {_airDropThreatSignals >= FLO_Transport_AirDropMinThreatSignals}
+            && {(!FLO_Transport_AirDropRequireEnemyNearby) || {_enemyNearby}}
+        ) then {
             _mode = "AIR_DROP";
         } else {
             if (!_allowAirLand) exitWith {
