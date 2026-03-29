@@ -31,7 +31,7 @@ private _recoverableAssets = if (_tracksAssets) then {
 };
 private _recoverableCount = count _recoverableAssets;
 
-["VIRTUALIZATION", 1, format [
+["VIRTUALIZATION", 2, format [
     "Active group %1 (%2) lost its realGroup handle while still marked active (missionLock=%3 replacementState=%4 recoverableAssets=%5) - repairing",
     _groupId,
     _groupType,
@@ -41,7 +41,7 @@ private _recoverableCount = count _recoverableAssets;
 ]] call FLO_fnc_log;
 
 if (_recoverableCount <= 0) exitWith {
-    ["VIRTUALIZATION", 1, format [
+    ["VIRTUALIZATION", 2, format [
         "Removing orphaned active group %1 (%2) because no recoverable live assets remain",
         _groupId,
         _groupType

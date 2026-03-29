@@ -7,7 +7,7 @@ params ["_groupId", "_groupData"];
 if (_groupData get "isActive") exitWith {
     private _realGroup = _groupData get "realGroup";
     if (isNull _realGroup) then {
-        ["VIRTUALIZATION", 1, format [
+        ["VIRTUALIZATION", 2, format [
             "Activation invariant violated for %1 (%2): group marked active with null realGroup",
             _groupId,
             _groupData get "groupType"
