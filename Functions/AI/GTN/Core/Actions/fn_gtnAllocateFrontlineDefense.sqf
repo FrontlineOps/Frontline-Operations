@@ -42,6 +42,7 @@ private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _objectives = _ws call ["_getObjectives", []];
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
+private _assignmentLimit = ((_cmdr get "_config") get "defenseAssignmentsPerCycle");
 private _claimedPositionsByObjective = createHashMap;
 private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 {
@@ -138,10 +139,15 @@ private _poolEntries = [];
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
+scopeName "defenseAllocation";
 while {_continueAllocation && {(count _poolEntries) > 0}} do {
     _continueAllocation = false;
 
     {
+        if ((_metrics get "assignedGroups") >= _assignmentLimit) then {
+            breakOut "defenseAllocation";
+        };
+
         private _deficit = _x get "deficit";
         if (_deficit <= 0) then { continue };
 

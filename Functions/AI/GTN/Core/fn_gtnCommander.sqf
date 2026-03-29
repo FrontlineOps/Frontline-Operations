@@ -180,6 +180,8 @@ private _gtnCommander = createHashMapObject [[
         ["engagementSaturationPenalty", 30], // Targets already saturated by current commitments become much less attractive than other valid contacts
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
+        ["attackAssignmentsPerCycle", 6], // One attack primitive only orders a bounded number of groups so one commander slice does not monopolize the scheduler
+        ["defenseAssignmentsPerCycle", 6], // One defense primitive only orders a bounded number of groups so surge defense spreads across updates
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
     ]],
     

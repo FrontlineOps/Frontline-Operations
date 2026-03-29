@@ -57,6 +57,7 @@ private _trackSectorObjectives = _track get "frontSectorObjectives";
 private _trackAnchorPos = +(_track get "frontSectorAnchorPos");
 private _reserveGraphDepth = ((_cmdr get "_config") get "attackReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
+private _assignmentLimit = ((_cmdr get "_config") get "attackAssignmentsPerCycle");
 private _activeAttackCounts = _assignmentCache get "attackCounts";
 private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 
@@ -137,10 +138,15 @@ private _poolEntries = [];
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
+scopeName "attackAllocation";
 while {_continueAllocation && {(count _poolEntries) > 0}} do {
     _continueAllocation = false;
 
     {
+        if ((_metrics get "assignedGroups") >= _assignmentLimit) then {
+            breakOut "attackAllocation";
+        };
+
         private _deficit = _x get "deficit";
         if (_deficit <= 0) then { continue };
 
