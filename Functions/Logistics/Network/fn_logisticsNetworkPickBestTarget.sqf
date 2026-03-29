@@ -120,7 +120,7 @@ if (count _collapseCandidates > 0) exitWith {
 };
 
 if (count _advanceCandidates > 0) exitWith {
-    [_net, _advanceCandidates] call FLO_fnc_logisticsNetworkPickAdvanceTarget
+    [_net, _advanceCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickAdvanceTarget
 };
 
 if (count _pressureCandidates > 0) exitWith {

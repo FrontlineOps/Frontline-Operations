@@ -27,6 +27,7 @@ class LogisticsNetwork {
 
     class logisticsNetworkApplyObjectiveCaptureGrowth {};
     class logisticsNetworkBuildInboundObjectiveCounts {};
+    class logisticsNetworkBuildBranchDispatchCounts {};
     class logisticsNetworkBuildRecentDispatchCounts {};
     class logisticsNetworkCanDispatchToObjective {};
     class logisticsNetworkCheckAndReplace {};
@@ -39,6 +40,7 @@ class LogisticsNetwork {
     class logisticsNetworkFindReinforcementTargets {};
     class logisticsNetworkFindSpawnPosition {};
     class logisticsNetworkGetComposition {};
+    class logisticsNetworkGetObjectiveSupplyBranch {};
     class logisticsNetworkGetRearAATargets {};
     class logisticsNetworkObjectiveIsCollapsePressure {};
     class logisticsNetworkObjectiveHasStaticAA {};

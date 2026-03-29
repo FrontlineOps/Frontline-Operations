@@ -30,10 +30,16 @@ private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
 private _lastTarget = _net get "_lastReinforcementTarget";
+private _branchRecentCounts = [_net, _recentDispatchCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
+private _branchInboundCounts = [_net, _inboundCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
+private _branchBatchCounts = [_net, _batchDispatchCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
 
 private _bestObjectiveId = "";
 private _bestPressure = -1;
 private _bestPriority = -1e12;
+private _bestBranchRecent = 1e12;
+private _bestBranchInbound = 1e12;
+private _bestBranchBatch = 1e12;
 private _bestInbound = 1e12;
 private _bestBatch = 1e12;
 private _bestRecent = 1e12;
@@ -44,8 +50,12 @@ private _bestIsLast = true;
     private _objective = FLO_Objectives get _objectiveId;
     private _friendlyCount = _objective get _friendlyCountKey;
     private _enemyCount = _objective get _enemyCountKey;
+    private _branchObjectiveId = [_net, _objectiveId] call FLO_fnc_logisticsNetworkGetObjectiveSupplyBranch;
     private _pressure = ((_enemyCount * 2) - _friendlyCount) max 0;
     private _priority = _objective get "priority";
+    private _branchRecentCount = _branchRecentCounts getOrDefault [_branchObjectiveId, 0];
+    private _branchInboundCount = _branchInboundCounts getOrDefault [_branchObjectiveId, 0];
+    private _branchBatchCount = _branchBatchCounts getOrDefault [_branchObjectiveId, 0];
     private _inboundCount = _inboundCounts getOrDefault [_objectiveId, 0];
     private _batchCount = _batchDispatchCounts getOrDefault [_objectiveId, 0];
     private _recentCount = _recentDispatchCounts getOrDefault [_objectiveId, 0];
@@ -60,18 +70,36 @@ private _bestIsLast = true;
                 || {
                     _priority == _bestPriority
                     && {
-                        _inboundCount < _bestInbound
+                        _branchRecentCount < _bestBranchRecent
                         || {
-                            _inboundCount == _bestInbound
+                            _branchRecentCount == _bestBranchRecent
                             && {
-                                _batchCount < _bestBatch
+                                _branchInboundCount < _bestBranchInbound
                                 || {
-                                    _batchCount == _bestBatch
+                                    _branchInboundCount == _bestBranchInbound
                                     && {
-                                        _recentCount < _bestRecent
+                                        _branchBatchCount < _bestBranchBatch
                                         || {
-                                            _recentCount == _bestRecent
-                                            && {!_isLastTarget && {_bestIsLast}}
+                                            _branchBatchCount == _bestBranchBatch
+                                            && {
+                                                _inboundCount < _bestInbound
+                                                || {
+                                                    _inboundCount == _bestInbound
+                                                    && {
+                                                        _batchCount < _bestBatch
+                                                        || {
+                                                            _batchCount == _bestBatch
+                                                            && {
+                                                                _recentCount < _bestRecent
+                                                                || {
+                                                                    _recentCount == _bestRecent
+                                                                    && {!_isLastTarget && {_bestIsLast}}
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -85,6 +113,9 @@ private _bestIsLast = true;
         _bestObjectiveId = _objectiveId;
         _bestPressure = _pressure;
         _bestPriority = _priority;
+        _bestBranchRecent = _branchRecentCount;
+        _bestBranchInbound = _branchInboundCount;
+        _bestBranchBatch = _branchBatchCount;
         _bestInbound = _inboundCount;
         _bestBatch = _batchCount;
         _bestRecent = _recentCount;
