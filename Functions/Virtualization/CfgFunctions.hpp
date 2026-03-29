@@ -161,6 +161,7 @@ class VirtualizationCore {
     class virtualizationAdvanceLoiterWaypoint {};
     class virtualizationAdvanceTerminalWaypoint {};
     class virtualizationApplyTieredUpdateWindow {};
+    class virtualizationRepairOrphanedActiveGroup {};
     class virtualizationProcessAttachedGroup {};
     class virtualizationProcessInactiveMovement {};
     class virtualizationComputeDeferredActivationPos {};

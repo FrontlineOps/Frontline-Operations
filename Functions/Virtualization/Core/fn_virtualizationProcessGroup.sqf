@@ -70,6 +70,10 @@ if (!_shouldProcess) exitWith {};
 
 if ([_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup) exitWith {};
 
+if (_isActive && {isNull _realGroup}) exitWith {
+    [_groupId, _groupData] call FLO_fnc_virtualizationRepairOrphanedActiveGroup;
+};
+
 if (!_isActive && {!_inCombat} && {!_activationDeferred}) then {
     [_groupId, _groupData, _now, _virtStats] call FLO_fnc_virtualizationProcessInactiveMovement;
 };

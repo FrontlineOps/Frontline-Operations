@@ -29,8 +29,7 @@ if !(_groupData isEqualType createHashMap) exitWith {
 
 private _realGroup = _groupData get "realGroup";
 if (isNull _realGroup) exitWith {
-    ["VIRTUALIZATION", 2, format["Attempted to deactivate virtual group %1 but no real group exists", _groupId]] call FLO_fnc_log;
-    false
+    [_groupId, _groupData] call FLO_fnc_virtualizationRepairOrphanedActiveGroup
 };
 
 [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupPosition;
