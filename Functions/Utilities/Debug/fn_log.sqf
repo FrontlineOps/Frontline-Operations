@@ -3,13 +3,13 @@
     
     Description:
     Logs a message to the RPT file based on the current debug level.
-    Levels 1 (ERROR) and 2 (WARN) are ALWAYS logged regardless of debug level.
+    Debug levels are cumulative severity thresholds.
     
     Parameters:
     _component - The component name for the log message (String)
     _level - The log level (Number)
-             1 = Error (always logged)
-             2 = Warning (always logged)
+             1 = Error
+             2 = Warning
              3 = Info (requires FLO_Debug_Level >= 3)
              4 = Debug (requires FLO_Debug_Level >= 4)
              5 = Trace (requires FLO_Debug_Level >= 5)
@@ -19,7 +19,8 @@
     Nothing
     
     Debug Level Control:
-    0 = Errors/Warnings only (1-2)
+    1 = Errors only
+    2 = Errors/Warnings only (1-2)
     3 = Info and below (1-3)
     4 = Debug and below (1-4)
     5 = All levels (1-5)
@@ -32,12 +33,10 @@ params [
 ];
 
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 1;
+    FLO_Debug_Level = 2;
 };
 
-// Always log errors (1) and warnings (2)
-// For levels 3-5, check if current debug level allows it
-private _shouldLog = (_level <= 2) || {_level <= FLO_Debug_Level};
+private _shouldLog = _level <= FLO_Debug_Level;
 
 if (_shouldLog) then {
     private _prefix = switch (_level) do {
