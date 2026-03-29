@@ -22,7 +22,7 @@ private _sourceObjId = [_net, _targetObjId, _blockedObjectives] call FLO_fnc_log
 if (_sourceObjId == "") exitWith { [[0, 0, 0], ""] };
 if (_sourceObjId isEqualTo _targetObjId) exitWith { [[0, 0, 0], ""] };
 
-private _spawnPos = [_sourceObjId, true] call FLO_fnc_getRandomObjectivePos;
+private _spawnPos = [_net, _sourceObjId] call FLO_fnc_logisticsNetworkGetCachedSpawnPosition;
 if (_spawnPos isEqualTo [0, 0, 0]) then {
     _spawnPos = (FLO_Objectives get _sourceObjId) get "position";
 };

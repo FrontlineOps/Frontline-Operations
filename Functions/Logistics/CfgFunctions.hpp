@@ -33,6 +33,7 @@ class LogisticsNetwork {
     class logisticsNetworkCheckAndReplace {};
     class logisticsNetworkDescribeObjectiveSupplyRole {};
     class logisticsNetworkFindSupplyAdvanceObjectives {};
+    class logisticsNetworkGetCachedSpawnPosition {};
     class logisticsNetworkFindSupplySourceObjective {};
     class logisticsNetworkCreate {};
     class logisticsNetworkCreateReplacement {};

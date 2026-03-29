@@ -85,6 +85,7 @@ private _logisticsClass = [
     ["_supplyRouteInfo", createHashMap],
     ["_activeSupplyNodes", createHashMap],
     ["_lastSupplyNodeSignature", ""],
+    ["_spawnRoadCache", createHashMap],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkCreate;
@@ -144,6 +145,10 @@ private _logisticsClass = [
 
     ["_findSupplyAdvanceObjectives", {
         [_self] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
+    }],
+
+    ["_getCachedSpawnPosition", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkGetCachedSpawnPosition;
     }],
 
     ["_buildInboundObjectiveCounts", {
