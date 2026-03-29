@@ -128,6 +128,7 @@ class VirtualizationTransport {
     class transportCreateReserveCarrier {};
     class transportGetCapacity  {};
     class transportGetGroupCapacity {};
+    class transportGetPickupCapacity {};
     class transportGetPassengerLoad {};
     class transportGetTrackedGroup {};
     class transportHasKnownEnemyNearby {};

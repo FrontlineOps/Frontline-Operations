@@ -62,4 +62,23 @@ if !([_carrierGroupId, _carrierData] call FLO_fnc_virtualizationTryActivateGroup
     false
 };
 
+_carrierData = [_carrierGroupId] call FLO_fnc_transportGetTrackedGroup;
+private _requiredSeats = _passengerData get "unitCount";
+private _passengerRealGroup = _passengerData get "realGroup";
+if (!isNull _passengerRealGroup) then {
+    _requiredSeats = ({alive _x} count units _passengerRealGroup) max 0;
+};
+
+private _pickupCapacity = [_carrierData] call FLO_fnc_transportGetPickupCapacity;
+if (_pickupCapacity < _requiredSeats) exitWith {
+    ["TRANSPORT", 2, format [
+        "Carrier prep failed: reserve carrier %1 has %2 live pickup seats for passenger %3 requiring %4",
+        _carrierGroupId,
+        _pickupCapacity,
+        _passengerGroupId,
+        _requiredSeats
+    ]] call FLO_fnc_log;
+    false
+};
+
 true

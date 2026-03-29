@@ -52,6 +52,10 @@ private _trackedRealVehicles = count (_groupData get "realVehicles");
 ]] call FLO_fnc_log;
 
 if (_recoverableCount <= 0) exitWith {
+    if (_attachedPassengerCount > 0) then {
+        [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
+    };
+
     ["VIRTUALIZATION", 2, format [
         "Removing orphaned active group %1 (%2) because no recoverable live assets remain",
         _groupId,
@@ -62,6 +66,9 @@ if (_recoverableCount <= 0) exitWith {
 };
 
 private _recoverableComp = _recoverableAssets apply { typeOf _x };
+if (_attachedPassengerCount > 0) then {
+    [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
+};
 _groupData set ["unitCount", _recoverableCount];
 [_groupData, _recoverableComp] call FLO_fnc_virtualizationSetAssetComposition;
 [_groupData] call FLO_fnc_virtualizationClearRealGroup;

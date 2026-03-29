@@ -48,8 +48,7 @@ if (_currentAttach != "") exitWith {
 };
 
 private _groupType = _transData get "groupType";
-private _capacity = [_transData] call FLO_fnc_transportGetGroupCapacity;
-private _currentLoad = [_transData] call FLO_fnc_transportGetPassengerLoad;
+private _pickupCapacity = [_transData] call FLO_fnc_transportGetPickupCapacity;
 private _infIsActive = _infData get "isActive";
 private _transIsActive = _transData get "isActive";
 
@@ -57,16 +56,28 @@ if (_infIsActive != _transIsActive && {_transData get "transportRole"} && {_infI
     if ([_transportGroupId, _transData, _infantryGroupId, _infData] call FLO_fnc_transportPrepareCarrierForPickup) then {
         _transData = [_transportGroupId] call FLO_fnc_transportGetTrackedGroup;
         _groupType = _transData get "groupType";
-        _capacity = [_transData] call FLO_fnc_transportGetGroupCapacity;
-        _currentLoad = [_transData] call FLO_fnc_transportGetPassengerLoad;
+        _pickupCapacity = [_transData] call FLO_fnc_transportGetPickupCapacity;
         _transIsActive = _transData get "isActive";
     };
 };
 
 private _infUnitCount = _infData get "unitCount";
-if (_currentLoad + _infUnitCount > _capacity) exitWith {
-    ["TRANSPORT", 2, format["Attach failed: capacity exceeded (%1+%2 > %3)", 
-        _currentLoad, _infUnitCount, _capacity]] call FLO_fnc_log;
+private _requiredSeats = _infUnitCount;
+if (_infIsActive) then {
+    private _infRealGroup = _infData get "realGroup";
+    if (!isNull _infRealGroup) then {
+        _requiredSeats = ({alive _x} count units _infRealGroup) max 0;
+    };
+};
+
+if (_requiredSeats > _pickupCapacity) exitWith {
+    ["TRANSPORT", 2, format[
+        "Attach failed: passenger %1 requires %2 pickup seats but carrier %3 only has %4",
+        _infantryGroupId,
+        _requiredSeats,
+        _transportGroupId,
+        _pickupCapacity
+    ]] call FLO_fnc_log;
     false
 };
 
@@ -107,7 +118,7 @@ if (_infIsActive && {!([_infantryGroupId, _infData, _transportGroupId, _transDat
 
 [_transData, _infantryGroupId] call FLO_fnc_virtualizationAddTransportPassenger;
 
-["TRANSPORT", 3, format["Attached %1 (%2 units) to transport %3 (load: %4/%5)", 
-    _infantryGroupId, _infUnitCount, _transportGroupId, _currentLoad + _infUnitCount, _capacity]] call FLO_fnc_log;
+["TRANSPORT", 3, format["Attached %1 (%2 units) to transport %3",
+    _infantryGroupId, _infUnitCount, _transportGroupId]] call FLO_fnc_log;
 
 true
