@@ -4,6 +4,8 @@
  * Description:
  *   Picks the next quiet chain-extension objective while avoiding repeated
  *   fixation on the same branch when other forward-extension candidates exist.
+ *   A branch needs a meaningful depth lead before raw depth overrides branch
+ *   balancing, so one sector cannot snowball because it got one hop ahead.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -35,6 +37,7 @@ private _branchBatchCounts = [_net, _batchDispatchCounts] call FLO_fnc_logistics
 
 private _bestObjectiveId = "";
 private _bestDepth = -1;
+private _bestDepthBand = -1;
 private _bestBranchRecent = 1e12;
 private _bestBranchInbound = 1e12;
 private _bestBranchBatch = 1e12;
@@ -53,6 +56,7 @@ private _bestIsLast = true;
     private _objective = FLO_Objectives get _objectiveId;
     private _branchObjectiveId = [_net, _objectiveId] call FLO_fnc_logisticsNetworkGetObjectiveSupplyBranch;
     private _depth = _role get "depth";
+    private _depthBand = floor (_depth / 2);
     private _branchRecentCount = _branchRecentCounts getOrDefault [_branchObjectiveId, 0];
     private _branchInboundCount = _branchInboundCounts getOrDefault [_branchObjectiveId, 0];
     private _branchBatchCount = _branchBatchCounts getOrDefault [_branchObjectiveId, 0];
@@ -66,9 +70,9 @@ private _bestIsLast = true;
     private _isLastTarget = _objectiveId isEqualTo _lastTarget;
 
     if (
-        _depth > _bestDepth
+        _depthBand > _bestDepthBand
         || {
-        _depth == _bestDepth
+        _depthBand == _bestDepthBand
         && {
             _branchRecentCount < _bestBranchRecent
             || {
@@ -86,30 +90,36 @@ private _bestIsLast = true;
                                     || {
                                         _recentCount == _bestRecent
                                         && {
-                                            _inboundCount < _bestInbound
+                                            _depth > _bestDepth
                                             || {
-                                                _inboundCount == _bestInbound
+                                                _depth == _bestDepth
                                                 && {
-                                                    _batchCount < _bestBatch
+                                                    _inboundCount < _bestInbound
                                                     || {
-                                                        _batchCount == _bestBatch
+                                                        _inboundCount == _bestInbound
                                                         && {
-                                                            _deliveryCount < _bestDeliveryCount
+                                                            _batchCount < _bestBatch
                                                             || {
-                                                                _deliveryCount == _bestDeliveryCount
+                                                                _batchCount == _bestBatch
                                                                 && {
-                                                                    _routeMeters > _bestRouteMeters
+                                                                    _deliveryCount < _bestDeliveryCount
                                                                     || {
-                                                                        _routeMeters == _bestRouteMeters
+                                                                        _deliveryCount == _bestDeliveryCount
                                                                         && {
-                                                                            _priority > _bestPriority
+                                                                            _routeMeters > _bestRouteMeters
                                                                             || {
-                                                                                _priority == _bestPriority
+                                                                                _routeMeters == _bestRouteMeters
                                                                                 && {
-                                                                                    _friendlyCount < _bestFriendlyCount
+                                                                                    _priority > _bestPriority
                                                                                     || {
-                                                                                        _friendlyCount == _bestFriendlyCount
-                                                                                        && {!_isLastTarget && {_bestIsLast}}
+                                                                                        _priority == _bestPriority
+                                                                                        && {
+                                                                                            _friendlyCount < _bestFriendlyCount
+                                                                                            || {
+                                                                                                _friendlyCount == _bestFriendlyCount
+                                                                                                && {!_isLastTarget && {_bestIsLast}}
+                                                                                            }
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                             }
@@ -134,6 +144,7 @@ private _bestIsLast = true;
     ) then {
         _bestObjectiveId = _objectiveId;
         _bestDepth = _depth;
+        _bestDepthBand = _depthBand;
         _bestBranchRecent = _branchRecentCount;
         _bestBranchInbound = _branchInboundCount;
         _bestBranchBatch = _branchBatchCount;

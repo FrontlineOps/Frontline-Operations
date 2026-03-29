@@ -44,6 +44,7 @@ class LogisticsNetwork {
     class logisticsNetworkGetObjectiveSupplyBranch {};
     class logisticsNetworkGetRearAATargets {};
     class logisticsNetworkObjectiveIsCollapsePressure {};
+    class logisticsNetworkObjectiveIsFrontlinePressure {};
     class logisticsNetworkObjectiveHasStaticAA {};
     class logisticsNetworkPickAdvanceTarget {};
     class logisticsNetworkPickBestTarget {};
