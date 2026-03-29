@@ -48,60 +48,19 @@ if (_groundTransportPool isEqualTo [] && {_airTransportPool isEqualTo []}) exitW
     []
 };
 
-private _ownedObjectiveIds = [];
-{
-    if ((_y get "owner") == _side) then {
-        _ownedObjectiveIds pushBack _x;
-    };
-} forEach FLO_Objectives;
+private _reserveData = [_side] call FLO_fnc_transportResolveReserveObjective;
+_reserveData params ["_reserveObjectiveId", "_reservePos"];
+if (_reserveObjectiveId isEqualTo "") exitWith { [] };
 
-if (_ownedObjectiveIds isEqualTo []) exitWith { [] };
-
-private _capitalObjectives = _ownedObjectiveIds select {
-    ((FLO_Objectives get _x) get "subtype") == "capital"
-};
-
-private _reserveObjectiveId = if (_capitalObjectives isNotEqualTo []) then {
-    _capitalObjectives select 0
-} else {
-    private _selectedObjectiveId = _ownedObjectiveIds select 0;
-    private _bestPriority = (FLO_Objectives get _selectedObjectiveId) get "priority";
-
-    {
-        private _priority = (FLO_Objectives get _x) get "priority";
-        if (_priority > _bestPriority) then {
-            _bestPriority = _priority;
-            _selectedObjectiveId = _x;
-        };
-    } forEach _ownedObjectiveIds;
-
-    _selectedObjectiveId
-};
-
-private _reserveObjective = FLO_Objectives get _reserveObjectiveId;
-private _reservePos = _reserveObjective get "position";
 private _createdGroups = [];
-private _availableTransports = FLO_TransportPool get "available";
 
 if (_groundTransportPool isNotEqualTo []) then {
     for "_i" from 1 to _groundReserveCount do {
-        private _groundGroupId = [_reservePos, "motorized", configNull, _reserveObjectiveId, 1, _side] call FLO_fnc_createVirtualGroup;
+        private _groundGroupId = [_side, "ground", _reserveObjectiveId, _reservePos] call FLO_fnc_transportCreateReserveCarrier;
         if (_groundGroupId == "") then { continue };
-
-        private _groundGroupData = (FLO_virtualGroups get "_groups") get _groundGroupId;
-        [_groundGroupData, [selectRandom _groundTransportPool]] call FLO_fnc_virtualizationSetAssetComposition;
-        _groundGroupData set ["transportRole", true];
-        _groundGroupData set ["commanderOrder", "TRANSPORT"];
-        _availableTransports set [_groundGroupId, [
-            [_groundGroupData] call FLO_fnc_transportGetGroupCapacity,
-            _groundGroupData get "position",
-            _groundGroupData get "groupType",
-            true,
-            _side
-        ]];
         _createdGroups pushBack _groundGroupId;
 
-        ["VIRTUALIZATION", 3, format [
+        ["VIRTUALIZATION", 2, format [
             "Seeded dedicated ground transport reserve %1 (%2/%3) for %4 at %5",
             _groundGroupId,
             _i,
@@ -121,23 +80,11 @@ if (_groundTransportPool isNotEqualTo []) then {
 
 if (_airTransportPool isNotEqualTo []) then {
     for "_i" from 1 to _airReserveCount do {
-        private _airGroupId = [_reservePos, "helicopter", configNull, _reserveObjectiveId, 1, _side] call FLO_fnc_createVirtualGroup;
+        private _airGroupId = [_side, "air", _reserveObjectiveId, _reservePos] call FLO_fnc_transportCreateReserveCarrier;
         if (_airGroupId == "") then { continue };
-
-        private _airGroupData = (FLO_virtualGroups get "_groups") get _airGroupId;
-        [_airGroupData, [selectRandom _airTransportPool]] call FLO_fnc_virtualizationSetAssetComposition;
-        _airGroupData set ["transportRole", true];
-        _airGroupData set ["commanderOrder", "TRANSPORT"];
-        _availableTransports set [_airGroupId, [
-            [_airGroupData] call FLO_fnc_transportGetGroupCapacity,
-            _airGroupData get "position",
-            _airGroupData get "groupType",
-            true,
-            _side
-        ]];
         _createdGroups pushBack _airGroupId;
 
-        ["VIRTUALIZATION", 3, format [
+        ["VIRTUALIZATION", 2, format [
             "Seeded dedicated air transport reserve %1 (%2/%3) for %4 at %5",
             _airGroupId,
             _i,

@@ -38,6 +38,11 @@ private _perf = createHashMapFromArray [
     ["resourcesAfter", 0],
     ["refreshMs", 0],
     ["compositionMs", 0],
+    ["reserveMs", 0],
+    ["reserveGroundMissing", 0],
+    ["reserveAirMissing", 0],
+    ["reserveGroundCreated", 0],
+    ["reserveAirCreated", 0],
     ["reconcileMs", 0],
     ["targetMs", 0],
     ["dispatchMs", 0],
@@ -70,6 +75,14 @@ private _neededTotal = 0;
 } forEach (keys _initialComp);
 _perf set ["compositionMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["neededCount", _neededTotal];
+
+_phaseT0 = diag_tickTime;
+private _reserveStats = [_net] call FLO_fnc_logisticsNetworkReplenishTransportReserves;
+_perf set ["reserveMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["reserveGroundMissing", _reserveStats get "groundMissing"];
+_perf set ["reserveAirMissing", _reserveStats get "airMissing"];
+_perf set ["reserveGroundCreated", _reserveStats get "groundCreated"];
+_perf set ["reserveAirCreated", _reserveStats get "airCreated"];
 
 if (_neededTotal == 0) exitWith {
     _perf set ["status", "AT_TARGET"];

@@ -67,15 +67,20 @@ _net set ["_loopStarted", true];
                                 _perf = createHashMap;
                             };
                             diag_log format [
-                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reconcile=%6 targets=%7 dispatch=%8 | collapse=%9 advance=%10 needed=%11 batch=%12 attempted=%13 created=%14 status=%15 | failPool=%16 failFunds=%17 failTarget=%18 failSat=%19 failDelivery=%20 failSpawn=%21 failSpend=%22 failCreate=%23 | res=%24->%25",
+                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reserve=%6 reconcile=%7 targets=%8 dispatch=%9 | reserveNeedG=%10 reserveNeedA=%11 reserveCreateG=%12 reserveCreateA=%13 | collapse=%14 advance=%15 needed=%16 batch=%17 attempted=%18 created=%19 status=%20 | failPool=%21 failFunds=%22 failTarget=%23 failSat=%24 failDelivery=%25 failSpawn=%26 failSpend=%27 failCreate=%28 | res=%29->%30",
                                 _net get "_managedSideKey",
                                 count (_net get "_reinforcementQueue"),
                                 _dt * 1000,
                                 _perf getOrDefault ["refreshMs", 0],
                                 _perf getOrDefault ["compositionMs", 0],
+                                _perf getOrDefault ["reserveMs", 0],
                                 _perf getOrDefault ["reconcileMs", 0],
                                 _perf getOrDefault ["targetMs", 0],
                                 _perf getOrDefault ["dispatchMs", 0],
+                                _perf getOrDefault ["reserveGroundMissing", 0],
+                                _perf getOrDefault ["reserveAirMissing", 0],
+                                _perf getOrDefault ["reserveGroundCreated", 0],
+                                _perf getOrDefault ["reserveAirCreated", 0],
                                 _perf getOrDefault ["collapseTargetCount", 0],
                                 _perf getOrDefault ["advanceTargetCount", 0],
                                 _perf getOrDefault ["neededCount", 0],

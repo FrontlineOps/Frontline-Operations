@@ -59,8 +59,11 @@ private _logisticsClass = [
     ["SUPPLY_ADVANCE_OBJECTIVE_INBOUND_CAP", 2],
     ["SUPPLY_ADVANCE_OBJECTIVE_BATCH_CAP", 1],
     ["SUPPLY_NODE_MIN_DELIVERIES", 1],
+    ["SUPPLY_NODE_PROMOTION_DELIVERY_COUNT", 2],
     ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
     ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
+    ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
+    ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
     ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
 
     ["_initialComposition", nil],
@@ -185,6 +188,10 @@ private _logisticsClass = [
 
     ["_recordTargetDispatch", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkRecordTargetDispatch;
+    }],
+
+    ["_replenishTransportReserves", {
+        [_self] call FLO_fnc_logisticsNetworkReplenishTransportReserves;
     }],
 
     ["_recordDelivery", {

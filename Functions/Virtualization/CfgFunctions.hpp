@@ -124,6 +124,8 @@ class VirtualizationTransport {
     file = "Functions\Virtualization\Transport";
 
     class transportConfig       {};
+    class transportResolveReserveObjective {};
+    class transportCreateReserveCarrier {};
     class transportGetCapacity  {};
     class transportGetGroupCapacity {};
     class transportGetPassengerLoad {};

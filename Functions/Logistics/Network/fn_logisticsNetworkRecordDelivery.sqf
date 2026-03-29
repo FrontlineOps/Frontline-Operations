@@ -39,7 +39,7 @@ _net set ["_supplyNodeDeliveries", _deliveryCounts];
 private _activeNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
 private _isActive = _deliveryObjectiveId in _activeNodes;
 
-["LOGISTICS", 3, format [
+["LOGISTICS", 2, format [
     "Confirmed reinforcement delivery for %1 at %2 (count=%3)%4",
     _net get "_managedSideKey",
     _deliveryObjectiveId,
