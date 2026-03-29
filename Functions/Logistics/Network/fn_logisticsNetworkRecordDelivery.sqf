@@ -43,7 +43,9 @@ private _promotionSuffix = "";
 
 if (_isActive && {!_wasActive}) then {
     _promotionSuffix = " | promoted to forward supply node";
-} else {
+};
+
+if !_isActive then {
     private _minDeliveries = _net get "SUPPLY_NODE_MIN_DELIVERIES";
     if (_nextDeliveryCount >= _minDeliveries) then {
         private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
