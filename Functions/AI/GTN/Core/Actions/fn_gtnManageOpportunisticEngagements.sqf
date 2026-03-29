@@ -36,17 +36,23 @@ private _attackCandidateIds = keys _engagementGroups;
 private _config = _gtnCommander get "_config";
 private _groups = FLO_virtualGroups get "_groups";
 private _ownSide = _gtnCommander get "_ownSide";
+private _taskedGroupIds = +(_gtnCommander get "_gtnTaskedGroups");
 private _assignmentState = createHashMap;
 private _assignmentCapCache = createHashMap;
+private _commanderGroups = [];
 
 _metrics set ["pictureGroups", _engagementPicture get "groupCount"];
 _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
 
 {
-    private _groupData = _y;
-    if ((_groupData get "side") != _ownSide) then { continue };
-    if !(_groupData get "engagementActive") then { continue };
+    private _groupId = _x;
+    if !(_groupId in _groups) then { continue };
 
+    private _groupData = _groups get _groupId;
+    if ((_groupData get "side") != _ownSide) then { continue };
+    _commanderGroups pushBack [_groupId, _groupData];
+
+    if !(_groupData get "engagementActive") then { continue };
     private _targetGroupId = _groupData get "engagementTargetGroupId";
     if (_targetGroupId == "") then { continue };
     private _targetData = _engagementGroups get _targetGroupId;
@@ -54,13 +60,10 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
 
     private _groupLoad = [_groupData, false] call FLO_fnc_virtualizationGetGroupUnitLoad;
     [_assignmentState, _targetGroupId, 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
-} forEach _groups;
+} forEach _taskedGroupIds;
 
 {
-    private _groupId = _x;
-    private _groupData = _y;
-
-    if ((_groupData get "side") != _ownSide) then { continue };
+    _x params ["_groupId", "_groupData"];
 
     private _groupType = _groupData get "groupType";
     if (_groupType in ["civilian", "ambient", "helicopter", "jet", "air", "artillery", "static_aa", "boat", "naval", "submarine"]) then {
@@ -140,6 +143,6 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
         [_assignmentState, _target get "targetGroupId", 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
         _metrics set ["appliedCount", (_metrics get "appliedCount") + 1];
     };
-} forEach _groups;
+} forEach _commanderGroups;
 
 _metrics
