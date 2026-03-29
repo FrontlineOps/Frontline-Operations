@@ -145,6 +145,7 @@ class VirtualizationTransport {
     class transportParadropActivePassengerGroup {};
     class transportProcessActiveCarrier {};
     class transportProcessVirtualCarrier {};
+    class transportLogMountFailureContext {};
     class transportMountActivePassengerGroup {};
     class transportPrepareCarrierForPickup {};
     class transportMaybeRequestReassignmentPickup {};

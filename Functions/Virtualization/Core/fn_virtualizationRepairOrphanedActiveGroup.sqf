@@ -30,14 +30,25 @@ private _recoverableAssets = if (_tracksAssets) then {
     []
 };
 private _recoverableCount = count _recoverableAssets;
+private _attachedTo = [_groupData] call FLO_fnc_virtualizationGetTransportAttachment;
+private _mountedIn = [_groupData] call FLO_fnc_virtualizationGetMountedTransport;
+private _attachedPassengerCount = count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);
+private _trackedRealVehicles = count (_groupData get "realVehicles");
 
 ["VIRTUALIZATION", 2, format [
-    "Active group %1 (%2) lost its realGroup handle while still marked active (missionLock=%3 replacementState=%4 recoverableAssets=%5) - repairing",
+    "Active group %1 (%2) lost its realGroup handle while still marked active (missionLock=%3 replacementState=%4 recoverableAssets=%5 attachedTo=%6 mountedIn=%7 transportRole=%8 attachedGroups=%9 trackedVehicles=%10 objective=%11 pos=%12) - repairing",
     _groupId,
     _groupType,
     _groupData get "missionLock",
     _groupData get "replacementState",
-    _recoverableCount
+    _recoverableCount,
+    _attachedTo,
+    _mountedIn,
+    _groupData get "transportRole",
+    _attachedPassengerCount,
+    _trackedRealVehicles,
+    _groupData get "objective",
+    _groupData get "position"
 ]] call FLO_fnc_log;
 
 if (_recoverableCount <= 0) exitWith {
