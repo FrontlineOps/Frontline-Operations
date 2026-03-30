@@ -1,158 +1,123 @@
 # FLO: Frontline Operations
 
-**Current Version**: 2.0 - Alpha 5
+FLO is a persistent Arma 3 frontline mission source built around phased server initialization, dual-side GTN commanders, force virtualization, resource-driven logistics, and long-running save states. The mission is designed for one human-controlled side per session while the opposing theater is managed by AI systems and virtualized assets.
 
-A dynamic frontline operations mission for Arma 3 featuring intelligent AI commanders, virtualized forces, resource-based logistics, and persistent save states.
+## What FLO Is
 
----
+- Persistent campaign mission with save/load support.
+- Objective-driven frontline with dynamic ownership, pressure, and reinforcement.
+- Virtualized ground, air, artillery, and transport groups that only unvirtualize near players.
+- Dual GTN commanders for `EAST` and `WEST`, with the active human side locked at runtime.
+- Side-scoped logistics networks with HQ selection, active supply nodes, and automated replacement dispatch.
+- Custom faction catalogs driven from mission-root faction files instead of hardcoded pools.
 
-## Table of Contents
+## Requirements
 
-1. [Features](#features)
-2. [Quick Start](#quick-start)
-3. [Mission Setup](#mission-setup)
-4. [Faction Configuration](#faction-configuration)
-5. [Parameter Reference](#parameter-reference)
-6. [Systems Overview](#systems-overview)
-7. [Server Administration](#server-administration)
-8. [Contributing](#contributing)
-
----
-
-## Features
-
-### Core Systems
-- **Dynamic Frontline** - Evolving battlefield with OPFOR forces that defend, reinforce, and counterattack
-- **Virtualization System** - Thousands of units simulated with minimal performance impact; only spawn when players approach
-- **AI Commander (GTN)** - Goal Task Network-based AI that plans operations, calls fire support, and coordinates reinforcements
-- **Persistent Save System** - Full mission state saved including objectives, resources, intel, and all virtual groups
-
-### Combat & Operations
-- **Virtual Artillery** - OPFOR artillery with shoot-and-scoot behavior, counterbattery avoidance
-- **Air Tasking Orders** - AI Commander requests CAS and strike missions from available aircraft
-- **Convoy Systems** - Supply convoys, HVT convoys, and convoy interdiction missions
-- **Side Mission Framework** - Modular system for rescue, sabotage, intel gathering, and patrol missions
-
-### Logistics & Resources
-- **OPFOR Resource System** - Enemy forces consume resources to reinforce, resupply, and execute operations
-- **Intel System** - BLUFOR intel generation based on controlled territory; affects notification visibility
-- **Logistics Network** - Automated replacement of destroyed OPFOR groups using resource pools
-
-### Player Features
-- **FOB & OP Construction** - Build forward operating bases with full logistics support
-- **Restricted Arsenal** - Configurable loadout restrictions (ACE compatible)
-- **Civilian Relations** - Reputation system affecting intel and guerrilla activity
-
----
+- Arma 3.
+- CBA. FLO uses CBA events and PFHs throughout the mission.
+- Any faction-specific mod sets required by the faction files you choose.
+- Singleplayer, Multiplayer, hosted MP, or a dedicated server.
 
 ## Quick Start
 
-1. **Download** the mission files and **unpack the PBO**
-2. Place in: `Documents/Arma 3/missions/` (or your profile's missions folder)
-3. Load in Eden Editor, place player units, and export/play
-4. On first launch, the **Commander** selects factions and starting parameters
+1. Put the mission source in your Arma 3 profile `missions` folder, or pack it as a PBO for a server.
+2. Open the mission in Eden Editor.
+5. Launch in multiplayer preview or host/dedicated MP.
+6. On a fresh start, the commander configures factions and world settings through the faction dialog.
+7. On a loaded save, the saved mission config is restored and the faction dialog is skipped.
 
----
+## Session Model
 
-## Mission Setup
+- FLO runs one active human side per session.
+- The first connected `EAST` or `WEST` player locks `FLO_ActivePlayerSide`.
+- Players on the opposite military side are moved to spectator.
+- The `FreshStart` lobby parameter controls whether the mission loads saved progress or resets campaign state.
 
-### Initialization Flow
+## Initialization Pipeline
 
-The mission uses a phased initialization system:
+All authoritative startup work runs on the server through [`Functions/Init/fn_initPhaseManager.sqf`](Functions/Init/fn_initPhaseManager.sqf).
 
-| Phase | Name | Description |
-|-------|------|-------------|
-| 0 | Save Detection | Check for existing save, load config if present |
-| 1 | Mission Config | Wait for Commander's faction dialog (or use saved config) |
-| 2 | Factions | Load faction scripts (units, vehicles, groups) |
-| 3 | Objectives | Index map locations or restore from save |
-| 4 | Virtualization | Create virtual OPFOR groups at objectives |
-| 5 | Mission Systems | Start AI Commander, side missions, logistics |
+| Phase | Name | Purpose |
+|-------|------|---------|
+| 0 | Save Detection | Detects existing save data and restores saved mission config when present |
+| 1 | Mission Config | Waits for commander setup on fresh start, or restores saved handles and world settings |
+| 2 | Factions | Loads faction scripts and builds the runtime faction catalog |
+| 3 | Objectives | Indexes map objectives or restores saved objective state |
+| 4 | Virtualization | Seeds or restores virtual groups, reserves, and registry state |
+| 5 | Mission Systems | Starts GTN, logistics, routing, civilian, and client-facing systems |
 
-### Required Editor Setup
+Clients do not run parallel startup logic. They wait for `FLO_MissionReady` and then finalize local UI/state.
 
-Follow these steps to set up the mission in Eden Editor:
+## Repository Layout
 
-1. **Open the Mission**
-   - Launch Arma 3 and open Eden Editor
-   - Load the FLO mission from your missions folder
-
-2. **Place Player Units**
-   - Place at least one playable unit (BLUFOR recommended)
-   - Position units at a safe starting location (away from OPFOR objectives)
-
-3. **Designate the Commander**
-   - Select ONE player unit who will be the mission commander
-   - In the unit's init field, add: `TheCommander = this;`
-   - This player will configure factions and mission parameters at start
-
-4. **Configure Respawn (Optional)**
-   - Place a respawn marker named `respawn_west` for BLUFOR respawn
-   - Or use the FOB system for dynamic respawn points
-
-5. **Test the Mission**
-   - Preview the mission in multiplayer mode (even for single player testing)
-   - The Commander will see the faction selection dialog on first load
-
-### Starting the Mission
-
-- **Fresh Start**: Commander gets faction selection dialog to choose BLUFOR, OPFOR, and civilian factions
-- **Saved Game**: Automatically loads previous state (controlled by lobby parameter)
-- **Tip**: Use the "Reset" option in lobby parameters to force a fresh start
-
----
-
-## Faction Configuration
-
-### Quick Setup (Recommended for Communities)
-
-Edit the three CUSTOM faction files in the mission root:
-
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| `CUSTOM_ENEMY_FACTION.sqf` | OPFOR units, vehicles, and garrison configuration |
-| `CUSTOM_PLAYER_FACTION.sqf` | BLUFOR units, vehicles, and purchasable assets |
-| `CUSTOM_CIVILIAN_FACTION.sqf` | Civilian and guerrilla populations |
+| [`Functions/Init`](Functions/Init) | Server phase manager and client finalization |
+| [`Functions/AI/GTN`](Functions/AI/GTN) | Commanders, world state, virtual combat, tasks, alerts, support assets |
+| [`Functions/Virtualization`](Functions/Virtualization) | Group registry, spawn/deactivate lifecycle, routing, transport, seeding |
+| [`Functions/Logistics`](Functions/Logistics) | Side resources, supply network, replacement dispatch, reserve replenishment |
+| [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, markers |
+| [`CUSTOM_PLAYER_FACTION.sqf`](CUSTOM_PLAYER_FACTION.sqf) | Player-side faction source data |
+| [`CUSTOM_ENEMY_FACTION.sqf`](CUSTOM_ENEMY_FACTION.sqf) | Enemy-side faction source data |
+| [`CUSTOM_CIVILIAN_FACTION.sqf`](CUSTOM_CIVILIAN_FACTION.sqf) | Civilian faction source data |
 
-### Creating a New OPFOR Faction
+## Core Systems
 
-```sqf
-// === VEHICLE ARRAYS ===
-East_Ground_Vehicles_Ambient = ["classname1", "classname2"];  // Patrol/ambient vehicles
-East_Ground_Vehicles_Light = ["armed_mrap", "armed_lsv"];     // Light combat vehicles
-East_Ground_Vehicles_Heavy = ["tank", "apc"];                  // Heavy armor
-East_Ground_Transport = ["truck", "unarmed_mrap"];            // Transport vehicles
-East_Air_Transport = ["transport_heli"];                       // Transport helicopters
-East_Air_Heli = ["attack_heli"];                               // Attack helicopters
-East_Air_Jet = ["fighter", "cas_plane"];                       // Fixed-wing aircraft
-East_Ground_Artillery = ["howitzer"];                          // Artillery pieces
-East_Air_Drone = ["uav"];                                      // Drones
+### GTN Commanders
 
-// === INFANTRY ARRAYS ===
-East_Units = [
-    "rifleman", "rifleman", "rifleman",  // Higher frequency = more common
-    "autorifleman", "autorifleman",
-    "grenadier",
-    "at_specialist",                      // Lower frequency = less common
-    "aa_specialist"
-];
-East_Units_Officers = ["officer"];
-East_FireObserver = ["forward_observer"];
+- FLO runs one GTN commander per military side.
+- Commanders build maintained world state, assign strategic attack and defense tracks, publish player-facing commander intel, and request support assets.
+- Virtual combat is cell- and cache-driven rather than full world simulation for every group every frame.
+- Artillery and air support are only abstractly available while those assets are secure; overrun support assets can now be attrited by virtual combat like other vulnerable groups.
 
-// === GROUP DEFINITIONS ===
-East_Groups = [
-    (configfile >> "CfgGroups" >> "East" >> "FACTION" >> "Infantry" >> "GroupClass1"),
-    (configfile >> "CfgGroups" >> "East" >> "FACTION" >> "Infantry" >> "GroupClass2")
-];
-```
+### Virtualization
 
-### Garrison Configuration
+- The virtual registry is the authoritative source for campaign groups.
+- Groups unvirtualize near players and revirtualize when they safely leave the activation envelope.
+- Orders, routes, attachments, mission locks, and saved runtime state are preserved across activation changes.
+- Objective seeding and save backfill both use the same faction-template-driven spawn logic.
 
-Define how many groups spawn at each objective type:
+### Logistics and Supply
+
+- Each side has a separate logistics network object.
+- The network elects an HQ objective, grows an active supply-node chain, and dispatches replacements from controlled rear areas.
+- Replacement creation uses group composition costs and current side resources instead of free respawns.
+- Transport reserve pools are replenished separately from frontline combat groups.
+
+### Routing
+
+- Routing is currently water-aware, not road-graph based.
+- Ground path resolution is effectively "direct if land, coarse detour if water."
+
+### Transport
+
+- Transport is a custom virtualization transport system.
+- Active unloads are staged to stop ground carriers and land helicopters before dismount.
+- Transport carriers can revirtualize after leaving player range; they are not held active forever by transport state.
+
+### Player Intel Pickups
+
+- Non-civilian spawned soldiers can carry battlefield intel items such as phones, secret files, and flash drives.
+- Picking one up now reveals maintained enemy strategic intel instead of doing nothing.
+- Phones prefer enemy commander target reveals, files prefer supply-node reveals, and flash drives prefer enemy HQ reveals.
+- These reveals are temporary side-only GTN alert markers, not permanent omniscient map knowledge.
+
+## Faction Customization
+
+The authoritative customization entry points are the three mission-root faction files:
+
+- [`CUSTOM_PLAYER_FACTION.sqf`](CUSTOM_PLAYER_FACTION.sqf)
+- [`CUSTOM_ENEMY_FACTION.sqf`](CUSTOM_ENEMY_FACTION.sqf)
+- [`CUSTOM_CIVILIAN_FACTION.sqf`](CUSTOM_CIVILIAN_FACTION.sqf)
+
+Phase 2 reads those files and builds `FLO_FactionCatalog`, which then feeds commander pools, virtualization spawn pools, objective seeding, logistics replacements, and transport reserves.
+
+### Objective Templates
+
+Objective seeding is defined by subtype templates such as `capital`, `city`, `village`, `local`, `marine`, and `cluster`.
 
 ```sqf
 OPFOR_Objective_Groups = [
-    // [objective_subtype, [[group_type, count], ...]]
     ["capital", [
         ["infantry", 12],
         ["motorized", 2],
@@ -163,322 +128,89 @@ OPFOR_Objective_Groups = [
     ["city", [
         ["infantry", 7],
         ["motorized", 2]
-    ]],
-    ["village", [
-        ["infantry", 3]
-    ]],
-    ["local", [           // Military bases, infrastructure
-        ["infantry", 6],
-        ["motorized", 2],
-        ["mechanized", 1]
-    ]],
-    ["marine", [          // Ports, coastal facilities
-        ["infantry", 3],
-        ["motorized", 1]
-    ]],
-    ["cluster", [         // Auto-generated areas
-        ["infantry", 2]
     ]]
 ];
 ```
 
-### Group Size Configuration
+### Group Counts
+
+Physical strength per virtual group type is configured separately:
 
 ```sqf
 OPFOR_Group_Counts = [
-    ["infantry", 10],      // Soldiers per infantry group
-    ["motorized", 2],      // Vehicles per motorized group
-    ["mechanized", 2],     // APCs per mechanized group
-    ["armor", 2],          // Tanks per armor group
-    ["helicopter", 1],     // Helicopters per air group
-    ["jet", 1],            // Jets per air group
-    ["artillery", 1]       // Guns per artillery group
+    ["infantry", 10],
+    ["motorized", 2],
+    ["mechanized", 2],
+    ["armor", 2],
+    ["artillery", 1]
 ];
 ```
 
-### Performance Tuning
+### Side-Wide Objective Caps
+
+Use side-wide caps when a subtype template is allowed to request an asset, but you do not want one spawned at every eligible objective.
 
 ```sqf
-// Mission-level world settings (set in Mission Setup dialog)
-// objectiveSizeThreshold: "Small", "Medium", "Large", "Huge"
-// virtualizationDistance: 1000/1500/2000/2500/3000
-```
-
-### BLUFOR Faction Setup
-
-Configure purchasable vehicles and their costs in `CUSTOM_PLAYER_FACTION.sqf`:
-
-```sqf
-F_Car_List = [
-    ["B_LSV_01_unarmed_F", 25],    // [classname, cost]
-    ["B_MRAP_01_F", 50]
+West_Objective_Group_Type_Caps = [
+    ["artillery", 5]
 ];
 
-F_Tank_List = [
-    ["B_MBT_01_cannon_F", 500],
-    ["B_MBT_01_TUSK_F", 650]
-];
-
-// Available categories:
-// F_Bike_List, F_Car_List, F_MRAP_List, F_Truck_List
-// F_APC_List, F_Tank_List, F_Artillery_List
-// F_Heli_List, F_Heli_Gunship_List, F_Plane_List
-// F_Boat_List, F_UAV_List, F_UGV_List
-// F_Container_List, F_Turret_List, F_SAM_List
-```
-
----
-
-## Parameter Reference
-
-### Lobby Parameters (description.ext)
-
-| Parameter | Options | Default | Description |
-|-----------|---------|---------|-------------|
-| AutoSaveSwitch | Activate/Deactivate | Activate | Enable automatic saving |
-| AutoSaveInterval | 5/10/20 minutes | 5 min | Time between auto-saves |
-| FreshStart | Load/Reset | Load | Load saved progress or start fresh |
-| RestrictedArsenal | Enable/Disable | Disable | Limit available arsenal items |
-| RagequitBlocker | Enable/Disable | Disable | Block abort while unconscious |
-| DisableSystemChat | Enable/Disable | Disable | Hide system messages |
-
-### Runtime Configuration
-
-**Server Restart Timer** (`Functions/Utilities/fn_heartBeat.sqf`):
-```sqf
-private _restartIntervalHours = 8;  // Hours between restarts
-private _notificationThresholds = [60, 30, 15, 10, 5, 2, 1];  // Minutes before restart
-```
-
-**Side Resources** (`Functions/Logistics/fn_sideResources.sqf`):
-```sqf
-["RESOURCE_VALUES", createHashMapFromArray [...]], // Resource generation by objective type
-["STARTING_VALUES", createHashMapFromArray [...]], // Initial stockpile by objective type
-["SPENDING_TYPES", createHashMapFromArray [...]]   // Cost multipliers / thresholds by spend type
-```
-
-**Intel System** (`Functions/Logistics/fn_intelSystem.sqf`):
-```sqf
-["BASE_DECAY", 5],           // Intel lost per cycle
-["UPDATE_INTERVAL", 300],    // Seconds between updates
-// Intel per objective type:
-["INTEL_VALUES", createHashMapFromArray [
-    ["capital", 15],
-    ["city", 10],
-    ["marine", 8],
-    ["local", 6],
-    ["village", 3],
-    ["cluster", 1]
-]]
-```
-
----
-
-## Systems Overview
-
-### Virtualization System
-
-Groups exist in two states:
-- **Virtual**: Position tracked, no physical entities, minimal performance cost
-- **Active**: Physical units spawned when players are within mission `virtualizationDistance`
-
-Groups automatically:
-- Spawn when players approach
-- Despawn when players leave (if not in combat)
-- Preserve state (health, ammo, waypoints) between activations
-
-### AI Commander (GTN)
-
-The Goal Task Network system enables intelligent OPFOR behavior:
-
-1. **World State** - Tracks threats, resources, objectives
-2. **Goal Library** - Defines available actions (defend, reinforce, attack)
-3. **Planner** - Decomposes goals into executable tasks
-4. **Executor** - Runs primitive actions (move group, call artillery)
-5. **Monitor** - Detects when replanning is needed
-
-### Resource System
-
-OPFOR resources affect:
-- Group replacement cost
-- Artillery availability
-- Air support frequency
-- Reinforcement speed
-
-Resource efficiency decreases as:
-- More objectives are lost
-- Resources are spent rapidly
-- Territory shrinks
-
-### Logistics Network
-
-Automatically replaces destroyed OPFOR groups:
-- Monitors group composition vs. initial state
-- Spawns replacements from map edges or rear objectives
-- Prioritizes objectives under BLUFOR pressure
-- Consumes OPFOR resources
-
----
-
-## Server Administration
-
-### Required Server Configuration
-
-#### Capture UI
-
-The Capture UI uses structured text to display objective capture progress. For this to work properly on dedicated servers, you need to enable the following in your server's configuration:
-
-**For `server.cfg` or startup parameters:**
-
-**For Dedicated Servers:**
-
-You may need to enable JavaScript extensions in your Arma 3 server configuration:
-
-1. Open your server's `basic.cfg` or `server.cfg`
-2. Add or modify the following:
-   ```
-   // Allowed file extensions (add if missing)
-   allowedLoadFileExtensions[] = {"hpp","sqs","sqf","fsm","cpp","paa","txt","xml","inc","ext","sqm","ods","fxy","lip","csv","kb","bik","bikb","html","htm","biedi","js","css"};
-   allowedPreprocessFileExtensions[] = {"hpp","sqs","sqf","fsm","cpp","paa","txt","xml","inc","ext","sqm","ods","fxy","lip","csv","kb","bik","bikb","html","htm","biedi","js","css"};
-   allowedHTMLLoadExtensions[] = {"htm","html","xml","txt"};
-   ```
-
-3. Ensure these extensions are in your `allowedHTMLLoadExtensions` if you want HTML-based UI elements
-
-**Note:** If players report not seeing the Capture UI when near objectives, this is usually a server configuration issue with the above settings.
-
-### Save System
-
-Saves are stored in the server's profile namespace. Key data includes:
-- Objective ownership and garrison state
-- All virtual group positions and compositions
-- Resource levels and efficiency ratings
-- Intel levels and bonuses
-
-### Restart Notifications
-
-The heartbeat system notifies players before restart:
-- Notifications at 60, 30, 15, 10, 5, 2, 1 minutes
-- Urgency colors increase (white → yellow → orange → red)
-- Based on server uptime, not wall clock
-
----
-
-## Side Missions
-
-Available mission templates:
-
-| Mission | Description |
-|---------|-------------|
-| Pilot Rescue | Rescue downed pilot before OPFOR captures them |
-| Squad Rescue | Extract stranded friendly squad |
-| POW Rescue | Free prisoners from OPFOR facility |
-| Convoy Interdiction | Destroy OPFOR supply convoy |
-| HVT Convoy | Intercept high-value target convoy |
-| Intel Gathering | Retrieve intel from enemy location |
-| Patrol Sweep | Clear enemy patrol from area |
-
----
-
-## Contributing
-
-We welcome contributions! Here's how to get started:
-
-### Getting Started
-
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally
-3. **Create a feature branch**: `git checkout -b feature/my-new-feature`
-4. **Make your changes** following the code style guidelines below
-5. **Test your changes** in-game
-6. **Commit with clear messages**: `git commit -m "Add: New feature description"`
-7. **Push to your fork**: `git push origin feature/my-new-feature`
-8. **Submit a Pull Request** to the `Develop` branch
-
-### Code Style Guidelines
-
-- **Indentation**: Use tabs for SQF files
-- **Variable Naming**:
-  - Local variables: `_camelCase`
-  - Global variables: `FLO_PascalCase`
-  - Parameters: `_paramName`
-- **Comments**: Add header comments to functions explaining purpose, parameters, and return values
-- **File Headers**: Include faction name, mod requirements, and author in faction files
-
-### Adding New Factions
-
-#### Faction File Naming Convention
-
-Format: `{side}_{faction}_{camo}_{mod}.sqf`
-
-| Component | Description | Examples |
-|-----------|-------------|----------|
-| `side` | Game side | `blu` (BLUFOR), `opf` (OPFOR), `ind` (Independent), `civ` (Civilian) |
-| `faction` | Military force | `NATO`, `US`, `BAF`, `GAF`, `CSAT`, `Russia` |
-| `camo` | Camouflage variant | `Desert`, `Wood`, `Winter`, `Urban` |
-| `mod` | Required mod(s) | `Vanilla`, `AEW`, `RHS`, `CUP`, `BW`, `FFAA` |
-
-**Examples:**
-- `blu_NATO_Desert_Vanilla.sqf` - Vanilla NATO in desert camo
-- `blu_US_Wood_CUP_RHS.sqf` - US forces requiring CUP and RHS mods
-- `opf_CSAT_Desert_Vanilla.sqf` - Vanilla CSAT in desert camo
-- `blu_GAF_Wood_BW.sqf` - German Armed Forces with Bundeswehr mod
-
-#### BLUFOR Faction Structure
-
-```sqf
-// ============================================================================
-// FACTION NAME - SIDE (Required Mods)
-// Description of the faction
-// ============================================================================
-
-// INFANTRY UNITS
-F_Officer = "classname";
-F_Assault_TL = "classname";
-// ... other unit definitions
-
-// SQUAD COMPOSITIONS
-F_ASSLT_TEAM = [F_Assault_TL, F_Assault_Eod, F_Assault_AT, ...];
-F_RCN_TEAM = [F_Recon_TL, F_Recon_AT, F_Recon_Mrk, ...];
-
-// VEHICLE LISTS - Format: [[classname, price], ...]
-F_Car_List = [
-    ["classname", 25],
-    ["classname", 50]
+East_Objective_Group_Type_Caps = [
+    ["artillery", 5]
 ];
 ```
 
-#### OPFOR Faction Structure
+These caps apply across all owned seeded objectives combined, not per objective.
 
-See the `CUSTOM_ENEMY_FACTION.sqf` template for the complete structure including:
-- Vehicle arrays by type
-- Infantry unit arrays
-- Group definitions
-- Garrison configuration
+### Transport Reserve Counts
 
-### Testing Your Changes
+Dedicated transport reserve pools are configured separately from frontline objective groups:
 
-1. **Load in Eden Editor** and preview the mission
-2. **Test faction selection** - Verify your faction appears in the dialog
-3. **Test unit spawning** - Check that units spawn correctly at objectives
-4. **Test vehicle purchasing** - Verify vehicles can be purchased with correct prices
-5. **Test with required mods** - Ensure the faction works with its required mods
+```sqf
+West_Transport_Reserve_Ground_Count = 20;
+West_Transport_Reserve_Air_Count = 10;
 
-### Pull Request Guidelines
+East_Transport_Reserve_Ground_Count = 20;
+East_Transport_Reserve_Air_Count = 10;
+```
 
-- Target the `Develop` branch, not `Release`
-- Include a clear description of changes
-- List any new mod dependencies
-- Include screenshots for visual changes
-- Ensure no merge conflicts
+### Important Save/Load Note
 
----
+Changing faction files does not automatically reseed missing groups into an old save. Loaded saves restore saved virtual groups first. If you add new objective-template group types after a save already exists, you usually need either:
+
+- a mission reset via the `FreshStart` lobby parameter, or
+- a targeted backfill call such as:
+
+```sqf
+[west, ["city"], ["artillery", "jet", "helicopter"]] call FLO_fnc_backfillObjectiveTemplateGroups;
+```
+
+## Runtime Configuration
+
+### Lobby Parameters
+
+| Parameter | Meaning |
+|-----------|---------|
+| `AutoSaveSwitch` | Enables or disables mission auto-save |
+| `AutoSaveInterval` | Auto-save cadence |
+| `FreshStart` | Load saved progress or reset mission progress |
+| `RestrictedArsenal` | Enables the restricted arsenal flow |
+| `RagequitBlocker` | Prevents abort while unconscious |
+| `DisableSystemChat` | Hides system chat |
+
+### Commander Mission Config
+
+On a fresh start, the commander dialog sets and publishes:
+
+- friendly, enemy, and civilian faction handles
+- reputation and difficulty handles
+- GTN attack coverage, defense coverage, tempo, force growth, and garrison handles
+- enemy presence
+- objective size threshold
+- virtualization distance
+- virtualization unit cap
+- player start position
 
 ## License
 
-GNU General Public License v3.0
-
-## Credits
-
-- Created by **Frontline Operations Development Group**
-- Special thanks to our early supporters and community contributors
+FLO is distributed under the GNU General Public License v3.0. See [`LICENSE`](LICENSE).
