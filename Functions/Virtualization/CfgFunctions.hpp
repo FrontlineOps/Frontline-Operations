@@ -31,6 +31,7 @@ class VirtualizationSeeding {
 
     class initializeObjectiveGroups {};
     class initializeTransportReserveGroups {};
+    class backfillObjectiveTemplateGroups {};
     class distributeVirtualGroups   {};
 };
 
