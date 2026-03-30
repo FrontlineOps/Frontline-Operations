@@ -35,16 +35,9 @@
             {
                 if (_x in _playerItems) then {
                     player removeItem _x;
-                    [mapGridPosition player] remoteExec ["FLO_fnc_addIntelServer", 2];
+                    [mapGridPosition player, _x] remoteExec ["FLO_fnc_addIntelServer", 2];
                 };
             } forEach _intelItems;
-
-            // 50% chance for each intel type reveal
-            if (random 1 < 0.5) then {
-                [] remoteExec ["FLO_fnc_militaryIntel", 0];
-            } else {
-                [] remoteExec ["FLO_fnc_revealRandomEnemyGroup", 0];
-            };
         };
     };
 };

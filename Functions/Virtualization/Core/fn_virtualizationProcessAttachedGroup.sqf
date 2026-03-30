@@ -17,7 +17,7 @@ if (isNil "_transportData") exitWith {
 
     [_groupData] call FLO_fnc_virtualizationClearTransportAttachment;
     [_groupData] call FLO_fnc_virtualizationClearMountedIn;
-    if ((_groupData get "missionLock") == "ORGANIC_PACKAGE") then {
+    if ((_groupData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
         [_groupData] call FLO_fnc_virtualizationClearMissionLock;
     };
     [true] call FLO_fnc_gtnCombatMarkClassificationDirty;

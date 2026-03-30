@@ -305,7 +305,7 @@ private _worldState = createHashMapObject [[
             {
                 private _gData = _groups get _x;
                 if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
-                if (_gData get "groupType" == "artillery") exitWith {
+                if ((_gData get "groupType") == "artillery" && {[_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport}) exitWith {
                     _artyAvailable = true;
                 };
             } forEach (keys _groups);
@@ -334,9 +334,8 @@ private _worldState = createHashMapObject [[
             {
                 private _gData = _groups get _x;
                 if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
-                if ((_gData get "missionLock") != "") then { continue };
                 private _gType = _gData get "groupType";
-                if (_gType in ["cas", "sead", "bomber", "air", "helicopter"]) then {
+                if (_gType in ["cas", "sead", "bomber", "air", "helicopter"] && {[_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport}) then {
                     _casAvailable = true;
                 };
             } forEach (keys _groups);

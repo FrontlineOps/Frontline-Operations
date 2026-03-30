@@ -3,9 +3,38 @@
 // Spanish Armed Forces in woodland camouflage
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = F_Officer + all F_Assault_* roles
+ *   groundSpecOps    = all F_Recon_* + all F_Diver_* roles
+ *   groundMotorized  = F_Car_List + F_MRAP_List
+ *   groundMechanized = F_APC_List
+ *   groundArmor      = F_Tank_List
+ *   groundTransport  = F_Truck_List
+ *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
+ *   groundArtillery  = F_Artillery_List
+ *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   transportReserveAirCount = West_Transport_Reserve_Air_Count
+ *   airHeli          = F_Heli_Gunship_List
+ *   airJet           = F_Plane_List
+ *   airDrone         = F_UAV_List
+ *   groundDrone      = F_UGV_List
+ *   staticAA         = F_SAM_List
+ *   radar            = F_RADAR
+ *   boat             = F_Boat_List
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above. You do not need to define separate West_* pools here.
+ */
 // ============================================================================
 // INFANTRY UNITS
 // ============================================================================
+// F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
+// All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
 F_Officer = "ffaa_bripac_oficial";
 
 F_Assault_Eng = "ffaa_brilat_ingeniero";
@@ -48,6 +77,7 @@ F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 // ============================================================================
 // BASE STRUCTURES
 // ============================================================================
+// F_RADAR feeds the commander radar pool.
 F_RADAR = "I_E_Radar_System_01_F";
 F_HQ_01 = "Land_Cargo_HQ_V1_F";
 F_HQ_C_01 = "Land_TripodScreen_01_large_F";
@@ -57,11 +87,13 @@ F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F";
 // ============================================================================
 // VEHICLE LISTS - Format: [[classname, price], ...]
 // ============================================================================
+// These same lists also feed commander/virtualization pools as described above.
 
 F_Bike_List = [
     ["B_T_Quadbike_01_F", 5]
 ];
 
+// groundMotorized
 F_Car_List = [
     ["ffaa_et_vamtac_ume", 25],
     ["ffaa_et_vamtac_m2", 50],
@@ -71,6 +103,7 @@ F_Car_List = [
     ["ffaa_et_vamtac_mistral", 90]
 ];
 
+// groundMotorized
 F_MRAP_List = [
     ["ffaa_et_lince_ambulancia", 50],
     ["ffaa_et_lince_m2", 70],
@@ -78,9 +111,11 @@ F_MRAP_List = [
     ["ffaa_et_rg31_samson", 120]
 ];
 
+// groundTransport
 F_Truck_List = [
     ["ffaa_et_m250_carga_blin", 65]
 ];
+West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
     ["ffaa_et_m250_sistema_nasams_blin", 100]
@@ -94,6 +129,7 @@ F_Truck_Respawn_List = [
     ["ffaa_et_lince_ambulancia", 150]
 ];
 
+// groundMechanized
 F_APC_List = [
     ["ffaa_et_toa_mando", 200],
     ["ffaa_et_toa_ambulancia", 150],
@@ -102,28 +138,35 @@ F_APC_List = [
     ["ffaa_et_pizarro_mauser", 400]
 ];
 
+// groundArmor
 F_Tank_List = [
     ["ffaa_et_leopardo", 650]
 ];
 
+// groundArtillery
 F_Artillery_List = [
     ["B_T_Mortar_01_F", 75],
     ["B_T_MBT_01_arty_F", 400],
     ["B_T_MBT_01_mlrs_F", 500]
 ];
 
+// airTransport
 F_Heli_List = [
     ["ffaa_famet_ec135", 250],
     ["ffaa_nh90_tth_transport", 400],
     ["ffaa_nh90_tth_cargo", 450]
 ];
+West_Transport_Reserve_Air_Count = 10;
 
+// airTransport
 F_Heli_Respawn_List = [];
 
+// airHeli
 F_Heli_Gunship_List = [
     ["ffaa_famet_tigre", 750]
 ];
 
+// airJet
 F_Plane_List = [
     ["B_Plane_CAS_01_dynamicLoadout_F", 1500],
     ["ffaa_ar_harrier", 1600],
@@ -131,16 +174,19 @@ F_Plane_List = [
     ["ffaa_ea_hercules_cargo", 1200]
 ];
 
+// boat
 F_Boat_List = [
     ["B_Boat_Armed_01_minigun_F", 150]
 ];
 
+// airDrone
 F_UAV_List = [
     ["ffaa_ea_reaper", 80],
     ["B_UAV_05_F", 80],
     ["B_T_UAV_03_dynamicLoadout_F", 80]
 ];
 
+// groundDrone
 F_UGV_List = [
     ["B_UGV_01_rcws_F", 55]
 ];
@@ -158,6 +204,7 @@ F_Turret_List = [
     ["ffaa_tow_tripode", 35]
 ];
 
+// staticAA
 F_SAM_List = [
     ["B_SAM_System_01_F", 500],
     ["B_SAM_System_02_F", 500],

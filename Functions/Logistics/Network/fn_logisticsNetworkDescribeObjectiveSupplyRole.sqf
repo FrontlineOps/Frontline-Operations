@@ -19,6 +19,7 @@ private _role = createHashMapFromArray [
     ["depth", -1],
     ["routeMeters", 1e12],
     ["parentObjective", ""],
+    ["deliveryCount", 0],
     ["isHQ", false],
     ["isActiveNode", false],
     ["activeLinkedObjectives", []],
@@ -45,6 +46,7 @@ private _activeLinkedObjectives = (_objective get "linkedObjectives") select { _
 _role set ["depth", _nodeInfo get "depth"];
 _role set ["routeMeters", _nodeInfo get "routeMeters"];
 _role set ["parentObjective", _nodeInfo get "parentObjective"];
+_role set ["deliveryCount", _nodeInfo get "deliveryCount"];
 _role set ["isHQ", _nodeInfo get "isHQ"];
 _role set ["isActiveNode", _isActiveNode];
 _role set ["activeLinkedObjectives", _activeLinkedObjectives];

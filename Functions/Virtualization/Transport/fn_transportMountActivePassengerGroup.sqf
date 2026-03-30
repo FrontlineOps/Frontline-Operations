@@ -31,6 +31,7 @@ if !(_transportData get "isActive") exitWith { false };
 private _passengerRealGroup = _passengerData get "realGroup";
 private _transportRealGroup = _transportData get "realGroup";
 if (isNull _passengerRealGroup || {isNull _transportRealGroup}) exitWith {
+    [_passengerGroupId, _passengerData, _transportGroupId, _transportData, "missing_real_group", _transportVehicles] call FLO_fnc_transportLogMountFailureContext;
     ["TRANSPORT", 2, format [
         "Active mount failed for %1 into %2 due to missing real group reference",
         _passengerGroupId,
@@ -43,6 +44,7 @@ if (count _transportVehicles == 0) then {
     _transportVehicles = ([_transportRealGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles) select { !isNull _x && {alive _x} };
 };
 if (count _transportVehicles == 0) exitWith {
+    [_passengerGroupId, _passengerData, _transportGroupId, _transportData, "no_live_vehicles", _transportVehicles] call FLO_fnc_transportLogMountFailureContext;
     ["TRANSPORT", 2, format [
         "Active mount failed for %1 into %2 because the carrier has no live vehicles",
         _passengerGroupId,
@@ -54,12 +56,30 @@ if (count _transportVehicles == 0) exitWith {
 private _aliveUnits = units _passengerRealGroup select { alive _x };
 if (count _aliveUnits == 0) exitWith { true };
 
+private _freeCargoSeats = 0;
+{
+    _freeCargoSeats = _freeCargoSeats + (_x emptyPositions "cargo");
+} forEach _transportVehicles;
+
+if (_freeCargoSeats < count _aliveUnits) exitWith {
+    [_passengerGroupId, _passengerData, _transportGroupId, _transportData, "insufficient_live_capacity", _transportVehicles] call FLO_fnc_transportLogMountFailureContext;
+    ["TRANSPORT", 2, format [
+        "Active mount failed for %1 into %2 because the carrier only has %3 live cargo seats for %4 units",
+        _passengerGroupId,
+        _transportGroupId,
+        _freeCargoSeats,
+        count _aliveUnits
+    ]] call FLO_fnc_log;
+    false
+};
+
 private _seatFailure = false;
 {
     private _veh = vehicle _x;
     if (_veh != _x && {_veh in _transportVehicles}) then { continue };
 
     if (_veh != _x) then {
+        unassignVehicle _x;
         moveOut _x;
     };
 
@@ -83,6 +103,7 @@ private _mountedCount = {
 } count _aliveUnits;
 
 if (_seatFailure || {_mountedCount != count _aliveUnits}) exitWith {
+    [_passengerGroupId, _passengerData, _transportGroupId, _transportData, "partial_mount", _transportVehicles] call FLO_fnc_transportLogMountFailureContext;
     ["TRANSPORT", 2, format [
         "Active mount failed for %1 into %2 (%3/%4 mounted)",
         _passengerGroupId,

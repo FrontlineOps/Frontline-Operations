@@ -44,6 +44,10 @@ private _available = [];
         continue;
     };
 
+    if !([_groupData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {
+        continue;
+    };
+
     _available pushBack [_groupId, _groupData];
 } forEach (keys (_cache get _cacheKey));
 

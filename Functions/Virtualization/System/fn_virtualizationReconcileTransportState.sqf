@@ -53,6 +53,14 @@ private _repairCount = 0;
             [_groupData] call FLO_fnc_virtualizationClearMountedIn;
             _repairCount = _repairCount + 1;
         };
+        if ((_groupData get "missionLock") == "TRANSPORT") then {
+            ["VIRTUALIZATION", 1, format [
+                "Clearing stale transport mission lock on unattached passenger %1",
+                _groupId
+            ]] call FLO_fnc_log;
+            [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+            _repairCount = _repairCount + 1;
+        };
         continue;
     };
 
@@ -62,7 +70,7 @@ private _repairCount = 0;
             _groupId
         ]] call FLO_fnc_log;
         [_groupData] call FLO_fnc_virtualizationClearTransportAttachment;
-        if ((_groupData get "missionLock") == "ORGANIC_PACKAGE") then {
+        if ((_groupData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
             [_groupData] call FLO_fnc_virtualizationClearMissionLock;
         };
         if (_organicRole == "dismount") then {
@@ -81,7 +89,7 @@ private _repairCount = 0;
             _attachedTo
         ]] call FLO_fnc_log;
         [_groupData] call FLO_fnc_virtualizationClearTransportAttachment;
-        if ((_groupData get "missionLock") == "ORGANIC_PACKAGE") then {
+        if ((_groupData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
             [_groupData] call FLO_fnc_virtualizationClearMissionLock;
         };
         if (_organicRole == "dismount") then {
@@ -104,7 +112,7 @@ private _repairCount = 0;
             _attachedTo
         ]] call FLO_fnc_log;
         [_groupData] call FLO_fnc_virtualizationClearTransportAttachment;
-        if ((_groupData get "missionLock") == "ORGANIC_PACKAGE") then {
+        if ((_groupData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
             [_groupData] call FLO_fnc_virtualizationClearMissionLock;
         };
         if (_organicRole == "dismount") then {
@@ -150,14 +158,12 @@ private _repairCount = 0;
         _repairCount = _repairCount + 1;
     };
 
-    if (count _passengerIds == 0 && {(_carrierData get "dismountAtWaypoint") >= 0}) then {
+    if (count _passengerIds == 0 && {(_carrierData get "dismountAtWaypoint") >= 0 || {(_carrierData get "transportInsertMode") != ""}}) then {
         ["VIRTUALIZATION", 1, format [
-            "Clearing stale dismount state on carrier %1 with no passengers",
+            "Clearing stale transport insert state on carrier %1 with no passengers",
             _carrierId
         ]] call FLO_fnc_log;
-        _carrierData set ["dismountAtWaypoint", -1];
-        [_carrierData] call FLO_fnc_virtualizationClearExecutionState;
-        [_carrierData] call FLO_fnc_virtualizationClearMissionLock;
+        [_carrierData] call FLO_fnc_transportClearInsertState;
         _repairCount = _repairCount + 1;
     };
 } forEach _groups;

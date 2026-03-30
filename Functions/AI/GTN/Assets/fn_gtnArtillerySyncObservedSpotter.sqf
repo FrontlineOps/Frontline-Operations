@@ -27,7 +27,7 @@ if !(_side in [east, west]) exitWith {
 };
 
 private _groupType = _groupData get "groupType";
-if !(_groupType in ["infantry", "recon", "motorized", "mechanized", "armor"]) exitWith {
+if !(_groupType in ["infantry", "motorized", "mechanized", "armor"]) exitWith {
     _spotters deleteAt _groupId;
     false
 };

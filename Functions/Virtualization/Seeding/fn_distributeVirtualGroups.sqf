@@ -67,7 +67,7 @@ _distributionRadius = _distributionRadius max 30;
 // Get group config if infantry
 private _groupCfg = configNull;
 if (_groupType isEqualTo "infantry") then {
-    private _groupsPool = _catalog get "groups";
+    private _groupsPool = _catalog get "groundInfantryGroups";
     if (_groupsPool isEqualType [] && {count _groupsPool > 0}) then {
         _groupCfg = _groupsPool;
     };

@@ -24,6 +24,10 @@ private _infData = [_infantryGroupId] call FLO_fnc_transportGetTrackedGroup;
 private _postWp = _infData get "postDismountWaypoint";
 if (count _postWp == 0) exitWith { false };
 
+if ((_infData get "missionLock") == "TRANSPORT") then {
+    [_infData] call FLO_fnc_virtualizationClearMissionLock;
+};
+
 _postWp params [
     ["_targetPos", [0, 0, 0], [[]]],
     ["_orderType", "ORGANIC_PACKAGE", [""]]

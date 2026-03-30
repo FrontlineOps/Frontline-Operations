@@ -238,13 +238,13 @@ private _fnc_countAliveTargets = {
             continue;
         };
 
-        private _worldState = nil;
-        private _worldObjectives = nil;
+        private _cmdr = nil;
+        private _worldObjectives = createHashMap;
         if (!isNil "FLO_GTN_ResourceManager") then {
-            private _cmdr = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_activeSide]];
+            _cmdr = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_activeSide]];
             if (!isNil "_cmdr") then {
-                _worldState = _cmdr get "_worldState";
-                _worldObjectives = _worldState call ["_getObjectives", []];
+                private _cmdrWorldState = _cmdr get "_worldState";
+                _worldObjectives = _cmdrWorldState call ["_getObjectives", []];
             };
         };
 
@@ -281,7 +281,11 @@ private _fnc_countAliveTargets = {
             if !(_legacyObjId isEqualTo "") then {
                 private _legacyObjData = FLO_Objectives get _legacyObjId;
                 if (!isNil "_legacyObjData") then {
-                    private _legacyDestroyInfo = [_legacyObjId, _legacyObjData, _enemySide, _worldState] call FLO_fnc_gtnTaskCollectDestroyTargets;
+                    private _legacyDestroyInfo = createHashMap;
+                    if (!isNil "_cmdr") then {
+                        private _cmdrWorldState = _cmdr get "_worldState";
+                        _legacyDestroyInfo = [_legacyObjId, _legacyObjData, _enemySide, _cmdrWorldState] call FLO_fnc_gtnTaskCollectDestroyTargets;
+                    };
                     if ((count (keys _legacyDestroyInfo)) > 0) then {
                         _state set ["secondaryTargets", _legacyDestroyInfo get "targets"];
                     };
@@ -384,7 +388,11 @@ private _fnc_countAliveTargets = {
                 private _captureScore = [_objId, _objData, _playerPositions, "capture", _objectiveState, nil] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
                 _captureCandidates pushBack [_objId, _captureScore, _objData];
 
-                private _destroyInfo = [_objId, _objData, _enemySide, _worldState] call FLO_fnc_gtnTaskCollectDestroyTargets;
+                private _destroyInfo = createHashMap;
+                if (!isNil "_cmdr") then {
+                    private _cmdrWorldState = _cmdr get "_worldState";
+                    _destroyInfo = [_objId, _objData, _enemySide, _cmdrWorldState] call FLO_fnc_gtnTaskCollectDestroyTargets;
+                };
                 if ((count (keys _destroyInfo)) > 0) then {
                     private _destroyScore = ([_objId, _objData, _playerPositions, "destroy", _objectiveState, nil] call FLO_fnc_gtnTaskScoreObjectiveForPlayers) + (_destroyInfo get "typeBonus");
                     private _meta = createHashMapFromArray [

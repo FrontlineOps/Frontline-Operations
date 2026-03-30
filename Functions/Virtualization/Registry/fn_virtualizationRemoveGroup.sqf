@@ -7,6 +7,8 @@ params ["_virt", "_groupId"];
 private _groups = _virt get "_groups";
 private _groupData = _groups get _groupId;
 if (isNil "_groupData") exitWith { false };
+private _availableTransports = FLO_TransportPool get "available";
+private _activeTransports = FLO_TransportPool get "active";
 
 private _detachIndex = 0;
 
@@ -28,7 +30,7 @@ private _detachIndex = 0;
             ]] call FLO_fnc_log;
             [_otherData] call FLO_fnc_virtualizationClearTransportAttachment;
             [_otherData] call FLO_fnc_virtualizationClearMountedIn;
-            if ((_otherData get "missionLock") == "ORGANIC_PACKAGE") then {
+            if ((_otherData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
                 [_otherData] call FLO_fnc_virtualizationClearMissionLock;
             };
         };
@@ -46,12 +48,43 @@ private _detachIndex = 0;
     private _attachedGroups = _otherData get "attachedGroups";
     if (_groupId in _attachedGroups) then {
         [_otherData, _groupId] call FLO_fnc_virtualizationRemoveTransportPassenger;
+
+        if (count ([_otherData] call FLO_fnc_virtualizationGetTransportPassengers) == 0) then {
+            if ((_otherData get "dismountAtWaypoint") >= 0 || {(_otherData get "transportInsertMode") != ""}) then {
+                ["TRANSPORT", 3, format [
+                    "Clearing transport task state on %1 after passenger %2 was removed",
+                    _otherId,
+                    _groupId
+                ]] call FLO_fnc_log;
+                [_otherData] call FLO_fnc_transportClearInsertState;
+            };
+
+            if (_otherId in _activeTransports) then {
+                [_otherId] call FLO_fnc_transportPoolRelease;
+            };
+        };
     };
 
     if ((_otherData get "organicPackageParentGroupId") == _groupId) then {
         _otherData set ["organicPackageParentGroupId", ""];
     };
 } forEach _groups;
+
+private _removedFromTransportPool = false;
+if (_groupId in _availableTransports) then {
+    _availableTransports deleteAt _groupId;
+    _removedFromTransportPool = true;
+};
+if (_groupId in _activeTransports) then {
+    _activeTransports deleteAt _groupId;
+    _removedFromTransportPool = true;
+};
+if (_removedFromTransportPool) then {
+    ["TRANSPORT", 3, format [
+        "Pool: Removed deleted transport %1 from pool state",
+        _groupId
+    ]] call FLO_fnc_log;
+};
 
 [_groupId] call FLO_fnc_virtualizationSpatialRemove;
 

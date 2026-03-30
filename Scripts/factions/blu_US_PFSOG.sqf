@@ -3,9 +3,38 @@
 // US Forces for Vietnam-era operations
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = F_Officer + all F_Assault_* roles
+ *   groundSpecOps    = all F_Recon_* + all F_Diver_* roles
+ *   groundMotorized  = F_Car_List + F_MRAP_List
+ *   groundMechanized = F_APC_List
+ *   groundArmor      = F_Tank_List
+ *   groundTransport  = F_Truck_List
+ *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
+ *   groundArtillery  = F_Artillery_List
+ *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   transportReserveAirCount = West_Transport_Reserve_Air_Count
+ *   airHeli          = F_Heli_Gunship_List
+ *   airJet           = F_Plane_List
+ *   airDrone         = F_UAV_List
+ *   groundDrone      = F_UGV_List
+ *   staticAA         = F_SAM_List
+ *   radar            = F_RADAR
+ *   boat             = F_Boat_List
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above. You do not need to define separate West_* pools here.
+ */
 // ============================================================================
 // INFANTRY UNITS
 // ============================================================================
+// F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
+// All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
 F_Officer = "vn_b_men_army_01";
 
 F_Assault_Eng = "vn_b_men_army_04";
@@ -48,6 +77,7 @@ F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 // ============================================================================
 // BASE STRUCTURES
 // ============================================================================
+// F_RADAR feeds the commander radar pool.
 F_RADAR = "I_E_Radar_System_01_F";
 F_HQ_01 = "Land_Cargo_HQ_V1_F";
 F_HQ_C_01 = "Land_TripodScreen_01_large_F";
@@ -57,11 +87,13 @@ F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F";
 // ============================================================================
 // VEHICLE LISTS - Format: [[classname, price], ...]
 // ============================================================================
+// These same lists also feed commander/virtualization pools as described above.
 
 F_Bike_List = [
     ["B_T_Quadbike_01_F", 5]
 ];
 
+// groundMotorized
 F_Car_List = [
     ["vn_b_wheeled_m151_02_mp", 15],
     ["vn_b_wheeled_m151_01", 20],
@@ -71,12 +103,15 @@ F_Car_List = [
     ["vn_b_wheeled_m151_mg_05", 50]
 ];
 
+// groundMotorized
 F_MRAP_List = [];
 
+// groundTransport
 F_Truck_List = [
     ["vn_b_wheeled_m54_01_aus_army", 65],
     ["vn_b_wheeled_m54_03", 65]
 ];
+West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
     ["vn_b_wheeled_m54_ammo", 100]
@@ -88,6 +123,7 @@ F_Truck_Construction_List = [
 
 F_Truck_Respawn_List = [];
 
+// groundMechanized
 F_APC_List = [
     ["vn_b_armor_m113_acav_04", 200],
     ["vn_b_armor_m113_acav_02", 200],
@@ -97,45 +133,55 @@ F_APC_List = [
     ["vn_b_armor_m113_01", 150]
 ];
 
+// groundArmor
 F_Tank_List = [
     ["vn_b_armor_m41_01_02", 500],
     ["vn_b_armor_m41_01_01", 500]
 ];
 
+// groundArtillery
 F_Artillery_List = [
     ["vn_b_army_static_m101_02", 75],
     ["vn_b_army_static_mortar_m29", 50],
     ["vn_b_army_static_mortar_m2", 50]
 ];
 
+// airTransport
 F_Heli_List = [
     ["vn_b_air_oh6a_01", 200],
     ["vn_b_air_uh1d_02_02", 300],
     ["vn_b_air_uh1d_01_01", 300],
     ["vn_b_air_uh1c_02_01", 400]
 ];
+West_Transport_Reserve_Air_Count = 10;
 
+// airTransport
 F_Heli_Respawn_List = [];
 
+// airHeli
 F_Heli_Gunship_List = [
     ["vn_b_air_oh6a_05", 400],
     ["vn_b_air_ah1g_07", 600],
     ["vn_b_air_ah1g_03", 600]
 ];
 
+// airJet
 F_Plane_List = [
     ["vn_b_air_f100d_cas", 1200],
     ["vn_b_air_f4b_navy_cas", 1500]
 ];
 
+// boat
 F_Boat_List = [
     ["vn_b_boat_11_01", 100],
     ["vn_b_boat_12_02", 150],
     ["vn_b_boat_05_02", 200]
 ];
 
+// airDrone
 F_UAV_List = [];
 
+// groundDrone
 F_UGV_List = [];
 
 F_Container_List = [];
@@ -146,6 +192,7 @@ F_Turret_List = [
     ["vn_b_army_static_tow", 35]
 ];
 
+// staticAA
 F_SAM_List = [];
 
 /*

@@ -2,8 +2,9 @@
  * Function: FLO_fnc_findRoadPath
  * Author: Frontline Operations Development Group
  * Description:
- * Resolves a waypoint array between two positions using the shared road graph.
- * The scheduler owns execution; this wrapper owns request coalescing and cache reuse.
+ * Resolves a waypoint array between two positions using cached water-aware
+ * routing. Straight land routes resolve directly; only water crossings receive
+ * coarse detour pivots.
  *
  * Arguments:
  * 0: Start Position <ARRAY>
@@ -67,15 +68,12 @@ if (_now >= FLO_PF_RequestNextPruneAt) then {
 };
 
 private _dist = _startPos distance2D _endPos;
-private _doctrine = FLO_PF_RoadDoctrine_V;
-private _doctrineName = "VEHICLE";
+private _routingModeKey = "GROUND";
 if (_trails) then {
-    _doctrine = FLO_PF_RoadDoctrine_M;
-    _doctrineName = "MIXED";
+    _routingModeKey = "TRAILS";
 } else {
     if (_sourceTag == "LOGI_REINF") then {
-        _doctrine = FLO_PF_RoadDoctrine_V_Logi;
-        _doctrineName = "LOGI_REINF";
+        _routingModeKey = "LOGI_REINF";
     };
 };
 
@@ -92,6 +90,20 @@ if (_dist > 6000) then {
     };
 };
 
+if (_sourceTag == "LOGI_REINF") then {
+    // Strategic reinforcement transit does not need near-unique cache keys.
+    // Coarser buckets increase cache/pending reuse across repeated supply hops.
+    if (_dist > 5000) then {
+        if (_cellSize < 720) then { _cellSize = 720; };
+    } else {
+        if (_dist > 2500) then {
+            if (_cellSize < 540) then { _cellSize = 540; };
+        } else {
+            if (_cellSize < 360) then { _cellSize = 360; };
+        };
+    };
+};
+
 private _cellKey = {
     params ["_pos", "_size"];
     format ["%1_%2", round ((_pos select 0) / _size), round ((_pos select 1) / _size)]
@@ -99,8 +111,8 @@ private _cellKey = {
 
 private _sKey = format ["%1@%2", [_startPos, _cellSize] call _cellKey, _cellSize];
 private _eKey = format ["%1@%2", [_endPos, _cellSize] call _cellKey, _cellSize];
-private _routeKey = format ["%1>%2|%3|%4", _sKey, _eKey, _trails, _doctrineName];
-private _reverseRouteKey = format ["%1>%2|%3|%4", _eKey, _sKey, _trails, _doctrineName];
+private _routeKey = format ["%1>%2|%3", _sKey, _eKey, _routingModeKey];
+private _reverseRouteKey = format ["%1>%2|%3", _eKey, _sKey, _routingModeKey];
 
 if (_routeKey in FLO_PF_RequestCache) then {
     private _cached = FLO_PF_RequestCache get _routeKey;
@@ -128,131 +140,100 @@ if (_reverseRouteKey in FLO_PF_RequestCache) then {
     FLO_PF_RequestCache deleteAt _reverseRouteKey;
 };
 
-if (_routeKey in FLO_PF_RequestPending) exitWith {
-    private _pendingJoinBySource = FLO_PF_SourceStats get "pendingJoin";
-    _pendingJoinBySource set [_sourceTag, (_pendingJoinBySource getOrDefault [_sourceTag, 0]) + 1];
-    private _waiters = FLO_PF_RequestPending get _routeKey;
-    _waiters pushBack [_code, _args];
-    FLO_PF_RequestPending set [_routeKey, _waiters];
-};
-
-if (_reverseRouteKey in FLO_PF_RequestPending) exitWith {
-    private _pendingJoinBySource = FLO_PF_SourceStats get "pendingJoin";
-    _pendingJoinBySource set [_sourceTag, (_pendingJoinBySource getOrDefault [_sourceTag, 0]) + 1];
-    private _waiters = FLO_PF_RequestPending get _reverseRouteKey;
-    private _reverseWaiter = {
-        params ["_resolved", "_posArray", "_waiterArgs"];
-        _waiterArgs params ["_codeFn", "_codeArgs"];
-
-        private _reversedPath = +_posArray;
-        reverse _reversedPath;
-        [_resolved, _reversedPath, _codeArgs] call _codeFn;
-    };
-    _waiters pushBack [_reverseWaiter, [_code, _args]];
-    FLO_PF_RequestPending set [_reverseRouteKey, _waiters];
-};
-
-FLO_PF_RequestPending set [_routeKey, [[_code, _args]]];
-
-private _dispatch = {
-    params ["_resolved", "_posArray", "_cbArgs"];
-    _cbArgs params ["_key"];
-
-    FLO_PF_RequestCache set [_key, [+_posArray, diag_tickTime + FLO_PF_RequestTTL]];
-
-    private _waiters = FLO_PF_RequestPending get _key;
-    FLO_PF_RequestPending deleteAt _key;
-
-    {
-        _x params ["_cb", "_userArgs"];
-        [_resolved, +_posArray, _userArgs] call _cb;
-    } forEach _waiters;
-};
-
-private _search = createHashMapObject [XPS_PF_typ_RoadGraphSearch, [FLO_PF_RoadGraph, _startPos, _endPos, true, _doctrine]];
-_search set ["Doctrine", _doctrine];
-_search set ["Callback", _dispatch];
-_search set ["CallbackArgs", [_routeKey]];
-_search set ["SubmittedAt", _now];
-_search set ["SourceTag", _sourceTag];
-_search set ["RouteKey", _routeKey];
-_search set ["RequestDistance", _dist];
-_search set ["NodeSteps", 0];
-_search set ["DoctrineName", _doctrineName];
-_search set ["RequestStartPos", +_startPos];
-_search set ["RequestEndPos", +_endPos];
-_search set ["RunawayLogNextNodeSteps", FLO_PF_Perf get "runawayNodeStepsThreshold"];
-
-private _startNode = _search get "StartNode";
-private _endNode = _search get "EndNode";
-private _startNodePos = +(_startNode get "PosASL");
-private _endNodePos = +(_endNode get "PosASL");
-private _allowedTypes = _doctrine get "RoadTypes";
-private _startComponentId = FLO_PF_RoadGraph call ["GetNodeComponentId", [_startNode, _allowedTypes]];
-private _endComponentId = FLO_PF_RoadGraph call ["GetNodeComponentId", [_endNode, _allowedTypes]];
-
-_search set ["StartNodeIndex", _startNode get "Index"];
-_search set ["EndNodeIndex", _endNode get "Index"];
-_search set ["StartNodeType", _startNode get "Type"];
-_search set ["EndNodeType", _endNode get "Type"];
-_search set ["StartNodePos", _startNodePos];
-_search set ["EndNodePos", _endNodePos];
-private _startSnapDistance = _startPos distance2D _startNodePos;
-private _endSnapDistance = _endPos distance2D _endNodePos;
-_search set ["StartSnapDistance", _startSnapDistance];
-_search set ["EndSnapDistance", _endSnapDistance];
-_search set ["StartComponentId", _startComponentId];
-_search set ["EndComponentId", _endComponentId];
-
-// Confirmed issue with how logistics is picking targets
-// FUCKING FIX ME!!!!
-if (_startComponentId != _endComponentId) exitWith {
-    diag_log format [
-        "[FLO][PERF] Pathfinding fallback source=%1 doctrine=%2 requestDist=%3 reason=DISCONNECTED startNode=%4(%5) endNode=%6(%7) startComp=%8 endComp=%9 startSnap=%10 endSnap=%11",
-        _sourceTag,
-        _doctrineName,
-        _dist,
-        _search get "StartNodeIndex",
-        _search get "StartNodeType",
-        _search get "EndNodeIndex",
-        _search get "EndNodeType",
-        _startComponentId,
-        _endComponentId,
-        _startSnapDistance,
-        _endSnapDistance
-    ];
-    [true, [+_endPos], [_routeKey]] call _dispatch;
-};
-
-if (_sourceTag == "LOGI_REINF") then {
-    private _maxSnapDistance = if (_dist <= 900) then { 180 } else { 260 };
-    if (_startSnapDistance > _maxSnapDistance || {_endSnapDistance > _maxSnapDistance}) exitWith {
-        diag_log format [
-            "[FLO][PERF] Pathfinding fallback source=%1 doctrine=%2 requestDist=%3 startSnap=%4 endSnap=%5 startNode=%6(%7) endNode=%8(%9)",
-            _sourceTag,
-            _doctrineName,
-            _dist,
-            _startSnapDistance,
-            _endSnapDistance,
-            _search get "StartNodeIndex",
-            _search get "StartNodeType",
-            _search get "EndNodeIndex",
-            _search get "EndNodeType"
-        ];
-        [true, [+_endPos], [_routeKey]] call _dispatch;
-    };
-};
-
-FLO_PF_Scheduler call ["AddItem", _search];
-
 private _newSearchBySource = FLO_PF_SourceStats get "newSearch";
 _newSearchBySource set [_sourceTag, (_newSearchBySource getOrDefault [_sourceTag, 0]) + 1];
-
-private _inFlightBySource = FLO_PF_SourceStats get "inFlight";
-private _newInFlight = (_inFlightBySource getOrDefault [_sourceTag, 0]) + 1;
-_inFlightBySource set [_sourceTag, _newInFlight];
-
-private _inFlightPeakBySource = FLO_PF_SourceStats get "inFlightPeak";
-if (_newInFlight > (_inFlightPeakBySource getOrDefault [_sourceTag, 0])) then {
-    _inFlightPeakBySource set [_sourceTag, _newInFlight];
+private _sampleStep = FLO_PF_WaterSampleStep;
+if (_trails) then {
+    _sampleStep = FLO_PF_WaterSampleStepTrails;
+} else {
+    if (_sourceTag == "LOGI_REINF") then {
+        _sampleStep = FLO_PF_WaterSampleStepLogi;
+    };
 };
+
+private _tResolve = diag_tickTime;
+private _routeResult = [_startPos, _endPos, _sampleStep, 0] call FLO_fnc_buildWaterAwarePath;
+_routeResult params ["_resolvedPath", "_sampleChecks", "_usedFallback"];
+if (_resolvedPath isEqualTo []) then {
+    _resolvedPath = [+_endPos];
+    _usedFallback = true;
+};
+private _resolvedMs = (diag_tickTime - _tResolve) * 1000;
+
+FLO_PF_RequestCache set [_routeKey, [+_resolvedPath, diag_tickTime + FLO_PF_RequestTTL]];
+
+private _metrics = FLO_PF_Scheduler call ["GetMetrics"];
+_metrics set ["submitted", (_metrics get "submitted") + 1];
+_metrics set ["nodeSteps", (_metrics get "nodeSteps") + _sampleChecks];
+if (_usedFallback) then {
+    _metrics set ["completedPartial", (_metrics get "completedPartial") + 1];
+} else {
+    _metrics set ["completedSuccess", (_metrics get "completedSuccess") + 1];
+};
+_metrics set ["resolvedCount", (_metrics get "resolvedCount") + 1];
+_metrics set ["resolvedNodeStepsLast", _sampleChecks];
+_metrics set ["resolvedNodeStepsTotal", (_metrics get "resolvedNodeStepsTotal") + _sampleChecks];
+_metrics set ["resolvedMsLast", _resolvedMs];
+_metrics set ["resolvedMsTotal", (_metrics get "resolvedMsTotal") + _resolvedMs];
+_metrics set ["emittedWaypointsLast", count _resolvedPath];
+_metrics set ["emittedWaypointsTotal", (_metrics get "emittedWaypointsTotal") + (count _resolvedPath)];
+if (_sampleChecks > (_metrics get "resolvedNodeStepsPeak")) then {
+    _metrics set ["resolvedNodeStepsPeak", _sampleChecks];
+};
+if (_resolvedMs > (_metrics get "resolvedMsPeak")) then {
+    _metrics set ["resolvedMsPeak", _resolvedMs];
+};
+if ((count _resolvedPath) > (_metrics get "emittedWaypointsPeak")) then {
+    _metrics set ["emittedWaypointsPeak", count _resolvedPath];
+};
+
+private _completedSuccessBySource = FLO_PF_SourceStats get "completedSuccess";
+private _completedPartialBySource = FLO_PF_SourceStats get "completedPartial";
+private _resolvedCountBySource = FLO_PF_SourceStats get "resolvedCount";
+private _resolvedNodeStepsLastBySource = FLO_PF_SourceStats get "resolvedNodeStepsLast";
+private _resolvedNodeStepsTotalBySource = FLO_PF_SourceStats get "resolvedNodeStepsTotal";
+private _resolvedNodeStepsPeakBySource = FLO_PF_SourceStats get "resolvedNodeStepsPeak";
+private _resolvedMsLastBySource = FLO_PF_SourceStats get "resolvedMsLast";
+private _resolvedMsTotalBySource = FLO_PF_SourceStats get "resolvedMsTotal";
+private _resolvedMsPeakBySource = FLO_PF_SourceStats get "resolvedMsPeak";
+private _emittedLastBySource = FLO_PF_SourceStats get "emittedWaypointsLast";
+private _emittedTotalBySource = FLO_PF_SourceStats get "emittedWaypointsTotal";
+private _emittedPeakBySource = FLO_PF_SourceStats get "emittedWaypointsPeak";
+
+if (_usedFallback) then {
+    _completedPartialBySource set [_sourceTag, (_completedPartialBySource getOrDefault [_sourceTag, 0]) + 1];
+} else {
+    _completedSuccessBySource set [_sourceTag, (_completedSuccessBySource getOrDefault [_sourceTag, 0]) + 1];
+};
+_resolvedCountBySource set [_sourceTag, (_resolvedCountBySource getOrDefault [_sourceTag, 0]) + 1];
+_resolvedNodeStepsLastBySource set [_sourceTag, _sampleChecks];
+_resolvedNodeStepsTotalBySource set [_sourceTag, (_resolvedNodeStepsTotalBySource getOrDefault [_sourceTag, 0]) + _sampleChecks];
+if (_sampleChecks > (_resolvedNodeStepsPeakBySource getOrDefault [_sourceTag, 0])) then {
+    _resolvedNodeStepsPeakBySource set [_sourceTag, _sampleChecks];
+};
+_resolvedMsLastBySource set [_sourceTag, _resolvedMs];
+_resolvedMsTotalBySource set [_sourceTag, (_resolvedMsTotalBySource getOrDefault [_sourceTag, 0]) + _resolvedMs];
+if (_resolvedMs > (_resolvedMsPeakBySource getOrDefault [_sourceTag, 0])) then {
+    _resolvedMsPeakBySource set [_sourceTag, _resolvedMs];
+};
+_emittedLastBySource set [_sourceTag, count _resolvedPath];
+_emittedTotalBySource set [_sourceTag, (_emittedTotalBySource getOrDefault [_sourceTag, 0]) + (count _resolvedPath)];
+if ((count _resolvedPath) > (_emittedPeakBySource getOrDefault [_sourceTag, 0])) then {
+    _emittedPeakBySource set [_sourceTag, count _resolvedPath];
+};
+
+private _perf = FLO_PF_Perf;
+if (_resolvedMs >= (_perf get "slowSearchThresholdMs") && {diag_tickTime >= (_perf get "nextSlowSearchLogAt")}) then {
+    _perf set ["nextSlowSearchLogAt", diag_tickTime + (_perf get "logCooldownSec")];
+    diag_log format [
+        "[FLO][PERF] Water route source=%1 status=%2 distance=%3 m waypoints=%4 samples=%5 resolved in %6 ms",
+        _sourceTag,
+        if (_usedFallback) then { "PARTIAL" } else { "SUCCESS" },
+        _dist,
+        count _resolvedPath,
+        _sampleChecks,
+        _resolvedMs
+    ];
+};
+
+[!_usedFallback, +_resolvedPath, _args] call _code;

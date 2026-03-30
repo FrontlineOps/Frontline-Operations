@@ -37,14 +37,38 @@ if (!_forceNow && {_currentIdx < _dismountIdx}) exitWith { false };
 
 // Get attached groups before detaching
 private _attachedIds = +([_transData] call FLO_fnc_virtualizationGetTransportPassengers);
+private _insertMode = _transData get "transportInsertMode";
+private _insertPos = _transData get "transportInsertPos";
+private _realGroup = _transData get "realGroup";
 
 // Detach all passengers
-private _detached = [_transportGroupId] call FLO_fnc_transportDetachAll;
+private _detached = if (_insertMode == "AIR_DROP" && {!isNull _realGroup}) then {
+    private _transportVehicles = ([_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles) select { !isNull _x && {alive _x} };
+    private _dropPos = if (_forceNow || {count _insertPos < 2}) then {
+        private _leader = leader _realGroup;
+        if (isNull _leader || {!alive _leader}) then {
+            _transData get "position"
+        } else {
+            getPosATL _leader
+        }
+    } else {
+        _insertPos
+    };
+    private _dropCount = 0;
+
+    {
+        if ([_x, _dropPos, _transportVehicles] call FLO_fnc_transportParadropActivePassengerGroup) then {
+            _dropCount = _dropCount + 1;
+        };
+    } forEach _attachedIds;
+
+    _dropCount
+} else {
+    [_transportGroupId] call FLO_fnc_transportDetachAll
+};
 
 // Clear dismount config
-_transData set ["dismountAtWaypoint", -1];
-[_transData] call FLO_fnc_virtualizationClearExecutionState;
-[_transData] call FLO_fnc_virtualizationClearMissionLock;
+[_transData] call FLO_fnc_transportClearInsertState;
 
 [_transportGroupId] call FLO_fnc_transportPoolRelease;
 

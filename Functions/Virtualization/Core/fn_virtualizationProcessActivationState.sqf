@@ -63,7 +63,12 @@ if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWit
 
 if (_nearestDist > _activationDist && {_isActive}) then {
     private _alwaysActive = _groupData get "alwaysActive";
-    if ((_missionLock != "" && {_replacementState == ""}) || {_alwaysActive}) then {
+    private _missionHoldActive = _missionLock != "" && {_replacementState == ""};
+    if (_missionHoldActive && {_missionLock == "TRANSPORT"} && {[_groupData] call FLO_fnc_virtualizationIsTransportCarrier}) then {
+        _missionHoldActive = [_groupData] call FLO_fnc_transportCarrierBlocksDeactivation;
+    };
+
+    if (_missionHoldActive || {_alwaysActive}) then {
         _virtStats set ["missionHoldSkipsTotal", (_virtStats get "missionHoldSkipsTotal") + 1];
         _virtStats set ["missionHoldSkipsThisBatch", (_virtStats get "missionHoldSkipsThisBatch") + 1];
     } else {

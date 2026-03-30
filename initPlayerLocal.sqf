@@ -146,7 +146,7 @@ enableSaving [false, false];
 // This replaces the old fragmented approach (init_groups, init_Markers, etc.)
 private _fnc_waitForPhaseManager = {
     private _startTime = diag_tickTime;
-    private _timeout = 300; // 5 minute timeout
+    private _timeout = 600; // 10 minute timeout
 
     waitUntil {
         sleep 1;

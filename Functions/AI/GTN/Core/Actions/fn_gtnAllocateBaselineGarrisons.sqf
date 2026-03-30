@@ -38,7 +38,7 @@ private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
-private _assignableGroupTypes = ["infantry", "recon", "motorized", "mechanized", "armor"];
+private _assignableGroupTypes = ["infantry", "motorized", "mechanized", "armor"];
 
 private _garrisonGroupsByObjective = createHashMap;
 private _garrisonPositionsByObjective = createHashMap;
@@ -239,7 +239,7 @@ while {_continueAllocation && {(count _available) > 0}} do {
         private _reserveBands = if ("reserveBands" in _x) then {
             _x get "reserveBands"
         } else {
-            private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnBuildObjectiveReserveBands;
+            private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
             _x set ["reserveBands", _bands];
             _metrics set ["reserveBandBuilds", (_metrics get "reserveBandBuilds") + 1];
             _bands

@@ -1810,7 +1810,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
                     if (_gType in ["helicopter", "jet"]) then {
-                        if ((_gData get "missionLock") == "") then {
+                        if ([_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {
                             (_result get "availableAssets") pushBack _x;
                         };
                     };
@@ -1828,7 +1828,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 {
                     private _gData = _y;
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
-                    if ((_gData get "groupType") == "artillery" && {(_gData get "missionLock") == ""}) then {
+                    if ((_gData get "groupType") == "artillery" && {[_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport}) then {
                         (_result get "availableAssets") pushBack _x;
                     };
                 } forEach _groups;
@@ -1884,12 +1884,12 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             };
 
             case "RECON": {
-                // Need UAV or recon infantry
+                // Need UAV reconnaissance assets
                 {
                     private _gData = _y;
                     if ((_gData getOrDefault ["side", sideUnknown]) != _side) then { continue };
                     private _gType = _gData get "groupType";
-                    if (_gType in ["uav", "recon"]) then {
+                    if (_gType == "uav") then {
                         if ([_gData] call _isTaskAvailable) then {
                             (_result get "availableAssets") pushBack _x;
                         };
@@ -1899,7 +1899,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 if (count (_result get "availableAssets") > 0) then {
                     _result set ["feasible", true];
                 } else {
-                    _result set ["reason", "No recon assets available"];
+                    _result set ["reason", "No UAV reconnaissance assets available"];
                 };
             };
 
@@ -2011,6 +2011,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 ["groupId", _gId],
                 ["isActive", false],
                 ["missionLock", ""],
+                ["supportEligible", false],
                 ["rounds", 0],
                 ["position", _gData get "position"]
             ];
@@ -2019,8 +2020,10 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
             private _missionLocked = _gId in _missions;
             _batteryInfo set ["missionLock", if (_missionLocked) then { "ARTILLERY" } else { "" }];
+            private _canSupport = [_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport;
+            _batteryInfo set ["supportEligible", _canSupport];
 
-            if (!_missionLocked) then {
+            if (_canSupport) then {
                 _result set ["availableBatteries", (_result get "availableBatteries") + 1];
             };
 
@@ -2102,6 +2105,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
                 ["type", _gType],
                 ["isActive", false],
                 ["missionLock", ""],
+                ["supportEligible", false],
                 ["ordnance", 0],
                 ["ammoStatus", 1.0],
                 ["position", _gData get "position"]
@@ -2109,6 +2113,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
 
             private _missionLock = _gData get "missionLock";
             _assetInfo set ["missionLock", _missionLock];
+            private _canSupport = [_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport;
+            _assetInfo set ["supportEligible", _canSupport];
 
             // Categorize and count
             private _typeKey = switch (_gType) do {
@@ -2117,7 +2123,7 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             };
 
             _result set [_typeKey + "Total", (_result get (_typeKey + "Total")) + 1];
-            if (_missionLock == "") then {
+            if (_canSupport) then {
                 _result set [_typeKey + "Available", (_result get (_typeKey + "Available")) + 1];
             };
 

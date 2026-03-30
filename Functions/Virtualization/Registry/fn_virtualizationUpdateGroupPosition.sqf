@@ -17,7 +17,13 @@ private _side = _groupData get "side";
 private _trackCombatSeed = (_side in [east, west])
     && {([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) == ""}
     && {_groupType in ["infantry", "motorized", "mechanized", "armor", "mobile_aa"]};
-private _seedCellSize = if (isNil "FLO_GTN_CombatState") then { 150 } else { FLO_GTN_CombatState get "classificationSeedCellSize" };
+private _seedCellSize = 150;
+if !(isNil "FLO_GTN_CombatState") then {
+    private _configuredSeedCellSize = FLO_GTN_CombatState get "classificationSeedCellSize";
+    if (_configuredSeedCellSize > 0) then {
+        _seedCellSize = _configuredSeedCellSize;
+    };
+};
 
 _groupData set ["position", _newPosition];
 [_groupId, _newPosition, _side] call FLO_fnc_virtualizationSpatialUpdate;

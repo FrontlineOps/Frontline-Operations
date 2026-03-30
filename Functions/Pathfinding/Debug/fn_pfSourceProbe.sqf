@@ -23,30 +23,11 @@ private _emitAverage = {
 };
 
 private _emitCurrentQueueBySource = {
-    private _counts = createHashMap;
-    private _queueObject = FLO_PF_Scheduler get "_queueObject";
-    private _queueArray = _queueObject get "_queueArray";
-    private _head = _queueObject get "_head";
-
-    for "_i" from _head to ((count _queueArray) - 1) do {
-        private _item = _queueArray select _i;
-        private _sourceTag = _item get "SourceTag";
-        _counts set [_sourceTag, (_counts getOrDefault [_sourceTag, 0]) + 1];
-    };
-
-    private _active = FLO_PF_Scheduler get "CurrentItem";
-    if !(isNil "_active") then {
-        private _sourceTag = _active get "SourceTag";
-        _counts set [_sourceTag, (_counts getOrDefault [_sourceTag, 0]) + 1];
-    };
-
-    [_counts] call _emitSorted
+    []
 };
 
 private _emitActiveSource = {
-    private _active = FLO_PF_Scheduler get "CurrentItem";
-    if (isNil "_active") exitWith { "" };
-    _active get "SourceTag";
+    ""
 };
 
 private _sourceStats = FLO_PF_SourceStats;
@@ -57,9 +38,6 @@ private _sourceStats = FLO_PF_SourceStats;
     ["attempts", [(_sourceStats get "attempts")] call _emitSorted],
     ["newSearch", [(_sourceStats get "newSearch")] call _emitSorted],
     ["cacheHit", [(_sourceStats get "cacheHit")] call _emitSorted],
-    ["pendingJoin", [(_sourceStats get "pendingJoin")] call _emitSorted],
-    ["inFlight", [(_sourceStats get "inFlight")] call _emitSorted],
-    ["inFlightPeak", [(_sourceStats get "inFlightPeak")] call _emitSorted],
     ["completedSuccess", [(_sourceStats get "completedSuccess")] call _emitSorted],
     ["completedPartial", [(_sourceStats get "completedPartial")] call _emitSorted],
     ["resolvedCount", [(_sourceStats get "resolvedCount")] call _emitSorted],

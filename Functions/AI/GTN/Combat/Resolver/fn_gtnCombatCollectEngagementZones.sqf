@@ -2,9 +2,9 @@
  * Function: FLO_fnc_gtnCombatCollectEngagementZones
  * Author: Frontline Operations Development Group
  * Description:
- *   Builds local engagement zones from the shared virtualization spatial index.
- *   Zones are anchored on the nearest opposing contact so fights do not merge
- *   across long transitive chains.
+ *   Builds local engagement zones from cached combat cell buckets. Zones are
+ *   anchored on the nearest opposing contact so fights do not merge across
+ *   long transitive chains.
  *
  * Arguments:
  *   0: Direct-combat virtual groups map <HASHMAP>
@@ -14,6 +14,10 @@
  *   4: Engagement distance <NUMBER>
  *   5: Seed cell size <NUMBER>
  *   6: Opponent threat cells <HASHMAP>
+ *   7: Seed-side groups by cell <HASHMAP>
+ *   8: Opponent-side groups by cell <HASHMAP>
+ *   9: Cell key base <NUMBER>
+ *  10: Cell key stride <NUMBER>
  *
  * Return Value:
  *   Engagement zones <ARRAY>
@@ -26,12 +30,18 @@ params [
     "_opponentSide",
     "_engagementDist",
     ["_seedCellSize", 150, [0]],
-    ["_opponentThreatCells", createHashMap]
+    ["_opponentThreatCells", createHashMap],
+    ["_seedGroupsByCell", createHashMap],
+    ["_opponentGroupsByCell", createHashMap],
+    ["_cellKeyBase", -1, [0]],
+    ["_cellKeyStride", -1, [0]]
 ];
 
 private _threatCellRadius = ceil (_engagementDist / _seedCellSize);
-private _cellKeyBase = ceil (worldSize / _seedCellSize) + _threatCellRadius + 8;
-private _cellKeyStride = (_cellKeyBase * 2) + 1;
+if (_cellKeyBase < 0 || {_cellKeyStride < 1}) then {
+    _cellKeyBase = ceil (worldSize / _seedCellSize) + _threatCellRadius + 8;
+    _cellKeyStride = (_cellKeyBase * 2) + 1;
+};
 
 private _zones = [];
 private _assigned = createHashMap;
@@ -47,32 +57,35 @@ private _assigned = createHashMap;
     private _seedCellX = floor ((_seedPos select 0) / _seedCellSize);
     private _seedCellY = floor ((_seedPos select 1) / _seedCellSize);
     private _seedCellKey = ((_seedCellX + _cellKeyBase) * _cellKeyStride) + (_seedCellY + _cellKeyBase);
-    private _hasOpponentCell = _opponentThreatCells getOrDefault [_seedCellKey, false];
+    if !(_opponentThreatCells getOrDefault [_seedCellKey, false]) then { continue };
 
-    if (!_hasOpponentCell) then { continue };
-
-    private _nearIds = ["queryRadius", [_seedPos, _engagementDist, _opponentSide, true]] call FLO_fnc_virtualizationSpatialIndex;
     private _closestOpponentId = "";
     private _closestOpponentData = createHashMap;
     private _closestDist = _engagementDist + 1;
 
-    {
-        private _otherId = _x;
-        if (_otherId isEqualTo _seedId) then { continue };
-        if (_assigned getOrDefault [_otherId, false]) then { continue };
+    for "_xCell" from (_seedCellX - _threatCellRadius) to (_seedCellX + _threatCellRadius) do {
+        for "_yCell" from (_seedCellY - _threatCellRadius) to (_seedCellY + _threatCellRadius) do {
+            private _cellKey = ((_xCell + _cellKeyBase) * _cellKeyStride) + (_yCell + _cellKeyBase);
+            private _opponentIds = _opponentGroupsByCell getOrDefault [_cellKey, []];
 
-        private _otherData = _combatGroups get _otherId;
-        if (isNil "_otherData") then { continue };
-        if !((_otherData get "side") isEqualTo _opponentSide) then { continue };
+            {
+                private _otherId = _x;
+                if (_assigned getOrDefault [_otherId, false]) then { continue };
 
-        private _dist = _seedPos distance2D (_otherData get "position");
-        if (_dist > _engagementDist) then { continue };
-        if (_dist >= _closestDist) then { continue };
+                private _otherData = _combatGroups get _otherId;
+                if (isNil "_otherData") then { continue };
+                if !((_otherData get "side") isEqualTo _opponentSide) then { continue };
 
-        _closestOpponentId = _otherId;
-        _closestOpponentData = _otherData;
-        _closestDist = _dist;
-    } forEach _nearIds;
+                private _dist = _seedPos distance2D (_otherData get "position");
+                if (_dist > _engagementDist) then { continue };
+                if (_dist >= _closestDist) then { continue };
+
+                _closestOpponentId = _otherId;
+                _closestOpponentData = _otherData;
+                _closestDist = _dist;
+            } forEach _opponentIds;
+        };
+    };
 
     if (_closestOpponentId == "") then { continue };
 
@@ -82,30 +95,38 @@ private _assigned = createHashMap;
         ((_seedPos select 1) + (_closestOpponentPos select 1)) * 0.5,
         0
     ];
-    private _seedCandidateIds = ["queryRadius", [_anchorPos, _engagementDist, _seedSide, true]] call FLO_fnc_virtualizationSpatialIndex;
-    private _opponentCandidateIds = ["queryRadius", [_anchorPos, _engagementDist, _opponentSide, true]] call FLO_fnc_virtualizationSpatialIndex;
+    private _anchorCellX = floor ((_anchorPos select 0) / _seedCellSize);
+    private _anchorCellY = floor ((_anchorPos select 1) / _seedCellSize);
     private _seedCandidates = [];
     private _opponentCandidates = [];
 
-    {
-        private _candidateId = _x;
-        if (_assigned getOrDefault [_candidateId, false]) then { continue };
+    for "_xCell" from (_anchorCellX - _threatCellRadius) to (_anchorCellX + _threatCellRadius) do {
+        for "_yCell" from (_anchorCellY - _threatCellRadius) to (_anchorCellY + _threatCellRadius) do {
+            private _cellKey = ((_xCell + _cellKeyBase) * _cellKeyStride) + (_yCell + _cellKeyBase);
 
-        private _candidateData = _combatGroups get _candidateId;
-        if (isNil "_candidateData") then { continue };
+            {
+                private _candidateId = _x;
+                if (_assigned getOrDefault [_candidateId, false]) then { continue };
 
-        _seedCandidates pushBack [_candidateId, _candidateData];
-    } forEach _seedCandidateIds;
+                private _candidateData = _combatGroups get _candidateId;
+                if (isNil "_candidateData") then { continue };
+                if ((_candidateData get "position") distance2D _anchorPos > _engagementDist) then { continue };
 
-    {
-        private _candidateId = _x;
-        if (_assigned getOrDefault [_candidateId, false]) then { continue };
+                _seedCandidates pushBack [_candidateId, _candidateData];
+            } forEach (_seedGroupsByCell getOrDefault [_cellKey, []]);
 
-        private _candidateData = _combatGroups get _candidateId;
-        if (isNil "_candidateData") then { continue };
+            {
+                private _candidateId = _x;
+                if (_assigned getOrDefault [_candidateId, false]) then { continue };
 
-        _opponentCandidates pushBack [_candidateId, _candidateData];
-    } forEach _opponentCandidateIds;
+                private _candidateData = _combatGroups get _candidateId;
+                if (isNil "_candidateData") then { continue };
+                if ((_candidateData get "position") distance2D _anchorPos > _engagementDist) then { continue };
+
+                _opponentCandidates pushBack [_candidateId, _candidateData];
+            } forEach (_opponentGroupsByCell getOrDefault [_cellKey, []]);
+        };
+    };
 
     private _eastCandidates = [];
     private _westCandidates = [];
@@ -119,54 +140,35 @@ private _assigned = createHashMap;
 
     if (count _eastCandidates == 0 || {count _westCandidates == 0}) then { continue };
 
-    private _eastRefs = _eastCandidates select {
-        private _candidatePos = (_x select 1) get "position";
-        private _hasEnemyContact = false;
-        {
-            if (_candidatePos distance2D ((_x select 1) get "position") <= _engagementDist) exitWith {
-                _hasEnemyContact = true;
-            };
-        } forEach _westCandidates;
-        _hasEnemyContact
-    };
-
-    if (count _eastRefs == 0) then { continue };
-
-    private _westRefs = _westCandidates select {
-        private _candidatePos = (_x select 1) get "position";
-        private _hasEnemyContact = false;
-        {
-            if (_candidatePos distance2D ((_x select 1) get "position") <= _engagementDist) exitWith {
-                _hasEnemyContact = true;
-            };
-        } forEach _eastRefs;
-        _hasEnemyContact
-    };
-
-    if (count _westRefs == 0) then { continue };
-
-    _eastRefs = _eastRefs select {
-        private _candidatePos = (_x select 1) get "position";
-        private _hasEnemyContact = false;
-        {
-            if (_candidatePos distance2D ((_x select 1) get "position") <= _engagementDist) exitWith {
-                _hasEnemyContact = true;
-            };
-        } forEach _westRefs;
-        _hasEnemyContact
-    };
-
-    if (count _eastRefs == 0) then { continue };
-
+    private _eastRefs = [];
+    private _westRefs = [];
+    private _eastSeen = createHashMap;
+    private _westSeen = createHashMap;
     private _minContactDist = 1e9;
     private _contactPos = _anchorPos;
 
     {
-        private _eastPos = (_x select 1) get "position";
+        private _eastRef = _x;
+        private _eastId = _eastRef select 0;
+        private _eastPos = (_eastRef select 1) get "position";
+
         {
-            private _westPos = (_x select 1) get "position";
+            private _westRef = _x;
+            private _westId = _westRef select 0;
+            private _westPos = (_westRef select 1) get "position";
             private _dist = _eastPos distance2D _westPos;
             if (_dist > _engagementDist) then { continue };
+
+            if !(_eastSeen getOrDefault [_eastId, false]) then {
+                _eastSeen set [_eastId, true];
+                _eastRefs pushBack _eastRef;
+            };
+
+            if !(_westSeen getOrDefault [_westId, false]) then {
+                _westSeen set [_westId, true];
+                _westRefs pushBack _westRef;
+            };
+
             if (_dist >= _minContactDist) then { continue };
 
             _minContactDist = _dist;
@@ -175,9 +177,10 @@ private _assigned = createHashMap;
                 ((_eastPos select 1) + (_westPos select 1)) * 0.5,
                 0
             ];
-        } forEach _westRefs;
-    } forEach _eastRefs;
+        } forEach _westCandidates;
+    } forEach _eastCandidates;
 
+    if (count _eastRefs == 0 || {count _westRefs == 0}) then { continue };
     if (_minContactDist > _engagementDist) then { continue };
 
     _zones pushBack [_eastRefs, _westRefs, _contactPos, _minContactDist];

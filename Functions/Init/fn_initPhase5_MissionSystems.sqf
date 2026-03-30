@@ -197,6 +197,16 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
     diag_log "[FLO_INIT_P5] Restoring entities from save...";
 
     private _savedData = FLO_SavedGameData;
+    private _combatMarkerPrefix = "FLO_GTN_COMBAT_";
+    private _staleCombatMarkers = allMapMarkers select { _x find _combatMarkerPrefix == 0 };
+    {
+        deleteMarker _x;
+    } forEach _staleCombatMarkers;
+    FLO_GTN_CombatDebugMarkers = createHashMap;
+    FLO_GTN_CombatDebugMarkerOrder = [];
+    if (count _staleCombatMarkers > 0) then {
+        diag_log format ["[FLO_INIT_P5] Cleared %1 stale combat debug markers before marker restore", count _staleCombatMarkers];
+    };
 
     // Restore markers
     if ("markers" in _savedData) then {
@@ -207,7 +217,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
             private _markerName = _x;
             private _attr = _markerHash get _markerName;
 
-            if (!isNil "_attr" && {_attr isEqualType createHashMap}) then {
+            if ((_markerName find _combatMarkerPrefix) != 0 && {!isNil "_attr" && {_attr isEqualType createHashMap}}) then {
                 if (getMarkerColor _markerName != "") then { deleteMarker _markerName };
 
                 private _marker = createMarker [_markerName, [0,0,0]];
@@ -628,26 +638,9 @@ diag_log "[FLO_INIT_P5] Logistics crates initialized and broadcast";
 
 
 // ============================================
-// Pathfinding System
+// Routing System
 // ============================================
-diag_log "[FLO_INIT_P5] Initializing pathfinding...";
-if (!isNil "FLO_fnc_initRoadGraph") then {
-    if (isNil "FLO_PF_RoadGraph") then {
-        [] call FLO_fnc_initRoadGraph;
-        diag_log "[FLO_INIT_P5] Road graph initialized";
-    } else {
-        diag_log "[FLO_INIT_P5] Road graph already initialized";
-    };
-};
-
-if (!isNil "FLO_fnc_initPFScheduler") then {
-    if (isNil "FLO_PF_Scheduler") then {
-        [] call FLO_fnc_initPFScheduler;
-        diag_log "[FLO_INIT_P5] Pathfinding scheduler started";
-    } else {
-        diag_log "[FLO_INIT_P5] Pathfinding scheduler already running";
-    };
-};
+diag_log format ["[FLO_INIT_P5] Routing mode active: %1", FLO_PF_Mode];
 
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_fnc_virtualizationResumeSavedRoutes"}) then {
     private _resumedRoutes = [] call FLO_fnc_virtualizationResumeSavedRoutes;

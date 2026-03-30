@@ -13,7 +13,7 @@ private _realGroup = grpNull;
 
 switch (true) do {
     case (_groupType isEqualTo "infantry"): {
-        _realGroup = [_position, _side, _groupCfg, _unitCount, _pools get "units", _pools get "sideKey"] call FLO_fnc_virtualizationSpawnInfantryGroup;
+        _realGroup = [_position, _side, _groupCfg, _unitCount, _pools get "groundInfantryUnits", _pools get "sideKey"] call FLO_fnc_virtualizationSpawnInfantryGroup;
     };
 
     case (_groupType in ["civilian", "civ_pedestrian", "civ_building"]): {

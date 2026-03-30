@@ -19,6 +19,7 @@ class GTNCombatResolver {
     class gtnCombatExitState {};
     class gtnCombatGetClassification {};
     class gtnCombatGetState {};
+    class gtnCombatGetZones {};
     class gtnCombatIsDirectCombatGroup {};
     class gtnCombatIsSupportProvider {};
     class gtnCombatIsLiveArea {};

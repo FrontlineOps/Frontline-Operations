@@ -3,9 +3,38 @@
 // German Armed Forces in woodland camouflage
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = F_Officer + all F_Assault_* roles
+ *   groundSpecOps    = all F_Recon_* + all F_Diver_* roles
+ *   groundMotorized  = F_Car_List + F_MRAP_List
+ *   groundMechanized = F_APC_List
+ *   groundArmor      = F_Tank_List
+ *   groundTransport  = F_Truck_List
+ *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
+ *   groundArtillery  = F_Artillery_List
+ *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   transportReserveAirCount = West_Transport_Reserve_Air_Count
+ *   airHeli          = F_Heli_Gunship_List
+ *   airJet           = F_Plane_List
+ *   airDrone         = F_UAV_List
+ *   groundDrone      = F_UGV_List
+ *   staticAA         = F_SAM_List
+ *   radar            = F_RADAR
+ *   boat             = F_Boat_List
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above. You do not need to define separate West_* pools here.
+ */
 // ============================================================================
 // INFANTRY UNITS
 // ============================================================================
+// F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
+// All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
 F_Officer = "Atlas_B_G_Officer_F";
 
 F_Assault_Eng = "Atlas_B_G_Engineer_F";
@@ -48,6 +77,7 @@ F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 // ============================================================================
 // BASE STRUCTURES
 // ============================================================================
+// F_RADAR feeds the commander radar pool.
 F_RADAR = "I_E_Radar_System_01_F";
 F_HQ_01 = "Land_Cargo_HQ_V1_F";
 F_HQ_C_01 = "Land_TripodScreen_01_large_F";
@@ -57,22 +87,27 @@ F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F";
 // ============================================================================
 // VEHICLE LISTS - Format: [[classname, price], ...]
 // ============================================================================
+// These same lists also feed commander/virtualization pools as described above.
 
 F_Bike_List = [
     ["B_A_Quadbike_01_wdl_F", 5]
 ];
 
+// groundMotorized
 F_Car_List = [];
 
+// groundMotorized
 F_MRAP_List = [
     ["Atlas_B_G_MRAP_03_F", 50],
     ["Atlas_B_G_MRAP_03_gmg_F", 100],
     ["Atlas_B_G_MRAP_03_hmg_F", 70]
 ];
 
+// groundTransport
 F_Truck_List = [
     ["Atlas_I_I_Truck_01_transport_F", 65]
 ];
+West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
     ["Atlas_I_I_Truck_01_ammo_F", 100]
@@ -86,6 +121,7 @@ F_Truck_Respawn_List = [
     ["Atlas_I_I_Truck_01_medical_F", 150]
 ];
 
+// groundMechanized
 F_APC_List = [
     ["Atlas_B_G_APC_Wheeled_03_cannon_F", 350],
     ["Atlas_B_G_LT_01_scout_F", 200],
@@ -94,38 +130,48 @@ F_APC_List = [
     ["Atlas_B_G_LT_01_AA_F", 350]
 ];
 
+// groundArmor
 F_Tank_List = [
     ["Atlas_B_G_MBT_03_cannon_F", 650]
 ];
 
+// groundArtillery
 F_Artillery_List = [
     ["B_T_Mortar_01_F", 75],
     ["B_T_MBT_01_arty_F", 400],
     ["B_T_MBT_01_mlrs_F", 500]
 ];
 
+// airTransport
 F_Heli_List = [
     ["Atlas_B_G_Heli_Transport_02_F", 400]
 ];
+West_Transport_Reserve_Air_Count = 10;
 
+// airTransport
 F_Heli_Respawn_List = [];
 
+// airHeli
 F_Heli_Gunship_List = [];
 
+// airJet
 F_Plane_List = [
     ["B_Plane_CAS_01_dynamicLoadout_F", 1500]
 ];
 
+// boat
 F_Boat_List = [
     ["B_A_Boat_Armed_01_hmg_F", 150]
 ];
 
+// airDrone
 F_UAV_List = [
     ["B_UAV_02_dynamicLoadout_F", 80],
     ["B_UAV_05_F", 80],
     ["B_T_UAV_03_dynamicLoadout_F", 80]
 ];
 
+// groundDrone
 F_UGV_List = [
     ["Atlas_B_G_UGV_01_rcws_F", 55]
 ];
@@ -143,6 +189,7 @@ F_Turret_List = [
     ["Atlas_B_G_Static_AT_F", 35]
 ];
 
+// staticAA
 F_SAM_List = [
     ["B_SAM_System_01_F", 500],
     ["B_SAM_System_02_F", 500],
