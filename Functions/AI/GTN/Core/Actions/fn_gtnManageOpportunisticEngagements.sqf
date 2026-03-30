@@ -9,24 +9,32 @@
  *
  * Arguments:
  * 0: GTN commander <HASHMAP>
+ * 1: BOOL - true to allow fresh target acquisition, false to only maintain
+ *    active engagement overlays
  *
  * Return Value:
  * HASHMAP - Metrics
  */
 
-params ["_gtnCommander"];
+params [
+    "_gtnCommander",
+    ["_fullSweep", true, [true]]
+];
 
 private _metrics = createHashMapFromArray [
+    ["fullSweep", _fullSweep],
     ["pictureGroups", 0],
     ["pictureObjectives", 0],
     ["eligibleGroups", 0],
     ["skippedInCombat", 0],
+    ["inactiveSweepSkipped", 0],
     ["activeEngagements", 0],
     ["appliedCount", 0],
     ["retaskedCount", 0],
     ["maintainedCount", 0],
     ["restoredCount", 0],
-    ["failedRestores", 0]
+    ["failedRestores", 0],
+    ["activeAfterCount", 0]
 ];
 
 private _ws = _gtnCommander get "_worldState";
@@ -40,6 +48,7 @@ private _taskedGroupIds = +(_gtnCommander get "_gtnTaskedGroups");
 private _assignmentState = createHashMap;
 private _assignmentCapCache = createHashMap;
 private _commanderGroups = [];
+private _activeCommanderGroups = [];
 
 _metrics set ["pictureGroups", _engagementPicture get "groupCount"];
 _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
@@ -53,6 +62,7 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
     _commanderGroups pushBack [_groupId, _groupData];
 
     if !(_groupData get "engagementActive") then { continue };
+    _activeCommanderGroups pushBack [_groupId, _groupData];
     private _targetGroupId = _groupData get "engagementTargetGroupId";
     if (_targetGroupId == "") then { continue };
     private _targetData = _engagementGroups get _targetGroupId;
@@ -61,6 +71,10 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
     private _groupLoad = [_groupData, false] call FLO_fnc_virtualizationGetGroupUnitLoad;
     [_assignmentState, _targetGroupId, 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
 } forEach _taskedGroupIds;
+
+if (!_fullSweep) then {
+    _metrics set ["inactiveSweepSkipped", (count _commanderGroups) - (count _activeCommanderGroups)];
+};
 
 {
     _x params ["_groupId", "_groupData"];
@@ -127,6 +141,8 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
         continue;
     };
 
+    if (!_fullSweep) then { continue };
+
     private _target = [
         _groupData,
         _engagementPicture,
@@ -143,6 +159,11 @@ _metrics set ["pictureObjectives", _engagementPicture get "objectiveCount"];
         [_assignmentState, _target get "targetGroupId", 1, _groupLoad] call FLO_fnc_gtnAdjustEngagementTargetAssignment;
         _metrics set ["appliedCount", (_metrics get "appliedCount") + 1];
     };
-} forEach _commanderGroups;
+} forEach (if (_fullSweep) then { _commanderGroups } else { _activeCommanderGroups });
+
+_metrics set [
+    "activeAfterCount",
+    ((_metrics get "activeEngagements") + (_metrics get "appliedCount")) - (_metrics get "restoredCount") - (_metrics get "failedRestores")
+];
 
 _metrics

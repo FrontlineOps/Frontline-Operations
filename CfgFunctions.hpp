@@ -54,6 +54,7 @@ class FLO {
         file = "Functions\AI\GTN\Core\Logic";
 
         class gtnAllocateAttackTrackPools {};
+        class gtnBuildObjectiveDemandSignature {};
         class gtnBuildObjectiveAssignmentCache {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};

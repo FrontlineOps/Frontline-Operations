@@ -122,6 +122,7 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCacheDirty", true],
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
+    ["_availabilityCacheBuiltAt", -1],
     ["_forceBaselineTotalGroups", 0],
     ["_attackFrontlineObjectives", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
@@ -134,12 +135,22 @@ private _gtnCommander = createHashMapObject [[
     ["_reserveBandsCache", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
     ["_frontlineCASLocks", createHashMap],
+    ["_lastIntelPublishAt", -1],
+    ["_lastGarrisonRunAt", -1],
+    ["_lastGarrisonSignature", ""],
+    ["_lastEngagementSweepAt", -1],
+    ["_lastEngagementPictureBuiltAt", -1],
+    ["_lastEngagementActiveCount", 0],
     
     // Configuration
     ["_config", createHashMapFromArray [
         ["replanInterval", 60],       // Minimum seconds between replans
         ["casualtyThreshold", 0.2],   // Force loss ratio to trigger replan
         ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
+        ["availabilityCacheMaxAgeSeconds", 20], // Rebuild the availability scan on a cadence even if no direct dirty event fired
+        ["intelPublishMinInterval", 30], // Commander COP publishing is player-facing and does not need a full refresh every cycle
+        ["garrisonRefreshMinSeconds", 30], // Baseline garrison floor only needs a strategic refresh cadence unless objective demand changed
+        ["engagementFullSweepMinSeconds", 20], // Fresh opportunistic target acquisition runs slower than engagement maintenance
         ["attackCoverageMultiplier", _attackCoverage], // Scales per-objective attack caps without multiplying ATK tracks
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
@@ -278,7 +289,17 @@ private _gtnCommander = createHashMapObject [[
         private _tPhase = diag_tickTime;
         private _normalizeMetrics = _self call ["_normalizeTaskedGroups", []];
         _phaseMs set ["normalizeTasked", (diag_tickTime - _tPhase) * 1000];
-        _self set ["_availabilityCacheDirty", true];
+        if (_normalizeMetrics get "changed") then {
+            _self set ["_availabilityCacheDirty", true];
+        };
+
+        private _availabilityCacheBuiltAt = _self get "_availabilityCacheBuiltAt";
+        if (
+            _availabilityCacheBuiltAt < 0
+            || {_now - _availabilityCacheBuiltAt >= (((_self get "_config") get "availabilityCacheMaxAgeSeconds") max 1)}
+        ) then {
+            _self set ["_availabilityCacheDirty", true];
+        };
         
         private _stats = _self get "_stats";
         _stats set ["cyclesRun", (_stats get "cyclesRun") + 1];
@@ -292,6 +313,12 @@ private _gtnCommander = createHashMapObject [[
         private _wsRan = _ws call ["_update", []];
         _phaseMs set ["worldState", (diag_tickTime - _tPhase) * 1000];
         private _wsPerf = _ws call ["_getPerf", []];
+        private _wsMeta = _wsPerf get "lastMeta";
+        private _enemyIntelSensed = _wsRan && { _wsMeta get "enemyIntelSenseRan" };
+        private _supportAssetsSensed = _wsRan && { _wsMeta get "supportSenseRan" };
+        private _objectives = _ws call ["_getObjectives", []];
+        private _garrisonSignature = [_objectives, _self get "_ownSide", _self get "_enemySide"] call FLO_fnc_gtnBuildObjectiveDemandSignature;
+        private _garrisonSignatureChanged = _garrisonSignature != (_self get "_lastGarrisonSignature");
 
         // Log world state summary
         private _forces = _ws call ["_getForces", []];
@@ -304,11 +331,27 @@ private _gtnCommander = createHashMapObject [[
         ]] call FLO_fnc_log;
 
         _self call ["_refreshAttackFrontline", []];
-        _self set ["_reserveBandsCache", createHashMap];
+        if (_garrisonSignatureChanged) then {
+            _self set ["_reserveBandsCache", createHashMap];
+        };
 
         // Publish the maintained commander COP to players as non-debug local intel markers.
+        private _intelPublishMetrics = createHashMapFromArray [
+            ["published", false],
+            ["groupCount", 0],
+            ["concentrationCount", 0],
+            ["friendlyGroupCount", 0],
+            ["supportMarkerCount", 0]
+        ];
+        private _intelPublishDue = (_self get "_lastIntelPublishAt") < 0
+            || {_enemyIntelSensed}
+            || {_supportAssetsSensed}
+            || {_now - (_self get "_lastIntelPublishAt") >= (((_self get "_config") get "intelPublishMinInterval") max 1)};
         _tPhase = diag_tickTime;
-        private _intelPublishMetrics = [_self] call FLO_fnc_gtnPublishCommanderIntel;
+        if (_intelPublishDue) then {
+            _intelPublishMetrics = [_self] call FLO_fnc_gtnPublishCommanderIntel;
+            _self set ["_lastIntelPublishAt", _now];
+        };
         _phaseMs set ["intelPublish", (diag_tickTime - _tPhase) * 1000];
 
         // Reset per-cycle attack objective reservations so tracks spread within the same cycle.
@@ -321,8 +364,31 @@ private _gtnCommander = createHashMapObject [[
         _self set ["_objectiveAssignmentCache", [_self] call FLO_fnc_gtnBuildObjectiveAssignmentCache];
 
         // Maintain standing garrisons before building mobile attack pools.
+        private _garrisonMetrics = createHashMapFromArray [
+            ["run", false],
+            ["signatureChanged", _garrisonSignatureChanged],
+            ["existingGarrisons", 0],
+            ["releasedGroups", 0],
+            ["candidateObjectives", 0],
+            ["eligibleGroups", 0],
+            ["assignedGroups", 0],
+            ["openedObjectives", 0],
+            ["reinforcedObjectives", 0],
+            ["reserveBandBuilds", 0],
+            ["assignmentPasses", 0]
+        ];
+        private _garrisonRunDue = (_self get "_lastGarrisonRunAt") < 0
+            || {_garrisonSignatureChanged}
+            || {(_attackAssignmentMetrics get "releasedCount") > 0}
+            || {_now - (_self get "_lastGarrisonRunAt") >= (((_self get "_config") get "garrisonRefreshMinSeconds") max 1)};
         _tPhase = diag_tickTime;
-        private _garrisonMetrics = [_self] call FLO_fnc_gtnAllocateBaselineGarrisons;
+        if (_garrisonRunDue) then {
+            _garrisonMetrics = [_self] call FLO_fnc_gtnAllocateBaselineGarrisons;
+            _garrisonMetrics set ["run", true];
+            _garrisonMetrics set ["signatureChanged", _garrisonSignatureChanged];
+            _self set ["_lastGarrisonRunAt", _now];
+            _self set ["_lastGarrisonSignature", _garrisonSignature];
+        };
         _phaseMs set ["garrisons", (diag_tickTime - _tPhase) * 1000];
 
         // Allocate groups to tracks (refreshes each cycle)
@@ -341,8 +407,40 @@ private _gtnCommander = createHashMapObject [[
         _phaseMs set ["executeTracks", (diag_tickTime - _tPhase) * 1000];
 
         // Overlay short-lived tactical engagements onto existing strategic orders using commander-confirmed intel.
+        private _engagementPicture = _ws call ["_getEnemyEngagementPicture", []];
+        private _engagementPictureBuiltAt = _engagementPicture get "builtAt";
+        private _engagementMetrics = createHashMapFromArray [
+            ["fullSweep", false],
+            ["pictureGroups", _engagementPicture get "groupCount"],
+            ["pictureObjectives", _engagementPicture get "objectiveCount"],
+            ["eligibleGroups", 0],
+            ["skippedInCombat", 0],
+            ["inactiveSweepSkipped", 0],
+            ["activeEngagements", 0],
+            ["appliedCount", 0],
+            ["retaskedCount", 0],
+            ["maintainedCount", 0],
+            ["restoredCount", 0],
+            ["failedRestores", 0],
+            ["activeAfterCount", _self get "_lastEngagementActiveCount"]
+        ];
+        private _engagementFullSweepDue = (_self get "_lastEngagementSweepAt") < 0
+            || {_engagementPictureBuiltAt != (_self get "_lastEngagementPictureBuiltAt")}
+            || {(_executeMetrics get "tasksExecuted") > 0}
+            || {(_garrisonMetrics get "assignedGroups") > 0}
+            || {(_garrisonMetrics get "releasedGroups") > 0}
+            || {(_attackAssignmentMetrics get "releasedCount") > 0}
+            || {_now - (_self get "_lastEngagementSweepAt") >= (((_self get "_config") get "engagementFullSweepMinSeconds") max 1)};
+        private _engagementNeedsMaintenance = (_self get "_lastEngagementActiveCount") > 0;
         _tPhase = diag_tickTime;
-        private _engagementMetrics = [_self] call FLO_fnc_gtnManageOpportunisticEngagements;
+        if (_engagementFullSweepDue || {_engagementNeedsMaintenance}) then {
+            _engagementMetrics = [_self, _engagementFullSweepDue] call FLO_fnc_gtnManageOpportunisticEngagements;
+            _self set ["_lastEngagementActiveCount", _engagementMetrics get "activeAfterCount"];
+            if (_engagementFullSweepDue) then {
+                _self set ["_lastEngagementSweepAt", _now];
+                _self set ["_lastEngagementPictureBuiltAt", _engagementPictureBuiltAt];
+            };
+        };
         _phaseMs set ["engagements", (diag_tickTime - _tPhase) * 1000];
 
         // Request one opportunistic CAP mission for the most threatened friendly frontline sector.
@@ -491,8 +589,10 @@ private _gtnCommander = createHashMapObject [[
             ];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 garrisons | existing=%2 released=%3 candidates=%4 eligible=%5 assigned=%6 opened=%7 reinforced=%8 reserveBands=%9 passes=%10",
+                "[FLO][PERF] GTN commander %1 garrisons | run=%2 signatureChanged=%3 existing=%4 released=%5 candidates=%6 eligible=%7 assigned=%8 opened=%9 reinforced=%10 reserveBands=%11 passes=%12",
                 _self get "_sideKey",
+                _garrisonMetrics get "run",
+                _garrisonMetrics get "signatureChanged",
                 _garrisonMetrics get "existingGarrisons",
                 _garrisonMetrics get "releasedGroups",
                 _garrisonMetrics get "candidateObjectives",
@@ -529,18 +629,21 @@ private _gtnCommander = createHashMapObject [[
             };
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 engagements | pictureGroups=%2 pictureObjectives=%3 eligible=%4 active=%5 applied=%6 retasked=%7 maintained=%8 restored=%9 failedRestore=%10 skippedCombat=%11",
+                "[FLO][PERF] GTN commander %1 engagements | fullSweep=%2 pictureGroups=%3 pictureObjectives=%4 eligible=%5 active=%6 activeAfter=%7 applied=%8 retasked=%9 maintained=%10 restored=%11 failedRestore=%12 skippedCombat=%13 inactiveSweepSkipped=%14",
                 _self get "_sideKey",
+                _engagementMetrics get "fullSweep",
                 _engagementMetrics get "pictureGroups",
                 _engagementMetrics get "pictureObjectives",
                 _engagementMetrics get "eligibleGroups",
                 _engagementMetrics get "activeEngagements",
+                _engagementMetrics get "activeAfterCount",
                 _engagementMetrics get "appliedCount",
                 _engagementMetrics get "retaskedCount",
                 _engagementMetrics get "maintainedCount",
                 _engagementMetrics get "restoredCount",
                 _engagementMetrics get "failedRestores",
-                _engagementMetrics get "skippedInCombat"
+                _engagementMetrics get "skippedInCombat",
+                _engagementMetrics get "inactiveSweepSkipped"
             ];
 
             diag_log format [
@@ -1360,6 +1463,7 @@ private _gtnCommander = createHashMapObject [[
         _self set ["_availabilityCandidates", _available];
         _self set ["_availabilityOwnSideTotal", _ownSideGroupCount];
         _self set ["_availabilityCacheDirty", false];
+        _self set ["_availabilityCacheBuiltAt", diag_tickTime];
         _available
     }],
 
@@ -1367,7 +1471,12 @@ private _gtnCommander = createHashMapObject [[
     ["_getAvailableGroups", {
         params [["_count", 4], ["_targetPos", []]];
 
-        if (_self get "_availabilityCacheDirty") then {
+        private _availabilityCacheBuiltAt = _self get "_availabilityCacheBuiltAt";
+        if (
+            (_self get "_availabilityCacheDirty")
+            || {_availabilityCacheBuiltAt < 0}
+            || {diag_tickTime - _availabilityCacheBuiltAt >= (((_self get "_config") get "availabilityCacheMaxAgeSeconds") max 1)}
+        ) then {
             _self call ["_rebuildAvailabilityCache", []];
         };
         private _available = +(_self get "_availabilityCandidates");

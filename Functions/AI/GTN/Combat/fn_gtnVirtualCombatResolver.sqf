@@ -71,21 +71,8 @@ private _pfhId = [{
     private _classification = [_groups, _engagementMaxDist * 0.5, _engagementMaxDist] call FLO_fnc_gtnCombatGetClassification;
     private _combatGroups = _classification get "combatGroups";
     private _combatGroupCount = count _combatGroups;
-    private _seedIds = _classification get "seedIds";
-    private _seedSide = _classification get "seedSide";
-    private _opponentSide = _classification get "opponentSide";
-    private _seedCellSize = _classification get "seedCellSize";
-    private _opponentThreatCells = if (_seedSide isEqualTo east) then { _classification get "westThreatCells" } else { _classification get "eastThreatCells" };
     private _supportAvailability = _classification get "supportAvailability";
-    private _zones = [
-        _combatGroups,
-        _seedIds,
-        _seedSide,
-        _opponentSide,
-        _engagementMaxDist,
-        _seedCellSize,
-        _opponentThreatCells
-    ] call FLO_fnc_gtnCombatCollectEngagementZones;
+    private _zones = [_classification] call FLO_fnc_gtnCombatGetZones;
     private _engagedNow = createHashMap;
     private _eventsChanged = false;
     private _liveAreaRadius = FLO_virtualGroups get "_activationDistance";

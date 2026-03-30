@@ -3,8 +3,8 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Classifies virtual groups for combat resolution in a single pass. Builds
- *   the direct-combat pool, dynamic seed IDs from the lighter side, and
- *   abstract support availability.
+ *   the direct-combat pool, dynamic seed IDs from the lighter side, per-cell
+ *   group buckets, and abstract support availability.
  *
  * Arguments:
  *   0: Virtual groups map <HASHMAP>
@@ -22,6 +22,8 @@ private _eastSeeds = [];
 private _westSeeds = [];
 private _eastSeedCells = createHashMap;
 private _westSeedCells = createHashMap;
+private _eastGroupsByCell = createHashMap;
+private _westGroupsByCell = createHashMap;
 private _eastThreatCells = createHashMap;
 private _westThreatCells = createHashMap;
 private _directCombatTypes = [
@@ -79,6 +81,10 @@ private _cellKeyStride = (_cellKeyBase * 2) + 1;
     private _seedCellKey = ((_seedCellX + _cellKeyBase) * _cellKeyStride) + (_seedCellY + _cellKeyBase);
 
     if (_side isEqualTo east) then {
+        private _eastCellGroups = _eastGroupsByCell getOrDefault [_seedCellKey, []];
+        _eastCellGroups pushBack _groupId;
+        _eastGroupsByCell set [_seedCellKey, _eastCellGroups];
+
         if !(_eastSeedCells getOrDefault [_seedCellKey, false]) then {
             _eastSeedCells set [_seedCellKey, true];
             _eastSeeds pushBack _groupId;
@@ -90,6 +96,10 @@ private _cellKeyStride = (_cellKeyBase * 2) + 1;
             };
         };
     } else {
+        private _westCellGroups = _westGroupsByCell getOrDefault [_seedCellKey, []];
+        _westCellGroups pushBack _groupId;
+        _westGroupsByCell set [_seedCellKey, _westCellGroups];
+
         if !(_westSeedCells getOrDefault [_seedCellKey, false]) then {
             _westSeedCells set [_seedCellKey, true];
             _westSeeds pushBack _groupId;
@@ -119,6 +129,10 @@ createHashMapFromArray [
     ["opponentSide", _opponentSide],
     ["seedCellSize", _seedCellSize],
     ["engagementDist", _engagementDist],
+    ["cellKeyBase", _cellKeyBase],
+    ["cellKeyStride", _cellKeyStride],
+    ["eastGroupsByCell", _eastGroupsByCell],
+    ["westGroupsByCell", _westGroupsByCell],
     ["eastThreatCells", _eastThreatCells],
     ["westThreatCells", _westThreatCells],
     ["threatCellRadius", _threatCellRadius],

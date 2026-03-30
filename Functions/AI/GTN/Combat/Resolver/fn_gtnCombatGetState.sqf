@@ -19,7 +19,12 @@ if (isNil "FLO_GTN_CombatState") then {
     FLO_GTN_CombatState set ["classificationSeedCellSize", -1];
     FLO_GTN_CombatState set ["classificationEngagementDist", -1];
     FLO_GTN_CombatState set ["classificationBuiltAt", -1];
-    FLO_GTN_CombatState set ["classificationMinRefreshSec", 60];
+    FLO_GTN_CombatState set ["classificationMinRefreshSec", 30];
+    FLO_GTN_CombatState set ["zones", []];
+    FLO_GTN_CombatState set ["zonesBuiltAt", -1];
+    FLO_GTN_CombatState set ["zonesClassificationBuiltAt", -1];
+    FLO_GTN_CombatState set ["zonesSeedCellSize", -1];
+    FLO_GTN_CombatState set ["zonesEngagementDist", -1];
     FLO_GTN_CombatState set ["objectiveContextCache", createHashMap];
     FLO_GTN_CombatState set ["objectiveContextCellSize", 250];
 };
