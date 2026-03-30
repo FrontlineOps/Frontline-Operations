@@ -67,7 +67,7 @@ _net set ["_loopStarted", true];
                                 _perf = createHashMap;
                             };
                             diag_log format [
-                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reserve=%6 reconcile=%7 targets=%8 dispatch=%9 | reserveNeedG=%10 reserveNeedA=%11 reserveCreateG=%12 reserveCreateA=%13 | collapse=%14 advance=%15 needed=%16 batch=%17 attempted=%18 created=%19 status=%20 | failPool=%21 failFunds=%22 failTarget=%23 failSat=%24 failDelivery=%25 failSpawn=%26 failSpend=%27 failCreate=%28 | res=%29->%30",
+                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reserve=%6 reconcile=%7 targets=%8 dispatch=%9 | dispatchDetail=tgt=%10 delivery=%11 spawn=%12 spend=%13 create=%14 book=%15 | createDetail=group=%16 transit=%17 organic=%18 wp=%19 | reserveNeedG=%20 reserveNeedA=%21 reserveCreateG=%22 reserveCreateA=%23 | collapse=%24 advance=%25 needed=%26 batch=%27 attempted=%28 created=%29 status=%30 | failPool=%31 failFunds=%32 failTarget=%33 failSat=%34 failDelivery=%35 failSpawn=%36 failSpend=%37 failCreate=%38 | res=%39->%40",
                                 _net get "_managedSideKey",
                                 count (_net get "_reinforcementQueue"),
                                 _dt * 1000,
@@ -77,6 +77,16 @@ _net set ["_loopStarted", true];
                                 _perf getOrDefault ["reconcileMs", 0],
                                 _perf getOrDefault ["targetMs", 0],
                                 _perf getOrDefault ["dispatchMs", 0],
+                                _perf getOrDefault ["dispatchTargetPickMs", 0],
+                                _perf getOrDefault ["dispatchDeliveryPickMs", 0],
+                                _perf getOrDefault ["dispatchSpawnMs", 0],
+                                _perf getOrDefault ["dispatchSpendMs", 0],
+                                _perf getOrDefault ["dispatchCreateMs", 0],
+                                _perf getOrDefault ["dispatchBookkeepingMs", 0],
+                                _perf getOrDefault ["dispatchCreateGroupMs", 0],
+                                _perf getOrDefault ["dispatchCreateTransitMs", 0],
+                                _perf getOrDefault ["dispatchCreateOrganicMs", 0],
+                                _perf getOrDefault ["dispatchCreateWaypointMs", 0],
                                 _perf getOrDefault ["reserveGroundMissing", 0],
                                 _perf getOrDefault ["reserveAirMissing", 0],
                                 _perf getOrDefault ["reserveGroundCreated", 0],
