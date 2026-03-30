@@ -26,9 +26,14 @@
  *   mobileAA         = East_Mobile_AA
  *   staticAA         = East_Static_AA
  *   radar            = East_Radar
+ *   objectiveGroupTypeCaps = East_Objective_Group_Type_Caps
  *
  * If you want to change what the commander can spawn, change the source data
  * that feeds the category above.
+ *
+ * Optional side-wide objective seeding caps:
+ *   East_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
+ * These caps apply across all owned seeded objectives combined, not per city.
  */
 
 /*
@@ -140,6 +145,19 @@ OPFOR_Objective_Groups = [
     ["cluster", [
         ["infantry", 2]
     ]]
+];
+
+/*
+ * Optional side-wide objective seeding caps:
+ *   East_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
+ * These caps apply across all owned seeded objectives combined.
+ */
+East_Objective_Group_Type_Caps = [
+    ["jet", 10],
+    ["helicopter", 10],
+    ["artillery", 5],
+    ["static_aa", 3],
+    ["mobile_aa", 20]
 ];
 
 /*

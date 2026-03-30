@@ -272,6 +272,24 @@ private _fnc_collectDirectUnitVars = {
     _units
 };
 
+private _fnc_extractObjectiveGroupCaps = {
+    params [["_caps", []]];
+
+    if !(_caps isEqualType []) exitWith { [] };
+
+    private _result = [];
+    {
+        if !(_x isEqualType [] && {count _x >= 2}) then { continue };
+        private _groupType = _x select 0;
+        private _cap = _x select 1;
+        if !(_groupType isEqualType "") then { continue };
+        if !(_cap isEqualType 0) then { continue };
+        _result pushBack [_groupType, _cap max 0];
+    } forEach _caps;
+
+    _result
+};
+
 private _westInfantryVars = [
     "F_Officer", "F_Assault_Eng", "F_Assault_TL", "F_Assault_SL", "F_Assault_Eod",
     "F_Assault_Mrk", "F_Assault_AT", "F_Assault_Amm", "F_Assault_Mg", "F_Assault_Med",
@@ -339,6 +357,11 @@ private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] c
 private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses;
 private _eastTransportReserveGroundCount = if (!isNil "East_Transport_Reserve_Ground_Count") then { East_Transport_Reserve_Ground_Count } else { 20 };
 private _eastTransportReserveAirCount = if (!isNil "East_Transport_Reserve_Air_Count") then { East_Transport_Reserve_Air_Count } else { 10 };
+private _eastObjectiveGroupTypeCaps = if (!isNil "East_Objective_Group_Type_Caps") then {
+    [East_Objective_Group_Type_Caps] call _fnc_extractObjectiveGroupCaps
+} else {
+    []
+};
 
 private _westGroundMotorized = if (!isNil "West_Ground_Motorized") then {
     [West_Ground_Motorized] call _fnc_extractVehicleClasses
@@ -416,6 +439,11 @@ private _westBoat = if (!isNil "West_Boat") then {
 };
 private _westTransportReserveGroundCount = if (!isNil "West_Transport_Reserve_Ground_Count") then { West_Transport_Reserve_Ground_Count } else { 20 };
 private _westTransportReserveAirCount = if (!isNil "West_Transport_Reserve_Air_Count") then { West_Transport_Reserve_Air_Count } else { 10 };
+private _westObjectiveGroupTypeCaps = if (!isNil "West_Objective_Group_Type_Caps") then {
+    [West_Objective_Group_Type_Caps] call _fnc_extractObjectiveGroupCaps
+} else {
+    []
+};
 private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
@@ -477,6 +505,7 @@ private _eastCatalog = createHashMapFromArray [
     ["boat", _eastBoat],
     ["radar", _eastRadar],
     ["objectiveGroups", OPFOR_Objective_Groups],
+    ["objectiveGroupTypeCaps", _eastObjectiveGroupTypeCaps],
     ["groupCounts", OPFOR_Group_Counts]
 ];
 
@@ -509,6 +538,7 @@ private _westCatalog = createHashMapFromArray [
     ["containers", _westContainers],
     ["radar", _westRadar],
     ["objectiveGroups", BLUFOR_Objective_Groups],
+    ["objectiveGroupTypeCaps", _westObjectiveGroupTypeCaps],
     ["groupCounts", BLUFOR_Group_Counts]
 ];
 

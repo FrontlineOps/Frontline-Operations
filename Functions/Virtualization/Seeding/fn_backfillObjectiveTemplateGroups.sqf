@@ -56,37 +56,15 @@ if (count (keys _requestedGroupTypes) == 0) exitWith { _result };
 
 private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
 private _sideKey = _sideCtx get "sideKey";
-private _catalog = FLO_FactionCatalog get _sideKey;
-private _objectiveTemplates = createHashMapFromArray (_catalog get "objectiveGroups");
-
-private _eligibleObjectives = [];
+private _spawnPlan = [_side, _normalizedSubtypes, keys _requestedGroupTypes] call FLO_fnc_buildObjectiveTemplateSpawnPlan;
+private _eligibleObjectives = keys _spawnPlan;
 private _eligibleObjectiveSet = createHashMap;
-private _desiredByObjective = createHashMap;
-
-{
-    private _objectiveId = _x;
-    private _objectiveData = FLO_Objectives get _objectiveId;
-    if ((_objectiveData get "owner") != _side) then { continue };
-
-    private _subtype = toLower (_objectiveData get "subtype");
-    if !(_subtype in _normalizedSubtypes) then { continue };
-    if !(_subtype in _objectiveTemplates) then { continue };
-
-    private _desiredGroups = createHashMap;
-    {
-        _x params ["_groupType", "_count"];
-        if !(_groupType in _requestedGroupTypes) then { continue };
-        _desiredGroups set [_groupType, _count];
-    } forEach (_objectiveTemplates get _subtype);
-
-    if (count (keys _desiredGroups) == 0) then { continue };
-
-    _eligibleObjectives pushBack _objectiveId;
-    _eligibleObjectiveSet set [_objectiveId, true];
-    _desiredByObjective set [_objectiveId, _desiredGroups];
-} forEach (keys FLO_Objectives);
 
 if (count _eligibleObjectives == 0) exitWith { _result };
+
+{
+    _eligibleObjectiveSet set [_x, true];
+} forEach _eligibleObjectives;
 
 private _currentCountsByObjective = createHashMap;
 private _groups = FLO_virtualGroups get "_groups";
@@ -119,7 +97,12 @@ private _details = [];
 
 {
     private _objectiveId = _x;
-    private _desiredGroups = _desiredByObjective get _objectiveId;
+    private _desiredGroupsArray = _spawnPlan get _objectiveId;
+    private _desiredGroups = createHashMap;
+    {
+        _x params ["_groupType", "_count"];
+        _desiredGroups set [_groupType, _count];
+    } forEach _desiredGroupsArray;
     private _counts = _currentCountsByObjective getOrDefault [_objectiveId, createHashMap];
     private _objectiveCreated = [];
 

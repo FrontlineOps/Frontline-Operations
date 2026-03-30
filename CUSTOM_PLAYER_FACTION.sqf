@@ -22,10 +22,15 @@
  *   groundDrone      = F_UGV_List
  *   staticAA         = F_SAM_List
  *   radar            = F_RADAR
+ *   objectiveGroupTypeCaps = West_Objective_Group_Type_Caps
  *   boat             = F_Boat_List
  *
  * If you want to change what the commander can spawn, change the source data
  * that feeds the category above. You do not need to define separate West_* pools here.
+ *
+ * Optional side-wide objective seeding caps:
+ *   West_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
+ * These caps apply across all owned seeded objectives combined, not per city.
  */
 
 // Default player faction units (Vanilla Arma 3 NATO)
@@ -257,6 +262,19 @@ BLUFOR_Objective_Groups = [
     ["cluster", [
         ["infantry", 2]
     ]]
+];
+
+/*
+ * Optional side-wide objective seeding caps:
+ *   West_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
+ * These caps apply across all owned seeded objectives combined.
+ */
+West_Objective_Group_Type_Caps = [
+    ["jet", 10],
+    ["helicopter", 10],
+    ["artillery", 5],
+    ["static_aa", 3],
+    ["mobile_aa", 20]
 ];
 
 /*

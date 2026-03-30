@@ -29,6 +29,7 @@ class VirtualizationSystem {
 class VirtualizationSeeding {
     file = "Functions\Virtualization\Seeding";
 
+    class buildObjectiveTemplateSpawnPlan {};
     class initializeObjectiveGroups {};
     class initializeTransportReserveGroups {};
     class backfillObjectiveTemplateGroups {};
