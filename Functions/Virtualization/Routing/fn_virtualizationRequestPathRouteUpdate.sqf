@@ -45,9 +45,9 @@ private _requestTime = diag_tickTime;
 [_groupData, _requestToken, _pathEnd, _allowTrails, _requestTime, _sourceTag, _firstWaypoint] call FLO_fnc_virtualizationSetPendingPathRequest;
 
 if (!_directBootstrapAllowed) then {
-    ["VIRTUALIZATION", 3, format ["Starting pathfinding for group %1 from %2 to %3 (holding: waiting for resolved path)", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
+    ["VIRTUALIZATION", 3, format ["Starting route resolution for group %1 from %2 to %3 (holding: waiting for resolved path)", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
 } else {
-    ["VIRTUALIZATION", 3, format ["Starting pathfinding for group %1 from %2 to %3 (direct movement active)", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
+    ["VIRTUALIZATION", 3, format ["Starting route resolution for group %1 from %2 to %3 (direct movement active)", _groupId, _pathStart, _pathEnd]] call FLO_fnc_log;
 };
 
 private _callbackArgs = [_groupId, _firstWaypoint, _requestToken];

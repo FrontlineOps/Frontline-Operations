@@ -3,14 +3,15 @@ class PathfindingCore {
 
     class initPFState { preInit = 1; };
     class initPFScheduler { preInit = 1; };
-    class initSearch { preInit = 1; };
-    class initRoadGraph { preInit = 1; };
 };
 
 class PathfindingRouting {
     file = "Functions\Pathfinding\Routing";
 
+    class buildWaterAwarePath {};
+    class findWaterDetour {};
     class findRoadPath {};
+    class pathSegmentWaterProfile {};
 };
 
 class PathfindingDebug {

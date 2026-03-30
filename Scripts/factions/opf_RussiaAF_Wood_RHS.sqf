@@ -3,21 +3,43 @@
 // Russian VDV forces in flora camouflage
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = East_Ground_Infantry
+ *   groundSpecOps    = East_Ground_SpecOps
+ *   groundMotorized  = East_Ground_Motorized
+ *   groundMechanized = East_Ground_Mechanized
+ *   groundArmor      = East_Ground_Armor
+ *   groundTransport  = East_Ground_Transport
+ *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
+ *   groundArtillery  = East_Ground_Artillery
+ *   airTransport     = East_Air_Transport
+ *   transportReserveAirCount = East_Transport_Reserve_Air_Count
+ *   airHeli          = East_Air_Heli
+ *   airJet           = East_Air_Jet
+ *   airDrone         = East_Air_Drone
+ *   mobileAA         = East_Mobile_AA
+ *   staticAA         = East_Static_AA
+ *   radar            = East_Radar
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above.
+ */
 // ============================================================================
-// INFANTRY GROUPS
+// INFANTRY
 // ============================================================================
-East_Groups = [
+// Mixed infantry source for groundInfantry.
+// Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
     (configfile >> "CfgGroups" >> "East" >> "rhs_faction_vdv" >> "rhs_group_rus_vdv_infantry_flora" >> "rhs_group_rus_vdv_infantry_flora_fireteam"),
     (configfile >> "CfgGroups" >> "East" >> "rhs_faction_vdv" >> "rhs_group_rus_vdv_infantry_flora" >> "rhs_group_rus_vdv_infantry_flora_section_AT"),
     (configfile >> "CfgGroups" >> "East" >> "rhs_faction_vdv" >> "rhs_group_rus_vdv_infantry_flora" >> "rhs_group_rus_vdv_infantry_flora_section_AA"),
     (configfile >> "CfgGroups" >> "East" >> "rhs_faction_vdv" >> "rhs_group_rus_vdv_infantry_flora" >> "rhs_group_rus_vdv_infantry_flora_squad_mg_sniper"),
-    (configfile >> "CfgGroups" >> "East" >> "rhs_faction_vdv" >> "rhs_group_rus_vdv_infantry_flora" >> "rhs_group_rus_vdv_infantry_flora_squad_2mg")
-];
-
-// ============================================================================
-// INFANTRY UNITS
-// ============================================================================
-East_Units = [
+    (configfile >> "CfgGroups" >> "East" >> "rhs_faction_vdv" >> "rhs_group_rus_vdv_infantry_flora" >> "rhs_group_rus_vdv_infantry_flora_squad_2mg"),
     "rhs_vdv_flora_rifleman", "rhs_vdv_flora_rifleman", "rhs_vdv_flora_rifleman",
     "rhs_vdv_flora_machinegunner", "rhs_vdv_flora_machinegunner",
     "rhs_vdv_flora_grenadier", "rhs_vdv_flora_grenadier",
@@ -28,41 +50,56 @@ East_Units = [
     "rhs_vdv_flora_at",
     "rhs_vdv_flora_engineer"
 ];
+// groundSpecOps
+East_Ground_SpecOps = [];
 
-East_Units_Officers = ["rhs_vdv_des_officer", "rhs_vdv_flora_officer"];
+// Fire observer pool for artillery support logic.
 East_FireObserver = ["rhs_vdv_des_officer"];
 
 // ============================================================================
 // VEHICLE ARRAYS
 // ============================================================================
-East_Ground_Vehicles_Ambient = [
-    "rhs_tigr_sts_msv", "rhs_tigr_msv", "rhs_gaz66o_msv",
-    "rhs_gaz66_repair_msv", "rhs_gaz66_vdv"
+// groundMotorized
+East_Ground_Motorized = ["rhs_btr60_vmf", "rhs_tigr_sts_msv"];
+
+// groundMechanized
+East_Ground_Mechanized = [
+    "rhs_zsu234_aa", "rhs_Ob_681_2", "rhs_bmp2_tv", "rhs_bmp1_tv",
+    "rhs_t72be_tv", "rhs_t80bvk", "rhs_t90sm_tv"
 ];
-
-East_Ground_Vehicles_Light = ["rhs_btr60_vmf", "rhs_tigr_sts_msv"];
-
-East_Ground_Vehicles_Heavy = [
+// groundArmor
+East_Ground_Armor = [
     "rhs_zsu234_aa", "rhs_Ob_681_2", "rhs_bmp2_tv", "rhs_bmp1_tv",
     "rhs_t72be_tv", "rhs_t80bvk", "rhs_t90sm_tv"
 ];
 
+// groundTransport
 East_Ground_Transport = ["rhs_tigr_msv", "rhs_gaz66_msv", "rhs_gaz66o_msv"];
+East_Transport_Reserve_Ground_Count = 20;
 
+// groundArtillery
 East_Ground_Artillery = ["O_MBT_02_arty_F"];
 
+// airTransport
 East_Air_Transport = ["rhs_ka60_c", "RHS_Mi8mt_vvsc", "RHS_Mi8MTV3_heavy_vvsc"];
+East_Transport_Reserve_Air_Count = 10;
 
+// airHeli
 East_Air_Heli = ["RHS_Ka52_vvsc", "RHS_Mi24P_vdv"];
 
+// airJet
 East_Air_Jet = ["rhs_mig29sm_vvsc", "RHS_Su25SM_vvsc"];
 
+// airDrone
 East_Air_Drone = ["O_UAV_01_F"];
 
+// mobileAA
 East_Mobile_AA = ["rhs_zsu234_aa"];
 
+// staticAA
 East_Static_AA = ["rhs_S300_launcher_radar_F"];
 
+// radar
 East_Radar = ["rhs_S300_launcher_radar_F"];
 
 // ============================================================================

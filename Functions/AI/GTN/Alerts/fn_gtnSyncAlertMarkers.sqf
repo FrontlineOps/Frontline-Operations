@@ -44,6 +44,7 @@ private _impactMarkerIds = [];
 
 private _markerText = "ALERT";
 private _markerColor = "ColorOPFOR";
+private _iconMarkerType = "mil_warning";
 private _areaBrush = "Border";
 private _areaAlpha = 0.18;
 private _etaMin = -1;
@@ -70,11 +71,51 @@ switch (toUpper _alertType) do {
         _areaBrush = "Border";
         _areaAlpha = 0.14;
     };
+    case "INTEL_COMMANDER_TARGET": {
+        private _objectiveName = if ((count _payload) >= 1) then { _payload select 0 } else { "" };
+        private _phase = if ((count _payload) >= 2) then { toUpper (_payload select 1) } else { "" };
+        _markerText = if (_objectiveName != "") then {
+            format ["ENY TARGET %1", _objectiveName]
+        } else {
+            "ENY TARGET"
+        };
+        if (_phase == "ASSAULT") then {
+            _markerText = _markerText + " (ASSAULT)";
+        };
+        _markerColor = if ((count _payload) >= 3) then { _payload select 2 } else { _markerColor };
+        _iconMarkerType = "mil_objective";
+        _areaBrush = "Border";
+        _areaAlpha = 0.14;
+    };
+    case "INTEL_SUPPLY_NODE": {
+        private _objectiveName = if ((count _payload) >= 1) then { _payload select 0 } else { "" };
+        _markerText = if (_objectiveName != "") then {
+            format ["ENY SUPPLY %1", _objectiveName]
+        } else {
+            "ENY SUPPLY"
+        };
+        _markerColor = if ((count _payload) >= 3) then { _payload select 2 } else { _markerColor };
+        _iconMarkerType = "o_maint";
+        _areaBrush = "Border";
+        _areaAlpha = 0.12;
+    };
+    case "INTEL_HQ": {
+        private _objectiveName = if ((count _payload) >= 1) then { _payload select 0 } else { "" };
+        _markerText = if (_objectiveName != "") then {
+            format ["ENY HQ %1", _objectiveName]
+        } else {
+            "ENY HQ"
+        };
+        _markerColor = if ((count _payload) >= 2) then { _payload select 1 } else { _markerColor };
+        _iconMarkerType = "n_support";
+        _areaBrush = "DiagGrid";
+        _areaAlpha = 0.16;
+    };
 };
 
 createMarkerLocal [_iconMarkerId, _position];
 _iconMarkerId setMarkerShapeLocal "ICON";
-_iconMarkerId setMarkerTypeLocal "mil_warning";
+_iconMarkerId setMarkerTypeLocal _iconMarkerType;
 _iconMarkerId setMarkerColorLocal _markerColor;
 _iconMarkerId setMarkerTextLocal _markerText;
 _iconMarkerId setMarkerSizeLocal [0.7, 0.7];
@@ -103,8 +144,8 @@ if (_radius > 0) then {
     _areaMarkerId setMarkerAlphaLocal _areaAlpha;
 };
 
-[_iconMarkerId, _areaMarkerId, _impactMarkerIds, _radius, _duration, _alertType, _etaMin, _etaMax] spawn {
-    params ["_iconMarkerId", "_areaMarkerId", "_impactMarkerIds", "_radius", "_duration", "_alertType", "_etaMin", "_etaMax"];
+[_iconMarkerId, _areaMarkerId, _impactMarkerIds, _radius, _duration, _alertType, _etaMin, _etaMax, _areaAlpha] spawn {
+    params ["_iconMarkerId", "_areaMarkerId", "_impactMarkerIds", "_radius", "_duration", "_alertType", "_etaMin", "_etaMax", "_baseAreaAlpha"];
 
     private _steadyDuration = ((_duration * 0.6) max 5);
     private _steadyUntil = diag_tickTime + _steadyDuration;
@@ -136,7 +177,8 @@ if (_radius > 0) then {
         _iconMarkerId setMarkerAlphaLocal _iconAlpha;
 
         if (_radius > 0) then {
-            private _areaAlpha = 0.18 - (_i * 0.03);
+            private _areaStep = ((_baseAreaAlpha / 6) max 0.01);
+            private _areaAlpha = _baseAreaAlpha - (_i * _areaStep);
             if (_areaAlpha < 0) then { _areaAlpha = 0; };
             _areaMarkerId setMarkerAlphaLocal _areaAlpha;
         };

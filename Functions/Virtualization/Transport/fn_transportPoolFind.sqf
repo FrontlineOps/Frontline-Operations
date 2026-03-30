@@ -5,7 +5,11 @@
 params [
     ["_requiredCapacity", 1, [0]],
     ["_nearPos", [0,0,0], [[]]],
-    ["_maxDistance", 3000, [0]]
+    ["_side", sideUnknown, [east]],
+    ["_maxDistance", 3000, [0]],
+    ["_requiredActivation", "ANY", [""]],
+    ["_allowedGroupTypes", [], [[]]],
+    ["_requireTransportRole", false, [false]]
 ];
 
 private _available = FLO_TransportPool get "available";
@@ -14,9 +18,23 @@ private _bestDist = _maxDistance + 1;
 
 {
     private _groupId = _x;
-    _y params ["_capacity", "_position"];
+    private _groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
+    private _entrySide = _groupData get "side";
+    private _groupType = _groupData get "groupType";
+    private _transportRole = _groupData get "transportRole";
+    private _position = _groupData get "position";
+    private _pickupCapacity = [_groupData] call FLO_fnc_transportGetPickupCapacity;
 
-    if (_capacity < _requiredCapacity) then { continue };
+    if (_pickupCapacity < _requiredCapacity) then { continue };
+
+    if (_side != sideUnknown && {_entrySide != _side}) then { continue };
+
+    if (count _allowedGroupTypes > 0 && {!(_groupType in _allowedGroupTypes)}) then { continue };
+    if (_requireTransportRole && {!_transportRole}) then { continue };
+
+    if (_requiredActivation != "ANY") then {
+        if ((_groupData get "isActive") != (_requiredActivation == "ACTIVE")) then { continue };
+    };
 
     private _dist = _position distance2D _nearPos;
     if (_dist < _bestDist) then {

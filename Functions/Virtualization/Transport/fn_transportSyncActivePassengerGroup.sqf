@@ -11,6 +11,7 @@
  *   1: Passenger Group Data <HASHMAP>
  *   2: Carrier Group ID <STRING>
  *   3: Carrier Vehicles <ARRAY>
+ *   4: Carrier Group Data <HASHMAP> - Optional
  *
  * Return Value:
  *   BOOL - True when the passenger group was examined
@@ -20,7 +21,8 @@ params [
     ["_passengerGroupId", "", [""]],
     ["_passengerData", createHashMap, [createHashMap]],
     ["_transportGroupId", "", [""]],
-    ["_transportVehicles", [], [[]]]
+    ["_transportVehicles", [], [[]]],
+    ["_transportData", createHashMap, [createHashMap]]
 ];
 
 if (_passengerGroupId == "" || {_transportGroupId == ""}) exitWith { false };
@@ -40,6 +42,18 @@ private _mountedCount = {
 if (_mountedCount == count _aliveUnits) exitWith {
     if (([_passengerData] call FLO_fnc_virtualizationGetMountedTransport) != _transportGroupId) then {
         [_passengerData, _transportGroupId] call FLO_fnc_virtualizationSetMountedIn;
+    };
+    true
+};
+
+private _unloadCommandIssued = false;
+if (count (keys _transportData) > 0) then {
+    _unloadCommandIssued = _transportData get "transportUnloadCommandIssued";
+};
+
+if (_unloadCommandIssued) exitWith {
+    if (_mountedCount == 0 && {([_passengerData] call FLO_fnc_virtualizationGetMountedTransport) != ""}) then {
+        [_passengerData] call FLO_fnc_virtualizationClearMountedIn;
     };
     true
 };

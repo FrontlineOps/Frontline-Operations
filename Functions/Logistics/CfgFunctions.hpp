@@ -27,11 +27,13 @@ class LogisticsNetwork {
 
     class logisticsNetworkApplyObjectiveCaptureGrowth {};
     class logisticsNetworkBuildInboundObjectiveCounts {};
+    class logisticsNetworkBuildBranchDispatchCounts {};
     class logisticsNetworkBuildRecentDispatchCounts {};
     class logisticsNetworkCanDispatchToObjective {};
     class logisticsNetworkCheckAndReplace {};
     class logisticsNetworkDescribeObjectiveSupplyRole {};
     class logisticsNetworkFindSupplyAdvanceObjectives {};
+    class logisticsNetworkGetCachedSpawnPosition {};
     class logisticsNetworkFindSupplySourceObjective {};
     class logisticsNetworkCreate {};
     class logisticsNetworkCreateReplacement {};
@@ -39,7 +41,10 @@ class LogisticsNetwork {
     class logisticsNetworkFindReinforcementTargets {};
     class logisticsNetworkFindSpawnPosition {};
     class logisticsNetworkGetComposition {};
+    class logisticsNetworkGetObjectiveSupplyBranch {};
     class logisticsNetworkGetRearAATargets {};
+    class logisticsNetworkObjectiveIsCollapsePressure {};
+    class logisticsNetworkObjectiveIsFrontlinePressure {};
     class logisticsNetworkObjectiveHasStaticAA {};
     class logisticsNetworkPickAdvanceTarget {};
     class logisticsNetworkPickBestTarget {};
@@ -48,6 +53,7 @@ class LogisticsNetwork {
     class logisticsNetworkPickPressureTarget {};
     class logisticsNetworkPickRearTarget {};
     class logisticsNetworkPickSpawnSourceObjective {};
+    class logisticsNetworkReplenishTransportReserves {};
     class logisticsNetworkRecordDelivery {};
     class logisticsNetworkRecordReplacement {};
     class logisticsNetworkRecordTargetDispatch {};

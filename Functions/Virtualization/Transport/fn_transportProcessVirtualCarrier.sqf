@@ -26,14 +26,12 @@ if !([_groupData] call FLO_fnc_virtualizationIsTransportCarrier) exitWith { fals
 
 private _attachedIds = +([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);
 if (count _attachedIds == 0) exitWith {
-    if ((_groupData get "dismountAtWaypoint") >= 0) then {
+    if ((_groupData get "dismountAtWaypoint") >= 0 || {(_groupData get "transportInsertMode") != ""}) then {
         ["TRANSPORT", 2, format [
             "Virtual carrier %1 had stale dismount state with no attached passengers - clearing",
             _groupId
         ]] call FLO_fnc_log;
-        _groupData set ["dismountAtWaypoint", -1];
-        [_groupData] call FLO_fnc_virtualizationClearExecutionState;
-        [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+        [_groupData] call FLO_fnc_transportClearInsertState;
     };
     false
 };

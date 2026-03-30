@@ -14,6 +14,7 @@ class FLO {
         file = "Functions\Init";
 
         class detectSavedGame       {};
+        class initFactionSplitMixedInfantryPool {};
         class initPhaseManager      {};
         class initPhase1_MissionConfig {};
         class initPhase2_Factions   {};
@@ -53,16 +54,20 @@ class FLO {
         file = "Functions\AI\GTN\Core\Logic";
 
         class gtnAllocateAttackTrackPools {};
+        class gtnBuildObjectiveDemandSignature {};
+        class gtnBuildObjectiveAssignmentCache {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
         class gtnBuildEnemyEngagementPicture {};
         class gtnBuildGroupEngagementContext {};
+        class gtnGetCachedReserveBands {};
         class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};
         class gtnEstimateEngagementTargetLoad {};
         class gtnEvaluateGroupEngagementTarget {};
         class gtnExecuteTrackCycle {};
+        class gtnGroupIsStrategicallyAssignable {};
         class gtnGetEngagementTargetAssignmentCap {};
         class gtnIsEngagementRouteActive {};
         class gtnPickObjectiveGarrisonPosition {};
@@ -78,9 +83,11 @@ class FLO {
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildFriendlyCommanderGroupMarkers {};
         class gtnBuildFriendlySupportMarkers {};
+        class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
+        class gtnRevealIntelPickup {};
         class gtnSyncCommanderIntelMarkers {};
     };
 
@@ -138,6 +145,7 @@ class FLO {
         class gtnArtilleryProcessObservedFireRequests {};
         class gtnProcessCounterBatteryRequests {};
         class gtnRecordCounterBatteryExposure {};
+        class gtnSupportAssetCanProvideAbstractSupport {};
         class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
         class gtnRadarDataLink          {};

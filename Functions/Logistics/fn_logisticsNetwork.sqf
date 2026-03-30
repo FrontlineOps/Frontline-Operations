@@ -37,12 +37,15 @@ private _logisticsClass = [
         ["static_aa", 64]
     ]],
 
-    ["CHECK_INTERVAL", 60],
+    ["CHECK_INTERVAL", 15],
     ["BLUFOR_DETECT_RANGE", 2000],
     ["DISPATCH_MIN_INTERVAL", 30],
     ["DISPATCH_MAX_INTERVAL", 90],
     ["DISPATCH_BATCH_MIN", 12],
     ["DISPATCH_BATCH_MAX", 64],
+    ["DISPATCH_MAX_PER_CHECK", 6],
+    ["DISPATCH_TIME_BUDGET_MS", 125],
+    ["DISPATCH_BACKLOG_RETRY_INTERVAL", 15],
     ["REINFORCEMENT_RECENT_TARGET_WINDOW", 300],
     ["REINFORCEMENT_OBJECTIVE_SECURE_RATIO", 1.75],
     ["REINFORCEMENT_OBJECTIVE_PRESSURE_PER_GROUP", 10],
@@ -53,9 +56,14 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
     ["SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS", 14000],
-    ["SUPPLY_NODE_MIN_DELIVERIES", 1],
+    ["SUPPLY_ADVANCE_OBJECTIVE_INBOUND_CAP", 2],
+    ["SUPPLY_ADVANCE_OBJECTIVE_BATCH_CAP", 1],
+    ["SUPPLY_NODE_MIN_DELIVERIES", 2],
+    ["SUPPLY_NODE_PROMOTION_DELIVERY_COUNT", 4],
     ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
     ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
+    ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
+    ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
     ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
 
     ["_initialComposition", nil],
@@ -77,6 +85,7 @@ private _logisticsClass = [
     ["_supplyRouteInfo", createHashMap],
     ["_activeSupplyNodes", createHashMap],
     ["_lastSupplyNodeSignature", ""],
+    ["_spawnRoadCache", createHashMap],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkCreate;
@@ -96,6 +105,10 @@ private _logisticsClass = [
 
     ["_objectiveHasStaticAA", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkObjectiveHasStaticAA;
+    }],
+
+    ["_objectiveIsCollapsePressure", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure;
     }],
 
     ["_getRearAATargets", {
@@ -132,6 +145,10 @@ private _logisticsClass = [
 
     ["_findSupplyAdvanceObjectives", {
         [_self] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
+    }],
+
+    ["_getCachedSpawnPosition", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkGetCachedSpawnPosition;
     }],
 
     ["_buildInboundObjectiveCounts", {
@@ -176,6 +193,10 @@ private _logisticsClass = [
 
     ["_recordTargetDispatch", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkRecordTargetDispatch;
+    }],
+
+    ["_replenishTransportReserves", {
+        [_self] call FLO_fnc_logisticsNetworkReplenishTransportReserves;
     }],
 
     ["_recordDelivery", {

@@ -3,20 +3,42 @@
 // Takistani Militia/Insurgent forces
 // ============================================================================
 
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = East_Ground_Infantry
+ *   groundSpecOps    = East_Ground_SpecOps
+ *   groundMotorized  = East_Ground_Motorized
+ *   groundMechanized = East_Ground_Mechanized
+ *   groundArmor      = East_Ground_Armor
+ *   groundTransport  = East_Ground_Transport
+ *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
+ *   groundArtillery  = East_Ground_Artillery
+ *   airTransport     = East_Air_Transport
+ *   transportReserveAirCount = East_Transport_Reserve_Air_Count
+ *   airHeli          = East_Air_Heli
+ *   airJet           = East_Air_Jet
+ *   airDrone         = East_Air_Drone
+ *   mobileAA         = East_Mobile_AA
+ *   staticAA         = East_Static_AA
+ *   radar            = East_Radar
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above.
+ */
 // ============================================================================
-// INFANTRY GROUPS
+// INFANTRY
 // ============================================================================
-East_Groups = [
+// Mixed infantry source for groundInfantry.
+// Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
     (configfile >> "CfgGroups" >> "East" >> "CUP_O_TK_MILITIA" >> "Infantry" >> "CUP_O_TK_MILITIA_Patrol"),
     (configfile >> "CfgGroups" >> "East" >> "CUP_O_TK_MILITIA" >> "Infantry" >> "CUP_O_TK_MILITIA_Group"),
     (configfile >> "CfgGroups" >> "East" >> "CUP_O_TK_MILITIA" >> "Infantry" >> "CUP_O_TK_MILITIA_ATTeam"),
-    (configfile >> "CfgGroups" >> "East" >> "CUP_O_TK_MILITIA" >> "Infantry" >> "CUP_O_TK_MILITIA_AATeam")
-];
-
-// ============================================================================
-// INFANTRY UNITS
-// ============================================================================
-East_Units = [
+    (configfile >> "CfgGroups" >> "East" >> "CUP_O_TK_MILITIA" >> "Infantry" >> "CUP_O_TK_MILITIA_AATeam"),
     "CUP_O_TK_INS_Soldier", "CUP_O_TK_INS_Soldier",
     "CUP_O_TK_INS_Soldier_MG", "CUP_O_TK_INS_Soldier_MG",
     "CUP_O_TK_INS_Soldier_GL", "CUP_O_TK_INS_Soldier_GL",
@@ -27,45 +49,59 @@ East_Units = [
     "CUP_O_TK_INS_Soldier_Enfield",
     "CUP_O_TK_INS_Soldier_FNFAL"
 ];
+// groundSpecOps
+East_Ground_SpecOps = [];
 
-East_Units_Officers = ["Opf_I_I_Soldier_Base_unarmed_F"];
+// Fire observer pool for artillery support logic.
 East_FireObserver = ["CUP_O_TK_INS_Soldier_TL"];
 
 // ============================================================================
 // VEHICLE ARRAYS
 // ============================================================================
-East_Ground_Vehicles_Ambient = [
-    "CUP_O_Hilux_unarmed_TK_INS", "CUP_O_V3S_Open_TKM", "CUP_O_Hilux_UB32_TK_INS",
-    "CUP_O_Hilux_M2_TK_INS", "CUP_O_V3S_Refuel_TKM",
-    "CUP_O_Hilux_DSHKM_TK_INS", "CUP_O_Hilux_metis_TK_INS"
-];
-
-East_Ground_Vehicles_Light = [
+// groundMotorized
+East_Ground_Motorized = [
     "CUP_O_Hilux_M2_TK_INS", "CUP_O_Hilux_DSHKM_TK_INS", "CUP_O_Hilux_UB32_TK_INS",
     "CUP_O_Hilux_SPG9_TK_INS", "CUP_O_Hilux_metis_TK_INS"
 ];
 
-East_Ground_Vehicles_Heavy = [
+// groundMechanized
+East_Ground_Mechanized = [
+    "CUP_O_BMP2_CHDKZ", "Opf_I_I_Offroad_01_AT_F", "CUP_O_Hilux_SPG9_TK_INS",
+    "Opf_I_I_Offroad_01_armed_F", "CUP_O_Hilux_UB32_TK_INS"
+];
+// groundArmor
+East_Ground_Armor = [
     "CUP_O_BMP2_CHDKZ", "Opf_I_I_Offroad_01_AT_F", "CUP_O_Hilux_SPG9_TK_INS",
     "Opf_I_I_Offroad_01_armed_F", "CUP_O_Hilux_UB32_TK_INS"
 ];
 
+// groundTransport
 East_Ground_Transport = ["CUP_O_Hilux_unarmed_TK_INS", "CUP_O_V3S_Open_TKM"];
+East_Transport_Reserve_Ground_Count = 20;
 
+// groundArtillery
 East_Ground_Artillery = ["O_MBT_02_arty_F"];
 
+// airTransport
 East_Air_Transport = [];
+East_Transport_Reserve_Air_Count = 10;
 
+// airHeli
 East_Air_Heli = ["O_Heli_Light_02_dynamicLoadout_F"];
 
+// airJet
 East_Air_Jet = ["O_Heli_Light_02_dynamicLoadout_F"];
 
+// airDrone
 East_Air_Drone = ["O_UAV_01_F"];
 
+// mobileAA
 East_Mobile_AA = ["O_APC_Tracked_02_AA_F"];
 
+// staticAA
 East_Static_AA = ["O_SAM_System_04_F"];
 
+// radar
 East_Radar = ["O_Radar_System_02_F"];
 
 // ============================================================================

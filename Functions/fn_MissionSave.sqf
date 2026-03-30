@@ -103,7 +103,12 @@ try {
 try {
     private _markerHash = createHashMap;
     private _exclude = createHashMapFromArray [["b_unknown", true], ["Empty", true], ["mil_dot", true], ["hd_start", true]];
-    private _markers = allMapMarkers select { !(_exclude getOrDefault [markerType _x, false]) && markerAlpha _x > 0.01 };
+    private _combatMarkerPrefix = "FLO_GTN_COMBAT_";
+    private _markers = allMapMarkers select {
+        !(_exclude getOrDefault [markerType _x, false])
+        && {markerAlpha _x > 0.01}
+        && {_x find _combatMarkerPrefix != 0}
+    };
     {
         _markerHash set [_x, createHashMapFromArray [
             ["alpha", markerAlpha _x], ["brush", markerBrush _x], ["color", getMarkerColor _x],

@@ -156,6 +156,8 @@ while {true} do {
         if (isNil {_objRecord get "captureProgress"}) then { _objRecord set ["captureProgress", 0]; };
         if (isNil {_objRecord get "bluforCount"}) then { _objRecord set ["bluforCount", 0]; };
         if (isNil {_objRecord get "opforCount"}) then { _objRecord set ["opforCount", 0]; };
+        if (isNil {_objRecord get "contested"}) then { _objRecord set ["contested", false]; };
+        if (isNil {_objRecord get "underAttack"}) then { _objRecord set ["underAttack", false]; };
         
         private _pos = _objRecord get "position";
         private _radius = _objRecord get "radius";
@@ -252,9 +254,23 @@ while {true} do {
         };
         
         // Store
+        _owner = _objRecord get "owner";
+        private _contested = (_bluforCount > 0) && { _opforCount > 0 };
+        private _underAttack = if (_owner isEqualTo west) then {
+            _opforCount > 0
+        } else {
+            if (_owner isEqualTo east) then {
+                _bluforCount > 0
+            } else {
+                false
+            }
+        };
+
         _objRecord set ["captureProgress", _progress];
         _objRecord set ["bluforCount", _bluforCount];
         _objRecord set ["opforCount", _opforCount];
+        _objRecord set ["contested", _contested];
+        _objRecord set ["underAttack", _underAttack];
         _objRecord set ["captureTime", _captureTime]; // Ensure fresh config
         _dataChanged = true;
     };

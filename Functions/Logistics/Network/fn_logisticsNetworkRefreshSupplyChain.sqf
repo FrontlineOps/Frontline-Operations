@@ -20,6 +20,7 @@ private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount"
 private _deliveryCounts = _net get "_supplyNodeDeliveries";
 private _resetFriendlyCount = _net get "SUPPLY_NODE_RESET_FRIENDLY_COUNT";
 private _minDeliveries = _net get "SUPPLY_NODE_MIN_DELIVERIES";
+private _promotionDeliveryCount = _net get "SUPPLY_NODE_PROMOTION_DELIVERY_COUNT";
 private _minActiveFriendlyCount = _net get "SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT";
 
 {
@@ -108,10 +109,14 @@ while {count _frontier > 0} do {
         _routeInfo set [_linkedObjectiveId, _nodeInfo];
         _frontier pushBack [_linkedObjectiveId, _depth + 1, _newRouteMeters];
 
+        private _friendlyCount = _linkedObjective get _friendlyCountKey;
         if (
             _deliveryCount >= _minDeliveries
             && {!(_linkedObjective get "contested")}
-            && {(_linkedObjective get _friendlyCountKey) >= _minActiveFriendlyCount}
+            && {
+                _friendlyCount >= _minActiveFriendlyCount
+                || {_deliveryCount >= _promotionDeliveryCount}
+            }
         ) then {
             _activeNodes set [_linkedObjectiveId, createHashMapFromArray [
                 ["depth", _nodeInfo get "depth"],

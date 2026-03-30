@@ -18,14 +18,63 @@ if (!isServer) exitWith {};
 // Minimum distance (meters) to warrant transport request
 FLO_Transport_MinDistance = 500;
 
+// Minimum reassignment distance for foot infantry to request pickup
+FLO_Transport_ReassignmentPickupMinDistance = 1500;
+
 // Maximum search radius (meters) for finding transports
 FLO_Transport_SearchRadius = 5000;
+
+// Minimum long-haul distance (meters) before airlift is considered
+FLO_Transport_AirPickupMinDistance = 4000;
+
+// Maximum search radius (meters) for dedicated transport helicopters
+FLO_Transport_AirSearchRadius = 12000;
+
+// Altitude target (meters AGL) for active helicopter landing inserts
+FLO_Transport_AirLandAltitude = 35;
+
+// Altitude target (meters AGL) for active helicopter paradrops
+FLO_Transport_AirDropAltitude = 150;
+
+// Minimum altitude (meters AGL) required before an active AIR_DROP can release
+// passengers into the engine-managed parachute flow.
+FLO_Transport_AirDropReleaseAltitudeMin = 75;
+
+// Minimum aircraft speed (m/s) required before an active AIR_DROP can release
+// passengers. This keeps the release path inside the engine's moving-aircraft
+// ejection behavior.
+FLO_Transport_AirDropReleaseSpeedMin = 15;
 
 // Default dismount standoff (meters) from the final destination
 FLO_Transport_DismountDistance = 400;
 
 // Threat-driven unload radius (meters) around the carrier
 FLO_Transport_ThreatDismountRadius = 500;
+
+// Maximum ground carrier speed (m/s) allowed before active passengers are told
+// to dismount.
+FLO_Transport_GroundUnloadSpeedMax = 3;
+
+// Maximum helicopter landing insert altitude (m AGL) allowed before active
+// passengers are told to dismount.
+FLO_Transport_AirLandUnloadAltitudeMax = 3;
+
+// Maximum helicopter landing insert speed (m/s) allowed before active
+// passengers are told to dismount.
+FLO_Transport_AirLandUnloadSpeedMax = 5;
+
+// Maximum time (seconds) to wait for a live active unload before falling back
+// to the forced detach path.
+FLO_Transport_ActiveUnloadTimeout = 8;
+
+// Minimum maintained threat signals required before helicopters prefer paradrop
+// over a landing insert. Signals are enemy ownership, objective pressure, and
+// nearby enemy intel around the destination.
+FLO_Transport_AirDropMinThreatSignals = 2;
+
+// When true, helicopter paradrops require nearby enemy intel at the drop area
+// in addition to the minimum threat signal count.
+FLO_Transport_AirDropRequireEnemyNearby = true;
 
 // Fallback capacity estimates by group type
 FLO_Transport_CapacityEstimates = createHashMapFromArray [

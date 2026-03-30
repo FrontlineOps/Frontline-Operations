@@ -80,4 +80,18 @@ if (_hadCycle && {count waypoints _realGroup > 1}) then {
     ["VIRTUALIZATION", 4, format ["Group %1: Added loop statement to last waypoint", _groupId]] call FLO_fnc_log;
 };
 
+if ((_groupData get "groupType") == "helicopter" && {([_groupData] call FLO_fnc_virtualizationIsTransportCarrier)}) then {
+    private _transportVehicles = ([_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles) select { !isNull _x && {alive _x} };
+    private _insertMode = _groupData get "transportInsertMode";
+    private _targetAltitude = switch (_insertMode) do {
+        case "AIR_DROP": { FLO_Transport_AirDropAltitude };
+        case "AIR_LAND": { FLO_Transport_AirLandAltitude };
+        default { 60 };
+    };
+
+    {
+        _x flyInHeight _targetAltitude;
+    } forEach _transportVehicles;
+};
+
 true

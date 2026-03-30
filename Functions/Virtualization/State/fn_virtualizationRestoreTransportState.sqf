@@ -4,6 +4,20 @@
 
 params ["_groupData", "_savedData"];
 
+private _savedTransportRole = false;
+if ("transportRole" in _savedData) then {
+    _savedTransportRole = _savedData get "transportRole";
+};
+if !(_savedTransportRole isEqualType true) then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportRole type for %1: %2",
+        _groupData get "groupType",
+        typeName _savedTransportRole
+    ]] call FLO_fnc_log;
+    _savedTransportRole = false;
+};
+_groupData set ["transportRole", _savedTransportRole];
+
 private _savedIsTransport = false;
 if ("isTransport" in _savedData) then {
     _savedIsTransport = _savedData get "isTransport";
@@ -99,6 +113,48 @@ if !(_dismountAtWaypoint isEqualType 0) then {
     _dismountAtWaypoint = -1;
 };
 _groupData set ["dismountAtWaypoint", _dismountAtWaypoint];
+
+private _transportInsertMode = "";
+if ("transportInsertMode" in _savedData) then {
+    _transportInsertMode = _savedData get "transportInsertMode";
+};
+if !(_transportInsertMode isEqualType "") then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportInsertMode type for %1: %2",
+        _groupData get "groupType",
+        typeName _transportInsertMode
+    ]] call FLO_fnc_log;
+    _transportInsertMode = "";
+};
+_groupData set ["transportInsertMode", toUpper _transportInsertMode];
+
+private _transportInsertPos = [];
+if ("transportInsertPos" in _savedData) then {
+    _transportInsertPos = _savedData get "transportInsertPos";
+};
+if !(_transportInsertPos isEqualType []) then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportInsertPos type for %1: %2",
+        _groupData get "groupType",
+        typeName _transportInsertPos
+    ]] call FLO_fnc_log;
+    _transportInsertPos = [];
+};
+_groupData set ["transportInsertPos", _transportInsertPos];
+
+private _transportLandCommandIssued = false;
+if ("transportLandCommandIssued" in _savedData) then {
+    _transportLandCommandIssued = _savedData get "transportLandCommandIssued";
+};
+if !(_transportLandCommandIssued isEqualType true) then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportLandCommandIssued type for %1: %2",
+        _groupData get "groupType",
+        typeName _transportLandCommandIssued
+    ]] call FLO_fnc_log;
+    _transportLandCommandIssued = false;
+};
+_groupData set ["transportLandCommandIssued", _transportLandCommandIssued];
 
 private _postDismountWaypoint = [];
 if ("postDismountWaypoint" in _savedData) then {

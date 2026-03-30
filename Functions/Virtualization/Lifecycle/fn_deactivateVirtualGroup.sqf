@@ -29,8 +29,25 @@ if !(_groupData isEqualType createHashMap) exitWith {
 
 private _realGroup = _groupData get "realGroup";
 if (isNull _realGroup) exitWith {
-    ["VIRTUALIZATION", 2, format["Attempted to deactivate virtual group %1 but no real group exists", _groupId]] call FLO_fnc_log;
-    false
+    [_groupId, _groupData] call FLO_fnc_virtualizationRepairOrphanedActiveGroup
+};
+
+private _realUnitCount = count units _realGroup;
+if (_realUnitCount <= 0) then {
+    ["VIRTUALIZATION", 2, format [
+        "Deactivating active group %1 (%2) with an empty realGroup (missionLock=%3 replacementState=%4 transportRole=%5 attachedTo=%6 mountedIn=%7 attachedGroups=%8 trackedVehicles=%9 objective=%10 pos=%11)",
+        _groupId,
+        _groupData get "groupType",
+        _groupData get "missionLock",
+        _groupData get "replacementState",
+        _groupData get "transportRole",
+        [_groupData] call FLO_fnc_virtualizationGetTransportAttachment,
+        [_groupData] call FLO_fnc_virtualizationGetMountedTransport,
+        count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers),
+        count (_groupData get "realVehicles"),
+        _groupData get "objective",
+        _groupData get "position"
+    ]] call FLO_fnc_log;
 };
 
 [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupPosition;

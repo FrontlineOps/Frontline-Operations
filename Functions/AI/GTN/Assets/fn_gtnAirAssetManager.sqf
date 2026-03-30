@@ -339,6 +339,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     if (_requestSide in [east, west] && {(_gData get "side") != _requestSide}) then {
                         continue;
                     };
+                    if !([_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {
+                        continue;
+                    };
                     _airGroups pushBack [_x, _gData];
                 };
             } forEach _groups;
@@ -655,6 +658,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _gType = _gData get "groupType";
                 if (_gType in ["helicopter", "jet", "air"]) then {
                     if !(_x in _missions) then {
+                        if !([_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {
+                            continue;
+                        };
                         _available pushBack _x;
                     };
                 };

@@ -29,7 +29,10 @@ class VirtualizationSystem {
 class VirtualizationSeeding {
     file = "Functions\Virtualization\Seeding";
 
+    class buildObjectiveTemplateSpawnPlan {};
     class initializeObjectiveGroups {};
+    class initializeTransportReserveGroups {};
+    class backfillObjectiveTemplateGroups {};
     class distributeVirtualGroups   {};
 };
 
@@ -123,11 +126,19 @@ class VirtualizationTransport {
     file = "Functions\Virtualization\Transport";
 
     class transportConfig       {};
+    class transportResolveReserveObjective {};
+    class transportCreateReserveCarrier {};
     class transportGetCapacity  {};
     class transportGetGroupCapacity {};
+    class transportGetPickupCapacity {};
     class transportGetPassengerLoad {};
+    class transportCountMountedActivePassengers {};
     class transportGetTrackedGroup {};
     class transportHasKnownEnemyNearby {};
+    class transportBuildMissionPlan {};
+    class transportClearInsertState {};
+    class transportResetActiveCarrierMotion {};
+    class transportCarrierBlocksDeactivation {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportPoolFind     {};
@@ -137,9 +148,14 @@ class VirtualizationTransport {
     class transportApplyPostDismountWaypoint {};
     class transportDetach       {};
     class transportDetachAll    {};
+    class transportIssueActiveDismount {};
+    class transportParadropActivePassengerGroup {};
     class transportProcessActiveCarrier {};
     class transportProcessVirtualCarrier {};
+    class transportLogMountFailureContext {};
     class transportMountActivePassengerGroup {};
+    class transportPrepareCarrierForPickup {};
+    class transportMaybeRequestReassignmentPickup {};
     class transportRequest      {};
     class transportDismount     {};
     class transportShouldThreatDismount {};
@@ -153,6 +169,7 @@ class VirtualizationCore {
     class virtualizationAdvanceLoiterWaypoint {};
     class virtualizationAdvanceTerminalWaypoint {};
     class virtualizationApplyTieredUpdateWindow {};
+    class virtualizationRepairOrphanedActiveGroup {};
     class virtualizationProcessAttachedGroup {};
     class virtualizationProcessInactiveMovement {};
     class virtualizationComputeDeferredActivationPos {};

@@ -284,7 +284,7 @@ _display closeDisplay 1;
 	hint "Initializing mission systems...";
 
 	private _startTime = diag_tickTime;
-	private _timeout = 300; // 5 minute timeout for full initialization
+	private _timeout = 600; // 10 minute timeout for full initialization
 
 	waitUntil {
 		uiSleep 1;
