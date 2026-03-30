@@ -36,11 +36,36 @@ FLO_Transport_AirLandAltitude = 35;
 // Altitude target (meters AGL) for active helicopter paradrops
 FLO_Transport_AirDropAltitude = 150;
 
+// Minimum altitude (meters AGL) required before an active AIR_DROP can release
+// passengers into the engine-managed parachute flow.
+FLO_Transport_AirDropReleaseAltitudeMin = 75;
+
+// Minimum aircraft speed (m/s) required before an active AIR_DROP can release
+// passengers. This keeps the release path inside the engine's moving-aircraft
+// ejection behavior.
+FLO_Transport_AirDropReleaseSpeedMin = 15;
+
 // Default dismount standoff (meters) from the final destination
 FLO_Transport_DismountDistance = 400;
 
 // Threat-driven unload radius (meters) around the carrier
 FLO_Transport_ThreatDismountRadius = 500;
+
+// Maximum ground carrier speed (m/s) allowed before active passengers are told
+// to dismount.
+FLO_Transport_GroundUnloadSpeedMax = 3;
+
+// Maximum helicopter landing insert altitude (m AGL) allowed before active
+// passengers are told to dismount.
+FLO_Transport_AirLandUnloadAltitudeMax = 3;
+
+// Maximum helicopter landing insert speed (m/s) allowed before active
+// passengers are told to dismount.
+FLO_Transport_AirLandUnloadSpeedMax = 5;
+
+// Maximum time (seconds) to wait for a live active unload before falling back
+// to the forced detach path.
+FLO_Transport_ActiveUnloadTimeout = 8;
 
 // Minimum maintained threat signals required before helicopters prefer paradrop
 // over a landing insert. Signals are enemy ownership, objective pressure, and

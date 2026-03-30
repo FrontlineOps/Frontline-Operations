@@ -51,6 +51,9 @@ if (!isNull _infRealGroup) then {
     {
         private _veh = vehicle _x;
         if (_veh != _x && {_veh in _transportVehicles}) then {
+            // Forced detach is the fallback path when live staged unload did not
+            // complete or when transport state must be repaired immediately.
+            unassignVehicle _x;
             moveOut _x;
         };
     } forEach units _infRealGroup;

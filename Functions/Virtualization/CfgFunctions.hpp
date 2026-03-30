@@ -130,10 +130,12 @@ class VirtualizationTransport {
     class transportGetGroupCapacity {};
     class transportGetPickupCapacity {};
     class transportGetPassengerLoad {};
+    class transportCountMountedActivePassengers {};
     class transportGetTrackedGroup {};
     class transportHasKnownEnemyNearby {};
     class transportBuildMissionPlan {};
     class transportClearInsertState {};
+    class transportResetActiveCarrierMotion {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportPoolFind     {};
@@ -143,6 +145,7 @@ class VirtualizationTransport {
     class transportApplyPostDismountWaypoint {};
     class transportDetach       {};
     class transportDetachAll    {};
+    class transportIssueActiveDismount {};
     class transportParadropActivePassengerGroup {};
     class transportProcessActiveCarrier {};
     class transportProcessVirtualCarrier {};

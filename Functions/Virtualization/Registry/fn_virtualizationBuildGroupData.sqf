@@ -109,6 +109,8 @@ private _groupData = createHashMapFromArray [
     ["transportInsertMode", ""],
     ["transportInsertPos", []],
     ["transportLandCommandIssued", false],
+    ["transportUnloadCommandIssued", false],
+    ["transportUnloadIssuedAt", -1],
     ["postDismountWaypoint", []],
     ["mountedIn", ""],
     ["organicPackageRole", ""],

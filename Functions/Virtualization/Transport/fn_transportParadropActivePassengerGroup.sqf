@@ -2,9 +2,9 @@
  * Function: FLO_fnc_transportParadropActivePassengerGroup
  * Author: Frontline Operations Development Group
  * Description:
- *   Ejects an active mounted infantry group from a live helicopter carrier by
- *   assigning each surviving soldier a parachute near the drop zone while
- *   clearing the canonical transport linkage.
+ *   Ejects an active mounted infantry group from a live helicopter carrier
+ *   through the engine parachute flow while clearing the canonical transport
+ *   linkage.
  *
  * Arguments:
  *   0: Passenger group ID <STRING>
@@ -12,7 +12,7 @@
  *   2: Carrier vehicles <ARRAY> - Optional
  *
  * Return Value:
- *   BOOL - True when the paradrop was executed
+ *   BOOL - True when the paradrop release was issued
  */
 
 params [
@@ -69,34 +69,26 @@ if (count _carrierVehicles > 0) then {
     };
 };
 
+private _releasedCount = 0;
 {
     private _unit = _x;
     private _veh = vehicle _unit;
     if (_veh != _unit && {_veh in _carrierVehicles}) then {
         unassignVehicle _unit;
-        moveOut _unit;
+        _unit action ["Eject", _veh];
+        _releasedCount = _releasedCount + 1;
     };
-
-    private _spawnPos = [
-        (_dropPos select 0) + (random 16) - 8,
-        (_dropPos select 1) + (random 16) - 8,
-        _dropAltitude
-    ];
-
-    private _parachute = createVehicle ["Steerable_Parachute_F", _spawnPos, [], 0, "FLY"];
-    _parachute setPosATL _spawnPos;
-    _parachute setDir random 360;
-    _parachute setVelocity [0, 0, -2];
-    _unit moveInDriver _parachute;
 } forEach _aliveUnits;
 
 [FLO_virtualGroups, _passengerGroupId, _dropPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
 ["TRANSPORT", 3, format [
-    "Paradropped active passenger group %1 from carrier %2 at %3",
+    "Paradropped active passenger group %1 from carrier %2 at %3 (%4 units, release altitude %5m)",
     _passengerGroupId,
     _carrierGroupId,
-    _dropPos
+    _dropPos,
+    _releasedCount,
+    round _dropAltitude
 ]] call FLO_fnc_log;
 
-true
+_releasedCount > 0

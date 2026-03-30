@@ -79,6 +79,7 @@ private _seatFailure = false;
     if (_veh != _x && {_veh in _transportVehicles}) then { continue };
 
     if (_veh != _x) then {
+        unassignVehicle _x;
         moveOut _x;
     };
 

@@ -51,7 +51,7 @@ private _groups = FLO_virtualGroups get "_groups";
         [_groupData, _x] call FLO_fnc_virtualizationRemoveTransportPassenger;
         continue;
     };
-    [_x, _attachedData, _groupId, _transportVehicles] call FLO_fnc_transportSyncActivePassengerGroup;
+    [_x, _attachedData, _groupId, _transportVehicles, _groupData] call FLO_fnc_transportSyncActivePassengerGroup;
 } forEach _attachedIds;
 
 if (count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers) == 0) exitWith {
@@ -83,21 +83,57 @@ private _leader = leader _realGroup;
 if (isNull _leader || {!alive _leader}) exitWith { true };
 
 private _carrierPos = getPosATL _leader;
-if ([_groupData, _carrierPos] call FLO_fnc_transportShouldThreatDismount) exitWith {
-    ["TRANSPORT", 3, format [
-        "Active carrier %1 encountered threat conditions - unloading passengers early",
-        _groupId
-    ]] call FLO_fnc_log;
-    [_groupId, true] call FLO_fnc_transportDismount;
-    true
+private _insertMode = _groupData get "transportInsertMode";
+
+if (_groupData get "transportUnloadCommandIssued") exitWith {
+    private _remainingMountedUnits = [_groupData, _transportVehicles] call FLO_fnc_transportCountMountedActivePassengers;
+    if (_remainingMountedUnits == 0) then {
+        ["TRANSPORT", 3, format [
+            "Active carrier %1 completed live %2 unload - finalizing transport detach",
+            _groupId,
+            if (_insertMode == "") then { "GROUND" } else { _insertMode }
+        ]] call FLO_fnc_log;
+        [_groupId, true] call FLO_fnc_transportDismount;
+        true
+    } else {
+        private _unloadIssuedAt = _groupData get "transportUnloadIssuedAt";
+        if (_unloadIssuedAt >= 0 && {(diag_tickTime - _unloadIssuedAt) >= FLO_Transport_ActiveUnloadTimeout}) then {
+            ["TRANSPORT", 2, format [
+                "Active carrier %1 live unload stalled with %2 mounted units - forcing detach fallback",
+                _groupId,
+                _remainingMountedUnits
+            ]] call FLO_fnc_log;
+            [_groupId, true] call FLO_fnc_transportDismount;
+        };
+        true
+    }
 };
 
 private _dismountWp = _waypoints select _dismountIdx;
 private _dismountPos = _dismountWp select 0;
 private _completionRadius = (_dismountWp param [6, 50]) max 35;
-private _insertMode = _groupData get "transportInsertMode";
+private _unloadTriggeredByThreat = [_groupData, _carrierPos] call FLO_fnc_transportShouldThreatDismount;
+private _atDismountWaypoint = (_carrierPos distance2D _dismountPos) <= _completionRadius;
 
-if ((_carrierPos distance2D _dismountPos) > _completionRadius) exitWith { true };
+if (!_unloadTriggeredByThreat && {!_atDismountWaypoint}) exitWith { true };
+
+if (_insertMode == "AIR_DROP") exitWith {
+    private _carrierVehicle = vehicle _leader;
+    private _carrierAltitude = getPosATL _carrierVehicle select 2;
+    private _carrierSpeed = vectorMagnitude (velocity _carrierVehicle);
+
+    if (_carrierAltitude < FLO_Transport_AirDropReleaseAltitudeMin || {_carrierSpeed < FLO_Transport_AirDropReleaseSpeedMin}) exitWith {
+        true
+    };
+
+    ["TRANSPORT", 3, format [
+        "Active carrier %1 reached AIR_DROP release conditions (%2) - unloading passengers",
+        _groupId,
+        if (_unloadTriggeredByThreat) then { "THREAT" } else { "WAYPOINT" }
+    ]] call FLO_fnc_log;
+    [_groupId, true] call FLO_fnc_transportDismount;
+    true
+};
 
 if (_insertMode == "AIR_LAND") then {
     private _carrierVehicle = vehicle _leader;
@@ -119,16 +155,29 @@ if (_insertMode == "AIR_LAND") then {
         true
     };
 
-    if (_carrierAltitude > 10 || {_carrierSpeed > 35}) exitWith { true };
+    if (!(isTouchingGround _carrierVehicle) && {_carrierAltitude > FLO_Transport_AirLandUnloadAltitudeMax}) exitWith { true };
+    if (_carrierSpeed > FLO_Transport_AirLandUnloadSpeedMax) exitWith { true };
+
+    [_groupId, _groupData, _transportVehicles] call FLO_fnc_transportIssueActiveDismount;
+    true
+} else {
+    private _maxCarrierSpeed = 0;
+
+    {
+        private _driver = driver _x;
+        if (!isNull _driver) then {
+            doStop _driver;
+        };
+        _x forceSpeed 0;
+
+        private _carrierSpeed = vectorMagnitude (velocity _x);
+        if (_carrierSpeed > _maxCarrierSpeed) then {
+            _maxCarrierSpeed = _carrierSpeed;
+        };
+    } forEach _transportVehicles;
+
+    if (_maxCarrierSpeed > FLO_Transport_GroundUnloadSpeedMax) exitWith { true };
+
+    [_groupId, _groupData, _transportVehicles] call FLO_fnc_transportIssueActiveDismount;
+    true
 };
-
-["TRANSPORT", 3, format [
-    "Active carrier %1 reached %2 waypoint %3 - unloading passengers",
-    _groupId,
-    if (_insertMode == "") then { "GROUND" } else { _insertMode },
-    _dismountIdx
-]] call FLO_fnc_log;
-
-[_groupId, true] call FLO_fnc_transportDismount;
-
-true

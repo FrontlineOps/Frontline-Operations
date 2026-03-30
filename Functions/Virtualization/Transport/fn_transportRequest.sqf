@@ -323,6 +323,8 @@ _transportData set ["dismountAtWaypoint", 0];
 _transportData set ["transportInsertMode", _insertMode];
 _transportData set ["transportInsertPos", _insertPos];
 _transportData set ["transportLandCommandIssued", false];
+_transportData set ["transportUnloadCommandIssued", false];
+_transportData set ["transportUnloadIssuedAt", -1];
 [_transportData, "TRANSPORT", _insertMode] call FLO_fnc_virtualizationSetMissionLock;
 [_transportData, "TRANSPORT"] call FLO_fnc_virtualizationSetExecutionState;
 [_infData, "TRANSPORT", _insertMode] call FLO_fnc_virtualizationSetMissionLock;
