@@ -136,6 +136,7 @@ class VirtualizationTransport {
     class transportBuildMissionPlan {};
     class transportClearInsertState {};
     class transportResetActiveCarrierMotion {};
+    class transportCarrierBlocksDeactivation {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportPoolFind     {};
