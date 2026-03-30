@@ -83,9 +83,11 @@ class FLO {
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildFriendlyCommanderGroupMarkers {};
         class gtnBuildFriendlySupportMarkers {};
+        class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
+        class gtnRevealIntelPickup {};
         class gtnSyncCommanderIntelMarkers {};
     };
 
