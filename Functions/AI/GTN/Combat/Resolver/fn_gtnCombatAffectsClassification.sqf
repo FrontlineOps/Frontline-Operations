@@ -23,4 +23,8 @@ if ([_groupType] call FLO_fnc_gtnCombatIsDirectCombatGroup) exitWith {
     (_groupData get "unitCount") > 0
 };
 
-([_groupType] call FLO_fnc_gtnCombatIsSupportProvider) && { (_groupData get "missionLock") == "" }
+if ([_groupType] call FLO_fnc_gtnCombatIsSupportProvider) exitWith {
+    (_groupData get "unitCount") > 0
+};
+
+false

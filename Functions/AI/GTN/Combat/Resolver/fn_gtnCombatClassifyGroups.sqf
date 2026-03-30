@@ -46,22 +46,30 @@ private _cellKeyStride = (_cellKeyBase * 2) + 1;
     private _gData = _y;
     private _side = _gData get "side";
     private _groupType = _gData get "groupType";
+    private _isSupportProvider = [_groupType] call FLO_fnc_gtnCombatIsSupportProvider;
+    private _isCombatParticipant = _groupType in _directCombatTypes;
     if !(_side in [east, west]) then { continue };
     if (([_gData] call FLO_fnc_virtualizationGetTransportAttachment) != "") then { continue };
 
-    if ((_gData get "missionLock") == "") then {
-        private _sideKey = if (_side isEqualTo east) then { "EAST" } else { "WEST" };
+    if (_isSupportProvider) then {
+        if ([_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {
+            private _sideKey = if (_side isEqualTo east) then { "EAST" } else { "WEST" };
 
-        if (_groupType isEqualTo "artillery") then {
-            _supportAvailability set [_sideKey + "_ARTY", true];
+            if (_groupType isEqualTo "artillery") then {
+                _supportAvailability set [_sideKey + "_ARTY", true];
+            };
+
+            if (_groupType in ["air", "helicopter", "jet"]) then {
+                _supportAvailability set [_sideKey + "_AIR", true];
+            };
+
+            continue;
         };
 
-        if (_groupType in ["air", "helicopter", "jet"]) then {
-            _supportAvailability set [_sideKey + "_AIR", true];
-        };
+        _isCombatParticipant = true;
     };
 
-    if !(_groupType in _directCombatTypes) then { continue };
+    if !(_isCombatParticipant) then { continue };
     if ((_gData get "unitCount") <= 0) then { continue };
 
     _combatGroups set [_groupId, _gData];

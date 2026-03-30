@@ -142,6 +142,7 @@ class FLO {
         class gtnArtilleryProcessObservedFireRequests {};
         class gtnProcessCounterBatteryRequests {};
         class gtnRecordCounterBatteryExposure {};
+        class gtnSupportAssetCanProvideAbstractSupport {};
         class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
         class gtnRadarDataLink          {};
