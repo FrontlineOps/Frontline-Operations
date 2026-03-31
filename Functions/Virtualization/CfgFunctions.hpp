@@ -144,6 +144,7 @@ class VirtualizationTransport {
     class transportPoolFind     {};
     class transportPoolFindExisting {};
     class transportPoolRelease  {};
+    class transportReturnCarrierToReserve {};
     class transportAttach       {};
     class transportApplyPostDismountWaypoint {};
     class transportDetach       {};

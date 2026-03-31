@@ -23,5 +23,7 @@ _available set [_groupId, [
     _groupData get "side"
 ]];
 
+[_groupId, _groupData] call FLO_fnc_transportReturnCarrierToReserve;
+
 ["TRANSPORT", 3, format ["Pool: Released transport %1 back to available", _groupId]] call FLO_fnc_log;
 true
