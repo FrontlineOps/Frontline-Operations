@@ -3,7 +3,10 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Finds the closest active supply node behind a friendly delivery target by
- *   walking the cached supply-route parent chain back toward HQ.
+ *   walking the cached supply-route parent chain back toward HQ. The search
+ *   prefers unblocked active nodes, but if every upstream active node is in
+ *   the blocked set it falls back to the nearest active node instead of
+ *   failing the dispatch outright.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -38,6 +41,7 @@ private _currentObjective = _targetObjective;
 private _routeMeters = 0;
 private _sourceObjectiveId = ((_routeInfo get _targetObjectiveId) get "parentObjective");
 private _resolvedSourceObjectiveId = "";
+private _fallbackSourceObjectiveId = "";
 
 while {_sourceObjectiveId != ""} do {
     if !(_sourceObjectiveId in FLO_Objectives) exitWith {
@@ -50,8 +54,14 @@ while {_sourceObjectiveId != ""} do {
         _sourceObjectiveId = "";
     };
 
-    if (_sourceObjectiveId in _activeNodes && {!(_sourceObjectiveId in _blockedObjectives)}) exitWith {
-        _resolvedSourceObjectiveId = _sourceObjectiveId;
+    if (_sourceObjectiveId in _activeNodes) then {
+        if (_fallbackSourceObjectiveId == "") then {
+            _fallbackSourceObjectiveId = _sourceObjectiveId;
+        };
+
+        if !(_sourceObjectiveId in _blockedObjectives) exitWith {
+            _resolvedSourceObjectiveId = _sourceObjectiveId;
+        };
     };
 
     if !(_sourceObjectiveId in _routeInfo) exitWith {
@@ -63,4 +73,8 @@ while {_sourceObjectiveId != ""} do {
     _sourceObjectiveId = ((_routeInfo get _currentObjectiveId) get "parentObjective");
 };
 
-_resolvedSourceObjectiveId
+if (_resolvedSourceObjectiveId != "") then {
+    _resolvedSourceObjectiveId
+} else {
+    _fallbackSourceObjectiveId
+}
