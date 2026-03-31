@@ -2,187 +2,69 @@
  * Function: FLO_fnc_civilianProtest
  * Author: Frontline Operations Development Group
  * Description:
- *   Spawns hostile civilians near players in low-reputation areas.
- *   Civilians gather around players, play protest animations, and throw objects.
- *   Called periodically by the Civilian Manager when in hostile areas.
+ *   Temporarily repurposes active civilian groups in one objective into a
+ *   bounded protest event against a nearby player.
  *
  * Arguments:
- *   0: Player to protest near <OBJECT>
- *   1: Number of protesters <NUMBER> (default: 3-6)
+ * 0: Target player <OBJECT>
+ * 1: Civilian group IDs <ARRAY>
+ * 2: Objective ID <STRING>
+ * 3: Protest expiry tick <NUMBER>
  *
- * Returns: Array of spawned protesters
+ * Return Value:
+ * ARRAY - Protesting civilian units
  */
 
-params [["_targetPlayer", objNull], ["_count", floor (3 + random 4)]];
+params [
+    ["_targetPlayer", objNull, [objNull]],
+    ["_groupIds", [], [[]]],
+    ["_objectiveId", "", [""]],
+    ["_expiresAt", diag_tickTime + 120, [0]]
+];
 
-if (isNull _targetPlayer) exitWith { [] };
-if (!isServer) exitWith { [] };
+if (!isServer || {isNull _targetPlayer} || {!alive _targetPlayer} || {_objectiveId == ""}) exitWith { [] };
+if ((count _groupIds) == 0 || {isNil "FLO_virtualGroups"}) exitWith { [] };
 
-// Check if player is in a valid protest area (populated location)
-private _playerPos = getPosATL _targetPlayer;
-private _nearbyLocations = nearestLocations [_playerPos, ["NameCity", "NameCityCapital", "NameVillage"], 500];
-if (count _nearbyLocations == 0) exitWith { [] };
-
-// Find spawn positions out of player's line of sight
-private _spawnPositions = [];
-for "_i" from 0 to (_count - 1) do {
-    private _angle = random 360;
-    private _distance = 30 + random 40;  // 30-70m away
-    private _testPos = _playerPos getPos [_distance, _angle];
-    
-    // Check if out of line of sight
-    private _los = lineIntersects [
-        AGLToASL (_playerPos vectorAdd [0, 0, 1.5]),
-        AGLToASL (_testPos vectorAdd [0, 0, 1.5])
-    ];
-    
-    if (_los) then {
-        // Position is hidden - good spawn point
-        _spawnPositions pushBack _testPos;
-    } else {
-        // Try behind buildings
-        private _buildings = _testPos nearObjects ["House", 30];
-        if (count _buildings > 0) then {
-            private _bldg = _buildings select 0;
-            private _behindPos = getPos _bldg getPos [15, _bldg getDir _playerPos + 180];
-            _spawnPositions pushBack _behindPos;
-        } else {
-            // Fallback - spawn further away
-            private _farPos = _playerPos getPos [80 + random 20, _angle];
-            _spawnPositions pushBack _farPos;
-        };
-    };
-};
-
-// Limit to requested count
-_spawnPositions = _spawnPositions select [0, _count min count _spawnPositions];
-
-if (count _spawnPositions == 0) exitWith { [] };
-
+private _groups = FLO_virtualGroups get "_groups";
 private _protesters = [];
 
-// Protest animations - valid Arma 3 animations
-private _protestAnims = [
-    "Acts_Excited_Loop",              // Excited/agitated stance
-    "Acts_CivilListening_1",          // Standing idle
-    "Acts_CivilTalking_1",            // Talking/gesturing
-    "Acts_CivilTalking_2",            // Talking/gesturing
-    "Acts_Ambient_Aggressive",        // Waving arms
-    "Acts_WalkingChecking"            // Moving around
-];
-
-// Throwable objects (rocks, bottles)
-private _throwables = [
-    "Land_Stone_sharp_F",
-    "Land_Stone_small_F",
-    "Land_BottlePlastic_V1_F",
-    "Land_BottlePlastic_V2_F"
-];
-
 {
-    private _spawnPos = _x;
-    private _unitType = selectRandom CivMenArray;
-    
-    // Create separate group for each protester
-    private _protestGroup = createGroup [civilian, true];
-    
-    private _protester = _protestGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
-    _protester setBehaviour "CARELESS";
-    _protester setSpeedMode "NORMAL";
-    
-    // Mark as protester
-    _protester setVariable ["FLO_isProtester", true, true];
-    
-    // Protester behavior - walk toward player continuously, then protest
-    [_protester, _targetPlayer, _protestAnims, _throwables] spawn {
-        params ["_protester", "_target", "_anims", "_throwables"];
-        
-        // Keep walking toward player until close
-        while {alive _protester && !isNull _target && _protester distance2D _target > 10} do {
-            // Update destination to follow player
-            private _gatherPos = getPosATL _target getPos [5 + random 10, random 360];
-            _protester doMove _gatherPos;
-            sleep 2;
-        };
-        
-        if (!alive _protester || isNull _target) exitWith {};
-        
-        // Stop and start protesting
-        _protester disableAI "PATH";
-        _protester setDir (_protester getDir _target);
-        
-        // Play protest animation
-        private _anim = selectRandom _anims;
-        [_protester, _anim] remoteExec ["playMove", 0];
-        
-        // Occasionally throw objects
-        private _throwChance = 0.3;  // 30% chance to throw
-        
-        while {alive _protester && alive _target && _protester distance2D _target < 50} do {
-            sleep (3 + random 5);
-            
-            if (random 1 < _throwChance) then {
-                // Create and throw object
-                private _objType = selectRandom _throwables;
-                private _proj = createVehicle [_objType, getPosATL _protester vectorAdd [0, 0, 1.5], [], 0, "CAN_COLLIDE"];
-                
-                // Calculate throw direction toward player
-                private _throwDir = _protester getDir _target;
-                private _throwVel = [
-                    (sin _throwDir) * 10 + random 2,
-                    (cos _throwDir) * 10 + random 2,
-                    4 + random 3
-                ];
-                
-                _proj setVelocity _throwVel;
-                
-                // Object cleanup after a few seconds
-                [_proj] spawn {
-                    params ["_obj"];
-                    sleep 10;
-                    if (!isNull _obj) then { deleteVehicle _obj };
-                };
-                
-                // Play throwing animation
-                [_protester, "Acts_Ambient_Aggressive"] remoteExec ["playMove", 0];
-            } else {
-                // Play random protest animation
-                [_protester, selectRandom _anims] remoteExec ["playMove", 0];
-            };
-            
-            // Face target
-            _protester setDir (_protester getDir _target);
-        };
-    };
-    
-    _protesters pushBack _protester;
-    
-} forEach _spawnPositions;
+    if !(_x in _groups) then { continue };
 
-// Cleanup after timeout
-[_protesters] spawn {
-    params ["_protesters"];
-    
-    sleep 180;  // 3 minutes
-    
+    private _groupData = _groups get _x;
+    private _realGroup = _groupData get "realGroup";
+    if (isNull _realGroup) then { continue };
+
+    _groupData set ["protestRestoreAlwaysActive", _groupData get "alwaysActive"];
+    _groupData set ["alwaysActive", true];
+    _groupData set ["civilianRoutineState", "protest"];
+    _groupData set ["civilianRoutineUntil", _expiresAt];
+
     {
-        if (alive _x) then {
-            _x enableAI "PATH";
-            _x setBehaviour "CARELESS";
-            private _fleeDir = random 360;
-            private _fleePos = getPosATL _x getPos [100, _fleeDir];
-            _x doMove _fleePos;
-            
-            // Delete after fleeing
-            [_x] spawn {
-                params ["_unit"];
-                sleep 60;
-                if (!isNull _unit) then { deleteVehicle _unit };
-            };
-        };
-    } forEach _protesters;
-};
+        if (!alive _x || {captive _x} || {vehicle _x != _x}) then { continue };
 
-["CIVILIAN", 2, format["Spawned %1 protesters near %2", count _protesters, name _targetPlayer]] call FLO_fnc_log;
+        _x setVariable ["FLO_isProtester", true, true];
+        _x setVariable ["FLO_ProtestTarget", _targetPlayer, false];
+        _x setVariable ["FLO_ProtestObjective", _objectiveId, false];
+        _x setVariable ["FLO_ProtestExpiresAt", _expiresAt, false];
+
+        if !(_x getVariable ["FLO_ProtestWorkerRunning", false]) then {
+            _x setVariable ["FLO_ProtestWorkerRunning", true, false];
+            [_x] spawn FLO_fnc_civilianRunProtestBehavior;
+        };
+
+        [[_x]] call FLO_fnc_civilianActions;
+        _protesters pushBack _x;
+    } forEach (units _realGroup);
+} forEach _groupIds;
+
+if ((count _protesters) > 0) then {
+    ["CIVILIAN", 2, format [
+        "Assigned %1 active civilians to protest objective %2 near %3",
+        count _protesters,
+        _objectiveId,
+        name _targetPlayer
+    ]] call FLO_fnc_log;
+};
 
 _protesters

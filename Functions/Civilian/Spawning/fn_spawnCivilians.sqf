@@ -18,6 +18,7 @@ if (isNil "FLO_CivilianConfig") then {
 private _densityConfig = FLO_CivilianConfig get "DENSITY";
 private _locationTypes = FLO_CivilianConfig get "CIV_LOCATION_TYPES";
 private _roleCounts = createHashMap;
+private _poiCaches = createHashMap;
 private _allLocations = [];
 
 {
@@ -38,6 +39,17 @@ private _groups = FLO_virtualGroups get "_groups";
 
     private _objective = FLO_Objectives get _objectiveId;
     private _objectiveRadius = (_objective get "radius") max 90;
+    private _poiCache = if (_objectiveId in _poiCaches) then {
+        _poiCaches get _objectiveId
+    } else {
+        private _cache = [_objectiveId] call FLO_fnc_civilianBuildObjectivePoiCache;
+        _poiCaches set [_objectiveId, _cache];
+        _cache
+    };
+    private _ambientContext = createHashMapFromArray [
+        ["disposition", "NEUTRAL"],
+        ["contested", _objective get "contested"]
+    ];
     private _density = _densityConfig get _locationType;
     if (isNil "_density") then { continue };
     _density params ["_minPedestrians", "_maxPedestrians", "_minCars", "_maxCars"];
@@ -53,7 +65,6 @@ private _groups = FLO_virtualGroups get "_groups";
         };
 
         private _profile = [_objectiveId, _locationType, "civilian", _spawnPos] call FLO_fnc_civilianBuildRoleProfile;
-        private _route = [_objectiveId, _profile get "role", _spawnPos] call FLO_fnc_civilianBuildAmbientRoute;
         private _groupId = [_spawnPos, "civilian", nil, _objectiveId, 1, civilian] call FLO_fnc_createVirtualGroup;
         if (_groupId == "") then { continue };
 
@@ -61,17 +72,16 @@ private _groups = FLO_virtualGroups get "_groups";
         _groupData set ["civilianRole", _profile get "role"];
         _groupData set ["civilianObjective", _objectiveId];
         _groupData set ["civilianAnchorPos", _profile get "anchorPos"];
-        _groupData set ["civilianRouteAnchors", _route get "anchors"];
+        _groupData set ["civilianHomeAnchorPos", _profile get "anchorPos"];
+        _groupData set ["civilianRoutineAnchorPos", _profile get "anchorPos"];
+        _groupData set ["civilianRouteAnchors", [_profile get "anchorPos"]];
         _groupData set ["civilianKnowledgeBias", _profile get "knowledgeBias"];
         _groupData set ["civilianTrustBias", _profile get "trustBias"];
         _groupData set ["civilianRoutineState", _profile get "routineState"];
+        _groupData set ["civilianLastMood", "NEUTRAL"];
 
-        private _waypoints = _route get "waypoints";
-        if ((count _waypoints) > 0) then {
-            [_groupId, _waypoints, false, true, "CIV_AMBIENT"] call FLO_fnc_updateVirtualGroupWaypoints;
-        } else {
-            _groupData set ["noWaypoints", true];
-        };
+        private _plan = [_groupData, _ambientContext, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
+        [_groupId, _groupData, _plan] call FLO_fnc_civilianApplyRoutinePlan;
 
         private _role = _profile get "role";
         _roleCounts set [_role, (_roleCounts getOrDefault [_role, 0]) + 1];
@@ -93,35 +103,16 @@ private _groups = FLO_virtualGroups get "_groups";
         _groupData set ["civilianRole", _profile get "role"];
         _groupData set ["civilianObjective", _objectiveId];
         _groupData set ["civilianAnchorPos", _parkPos];
+        _groupData set ["civilianHomeAnchorPos", _parkPos];
+        _groupData set ["civilianRoutineAnchorPos", _parkPos];
         _groupData set ["civilianRouteAnchors", [_parkPos]];
         _groupData set ["civilianKnowledgeBias", _profile get "knowledgeBias"];
         _groupData set ["civilianTrustBias", _profile get "trustBias"];
         _groupData set ["civilianRoutineState", _profile get "routineState"];
+        _groupData set ["civilianLastMood", "NEUTRAL"];
 
-        private _nearbyLocations = nearestLocations [_locationPos, _locationTypes, 3000];
-        _nearbyLocations = _nearbyLocations select { locationPosition _x distance2D _locationPos > 500 };
-
-        if ((count _nearbyLocations) > 0) then {
-            private _destinationLocation = selectRandom _nearbyLocations;
-            private _destinationObjectiveId = [locationPosition _destinationLocation] call FLO_fnc_civilianResolveObjective;
-            private _destinationPos = if (_destinationObjectiveId != "") then {
-                [_destinationObjectiveId, true] call FLO_fnc_getRandomObjectivePos
-            } else {
-                locationPosition _destinationLocation
-            };
-            if (_destinationPos isEqualTo [0, 0, 0]) then {
-                _destinationPos = locationPosition _destinationLocation;
-            };
-
-            private _vehicleWaypoints = [
-                [_destinationPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "WHITE", 20],
-                [_parkPos, "MOVE", "SAFE", "LIMITED", "COLUMN", "WHITE", 20],
-                [_destinationPos, "CYCLE", "SAFE", "LIMITED", "COLUMN", "WHITE", 20]
-            ];
-
-            _groupData set ["civilianRouteAnchors", [_parkPos, _destinationPos]];
-            [_groupId, _vehicleWaypoints, false, true, "CIV_TRAFFIC"] call FLO_fnc_updateVirtualGroupWaypoints;
-        };
+        private _plan = [_groupData, _ambientContext, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
+        [_groupId, _groupData, _plan] call FLO_fnc_civilianApplyRoutinePlan;
 
         _roleCounts set ["driver", (_roleCounts getOrDefault ["driver", 0]) + 1];
         _createdCount = _createdCount + 1;
@@ -174,11 +165,16 @@ private _groups = FLO_virtualGroups get "_groups";
         _groupData set ["civilianRole", _profile get "role"];
         _groupData set ["civilianObjective", _objectiveId];
         _groupData set ["civilianAnchorPos", _buildingPos];
+        _groupData set ["civilianHomeAnchorPos", _buildingPos];
+        _groupData set ["civilianRoutineAnchorPos", _buildingPos];
         _groupData set ["civilianRouteAnchors", [_buildingPos]];
         _groupData set ["civilianKnowledgeBias", _profile get "knowledgeBias"];
         _groupData set ["civilianTrustBias", _profile get "trustBias"];
         _groupData set ["civilianRoutineState", _profile get "routineState"];
-        _groupData set ["noWaypoints", true];
+        _groupData set ["civilianLastMood", "NEUTRAL"];
+
+        private _plan = [_groupData, _ambientContext, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
+        [_groupId, _groupData, _plan] call FLO_fnc_civilianApplyRoutinePlan;
 
         private _role = _profile get "role";
         _roleCounts set [_role, (_roleCounts getOrDefault [_role, 0]) + 1];

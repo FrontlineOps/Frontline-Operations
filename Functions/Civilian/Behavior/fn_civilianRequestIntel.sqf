@@ -53,7 +53,11 @@ private _trustBias = if (count (keys _groupData) > 0) then { _groupData get "civ
 private _knowledgeBias = if (count (keys _groupData) > 0) then { _groupData get "civilianKnowledgeBias" } else { 1 };
 private _lastIntelAt = if (count (keys _groupData) > 0) then { _groupData get "civilianLastIntelAt" } else { -1 };
 
-private _context = [_objectiveId, _civilianRole, _callerSide] call FLO_fnc_civilianResolveObjectiveContext;
+private _context = if (!isNil "FLO_CivilianManager") then {
+    FLO_CivilianManager call ["getObjectiveContext", [_objectiveId, _civilianRole, _callerSide]]
+} else {
+    [_objectiveId, _civilianRole, _callerSide] call FLO_fnc_civilianResolveObjectiveContext
+};
 private _intelCooldown = FLO_CivilianConfig get "INTEL_COOLDOWN_SECONDS";
 private _callerOwner = owner _caller;
 

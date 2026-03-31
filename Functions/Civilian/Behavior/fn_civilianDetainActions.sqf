@@ -1,53 +1,54 @@
 /*
  * Function: FLO_fnc_civilianDetainActions
- * Description: Adds detain-related actions to a captured civilian.
+ * Description:
+ *   Adds detainee interaction actions that route back to the server command
+ *   handler.
  */
-params ["_unit"];
 
-// Move Action
-[_unit, [
-    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Move",
-    {(_this select 0) attachTo [player, [0, 0.7, 0]];},
-    nil, 0, true, true, "", "true", 3, false, "", ""
-]] remoteExec ["addAction", 0, true];
+params [["_unit", objNull, [objNull]]];
+if (isNull _unit) exitWith {};
 
-// Stop Action
 [_unit, [
-    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Stop",
-    {detach (_this select 0);},
-    nil, 0, true, true, "", "true", 3, false, "", ""
-]] remoteExec ["addAction", 0, true];
-
-// Mount Action
-[_unit, [
-    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Mount",
+    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Escort Detainee",
     {
-        params ["_target", "_caller", "_actionId", "_arguments"];
-        detach _target;
-        private _nearVehicles = nearestObjects [_target, ['Air', 'Ship', 'LandVehicle'], 15];
-        
-        if (count _nearVehicles > 0) then {
-            private _vh = _nearVehicles select 0;
-            _target moveInCargo _vh;
-            
-            // Unmount Action
-            [_vh, [
-                "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>UnMount",
-                {
-                    params ["_target", "_caller", "_actionId"];
-                    private _pows = crew _target select {side _x == civilian && captive _x && alive _x};
-                    if (count _pows > 0) then {
-                        private _pow = _pows select 0;
-                        detach _pow;
-                        unassignVehicle _pow;
-                        moveOut _pow;
-                        _pow switchMove 'AmovPercMstpSsurWnonDnon';
-                        _target removeAction _actionId;
-                    };
-                },
-                nil, 0, true, true, "", "true", 5, false, "", ""
-            ]] remoteExec ["addAction", 0, true];
-        };
+        params ["_target", "_caller"];
+        ["ESCORT", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
     },
-    nil, 0, true, true, "", "count (nearestObjects [_target, ['Air', 'Ship', 'LandVehicle'], 15]) > 0", 5, false, "", ""
+    nil, 0, true, true, "", "alive _target && captive _target", 3, false, "", ""
+]] remoteExec ["addAction", 0, true];
+
+[_unit, [
+    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Halt Detainee",
+    {
+        params ["_target"];
+        ["HALT", [_target]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
+    },
+    nil, 0, true, true, "", "alive _target && captive _target", 3, false, "", ""
+]] remoteExec ["addAction", 0, true];
+
+[_unit, [
+    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Load Nearby Vehicle",
+    {
+        params ["_target", "_caller"];
+        ["LOAD", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
+    },
+    nil, 0, true, true, "", "alive _target && captive _target && {(count (nearestObjects [_target, ['Air', 'Ship', 'LandVehicle'], 15])) > 0}", 5, false, "", ""
+]] remoteExec ["addAction", 0, true];
+
+[_unit, [
+    "<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Interrogate",
+    {
+        params ["_target", "_caller"];
+        ["INTERROGATE", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
+    },
+    nil, 0, true, true, "", "alive _target && captive _target", 4, false, "", ""
+]] remoteExec ["addAction", 0, true];
+
+[_unit, [
+    "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Release",
+    {
+        params ["_target", "_caller"];
+        ["RELEASE", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
+    },
+    nil, 0, true, true, "", "alive _target && captive _target", 4, false, "", ""
 ]] remoteExec ["addAction", 0, true];

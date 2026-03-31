@@ -2,63 +2,139 @@
  * Function: FLO_fnc_civilianMissionManager
  * Author: Frontline Operations Development Group
  * Description:
- *   Manages the lifecycle of civilian missions.
+ *   Server-authoritative civilian mission state manager.
  *
  * Arguments:
- *   0: Mode <STRING> - "INIT", "NEXT_MISSION", "MISSION_COMPLETE"
+ * 0: Mode <STRING>
+ * 1: Arguments <ARRAY>
  *
- * Example:
- *   ["INIT"] call FLO_fnc_civilianMissionManager;
+ * Return Value:
+ * HASHMAP | BOOL
  */
 
-params ["_mode", "_args"];
+params [
+    ["_mode", "", [""]],
+    ["_args", [], [[]]]
+];
 
-switch (toUpper _mode) do {
+private _modeKey = toUpper _mode;
+if (!isServer && {_modeKey in ["INIT", "REQUEST_MISSION", "MISSION_COMPLETE", "MISSION_FAILED"]}) exitWith {
+    [_mode, _args] remoteExecCall ["FLO_fnc_civilianMissionManager", 2, false];
+    createHashMap
+};
+
+if (isNil "FLO_CivilianManager") exitWith { createHashMap };
+
+private _missionState = FLO_CivilianManager get "_missionState";
+private _resetPairs = [
+    ["active", false],
+    ["id", ""],
+    ["type", ""],
+    ["objectiveId", ""],
+    ["briefing", ""],
+    ["requestedByUid", ""],
+    ["requestedByName", ""],
+    ["startedAt", -1],
+    ["taskId", ""],
+    ["position", []],
+    ["offer", createHashMap]
+];
+
+switch (_modeKey) do {
     case "INIT": {
+        {
+            _missionState set [_x select 0, _x select 1];
+        } forEach _resetPairs;
         FLO_CivilianMission_Active = false;
-        ["CIV_MISSION", 3, "Civilian Mission Manager Initialized (Waiting for player request)"] call FLO_fnc_log;
+        true
     };
 
-    case "NEXT_MISSION": {
-        if (isNil "FLO_CivilianMission_Active") then { FLO_CivilianMission_Active = false; };
-        if (FLO_CivilianMission_Active) exitWith {
-            ["CIV_MISSION", 3, "Mission already active, skipping valid request"] call FLO_fnc_log;
+    case "GET_STATE": {
+        _missionState
+    };
+
+    case "REQUEST_MISSION": {
+        _args params [["_civilian", objNull, [objNull]], ["_caller", objNull, [objNull]]];
+        if ((_missionState get "active")) exitWith {
+            createHashMapFromArray [
+                ["status", "BUSY"],
+                ["line", "Someone else already asked for help. Deal with that first."]
+            ]
         };
 
-        // Select a random mission from the available pool
-        // Assuming missions are named civMission1...N
-        private _availableMissions = ["fn_civMission1", "fn_civMission2", "fn_civMission3", "fn_civMission4"];
-        private _selectedMission = selectRandom _availableMissions;
+        private _groups = FLO_virtualGroups get "_groups";
+        private _groupId = _civilian getVariable ["FLO_VirtualGroupId", ""];
+        private _groupData = if (_groupId != "" && {_groupId in _groups}) then { _groups get _groupId } else { createHashMap };
 
-        // Execute the mission function
+        private _offer = [_civilian, _caller, _groupData] call FLO_fnc_civilianBuildMissionOffer;
+        if ((count (keys _offer)) == 0) exitWith {
+            createHashMapFromArray [
+                ["status", "REFUSED"],
+                ["line", selectRandom [
+                    "Not now. People are keeping their heads down.",
+                    "I cannot ask that of you here.",
+                    "This is not the right place to start something like that."
+                ]]
+            ]
+        };
+
+        private _functionName = format ["FLO_fnc_%1", _offer get "templateFunction"];
+        if (isNil _functionName) exitWith {
+            createHashMapFromArray [
+                ["status", "FAILED"],
+                ["line", "I do not know who can help with that right now."]
+            ]
+        };
+
+        private _template = missionNamespace getVariable _functionName;
+        private _result = [_offer] call _template;
+        if ((count (keys _result)) == 0) exitWith {
+            createHashMapFromArray [
+                ["status", "FAILED"],
+                ["line", "The problem moved before we could act on it."]
+            ]
+        };
+
+        _missionState set ["active", true];
+        _missionState set ["id", _offer get "missionId"];
+        _missionState set ["type", _offer get "missionType"];
+        _missionState set ["objectiveId", _offer get "targetObjectiveId"];
+        _missionState set ["briefing", _offer get "briefing"];
+        _missionState set ["requestedByUid", getPlayerUID _caller];
+        _missionState set ["requestedByName", name _caller];
+        _missionState set ["startedAt", diag_tickTime];
+        _missionState set ["taskId", _result get "taskId"];
+        _missionState set ["position", _result get "position"];
+        _missionState set ["offer", _offer];
         FLO_CivilianMission_Active = true;
-        
-        // Dynamic call to the mission function
-        private _fncName = "FLO_" + _selectedMission;
-        private _function = missionNamespace getVariable ["FLO_" + ( _selectedMission select [3]), ""];
-        private _missionId = (floor random 4) + 1; // 1 to 4
-        private _fnc = missionNamespace getVariable [format["FLO_fnc_civMission%1", _missionId], ""];
-        
-        if (!isNil "_fnc") then {
-            ["CIV_MISSION", 3, format["Starting Mission %1", _missionId]] call FLO_fnc_log;
-            [] call _fnc;
-            _missionId
-        } else {
-            ["CIV_MISSION", 1, format["Failed to start mission %1 - Function not found", _missionId]] call FLO_fnc_log;
-            FLO_CivilianMission_Active = false;
-            0
-        };
+
+        ["CIV_MISSION", 2, format [
+            "Started civilian mission %1 for objective %2",
+            _offer get "missionType",
+            _offer get "targetObjectiveId"
+        ]] call FLO_fnc_log;
+
+        createHashMapFromArray [
+            ["status", "STARTED"],
+            ["line", _offer get "requestLine"],
+            ["taskId", _result get "taskId"]
+        ]
     };
 
-    case "MISSION_COMPLETE": {
-        // Called by missions when they finish
+    case "MISSION_COMPLETE";
+    case "MISSION_FAILED": {
+        private _wasActive = _missionState get "active";
+        {
+            _missionState set [_x select 0, _x select 1];
+        } forEach _resetPairs;
         FLO_CivilianMission_Active = false;
-        
-        // Schedule next mission
-        private _delay = 600 + (random 600); // 10-20 minutes between missions
-        if (!isMultiplayer) then { _delay = 300 + (random 300); };
 
-        // Loop removed
-        ["CIV_MISSION", 3, "Mission Complete. Waiting for next player request."] call FLO_fnc_log;
+        if (_wasActive) then {
+            ["CIV_MISSION", 2, format ["Civilian mission resolved with state %1", _modeKey]] call FLO_fnc_log;
+        };
+
+        true
     };
 };
+
+createHashMap

@@ -160,8 +160,16 @@ class FLO {
         class civilianResolveObjective {};
         class civilianBuildRoleProfile {};
         class civilianBuildAmbientRoute {};
+        class civilianBuildObjectivePoiCache {};
         class civilianResolveObjectiveContext {};
+        class civilianMergeObjectiveMemory {};
+        class civilianIngestCombatEvents {};
+        class civilianPropagateObjectiveGossip {};
+        class civilianSelectObjectiveMemory {};
+        class civilianBuildIntelPackageFromMemory {};
         class civilianBuildIntelPackage {};
+        class civilianPlanRoutine {};
+        class civilianApplyRoutinePlan {};
     };
 
     class CivilianSpawning {
@@ -177,6 +185,9 @@ class FLO {
         class civilianActions {};
         class civilianInvestigateAction {};
         class civilianRequestIntel {};
+        class civilianSelectObjectiveProtesters {};
+        class civilianRunProtestBehavior {};
+        class civilianDetaineeCommand {};
         class civilianDetainActions {};
         class civilianProtest {};
     };
@@ -184,6 +195,8 @@ class FLO {
     class CivilianMissions {
         file = "Functions\Civilian\Missions";
 
+        class civilianBuildMissionOffer {};
+        class civilianMissionResolveAction {};
         class civilianMissionManager {};
         class civilianRequestMission {};
     };

@@ -120,12 +120,16 @@ private _groupData = createHashMapFromArray [
     ["civilianRole", ""],
     ["civilianObjective", _homeObjective],
     ["civilianAnchorPos", _position],
+    ["civilianHomeAnchorPos", _position],
+    ["civilianRoutineAnchorPos", _position],
     ["civilianRouteAnchors", []],
     ["civilianKnowledgeBias", 1],
     ["civilianTrustBias", 1],
     ["civilianLastIntelAt", -1],
     ["civilianLastMood", ""],
-    ["civilianRoutineState", ""]
+    ["civilianRoutineState", ""],
+    ["civilianLastRoutineAt", -1],
+    ["civilianRoutineUntil", -1]
 ];
 
 private _initialAssetComposition = [_groupType, _resolvedUnitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;

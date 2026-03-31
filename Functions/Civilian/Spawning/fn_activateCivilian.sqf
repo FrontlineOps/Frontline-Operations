@@ -22,6 +22,7 @@ private _unitCount = _groupData get "unitCount";
 private _spawnClass = _groupData get "spawnClass";
 private _civilianRole = _groupData get "civilianRole";
 private _civilianObjective = _groupData get "civilianObjective";
+private _civilianRoutineState = _groupData get "civilianRoutineState";
 private _anchorPos = _groupData get "civilianAnchorPos";
 private _realGroup = createGroup [civilian, true];
 private _spawnedUnits = [];
@@ -82,6 +83,7 @@ if (isNull _realGroup) exitWith { grpNull };
     _x setVariable ["FLO_VirtualGroupId", _groupId, true];
     _x setVariable ["FLO_CivilianObjective", _civilianObjective, true];
     _x setVariable ["FLO_CivilianRole", _civilianRole, true];
+    _x setVariable ["FLO_CivilianRoutineState", _civilianRoutineState, true];
     _x setVariable ["FLO_CivilianLastIntelAt", _groupData get "civilianLastIntelAt", true];
 
     _x disableAI "AUTOCOMBAT";

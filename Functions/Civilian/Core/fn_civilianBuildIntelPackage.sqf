@@ -25,7 +25,22 @@ params [
 ];
 
 private _package = createHashMap;
-if (_objectiveId == "" || {isNil "FLO_GTN_CommandersBySide"}) exitWith { _package };
+if (_objectiveId == "") exitWith { _package };
+
+if (!isNil "FLO_CivilianManager") then {
+    private _memory = [
+        FLO_CivilianManager get "_objectiveMemories",
+        _objectiveId,
+        _civilianRole,
+        diag_tickTime
+    ] call FLO_fnc_civilianSelectObjectiveMemory;
+
+    if ((count (keys _memory)) > 0) exitWith {
+        [_memory, _reportingSide, _civilianRole] call FLO_fnc_civilianBuildIntelPackageFromMemory
+    };
+};
+
+if (isNil "FLO_GTN_CommandersBySide") exitWith { _package };
 
 private _sideKey = ([_reportingSide] call FLO_fnc_gtnSideContext) get "sideKey";
 private _commander = FLO_GTN_CommandersBySide get _sideKey;

@@ -1,57 +1,47 @@
 /*
  * Function: FLO_fnc_civMission1
- * Description: Civilian Mission 1 - Repair Vehicle
- *   Finds a damaged civilian vehicle to repair.
- *   Spawns vehicle, creates marker (globally), adds repair action.
+ * Description:
+ *   Civilian Mission 1 - Repair Vehicle
  */
 
-if (!isServer) exitWith {};
+params [["_offer", createHashMap, [createHashMap]]];
 
-// Find Location
-private _players = allPlayers select {alive _x};
-if (count _players == 0) exitWith { ["MISSION_COMPLETE", []] call FLO_fnc_civilianMissionManager; };
-private _centerPlayer = selectRandom _players;
+private _result = createHashMap;
+if (!isServer || {(count (keys _offer)) == 0}) exitWith { _result };
 
-private _nearRoads = (getPos _centerPlayer) nearRoads 800 select { _x distance2D _centerPlayer > 200 };
-if (count _nearRoads == 0) exitWith { 
-    ["CIV_MISSION", 2, "Mission 1 cancelled: No valid roads found"] call FLO_fnc_log;
-    ["MISSION_COMPLETE", []] call FLO_fnc_civilianMissionManager; 
+private _objectiveId = _offer get "targetObjectiveId";
+if !(_objectiveId in FLO_Objectives) exitWith { _result };
+
+private _objective = FLO_Objectives get _objectiveId;
+private _objectivePos = _objective get "position";
+private _objectiveRadius = ((_objective get "radius") max 150) min 900;
+private _caller = _offer get "caller";
+private _roads = _objectivePos nearRoads _objectiveRadius;
+_roads = _roads select { [getPosATL _x, _objective] call FLO_fnc_isPositionInObjective };
+if (!isNull _caller) then {
+    _roads = _roads select { (getPosATL _caller distance2D getPosATL _x) > 120 };
 };
+if ((count _roads) == 0) exitWith { _result };
 
-private _road = selectRandom _nearRoads;
-private _pos = getPos _road;
-private _taskId = format ["CivMission_Repair_%1", floor random 9999];
-[true, _taskId, ["Find and repair the civilian vehicle.", "Repair Vehicle", ""], _pos, "CREATED", 1, true, "repair", true] call BIS_fnc_taskCreate;
-
-// Notification
+private _road = selectRandom _roads;
+private _pos = getPosATL _road;
+private _taskId = _offer get "missionId";
+[true, _taskId, [_offer get "briefing", _offer get "taskTitle", ""], _pos, "CREATED", 1, true, "repair", true] call BIS_fnc_taskCreate;
 ["STR_FLO_MISSIONCIV_REPAIR", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
-private _vehType = selectRandom CivVehArray;
-if (isNil "CivVehArray") then { _vehType = "C_Offroad_01_F"; };
+private _vehicleType = if (!isNil "CivVehArray" && {count CivVehArray > 0}) then { selectRandom CivVehArray } else { "C_Offroad_01_F" };
+private _vehicle = createVehicle [_vehicleType, _pos, [], 0, "NONE"];
+_vehicle setDir (_road getDir ((roadsConnectedTo _road) param [0, _road]));
+_vehicle setDamage 0.7;
+_vehicle setVariable ["missionTaskId", _taskId, true];
 
-private _veh = createVehicle [_vehType, _pos, [], 0, "NONE"];
-_veh setDir (_road getDir ((roadsConnectedTo _road) param [0, _road]));
-_veh setDamage 0.7;
-
-// Handle Failure (Vehicle Destroyed)
-_veh addEventHandler ["Killed", {
+_vehicle addEventHandler ["Killed", {
     params ["_unit"];
-    private _tId = _unit getVariable ["missionTaskId", ""];
-    
-    if (_tId != "") then { [_tId, "FAILED", true] call BIS_fnc_taskSetState; };
-    
-    [-0.35, 'decrease'] call FLO_fnc_adjustReputation;
-    
-    // Fail -> Next mission
-    ["MISSION_COMPLETE", []] call FLO_fnc_civilianMissionManager;
+    ["REPAIR_FAILED", [_unit]] call FLO_fnc_civilianMissionResolveAction;
 }];
 
-// Store task ID on vehicle for updates
-_veh setVariable ["missionTaskId", _taskId, true];
-
-// Add Repair Action
 [
-    _veh,
+    _vehicle,
     "Repair Civilian Vehicle",
     "\a3\ui_f\data\IGUI\Cfg\HoldActions\holdAction_connect_ca.paa",
     "\a3\ui_f\data\IGUI\Cfg\HoldActions\holdAction_connect_ca.paa",
@@ -60,10 +50,8 @@ _veh setVariable ["missionTaskId", _taskId, true];
     {},
     {},
     {
-        params ["_target", "_caller", "_actionId", "_arguments"];        
-        // Repair
-        _target setDamage 0;
-        [_target] remoteExec ["FLO_fnc_civMission1_OnComplete", 2];
+        params ["_target", "_caller", "_actionId"];
+        ["REPAIR_COMPLETE", [_target, _actionId]] remoteExecCall ["FLO_fnc_civilianMissionResolveAction", 2, false];
     },
     {},
     [],
@@ -71,37 +59,21 @@ _veh setVariable ["missionTaskId", _taskId, true];
     0,
     true,
     false
-] remoteExec ["BIS_fnc_holdActionAdd", 0, _veh];
+] remoteExec ["BIS_fnc_holdActionAdd", 0, _vehicle];
 
-// Spawn Ambush (if Low Rep)
-private _repScore = FLO_ReputationHandle getOrDefault ["value", 0];
-if (_repScore < 7) then {
+if ((FLO_ReputationHandle get "value") < 7) then {
     private _grp = createGroup [east, true];
     private _spawnPos = [_pos, 100, 200, 3, 0, 20, 0] call BIS_fnc_findSafePos;
-    
+
     for "_i" from 1 to 4 do {
-        private _unitType = if (!isNil "GuerMenArray") then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
+        private _unitType = if (!isNil "GuerMenArray" && {count GuerMenArray > 0}) then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
         _grp createUnit [_unitType, _spawnPos, [], 0, "NONE"];
     };
-    
+
     [_grp, _pos, 100] call FLO_fnc_taskPatrol;
 };
 
-// Define completion function locally for the server to call
-FLO_fnc_civMission1_OnComplete = {
-    params ["_vehicle"];
-    
-    // Complete Task
-    private _tId = _vehicle getVariable ["missionTaskId", ""];
-    if (_tId != "") then { [_tId, "SUCCEEDED", true] call BIS_fnc_taskSetState; };
-    
-    // Reward
-    [0.35, 'increase'] call FLO_fnc_adjustReputation;
-    ["ScoreAdded", ["Vehicle Repaired", 0]] remoteExec ["BIS_fnc_showNotification", 0];
-    
-    // Remove Action
-    [_vehicle, 0] remoteExec ["bis_fnc_holdActionRemove", 0];
-    
-    // Complete Mission Loop
-    ["MISSION_COMPLETE", []] call FLO_fnc_civilianMissionManager;
-};
+createHashMapFromArray [
+    ["taskId", _taskId],
+    ["position", _pos]
+]

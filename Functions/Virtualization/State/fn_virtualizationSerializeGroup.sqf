@@ -78,11 +78,15 @@ createHashMapFromArray [
     ["civilianRole", _groupData get "civilianRole"],
     ["civilianObjective", _groupData get "civilianObjective"],
     ["civilianAnchorPos", _groupData get "civilianAnchorPos"],
+    ["civilianHomeAnchorPos", _groupData get "civilianHomeAnchorPos"],
+    ["civilianRoutineAnchorPos", _groupData get "civilianRoutineAnchorPos"],
     ["civilianRouteAnchors", _groupData get "civilianRouteAnchors"],
     ["civilianKnowledgeBias", _groupData get "civilianKnowledgeBias"],
     ["civilianTrustBias", _groupData get "civilianTrustBias"],
     ["civilianLastIntelAt", _groupData get "civilianLastIntelAt"],
     ["civilianLastMood", _groupData get "civilianLastMood"],
-    ["civilianRoutineState", _groupData get "civilianRoutineState"]
+    ["civilianRoutineState", _groupData get "civilianRoutineState"],
+    ["civilianLastRoutineAt", _groupData get "civilianLastRoutineAt"],
+    ["civilianRoutineUntil", _groupData get "civilianRoutineUntil"]
 ]
 
