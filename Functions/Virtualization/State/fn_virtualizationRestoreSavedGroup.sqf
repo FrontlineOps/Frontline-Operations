@@ -27,6 +27,15 @@ _groupData set ["noWaypoints", _savedData get "noWaypoints"];
 _groupData set ["forceVirtual", _savedData get "forceVirtual"];
 _groupData set ["organicPackageRole", _savedData get "organicPackageRole"];
 _groupData set ["organicPackageParentGroupId", _savedData get "organicPackageParentGroupId"];
+_groupData set ["civilianRole", _savedData get "civilianRole"];
+_groupData set ["civilianObjective", _savedData get "civilianObjective"];
+_groupData set ["civilianAnchorPos", _savedData get "civilianAnchorPos"];
+_groupData set ["civilianRouteAnchors", _savedData get "civilianRouteAnchors"];
+_groupData set ["civilianKnowledgeBias", _savedData get "civilianKnowledgeBias"];
+_groupData set ["civilianTrustBias", _savedData get "civilianTrustBias"];
+_groupData set ["civilianLastIntelAt", _savedData get "civilianLastIntelAt"];
+_groupData set ["civilianLastMood", _savedData get "civilianLastMood"];
+_groupData set ["civilianRoutineState", _savedData get "civilianRoutineState"];
 
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreMissionState;
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreCommanderState;

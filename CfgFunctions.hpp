@@ -157,6 +157,11 @@ class FLO {
 
         class civilianManager {};
         class civilianConfig {};
+        class civilianResolveObjective {};
+        class civilianBuildRoleProfile {};
+        class civilianBuildAmbientRoute {};
+        class civilianResolveObjectiveContext {};
+        class civilianBuildIntelPackage {};
     };
 
     class CivilianSpawning {
@@ -171,6 +176,7 @@ class FLO {
 
         class civilianActions {};
         class civilianInvestigateAction {};
+        class civilianRequestIntel {};
         class civilianDetainActions {};
         class civilianProtest {};
     };

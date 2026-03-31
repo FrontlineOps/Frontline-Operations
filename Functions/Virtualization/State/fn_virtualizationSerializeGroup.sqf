@@ -74,6 +74,15 @@ createHashMapFromArray [
     ["organicPackageRole", _groupData get "organicPackageRole"],
     ["organicPackageParentGroupId", _groupData get "organicPackageParentGroupId"],
     ["garrisonPosition", _groupData get "garrisonPosition"],
-    ["garrisonObjective", _groupData get "garrisonObjective"]
+    ["garrisonObjective", _groupData get "garrisonObjective"],
+    ["civilianRole", _groupData get "civilianRole"],
+    ["civilianObjective", _groupData get "civilianObjective"],
+    ["civilianAnchorPos", _groupData get "civilianAnchorPos"],
+    ["civilianRouteAnchors", _groupData get "civilianRouteAnchors"],
+    ["civilianKnowledgeBias", _groupData get "civilianKnowledgeBias"],
+    ["civilianTrustBias", _groupData get "civilianTrustBias"],
+    ["civilianLastIntelAt", _groupData get "civilianLastIntelAt"],
+    ["civilianLastMood", _groupData get "civilianLastMood"],
+    ["civilianRoutineState", _groupData get "civilianRoutineState"]
 ]
 

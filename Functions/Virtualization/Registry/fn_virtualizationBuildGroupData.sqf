@@ -116,7 +116,16 @@ private _groupData = createHashMapFromArray [
     ["organicPackageRole", ""],
     ["organicPackageParentGroupId", ""],
     ["garrisonPosition", _position],
-    ["garrisonObjective", ""]
+    ["garrisonObjective", ""],
+    ["civilianRole", ""],
+    ["civilianObjective", _homeObjective],
+    ["civilianAnchorPos", _position],
+    ["civilianRouteAnchors", []],
+    ["civilianKnowledgeBias", 1],
+    ["civilianTrustBias", 1],
+    ["civilianLastIntelAt", -1],
+    ["civilianLastMood", ""],
+    ["civilianRoutineState", ""]
 ];
 
 private _initialAssetComposition = [_groupType, _resolvedUnitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;
