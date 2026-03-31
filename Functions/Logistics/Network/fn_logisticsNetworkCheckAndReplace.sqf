@@ -211,14 +211,10 @@ if ((count _maneuverTargets) + (count _rearTargets) == 0) then {
 
 private _batchMin = _net get "DISPATCH_BATCH_MIN";
 private _batchMax = _net get "DISPATCH_BATCH_MAX";
-private _batchHardCap = _net get "DISPATCH_MAX_PER_CHECK";
 private _dispatchTimeBudgetMs = _net get "DISPATCH_TIME_BUDGET_MS";
 private _batchSize = _batchMin + floor random ((_batchMax - _batchMin) + 1);
 if (_batchSize > count _queue) then {
     _batchSize = count _queue;
-};
-if (_batchSize > _batchHardCap) then {
-    _batchSize = _batchHardCap;
 };
 _perf set ["batchSize", _batchSize];
 
