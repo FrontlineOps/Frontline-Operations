@@ -184,8 +184,8 @@ private _gtnCommander = createHashMapObject [[
         ["attackEngagementSearchRadius", 1000], // Attack groups may engage confirmed enemies near their current position
         ["attackEngagementCorridorRadius", 500], // Attack groups may peel off to confirmed enemies close to their assigned route
         ["attackEngagementLeashMeters", 450], // Attack groups do not chase confirmed targets too far off their approach
-        ["defenseEngagementLeashMeters", 750], // Defenders only engage confirmed targets local to their defended objective
-        ["garrisonEngagementLeashMeters", 500], // Garrisons only engage confirmed targets local to their held objective
+        ["defenseEngagementLeashMeters", 1000], // Defenders only engage confirmed targets local to their defended objective
+        ["garrisonEngagementLeashMeters", 1000], // Garrisons only engage confirmed targets local to their held objective
         ["engagementTargetLoadMultiplier", 1.25], // Known contacts only attract a limited friendly load before selection starts spreading to other valid targets
         ["engagementReservationPenaltyPerGroup", 16], // Each committed friendly group reduces the score of the same target for later groups that cycle
         ["engagementSaturationPenalty", 30], // Targets already saturated by current commitments become much less attractive than other valid contacts
