@@ -96,6 +96,8 @@ if (_groupData get "transportUnloadCommandIssued") exitWith {
         [_groupId, true] call FLO_fnc_transportDismount;
         true
     } else {
+        [_groupId, _groupData, _transportVehicles] call FLO_fnc_transportIssueActiveDismount;
+
         private _unloadIssuedAt = _groupData get "transportUnloadIssuedAt";
         if (_unloadIssuedAt >= 0 && {(diag_tickTime - _unloadIssuedAt) >= FLO_Transport_ActiveUnloadTimeout}) then {
             ["TRANSPORT", 2, format [
