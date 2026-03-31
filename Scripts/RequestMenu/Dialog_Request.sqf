@@ -426,7 +426,7 @@ VEH_REQUEST = {
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
     
     // Apply vehicle-specific configurations
-    [_VehName, CreatedVEH] call FLO_fnc_configureVehicle;
+    [CreatedVEH, _VehName] call FLO_fnc_vehicleConfigureRequestedVehicle;
     
     // Setup placement system
     CursorTracker = true;
@@ -534,78 +534,3 @@ VEH_REQUEST = {
     closeDialog 0;
 };
 
-// Helper function to configure specific vehicle types
-FLO_fnc_configureVehicle = {
-    params ["_VehName", "_vehicle"];
-    
-    // Apply Stryker textures
-    if ((_VehName == "rhsusf_stryker_m1126_m2_d") or (_VehName == "rhsusf_stryker_m1126_mk19_d") or (_VehName == "rhsusf_stryker_m1134_d")) then {
-        [_vehicle, ["Tan", 1]] call BIS_fnc_initVehicle;
-    };
-    
-    // Apply textures to MRZR in woodland environment
-    if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ CUP + RHS") or 
-         (markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ RHS")) && 
-         (_VehName == "rhsusf_mrzr4_d")) then {
-        [_vehicle, ["mud_olive", 1]] call BIS_fnc_initVehicle;
-    };
-    
-    // Configure repair slingload container
-    if (_VehName == "B_Slingload_01_Repair_F") then {
-        [_vehicle, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-            "Scripts\PObjectives\OPUNPACK.sqf",
-            nil,
-            0,
-            true,
-            true,
-            "",
-            "true",
-            40,
-            false,
-            "",
-            ""
-        ]] remoteExec ["addAction", 0, true];
-    };
-    
-    // Configure mobile workshop (F_Truck_04)
-    _MOBSERName = missionNamespace getVariable "F_Truck_04";
-    if (_VehName == _MOBSERName) then {
-        if (!isNil "_vehicle" && {!isNull _vehicle}) then {
-            [_vehicle, [
-                "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode", 
-                { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
-                nil, 
-                1.4, 
-                false, 
-                true, 
-                "", 
-                "!IDS_Logistics_isHolding"
-            ]] remoteExec ["addAction", 0, true];
-        };
-    };
-    
-    // Configure ammo truck (F_Truck_03)
-    _MOBSERName = missionNamespace getVariable "F_Truck_03";
-    if (_VehName == _MOBSERName) then {
-        [_vehicle, [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil,
-            1,
-            true,
-            true,
-            "",
-            "_this distance _target < 10"
-        ]] remoteExec ["addAction", 0, true];
-    };
-};
-
-
-   
