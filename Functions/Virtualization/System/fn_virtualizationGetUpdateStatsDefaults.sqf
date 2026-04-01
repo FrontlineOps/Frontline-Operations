@@ -33,6 +33,8 @@ createHashMapFromArray [
     ["deactivationsThisBatch", 0],
     ["virtualMovesTotal", 0],
     ["virtualMovesThisBatch", 0],
+    ["movementOnlyUpdatesTotal", 0],
+    ["movementOnlyUpdatesThisBatch", 0],
     ["activePositionSyncsTotal", 0],
     ["activePositionSyncsThisBatch", 0],
     ["waypointAdvancesTotal", 0],

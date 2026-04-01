@@ -36,6 +36,8 @@ private _perf = FLO_VirtUpdate get "perf";
     ["deactivationsThisBatch", _stats get "deactivationsThisBatch"],
     ["virtualMovesTotal", _stats get "virtualMovesTotal"],
     ["virtualMovesThisBatch", _stats get "virtualMovesThisBatch"],
+    ["movementOnlyUpdatesTotal", _stats get "movementOnlyUpdatesTotal"],
+    ["movementOnlyUpdatesThisBatch", _stats get "movementOnlyUpdatesThisBatch"],
     ["activePositionSyncsTotal", _stats get "activePositionSyncsTotal"],
     ["activePositionSyncsThisBatch", _stats get "activePositionSyncsThisBatch"],
     ["waypointAdvancesTotal", _stats get "waypointAdvancesTotal"],

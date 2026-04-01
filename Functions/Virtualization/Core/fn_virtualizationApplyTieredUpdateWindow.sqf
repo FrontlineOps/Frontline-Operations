@@ -17,23 +17,37 @@ if (_updatePhase < 0) then {
     _groupData set ["updatePhase", _updatePhase];
 };
 
-private _updateInterval = if (_nearestDist < 1000) then {
-    2
-} else {
-    if (_nearestDist < 2500) then { 5 } else { 15 };
-};
-
 if (!_isActive && {_nearestDist > _activationDist}) then {
+    private _profile = [_groupData, _nearestDist, _activationDist] call FLO_fnc_virtualizationResolveInactiveUpdateProfile;
+    _profile params ["_fullUpdateInterval", "_movementUpdateInterval", "_speedMultiplier"];
+
     if (_lastGroupUpdate < 0) then {
-        _lastGroupUpdate = _now - (_updatePhase * _updateInterval);
+        _lastGroupUpdate = _now - (_updatePhase * _fullUpdateInterval);
         _groupUpdateTimes set [_groupId, _lastGroupUpdate];
     };
-    if (_now - _lastGroupUpdate < _updateInterval) exitWith {
-        _virtStats set ["tierSkipsTotal", (_virtStats get "tierSkipsTotal") + 1];
-        _virtStats set ["tierSkipsThisBatch", (_virtStats get "tierSkipsThisBatch") + 1];
-        [false, _nearestDist]
+
+    private _fullUpdateDue = (_now - _lastGroupUpdate) >= _fullUpdateInterval;
+    if (_fullUpdateDue) exitWith {
+        _groupUpdateTimes set [_groupId, _now];
+        [true, _nearestDist, true, _speedMultiplier]
     };
+
+    if (_movementUpdateInterval < _fullUpdateInterval) then {
+        private _lastMove = _groupData get "lastMoveTime";
+        if (_lastMove < 0) then {
+            _lastMove = _now - (_updatePhase * _movementUpdateInterval);
+            _groupData set ["lastMoveTime", _lastMove];
+        };
+
+        if (_now - _lastMove >= _movementUpdateInterval) exitWith {
+            [true, _nearestDist, false, _speedMultiplier]
+        };
+    };
+
+    _virtStats set ["tierSkipsTotal", (_virtStats get "tierSkipsTotal") + 1];
+    _virtStats set ["tierSkipsThisBatch", (_virtStats get "tierSkipsThisBatch") + 1];
+    [false, _nearestDist, false, 1]
 };
 
 _groupUpdateTimes set [_groupId, _now];
-[true, _nearestDist]
+[true, _nearestDist, true, 1]

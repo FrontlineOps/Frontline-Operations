@@ -2,7 +2,7 @@
  * Function: FLO_fnc_virtualizationProcessInactiveMovement
  */
 
-params ["_groupId", "_groupData", "_now", "_virtStats"];
+params ["_groupId", "_groupData", "_now", "_virtStats", ["_speedMultiplier", 1, [0]]];
 
 private _waypoints = _groupData get "waypoints";
 private _currentWpIdx = _groupData get "currentWaypointIndex";
@@ -12,7 +12,7 @@ if (count _waypoints > 0 && {_currentWpIdx < count _waypoints}) then {
     private _wp = _waypoints select _currentWpIdx;
     private _wpPos = _wp select 0;
     private _wpType = _wp select 1;
-    private _virtualSpeed = _groupData get "virtualSpeed";
+    private _virtualSpeed = (_groupData get "virtualSpeed") * _speedMultiplier;
     private _lastMove = _groupData get "lastMoveTime";
     private _timeDelta = _now - _lastMove;
     private _distToWp = _position distance2D _wpPos;

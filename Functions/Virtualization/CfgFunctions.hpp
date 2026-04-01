@@ -170,6 +170,7 @@ class VirtualizationCore {
     class virtualizationAdvanceDefaultWaypoint {};
     class virtualizationAdvanceLoiterWaypoint {};
     class virtualizationAdvanceTerminalWaypoint {};
+    class virtualizationResolveInactiveUpdateProfile {};
     class virtualizationApplyTieredUpdateWindow {};
     class virtualizationRepairOrphanedActiveGroup {};
     class virtualizationProcessAttachedGroup {};

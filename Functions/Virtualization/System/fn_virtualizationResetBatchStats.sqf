@@ -12,6 +12,7 @@ params ["_stats"];
     ["activationBlocksThisBatch", 0],
     ["deactivationsThisBatch", 0],
     ["virtualMovesThisBatch", 0],
+    ["movementOnlyUpdatesThisBatch", 0],
     ["activePositionSyncsThisBatch", 0],
     ["waypointAdvancesThisBatch", 0],
     ["patrolAssignmentsThisBatch", 0],
