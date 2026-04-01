@@ -24,6 +24,7 @@ private _civilianRole = _groupData get "civilianRole";
 private _civilianObjective = _groupData get "civilianObjective";
 private _civilianRoutineState = _groupData get "civilianRoutineState";
 private _anchorPos = _groupData get "civilianAnchorPos";
+private _routineAnchorPos = _groupData get "civilianRoutineAnchorPos";
 private _realGroup = createGroup [civilian, true];
 private _spawnedUnits = [];
 
@@ -31,12 +32,22 @@ switch (_groupType) do {
     case "civilian";
     case "civ_pedestrian";
     case "civ_building": {
+        private _spawnBasis = if (_groupType == "civ_building") then {
+            +_anchorPos
+        } else {
+            if ((_position distance2D _routineAnchorPos) > 80) then {
+                +_routineAnchorPos
+            } else {
+                +_position
+            }
+        };
+
         for "_i" from 1 to _unitCount do {
             private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
             private _spawnPos = if (_groupType == "civ_building") then {
                 +_anchorPos
             } else {
-                [_position, 3, 12, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
+                [_spawnBasis, 3, 12, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
             };
 
             private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
@@ -47,7 +58,11 @@ switch (_groupType) do {
     case "civilianVehicle";
     case "civ_car": {
         private _vehicleType = selectRandom CivVehArray;
-        private _spawnPos = +_position;
+        private _spawnPos = if ((_position distance2D _routineAnchorPos) > 80) then {
+            +_routineAnchorPos
+        } else {
+            +_position
+        };
         private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "CAN_COLLIDE"];
         _vehicle setPos [_spawnPos select 0, _spawnPos select 1, 0];
         _vehicle setVectorUp [0, 0, 1];
@@ -94,7 +109,7 @@ if (isNull _realGroup) exitWith { grpNull };
     if (_groupType == "civ_building") then {
         _x disableAI "PATH";
         _x disableAI "MOVE";
-        _x doStop _x;
+        doStop _x;
     };
 } forEach _spawnedUnits;
 

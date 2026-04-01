@@ -48,7 +48,7 @@ while {alive _unit && {_unit getVariable ["FLO_isProtester", false]}} do {
         _gatherPos set [2, 0];
         _unit doMove _gatherPos;
     } else {
-        _unit doStop _unit;
+        doStop _unit;
         _unit setDir (_unit getDir _target);
 
         private _lastAnimAt = _unit getVariable ["FLO_ProtestLastAnimAt", -1];

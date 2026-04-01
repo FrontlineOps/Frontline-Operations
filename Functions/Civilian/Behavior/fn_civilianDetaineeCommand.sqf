@@ -96,7 +96,7 @@ switch (toUpper _mode) do {
         detach _unit;
         _unit disableAI "PATH";
         _unit disableAI "MOVE";
-        _unit doStop _unit;
+        doStop _unit;
         private _record = _records get (netId _unit);
         _record set ["escorting", false];
         true

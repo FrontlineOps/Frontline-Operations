@@ -40,6 +40,10 @@ _groupData set ["civilianRoutineAnchorPos", _anchorPos];
 _groupData set ["civilianAnchorPos", _anchorPos];
 _groupData set ["civilianRouteAnchors", _routeAnchors];
 
+if !(_groupData get "isActive") then {
+    [FLO_virtualGroups, _groupId, _anchorPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+};
+
 if ((count _waypoints) > 0) then {
     _groupData set ["noWaypoints", false];
     [_groupId, _waypoints, false, true, _source] call FLO_fnc_updateVirtualGroupWaypoints;

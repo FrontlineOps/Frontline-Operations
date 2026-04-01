@@ -22,9 +22,10 @@ private _poiCaches = createHashMap;
 private _allLocations = [];
 
 {
+    private _locationType = _x;
     {
-        _allLocations pushBack [_x, _y];
-    } forEach (nearestLocations [[worldSize * 0.5, worldSize * 0.5, 0], [_y], worldSize]);
+        _allLocations pushBack [_x, _locationType];
+    } forEach (nearestLocations [[worldSize * 0.5, worldSize * 0.5, 0], [_locationType], worldSize]);
 } forEach _locationTypes;
 
 private _createdCount = 0;
