@@ -155,6 +155,9 @@ private _rearTargets = _targetPicture get "rearTargets";
 private _maneuverTargets = _targetPicture get "maneuverTargets";
 private _collapseTargetCount = _targetPicture get "collapseTargetCount";
 private _frontlinePressureTargetCount = _targetPicture get "frontlinePressureTargetCount";
+private _sourceBlockedObjectives = _pressureTargets select {
+    [_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure
+};
 
 if (_collapseTargetCount > 0) then {
     ["LOGISTICS", 3, format [
@@ -280,7 +283,7 @@ for "_i" from 1 to _batchSize do {
     };
 
     private _spawnFindT0 = diag_tickTime;
-    private _spawnData = [_net, _deliveryObjectiveId, _pressureTargets] call FLO_fnc_logisticsNetworkFindSpawnPosition;
+    private _spawnData = [_net, _deliveryObjectiveId, _sourceBlockedObjectives] call FLO_fnc_logisticsNetworkFindSpawnPosition;
     _perf set ["dispatchSpawnMs", (_perf get "dispatchSpawnMs") + ((diag_tickTime - _spawnFindT0) * 1000)];
     private _spawnPos = _spawnData select 0;
     private _sourceObjId = _spawnData select 1;
