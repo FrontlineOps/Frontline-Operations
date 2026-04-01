@@ -2,11 +2,11 @@
  * Function: FLO_fnc_logisticsNetworkFindSupplySourceObjective
  * Author: Frontline Operations Development Group
  * Description:
- *   Finds the closest active supply node behind a friendly delivery target by
- *   walking the cached supply-route parent chain back toward HQ. The search
- *   prefers unblocked active nodes, but if every upstream active node is in
- *   the blocked set it falls back to the nearest active node instead of
- *   failing the dispatch outright.
+ *   Finds the closest active supply node at or behind a friendly delivery
+ *   target by walking the cached supply-route parent chain back toward HQ.
+ *   The search prefers unblocked active nodes, but if every reachable active
+ *   node is in the blocked set it falls back to the nearest active node
+ *   instead of failing the dispatch outright.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -39,7 +39,7 @@ private _maxRouteMeters = _net get "SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS";
 private _currentObjectiveId = _targetObjectiveId;
 private _currentObjective = _targetObjective;
 private _routeMeters = 0;
-private _sourceObjectiveId = ((_routeInfo get _targetObjectiveId) get "parentObjective");
+private _sourceObjectiveId = _targetObjectiveId;
 private _resolvedSourceObjectiveId = "";
 private _fallbackSourceObjectiveId = "";
 
