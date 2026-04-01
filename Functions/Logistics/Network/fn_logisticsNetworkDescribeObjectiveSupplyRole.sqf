@@ -15,6 +15,9 @@
 
 params ["_net", "_objectiveId"];
 
+private _roleCache = _net get "_dispatchRoleCache";
+if (_objectiveId in _roleCache) exitWith { _roleCache get _objectiveId };
+
 private _role = createHashMapFromArray [
     ["depth", -1],
     ["routeMeters", 1e12],
@@ -26,7 +29,10 @@ private _role = createHashMapFromArray [
     ["isAdvanceCandidate", false]
 ];
 
-if !(_objectiveId in FLO_Objectives) exitWith { _role };
+if !(_objectiveId in FLO_Objectives) exitWith {
+    _roleCache set [_objectiveId, _role];
+    _role
+};
 
 private _routeInfo = _net get "_supplyRouteInfo";
 private _activeNodes = _net get "_activeSupplyNodes";
@@ -36,7 +42,10 @@ if ((count (keys _routeInfo)) == 0 && {(count (keys _activeNodes)) == 0}) then {
     _activeNodes = _net get "_activeSupplyNodes";
 };
 
-if !(_objectiveId in _routeInfo) exitWith { _role };
+if !(_objectiveId in _routeInfo) exitWith {
+    _roleCache set [_objectiveId, _role];
+    _role
+};
 
 private _nodeInfo = _routeInfo get _objectiveId;
 private _objective = FLO_Objectives get _objectiveId;
@@ -51,5 +60,7 @@ _role set ["isHQ", _nodeInfo get "isHQ"];
 _role set ["isActiveNode", _isActiveNode];
 _role set ["activeLinkedObjectives", _activeLinkedObjectives];
 _role set ["isAdvanceCandidate", !_isActiveNode && {count _activeLinkedObjectives > 0}];
+
+_roleCache set [_objectiveId, _role];
 
 _role

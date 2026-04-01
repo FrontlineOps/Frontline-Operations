@@ -89,6 +89,9 @@ if (count _available == 0) exitWith { "" };
 
 private _managedSide = _net get "_managedSide";
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
+private _branchRecentCounts = [_net, _recentDispatchCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
+private _branchInboundCounts = [_net, _inboundCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
+private _branchBatchCounts = [_net, _batchDispatchCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
 private _collapseCandidates = [];
 private _frontlinePressureCandidates = [];
 private _pressureCandidates = [];
@@ -121,19 +124,19 @@ private _rearCandidates = [];
 } forEach _available;
 
 if (count _collapseCandidates > 0) exitWith {
-    [_net, _collapseCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
+    [_net, _collapseCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts, _branchInboundCounts, _branchRecentCounts, _branchBatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
 };
 
 if (count _frontlinePressureCandidates > 0) exitWith {
-    [_net, _frontlinePressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
+    [_net, _frontlinePressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts, _branchInboundCounts, _branchRecentCounts, _branchBatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
 };
 
 if (count _advanceCandidates > 0) exitWith {
-    [_net, _advanceCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickAdvanceTarget
+    [_net, _advanceCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts, _branchInboundCounts, _branchRecentCounts, _branchBatchCounts] call FLO_fnc_logisticsNetworkPickAdvanceTarget
 };
 
 if (count _pressureCandidates > 0) exitWith {
-    [_net, _pressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
+    [_net, _pressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts, _branchInboundCounts, _branchRecentCounts, _branchBatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
 };
 
 [_net, _rearCandidates] call FLO_fnc_logisticsNetworkPickRearTarget

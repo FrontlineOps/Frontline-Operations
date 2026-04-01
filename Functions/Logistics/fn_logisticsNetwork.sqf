@@ -85,6 +85,11 @@ private _logisticsClass = [
     ["_activeSupplyNodes", createHashMap],
     ["_lastSupplyNodeSignature", ""],
     ["_spawnRoadCache", createHashMap],
+    ["_dispatchRoleCache", createHashMap],
+    ["_dispatchBranchCache", createHashMap],
+    ["_dispatchEnemyDistanceCache", createHashMap],
+    ["_dispatchSourceableCache", createHashMap],
+    ["_dispatchDeliveryObjectiveCache", createHashMap],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkCreate;

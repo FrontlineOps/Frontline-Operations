@@ -63,6 +63,11 @@ private _perf = createHashMapFromArray [
 private _phaseT0 = diag_tickTime;
 [_net] call FLO_fnc_logisticsNetworkRefreshManagedSide;
 private _activeSupplyNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+_net set ["_dispatchRoleCache", createHashMap];
+_net set ["_dispatchBranchCache", createHashMap];
+_net set ["_dispatchEnemyDistanceCache", createHashMap];
+_net set ["_dispatchSourceableCache", createHashMap];
+_net set ["_dispatchDeliveryObjectiveCache", createHashMap];
 _perf set ["refreshMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["hqObjective", _net get "_hqObjectiveId"];
 _perf set ["supplyNodeCount", count (keys _activeSupplyNodes)];
@@ -166,7 +171,7 @@ private _maneuverTargets = +_pressureTargets;
 } forEach _advanceTargets;
 
 if (_collapseTargetCount > 0) then {
-    ["LOGISTICS", 2, format [
+    ["LOGISTICS", 3, format [
         "Queue dispatch: collapse pressure overriding supply advance (%1 collapse, %2 advance, %3 pending)",
         _collapseTargetCount,
         count _advanceTargets,
@@ -174,7 +179,7 @@ if (_collapseTargetCount > 0) then {
     ]] call FLO_fnc_log;
 } else {
     if (_frontlinePressureTargetCount > 0) then {
-        ["LOGISTICS", 2, format [
+        ["LOGISTICS", 3, format [
             "Queue dispatch: frontline pressure overriding supply advance (%1 frontline, %2 advance, %3 background pressure, %4 pending)",
             _frontlinePressureTargetCount,
             count _advanceTargets,
@@ -183,7 +188,7 @@ if (_collapseTargetCount > 0) then {
         ]] call FLO_fnc_log;
     } else {
         if (count _advanceTargets > 0) then {
-        ["LOGISTICS", 2, format [
+        ["LOGISTICS", 3, format [
             "Queue dispatch: prioritizing supply-chain advance (%1 advance, %2 non-critical pressure, %3 pending)",
             count _advanceTargets,
             (count _pressureTargets) - _collapseTargetCount - _frontlinePressureTargetCount,
@@ -191,7 +196,7 @@ if (_collapseTargetCount > 0) then {
         ]] call FLO_fnc_log;
     } else {
         if (count _pressureTargets == 0) then {
-            ["LOGISTICS", 2, format [
+            ["LOGISTICS", 3, format [
                 "Queue dispatch: no pressure or advance objectives - checking rear objectives (%1 pending)",
                 count _queue
             ]] call FLO_fnc_log;
@@ -206,7 +211,7 @@ _perf set ["advanceTargetCount", count _advanceTargets];
 _perf set ["targetCount", (count _maneuverTargets) + (count _rearTargets)];
 
 if ((count _maneuverTargets) + (count _rearTargets) == 0) then {
-    ["LOGISTICS", 2, "No pressure, supply-advance, or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
+    ["LOGISTICS", 3, "No pressure, supply-advance, or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
 };
 
 private _batchMin = _net get "DISPATCH_BATCH_MIN";

@@ -23,7 +23,10 @@ params [
     "_candidates",
     ["_inboundCounts", createHashMap],
     ["_recentDispatchCounts", createHashMap],
-    ["_batchDispatchCounts", createHashMap]
+    ["_batchDispatchCounts", createHashMap],
+    ["_branchInboundCounts", createHashMap],
+    ["_branchRecentCounts", createHashMap],
+    ["_branchBatchCounts", createHashMap]
 ];
 
 if (count _candidates == 0) exitWith { "" };
@@ -31,9 +34,6 @@ if (count _candidates == 0) exitWith { "" };
 private _lastTarget = _net get "_lastReinforcementTarget";
 private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
-private _branchRecentCounts = [_net, _recentDispatchCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
-private _branchInboundCounts = [_net, _inboundCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
-private _branchBatchCounts = [_net, _batchDispatchCounts] call FLO_fnc_logisticsNetworkBuildBranchDispatchCounts;
 
 private _bestObjectiveId = "";
 private _bestDepth = -1;

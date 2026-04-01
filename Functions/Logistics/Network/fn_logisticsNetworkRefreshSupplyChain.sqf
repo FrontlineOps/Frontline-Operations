@@ -15,6 +15,12 @@
 
 params ["_net"];
 
+_net set ["_dispatchRoleCache", createHashMap];
+_net set ["_dispatchBranchCache", createHashMap];
+_net set ["_dispatchEnemyDistanceCache", createHashMap];
+_net set ["_dispatchSourceableCache", createHashMap];
+_net set ["_dispatchDeliveryObjectiveCache", createHashMap];
+
 private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
 private _deliveryCounts = _net get "_supplyNodeDeliveries";
