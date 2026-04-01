@@ -29,6 +29,7 @@
  * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
  * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
  * FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP = 1968
+ * FLO_IDC_FACTION_COMBO_TERRITORY_RATIO = 1969
  */
 
 disableSerialization;
@@ -225,6 +226,21 @@ private _virtualizationUnitCapCombo = _display displayCtrl 1968;
 private _virtualizationUnitCapOptions = ["100", "150", "200", "250", "300", "350", "400"];
 
 [_virtualizationUnitCapCombo, _virtualizationUnitCapOptions, 2] call _fnc_addItems;
+
+// ============================================================================
+// STARTING TERRITORY RATIO (IDC 1969)
+// ============================================================================
+
+private _territoryRatioCombo = _display displayCtrl 1969;
+private _territoryRatioOptions = [
+    "30% BLUFOR / 70% OPFOR",
+    "40% BLUFOR / 60% OPFOR",
+    "50% BLUFOR / 50% OPFOR",
+    "60% BLUFOR / 40% OPFOR",
+    "70% BLUFOR / 30% OPFOR"
+];
+
+[_territoryRatioCombo, _territoryRatioOptions, 2] call _fnc_addItems;
 
 // ============================================================================
 // COMMANDER FORCE GROWTH (IDC 1966)

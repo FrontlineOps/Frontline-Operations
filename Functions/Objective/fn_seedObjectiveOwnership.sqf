@@ -6,6 +6,7 @@
  *
  * Arguments:
  *   0: Start position <ARRAY>
+ *   1: WEST territory ratio <NUMBER> - Default 0.5
  *
  * Returns:
  *   BOOL - true when ownership was seeded
@@ -14,10 +15,17 @@
 if (!isServer) exitWith { false };
 if (isNil "FLO_Objectives" || {count FLO_Objectives == 0}) exitWith { false };
 
-params [["_startPos", [], [[]]]];
+params [["_startPos", [], [[]]], ["_westRatio", 0.5, [0]]];
 
 private _allObjectives = keys FLO_Objectives;
-private _targetWestCount = ceil ((count _allObjectives) / 2);
+private _objectiveCount = count _allObjectives;
+private _targetWestCount = round (_objectiveCount * _westRatio);
+if (_objectiveCount > 1) then {
+    if (_targetWestCount < 1) then { _targetWestCount = 1; };
+    if (_targetWestCount > (_objectiveCount - 1)) then { _targetWestCount = _objectiveCount - 1; };
+} else {
+    _targetWestCount = _objectiveCount;
+};
 private _westOwned = [];
 private _queue = [];
 private _queued = createHashMap;
@@ -100,9 +108,10 @@ if ((count _westOwned) == 0 || {(count _eastOwned) == 0}) then {
 
 publicVariable "FLO_Objectives";
 
-["OBJECTIVE", 2, format ["Seeded ownership from start position: WEST=%1 EAST=%2 (anchor=%3)",
+["OBJECTIVE", 2, format ["Seeded ownership from start position: WEST=%1 EAST=%2 ratio=%3 (anchor=%4)",
     ({((FLO_Objectives get _x) get "owner") isEqualTo west} count _allObjectives),
     ({((FLO_Objectives get _x) get "owner") isEqualTo east} count _allObjectives),
+    _westRatio,
     _startPos
 ]] call FLO_fnc_log;
 

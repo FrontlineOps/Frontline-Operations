@@ -44,6 +44,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
         FLO_VirtualizationDistance = _configData get "virtualizationDistance";
         FLO_VirtualizationUnitCap = _configData get "virtualizationUnitCap";
+        FLO_StartingTerritoryWestRatio = _configData get "startingTerritoryWestRatio";
 
         publicVariable "FLO_FriendlyHandle";
         publicVariable "FLO_EnemyHandle";
@@ -60,6 +61,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "FLO_ObjectiveSizeThreshold";
         publicVariable "FLO_VirtualizationDistance";
         publicVariable "FLO_VirtualizationUnitCap";
+        publicVariable "FLO_StartingTerritoryWestRatio";
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
             FLO_FriendlyHandle get "name",
@@ -68,10 +70,11 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
     };
 
     diag_log format [
-        "[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3",
+        "[FLO_INIT_P1] Restored world settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3 territoryRatio=%4",
         FLO_ObjectiveSizeThreshold,
         FLO_VirtualizationDistance,
-        FLO_VirtualizationUnitCap
+        FLO_VirtualizationUnitCap,
+        FLO_StartingTerritoryWestRatio
     ];
 
     // Mark starting location as done for saved games
@@ -130,6 +133,7 @@ private _requiredFields = [
     "objectiveSizeThreshold",
     "virtualizationDistance",
     "virtualizationUnitCap",
+    "startingTerritoryWestRatio",
     "startPosition"
 ];
 private _missingFields = _requiredFields select { !(_x in FLO_MissionConfig) };
@@ -181,11 +185,15 @@ publicVariable "FLO_VirtualizationDistance";
 private _virtualizationUnitCap = FLO_MissionConfig get "virtualizationUnitCap";
 FLO_VirtualizationUnitCap = _virtualizationUnitCap;
 publicVariable "FLO_VirtualizationUnitCap";
+private _startingTerritoryWestRatio = FLO_MissionConfig get "startingTerritoryWestRatio";
+FLO_StartingTerritoryWestRatio = _startingTerritoryWestRatio;
+publicVariable "FLO_StartingTerritoryWestRatio";
 diag_log format [
-    "[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3",
+    "[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3 territoryRatio=%4",
     FLO_ObjectiveSizeThreshold,
     FLO_VirtualizationDistance,
-    FLO_VirtualizationUnitCap
+    FLO_VirtualizationUnitCap,
+    FLO_StartingTerritoryWestRatio
 ];
 
 // Mark starting location as done

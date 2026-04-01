@@ -61,7 +61,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 15;
+private _expectedSaveVersion = 16;
 private _saveVersion = _saveData get "saveVersion";
 if (_saveVersion != _expectedSaveVersion) exitWith {
     [
@@ -108,6 +108,7 @@ private _requiredConfigKeys = [
     "objectiveSizeThreshold",
     "virtualizationDistance",
     "virtualizationUnitCap",
+    "startingTerritoryWestRatio",
     "enemyPrec"
 ];
 
@@ -149,6 +150,7 @@ private _missionConfig = createHashMapFromArray [
     ["difficulty", _savedConfig get "FLO_DifficultyHandle"],
     ["startingFunds", _savedConfig get "FLO_MoneyHandle"],
     ["startingReputation", _savedConfig get "FLO_ReputationHandle"],
+    ["startingTerritoryWestRatio", _configData get "startingTerritoryWestRatio"],
     ["isLoadedSave", true]  // Flag to indicate this is from a save
 ];
 
