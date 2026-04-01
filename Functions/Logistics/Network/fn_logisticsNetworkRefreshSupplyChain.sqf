@@ -3,8 +3,10 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Rebuilds the managed side's active supply-node chain from the elected HQ
- *   across owned linked objectives. Objectives only become forward supply
- *   nodes after confirmed deliveries and sufficient local stability.
+ *   across owned linked objectives. Supply depth is derived from cumulative
+ *   route distance so long direct graph links do not stay artificially shallow.
+ *   Objectives only become forward supply nodes after confirmed deliveries and
+ *   sufficient local stability.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -29,6 +31,7 @@ private _resetFriendlyCount = _net get "SUPPLY_NODE_RESET_FRIENDLY_COUNT";
 private _minDeliveries = _net get "SUPPLY_NODE_MIN_DELIVERIES";
 private _promotionDeliveryCount = _net get "SUPPLY_NODE_PROMOTION_DELIVERY_COUNT";
 private _minActiveFriendlyCount = _net get "SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT";
+private _depthMeters = _net get "SUPPLY_CHAIN_DEPTH_METERS";
 
 {
     private _objectiveId = _x;
@@ -76,13 +79,13 @@ _activeNodes set [_hqObjectiveId, createHashMapFromArray [
     ["isHQ", _hqInfo get "isHQ"]
 ]];
 
-private _frontier = [[_hqObjectiveId, 0, 0]];
+private _frontier = [[_hqObjectiveId, 0]];
 private _frontierIndex = 0;
 
 while {_frontierIndex < count _frontier} do {
     private _entry = _frontier select _frontierIndex;
     _frontierIndex = _frontierIndex + 1;
-    _entry params ["_currentObjectiveId", "_depth", "_routeMeters"];
+    _entry params ["_currentObjectiveId", "_routeMeters"];
 
     private _currentObjective = FLO_Objectives get _currentObjectiveId;
     private _currentPos = _currentObjective get "position";
@@ -108,8 +111,9 @@ while {_frontierIndex < count _frontier} do {
             0
         };
 
+        private _newDepth = ceil (_newRouteMeters / _depthMeters);
         private _nodeInfo = createHashMapFromArray [
-            ["depth", _depth + 1],
+            ["depth", _newDepth],
             ["routeMeters", _newRouteMeters],
             ["parentObjective", _currentObjectiveId],
             ["deliveryCount", _deliveryCount],
@@ -117,7 +121,7 @@ while {_frontierIndex < count _frontier} do {
         ];
 
         _routeInfo set [_linkedObjectiveId, _nodeInfo];
-        _frontier pushBack [_linkedObjectiveId, _depth + 1, _newRouteMeters];
+        _frontier pushBack [_linkedObjectiveId, _newRouteMeters];
 
         private _friendlyCount = _linkedObjective get _friendlyCountKey;
         if (
