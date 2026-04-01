@@ -309,6 +309,7 @@ class FLO {
     class UI {
         file = "Functions\UI";
         class safeConfirm             {};
+        class shouldOpenFactionDialog {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
         class factionDialogPopulate   {};

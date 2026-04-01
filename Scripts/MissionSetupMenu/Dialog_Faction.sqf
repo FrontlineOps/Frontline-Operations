@@ -19,6 +19,15 @@
 
 disableSerialization;
 
+if !([] call FLO_fnc_shouldOpenFactionDialog) exitWith {
+    ["UI", 3, "Faction selection dialog launch ignored - mission setup already in progress or complete"] call FLO_fnc_log;
+};
+
+private _existingDisplay = uiNamespace getVariable ["FLO_FactionDialog", displayNull];
+if (!isNull _existingDisplay) exitWith {
+    ["UI", 3, "Faction selection dialog already open - skipping duplicate launch"] call FLO_fnc_log;
+};
+
 // Create the faction selection dialog
 // The new dialog class FLO_FactionSelectDialog handles everything via onLoad
 // factionselect_dialog2 is an alias for backward compatibility
