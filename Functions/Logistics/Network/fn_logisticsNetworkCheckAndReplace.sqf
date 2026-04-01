@@ -63,11 +63,6 @@ private _perf = createHashMapFromArray [
 private _phaseT0 = diag_tickTime;
 [_net] call FLO_fnc_logisticsNetworkRefreshManagedSide;
 private _activeSupplyNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
-_net set ["_dispatchRoleCache", createHashMap];
-_net set ["_dispatchBranchCache", createHashMap];
-_net set ["_dispatchEnemyDistanceCache", createHashMap];
-_net set ["_dispatchSourceableCache", createHashMap];
-_net set ["_dispatchDeliveryObjectiveCache", createHashMap];
 _perf set ["refreshMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["hqObjective", _net get "_hqObjectiveId"];
 _perf set ["supplyNodeCount", count (keys _activeSupplyNodes)];
@@ -153,22 +148,13 @@ if (time < _nextDispatchAt) exitWith {
 _phaseT0 = diag_tickTime;
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
 _perf set ["resourcesBefore", _resources call ["getResources", []]];
-private _pressureTargets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
-private _advanceTargets = [_net] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
-private _rearTargets = [_net, 3000] call FLO_fnc_logisticsNetworkFindRearObjectives;
-private _collapseTargetCount = {
-    [_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure
-} count _pressureTargets;
-private _frontlinePressureTargetCount = {
-    !([_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure)
-    && {[_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsFrontlinePressure}
-} count _pressureTargets;
-private _maneuverTargets = +_pressureTargets;
-{
-    if !(_x in _maneuverTargets) then {
-        _maneuverTargets pushBack _x;
-    };
-} forEach _advanceTargets;
+private _targetPicture = [_net, 3000] call FLO_fnc_logisticsNetworkBuildTargetPicture;
+private _pressureTargets = _targetPicture get "pressureTargets";
+private _advanceTargets = _targetPicture get "advanceTargets";
+private _rearTargets = _targetPicture get "rearTargets";
+private _maneuverTargets = _targetPicture get "maneuverTargets";
+private _collapseTargetCount = _targetPicture get "collapseTargetCount";
+private _frontlinePressureTargetCount = _targetPicture get "frontlinePressureTargetCount";
 
 if (_collapseTargetCount > 0) then {
     ["LOGISTICS", 3, format [

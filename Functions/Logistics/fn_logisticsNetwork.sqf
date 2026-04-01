@@ -84,6 +84,9 @@ private _logisticsClass = [
     ["_supplyRouteInfo", createHashMap],
     ["_activeSupplyNodes", createHashMap],
     ["_lastSupplyNodeSignature", ""],
+    ["_managedObjectiveIds", []],
+    ["_enemyObjectiveIds", []],
+    ["_targetPicture", createHashMap],
     ["_spawnRoadCache", createHashMap],
     ["_dispatchRoleCache", createHashMap],
     ["_dispatchBranchCache", createHashMap],
@@ -143,8 +146,16 @@ private _logisticsClass = [
         [_self] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
     }],
 
+    ["_refreshObjectiveSideIndex", {
+        [_self] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
+    }],
+
     ["_describeObjectiveSupplyRole", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    }],
+
+    ["_buildTargetPicture", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkBuildTargetPicture;
     }],
 
     ["_findSupplyAdvanceObjectives", {

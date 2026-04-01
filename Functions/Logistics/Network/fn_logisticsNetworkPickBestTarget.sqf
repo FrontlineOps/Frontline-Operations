@@ -48,7 +48,9 @@ if (_groupType isEqualTo "static_aa") exitWith {
 
     private _bestScore = -1;
     private _bestCandidates = [];
-    private _enemySide = _net get "_enemySide";
+    private _enemyObjectives = _net get "_enemyObjectiveIds";
+
+    if (count _enemyObjectives == 0) exitWith { "" };
 
     {
         private _objId = _x;
@@ -58,14 +60,11 @@ if (_groupType isEqualTo "static_aa") exitWith {
         private _nearestEnemyDist = 1e12;
 
         {
-            private _enemyData = FLO_Objectives get _x;
-            if ((_enemyData get "owner") != _enemySide) then { continue };
-
-            private _dist = _objPos distance2D (_enemyData get "position");
+            private _dist = _objPos distance2D ((FLO_Objectives get _x) get "position");
             if (_dist < _nearestEnemyDist) then {
                 _nearestEnemyDist = _dist;
             };
-        } forEach (keys FLO_Objectives);
+        } forEach _enemyObjectives;
 
         _score = _score + ((_nearestEnemyDist min 6000) * 0.15);
 

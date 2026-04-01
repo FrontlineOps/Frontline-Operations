@@ -16,11 +16,8 @@ params ["_net"];
 
 private _managedSide = _net get "_managedSide";
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
-
-private _managedObjectives = (keys FLO_Objectives) select {
-    private _objData = FLO_Objectives get _x;
-    (_objData get "owner") isEqualTo _managedSide &&
-    {(_objData get _enemyCountKey) > 0}
+private _managedObjectives = (_net get "_managedObjectiveIds") select {
+    ((FLO_Objectives get _x) get _enemyCountKey) > 0
 };
 
 _managedObjectives

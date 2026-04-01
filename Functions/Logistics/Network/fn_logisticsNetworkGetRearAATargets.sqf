@@ -15,12 +15,8 @@
 params ["_net"];
 
 private _managedSide = _net get "_managedSide";
-private _enemySide = _net get "_enemySide";
-private _objectives = keys FLO_Objectives;
-
-private _enemyObjectives = _objectives select {
-    ((FLO_Objectives get _x) get "owner") isEqualTo _enemySide
-};
+private _objectives = _net get "_managedObjectiveIds";
+private _enemyObjectives = _net get "_enemyObjectiveIds";
 if (count _enemyObjectives == 0) exitWith { [] };
 
 private _minEnemyDistance = 1500;

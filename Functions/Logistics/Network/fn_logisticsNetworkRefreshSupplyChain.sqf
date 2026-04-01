@@ -15,6 +15,7 @@
 
 params ["_net"];
 
+_net set ["_targetPicture", createHashMap];
 _net set ["_dispatchRoleCache", createHashMap];
 _net set ["_dispatchBranchCache", createHashMap];
 _net set ["_dispatchEnemyDistanceCache", createHashMap];
@@ -44,6 +45,7 @@ private _minActiveFriendlyCount = _net get "SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUN
 
 _net set ["_supplyNodeDeliveries", _deliveryCounts];
 
+[_net] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
 private _hqObjectiveId = [_net] call FLO_fnc_logisticsNetworkPickHQObjective;
 _net set ["_hqObjectiveId", _hqObjectiveId];
 
@@ -75,9 +77,11 @@ _activeNodes set [_hqObjectiveId, createHashMapFromArray [
 ]];
 
 private _frontier = [[_hqObjectiveId, 0, 0]];
+private _frontierIndex = 0;
 
-while {count _frontier > 0} do {
-    private _entry = _frontier deleteAt 0;
+while {_frontierIndex < count _frontier} do {
+    private _entry = _frontier select _frontierIndex;
+    _frontierIndex = _frontierIndex + 1;
     _entry params ["_currentObjectiveId", "_depth", "_routeMeters"];
 
     private _currentObjective = FLO_Objectives get _currentObjectiveId;
