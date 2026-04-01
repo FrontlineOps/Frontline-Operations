@@ -3,8 +3,10 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Returns true only when the mission setup dialog is still valid to open.
- *   Once configuration has already been submitted or initialization is
- *   underway/completed, reconnecting commanders must not see setup again.
+ *   Fresh starts are allowed to open during Phase 1 while the server is
+ *   waiting for commander-submitted config. Once configuration has already
+ *   been submitted or later initialization is underway/completed, reconnecting
+ *   commanders must not see setup again.
  *
  * Arguments:
  *   None
@@ -22,6 +24,6 @@ private _missionConfigReady = !isNil "FLO_MissionConfig"
 if (_missionConfigReady) exitWith { false };
 
 private _initPhase = missionNamespace getVariable ["FLO_InitPhase", 0];
-if (_initPhase >= 1) exitWith { false };
+if (_initPhase > 1) exitWith { false };
 
 missionNamespace getVariable ["FLO_MissionReady", false] isEqualTo false
