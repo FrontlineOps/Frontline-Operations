@@ -9,6 +9,4 @@ private _realGroup = createGroup [_side, true];
     [_realGroup, _x, _position, _side, _groupType] call FLO_fnc_activateSavedVirtualGroup;
 } forEach _comp;
 
-[_groupType, _realGroup] call FLO_fnc_virtualizationDistributeIntelItems;
-
 _realGroup

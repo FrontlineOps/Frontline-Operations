@@ -94,6 +94,7 @@ class VirtualizationLifecycle {
     class virtualizationResolveCrewType    {};
     class virtualizationResolveGroundSpawnPos {};
     class virtualizationSyncRealGroupOutcome {};
+    class virtualizationAssignIntelItem {};
     class virtualizationCreateCrewedVehicle {};
     class virtualizationSpawnFromComposition {};
     class virtualizationSpawnInfantryGroup {};
