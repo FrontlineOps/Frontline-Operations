@@ -21,6 +21,10 @@ sleep 1;
 
 // Initialize mission state
 StartingLocationDone = false;
+FLO_GTN_ShowSupplyMarkers = true;
+FLO_GTN_CommanderSupplyToggleActionId = -1;
+FLO_GTN_LastCommanderIntelSyncArgs = [];
+FLO_GTN_CommanderSupplyRespawnHandlerAdded = false;
 
 // ============================================================================
 // MISSION LOADING SEQUENCE

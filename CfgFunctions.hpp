@@ -82,11 +82,14 @@ class FLO {
         class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildFriendlyCommanderGroupMarkers {};
+        class gtnBuildFriendlySupplyNodeMarkers {};
         class gtnBuildFriendlySupportMarkers {};
+        class gtnCommanderSupplyMarkersToggle {};
         class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
+        class gtnRefreshCommanderSupplyToggleAction {};
         class gtnRevealIntelPickup {};
         class gtnSyncCommanderIntelMarkers {};
     };

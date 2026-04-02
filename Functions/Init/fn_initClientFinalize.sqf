@@ -99,6 +99,19 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
 // Initialize client-side systems
 diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
 
+[] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
+if (!FLO_GTN_CommanderSupplyRespawnHandlerAdded) then {
+    addMissionEventHandler ["EntityRespawned", {
+        params ["_newUnit", "_oldUnit"];
+
+        if (_newUnit isEqualTo player) then {
+            FLO_GTN_CommanderSupplyToggleActionId = -1;
+            [] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
+        };
+    }];
+    FLO_GTN_CommanderSupplyRespawnHandlerAdded = true;
+};
+
 // Load arsenal restrictions if enabled (param 0 = enabled, 1 = disabled)
 private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
 if (_restrictedArsenal isEqualTo 0 && {!isNil "FLO_fnc_restrictedArsenal"}) then {
