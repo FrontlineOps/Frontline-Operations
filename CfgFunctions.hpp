@@ -187,6 +187,7 @@ class FLO {
         file = "Functions\Civilian\Behavior";
 
         class civilianActions {};
+        class civilianConfigureActionsLocal {};
         class civilianInvestigateAction {};
         class civilianRequestIntel {};
         class civilianSelectObjectiveProtesters {};
@@ -292,6 +293,7 @@ class FLO {
         class addIntelServer            {};
         class adjustAggression          {};
         class adjustReputation          {};
+        class configureObjectActionsLocal {};
     };
 
     class UtilitiesVehicle {

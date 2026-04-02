@@ -17,11 +17,14 @@ params ["_civUnits"];
     private _unit = _x;
     if (isNull _unit || {!alive _unit}) then { continue };
     private _isProtester = _unit getVariable ["FLO_isProtester", false];
+    private _isDetained = captive _unit || {_unit getVariable ["FLO_CivilianDetained", false]};
+    private _killedEhId = _unit getVariable ["FLO_CivilianKilledEhId", -1];
 
-    removeAllActions _unit;
-    _unit removeAllEventHandlers "Killed";
+    if (_killedEhId >= 0) then {
+        _unit removeEventHandler ["Killed", _killedEhId];
+    };
 
-    _unit addEventHandler ["Killed", {
+    _killedEhId = _unit addEventHandler ["Killed", {
         params ["_unit", "_killer"];
 
         private _activeSide = FLO_ActivePlayerSide;
@@ -33,37 +36,12 @@ params ["_civUnits"];
             [-0.35, "decrease"] call FLO_fnc_adjustReputation;
         };
     }];
+    _unit setVariable ["FLO_CivilianKilledEhId", _killedEhId];
 
-    if (!_isProtester) then {
-        [_unit, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\talk_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Ask About Activity",
-            {
-                params ["_target", "_caller"];
-                [_target, _caller] call FLO_fnc_civilianRequestIntel;
-            },
-            nil, 1.5, true, true, "", "alive _target && !captive _target", 4, false, "", ""
-        ]] remoteExec ["addAction", 0, true];
+    private _jipId = format ["FLO_CIV_ACT_%1", netId _unit];
+    [_unit, _isProtester, _isDetained] remoteExec ["FLO_fnc_civilianConfigureActionsLocal", 0, _jipId];
 
-        [_unit, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\defend_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Offer Help",
-            {
-                params ["_target", "_caller"];
-                [_target, _caller] call FLO_fnc_civilianRequestMission;
-            },
-            nil, 1.5, true, true, "", "alive _target && !captive _target", 4, false, "", ""
-        ]] remoteExec ["addAction", 0, true];
-    };
-
-    [_unit, [
-        "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Detain",
-        {
-            params ["_target", "_caller"];
-            ["DETAIN", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
-        },
-        nil, 0, true, true, "", "alive _target && !captive _target", 5, false, "", ""
-    ]] remoteExec ["addAction", 0, true];
-
-    if (!_isProtester && {!isNil "FLO_CivilianManager"}) then {
+    if (!_isProtester && {!_isDetained} && {!isNil "FLO_CivilianManager"}) then {
         if (FLO_CivilianManager call ["shouldFlee", [getPosATL _unit]]) then {
             private _players = allPlayers select { alive _x };
             if ((count _players) > 0) then {

@@ -32,7 +32,6 @@ switch (toUpper _mode) do {
         _args params [["_unit", objNull, [objNull]], ["_caller", objNull, [objNull]]];
         if (isNull _unit || {isNull _caller} || {!alive _unit} || {!alive _caller} || {captive _unit}) exitWith { false };
 
-        removeAllActions _unit;
         detach _unit;
         _unit setVariable ["FLO_isProtester", false, true];
         _unit setVariable ["FLO_ProtestExpiresAt", diag_tickTime - 1, false];

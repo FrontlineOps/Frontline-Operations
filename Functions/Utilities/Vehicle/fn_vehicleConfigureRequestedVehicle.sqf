@@ -27,7 +27,7 @@ if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ C
 
 if ((_vehicleClass == "B_Slingload_01_Repair_F") and !(_vehicle getVariable ["FLO_OPUnpackActionAdded", false])) then {
     _vehicle setVariable ["FLO_OPUnpackActionAdded", true, true];
-    [_vehicle, [
+    [_vehicle, "VEHICLE_OP_UNPACK", [[
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
         "Scripts\PObjectives\OPUNPACK.sqf",
         nil,
@@ -40,13 +40,17 @@ if ((_vehicleClass == "B_Slingload_01_Repair_F") and !(_vehicle getVariable ["FL
         false,
         "",
         ""
-    ]] remoteExec ["addAction", 0, true];
+    ]]] remoteExec [
+        "FLO_fnc_configureObjectActionsLocal",
+        0,
+        format ["FLO_OBJ_ACT_%1_VEHICLE_OP_UNPACK", netId _vehicle]
+    ];
 };
 
 private _constructionVehicleTypes = F_Truck_Construction_List apply { _x # 0 };
 if ((_vehicleClass in _constructionVehicleTypes) and !(_vehicle getVariable ["FLO_BuildActionAdded", false])) then {
     _vehicle setVariable ["FLO_BuildActionAdded", true, true];
-    [_vehicle, [
+    [_vehicle, "VEHICLE_BUILD", [[
         "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
         { [player] call IDS_Logistics_fnc_initBuildCamera; },
         nil,
@@ -55,13 +59,17 @@ if ((_vehicleClass in _constructionVehicleTypes) and !(_vehicle getVariable ["FL
         true,
         "",
         "!IDS_Logistics_isHolding"
-    ]] remoteExec ["addAction", 0, true];
+    ]]] remoteExec [
+        "FLO_fnc_configureObjectActionsLocal",
+        0,
+        format ["FLO_OBJ_ACT_%1_VEHICLE_BUILD", netId _vehicle]
+    ];
 };
 
 private _arsenalVehicleTypes = F_Truck_Ammo_List apply { _x # 0 };
 if ((_vehicleClass in _arsenalVehicleTypes) and !(_vehicle getVariable ["FLO_ArsenalActionAdded", false])) then {
     _vehicle setVariable ["FLO_ArsenalActionAdded", true, true];
-    [_vehicle, [
+    [_vehicle, "VEHICLE_ARSENAL", [[
         "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
         {
             if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
@@ -76,7 +84,11 @@ if ((_vehicleClass in _arsenalVehicleTypes) and !(_vehicle getVariable ["FLO_Ars
         true,
         "",
         "_this distance _target < 10"
-    ]] remoteExec ["addAction", 0, true];
+    ]]] remoteExec [
+        "FLO_fnc_configureObjectActionsLocal",
+        0,
+        format ["FLO_OBJ_ACT_%1_VEHICLE_ARSENAL", netId _vehicle]
+    ];
 };
 
 private _medicalVehicleTypes = F_Truck_Respawn_List apply { _x # 0 };
