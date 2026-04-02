@@ -23,6 +23,7 @@ if (_homeObjective isEqualTo "civ_building") then {
 private _patrolConfig = _groupData get "patrolConfig";
 if (_patrolConfig isNotEqualTo []) exitWith {
     _patrolConfig params ["_patrolCenter", "_patrolRadius", "_wpCount", "_behavior", "_speed"];
+    _realGroup setSpeedMode _speed;
     [_realGroup, _patrolCenter, _patrolRadius, _wpCount, _behavior, _speed] call FLO_fnc_taskPatrol;
     ["VIRTUALIZATION", 3, format ["Group %1: Applied patrol route (center %2, radius %3)", _groupId, _patrolCenter, _patrolRadius]] call FLO_fnc_log;
     true
@@ -41,6 +42,8 @@ if (_firstWpType == "CYCLE" && {count _waypoints == 1}) exitWith {
 
 private _hadCycle = (_waypoints findIf { (_x select 1) == "CYCLE" }) != -1;
 private _filteredWaypoints = _waypoints select { (_x select 1) != "CYCLE" };
+private _firstWpSpeed = (_filteredWaypoints select 0) select 3;
+_realGroup setSpeedMode _firstWpSpeed;
 
 {
     private _wpPos = _x select 0;

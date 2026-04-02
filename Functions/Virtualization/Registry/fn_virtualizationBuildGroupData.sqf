@@ -61,7 +61,6 @@ private _groupData = createHashMapFromArray [
     ["lastSentryTime", 0],
     ["loiterStartTime", 0],
     ["tempWaypointCount", 0],
-    ["updatePhase", -1],
     ["pathToken", -1],
     ["pathTargetPos", []],
     ["pathAllowTrails", false],

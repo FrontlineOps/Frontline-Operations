@@ -116,6 +116,7 @@ class VirtualizationRouting {
     class updateVirtualGroupWaypoints      {};
     class virtualizationApplyRealRoute     {};
     class virtualizationRequestPathRouteUpdate {};
+    class virtualizationResolveMovePlatformClass {};
     class virtualizationSanitizeWaypoints  {};
     class virtualizationComputeVirtualSpeed {};
     class virtualizationSetRouteState      {};
@@ -170,7 +171,6 @@ class VirtualizationCore {
     class virtualizationAdvanceDefaultWaypoint {};
     class virtualizationAdvanceLoiterWaypoint {};
     class virtualizationAdvanceTerminalWaypoint {};
-    class virtualizationResolveInactiveUpdateProfile {};
     class virtualizationApplyTieredUpdateWindow {};
     class virtualizationRepairOrphanedActiveGroup {};
     class virtualizationProcessAttachedGroup {};

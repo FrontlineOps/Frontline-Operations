@@ -14,7 +14,6 @@ private _requiredKeys = [
     "currentBatchIndex",
     "batchSize",
     "playerCacheInterval",
-    "groupUpdateTimes",
     "stats",
     "perf"
 ];

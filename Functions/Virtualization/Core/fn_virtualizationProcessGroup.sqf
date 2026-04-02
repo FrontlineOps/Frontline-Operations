@@ -10,16 +10,16 @@
  * 1: Group Data <HASHMAP>
  * 2: Activation Distance <NUMBER>
  * 3: Current Time <NUMBER>
- * 4: Group Update Times HashMap <HASHMAP> - For tiered updates
+ * 4: Unused legacy argument retained at call sites during refactor <ANY>
  *
  * Return Value:
  * None
  *
  * Example:
- * [_groupId, _groupData, 2000, diag_tickTime, _updateTimes] call FLO_fnc_virtualizationProcessGroup;
+ * [_groupId, _groupData, 2000, diag_tickTime, nil] call FLO_fnc_virtualizationProcessGroup;
  */
 
-params ["_groupId", "_groupData", "_activationDist", "_now", "_groupUpdateTimes"];
+params ["_groupId", "_groupData", "_activationDist", "_now"];
 
 private _virtStats = FLO_VirtUpdate get "stats";
 
@@ -64,8 +64,8 @@ if !([_position] call FLO_fnc_validateGroupPosition) exitWith {
     };
 };
 
-private _tierResult = [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes, _virtStats] call FLO_fnc_virtualizationApplyTieredUpdateWindow;
-_tierResult params ["_shouldProcess", "_nearestDist", "_shouldRunFullUpdate", "_movementSpeedMultiplier"];
+private _tierResult = [_groupData] call FLO_fnc_virtualizationApplyTieredUpdateWindow;
+_tierResult params ["_shouldProcess", "_nearestDist"];
 if (!_shouldProcess) exitWith {};
 
 if ([_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup) exitWith {};
@@ -74,19 +74,8 @@ if (_isActive && {isNull _realGroup}) exitWith {
     [_groupId, _groupData] call FLO_fnc_virtualizationRepairOrphanedActiveGroup;
 };
 
-if (!_shouldRunFullUpdate && {!_isActive} && {!_inCombat} && {!_activationDeferred}) exitWith {
-    [_groupId, _groupData, _now, _virtStats, _movementSpeedMultiplier] call FLO_fnc_virtualizationProcessInactiveMovement;
-    _virtStats set ["movementOnlyUpdatesTotal", (_virtStats get "movementOnlyUpdatesTotal") + 1];
-    _virtStats set ["movementOnlyUpdatesThisBatch", (_virtStats get "movementOnlyUpdatesThisBatch") + 1];
-
-    private _postMoveDist = [ _groupData get "position" ] call FLO_fnc_virtualizationGetNearestCachedPlayerDistance;
-    if (!_forceVirtual && {_postMoveDist <= _activationDist}) then {
-        [_groupId, _groupData, _activationDist, _postMoveDist, _forceVirtual, _missionLock, _replacementState, _inCombat, _virtStats] call FLO_fnc_virtualizationProcessActivationState;
-    };
-};
-
 if (!_isActive && {!_inCombat} && {!_activationDeferred}) then {
-    [_groupId, _groupData, _now, _virtStats, _movementSpeedMultiplier] call FLO_fnc_virtualizationProcessInactiveMovement;
+    [_groupId, _groupData, _now, _virtStats] call FLO_fnc_virtualizationProcessInactiveMovement;
 };
 
 [_groupId, _groupData, _activationDist, _nearestDist, _forceVirtual, _missionLock, _replacementState, _inCombat, _virtStats] call FLO_fnc_virtualizationProcessActivationState;

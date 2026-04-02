@@ -26,7 +26,7 @@ if (_tempWaypointCount >= 0) then {
 
 if (count _waypoints > 0) then {
     private _wpSpeed = (_waypoints select 0) select 3;
-    _groupData set ["virtualSpeed", [(_groupData get "groupType"), _wpSpeed] call FLO_fnc_virtualizationComputeVirtualSpeed];
+    _groupData set ["virtualSpeed", [_groupData, _wpSpeed] call FLO_fnc_virtualizationComputeVirtualSpeed];
 };
 
 [_groupData, _runtimeState] call FLO_fnc_virtualizationSetRuntimeState;
