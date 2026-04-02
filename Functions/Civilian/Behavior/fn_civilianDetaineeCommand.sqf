@@ -210,11 +210,7 @@ switch (toUpper _mode) do {
         };
 
         [_package] call FLO_fnc_gtnAlertCivilianReport;
-        ["Civilian", selectRandom [
-            "Fine. Check your map and leave.",
-            "That is all I know. Now get away from me.",
-            "You wanted information. There it is."
-        ]] remoteExec ["BIS_fnc_showSubtitle", owner _caller, false];
+        ["Civilian", [_package] call FLO_fnc_civilianBuildIntelSubtitle] remoteExec ["BIS_fnc_showSubtitle", owner _caller, false];
         true
     };
 

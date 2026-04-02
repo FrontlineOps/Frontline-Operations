@@ -71,6 +71,41 @@ switch (toUpper _alertType) do {
         _areaBrush = "Border";
         _areaAlpha = 0.14;
     };
+    case "CIV_PATROL": {
+        _markerText = "CIV PATROL";
+        _markerColor = "ColorYellow";
+        _iconMarkerType = "mil_dot";
+        _areaBrush = "Border";
+        _areaAlpha = 0.14;
+    };
+    case "CIV_VEHICLE": {
+        _markerText = "CIV VEHICLE";
+        _markerColor = "ColorYellow";
+        _iconMarkerType = "mil_arrow2";
+        _areaBrush = "Border";
+        _areaAlpha = 0.14;
+    };
+    case "CIV_CHECKPOINT": {
+        _markerText = "CIV CHECKPOINT";
+        _markerColor = "ColorYellow";
+        _iconMarkerType = "mil_warning";
+        _areaBrush = "Border";
+        _areaAlpha = 0.14;
+    };
+    case "CIV_SAFE_ROUTE": {
+        _markerText = "CIV SAFE ROUTE";
+        _markerColor = "ColorGUER";
+        _iconMarkerType = "mil_arrow2";
+        _areaBrush = "Border";
+        _areaAlpha = 0.12;
+    };
+    case "CIV_HOSTILE": {
+        _markerText = "CIV HOSTILE";
+        _markerColor = "ColorRed";
+        _iconMarkerType = "mil_warning";
+        _areaBrush = "DiagGrid";
+        _areaAlpha = 0.16;
+    };
     case "INTEL_COMMANDER_TARGET": {
         private _objectiveName = if ((count _payload) >= 1) then { _payload select 0 } else { "" };
         private _phase = if ((count _payload) >= 2) then { toUpper (_payload select 1) } else { "" };

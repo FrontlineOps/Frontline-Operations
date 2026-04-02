@@ -142,10 +142,6 @@ if (count (keys _groupData) > 0) then {
 _civilian setVariable ["FLO_CivilianLastIntelAt", diag_tickTime, true];
 
 [_package] call FLO_fnc_gtnAlertCivilianReport;
-["Civilian", selectRandom [
-    "Keep this to yourself, but I heard something.",
-    "Listen carefully, this may help you.",
-    "I heard movement nearby. Check the map."
-]] remoteExec ["BIS_fnc_showSubtitle", _callerOwner, false];
+["Civilian", [_package] call FLO_fnc_civilianBuildIntelSubtitle] remoteExec ["BIS_fnc_showSubtitle", _callerOwner, false];
 
 true

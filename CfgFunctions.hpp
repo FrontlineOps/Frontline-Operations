@@ -168,6 +168,7 @@ class FLO {
         class civilianSelectObjectiveMemory {};
         class civilianBuildIntelPackageFromMemory {};
         class civilianBuildIntelPackage {};
+        class civilianBuildIntelSubtitle {};
         class civilianPlanRoutine {};
         class civilianApplyRoutinePlan {};
     };
