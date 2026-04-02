@@ -25,6 +25,7 @@ if (count _transportVehicles == 0) exitWith { false };
 
 private _groups = FLO_virtualGroups get "_groups";
 private _issuedCount = 0;
+private _unloadAlreadyIssued = _carrierData get "transportUnloadCommandIssued";
 
 {
     private _passengerData = _groups get _x;
@@ -40,7 +41,11 @@ private _issuedCount = 0;
         private _veh = vehicle _x;
         if (_veh == _x || {!(_veh in _transportVehicles)}) then { continue; };
 
+        // Active passenger groups are separate AI groups inside the carrier.
+        // Reasserting both doGetOut and GetOut is more reliable than a single
+        // action call when the first unload order gets ignored.
         unassignVehicle _x;
+        doGetOut _x;
         _x action ["GetOut", _veh];
         _issuedCount = _issuedCount + 1;
     } forEach units _realGroup;
@@ -48,13 +53,15 @@ private _issuedCount = 0;
 
 if (_issuedCount == 0) exitWith { false };
 
-_carrierData set ["transportUnloadCommandIssued", true];
-_carrierData set ["transportUnloadIssuedAt", diag_tickTime];
+if (!_unloadAlreadyIssued) then {
+    _carrierData set ["transportUnloadCommandIssued", true];
+    _carrierData set ["transportUnloadIssuedAt", diag_tickTime];
 
-["TRANSPORT", 3, format [
-    "Active carrier %1 issued live dismount to %2 mounted passengers",
-    _carrierGroupId,
-    _issuedCount
-]] call FLO_fnc_log;
+    ["TRANSPORT", 3, format [
+        "Active carrier %1 issued live dismount to %2 mounted passengers",
+        _carrierGroupId,
+        _issuedCount
+    ]] call FLO_fnc_log;
+};
 
 true

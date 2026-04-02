@@ -118,29 +118,35 @@ private _opCount = 0;
 // FOB slingload containers
 private _fobSlingloads = allMissionObjects "B_Slingload_01_Cargo_F";
 {
-    [_x, [
+    [_x, "SLINGLOAD_FOB", [[
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
         "Scripts\PObjectives\FOBUNPACK.sqf", nil, 0, true, true, "", "true", 40, false, "", ""
-    ]] remoteExec ["addAction", 0, true];
-    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-    [_x, [
+    ], [
         "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>",
         { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-    ]] remoteExec ["addAction", 0, true];
+    ]]] remoteExec [
+        "FLO_fnc_configureObjectActionsLocal",
+        0,
+        format ["FLO_OBJ_ACT_%1_SLINGLOAD_FOB", netId _x]
+    ];
+    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
 } forEach _fobSlingloads;
 
 // OP slingload containers
 private _opSlingloads = allMissionObjects "B_Slingload_01_Repair_F";
 {
-    [_x, [
+    [_x, "SLINGLOAD_OP", [[
         "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
         "Scripts\PObjectives\OPUNPACK.sqf", nil, 0, true, true, "", "true", 40, false, "", ""
-    ]] remoteExec ["addAction", 0, true];
-    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-    [_x, [
+    ], [
         "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>",
         { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-    ]] remoteExec ["addAction", 0, true];
+    ]]] remoteExec [
+        "FLO_fnc_configureObjectActionsLocal",
+        0,
+        format ["FLO_OBJ_ACT_%1_SLINGLOAD_OP", netId _x]
+    ];
+    _x setVariable ["IDS_Logistics_isPlacedEntity", true, true];
 } forEach _opSlingloads;
 
 ["STARTUP", 3, format ["Initialized %1 FOB and %2 OP slingloads", count _fobSlingloads, count _opSlingloads]] call FLO_fnc_log;
@@ -217,34 +223,24 @@ FLO_RespawnVehicleTypeSet = createHashMapFromArray (_respawnVehicleTypes apply {
 private _constructionVehicles = [];
 { _constructionVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Construction_List;
 
-{
-    if (!isNull _x) then {
-        [_x, [
-            "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
-            { [player] call IDS_Logistics_fnc_initBuildCamera; }, nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-        ]] remoteExec ["addAction", 0, true];
-    };
-} forEach _constructionVehicles;
-
 // Arsenal vehicles
 private _arsenalVehicles = [];
 { _arsenalVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Ammo_List;
 
-{
-    [_x, [
-        "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-        {
-            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
-                [player, player, true] call ace_arsenal_fnc_openBox;
-            } else {
-                ["Open", true] spawn BIS_fnc_arsenal;
-            };
-        },
-        nil, 1, true, true, "", "_this distance _target < 10"
-    ]] remoteExec ["addAction", 0, true];
-} forEach _arsenalVehicles;
+// Medical/respawn vehicles
+private _medicalVehicles = [];
+{ _medicalVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Respawn_List;
 
-["STARTUP", 3, format ["Initialized %1 construction and %2 arsenal vehicles", count _constructionVehicles, count _arsenalVehicles]] call FLO_fnc_log;
+private _supportVehicles = (_constructionVehicles + _arsenalVehicles + _medicalVehicles);
+_supportVehicles = _supportVehicles arrayIntersect _supportVehicles;
+
+{
+    if (!isNull _x) then {
+        [_x, typeOf _x] call FLO_fnc_vehicleConfigureRequestedVehicle;
+    };
+} forEach _supportVehicles;
+
+["STARTUP", 3, format ["Initialized %1 construction, %2 arsenal, and %3 medical vehicles", count _constructionVehicles, count _arsenalVehicles, count _medicalVehicles]] call FLO_fnc_log;
 
 // ============================================================================
 // CLEANUP MAP OBJECTS

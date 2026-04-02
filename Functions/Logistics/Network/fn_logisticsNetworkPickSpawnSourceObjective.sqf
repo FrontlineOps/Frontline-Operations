@@ -18,5 +18,4 @@ params ["_net", "_targetObjId", ["_blockedObjectives", []]];
 
 if (_targetObjId == "") exitWith { "" };
 
-[_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
 [_net, _targetObjId, _blockedObjectives] call FLO_fnc_logisticsNetworkFindSupplySourceObjective

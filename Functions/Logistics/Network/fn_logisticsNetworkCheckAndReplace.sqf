@@ -148,25 +148,19 @@ if (time < _nextDispatchAt) exitWith {
 _phaseT0 = diag_tickTime;
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
 _perf set ["resourcesBefore", _resources call ["getResources", []]];
-private _pressureTargets = [_net] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
-private _advanceTargets = [_net] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
-private _rearTargets = [_net, 3000] call FLO_fnc_logisticsNetworkFindRearObjectives;
-private _collapseTargetCount = {
+private _targetPicture = [_net, 3000] call FLO_fnc_logisticsNetworkBuildTargetPicture;
+private _pressureTargets = _targetPicture get "pressureTargets";
+private _advanceTargets = _targetPicture get "advanceTargets";
+private _rearTargets = _targetPicture get "rearTargets";
+private _maneuverTargets = _targetPicture get "maneuverTargets";
+private _collapseTargetCount = _targetPicture get "collapseTargetCount";
+private _frontlinePressureTargetCount = _targetPicture get "frontlinePressureTargetCount";
+private _sourceBlockedObjectives = _pressureTargets select {
     [_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure
-} count _pressureTargets;
-private _frontlinePressureTargetCount = {
-    !([_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure)
-    && {[_net, _x] call FLO_fnc_logisticsNetworkObjectiveIsFrontlinePressure}
-} count _pressureTargets;
-private _maneuverTargets = +_pressureTargets;
-{
-    if !(_x in _maneuverTargets) then {
-        _maneuverTargets pushBack _x;
-    };
-} forEach _advanceTargets;
+};
 
 if (_collapseTargetCount > 0) then {
-    ["LOGISTICS", 2, format [
+    ["LOGISTICS", 3, format [
         "Queue dispatch: collapse pressure overriding supply advance (%1 collapse, %2 advance, %3 pending)",
         _collapseTargetCount,
         count _advanceTargets,
@@ -174,7 +168,7 @@ if (_collapseTargetCount > 0) then {
     ]] call FLO_fnc_log;
 } else {
     if (_frontlinePressureTargetCount > 0) then {
-        ["LOGISTICS", 2, format [
+        ["LOGISTICS", 3, format [
             "Queue dispatch: frontline pressure overriding supply advance (%1 frontline, %2 advance, %3 background pressure, %4 pending)",
             _frontlinePressureTargetCount,
             count _advanceTargets,
@@ -183,7 +177,7 @@ if (_collapseTargetCount > 0) then {
         ]] call FLO_fnc_log;
     } else {
         if (count _advanceTargets > 0) then {
-        ["LOGISTICS", 2, format [
+        ["LOGISTICS", 3, format [
             "Queue dispatch: prioritizing supply-chain advance (%1 advance, %2 non-critical pressure, %3 pending)",
             count _advanceTargets,
             (count _pressureTargets) - _collapseTargetCount - _frontlinePressureTargetCount,
@@ -191,7 +185,7 @@ if (_collapseTargetCount > 0) then {
         ]] call FLO_fnc_log;
     } else {
         if (count _pressureTargets == 0) then {
-            ["LOGISTICS", 2, format [
+            ["LOGISTICS", 3, format [
                 "Queue dispatch: no pressure or advance objectives - checking rear objectives (%1 pending)",
                 count _queue
             ]] call FLO_fnc_log;
@@ -206,19 +200,15 @@ _perf set ["advanceTargetCount", count _advanceTargets];
 _perf set ["targetCount", (count _maneuverTargets) + (count _rearTargets)];
 
 if ((count _maneuverTargets) + (count _rearTargets) == 0) then {
-    ["LOGISTICS", 2, "No pressure, supply-advance, or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
+    ["LOGISTICS", 3, "No pressure, supply-advance, or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
 };
 
 private _batchMin = _net get "DISPATCH_BATCH_MIN";
 private _batchMax = _net get "DISPATCH_BATCH_MAX";
-private _batchHardCap = _net get "DISPATCH_MAX_PER_CHECK";
 private _dispatchTimeBudgetMs = _net get "DISPATCH_TIME_BUDGET_MS";
 private _batchSize = _batchMin + floor random ((_batchMax - _batchMin) + 1);
 if (_batchSize > count _queue) then {
     _batchSize = count _queue;
-};
-if (_batchSize > _batchHardCap) then {
-    _batchSize = _batchHardCap;
 };
 _perf set ["batchSize", _batchSize];
 
@@ -293,7 +283,7 @@ for "_i" from 1 to _batchSize do {
     };
 
     private _spawnFindT0 = diag_tickTime;
-    private _spawnData = [_net, _deliveryObjectiveId, _pressureTargets] call FLO_fnc_logisticsNetworkFindSpawnPosition;
+    private _spawnData = [_net, _deliveryObjectiveId, _sourceBlockedObjectives] call FLO_fnc_logisticsNetworkFindSpawnPosition;
     _perf set ["dispatchSpawnMs", (_perf get "dispatchSpawnMs") + ((diag_tickTime - _spawnFindT0) * 1000)];
     private _spawnPos = _spawnData select 0;
     private _sourceObjId = _spawnData select 1;

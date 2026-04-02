@@ -43,8 +43,7 @@ private _logisticsClass = [
     ["DISPATCH_MAX_INTERVAL", 90],
     ["DISPATCH_BATCH_MIN", 12],
     ["DISPATCH_BATCH_MAX", 64],
-    ["DISPATCH_MAX_PER_CHECK", 6],
-    ["DISPATCH_TIME_BUDGET_MS", 125],
+    ["DISPATCH_TIME_BUDGET_MS", 200],
     ["DISPATCH_BACKLOG_RETRY_INTERVAL", 15],
     ["REINFORCEMENT_RECENT_TARGET_WINDOW", 300],
     ["REINFORCEMENT_OBJECTIVE_SECURE_RATIO", 1.75],
@@ -56,8 +55,10 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
     ["SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS", 14000],
+    ["SUPPLY_CHAIN_DEPTH_METERS", 1500],
     ["SUPPLY_ADVANCE_OBJECTIVE_INBOUND_CAP", 2],
     ["SUPPLY_ADVANCE_OBJECTIVE_BATCH_CAP", 1],
+    ["SUPPLY_ADVANCE_DEPTH_BAND_SIZE", 1],
     ["SUPPLY_NODE_MIN_DELIVERIES", 2],
     ["SUPPLY_NODE_PROMOTION_DELIVERY_COUNT", 4],
     ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
@@ -85,7 +86,15 @@ private _logisticsClass = [
     ["_supplyRouteInfo", createHashMap],
     ["_activeSupplyNodes", createHashMap],
     ["_lastSupplyNodeSignature", ""],
+    ["_managedObjectiveIds", []],
+    ["_enemyObjectiveIds", []],
+    ["_targetPicture", createHashMap],
     ["_spawnRoadCache", createHashMap],
+    ["_dispatchRoleCache", createHashMap],
+    ["_dispatchBranchCache", createHashMap],
+    ["_dispatchEnemyDistanceCache", createHashMap],
+    ["_dispatchSourceableCache", createHashMap],
+    ["_dispatchDeliveryObjectiveCache", createHashMap],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkCreate;
@@ -139,8 +148,16 @@ private _logisticsClass = [
         [_self] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
     }],
 
+    ["_refreshObjectiveSideIndex", {
+        [_self] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
+    }],
+
     ["_describeObjectiveSupplyRole", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    }],
+
+    ["_buildTargetPicture", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkBuildTargetPicture;
     }],
 
     ["_findSupplyAdvanceObjectives", {

@@ -14,10 +14,7 @@
 
 params ["_net"];
 
-private _managedSide = _net get "_managedSide";
-private _friendlyObjectiveIds = (keys FLO_Objectives) select {
-    ((FLO_Objectives get _x) get "owner") isEqualTo _managedSide
-};
+private _friendlyObjectiveIds = _net get "_managedObjectiveIds";
 
 if (count _friendlyObjectiveIds == 0) exitWith { "" };
 

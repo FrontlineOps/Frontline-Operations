@@ -61,6 +61,11 @@ class CfgRemoteExec
 		class FLO_fnc_displayNotification { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_addIntelServer { allowedTargets = 2; jip = 0; };
 		class FLO_fnc_gtnAlertCivilianReport { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_civilianRequestIntel { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_civilianRequestMission { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_civilianMissionManager { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_civilianMissionResolveAction { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_civilianDetaineeCommand { allowedTargets = 2; jip = 0; };
 		class FLO_fnc_gtnSyncAlertMarkers { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };

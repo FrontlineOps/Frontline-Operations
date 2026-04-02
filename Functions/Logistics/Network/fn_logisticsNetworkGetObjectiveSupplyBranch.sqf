@@ -18,11 +18,20 @@ params ["_net", "_objectiveId"];
 
 if (_objectiveId == "") exitWith { "" };
 
+private _branchCache = _net get "_dispatchBranchCache";
+if (_objectiveId in _branchCache) exitWith { _branchCache get _objectiveId };
+
 private _routeInfo = _net get "_supplyRouteInfo";
-if !(_objectiveId in _routeInfo) exitWith { "" };
+if !(_objectiveId in _routeInfo) exitWith {
+    _branchCache set [_objectiveId, ""];
+    ""
+};
 
 private _hqObjectiveId = _net get "_hqObjectiveId";
-if (_objectiveId isEqualTo _hqObjectiveId) exitWith { _hqObjectiveId };
+if (_objectiveId isEqualTo _hqObjectiveId) exitWith {
+    _branchCache set [_objectiveId, _hqObjectiveId];
+    _hqObjectiveId
+};
 
 private _branchObjectiveId = _objectiveId;
 private _parentObjectiveId = ((_routeInfo get _branchObjectiveId) get "parentObjective");
@@ -36,5 +45,7 @@ while {_parentObjectiveId != "" && {_parentObjectiveId isNotEqualTo _hqObjective
 
     _parentObjectiveId = ((_routeInfo get _branchObjectiveId) get "parentObjective");
 };
+
+_branchCache set [_objectiveId, _branchObjectiveId];
 
 _branchObjectiveId

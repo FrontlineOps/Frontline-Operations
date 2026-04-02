@@ -26,6 +26,7 @@ class LogisticsNetwork {
     file = "Functions\Logistics\Network";
 
     class logisticsNetworkApplyObjectiveCaptureGrowth {};
+    class logisticsNetworkBuildTargetPicture {};
     class logisticsNetworkBuildInboundObjectiveCounts {};
     class logisticsNetworkBuildBranchDispatchCounts {};
     class logisticsNetworkBuildRecentDispatchCounts {};
@@ -58,6 +59,7 @@ class LogisticsNetwork {
     class logisticsNetworkRecordReplacement {};
     class logisticsNetworkRecordTargetDispatch {};
     class logisticsNetworkRefreshManagedSide {};
+    class logisticsNetworkRefreshObjectiveSideIndex {};
     class logisticsNetworkRefreshSupplyChain {};
     class logisticsNetworkSetManagedSide {};
     class logisticsNetworkStartMainLoop {};

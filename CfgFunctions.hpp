@@ -82,11 +82,14 @@ class FLO {
         class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildFriendlyCommanderGroupMarkers {};
+        class gtnBuildFriendlySupplyNodeMarkers {};
         class gtnBuildFriendlySupportMarkers {};
+        class gtnCommanderSupplyMarkersToggle {};
         class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
+        class gtnRefreshCommanderSupplyToggleAction {};
         class gtnRevealIntelPickup {};
         class gtnSyncCommanderIntelMarkers {};
     };
@@ -157,6 +160,20 @@ class FLO {
 
         class civilianManager {};
         class civilianConfig {};
+        class civilianResolveObjective {};
+        class civilianBuildRoleProfile {};
+        class civilianBuildAmbientRoute {};
+        class civilianBuildObjectivePoiCache {};
+        class civilianResolveObjectiveContext {};
+        class civilianMergeObjectiveMemory {};
+        class civilianIngestCombatEvents {};
+        class civilianPropagateObjectiveGossip {};
+        class civilianSelectObjectiveMemory {};
+        class civilianBuildIntelPackageFromMemory {};
+        class civilianBuildIntelPackage {};
+        class civilianBuildIntelSubtitle {};
+        class civilianPlanRoutine {};
+        class civilianApplyRoutinePlan {};
     };
 
     class CivilianSpawning {
@@ -170,7 +187,12 @@ class FLO {
         file = "Functions\Civilian\Behavior";
 
         class civilianActions {};
+        class civilianConfigureActionsLocal {};
         class civilianInvestigateAction {};
+        class civilianRequestIntel {};
+        class civilianSelectObjectiveProtesters {};
+        class civilianRunProtestBehavior {};
+        class civilianDetaineeCommand {};
         class civilianDetainActions {};
         class civilianProtest {};
     };
@@ -178,6 +200,8 @@ class FLO {
     class CivilianMissions {
         file = "Functions\Civilian\Missions";
 
+        class civilianBuildMissionOffer {};
+        class civilianMissionResolveAction {};
         class civilianMissionManager {};
         class civilianRequestMission {};
     };
@@ -269,11 +293,13 @@ class FLO {
         class addIntelServer            {};
         class adjustAggression          {};
         class adjustReputation          {};
+        class configureObjectActionsLocal {};
     };
 
     class UtilitiesVehicle {
         file = "Functions\Utilities\Vehicle";
         class placeVehicleWithCrew      {};
+        class vehicleConfigureRequestedVehicle {};
         class vehicleCleanupManager     {};
         class vehicleCleanupRun         {};
         class vehicleShouldCleanup      {};
@@ -289,6 +315,7 @@ class FLO {
     class UI {
         file = "Functions\UI";
         class safeConfirm             {};
+        class shouldOpenFactionDialog {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
         class factionDialogPopulate   {};

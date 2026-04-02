@@ -6,7 +6,11 @@ params ["_groupId", "_groupData", "_realGroup", "_tracksAssets", "_replacementSt
 
 private _leader = leader _realGroup;
 if (!isNull _leader && {alive _leader}) then {
-    private _realPos = getPosATL _leader;
+    private _anchor = vehicle _leader;
+    if (isNull _anchor) then {
+        _anchor = _leader;
+    };
+    private _realPos = getPosATL _anchor;
     if ([_realPos] call FLO_fnc_virtualizationIsValidPosition) then {
         [FLO_virtualGroups, _groupId, _realPos] call FLO_fnc_virtualizationUpdateGroupPosition;
         _virtStats set ["activePositionSyncsTotal", (_virtStats get "activePositionSyncsTotal") + 1];

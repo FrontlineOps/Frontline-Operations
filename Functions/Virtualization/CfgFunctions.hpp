@@ -94,6 +94,7 @@ class VirtualizationLifecycle {
     class virtualizationResolveCrewType    {};
     class virtualizationResolveGroundSpawnPos {};
     class virtualizationSyncRealGroupOutcome {};
+    class virtualizationAssignIntelItem {};
     class virtualizationCreateCrewedVehicle {};
     class virtualizationSpawnFromComposition {};
     class virtualizationSpawnInfantryGroup {};
@@ -115,6 +116,9 @@ class VirtualizationRouting {
     class updateVirtualGroupWaypoints      {};
     class virtualizationApplyRealRoute     {};
     class virtualizationRequestPathRouteUpdate {};
+    class virtualizationRefreshCurrentWaypointSpeed {};
+    class virtualizationResolveMovePlatformClass {};
+    class virtualizationResolveMoveSpeedMps {};
     class virtualizationSanitizeWaypoints  {};
     class virtualizationComputeVirtualSpeed {};
     class virtualizationSetRouteState      {};
@@ -144,6 +148,7 @@ class VirtualizationTransport {
     class transportPoolFind     {};
     class transportPoolFindExisting {};
     class transportPoolRelease  {};
+    class transportReturnCarrierToReserve {};
     class transportAttach       {};
     class transportApplyPostDismountWaypoint {};
     class transportDetach       {};

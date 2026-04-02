@@ -186,13 +186,15 @@ private _fnc_addActions = {
     ];
 
     // Add all actions with error handling
-    {
-        try {
-            [_building, _x] remoteExec ["addAction", 0, true];
-        } catch {
-            [_type, 1, format["Failed to add action %1: %2", _forEachIndex, _exception]] call FLO_fnc_log;
-        };
-    } forEach _actions;
+    try {
+        [_building, "FOB_MAIN", _actions] remoteExec [
+            "FLO_fnc_configureObjectActionsLocal",
+            0,
+            format ["FLO_OBJ_ACT_%1_FOB_MAIN", netId _building]
+        ];
+    } catch {
+        [_type, 1, format["Failed to configure main actions: %1", _exception]] call FLO_fnc_log;
+    };
 
     [_type, 3, format["Added %1 actions to %2", count _actions, _type]] call FLO_fnc_log;
 };
@@ -221,13 +223,15 @@ private _fnc_addContainerActions = {
         ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, nil, 3, true, true, "", _commanderCondition]
     ];
 
-    {
-        try {
-            [_container, _x] remoteExec ["addAction", 0, true];
-        } catch {
-            [_type, 1, format["Failed to add container action %1: %2", _forEachIndex, _exception]] call FLO_fnc_log;
-        };
-    } forEach _containerActions;
+    try {
+        [_container, "FOB_CONTAINER", _containerActions] remoteExec [
+            "FLO_fnc_configureObjectActionsLocal",
+            0,
+            format ["FLO_OBJ_ACT_%1_FOB_CONTAINER", netId _container]
+        ];
+    } catch {
+        [_type, 1, format["Failed to configure container actions: %1", _exception]] call FLO_fnc_log;
+    };
 
     [_type, 3, format["Added %1 commander actions to container", count _containerActions]] call FLO_fnc_log;
 };

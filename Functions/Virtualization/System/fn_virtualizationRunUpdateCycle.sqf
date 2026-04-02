@@ -7,6 +7,8 @@ private _stats = FLO_VirtUpdate get "stats";
 private _perf = FLO_VirtUpdate get "perf";
 private _batchStartTime = diag_tickTime;
 
+FLO_VirtUpdate set ["lastUpdateTime", _now];
+
 [_stats] call FLO_fnc_virtualizationResetBatchStats;
 [ _now, _stats ] call FLO_fnc_virtualizationRefreshPlayerCache;
 
@@ -29,8 +31,7 @@ if ((count _groups) == 0) exitWith {
 private _groupIds = [_now, _stats, _groups] call FLO_fnc_virtualizationRefreshCachedGroups;
 
 private _activationDist = FLO_virtualGroups get "_activationDistance";
-private _groupUpdateTimes = FLO_VirtUpdate get "groupUpdateTimes";
-private _batchResult = [_groupIds, _groups, _activationDist, _now, _groupUpdateTimes, _stats, _perf] call FLO_fnc_virtualizationProcessGroupBatch;
+private _batchResult = [_groupIds, _groups, _activationDist, _now, _stats, _perf] call FLO_fnc_virtualizationProcessGroupBatch;
 _batchResult params ["_processed", "_batchStart", "_batchEnd", "_totalGroups"];
 
 private _batchMs = (diag_tickTime - _batchStartTime) * 1000;

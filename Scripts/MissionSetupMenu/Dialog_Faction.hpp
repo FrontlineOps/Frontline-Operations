@@ -530,19 +530,38 @@ class FLO_FactionSelectDialog
 		{
 			idc = FLO_IDC_NONE;
 			text = "Active AI Cap";
-			x = FACTION_HALF_X2;
+			x = FACTION_HALF_FIELD_X1(FACTION_HALF_X2);
 			y = FACTION_CARD_MISC_Y + (4.1 * GUI_GRID_H);
-			w = FACTION_HALF_W;
+			w = FACTION_HALF_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
 		class ComboVirtualizationUnitCap: FLO_FactionCombo
 		{
 			idc = FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP;
-			x = FACTION_HALF_X2;
+			x = FACTION_HALF_FIELD_X1(FACTION_HALF_X2);
 			y = FACTION_CARD_MISC_Y + (4.8 * GUI_GRID_H);
-			w = FACTION_HALF_W;
+			w = FACTION_HALF_FIELD_W;
 			tooltip = "Maximum non-player AI that may stay physically spawned before additional groups are held at the virtualization edge";
+		};
+
+		class LabelTerritoryRatio: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Starting Territory";
+			x = FACTION_HALF_FIELD_X2(FACTION_HALF_X2);
+			y = FACTION_CARD_MISC_Y + (4.1 * GUI_GRID_H);
+			w = FACTION_HALF_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboTerritoryRatio: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_TERRITORY_RATIO;
+			x = FACTION_HALF_FIELD_X2(FACTION_HALF_X2);
+			y = FACTION_CARD_MISC_Y + (4.8 * GUI_GRID_H);
+			w = FACTION_HALF_FIELD_W;
+			tooltip = "Initial objective ownership split before combat starts";
 		};
 
 		class StartButton: FLO_RscButton_Primary

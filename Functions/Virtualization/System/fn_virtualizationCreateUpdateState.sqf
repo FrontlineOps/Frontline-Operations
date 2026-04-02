@@ -19,7 +19,6 @@ createHashMapFromArray [
     ["currentBatchIndex", 0],
     ["batchSize", _batchSize],
     ["playerCacheInterval", _playerCacheInterval],
-    ["groupUpdateTimes", createHashMap],
     ["stats", call FLO_fnc_virtualizationGetUpdateStatsDefaults],
     ["perf", call FLO_fnc_virtualizationGetUpdatePerfDefaults]
 ]

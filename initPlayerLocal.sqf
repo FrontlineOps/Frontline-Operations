@@ -21,6 +21,10 @@ sleep 1;
 
 // Initialize mission state
 StartingLocationDone = false;
+FLO_GTN_ShowSupplyMarkers = true;
+FLO_GTN_CommanderSupplyToggleActionId = -1;
+FLO_GTN_LastCommanderIntelSyncArgs = [];
+FLO_GTN_CommanderSupplyRespawnHandlerAdded = false;
 
 // ============================================================================
 // MISSION LOADING SEQUENCE
@@ -124,13 +128,22 @@ if (!_isSavedGame && !StartingLocationDone) then {
 
     if (_isLoadedSave) then {
         ["INIT_CLIENT", 3, "Loading from saved game - skipping faction selection dialog"] call FLO_fnc_log;
+        StartingLocationDone = true;
     } else {
+        private _shouldOpenFactionDialog = [] call FLO_fnc_shouldOpenFactionDialog;
+        if (!_shouldOpenFactionDialog) then {
+            ["INIT_CLIENT", 3, "Mission setup already in progress or complete - skipping faction selection dialog"] call FLO_fnc_log;
+            StartingLocationDone = true;
+        };
+
         // Launch faction selection for commander (fresh start only)
-        if (_player isEqualTo TheCommander) then {
-            ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
-            execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
-        } else {
-            ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+        if (_shouldOpenFactionDialog) then {
+            if (_player isEqualTo TheCommander) then {
+                ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
+                execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+            } else {
+                ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+            };
         };
     };
 };

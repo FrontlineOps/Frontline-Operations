@@ -63,6 +63,19 @@ if (_localSideKey != _sideKey && {_sideKey in _registry}) then {
 
 if (_localSideKey != _sideKey) exitWith { false };
 
+FLO_GTN_LastCommanderIntelSyncArgs = [
+    _sideKey,
+    +_enemyGroupMarkers,
+    +_enemyConcentrationMarkers,
+    +_friendlyGroupMarkers,
+    +_supportMarkers
+];
+
+if (!FLO_GTN_ShowSupplyMarkers) then {
+    private _supplyPrefix = format ["FLO_GTN_INTEL_%1_SUP_LOG_", _sideKey];
+    _supportMarkers = _supportMarkers select { ((_x select 0) find _supplyPrefix) != 0 };
+};
+
 if !(_sideKey in _registry) then {
     _registry set [_sideKey, createHashMapFromArray [
         ["enemyGroups", createHashMap],

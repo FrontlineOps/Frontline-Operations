@@ -101,9 +101,12 @@ private _concentrationFreshSeconds = _freshSeconds * 2;
     ];
 } forEach (_enemyIntel get "concentrations");
 
+private _supportMarkers = [_worldState] call FLO_fnc_gtnBuildFriendlySupportMarkers;
+_supportMarkers append ([_worldState] call FLO_fnc_gtnBuildFriendlySupplyNodeMarkers);
+
 createHashMapFromArray [
     ["enemyGroups", _enemyGroupMarkers],
     ["enemyConcentrations", _enemyConcentrationMarkers],
     ["friendlyGroups", [_worldState] call FLO_fnc_gtnBuildFriendlyCommanderGroupMarkers],
-    ["supportMarkers", [_worldState] call FLO_fnc_gtnBuildFriendlySupportMarkers]
+    ["supportMarkers", _supportMarkers]
 ]

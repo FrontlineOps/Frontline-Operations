@@ -14,21 +14,16 @@
 
 params ["_net"];
 
-private _activeNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+private _activeNodes = _net get "_activeSupplyNodes";
 if ((count (keys _activeNodes)) == 0) exitWith { [] };
 
-private _managedSide = _net get "_managedSide";
 private _advanceObjectives = [];
 
 {
-    private _objectiveId = _x;
-    private _objective = FLO_Objectives get _objectiveId;
-    if ((_objective get "owner") isNotEqualTo _managedSide) then { continue };
-
-    private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    private _role = [_net, _x] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
     if !(_role get "isAdvanceCandidate") then { continue };
 
-    _advanceObjectives pushBack _objectiveId;
-} forEach (keys FLO_Objectives);
+    _advanceObjectives pushBack _x;
+} forEach (_net get "_managedObjectiveIds");
 
 _advanceObjectives

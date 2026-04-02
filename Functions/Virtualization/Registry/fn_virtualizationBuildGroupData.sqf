@@ -58,10 +58,10 @@ private _groupData = createHashMapFromArray [
     ["noWaypoints", false],
     ["virtualSpeed", 0],
     ["lastMoveTime", -1],
+    ["virtualMoveCarryMeters", 0],
     ["lastSentryTime", 0],
     ["loiterStartTime", 0],
     ["tempWaypointCount", 0],
-    ["updatePhase", -1],
     ["pathToken", -1],
     ["pathTargetPos", []],
     ["pathAllowTrails", false],
@@ -116,7 +116,20 @@ private _groupData = createHashMapFromArray [
     ["organicPackageRole", ""],
     ["organicPackageParentGroupId", ""],
     ["garrisonPosition", _position],
-    ["garrisonObjective", ""]
+    ["garrisonObjective", ""],
+    ["civilianRole", ""],
+    ["civilianObjective", _homeObjective],
+    ["civilianAnchorPos", _position],
+    ["civilianHomeAnchorPos", _position],
+    ["civilianRoutineAnchorPos", _position],
+    ["civilianRouteAnchors", []],
+    ["civilianKnowledgeBias", 1],
+    ["civilianTrustBias", 1],
+    ["civilianLastIntelAt", -1],
+    ["civilianLastMood", ""],
+    ["civilianRoutineState", ""],
+    ["civilianLastRoutineAt", -1],
+    ["civilianRoutineUntil", -1]
 ];
 
 private _initialAssetComposition = [_groupType, _resolvedUnitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;

@@ -30,6 +30,7 @@
  * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
  * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
  * FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP = 1968
+ * FLO_IDC_FACTION_COMBO_TERRITORY_RATIO = 1969
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -66,6 +67,7 @@ private _virtualizationDistance = [1965] call _fnc_getSelection;
 private _forceGrowth = [1966] call _fnc_getSelection;
 private _garrison = [1967] call _fnc_getSelection;
 private _virtualizationUnitCap = [1968] call _fnc_getSelection;
+private _territoryRatio = [1969] call _fnc_getSelection;
 
 // Validate selections
 if (_playerFaction isEqualTo "" ||
@@ -81,7 +83,8 @@ if (_playerFaction isEqualTo "" ||
     _virtualizationDistance isEqualTo "" ||
     _forceGrowth isEqualTo "" ||
     _garrison isEqualTo "" ||
-    _virtualizationUnitCap isEqualTo "") exitWith {
+    _virtualizationUnitCap isEqualTo "" ||
+    _territoryRatio isEqualTo "") exitWith {
 	
 	["UI", 2, "Faction dialog validation failed - empty selections"] call FLO_fnc_log;
 	hint "Please select all options before starting the mission.";
@@ -96,8 +99,8 @@ _display closeDisplay 1;
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _attackCoverage, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance, _forceGrowth, _garrison, _virtualizationUnitCap] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackCoverage", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance", "_forceGrowth", "_garrison", "_virtualizationUnitCap"];
+[_playerFaction, _enemyFaction, _civilianFaction, _attackCoverage, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance, _forceGrowth, _garrison, _virtualizationUnitCap, _territoryRatio] spawn {
+	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackCoverage", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance", "_forceGrowth", "_garrison", "_virtualizationUnitCap", "_territoryRatio"];
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -208,6 +211,14 @@ _display closeDisplay 1;
 	private _objectiveSizeThreshold = _objectiveSize;
 	private _virtualizationDistanceValue = parseNumber _virtualizationDistance;
     private _virtualizationUnitCapValue = parseNumber _virtualizationUnitCap;
+    private _territoryRatioWestValue = switch (_territoryRatio) do {
+        case "30% BLUFOR / 70% OPFOR": {0.3};
+        case "40% BLUFOR / 60% OPFOR": {0.4};
+        case "50% BLUFOR / 50% OPFOR": {0.5};
+        case "60% BLUFOR / 40% OPFOR": {0.6};
+        case "70% BLUFOR / 30% OPFOR": {0.7};
+        default {0.5};
+    };
 
 	// Legacy compatibility value (not consumed by current systems)
 	private _enemyPresence = 2;
@@ -270,6 +281,7 @@ _display closeDisplay 1;
 		["objectiveSizeThreshold", _objectiveSizeThreshold],
 		["virtualizationDistance", _virtualizationDistanceValue],
         ["virtualizationUnitCap", _virtualizationUnitCapValue],
+        ["startingTerritoryWestRatio", _territoryRatioWestValue],
 		["startPosition", _startPos]
 	];
 	publicVariable "FLO_MissionConfig";

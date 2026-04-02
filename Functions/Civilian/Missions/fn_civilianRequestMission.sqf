@@ -1,50 +1,36 @@
 /*
  * Function: FLO_fnc_civilianRequestMission
- * Description: 
- *   Handles player request to help civilians ("Offer Help" action).
- *   Can trigger hostile responses (Engineers) or start a new mission via Manager.
+ * Author: Frontline Operations Development Group
+ * Description:
+ *   Handles the civilian "Offer Help" interaction through the rewritten
+ *   server-authoritative civilian mission manager.
  *
  * Arguments:
- *   0: Civilian Unit <OBJECT>
+ * 0: Civilian unit <OBJECT>
+ * 1: Caller <OBJECT>
+ *
+ * Return Value:
+ * BOOL - True when a mission starts
  */
 
-params ["_civilian"];
+params [
+    ["_civilian", objNull, [objNull]],
+    ["_caller", objNull, [objNull]]
+];
 
-// Hostile Engineer Logic (Legacy)
-// 66% chance of hostile response if unit is an engineer
-private _isEngineer = _civilian getUnitTrait "engineer";
-if (_isEngineer && (random 1 > 0.33)) then {
-    private _hostileLines = [
-        "We Don't Need Your Help Outsider, Move away, GOD Damn you ALL !!!",
-        "Wanna Help ? make alive My little Brother that you Killed, Fuck off you Bastard, GOD kill you ALL !!!",
-        "You will Pay for what you have done to our Country, I dont tell you shit !!!",
-        "We Dont need your Help, JUST FUCK OFF !!!",
-        "Your Men Caused my Innocent brothers and sisters Suffer and Die, Fuck you, FUCK YOU ALL !!!"
-    ];
-    ["Civilian", selectRandom _hostileLines] remoteExec ["BIS_fnc_showSubtitle"];
-} else {
-    // Attempt to start a mission
-    private _missionId = [["NEXT_MISSION"] call FLO_fnc_civilianMissionManager] param [0, 0];
-    
-    // If mission initiated successfully
-    if (!isNil "_missionId" && {_missionId > 0}) then {
-        // Show context-specific dialogue
-        private _line = switch (_missionId) do {
-            case 1: { "Ive heard some of you are Engineers, One of Locals Troubled his Vehicle somewhere Along the Road, Think You can Help?" };
-            case 2: { "This Neighborhood Runs low on Supplies and the IDAP does not Accept the Risk, Can your Guys help them?" };
-            case 3: { "our Neighbors Found a Minefield the hard way near this Area, Can Your Engineers take a look at it ?" };
-            case 4: { "I know you were Looking for Insurgents, They have been seen along these roads few nights, Can you Create Checkpoints ?" };
-            default { "We have some trouble nearby, can you help?" };
-        };
-        ["Civilian", _line] remoteExec ["BIS_fnc_showSubtitle"];
-    } else {
-        // Mission failed to start (likely one already active)
-        private _busyLines = [
-            "We are okay for now, thank you.",
-            "Someone else is already helping us, I think.",
-            "I haven't heard of any trouble recently.",
-            "Maybe ask someone else in the next town."
-        ];
-        ["Civilian", selectRandom _busyLines] remoteExec ["BIS_fnc_showSubtitle"];
-    };
+if (!isServer) exitWith {
+    [_civilian, _caller] remoteExecCall ["FLO_fnc_civilianRequestMission", 2, false];
+    false
 };
+
+if (isNull _civilian || {isNull _caller} || {!alive _civilian} || {!alive _caller}) exitWith { false };
+
+private _result = ["REQUEST_MISSION", [_civilian, _caller]] call FLO_fnc_civilianMissionManager;
+if ((count (keys _result)) == 0) exitWith { false };
+
+private _line = _result get "line";
+if (_line != "") then {
+    ["Civilian", _line] remoteExec ["BIS_fnc_showSubtitle", owner _caller, false];
+};
+
+(_result get "status") == "STARTED"

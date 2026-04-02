@@ -7,7 +7,6 @@ params [
     "_groups",
     "_activationDist",
     "_now",
-    "_groupUpdateTimes",
     "_stats",
     "_perf"
 ];
@@ -30,7 +29,7 @@ for "_i" from _batchStart to _batchEnd do {
     private _groupId = _groupIds select _i;
     private _groupData = _groups get _groupId;
     private _groupStart = diag_tickTime;
-    [_groupId, _groupData, _activationDist, _now, _groupUpdateTimes] call FLO_fnc_virtualizationProcessGroup;
+    [_groupId, _groupData, _activationDist, _now] call FLO_fnc_virtualizationProcessGroup;
     private _groupMs = (diag_tickTime - _groupStart) * 1000;
 
     _stats set ["lastGroupProcessMs", _groupMs];

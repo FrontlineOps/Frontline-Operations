@@ -18,6 +18,9 @@ params ["_net", "_requestedObjectiveId"];
 
 if (_requestedObjectiveId == "") exitWith { "" };
 
+private _deliveryCache = _net get "_dispatchDeliveryObjectiveCache";
+if (_requestedObjectiveId in _deliveryCache) exitWith { _deliveryCache get _requestedObjectiveId };
+
 private _objectives = FLO_Objectives;
 private _requestedObjective = _objectives get _requestedObjectiveId;
 private _requestedPos = _requestedObjective get "position";
@@ -26,12 +29,21 @@ private _enemySide = _net get "_enemySide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
 private _enemyCountKey = if (_managedSide isEqualTo east) then { "bluforCount" } else { "opforCount" };
 private _requestedRole = [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+private _sourceableCache = _net get "_dispatchSourceableCache";
+private _requestedCanSource = if (_requestedObjectiveId in _sourceableCache) then {
+    _sourceableCache get _requestedObjectiveId
+} else {
+    private _canSource = ([_net, _requestedObjectiveId, []] call FLO_fnc_logisticsNetworkFindSupplySourceObjective) != "";
+    _sourceableCache set [_requestedObjectiveId, _canSource];
+    _canSource
+};
 
 if (
     (_requestedRole get "isAdvanceCandidate")
     && {!(_requestedObjective get "contested")}
     && {(_requestedObjective get _enemyCountKey) <= 0}
 ) exitWith {
+    _deliveryCache set [_requestedObjectiveId, _requestedObjectiveId];
     _requestedObjectiveId
 };
 
@@ -58,16 +70,42 @@ private _candidateIds = [];
 } forEach (_requestedObjective get "linkedObjectives");
 
 _candidateIds = _candidateIds - [_requestedObjectiveId];
-if (count _candidateIds == 0) exitWith { _requestedObjectiveId };
+_candidateIds = _candidateIds select {
+    if (_x in _sourceableCache) then {
+        _sourceableCache get _x
+    } else {
+        private _canSource = ([_net, _x, []] call FLO_fnc_logisticsNetworkFindSupplySourceObjective) != "";
+        _sourceableCache set [_x, _canSource];
+        _canSource
+    }
+};
+if (count _candidateIds == 0) exitWith {
+    private _fallbackObjectiveId = if (_requestedCanSource) then {
+        _requestedObjectiveId
+    } else {
+        ""
+    };
+    _deliveryCache set [_requestedObjectiveId, _fallbackObjectiveId];
+    _fallbackObjectiveId
+};
 
 private _enemyObjectiveIds = (keys _objectives) select {
     ((_objectives get _x) get "owner") isEqualTo _enemySide
 };
-if (count _enemyObjectiveIds == 0) exitWith { _requestedObjectiveId };
+if (count _enemyObjectiveIds == 0) exitWith {
+    private _fallbackObjectiveId = if (_requestedCanSource) then {
+        _requestedObjectiveId
+    } else {
+        _candidateIds select 0
+    };
+    _deliveryCache set [_requestedObjectiveId, _fallbackObjectiveId];
+    _fallbackObjectiveId
+};
 
 private _minEnemyDistance = _net get "REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE";
 private _quietCandidates = [];
 private _fallbackCandidates = [];
+private _enemyDistanceCache = _net get "_dispatchEnemyDistanceCache";
 
 {
     private _candidateId = _x;
@@ -77,15 +115,20 @@ private _fallbackCandidates = [];
     private _friendlyCount = _candidateObjective get _friendlyCountKey;
     private _enemyCount = _candidateObjective get _enemyCountKey;
     private _priority = _candidateObjective get "priority";
-    private _nearestEnemyDist = 1e12;
-
-    {
-        private _enemyPos = (_objectives get _x) get "position";
-        private _dist = _candidatePos distance2D _enemyPos;
-        if (_dist < _nearestEnemyDist) then {
-            _nearestEnemyDist = _dist;
-        };
-    } forEach _enemyObjectiveIds;
+    private _nearestEnemyDist = if (_candidateId in _enemyDistanceCache) then {
+        _enemyDistanceCache get _candidateId
+    } else {
+        private _resolvedDist = 1e12;
+        {
+            private _enemyPos = (_objectives get _x) get "position";
+            private _dist = _candidatePos distance2D _enemyPos;
+            if (_dist < _resolvedDist) then {
+                _resolvedDist = _dist;
+            };
+        } forEach _enemyObjectiveIds;
+        _enemyDistanceCache set [_candidateId, _resolvedDist];
+        _resolvedDist
+    };
 
     private _row = [_candidateId, _distToRequested, _nearestEnemyDist, _friendlyCount, _enemyCount, _priority];
     if (_enemyCount == 0 && {_nearestEnemyDist >= _minEnemyDistance}) then {
@@ -96,9 +139,17 @@ private _fallbackCandidates = [];
 } forEach _candidateIds;
 
 private _candidateRows = if (count _quietCandidates > 0) then { _quietCandidates } else { _fallbackCandidates };
-if (count _candidateRows == 0) exitWith { _requestedObjectiveId };
+if (count _candidateRows == 0) exitWith {
+    private _fallbackObjectiveId = if (_requestedCanSource) then {
+        _requestedObjectiveId
+    } else {
+        _candidateIds select 0
+    };
+    _deliveryCache set [_requestedObjectiveId, _fallbackObjectiveId];
+    _fallbackObjectiveId
+};
 
-private _bestObjectiveId = _requestedObjectiveId;
+private _bestObjectiveId = if (_requestedCanSource) then { _requestedObjectiveId } else { _candidateIds select 0 };
 private _bestScore = -1e12;
 
 {
@@ -115,5 +166,7 @@ private _bestScore = -1e12;
         _bestObjectiveId = _candidateId;
     };
 } forEach _candidateRows;
+
+_deliveryCache set [_requestedObjectiveId, _bestObjectiveId];
 
 _bestObjectiveId
