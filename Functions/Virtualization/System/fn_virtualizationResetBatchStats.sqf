@@ -16,6 +16,8 @@ params ["_stats"];
     ["waypointAdvancesThisBatch", 0],
     ["patrolAssignmentsThisBatch", 0],
     ["attachedSyncsThisBatch", 0],
+    ["movementPauseSkipsThisBatch", 0],
+    ["movementDeadbandSkipsThisBatch", 0],
     ["missionHoldSkipsThisBatch", 0],
     ["eliminatedGroupsThisBatch", 0],
     ["lastPlayerCacheMs", 0],

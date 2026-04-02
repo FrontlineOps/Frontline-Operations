@@ -58,6 +58,7 @@ private _groupData = createHashMapFromArray [
     ["noWaypoints", false],
     ["virtualSpeed", 0],
     ["lastMoveTime", -1],
+    ["virtualMoveCarryMeters", 0],
     ["lastSentryTime", 0],
     ["loiterStartTime", 0],
     ["tempWaypointCount", 0],

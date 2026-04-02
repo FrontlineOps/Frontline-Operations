@@ -39,6 +39,8 @@ params ["_groupId", "_groupData", "_currentIdx", "_waypoints"];
 if (count _waypoints == 0 || _currentIdx >= count _waypoints) exitWith {
     [_groupData, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
     _groupData set ["currentWaypointIndex", 0];
+    _groupData set ["virtualMoveCarryMeters", 0];
+    [_groupData] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
 };
 
 private _currentWp = _waypoints select _currentIdx;
@@ -86,4 +88,7 @@ switch (_wpType) do {
         [_groupId, _groupData, _currentIdx, _waypoints, _isPatrol] call FLO_fnc_virtualizationAdvanceDefaultWaypoint;
     };
 };
+
+_groupData set ["virtualMoveCarryMeters", 0];
+[_groupData] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
 

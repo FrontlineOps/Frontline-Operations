@@ -7,6 +7,8 @@ private _stats = FLO_VirtUpdate get "stats";
 private _perf = FLO_VirtUpdate get "perf";
 private _batchStartTime = diag_tickTime;
 
+FLO_VirtUpdate set ["lastUpdateTime", _now];
+
 [_stats] call FLO_fnc_virtualizationResetBatchStats;
 [ _now, _stats ] call FLO_fnc_virtualizationRefreshPlayerCache;
 

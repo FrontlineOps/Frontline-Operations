@@ -116,7 +116,9 @@ class VirtualizationRouting {
     class updateVirtualGroupWaypoints      {};
     class virtualizationApplyRealRoute     {};
     class virtualizationRequestPathRouteUpdate {};
+    class virtualizationRefreshCurrentWaypointSpeed {};
     class virtualizationResolveMovePlatformClass {};
+    class virtualizationResolveMoveSpeedMps {};
     class virtualizationSanitizeWaypoints  {};
     class virtualizationComputeVirtualSpeed {};
     class virtualizationSetRouteState      {};

@@ -17,6 +17,7 @@ _groupData set ["patrolConfig", []];
 _groupData set ["autoPatrol", false];
 _groupData set ["currentWaypointIndex", 0];
 _groupData set ["lastMoveTime", diag_tickTime];
+_groupData set ["virtualMoveCarryMeters", 0];
 
 if (_tempWaypointCount >= 0) then {
     _groupData set ["tempWaypointCount", _tempWaypointCount];
@@ -24,10 +25,7 @@ if (_tempWaypointCount >= 0) then {
     _groupData set ["tempWaypointCount", count _waypoints];
 };
 
-if (count _waypoints > 0) then {
-    private _wpSpeed = (_waypoints select 0) select 3;
-    _groupData set ["virtualSpeed", [_groupData, _wpSpeed] call FLO_fnc_virtualizationComputeVirtualSpeed];
-};
+[_groupData] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
 
 [_groupData, _runtimeState] call FLO_fnc_virtualizationSetRuntimeState;
 

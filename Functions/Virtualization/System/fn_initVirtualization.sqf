@@ -34,6 +34,7 @@ FLO_virtualGroups = createHashMapFromArray [
     ["_activationDistance", _activationDistance],
     ["_activationUnitCap", _activationUnitCap],
     ["_activationResumeCap", ((_activationUnitCap - 20) max 0)],
+    ["_movementDeadbandMeters", 8],
     ["_enabled", true],
     ["_debugMode", false]
 ];
