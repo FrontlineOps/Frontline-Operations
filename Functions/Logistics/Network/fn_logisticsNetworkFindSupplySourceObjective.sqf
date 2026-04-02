@@ -42,8 +42,9 @@ private _routeMeters = 0;
 private _sourceObjectiveId = _targetObjectiveId;
 private _resolvedSourceObjectiveId = "";
 private _fallbackSourceObjectiveId = "";
+private _searchComplete = false;
 
-while {_sourceObjectiveId != ""} do {
+while {_sourceObjectiveId != "" && {!_searchComplete}} do {
     if !(_sourceObjectiveId in FLO_Objectives) exitWith {
         _sourceObjectiveId = "";
     };
@@ -59,18 +60,21 @@ while {_sourceObjectiveId != ""} do {
             _fallbackSourceObjectiveId = _sourceObjectiveId;
         };
 
-        if !(_sourceObjectiveId in _blockedObjectives) exitWith {
+        if !(_sourceObjectiveId in _blockedObjectives) then {
             _resolvedSourceObjectiveId = _sourceObjectiveId;
+            _searchComplete = true;
         };
     };
 
-    if !(_sourceObjectiveId in _routeInfo) exitWith {
-        _sourceObjectiveId = "";
-    };
+    if (!_searchComplete) then {
+        if !(_sourceObjectiveId in _routeInfo) exitWith {
+            _sourceObjectiveId = "";
+        };
 
-    _currentObjectiveId = _sourceObjectiveId;
-    _currentObjective = _sourceObjective;
-    _sourceObjectiveId = ((_routeInfo get _currentObjectiveId) get "parentObjective");
+        _currentObjectiveId = _sourceObjectiveId;
+        _currentObjective = _sourceObjective;
+        _sourceObjectiveId = ((_routeInfo get _currentObjectiveId) get "parentObjective");
+    };
 };
 
 if (_resolvedSourceObjectiveId != "") then {
