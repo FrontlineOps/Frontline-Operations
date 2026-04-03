@@ -157,11 +157,23 @@ private _gtnCommander = createHashMapObject [[
         ["engagementFullSweepMinSeconds", 20], // Fresh opportunistic target acquisition runs slower than engagement maintenance
         ["attackCoverageMultiplier", _attackCoverage], // Scales per-objective attack caps without multiplying ATK tracks
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
+        ["defenseObjectiveBaseMin", 2], // Quiet or low-contact objectives should not automatically pull four-plus defenders
+        ["defenseObjectiveEnemyMultiplier", 1.0], // Defense scaling should follow enemy strength more conservatively than before
+        ["defenseObjectiveUnderAttackBonus", 2], // Active pressure raises the cap, but not by an entire extra squad stack
+        ["defenseObjectiveContestedBonus", 1], // Contested ownership gets a small cap bump instead of a large dogpile bonus
+        ["defenseObjectiveDeficitMultiplier", 0.25], // Local force deficits should raise defense demand gradually, not explosively
+        ["defenseObjectiveHardCap", 8], // Hard ceiling for total defenders on one objective
+        ["attackObjectiveBaseMin", 2], // Small enemy footholds should not always attract four attackers minimum
+        ["attackObjectiveEnemyMultiplier", 1.0], // Attack scaling should track real enemy presence more conservatively
+        ["attackObjectiveUnderAttackBonus", 2], // Ongoing combat justifies more attackers, but not a heavy overcommit
+        ["attackObjectiveContestedBonus", 1], // Contested enemy objectives get a slight pressure bump
+        ["attackObjectiveDeficitMultiplier", 0.25], // Attack deficits should widen demand slowly so multiple objectives can stay active
+        ["attackObjectiveHardCap", 6], // Hard ceiling for attackers focused on one objective
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
-        ["attackLaneStagingMinGroups", 6], // Tracks wait for a meaningful reserve package before opening an assault
-        ["attackLaneStagingGoalFraction", 0.6], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
+        ["attackLaneStagingMinGroups", 12], // Tracks wait for a meaningful reserve package before opening an assault
+        ["attackLaneStagingGoalFraction", 0.7], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
         ["attackLaneCautiousStrengthRatio", 0.75], // Below this theater-wide force ratio, attacks become harder to launch even if one lane has local groups
         ["attackLaneExhaustedStrengthRatio", 0.5], // Below this ratio, the side is too depleted to begin new assaults
         ["attackLaneCautiousGoalMultiplier", 1.25], // Cautious posture needs a larger reserve package before opening an assault
@@ -174,6 +186,7 @@ private _gtnCommander = createHashMapObject [[
         ["garrisonPriorityBonusThreshold", 60], // Important objectives receive one extra standing garrison group
         ["garrisonPriorityBonusGroups", _garrisonPriorityBonusGroups], // High-priority objectives keep one more standing holder before surge defense fills
         ["garrisonHotBonusGroups", _garrisonHotBonusGroups], // Objectives already under pressure keep an extra baseline holder even before reactive defense fills
+        ["garrisonObjectiveHardCap", 4], // Baseline garrisons should stay lean so defense reserves can move instead of ossifying
         ["frontlineCAPMinThreatScore", 70], // Only spend CAP when recent enemy air contacts near a frontline sector are meaningful
         ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
         ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
@@ -198,16 +211,19 @@ private _gtnCommander = createHashMapObject [[
         ["playerSupportObjectiveCooldownCAPSeconds", 360], // Keep one sector or map area from monopolizing CAP coverage
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
-        ["defenseContestedCollapseCap", 8], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
+        ["defenseContestedCollapseCap", 5], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
         ["engagementFreshSeconds", 180], // Fresh commander contact window used for exact opportunistic engagement targets
         ["attackEngagementSearchRadius", 1500], // Attack groups may engage confirmed enemies near their current position
         ["attackEngagementCorridorRadius", 500], // Attack groups may peel off to confirmed enemies close to their assigned route
         ["attackEngagementLeashMeters", 450], // Attack groups do not chase confirmed targets too far off their approach
         ["defenseEngagementLeashMeters", 1500], // Defenders only engage confirmed targets local to their defended objective
         ["garrisonEngagementLeashMeters", 1500], // Garrisons only engage confirmed targets local to their held objective
-        ["engagementTargetLoadMultiplier", 1.25], // Known contacts only attract a limited friendly load before selection starts spreading to other valid targets
-        ["engagementReservationPenaltyPerGroup", 16], // Each committed friendly group reduces the score of the same target for later groups that cycle
-        ["engagementSaturationPenalty", 30], // Targets already saturated by current commitments become much less attractive than other valid contacts
+        ["engagementTargetAssignmentDivisor", 12], // Bigger target-load buckets are required before another group may pile onto the same contact
+        ["engagementTargetMaxGroups", 2], // Opportunistic contact handling should spread out instead of tripling up on one target
+        ["engagementTargetLoadMultiplier", 0.85], // A target reaches its soft assignment load earlier so extra groups prefer other contacts
+        ["engagementAssignedLoadPenaltyDivisor", 3], // Existing assigned load should punish same-target selection more aggressively
+        ["engagementReservationPenaltyPerGroup", 28], // Each extra committed group sharply reduces the score of the same target
+        ["engagementSaturationPenalty", 60], // Saturated contacts should be strongly deprioritized against other valid targets
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
         ["attackAssignmentsPerCycle", 6], // One attack primitive only orders a bounded number of groups so one commander slice does not monopolize the scheduler
@@ -1632,17 +1648,17 @@ private _gtnCommander = createHashMapObject [[
         private _config = _self get "_config";
         private _coverage = _config get "defenseCoverageMultiplier";
 
-        private _cap = (4 max (ceil (_enemyCount * 1.25))) min 24;
-        if (_underAttack) then { _cap = (_cap + 4) min 32; };
-        if (_contested) then { _cap = (_cap + 2) min 32; };
+        private _cap = (_config get "defenseObjectiveBaseMin") max (ceil (_enemyCount * (_config get "defenseObjectiveEnemyMultiplier")));
+        if (_underAttack) then { _cap = _cap + (_config get "defenseObjectiveUnderAttackBonus"); };
+        if (_contested) then { _cap = _cap + (_config get "defenseObjectiveContestedBonus"); };
 
         private _deficit = (_enemyCount - _friendlyCount) max 0;
         if (_deficit > 0) then {
-            _cap = (_cap + (ceil (_deficit * 0.5))) min 32;
+            _cap = _cap + (ceil (_deficit * (_config get "defenseObjectiveDeficitMultiplier")));
         };
 
         _cap = ceil (_cap * _coverage);
-        _cap = (_cap max 4) min 12;
+        _cap = (_cap max (_config get "defenseObjectiveBaseMin")) min (_config get "defenseObjectiveHardCap");
 
         if (_contested && {_enemyCount > 0}) then {
             private _forceRatio = _friendlyCount / _enemyCount;
@@ -1692,7 +1708,7 @@ private _gtnCommander = createHashMapObject [[
         };
 
         private _defenseCap = _self call ["_getDefenseCapForObjective", [_objectiveId]];
-        (_cap max 0) min _defenseCap
+        (_cap max 0) min ((_config get "garrisonObjectiveHardCap") min _defenseCap)
     }],
 
     // Friendly-held linked objectives that can directly source an attack on this enemy objective.
@@ -1739,17 +1755,17 @@ private _gtnCommander = createHashMapObject [[
         private _contested = _obj get "contested";
         private _config = _self get "_config";
         private _coverage = _config get "attackCoverageMultiplier";
-        private _cap = (4 max (ceil (_enemyCount * 1.25))) min 24;
-        if (_underAttack) then { _cap = (_cap + 4) min 32; };
-        if (_contested) then { _cap = (_cap + 2) min 32; };
+        private _cap = (_config get "attackObjectiveBaseMin") max (ceil (_enemyCount * (_config get "attackObjectiveEnemyMultiplier")));
+        if (_underAttack) then { _cap = _cap + (_config get "attackObjectiveUnderAttackBonus"); };
+        if (_contested) then { _cap = _cap + (_config get "attackObjectiveContestedBonus"); };
 
         private _deficit = (_enemyCount - _friendlyCount) max 0;
         if (_deficit > 0) then {
-            _cap = (_cap + (ceil (_deficit * 0.5))) min 32;
+            _cap = _cap + (ceil (_deficit * (_config get "attackObjectiveDeficitMultiplier")));
         };
 
         _cap = ceil (_cap * _coverage);
-        _cap = (_cap max 4) min 10;
+        _cap = (_cap max (_config get "attackObjectiveBaseMin")) min (_config get "attackObjectiveHardCap");
         _cap
     }],
 

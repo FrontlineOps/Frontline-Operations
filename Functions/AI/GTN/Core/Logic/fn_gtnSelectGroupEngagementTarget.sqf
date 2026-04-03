@@ -65,7 +65,7 @@ private _candidateIds = switch (_order) do {
     };
     private _assignedCount = _assignment select 0;
     private _assignedLoad = _assignment select 1;
-    private _loadPenalty = _assignedLoad / 6;
+    private _loadPenalty = _assignedLoad / (_config get "engagementAssignedLoadPenaltyDivisor");
 
     _score = _score - (_assignedCount * (_config get "engagementReservationPenaltyPerGroup")) - _loadPenalty;
     if (_assignedCount >= (_assignmentCap select 1) || {_assignedLoad >= (_assignmentCap select 2)}) then {

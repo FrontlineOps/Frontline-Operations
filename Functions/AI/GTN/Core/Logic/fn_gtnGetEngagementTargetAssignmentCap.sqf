@@ -17,7 +17,7 @@
 params ["_targetData", "_config"];
 
 private _targetLoad = [_targetData] call FLO_fnc_gtnEstimateEngagementTargetLoad;
-private _maxGroups = ((ceil (_targetLoad / 8)) max 1) min 3;
+private _maxGroups = ((ceil (_targetLoad / (_config get "engagementTargetAssignmentDivisor"))) max 1) min (_config get "engagementTargetMaxGroups");
 private _maxLoad = ceil ((_targetLoad max 4) * (_config get "engagementTargetLoadMultiplier"));
 
 [_targetLoad, _maxGroups, _maxLoad]

@@ -128,19 +128,19 @@ _display closeDisplay 1;
 
 	// Process GTN attack and defense coverage.
 	private _attackCoverageValue = switch (_attackCoverage) do {
-		case "Minimal Coverage": {0.75};
-		case "Balanced Coverage": {1};
-		case "Layered Coverage": {1.25};
-		case "Maximum Coverage": {1.5};
-		default {1};
+		case "Minimal Coverage": {0.5};
+		case "Balanced Coverage": {0.75};
+		case "Layered Coverage": {1};
+		case "Maximum Coverage": {1.25};
+		default {0.75};
 	};
 
 	private _defenseOpsValue = switch (_defenseCoverage) do {
-		case "Minimal Coverage": {0.75};
-		case "Balanced Coverage": {1};
-		case "Layered Coverage": {1.25};
-		case "Maximum Coverage": {1.5};
-		default {1};
+		case "Minimal Coverage": {0.5};
+		case "Balanced Coverage": {0.75};
+		case "Layered Coverage": {1};
+		case "Maximum Coverage": {1.25};
+		default {0.75};
 	};
 
 	// Process GTN commander update tempo (seconds)
@@ -166,44 +166,44 @@ _display closeDisplay 1;
 				["name", _garrison],
 				["rearBaseGroups", 1],
 				["frontlineBaseGroups", 2],
-				["priorityBonusGroups", 1],
+				["priorityBonusGroups", 0],
 				["hotBonusGroups", 1]
 			]
 		};
-		case "Standard _ 2 Rear / 4 Front": {
+		case "Standard _ 1 Rear / 3 Front": {
+			createHashMapFromArray [
+				["name", _garrison],
+				["rearBaseGroups", 1],
+				["frontlineBaseGroups", 3],
+				["priorityBonusGroups", 0],
+				["hotBonusGroups", 1]
+			]
+		};
+		case "Heavy _ 2 Rear / 3 Front": {
+			createHashMapFromArray [
+				["name", _garrison],
+				["rearBaseGroups", 2],
+				["frontlineBaseGroups", 3],
+				["priorityBonusGroups", 0],
+				["hotBonusGroups", 1]
+			]
+		};
+		case "Fortified _ 2 Rear / 4 Front": {
 			createHashMapFromArray [
 				["name", _garrison],
 				["rearBaseGroups", 2],
 				["frontlineBaseGroups", 4],
-				["priorityBonusGroups", 1],
+				["priorityBonusGroups", 0],
 				["hotBonusGroups", 2]
-			]
-		};
-		case "Heavy _ 3 Rear / 5 Front": {
-			createHashMapFromArray [
-				["name", _garrison],
-				["rearBaseGroups", 3],
-				["frontlineBaseGroups", 5],
-				["priorityBonusGroups", 1],
-				["hotBonusGroups", 2]
-			]
-		};
-		case "Fortified _ 4 Rear / 6 Front": {
-			createHashMapFromArray [
-				["name", _garrison],
-				["rearBaseGroups", 4],
-				["frontlineBaseGroups", 6],
-				["priorityBonusGroups", 1],
-				["hotBonusGroups", 3]
 			]
 		};
 		default {
 			createHashMapFromArray [
-				["name", "Standard _ 2 Rear / 4 Front"],
-				["rearBaseGroups", 2],
-				["frontlineBaseGroups", 4],
-				["priorityBonusGroups", 1],
-				["hotBonusGroups", 2]
+				["name", "Standard _ 1 Rear / 3 Front"],
+				["rearBaseGroups", 1],
+				["frontlineBaseGroups", 3],
+				["priorityBonusGroups", 0],
+				["hotBonusGroups", 1]
 			]
 		};
 	};

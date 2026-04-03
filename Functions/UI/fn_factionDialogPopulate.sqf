@@ -263,9 +263,9 @@ private _forceGrowthOptions = [
 private _garrisonCombo = _display displayCtrl 1967;
 private _garrisonOptions = [
     "Light _ 1 Rear / 2 Front",
-    "Standard _ 2 Rear / 4 Front",
-    "Heavy _ 3 Rear / 5 Front",
-    "Fortified _ 4 Rear / 6 Front"
+    "Standard _ 1 Rear / 3 Front",
+    "Heavy _ 2 Rear / 3 Front",
+    "Fortified _ 2 Rear / 4 Front"
 ];
 
 [_garrisonCombo, _garrisonOptions, 1] call _fnc_addItems;

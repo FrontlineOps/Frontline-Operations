@@ -21,7 +21,7 @@ if (isNil "FLO_VehicleCleanup") then {
         ["pfhId", -1],
         ["interval", 60],
         ["graceTime", 600],
-        ["playerSafeRadius", 500],
+        ["playerSafeRadius", 150],
         ["installationSafeRadius", 500],
         ["candidateSince", createHashMap]
     ];
