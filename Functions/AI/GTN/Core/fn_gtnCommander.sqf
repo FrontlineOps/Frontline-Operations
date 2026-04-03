@@ -135,6 +135,10 @@ private _gtnCommander = createHashMapObject [[
     ["_reserveBandsCache", createHashMap],
     ["_frontlineCAPLocks", createHashMap],
     ["_frontlineCASLocks", createHashMap],
+    ["_playerSupportRequests", []],
+    ["_playerSupportPlayerCooldowns", createHashMap],
+    ["_playerSupportObjectiveLocks", createHashMap],
+    ["_playerSupportRequestSeq", 0],
     ["_lastIntelPublishAt", -1],
     ["_lastGarrisonRunAt", -1],
     ["_lastGarrisonSignature", ""],
@@ -177,6 +181,20 @@ private _gtnCommander = createHashMapObject [[
         ["frontlineCASMinAttackers", 4], // Do not spend CAS on token attacks with no meaningful committed assault package
         ["frontlineCASMinScore", 80], // Prevent trivial objectives from consuming air support
         ["frontlineCASObjectiveLockSeconds", 420], // Cooldown per objective so repeated cycles do not spam CAS on the same target
+        ["playerSupportRequestExpireSeconds", 150], // Player support requests should expire instead of sitting forever in the queue
+        ["playerSupportMaxQueuedRequests", 12], // Per-side player support queue cap so spam does not crowd out the commander
+        ["playerSupportMaxAssignmentsPerCycle", 1], // One player support assignment per commander cycle keeps support spending paced
+        ["playerSupportObjectiveSnapRadiusMeters", 600], // Map clicks must be tied to a real nearby sector instead of empty map space
+        ["playerSupportArtilleryDangerCloseMeters", 250], // Artillery requests must clear a larger safety bubble
+        ["playerSupportCASDangerCloseMeters", 175], // CAS requests still need a friendlies exclusion radius
+        ["playerSupportArtilleryRounds", 6], // Default player-requested artillery salvo size
+        ["playerSupportArtilleryAccuracy", 100], // Default player-requested artillery dispersion in meters
+        ["playerSupportPlayerCooldownArtillerySeconds", 120], // Repeat artillery asks from one player should pace out
+        ["playerSupportPlayerCooldownCASSeconds", 240], // Repeat CAS asks from one player should pace out
+        ["playerSupportPlayerCooldownCAPSeconds", 300], // Repeat CAP asks from one player should pace out
+        ["playerSupportObjectiveCooldownArtillerySeconds", 180], // Prevent repeated artillery hits on the same sector from player spam
+        ["playerSupportObjectiveCooldownCASSeconds", 300], // Prevent repeated CAS cycling on the same sector from player spam
+        ["playerSupportObjectiveCooldownCAPSeconds", 360], // Keep one sector from monopolizing CAP coverage
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
         ["defenseContestedCollapseCap", 8], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
@@ -222,6 +240,7 @@ private _gtnCommander = createHashMapObject [[
             ["engagements", 0],
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
+            ["playerSupport", 0],
             ["defenseLeases", 0],
             ["staticAA", 0]
         ]],
@@ -282,6 +301,7 @@ private _gtnCommander = createHashMapObject [[
             ["engagements", 0],
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
+            ["playerSupport", 0],
             ["defenseLeases", 0],
             ["staticAA", 0]
         ];
@@ -453,6 +473,11 @@ private _gtnCommander = createHashMapObject [[
         private _frontlineCASMetrics = [_self] call FLO_fnc_gtnRequestFrontlineCAS;
         _phaseMs set ["frontlineCAS", (diag_tickTime - _tPhase) * 1000];
 
+        // Process queued player support requests through the same commander-owned support systems.
+        _tPhase = diag_tickTime;
+        private _playerSupportMetrics = [_self] call FLO_fnc_gtnProcessPlayerSupportRequests;
+        _phaseMs set ["playerSupport", (diag_tickTime - _tPhase) * 1000];
+
         // Release DEFEND-tasked groups that sat idle too long in low-pressure sectors.
         _tPhase = diag_tickTime;
         private _leaseMetrics = _self call ["_manageDefenseLeases", []];
@@ -486,6 +511,7 @@ private _gtnCommander = createHashMapObject [[
             ["engagements", _engagementMetrics],
             ["frontlineCAP", _frontlineCAPMetrics],
             ["frontlineCAS", _frontlineCASMetrics],
+            ["playerSupport", _playerSupportMetrics],
             ["defenseLeases", _leaseMetrics],
             ["staticAA", _staticAAMetrics]
         ];
@@ -500,7 +526,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 allocate=%14 phases=%15 execute=%16 engage=%17 cap=%18 cas=%19 defense=%20 staticAA=%21",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 allocate=%14 phases=%15 execute=%16 engage=%17 cap=%18 cas=%19 playerSupport=%20 defense=%21 staticAA=%22",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -520,6 +546,7 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "engagements",
                 _phaseMs get "frontlineCAP",
                 _phaseMs get "frontlineCAS",
+                _phaseMs get "playerSupport",
                 _phaseMs get "defenseLeases",
                 _phaseMs get "staticAA"
             ];
@@ -681,6 +708,20 @@ private _gtnCommander = createHashMapObject [[
                 _frontlineCASMetrics get "requestedCount",
                 _frontlineCASMetrics get "selectedObjective",
                 _frontlineCASMetrics get "selectedScore"
+            ];
+
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 playerSupport | queued=%2 remaining=%3 approved=%4 expired=%5 rejected=%6 waiting=%7 locked=%8 dispatchFail=%9 abandoned=%10",
+                _self get "_sideKey",
+                _playerSupportMetrics get "queueCount",
+                _playerSupportMetrics get "queueCountAfter",
+                _playerSupportMetrics get "approvedCount",
+                _playerSupportMetrics get "expiredCount",
+                _playerSupportMetrics get "rejectedCount",
+                _playerSupportMetrics get "waitingAssetCount",
+                _playerSupportMetrics get "lockedCount",
+                _playerSupportMetrics get "dispatchFailCount",
+                _playerSupportMetrics get "abandonedCount"
             ];
         };
         
@@ -2240,13 +2281,13 @@ private _gtnCommander = createHashMapObject [[
 
     // Request an air mission using the GTN air support system.
     ["_requestAirMission", {
-        params ["_pos", ["_missionType", "CAS"]];
+        params ["_pos", ["_missionType", "CAS"], ["_meta", createHashMap]];
         private _ownSide = _self get "_ownSide";
 
         private _ato = call FLO_fnc_gtnAirTaskOrder;
         private _altitude = 150;
 
-        _ato call ["_addTask", [_pos, _missionType, "", _altitude, _ownSide]];
+        _ato call ["_addTask", [_pos, _missionType, "", _altitude, _ownSide, _meta]];
         private _assignedCount = _ato call ["_processTasks", []];
         private _success = _assignedCount > 0;
 
@@ -2261,14 +2302,14 @@ private _gtnCommander = createHashMapObject [[
 
     // Request CAS using the GTN air support system
     ["_requestCAS", {
-        params ["_pos", ["_missionType", "CAS"]];
-        _self call ["_requestAirMission", [_pos, _missionType]]
+        params ["_pos", ["_missionType", "CAS"], ["_meta", createHashMap]];
+        _self call ["_requestAirMission", [_pos, _missionType, _meta]]
     }],
 
     // Request CAP using the GTN air support system
     ["_requestCAP", {
-        params ["_pos"];
-        _self call ["_requestAirMission", [_pos, "CAP"]]
+        params ["_pos", ["_meta", createHashMap]];
+        _self call ["_requestAirMission", [_pos, "CAP", _meta]]
     }],
 
     // Static AA deployment finalization

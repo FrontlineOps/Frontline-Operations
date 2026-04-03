@@ -116,6 +116,17 @@ class FLO {
         class gtnTaskCollectDestroyTargets {};
     };
 
+    class GTNPlayerSupport {
+        file = "Functions\AI\GTN\PlayerSupport";
+
+        class gtnOpenPlayerSupportRequestMap {};
+        class gtnProcessPlayerSupportRequests {};
+        class gtnRefreshPlayerSupportActions {};
+        class gtnResolveSupportObjective {};
+        class gtnSubmitPlayerSupportRequest {};
+        class gtnValidatePlayerSupportRequest {};
+    };
+
     class GTNResourceManager {
         file = "Functions\AI\GTN\ResourceManager";
 
@@ -134,6 +145,7 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnBroadcastCommanderRadioMessage {};
         class gtnBroadcastArtilleryRadio {};
         class gtnBuildArtilleryMissionRecord {};
         class gtnCollectArtilleryVehicles {};

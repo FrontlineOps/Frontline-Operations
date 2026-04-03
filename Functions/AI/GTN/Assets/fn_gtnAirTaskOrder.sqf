@@ -38,10 +38,11 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 ["_missionType", "CAS", [""]],
                 ["_aircraftType", "", [""]],
                 ["_altitude", 50, [0]],
-                ["_requestSide", sideUnknown]
+                ["_requestSide", sideUnknown],
+                ["_meta", createHashMap]
             ];
             private _queue = _self get "_taskQueue";
-            _queue pushBack [_pos, _missionType, _aircraftType, _altitude, _requestSide];
+            _queue pushBack [_pos, _missionType, _aircraftType, _altitude, _requestSide, _meta];
             _self set ["_taskQueue", _queue];
         }],
 
@@ -53,8 +54,10 @@ if (isNil "FLO_GTNAirTaskOrder") then {
             ["GTN ATO", 3, format["Processing %1 queued air tasks", count _queue]] call FLO_fnc_log;
 
             {
-                _x params ["_pos", "_mission", "_airType", "_alt", "_requestSide"];
+                _x params ["_pos", "_mission", "_airType", "_alt", "_requestSide", ["_meta", createHashMap]];
                 ["GTN ATO", 3, format["Task %1: %2 mission at %3, alt %4m", _forEachIndex + 1, _mission, _pos, _alt]] call FLO_fnc_log;
+                private _hasPlayerSupportMeta = ("playerSupport" in _meta) && {_meta get "playerSupport"};
+                private _targetLabel = if ("targetLabel" in _meta) then { _meta get "targetLabel" } else { mapGridPosition _pos };
 
                 private _asset = _mgr call ["_requestAirAsset", [_pos, _mission, _requestSide]];
                 private _air = objNull;
@@ -88,6 +91,9 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         };
                     } else {
                         ["GTN ATO", 3, format["Virtual-only %1 mission assigned to %2 at %3 (no unvirtualize)", _mission, _gid, _pos]] call FLO_fnc_log;
+                        if (_hasPlayerSupportMeta) then {
+                            [_requestSide, "HQ", format ["%1 active over %2.", toUpper _mission, _targetLabel]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
+                        };
                     };
                 } else {
                     ["GTN ATO", 2, "No available virtual air asset for task - skipping"] call FLO_fnc_log;
@@ -166,8 +172,8 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                     }, [[_gid, _air, _pos, _mission, _patrolRadius]], 1] call CBA_fnc_waitAndExecute;
 
                     // Mission timer: wait for aircraft to reach target, then run mission duration
-                    [_air, _gid, _missionDuration, _mission, _pos, _targetSide] spawn {
-                        params ["_a", "_gid", "_duration", "_missionType", "_targetPos", "_targetSide"];
+                    [_air, _gid, _missionDuration, _mission, _pos, _targetSide, _requestSide, _hasPlayerSupportMeta, _targetLabel] spawn {
+                        params ["_a", "_gid", "_duration", "_missionType", "_targetPos", "_targetSide", "_requestSide", "_hasPlayerSupportMeta", "_targetLabel"];
 
                         private _arrivalRadius = 1000; // Consider "arrived" within 1km
                         private _maxTravelTime = 600;  // Max 10 min to reach target
@@ -209,6 +215,9 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         };
 
                         ["GTN ATO", 3, format["Aircraft %1 on station, mission timer started: %2s", _gid, _duration]] call FLO_fnc_log;
+                        if (_hasPlayerSupportMeta) then {
+                            [_requestSide, "HQ", format ["%1 on station over %2.", toUpper _missionType, _targetLabel]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
+                        };
 
                         // Refresh intel reveal now that aircraft is on station
                         // Targets may have moved since initial reveal

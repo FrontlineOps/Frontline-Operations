@@ -100,13 +100,25 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
 diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
 
 [] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
+[] call FLO_fnc_gtnRefreshPlayerSupportActions;
 if (!FLO_GTN_CommanderSupplyRespawnHandlerAdded) then {
     addMissionEventHandler ["EntityRespawned", {
         params ["_newUnit", "_oldUnit"];
 
         if (_newUnit isEqualTo player) then {
             FLO_GTN_CommanderSupplyToggleActionId = -1;
+            {
+                player removeAction _x;
+            } forEach FLO_GTN_PlayerSupportActionIds;
+            FLO_GTN_PlayerSupportActionIds = [];
+            if (FLO_GTN_PlayerSupportMapClickEhId >= 0) then {
+                removeMissionEventHandler ["MapSingleClick", FLO_GTN_PlayerSupportMapClickEhId];
+                FLO_GTN_PlayerSupportMapClickEhId = -1;
+            };
+            FLO_GTN_PlayerSupportPendingType = "";
+            FLO_GTN_PlayerSupportCancelWatcherRunning = false;
             [] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
+            [] call FLO_fnc_gtnRefreshPlayerSupportActions;
         };
     }];
     FLO_GTN_CommanderSupplyRespawnHandlerAdded = true;

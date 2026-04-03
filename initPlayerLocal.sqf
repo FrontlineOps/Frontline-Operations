@@ -25,6 +25,10 @@ FLO_GTN_ShowSupplyMarkers = true;
 FLO_GTN_CommanderSupplyToggleActionId = -1;
 FLO_GTN_LastCommanderIntelSyncArgs = [];
 FLO_GTN_CommanderSupplyRespawnHandlerAdded = false;
+FLO_GTN_PlayerSupportActionIds = [];
+FLO_GTN_PlayerSupportMapClickEhId = -1;
+FLO_GTN_PlayerSupportPendingType = "";
+FLO_GTN_PlayerSupportCancelWatcherRunning = false;
 
 // ============================================================================
 // MISSION LOADING SEQUENCE
