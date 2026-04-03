@@ -42,8 +42,7 @@ switch (_order) do {
         };
 
         _context set ["groupPos", _groupPos];
-        _context set ["searchRadius", _config get "attackEngagementSearchRadius"];
-        _context set ["corridorRadius", _config get "attackEngagementCorridorRadius"];
+        _context set ["leashMeters", _config get "attackEngagementLeashMeters"];
         _context set ["attackObjective", _groupData get "attackObjective"];
         _context set ["routePoints", _routePoints];
     };

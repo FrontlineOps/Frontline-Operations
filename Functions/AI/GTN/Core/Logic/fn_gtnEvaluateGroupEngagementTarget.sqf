@@ -52,8 +52,7 @@ switch (_order) do {
     case "ATTACK": {
         private _groupPos = _groupContext getOrDefault ["groupPos", _groupData get "position"];
         private _directDist = _groupPos distance2D _targetPos;
-        private _searchRadius = _groupContext getOrDefault ["searchRadius", _config get "attackEngagementSearchRadius"];
-        private _corridorRadius = _groupContext getOrDefault ["corridorRadius", _config get "attackEngagementCorridorRadius"];
+        private _leashMeters = _groupContext getOrDefault ["leashMeters", _config get "attackEngagementLeashMeters"];
         private _attackObjective = _groupContext getOrDefault ["attackObjective", _groupData get "attackObjective"];
         private _inAttackObjective = _attackObjective != "" && {_attackObjective in _objectiveIds};
         private _routePoints = _groupContext getOrDefault ["routePoints", []];
@@ -69,14 +68,14 @@ switch (_order) do {
             };
         };
 
-        if (_directDist > _searchRadius && {!_inAttackObjective} && {_routeDist > _corridorRadius}) exitWith { _result };
+        if (_directDist > _leashMeters && {_routeDist > _leashMeters}) exitWith { _result };
 
-        private _proximityScore = ((_searchRadius - (_directDist min _searchRadius)) / 45) + ((_corridorRadius - (_routeDist min _corridorRadius)) / 25);
+        private _proximityScore = ((_leashMeters - (_directDist min _leashMeters)) / 35) + ((_leashMeters - (_routeDist min _leashMeters)) / 30);
         private _objectiveBonus = if (_inAttackObjective) then { 28 } else { 0 };
         private _reason = if (_inAttackObjective) then {
             "ATTACK_OBJECTIVE"
         } else {
-            if (_routeDist <= _corridorRadius) then { "ATTACK_ROUTE" } else { "ATTACK_LOCAL" };
+            if (_routeDist <= _directDist) then { "ATTACK_ROUTE" } else { "ATTACK_LOCAL" };
         };
 
         _result = [
