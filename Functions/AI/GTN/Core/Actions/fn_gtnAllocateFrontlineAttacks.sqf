@@ -48,9 +48,6 @@ private _ownSide = _cmdr get "_ownSide";
 private _groups = FLO_virtualGroups get "_groups";
 private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
-if ((count (keys _frontlineObjectives)) == 0) then {
-    _frontlineObjectives = _ws call ["_getEnemyObjectives", []];
-};
 if ((count (keys _frontlineObjectives)) == 0) exitWith { _metrics };
 
 private _trackSectorObjectives = _track get "frontSectorObjectives";

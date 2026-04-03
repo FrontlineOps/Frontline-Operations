@@ -37,7 +37,7 @@ _metrics set ["trackCount", count _tracks];
 if ((count _tracks) == 0) exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
-private _enemyObjectives = _ws call ["_getEnemyObjectives", []];
+private _frontlineEnemyObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 private _now = diag_tickTime;
 private _config = _cmdr get "_config";
 private _minStageGroups = _config get "attackLaneStagingMinGroups";
@@ -121,7 +121,7 @@ private _setPhase = {
         continue;
     };
 
-    if (_phaseObjectiveId != "" && !(_phaseObjectiveId in _enemyObjectives)) then {
+    if (_phaseObjectiveId != "" && !(_phaseObjectiveId in _frontlineEnemyObjectives)) then {
         _phaseObjectiveId = "";
         _track set ["phaseObjectiveId", ""];
         _track set ["phaseStagingGoal", 0];

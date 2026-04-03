@@ -127,7 +127,7 @@ private _goalLibrary = createHashMapObject [[
             ["description", "Spend the shared offensive pool across valid frontline attack objectives"],
             ["preconditions", {
                 params ["_ws", "_params"];
-                count (keys (_ws call ["_getEnemyObjectives", []])) > 0
+                count (keys (_ws call ["_getFrontlineEnemyObjectives", []])) > 0
             }],
             ["methods", [
                 createHashMapFromArray [

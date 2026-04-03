@@ -1239,10 +1239,6 @@ private _gtnCommander = createHashMapObject [[
         private _trackSectorObjectives = [];
         private _phaseObjectiveId = "";
 
-        if (count (keys _objectives) == 0) then {
-            _objectives = _ws call ["_getEnemyObjectives", []];
-            ["GTN", 3, "No attack-frontline enemy objectives; falling back to all enemy objectives"] call FLO_fnc_log;
-        };
         if (count (keys _objectives) == 0) exitWith { "" };
 
         if (_trackId != "") then {
@@ -1418,7 +1414,7 @@ private _gtnCommander = createHashMapObject [[
             ["GTN", 3, format["Priority selection fallback: all %1 candidate objectives already at attack cap", count _saturatedTargets]] call FLO_fnc_log;
         };
         if (_trackId != "" && {(count _trackSectorObjectives) > 0} && {count _sectorAvailableTargets == 0} && {count _sectorSaturatedTargets == 0}) then {
-            ["GTN", 3, format["Priority selection fallback: %1 has no sector-linked enemy objective, widening search", _trackId]] call FLO_fnc_log;
+            ["GTN", 3, format["Priority selection: %1 has no sector-linked frontline objective, widening across the current frontline only", _trackId]] call FLO_fnc_log;
         };
 
         private _bestObj = "";

@@ -37,11 +37,7 @@ private _config = _cmdr get "_config";
 private _stagingFloor = ((_config get "attackLaneStagingMinGroups") max 1);
 _metrics set ["stagingFloor", _stagingFloor];
 
-private _ws = _cmdr get "_worldState";
 private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
-if ((count (keys _frontlineObjectives)) == 0) then {
-    _frontlineObjectives = _ws call ["_getEnemyObjectives", []];
-};
 if ((count (keys _frontlineObjectives)) == 0) exitWith { _metrics };
 
 private _track = _attackTracks select 0;
