@@ -13,8 +13,13 @@
 if (!hasInterface) exitWith { false };
 if (isNull player) exitWith { false };
 
+private _actionOwner = FLO_GTN_PlayerSupportActionOwner;
+if (isNull _actionOwner) then {
+    _actionOwner = player;
+};
+
 {
-    player removeAction _x;
+    _actionOwner removeAction _x;
 } forEach FLO_GTN_PlayerSupportActionIds;
 
 FLO_GTN_PlayerSupportActionIds = [];
@@ -29,7 +34,7 @@ FLO_GTN_PlayerSupportActionIds pushBack (
         { ["ARTY"] call FLO_fnc_gtnOpenPlayerSupportRequestMap; },
         nil,
         1.4,
-        false,
+        true,
         true,
         "",
         _condition
@@ -42,7 +47,7 @@ FLO_GTN_PlayerSupportActionIds pushBack (
         { ["CAS"] call FLO_fnc_gtnOpenPlayerSupportRequestMap; },
         nil,
         1.3,
-        false,
+        true,
         true,
         "",
         _condition
@@ -55,11 +60,13 @@ FLO_GTN_PlayerSupportActionIds pushBack (
         { ["CAP"] call FLO_fnc_gtnOpenPlayerSupportRequestMap; },
         nil,
         1.2,
-        false,
+        true,
         true,
         "",
         _condition
     ]
 );
+
+FLO_GTN_PlayerSupportActionOwner = player;
 
 true

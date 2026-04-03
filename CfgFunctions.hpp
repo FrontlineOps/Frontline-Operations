@@ -119,6 +119,7 @@ class FLO {
     class GTNPlayerSupport {
         file = "Functions\AI\GTN\PlayerSupport";
 
+        class gtnBuildSupportCooldownKey {};
         class gtnOpenPlayerSupportRequestMap {};
         class gtnProcessPlayerSupportRequests {};
         class gtnRefreshPlayerSupportActions {};

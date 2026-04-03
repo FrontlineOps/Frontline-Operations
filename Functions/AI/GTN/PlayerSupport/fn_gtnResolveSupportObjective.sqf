@@ -8,12 +8,16 @@
  *
  * Arguments:
  *   0: Position <ARRAY>
+ *   1: Objective snap radius meters <NUMBER>
  *
  * Return Value:
  *   STRING - Objective ID or ""
  */
 
-params [["_position", [0, 0, 0], [[]], [3]]];
+params [
+    ["_position", [0, 0, 0], [[]], [3]],
+    ["_snapRadius", 0, [0]]
+];
 
 if (isNil "FLO_Objectives") exitWith { "" };
 
@@ -35,4 +39,17 @@ private _bestDistance = 1e12;
 
 if (_bestObjectiveId != "") exitWith { _bestObjectiveId };
 
-[_position] call FLO_fnc_getNearestObjective
+if (_snapRadius <= 0) exitWith { "" };
+
+private _nearestObjectiveId = [_position] call FLO_fnc_getNearestObjective;
+if (_nearestObjectiveId == "") exitWith { "" };
+
+private _nearestObjective = FLO_Objectives get _nearestObjectiveId;
+private _nearestObjectivePos = _nearestObjective get "position";
+private _nearestObjectiveRadius = _nearestObjective get "radius";
+
+if ((_position distance2D _nearestObjectivePos) <= ((_nearestObjectiveRadius max 0) + _snapRadius)) exitWith {
+    _nearestObjectiveId
+};
+
+""

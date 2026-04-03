@@ -71,6 +71,6 @@ if (!FLO_GTN_PlayerSupportCancelWatcherRunning) then {
 };
 
 openMap true;
-hint format ["Select a sector for commander %1. Close the map to cancel.", _label];
+hint format ["Select a target area for commander %1. Close the map to cancel.", _label];
 
 true

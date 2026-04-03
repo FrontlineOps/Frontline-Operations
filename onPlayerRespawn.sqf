@@ -1,7 +1,5 @@
 OLDGRP = group player;
 
-removeAllActions player;
-
 player setDamage 0;
 [true] remoteExec ["showHud", player];
 player stop false;

@@ -23,12 +23,30 @@ sleep 1;
 StartingLocationDone = false;
 FLO_GTN_ShowSupplyMarkers = true;
 FLO_GTN_CommanderSupplyToggleActionId = -1;
+FLO_GTN_CommanderSupplyToggleActionOwner = objNull;
 FLO_GTN_LastCommanderIntelSyncArgs = [];
 FLO_GTN_CommanderSupplyRespawnHandlerAdded = false;
 FLO_GTN_PlayerSupportActionIds = [];
+FLO_GTN_PlayerSupportActionOwner = objNull;
 FLO_GTN_PlayerSupportMapClickEhId = -1;
 FLO_GTN_PlayerSupportPendingType = "";
 FLO_GTN_PlayerSupportCancelWatcherRunning = false;
+FLO_ClientFinalizeDone = false;
+
+[] spawn {
+    waitUntil {
+        sleep 1;
+        !isNull player
+        && {player == player}
+        && {!isNil "FLO_MissionReady"}
+        && {FLO_MissionReady}
+    };
+
+    if (!FLO_ClientFinalizeDone) then {
+        ["INIT_CLIENT", 3, "Mission-ready watchdog firing local client finalize"] call FLO_fnc_log;
+        ["FLO_INIT_COMPLETE", []] call FLO_fnc_initClientFinalize;
+    };
+};
 
 // ============================================================================
 // MISSION LOADING SEQUENCE

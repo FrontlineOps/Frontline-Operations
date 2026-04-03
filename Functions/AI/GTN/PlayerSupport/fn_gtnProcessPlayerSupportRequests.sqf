@@ -64,11 +64,8 @@ private _assignedThisCycle = 0;
     private _type = _request get "type";
     private _targetLabel = _request get "targetLabel";
     private _requesterUnit = _request get "requesterUnit";
-    private _requesterOwner = _request get "requesterOwner";
-    private _hasOwnerTarget = _requesterOwner > 0 && {({owner _x == _requesterOwner} count allPlayers) > 0};
-    private _notifyTarget = if (_hasOwnerTarget) then { _requesterOwner } else { _requesterUnit };
 
-    if (!_hasOwnerTarget && {isNull _requesterUnit}) then {
+    if (isNull _requesterUnit) then {
         _metrics set ["abandonedCount", (_metrics get "abandonedCount") + 1];
         continue;
     };
@@ -76,7 +73,6 @@ private _assignedThisCycle = 0;
     if ((_request get "expiresAt") <= _now) then {
         _metrics set ["expiredCount", (_metrics get "expiredCount") + 1];
         [_requestSide, "HQ", format ["Negative. Unable to service %1 for %2. No assets became available.", _type, _targetLabel]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
-        [format ["Commander could not service %1 for %2 before it expired.", _type, _targetLabel], "warning", false, _notifyTarget] call FLO_fnc_displayNotification;
         continue;
     };
 
@@ -89,12 +85,12 @@ private _assignedThisCycle = 0;
 
     if !(_validation get "valid") then {
         _metrics set ["rejectedCount", (_metrics get "rejectedCount") + 1];
-        [format ["Commander rejected %1 for %2: %3", _type, _request get "targetLabel", _validation get "reason"], "error", false, _notifyTarget] call FLO_fnc_displayNotification;
+        [_requestSide, "HQ", format ["Negative. Unable to service %1 for %2. %3", _type, _request get "targetLabel", _validation get "reason"]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
         continue;
     };
 
     private _objectiveId = _validation get "objectiveId";
-    private _objectiveLockKey = format ["%1:%2", _type, _objectiveId];
+    private _objectiveLockKey = _validation get "cooldownKey";
     if (_objectiveLockKey in _objectiveLocks) then {
         private _lockedUntil = _objectiveLocks get _objectiveLockKey;
         if (_lockedUntil > _now) then {
@@ -123,7 +119,8 @@ private _assignedThisCycle = 0;
                     _config get "playerSupportArtilleryAccuracy",
                     _requestSide,
                     _objectiveId,
-                    "PLAYER"
+                    "PLAYER",
+                    true
                 ]
             ];
         };
@@ -131,7 +128,8 @@ private _assignedThisCycle = 0;
         case "CAS": {
             private _meta = createHashMapFromArray [
                 ["playerSupport", true],
-                ["targetLabel", _validation get "targetLabel"]
+                ["targetLabel", _validation get "targetLabel"],
+                ["forceLive", true]
             ];
             _success = _cmdr call ["_requestCAS", [_validation get "dispatchPos", "CAS", _meta]];
         };
@@ -139,7 +137,8 @@ private _assignedThisCycle = 0;
         case "CAP": {
             private _meta = createHashMapFromArray [
                 ["playerSupport", true],
-                ["targetLabel", _validation get "targetLabel"]
+                ["targetLabel", _validation get "targetLabel"],
+                ["forceLive", true]
             ];
             _success = _cmdr call ["_requestCAP", [_validation get "dispatchPos", _meta]];
         };
@@ -165,7 +164,9 @@ private _assignedThisCycle = 0;
 
     private _playerCooldownKey = format ["%1:%2", _request get "requesterUid", _type];
     _playerCooldowns set [_playerCooldownKey, _now + _playerCooldownSeconds];
-    _objectiveLocks set [_objectiveLockKey, _now + _objectiveCooldownSeconds];
+    if (_objectiveLockKey != "") then {
+        _objectiveLocks set [_objectiveLockKey, _now + _objectiveCooldownSeconds];
+    };
 
     _metrics set ["approvedCount", (_metrics get "approvedCount") + 1];
     _assignedThisCycle = _assignedThisCycle + 1;
@@ -176,8 +177,6 @@ private _assignedThisCycle = 0;
         default { format ["HQ approves CAP over %1. Air cover launching.", _validation get "targetLabel"] };
     };
     [_requestSide, "HQ", _approvalText] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
-
-    [format ["Commander approved %1 for %2.", _type, _validation get "targetLabel"], "success", false, _notifyTarget] call FLO_fnc_displayNotification;
     ["GTN Player Support", 3, format [
         "%1 approved %2 request %3 for %4",
         _cmdr get "_sideKey",

@@ -16,7 +16,11 @@ if (!hasInterface || {isNull player}) exitWith { false };
 if !(side group player in [east, west]) exitWith { false };
 
 if (FLO_GTN_CommanderSupplyToggleActionId >= 0) then {
-    player removeAction FLO_GTN_CommanderSupplyToggleActionId;
+    private _actionOwner = FLO_GTN_CommanderSupplyToggleActionOwner;
+    if (isNull _actionOwner) then {
+        _actionOwner = player;
+    };
+    _actionOwner removeAction FLO_GTN_CommanderSupplyToggleActionId;
 };
 
 private _actionText = if (FLO_GTN_ShowSupplyMarkers) then {
@@ -33,10 +37,12 @@ FLO_GTN_CommanderSupplyToggleActionId = player addAction [
     },
     [],
     1.2,
-    false,
+    true,
     true,
     "",
     "(side group player) in [east, west]"
 ];
+
+FLO_GTN_CommanderSupplyToggleActionOwner = player;
 
 true

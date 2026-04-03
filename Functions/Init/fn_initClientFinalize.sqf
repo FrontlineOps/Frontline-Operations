@@ -18,11 +18,15 @@ if (isServer && !hasInterface) exitWith {
     // Dedicated server, no client setup needed
 };
 
+if (missionNamespace getVariable ["FLO_ClientFinalizeDone", false]) exitWith {};
+
 diag_log "[FLO_INIT_CLIENT] Mission initialization complete, setting up client...";
 
 // Wait for mission loaded screen to finish
 waitUntil { !isNull player };
 waitUntil { player == player };
+
+FLO_ClientFinalizeDone = true;
 
 // Create respawn marker if needed
 private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
@@ -106,11 +110,21 @@ if (!FLO_GTN_CommanderSupplyRespawnHandlerAdded) then {
         params ["_newUnit", "_oldUnit"];
 
         if (_newUnit isEqualTo player) then {
+            if (FLO_GTN_CommanderSupplyToggleActionId >= 0 && {!isNull FLO_GTN_CommanderSupplyToggleActionOwner}) then {
+                FLO_GTN_CommanderSupplyToggleActionOwner removeAction FLO_GTN_CommanderSupplyToggleActionId;
+            };
             FLO_GTN_CommanderSupplyToggleActionId = -1;
+            FLO_GTN_CommanderSupplyToggleActionOwner = objNull;
+            if (!isNull FLO_GTN_PlayerSupportActionOwner) then {
+                {
+                    FLO_GTN_PlayerSupportActionOwner removeAction _x;
+                } forEach FLO_GTN_PlayerSupportActionIds;
+            };
             {
                 player removeAction _x;
             } forEach FLO_GTN_PlayerSupportActionIds;
             FLO_GTN_PlayerSupportActionIds = [];
+            FLO_GTN_PlayerSupportActionOwner = objNull;
             if (FLO_GTN_PlayerSupportMapClickEhId >= 0) then {
                 removeMissionEventHandler ["MapSingleClick", FLO_GTN_PlayerSupportMapClickEhId];
                 FLO_GTN_PlayerSupportMapClickEhId = -1;

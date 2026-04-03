@@ -43,20 +43,20 @@ private _requestSide = side group _requester;
 if !(_requestSide in [east, west]) exitWith { false };
 
 if (isNil "FLO_GTN_ResourceManager") exitWith {
-    ["Commander support is offline.", "error", false, _requester] call FLO_fnc_displayNotification;
+    [_requestSide, "HQ", "Negative. Commander support is offline."] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     false
 };
 
 private _cmdr = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_requestSide]];
 if (isNil "_cmdr") exitWith {
-    ["Commander support is offline.", "error", false, _requester] call FLO_fnc_displayNotification;
+    [_requestSide, "HQ", "Negative. Commander support is offline."] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     false
 };
 
 private _type = toUpper _supportType;
 private _validation = [_cmdr, _requestSide, _type, _targetPos] call FLO_fnc_gtnValidatePlayerSupportRequest;
 if !(_validation get "valid") exitWith {
-    [(_validation get "reason"), "warning", false, _requester] call FLO_fnc_displayNotification;
+    [_requestSide, "HQ", format ["Negative. %1", _validation get "reason"]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     false
 };
 
@@ -65,7 +65,7 @@ private _requests = _cmdr get "_playerSupportRequests";
 private _maxQueuedRequests = _config get "playerSupportMaxQueuedRequests";
 
 if ((count _requests) >= _maxQueuedRequests) exitWith {
-    ["Commander support queue is full. Try again shortly.", "warning", false, _requester] call FLO_fnc_displayNotification;
+    [_requestSide, "HQ", "Negative. Commander support queue is full. Try again shortly."] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     false
 };
 
@@ -79,7 +79,7 @@ private _playerCooldownKey = format ["%1:%2", _requesterUid, _type];
 if (_playerCooldownKey in _playerCooldowns) then {
     private _lockedUntil = _playerCooldowns get _playerCooldownKey;
     if (_lockedUntil > diag_tickTime) exitWith {
-        [format ["%1 request cooling down for %2s.", _type, ceil (_lockedUntil - diag_tickTime)], "warning", false, _requester] call FLO_fnc_displayNotification;
+        [_requestSide, "HQ", format ["Negative. %1 request cooling down for %2 seconds.", _type, ceil (_lockedUntil - diag_tickTime)]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
         false
     };
 
@@ -97,7 +97,7 @@ private _hasPendingDuplicate = false;
 } forEach _requests;
 
 if (_hasPendingDuplicate) exitWith {
-    [format ["You already have a pending %1 request.", _type], "warning", false, _requester] call FLO_fnc_displayNotification;
+    [_requestSide, "HQ", format ["Negative. Pending %1 request already on file.", _type]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     false
 };
 
@@ -125,7 +125,6 @@ _requests pushBack _request;
 _cmdr set ["_playerSupportRequests", _requests];
 
 [ _requestSide, "HQ", format ["HQ copies %1 request for %2. Stand by.", _type, _validation get "targetLabel"] ] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
-[format ["Commander received %1 request for %2.", _type, _validation get "targetLabel"], "info", false, _requester] call FLO_fnc_displayNotification;
 ["GTN Player Support", 3, format [
     "%1 queued %2 request %3 for %4",
     name _requester,

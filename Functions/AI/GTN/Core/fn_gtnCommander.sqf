@@ -184,7 +184,8 @@ private _gtnCommander = createHashMapObject [[
         ["playerSupportRequestExpireSeconds", 150], // Player support requests should expire instead of sitting forever in the queue
         ["playerSupportMaxQueuedRequests", 12], // Per-side player support queue cap so spam does not crowd out the commander
         ["playerSupportMaxAssignmentsPerCycle", 1], // One player support assignment per commander cycle keeps support spending paced
-        ["playerSupportObjectiveSnapRadiusMeters", 600], // Map clicks must be tied to a real nearby sector instead of empty map space
+        ["playerSupportObjectiveSnapRadiusMeters", 600], // Free-point support requests still attach to a nearby sector for context when one is close enough
+        ["playerSupportMapCooldownBucketMeters", 500], // Free-point support requests lock a coarse local map bucket when no sector context exists
         ["playerSupportArtilleryDangerCloseMeters", 250], // Artillery requests must clear a larger safety bubble
         ["playerSupportCASDangerCloseMeters", 175], // CAS requests still need a friendlies exclusion radius
         ["playerSupportArtilleryRounds", 6], // Default player-requested artillery salvo size
@@ -192,9 +193,9 @@ private _gtnCommander = createHashMapObject [[
         ["playerSupportPlayerCooldownArtillerySeconds", 120], // Repeat artillery asks from one player should pace out
         ["playerSupportPlayerCooldownCASSeconds", 240], // Repeat CAS asks from one player should pace out
         ["playerSupportPlayerCooldownCAPSeconds", 300], // Repeat CAP asks from one player should pace out
-        ["playerSupportObjectiveCooldownArtillerySeconds", 180], // Prevent repeated artillery hits on the same sector from player spam
-        ["playerSupportObjectiveCooldownCASSeconds", 300], // Prevent repeated CAS cycling on the same sector from player spam
-        ["playerSupportObjectiveCooldownCAPSeconds", 360], // Keep one sector from monopolizing CAP coverage
+        ["playerSupportObjectiveCooldownArtillerySeconds", 180], // Prevent repeated artillery hits on the same sector or map area from player spam
+        ["playerSupportObjectiveCooldownCASSeconds", 300], // Prevent repeated CAS cycling on the same sector or map area from player spam
+        ["playerSupportObjectiveCooldownCAPSeconds", 360], // Keep one sector or map area from monopolizing CAP coverage
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
         ["defenseContestedCollapseCap", 8], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles

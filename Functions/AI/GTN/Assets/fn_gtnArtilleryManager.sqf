@@ -314,7 +314,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
         // Main entry point for artillery fire missions
         // =========================================================================
         ["_requestFireMission", {
-            params ["_targetPos", ["_rounds", -1], ["_accuracy", -1], ["_requestSide", sideUnknown], ["_objectiveId", ""], ["_requestKind", "GENERAL"]];
+            params ["_targetPos", ["_rounds", -1], ["_accuracy", -1], ["_requestSide", sideUnknown], ["_objectiveId", ""], ["_requestKind", "GENERAL"], ["_forceLive", false]];
 
             if (_rounds < 0) then { _rounds = _self get "defaultRounds"; };
             if (_accuracy < 0) then { _accuracy = _self get "defaultAccuracy"; };
@@ -365,7 +365,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
-            private _isLiveArea = _self call ["_isLiveArea", [_targetPos]];
+            private _isLiveArea = if (_forceLive) then { true } else { _self call ["_isLiveArea", [_targetPos]] };
             private _sideKey = if (_requestSide in [east, west]) then {
                 ([_requestSide] call FLO_fnc_gtnSideContext) get "sideKey"
             } else {
@@ -382,9 +382,23 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 ""
             };
             private _cooldownSeconds = _self get "objectiveCooldownSeconds";
+            private _forceLiveActivationFailed = false;
 
             if (_isLiveArea && {!(_gdata get "isActive")} && {!([_gid, _gdata] call FLO_fnc_virtualizationTryActivateGroup)}) then {
-                _isLiveArea = false;
+                if (_forceLive) then {
+                    _forceLiveActivationFailed = true;
+                } else {
+                    _isLiveArea = false;
+                };
+            };
+
+            if (_forceLiveActivationFailed) exitWith {
+                ["GTN Artillery", 2, format [
+                    "Force-live artillery request for %1 failed - unable to activate battery %2",
+                    _targetPos,
+                    _gid
+                ]] call FLO_fnc_log;
+                false
             };
 
             ["GTN Artillery", 3, format["Selected group %1, isActive: %2, liveArea: %3", _gid, _gdata get "isActive", _isLiveArea]] call FLO_fnc_log;
@@ -418,7 +432,22 @@ if (isNil "FLO_GTNArtilleryManager") then {
             };
 
             private _realGroup = _gdata get "realGroup";
+            if (isNull _realGroup) exitWith {
+                ["GTN Artillery", 1, format [
+                    "Artillery request failed - selected battery %1 has no realGroup after live activation",
+                    _gid
+                ]] call FLO_fnc_log;
+                false
+            };
             private _firePlan = [_realGroup, _targetPos, _rounds, _accuracy] call FLO_fnc_gtnBuildArtilleryFirePlan;
+            if (count (keys _firePlan) == 0) exitWith {
+                ["GTN Artillery", 1, format [
+                    "Artillery request failed - selected battery %1 produced an empty fire plan at %2",
+                    _gid,
+                    _targetPos
+                ]] call FLO_fnc_log;
+                false
+            };
 
             if (_targetSide in [east, west]) then {
                 private _alertPayload = [];

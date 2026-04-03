@@ -28,14 +28,31 @@ private _markers = [];
 
 if (_hqObjectiveId != "") then {
     private _hqObjective = FLO_Objectives get _hqObjectiveId;
+    private _hqName = _hqObjective get "name";
+    if (_hqName == "") then {
+        _hqName = _hqObjectiveId;
+    };
+
+    _markers pushBack [
+        format ["FLO_GTN_INTEL_%1_SUP_LOG_HQ_RING", _sideKey],
+        "ELLIPSE",
+        _hqObjective get "position",
+        "",
+        [130, 130],
+        0.16,
+        "",
+        _friendlyColor,
+        "Border"
+    ];
+
     _markers pushBack [
         format ["FLO_GTN_INTEL_%1_SUP_LOG_HQ", _sideKey],
         "ICON",
         _hqObjective get "position",
         _hqMarkerType,
-        [0.75, 0.75],
-        0.85,
-        "SUP HQ",
+        [1.05, 1.05],
+        1,
+        format ["SUP HQ %1", _hqName],
         _friendlyColor,
         ""
     ];
@@ -47,15 +64,31 @@ if (_hqObjectiveId != "") then {
 
     private _nodeInfo = _activeNodes get _objectiveId;
     private _objective = FLO_Objectives get _objectiveId;
+    private _objectiveName = _objective get "name";
+    if (_objectiveName == "") then {
+        _objectiveName = _objectiveId;
+    };
+
+    _markers pushBack [
+        format ["FLO_GTN_INTEL_%1_SUP_LOG_NODE_RING_%2", _sideKey, _objectiveId],
+        "ELLIPSE",
+        _objective get "position",
+        "",
+        [85, 85],
+        0.12,
+        "",
+        _friendlyColor,
+        "Border"
+    ];
 
     _markers pushBack [
         format ["FLO_GTN_INTEL_%1_SUP_LOG_NODE_%2", _sideKey, _objectiveId],
         "ICON",
         _objective get "position",
-        "mil_box",
-        [0.55, 0.55],
-        0.7,
-        format ["SUP d%1", _nodeInfo get "depth"],
+        "mil_triangle",
+        [0.85, 0.85],
+        0.95,
+        format ["SUP d%1 %2", _nodeInfo get "depth", _objectiveName],
         _friendlyColor,
         ""
     ];

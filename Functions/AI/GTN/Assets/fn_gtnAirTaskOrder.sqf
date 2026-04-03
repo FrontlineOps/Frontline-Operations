@@ -59,7 +59,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                 private _hasPlayerSupportMeta = ("playerSupport" in _meta) && {_meta get "playerSupport"};
                 private _targetLabel = if ("targetLabel" in _meta) then { _meta get "targetLabel" } else { mapGridPosition _pos };
 
-                private _asset = _mgr call ["_requestAirAsset", [_pos, _mission, _requestSide]];
+                private _asset = _mgr call ["_requestAirAsset", [_pos, _mission, _requestSide, _meta]];
                 private _air = objNull;
                 private _gid = "";
                 private _mode = "";

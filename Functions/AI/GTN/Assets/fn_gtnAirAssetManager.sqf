@@ -302,7 +302,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
         }],
 
         ["_requestAirAsset", {
-            params ["_targetPos", ["_missionType", "CAS"], ["_requestSide", sideUnknown]];
+            params ["_targetPos", ["_missionType", "CAS"], ["_requestSide", sideUnknown], ["_meta", createHashMap]];
 
             private _tRequest = diag_tickTime;
             private _candidateCount = 0;
@@ -422,8 +422,14 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
             _selectedId = _gid;
+            private _forceLive = ("forceLive" in _meta) && {_meta get "forceLive"};
+            private _forceLiveActivationFailed = false;
             private _tLive = diag_tickTime;
-            private _isLiveArea = _self call ["_isLiveArea", [_targetPos]];
+            private _isLiveArea = if (_forceLive) then {
+                true
+            } else {
+                _self call ["_isLiveArea", [_targetPos]]
+            };
             _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
             if (_isLiveArea && {!(_gdata get "isActive")}) then {
@@ -431,8 +437,35 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 _activated = [_gid, _gdata] call FLO_fnc_virtualizationTryActivateGroup;
                 _phaseActivateMs = (diag_tickTime - _tActivate) * 1000;
                 if (!_activated) then {
-                    _isLiveArea = false;
+                    if (_forceLive) then {
+                        _forceLiveActivationFailed = true;
+                    } else {
+                        _isLiveArea = false;
+                    };
                 };
+            };
+
+            if (_forceLiveActivationFailed) exitWith {
+                ["GTN Air Asset Manager", 2, format [
+                    "Force-live %1 request failed - unable to activate air group %2",
+                    toUpper _missionType,
+                    _selectedId
+                ]] call FLO_fnc_log;
+                _self call ["_recordRequestPerf", [
+                    (diag_tickTime - _tRequest) * 1000,
+                    _missionType,
+                    _requestSide,
+                    "NONE",
+                    true,
+                    _candidateCount,
+                    _availableCount,
+                    false,
+                    _selectedId,
+                    _phaseLiveMs,
+                    _phaseActivateMs,
+                    0
+                ]];
+                []
             };
 
             if (!_isLiveArea) exitWith {
@@ -474,6 +507,10 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             private _realGroup = _gdata get "realGroup";
             if (isNull _realGroup) exitWith {
+                ["GTN Air Asset Manager", 2, format [
+                    "Air request failed - selected group %1 has no realGroup after live activation",
+                    _selectedId
+                ]] call FLO_fnc_log;
                 _self call ["_recordRequestPerf", [
                     (diag_tickTime - _tRequest) * 1000,
                     _missionType,
@@ -509,6 +546,10 @@ if (isNil "FLO_GTNAirAssetManager") then {
             } forEach units _realGroup;
             if (isNull _veh) then { _veh = vehicle (leader _realGroup); };
             if (isNull _veh) exitWith {
+                ["GTN Air Asset Manager", 2, format [
+                    "Air request failed - live group %1 has no aircraft vehicle",
+                    _selectedId
+                ]] call FLO_fnc_log;
                 _self call ["_recordRequestPerf", [
                     (diag_tickTime - _tRequest) * 1000,
                     _missionType,
