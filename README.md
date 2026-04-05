@@ -24,6 +24,7 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - Objectives are linked into a real frontline and rear area network.
 - Towns, villages, military sites, and clusters change ownership over time.
 - Frontline pressure, contested sectors, and reinforcement needs update during the session.
+- Newly captured sectors do not immediately become perfect launchpads. Capture growth is delayed, repeated breakthroughs fatigue the attacking commander, and overextended lanes stage more slowly.
 
 ### Dual AI Commanders
 
@@ -43,6 +44,7 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - Each side has its own logistics network and supply chain.
 - The network selects an HQ, promotes forward supply nodes, and dispatches replacements from rear areas.
 - Replacements spend side resources instead of appearing for free.
+- Capturing territory only expands long-term force growth after the new owner actually holds and consolidates the sector.
 - Rear-area support assets such as artillery and aircraft are only considered available when they are actually secure.
 - Transport reserve pools are maintained separately from frontline combat forces.
 

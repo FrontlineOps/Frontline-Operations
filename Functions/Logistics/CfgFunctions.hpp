@@ -54,6 +54,7 @@ class LogisticsNetwork {
     class logisticsNetworkPickPressureTarget {};
     class logisticsNetworkPickRearTarget {};
     class logisticsNetworkPickSpawnSourceObjective {};
+    class logisticsNetworkProcessPendingCaptureGrowth {};
     class logisticsNetworkReplenishTransportReserves {};
     class logisticsNetworkRecordDelivery {};
     class logisticsNetworkRecordReplacement {};

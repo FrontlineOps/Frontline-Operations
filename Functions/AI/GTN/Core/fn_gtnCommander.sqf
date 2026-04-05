@@ -125,6 +125,7 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCacheBuiltAt", -1],
     ["_forceBaselineTotalGroups", 0],
     ["_attackFrontlineObjectives", createHashMap],
+    ["_attackPressureProfiles", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
     ["_objectiveAssignmentCache", createHashMapFromArray [
         ["attackCounts", createHashMap],
@@ -181,6 +182,19 @@ private _gtnCommander = createHashMapObject [[
         ["attackLaneMaxStagingSeconds", 960], // After this window, staging may assault with a reduced-but-still-meaningful package
         ["attackLaneAssaultDurationSeconds", 360], // Assault windows stay open long enough for one burst of committed attacks
         ["attackLaneSpentDurationSeconds", 240], // Cooldown after an assault so reserves and logistics can catch up
+        ["captureStreakWindowSeconds", 3600], // Recent captures inside this window count toward offensive fatigue
+        ["captureStreakMaxSteps", 3], // Limit how much one capture streak can stack lane fatigue
+        ["captureStreakCapPenaltyPerStep", 0.08], // Recent breakthroughs slightly reduce how many attackers can pile into the next push
+        ["captureStreakStagingMultiplierPerStep", 0.12], // Recent breakthroughs make the next assault wait for a larger reserve package
+        ["captureStreakSpentSecondsPerStep", 45], // Recent breakthroughs lengthen the reorganization pause between assaults
+        ["attackOverextensionRecentCaptureSeconds", 2700], // Freshly captured source sectors are treated as unstable attack bases for a while
+        ["attackOverextensionDepthThreshold", 3], // Attacks sourced too many supply-depth bands from HQ are treated as overextended
+        ["attackOverextensionDisconnectedSteps", 2], // Disconnected source sectors are strongly penalized until logistics reconnect them
+        ["attackOverextensionCapPenaltyPerStep", 0.1], // Overextended lanes commit fewer simultaneous attackers
+        ["attackOverextensionStagingMultiplierPerStep", 0.15], // Overextended lanes need a bigger staging package before the commander pushes again
+        ["attackOverextensionSpentSecondsPerStep", 60], // Overextended lanes stay in reorganization longer after an assault
+        ["attackOverextensionSelectionPenaltyMetersPerStep", 1500], // Overextended objectives look strategically farther away during target selection
+        ["attackPressureMinimumCapMultiplier", 0.4], // Fatigue and overextension can throttle a lane, but not to zero
         ["garrisonRearBaseGroups", _garrisonRearBaseGroups], // Minimum standing rear garrison on owned quiet objectives
         ["garrisonFrontlineBaseGroups", _garrisonFrontlineBaseGroups], // Minimum standing garrison on owned objectives exposed to enemy adjacency
         ["garrisonPriorityBonusThreshold", 60], // Important objectives receive one extra standing garrison group
@@ -303,6 +317,7 @@ private _gtnCommander = createHashMapObject [[
         
         private _now = diag_tickTime;
         _self set ["_lastUpdate", _now];
+        _self set ["_attackPressureProfiles", createHashMap];
         private _perf = _self get "_perf";
         private _phaseMs = createHashMapFromArray [
             ["normalizeTasked", 0],
@@ -1373,9 +1388,10 @@ private _gtnCommander = createHashMapObject [[
                 _selectionDist = _trackAnchorPos distance2D ((_objectives get _objId) get "position");
             };
             private _sourceObjectives = _self call ["_getFriendlyAttackSourceObjectives", [_objId]];
+            private _pressureProfile = [_self, _objId] call FLO_fnc_gtnGetAttackPressureProfile;
             private _sectorMatch = (count _trackSectorObjectives == 0)
                 || { (count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0 };
-            private _effectiveDist = _selectionDist + (_committed * _spreadMeters);
+            private _effectiveDist = _selectionDist + (_committed * _spreadMeters) + (_pressureProfile get "selectionPenaltyMeters");
             if (!_sectorMatch) then {
                 _effectiveDist = _effectiveDist + _crossSectorPenalty;
             };
@@ -1759,7 +1775,9 @@ private _gtnCommander = createHashMapObject [[
         };
 
         _cap = ceil (_cap * _coverage);
-        _cap = (_cap max (_config get "attackObjectiveBaseMin")) min (_config get "attackObjectiveHardCap");
+        private _pressureProfile = [_self, _objectiveId] call FLO_fnc_gtnGetAttackPressureProfile;
+        _cap = ceil (_cap * (_pressureProfile get "capMultiplier"));
+        _cap = (_cap max 1) min (_config get "attackObjectiveHardCap");
         _cap
     }],
 

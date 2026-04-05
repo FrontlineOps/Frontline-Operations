@@ -38,6 +38,9 @@ private _perf = createHashMapFromArray [
     ["resourcesBefore", 0],
     ["resourcesAfter", 0],
     ["refreshMs", 0],
+    ["captureGrowthMs", 0],
+    ["captureGrowthPending", 0],
+    ["captureGrowthApplied", 0],
     ["compositionMs", 0],
     ["reserveMs", 0],
     ["reserveGroundMissing", 0],
@@ -66,6 +69,12 @@ private _activeSupplyNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyCh
 _perf set ["refreshMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["hqObjective", _net get "_hqObjectiveId"];
 _perf set ["supplyNodeCount", count (keys _activeSupplyNodes)];
+
+_phaseT0 = diag_tickTime;
+private _captureGrowthMetrics = [_net] call FLO_fnc_logisticsNetworkProcessPendingCaptureGrowth;
+_perf set ["captureGrowthMs", (diag_tickTime - _phaseT0) * 1000];
+_perf set ["captureGrowthPending", _captureGrowthMetrics get "pendingObjectives"];
+_perf set ["captureGrowthApplied", _captureGrowthMetrics get "appliedObjectives"];
 
 _phaseT0 = diag_tickTime;
 private _initialComp = _net get "_initialComposition";

@@ -66,6 +66,7 @@ private _logisticsClass = [
     ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
     ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
     ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
+    ["OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS", 1800],
 
     ["_initialComposition", nil],
     ["_lastUpdate", 0],
@@ -134,6 +135,10 @@ private _logisticsClass = [
 
     ["_applyObjectiveCaptureGrowth", {
         ([_self] + _this) call FLO_fnc_logisticsNetworkApplyObjectiveCaptureGrowth;
+    }],
+
+    ["_processPendingCaptureGrowth", {
+        [_self] call FLO_fnc_logisticsNetworkProcessPendingCaptureGrowth;
     }],
 
     ["_pickBestTarget", {

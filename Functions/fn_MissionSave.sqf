@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 16;
+private _saveVersion = 17;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 

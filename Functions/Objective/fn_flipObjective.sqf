@@ -28,11 +28,17 @@ private _obj = FLO_Objectives get _objectiveId;
 if (isNil "_obj") exitWith { false };
 
 // Store previous owner for event
-private _previousOwner = _obj getOrDefault ["owner", east];
+private _previousOwner = _obj get "owner";
 if (_previousOwner isEqualTo _newOwner) exitWith { false };
+
+private _captureDateNum = dateToNumber date;
 
 // Update owner
 _obj set ["owner", _newOwner];
+_obj set ["capturedAtDateNum", _captureDateNum];
+_obj set ["capturedFrom", _previousOwner];
+_obj set ["captureGrowthEligibleAtDateNum", -1];
+_obj set ["captureGrowthPending", false];
 FLO_Objectives set [_objectiveId, _obj];
 
 if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {
@@ -50,16 +56,20 @@ if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {
 
     if (!isNil "FLO_Logistics_Networks" && {_sideKey in FLO_Logistics_Networks}) then {
         private _net = FLO_Logistics_Networks get _sideKey;
-        private _forceGrowth = [_net, _objectiveId] call FLO_fnc_logisticsNetworkApplyObjectiveCaptureGrowth;
+        if ((_net get "OBJECTIVE_CAPTURE_FORCE_GROWTH") > 0) then {
+            _obj set [
+                "captureGrowthEligibleAtDateNum",
+                _captureDateNum + ((_net get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS") / 86400)
+            ];
+            _obj set ["captureGrowthPending", true];
+            FLO_Objectives set [_objectiveId, _obj];
 
-        if (_forceGrowth > 0 && {!isNil "FLO_GTN_ResourceManager"}) then {
-            private _cmdr = FLO_GTN_ResourceManager call ["_getCommanderBySide", [_newOwner]];
-            if (!isNil "_cmdr") then {
-                private _baselineTotalGroups = _cmdr get "_forceBaselineTotalGroups";
-                if (_baselineTotalGroups > 0) then {
-                    _cmdr set ["_forceBaselineTotalGroups", _baselineTotalGroups + _forceGrowth];
-                };
-            };
+            ["LOGISTICS", 3, format [
+                "Queued delayed capture growth: %1 held by %2 until %3",
+                _objectiveId,
+                _sideKey,
+                _obj get "captureGrowthEligibleAtDateNum"
+            ]] call FLO_fnc_log;
         };
     };
 };

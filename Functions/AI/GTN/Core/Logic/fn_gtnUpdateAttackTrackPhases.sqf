@@ -48,7 +48,7 @@ private _cautiousGoalMultiplier = _config get "attackLaneCautiousGoalMultiplier"
 private _timeoutAssaultFraction = _config get "attackLaneTimeoutAssaultFraction";
 private _maxStageSeconds = _config get "attackLaneMaxStagingSeconds";
 private _assaultSeconds = _config get "attackLaneAssaultDurationSeconds";
-private _spentSeconds = _config get "attackLaneSpentDurationSeconds";
+private _spentBaseSeconds = _config get "attackLaneSpentDurationSeconds";
 private _forces = _ws call ["_getForces", []];
 private _currentTotalGroups = _forces get "totalGroups";
 private _baselineTotalGroups = _cmdr get "_forceBaselineTotalGroups";
@@ -145,6 +145,7 @@ private _setPhase = {
     };
 
     private _attackCap = _cmdr call ["_getAttackCapForObjective", [_phaseObjectiveId]];
+    private _pressureProfile = [_cmdr, _phaseObjectiveId] call FLO_fnc_gtnGetAttackPressureProfile;
     private _activeAttackers = _cmdr call ["_countObjectiveAttackers", [_phaseObjectiveId]];
     private _slotsRemaining = (_attackCap - _activeAttackers) max 0;
     private _maxRelevantSlots = _slotsRemaining max 1;
@@ -153,12 +154,14 @@ private _setPhase = {
     if (_posture == "cautious") then {
         _stagingGoal = ((ceil(_stagingGoal * _cautiousGoalMultiplier)) max 1) min _maxRelevantSlots;
     };
+    _stagingGoal = ((ceil(_stagingGoal * (_pressureProfile get "stagingGoalMultiplier"))) max 1) min _maxRelevantSlots;
     private _timeoutAssaultAllowed = _posture == "normal";
     private _timeoutAssaultGoal = if (_timeoutAssaultAllowed) then {
         ((ceil(_stagingGoal * _timeoutAssaultFraction)) max 1) min _stagingGoal
     } else {
         -1
     };
+    private _spentSeconds = _spentBaseSeconds + (_pressureProfile get "spentSecondsBonus");
     _track set ["phaseStagingGoal", _stagingGoal];
 
     switch (_phase) do {
@@ -214,7 +217,7 @@ private _setPhase = {
     _metrics set [_phaseCountKey, (_metrics get _phaseCountKey) + 1];
 
     ["GTN", 3, format [
-        "Track %1 phase=%2 objective=%3 pool=%4 staged=%5 timeoutGoal=%6 active=%7 cap=%8 posture=%9 strength=%10",
+        "Track %1 phase=%2 objective=%3 pool=%4 staged=%5 timeoutGoal=%6 active=%7 cap=%8 posture=%9 strength=%10 streak=%11 overext=%12",
         _trackId,
         _phase,
         _phaseObjectiveId,
@@ -224,7 +227,9 @@ private _setPhase = {
         _activeAttackers,
         _attackCap,
         _posture,
-        _theaterStrengthRatio toFixed 2
+        _theaterStrengthRatio toFixed 2,
+        _pressureProfile get "captureStreakSteps",
+        _pressureProfile get "overextensionSteps"
     ]] call FLO_fnc_log;
 } forEach _tracks;
 

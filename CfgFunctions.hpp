@@ -67,6 +67,7 @@ class FLO {
         class gtnEstimateEngagementTargetLoad {};
         class gtnEvaluateGroupEngagementTarget {};
         class gtnExecuteTrackCycle {};
+        class gtnGetAttackPressureProfile {};
         class gtnGroupIsStrategicallyAssignable {};
         class gtnGetEngagementTargetAssignmentCap {};
         class gtnIsEngagementRouteActive {};
