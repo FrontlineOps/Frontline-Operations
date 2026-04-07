@@ -66,21 +66,11 @@ _stats set ["airMissing", _airMissing];
 
 if (_groundMissing <= 0 && {_airMissing <= 0}) exitWith { _stats };
 
-private _reserveData = [_managedSide] call FLO_fnc_transportResolveReserveObjective;
-_reserveData params ["_reserveObjectiveId", "_reservePos"];
+private _spawnContext = [_managedSide, _net] call FLO_fnc_transportResolveReserveSpawnContext;
+_spawnContext params ["_spawnObjectiveIds", "_reserveObjectiveId", "_reservePos"];
 if (_reserveObjectiveId isEqualTo "") exitWith { _stats };
 
 private _activeSupplyNodes = _net get "_activeSupplyNodes";
-if ((count (keys _activeSupplyNodes)) == 0) then {
-    _activeSupplyNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
-};
-
-private _spawnObjectiveIds = (keys _activeSupplyNodes) select {
-    _x in FLO_Objectives && {((FLO_Objectives get _x) get "owner") isEqualTo _managedSide}
-};
-if ((count _spawnObjectiveIds) == 0) then {
-    _spawnObjectiveIds = [_reserveObjectiveId];
-};
 
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
 private _groupCosts = _net get "GROUP_COSTS";
@@ -93,36 +83,19 @@ for "_i" from 1 to _groundCreateCap do {
     if !(_resources call ["canAfford", [_groundCost, "reinforcement"]]) exitWith {};
     if !(_resources call ["spendResources", [_groundCost, "reinforcement"]]) exitWith {};
 
-    private _spawnObjectiveId = _reserveObjectiveId;
-    private _spawnDepth = -1;
-    private _spawnReserveCount = 1e12;
-
-    {
-        private _objectiveId = _x;
-        private _nodeInfo = _activeSupplyNodes get _objectiveId;
-        private _depth = if (isNil "_nodeInfo") then { 0 } else { _nodeInfo get "depth" };
-        private _reserveCount = _groundByObjective getOrDefault [_objectiveId, 0];
-
-        if (
-            _reserveCount < _spawnReserveCount
-            || {_reserveCount == _spawnReserveCount && {_depth > _spawnDepth}}
-        ) then {
-            _spawnObjectiveId = _objectiveId;
-            _spawnDepth = _depth;
-            _spawnReserveCount = _reserveCount;
-        };
-    } forEach _spawnObjectiveIds;
-
-    private _spawnPos = [_net, _spawnObjectiveId] call FLO_fnc_logisticsNetworkGetCachedSpawnPosition;
-    if (_spawnPos isEqualTo [0, 0, 0]) then {
-        _spawnPos = _reservePos;
+    private _spawnObjectiveId = [_spawnObjectiveIds, _groundByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
+    private _objectiveReserveCount = if (_spawnObjectiveId in _groundByObjective) then {
+        _groundByObjective get _spawnObjectiveId
+    } else {
+        0
     };
+    private _spawnPos = [_net, _spawnObjectiveId, _objectiveReserveCount, "ground", _reservePos] call FLO_fnc_transportResolveReserveSpawnPosition;
 
     private _groupId = [_managedSide, "ground", _spawnObjectiveId, _spawnPos] call FLO_fnc_transportCreateReserveCarrier;
     if (_groupId isEqualTo "") then { continue };
 
     _stats set ["groundCreated", (_stats get "groundCreated") + 1];
-    _groundByObjective set [_spawnObjectiveId, (_groundByObjective getOrDefault [_spawnObjectiveId, 0]) + 1];
+    _groundByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
     [_net, "motorized", _groundCost] call FLO_fnc_logisticsNetworkRecordReplacement;
 
     ["LOGISTICS", 2, format [
@@ -137,36 +110,19 @@ for "_i" from 1 to _airCreateCap do {
     if !(_resources call ["canAfford", [_airCost, "reinforcement"]]) exitWith {};
     if !(_resources call ["spendResources", [_airCost, "reinforcement"]]) exitWith {};
 
-    private _spawnObjectiveId = _reserveObjectiveId;
-    private _spawnDepth = -1;
-    private _spawnReserveCount = 1e12;
-
-    {
-        private _objectiveId = _x;
-        private _nodeInfo = _activeSupplyNodes get _objectiveId;
-        private _depth = if (isNil "_nodeInfo") then { 0 } else { _nodeInfo get "depth" };
-        private _reserveCount = _airByObjective getOrDefault [_objectiveId, 0];
-
-        if (
-            _reserveCount < _spawnReserveCount
-            || {_reserveCount == _spawnReserveCount && {_depth > _spawnDepth}}
-        ) then {
-            _spawnObjectiveId = _objectiveId;
-            _spawnDepth = _depth;
-            _spawnReserveCount = _reserveCount;
-        };
-    } forEach _spawnObjectiveIds;
-
-    private _spawnPos = [_net, _spawnObjectiveId] call FLO_fnc_logisticsNetworkGetCachedSpawnPosition;
-    if (_spawnPos isEqualTo [0, 0, 0]) then {
-        _spawnPos = _reservePos;
+    private _spawnObjectiveId = [_spawnObjectiveIds, _airByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
+    private _objectiveReserveCount = if (_spawnObjectiveId in _airByObjective) then {
+        _airByObjective get _spawnObjectiveId
+    } else {
+        0
     };
+    private _spawnPos = [_net, _spawnObjectiveId, _objectiveReserveCount, "air", _reservePos] call FLO_fnc_transportResolveReserveSpawnPosition;
 
     private _groupId = [_managedSide, "air", _spawnObjectiveId, _spawnPos] call FLO_fnc_transportCreateReserveCarrier;
     if (_groupId isEqualTo "") then { continue };
 
     _stats set ["airCreated", (_stats get "airCreated") + 1];
-    _airByObjective set [_spawnObjectiveId, (_airByObjective getOrDefault [_spawnObjectiveId, 0]) + 1];
+    _airByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
     [_net, "helicopter", _airCost] call FLO_fnc_logisticsNetworkRecordReplacement;
 
     ["LOGISTICS", 2, format [

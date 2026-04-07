@@ -19,6 +19,7 @@ if !(_side in [east, west]) exitWith { [] };
 
 private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
 private _sideKey = _sideCtx get "sideKey";
+private _net = FLO_Logistics_Networks get _sideKey;
 private _catalog = FLO_FactionCatalog get _sideKey;
 private _rawGroundTransportPool = _catalog get "groundTransport";
 private _rawAirTransportPool = _catalog get "airTransport";
@@ -48,25 +49,76 @@ if (_groundTransportPool isEqualTo [] && {_airTransportPool isEqualTo []}) exitW
     []
 };
 
-private _reserveData = [_side] call FLO_fnc_transportResolveReserveObjective;
-_reserveData params ["_reserveObjectiveId", "_reservePos"];
+private _spawnContext = [_side, _net] call FLO_fnc_transportResolveReserveSpawnContext;
+_spawnContext params ["_spawnObjectiveIds", "_reserveObjectiveId", "_reservePos"];
 if (_reserveObjectiveId isEqualTo "") exitWith { [] };
 
 private _createdGroups = [];
+private _groups = FLO_virtualGroups get "_groups";
+private _activeSupplyNodes = _net get "_activeSupplyNodes";
+private _currentGround = 0;
+private _currentAir = 0;
+private _groundByObjective = createHashMap;
+private _airByObjective = createHashMap;
+
+{
+    private _groupData = _y;
+    if ((_groupData get "side") isNotEqualTo _side) then { continue };
+    if !(_groupData get "transportRole") then { continue };
+
+    private _groupType = _groupData get "groupType";
+    private _homeObjective = _groupData get "homeObjective";
+
+    if (_groupType isEqualTo "helicopter") then {
+        _currentAir = _currentAir + 1;
+        if (_homeObjective != "") then {
+            private _airCount = if (_homeObjective in _airByObjective) then {
+                _airByObjective get _homeObjective
+            } else {
+                0
+            };
+            _airByObjective set [_homeObjective, _airCount + 1];
+        };
+        continue;
+    };
+
+    if (_groupType in ["motorized", "mechanized"]) then {
+        _currentGround = _currentGround + 1;
+        if (_homeObjective != "") then {
+            private _groundCount = if (_homeObjective in _groundByObjective) then {
+                _groundByObjective get _homeObjective
+            } else {
+                0
+            };
+            _groundByObjective set [_homeObjective, _groundCount + 1];
+        };
+    };
+} forEach _groups;
+
+private _groundToCreate = (_groundReserveCount - _currentGround) max 0;
+private _airToCreate = (_airReserveCount - _currentAir) max 0;
 
 if (_groundTransportPool isNotEqualTo []) then {
-    for "_i" from 1 to _groundReserveCount do {
-        private _groundGroupId = [_side, "ground", _reserveObjectiveId, _reservePos] call FLO_fnc_transportCreateReserveCarrier;
+    for "_i" from 1 to _groundToCreate do {
+        private _spawnObjectiveId = [_spawnObjectiveIds, _groundByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
+        private _objectiveReserveCount = if (_spawnObjectiveId in _groundByObjective) then {
+            _groundByObjective get _spawnObjectiveId
+        } else {
+            0
+        };
+        private _spawnPos = [_net, _spawnObjectiveId, _objectiveReserveCount, "ground", _reservePos] call FLO_fnc_transportResolveReserveSpawnPosition;
+        private _groundGroupId = [_side, "ground", _spawnObjectiveId, _spawnPos] call FLO_fnc_transportCreateReserveCarrier;
         if (_groundGroupId == "") then { continue };
         _createdGroups pushBack _groundGroupId;
+        _groundByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
 
         ["VIRTUALIZATION", 2, format [
             "Seeded dedicated ground transport reserve %1 (%2/%3) for %4 at %5",
             _groundGroupId,
             _i,
-            _groundReserveCount,
+            _groundToCreate,
             _sideKey,
-            _reserveObjectiveId
+            _spawnObjectiveId
         ]] call FLO_fnc_log;
     };
 } else {
@@ -79,18 +131,26 @@ if (_groundTransportPool isNotEqualTo []) then {
 };
 
 if (_airTransportPool isNotEqualTo []) then {
-    for "_i" from 1 to _airReserveCount do {
-        private _airGroupId = [_side, "air", _reserveObjectiveId, _reservePos] call FLO_fnc_transportCreateReserveCarrier;
+    for "_i" from 1 to _airToCreate do {
+        private _spawnObjectiveId = [_spawnObjectiveIds, _airByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
+        private _objectiveReserveCount = if (_spawnObjectiveId in _airByObjective) then {
+            _airByObjective get _spawnObjectiveId
+        } else {
+            0
+        };
+        private _spawnPos = [_net, _spawnObjectiveId, _objectiveReserveCount, "air", _reservePos] call FLO_fnc_transportResolveReserveSpawnPosition;
+        private _airGroupId = [_side, "air", _spawnObjectiveId, _spawnPos] call FLO_fnc_transportCreateReserveCarrier;
         if (_airGroupId == "") then { continue };
         _createdGroups pushBack _airGroupId;
+        _airByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
 
         ["VIRTUALIZATION", 2, format [
             "Seeded dedicated air transport reserve %1 (%2/%3) for %4 at %5",
             _airGroupId,
             _i,
-            _airReserveCount,
+            _airToCreate,
             _sideKey,
-            _reserveObjectiveId
+            _spawnObjectiveId
         ]] call FLO_fnc_log;
     };
 } else {

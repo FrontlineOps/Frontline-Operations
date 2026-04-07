@@ -486,10 +486,18 @@ if (!isNil "FLO_fnc_sideResources") then {
 // ============================================
 diag_log "[FLO_INIT_P5] Starting logistics network...";
 if (!isNil "FLO_fnc_logisticsNetwork") then {
-    [] spawn FLO_fnc_logisticsNetwork;
+    [] call FLO_fnc_logisticsNetwork;
     diag_log "[FLO_INIT_P5] Logistics network started";
 } else {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_logisticsNetwork not found";
+};
+
+if (!FLO_IsLoadedSave) then {
+    private _missionSides = missionNamespace getVariable ["FLO_MissionSides", [east, west]];
+    {
+        [_x] call FLO_fnc_initializeTransportReserveGroups;
+    } forEach _missionSides;
+    diag_log "[FLO_INIT_P5] Transport reserve carriers seeded from active supply nodes";
 };
 
 // ============================================

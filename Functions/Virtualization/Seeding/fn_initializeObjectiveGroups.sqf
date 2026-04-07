@@ -64,9 +64,6 @@ private _plannedObjectives = keys _spawnPlan;
     ["VIRTUALIZATION", 3, format["Created %1 %2 virtual groups at objective %3", count _objectiveGroups, _sideKey, _objId]] call FLO_fnc_log;
 } forEach _plannedObjectives;
 
-private _transportReserveGroups = [_side] call FLO_fnc_initializeTransportReserveGroups;
-_allCreatedGroups append _transportReserveGroups;
-
 // Spawn civilians once after first side pass.
 if (isNil "FLO_CiviliansInitialized" || {!FLO_CiviliansInitialized}) then {
     [] call FLO_fnc_spawnCivilians;

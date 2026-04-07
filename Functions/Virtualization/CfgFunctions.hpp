@@ -131,6 +131,9 @@ class VirtualizationTransport {
 
     class transportConfig       {};
     class transportResolveReserveObjective {};
+    class transportResolveReserveSpawnContext {};
+    class transportPickReserveSpawnObjective {};
+    class transportResolveReserveSpawnPosition {};
     class transportCreateReserveCarrier {};
     class transportGetCapacity  {};
     class transportGetGroupCapacity {};
