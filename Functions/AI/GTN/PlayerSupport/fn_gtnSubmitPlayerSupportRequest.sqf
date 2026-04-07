@@ -86,6 +86,23 @@ if (_playerCooldownKey in _playerCooldowns) then {
     _playerCooldowns deleteAt _playerCooldownKey;
 };
 
+private _objectiveLocks = _cmdr get "_playerSupportObjectiveLocks";
+private _objectiveLockKey = _validation get "cooldownKey";
+if (_objectiveLockKey in _objectiveLocks) then {
+    private _lockedUntil = _objectiveLocks get _objectiveLockKey;
+    if (_lockedUntil > diag_tickTime) exitWith {
+        [_requestSide, "HQ", format [
+            "Negative. %1 for %2 cooling down for %3 seconds.",
+            _type,
+            _validation get "targetLabel",
+            ceil (_lockedUntil - diag_tickTime)
+        ]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
+        false
+    };
+
+    _objectiveLocks deleteAt _objectiveLockKey;
+};
+
 private _hasPendingDuplicate = false;
 {
     if (
@@ -98,6 +115,21 @@ private _hasPendingDuplicate = false;
 
 if (_hasPendingDuplicate) exitWith {
     [_requestSide, "HQ", format ["Negative. Pending %1 request already on file.", _type]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
+    false
+};
+
+private _hasPendingObjectiveDuplicate = false;
+{
+    if (
+        (_x get "type") == _type
+        && {(_x get "cooldownKey") == _objectiveLockKey}
+    ) exitWith {
+        _hasPendingObjectiveDuplicate = true;
+    };
+} forEach _requests;
+
+if (_hasPendingObjectiveDuplicate) exitWith {
+    [_requestSide, "HQ", format ["Negative. Pending %1 request already on file for %2.", _type, _validation get "targetLabel"]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     false
 };
 
@@ -114,6 +146,7 @@ private _request = createHashMapFromArray [
     ["requesterUid", _requesterUid],
     ["requesterName", name _requester],
     ["objectiveId", _validation get "objectiveId"],
+    ["cooldownKey", _objectiveLockKey],
     ["targetLabel", _validation get "targetLabel"],
     ["targetPos", +_targetPos],
     ["dispatchPos", +(_validation get "dispatchPos")],

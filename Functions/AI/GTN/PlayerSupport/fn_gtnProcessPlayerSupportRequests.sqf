@@ -95,7 +95,13 @@ private _assignedThisCycle = 0;
         private _lockedUntil = _objectiveLocks get _objectiveLockKey;
         if (_lockedUntil > _now) then {
             _metrics set ["lockedCount", (_metrics get "lockedCount") + 1];
-            _remainingRequests pushBack _request;
+            _metrics set ["rejectedCount", (_metrics get "rejectedCount") + 1];
+            [_requestSide, "HQ", format [
+                "Negative. %1 for %2 still cooling down for %3 seconds.",
+                _type,
+                _validation get "targetLabel",
+                ceil (_lockedUntil - _now)
+            ]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
             continue;
         };
 
