@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 18;
+private _saveVersion = 19;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -326,6 +326,44 @@ try {
     _data set ["structureTypes", [_fobType, _fobContainerType, _opType, _opContainerType]];
     ["SAVE", 3, format ["Structures: %1 FOBs, %2 OPs", count _fobArray, count _opArray]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Structures failed: %1", _exception]] call FLO_fnc_log; };
+
+// ============================================================================
+// SAVE: PLAYER STATES
+// ============================================================================
+
+try {
+    private _playerHash = createHashMap;
+    if (!isNil "FLO_PersistentPlayerStates") then {
+        {
+            _playerHash set [_x, FLO_PersistentPlayerStates get _x];
+        } forEach (keys FLO_PersistentPlayerStates);
+    };
+    private _playerVehicleHash = createHashMap;
+    if (!isNil "FLO_PersistentPlayerVehicles") then {
+        {
+            _playerVehicleHash set [_x, FLO_PersistentPlayerVehicles get _x];
+        } forEach (keys FLO_PersistentPlayerVehicles);
+    };
+
+    {
+        private _uid = getPlayerUID _x;
+        if (_uid != "") then {
+            private _playerState = [_x] call FLO_fnc_buildSavedPlayerState;
+            _playerHash set [_uid, _playerState];
+
+            private _vehicleSaveId = _playerState get "vehicleSaveId";
+            if (_vehicleSaveId != "") then {
+                if !(_vehicleSaveId in _playerVehicleHash) then {
+                    _playerVehicleHash set [_vehicleSaveId, [vehicle _x] call FLO_fnc_buildSavedPlayerVehicleState];
+                };
+            };
+        };
+    } forEach allPlayers;
+
+    _data set ["players", _playerHash];
+    _data set ["playerVehicles", _playerVehicleHash];
+    ["SAVE", 3, format ["Players: %1 states, %2 player vehicles", count (keys _playerHash), count (keys _playerVehicleHash)]] call FLO_fnc_log;
+} catch { ["SAVE", 1, format ["Player states failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // SAVE: SIDE RESOURCES

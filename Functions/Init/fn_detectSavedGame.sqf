@@ -47,7 +47,7 @@ if !(_saveData isEqualType createHashMap) exitWith {
 };
 
 // Check for required keys to validate save integrity
-private _requiredKeys = ["time", "markers", "saveVersion"];
+private _requiredKeys = ["time", "markers", "saveVersion", "players", "playerVehicles"];
 private _hasRequired = true;
 {
     if !(_x in _saveData) then {
@@ -61,7 +61,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 18;
+private _expectedSaveVersion = 19;
 private _saveVersion = _saveData get "saveVersion";
 if (_saveVersion != _expectedSaveVersion) exitWith {
     [

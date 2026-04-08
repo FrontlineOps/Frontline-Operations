@@ -16,7 +16,7 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 ### Persistent Campaign
 
 - The campaign can be started fresh or loaded from a previous save.
-- Objective ownership, virtual groups, logistics state, and mission configuration persist across saves.
+- Objective ownership, virtual groups, logistics state, mission configuration, and connected player state persist across saves.
 - The battlefield keeps evolving instead of resetting every session.
 
 ### Dynamic Frontline
@@ -75,6 +75,14 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - Requests go through the side commander instead of directly spawning support effects.
 - Support requests use map clicks, cooldowns, queueing, and HQ radio messages.
 - Approved support reuses the real GTN artillery and air systems.
+
+### Persistent Player State
+
+- Connected human players are saved by UID as part of the campaign snapshot.
+- Player persistence includes world position, full loadout, current weapon, damage state, stance, and occupied-vehicle seat context.
+- Player-occupied vehicles that sit outside the normal installation save radius are also tracked so field reconnects do not strand players away from their saved transport.
+- The server caches disconnect state during the live session, so reconnects can restore the same player without waiting for the next autosave.
+- Restores are side-safe. A player only gets their saved state back when rejoining the same military side.
 
 ### Battlefield Intel Pickups
 

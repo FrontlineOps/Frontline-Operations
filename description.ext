@@ -72,6 +72,8 @@ class CfgRemoteExec
 		class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnSubmitPlayerSupportRequest { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_requestSavedPlayerState { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_applySavedPlayerState { allowedTargets = 1; jip = 0; };
 	};	
 };
 

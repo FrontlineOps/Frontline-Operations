@@ -24,6 +24,15 @@ class FLO {
         class initClientFinalize    {};
     };
 
+    class Persistence {
+        file = "Functions\Persistence";
+
+        class applySavedPlayerState {};
+        class buildSavedPlayerState {};
+        class buildSavedPlayerVehicleState {};
+        class requestSavedPlayerState {};
+    };
+
     // === GTN (Goal Task Network) SYSTEM ===
     class GTNCore {
         file = "Functions\AI\GTN\Core";

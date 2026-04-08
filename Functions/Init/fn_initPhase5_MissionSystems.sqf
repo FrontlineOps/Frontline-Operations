@@ -81,6 +81,36 @@ if ((call _fnc_sideResourcesUninitialized) && {!isNil "FLO_fnc_sideResources"}) 
     [] call FLO_fnc_sideResources;
 };
 
+if (isNil "FLO_PersistentPlayerStates") then {
+    FLO_PersistentPlayerStates = createHashMap;
+};
+if (isNil "FLO_PersistentPlayerVehicles") then {
+    FLO_PersistentPlayerVehicles = createHashMap;
+};
+
+if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"} && {"players" in FLO_SavedGameData}) then {
+    FLO_PersistentPlayerStates = FLO_SavedGameData get "players";
+    FLO_PersistentPlayerVehicles = FLO_SavedGameData get "playerVehicles";
+};
+
+if (isNil "FLO_PlayerPersistenceDisconnectEhAdded") then {
+    addMissionEventHandler ["HandleDisconnect", {
+        params ["_unit", "_id", "_uid", "_name"];
+
+        if (!isNull _unit && {_uid != ""}) then {
+            FLO_PersistentPlayerStates set [_uid, [_unit] call FLO_fnc_buildSavedPlayerState];
+            if (vehicle _unit != _unit) then {
+                private _vehicleState = [vehicle _unit] call FLO_fnc_buildSavedPlayerVehicleState;
+                FLO_PersistentPlayerVehicles set [_vehicleState get "saveId", _vehicleState];
+            };
+            ["PERSIST", 3, format ["Cached disconnect state for %1 (%2)", _name, _uid]] call FLO_fnc_log;
+        };
+
+        false
+    }];
+    FLO_PlayerPersistenceDisconnectEhAdded = true;
+};
+
 // ============================================
 // RESTORE FOBs AND OPs FROM SAVE
 // ============================================
@@ -326,6 +356,59 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         } forEach (keys _vehHash);
 
         diag_log format ["[FLO_INIT_P5] Restored %1 vehicles", _loadedVehicles];
+    };
+
+    // Restore player-occupied vehicles that are tracked outside the normal base radius save.
+    if ("playerVehicles" in _savedData) then {
+        private _playerVehHash = _savedData get "playerVehicles";
+        private _loadedPlayerVehicles = 0;
+
+        {
+            private _vehId = _x;
+            private _attr = _playerVehHash get _vehId;
+
+            if (!isNil "_attr" && {_attr isEqualType createHashMap}) then {
+                private _alreadyRestored = false;
+                {
+                    if ((_x getVariable ["FLO_SaveID", ""]) isEqualTo _vehId) exitWith {
+                        _alreadyRestored = true;
+                    };
+                } forEach vehicles;
+
+                if (!_alreadyRestored) then {
+                    private _type = _attr get "type";
+                    private _veh = createVehicle [_type, [0,0,0], [], 0, "CAN_COLLIDE"];
+
+                    if (!isNull _veh) then {
+                        _veh setVectorDirAndUp (_attr get "vectorDirAndUp");
+                        _veh setPosATL (_attr get "posATL");
+                        _veh setFuel (_attr get "fuel");
+                        _veh setDamage (_attr get "damage");
+                        _veh lock (_attr get "locked");
+                        _veh setVariable ["FLO_SaveID", _vehId, true];
+
+                        {
+                            _x params ["_hp", "_dmg"];
+                            _veh setHitPointDamage [_hp, _dmg];
+                        } forEach (_attr get "damagedHitpoints");
+
+                        if (_attr get "engineOn") then {
+                            _veh engineOn true;
+                        };
+
+                        if (_attr get "hadAICrew") then {
+                            if (getText (configFile >> "CfgVehicles" >> _type >> "crew") != "") then {
+                                createVehicleCrew _veh;
+                            };
+                        };
+
+                        _loadedPlayerVehicles = _loadedPlayerVehicles + 1;
+                    };
+                };
+            };
+        } forEach (keys _playerVehHash);
+
+        diag_log format ["[FLO_INIT_P5] Restored %1 player vehicles", _loadedPlayerVehicles];
     };
 
     // Restore objects

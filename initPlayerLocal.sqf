@@ -32,6 +32,7 @@ FLO_GTN_PlayerSupportMapClickEhId = -1;
 FLO_GTN_PlayerSupportPendingType = "";
 FLO_GTN_PlayerSupportCancelWatcherRunning = false;
 FLO_ClientFinalizeDone = false;
+FLO_PlayerStateRestored = false;
 
 [] spawn {
     waitUntil {
@@ -414,3 +415,5 @@ private _fnc_finalizeInit = {
 };
 
 call _fnc_finalizeInit;
+
+[player] remoteExecCall ["FLO_fnc_requestSavedPlayerState", 2];
