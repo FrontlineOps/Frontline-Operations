@@ -301,6 +301,52 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
         }],
 
+        ["_scheduleRTBCompletion", {
+            params ["_gid", "_rtbPos", ["_timeoutSeconds", 900]];
+
+            [_gid, +_rtbPos, _timeoutSeconds] spawn {
+                params ["_gid", "_rtbPos", "_timeoutSeconds"];
+
+                private _deadline = diag_tickTime + _timeoutSeconds;
+                private _arrivalRadius = 600;
+
+                waitUntil {
+                    sleep 10;
+
+                    if (isNil "FLO_GTNAirAssetManager") exitWith { true };
+                    if (isNil "FLO_virtualGroups") exitWith { true };
+
+                    private _missions = FLO_GTNAirAssetManager get "missions";
+                    if !(_gid in _missions) exitWith { true };
+
+                    private _groups = FLO_virtualGroups get "_groups";
+                    if !(_gid in _groups) exitWith { true };
+
+                    private _gData = _groups get _gid;
+                    ((_gData get "position") distance2D _rtbPos <= _arrivalRadius) || {diag_tickTime >= _deadline}
+                };
+
+                if (isNil "FLO_GTNAirAssetManager" || {isNil "FLO_virtualGroups"}) exitWith {};
+
+                private _missions = FLO_GTNAirAssetManager get "missions";
+                if !(_gid in _missions) exitWith {};
+
+                private _groups = FLO_virtualGroups get "_groups";
+                if (_gid in _groups) then {
+                    private _gData = _groups get _gid;
+                    [_gData] call FLO_fnc_virtualizationClearExecutionState;
+
+                    if (((_gData get "position") distance2D _rtbPos) <= _arrivalRadius) then {
+                        ["GTN Air Asset Manager", 3, format["Air asset %1 completed RTB", _gid]] call FLO_fnc_log;
+                    } else {
+                        ["GTN Air Asset Manager", 2, format["Air asset %1 RTB timed out before reaching base", _gid]] call FLO_fnc_log;
+                    };
+                };
+
+                _missions deleteAt _gid;
+            };
+        }],
+
         ["_requestAirAsset", {
             params ["_targetPos", ["_missionType", "CAS"], ["_requestSide", sideUnknown], ["_meta", createHashMap]];
 
@@ -602,16 +648,20 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     private _data = _groups get _gid;
                     [_data] call FLO_fnc_virtualizationClearMissionLock;
                     if !(_missionState isEqualTo "VIRTUAL") then {
+                        private _rtbPos = _self call ["_getRTBPosition", [_gid]];
                         _self call ["_sendToRTB", [_gid]];
+                        _missions set [_gid, "RTB"];
+                        _self call ["_scheduleRTBCompletion", [_gid, _rtbPos]];
                         _sentRTB = true;
                     } else {
                         [_data] call FLO_fnc_virtualizationClearExecutionState;
+                        _missions deleteAt _gid;
                     };
                     _released = true;
                 } else {
                     ["GTN Air Asset Manager", 2, format["Group %1 not found in virtualGroups - may have been destroyed", _gid]] call FLO_fnc_log;
+                    _missions deleteAt _gid;
                 };
-                (_self get "missions") deleteAt _gid;
                 ["GTN Air Asset Manager", 3, format["Released air asset %1", _gid]] call FLO_fnc_log;
             };
 
@@ -668,8 +718,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 _loiterWp setWaypointType "LOITER";
                 _loiterWp setWaypointLoiterType "CIRCLE";
                 _loiterWp setWaypointLoiterRadius 500;
-
-                // _realGroup setCurrentWaypoint [_realGroup, 1];
 
                 ["GTN Air Asset Manager", 3, format["RTB waypoints set for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             } else {
