@@ -107,12 +107,12 @@ Current setup options include:
 - civilian faction
 - player start position
 - difficulty and reputation handles
-- GTN tempo, attack coverage, defense coverage, force growth, and garrison settings
+- separate BLUFOR/WEST and OPFOR/EAST commander posture settings for aggression, tempo, attack coverage, defense coverage, force growth, and baseline garrison
 - enemy presence
 - objective size threshold
 - virtualization distance
 - virtualization unit cap
-- starting territory ratio
+- starting territory ratio from `10/90` up to `90/10`
 
 On a loaded save, the saved configuration is restored automatically and the setup dialog is skipped.
 

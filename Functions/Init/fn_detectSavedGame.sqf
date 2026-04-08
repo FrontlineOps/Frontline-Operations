@@ -61,7 +61,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 17;
+private _expectedSaveVersion = 18;
 private _saveVersion = _saveData get "saveVersion";
 if (_saveVersion != _expectedSaveVersion) exitWith {
     [
@@ -83,12 +83,18 @@ private _handleKeys = [
     ["friendlyHandle", "FLO_FriendlyHandle"],
     ["enemyHandle", "FLO_EnemyHandle"],
     ["civilianHandle", "FLO_CivilianHandle"],
-    ["difficultyHandle", "FLO_DifficultyHandle"],
-    ["gtnAttackCoverageHandle", "FLO_GTN_AttackCoverageHandle"],
-    ["gtnDefenseCoverageHandle", "FLO_GTN_DefenseCoverageHandle"],
-    ["gtnTempoHandle", "FLO_GTN_TempoHandle"],
-    ["gtnForceGrowthHandle", "FLO_GTN_ForceGrowthHandle"],
-    ["gtnGarrisonHandle", "FLO_GTN_GarrisonHandle"],
+    ["westDifficultyHandle", "FLO_WestDifficultyHandle"],
+    ["eastDifficultyHandle", "FLO_EastDifficultyHandle"],
+    ["westGTNAttackCoverageHandle", "FLO_WestGTN_AttackCoverageHandle"],
+    ["eastGTNAttackCoverageHandle", "FLO_EastGTN_AttackCoverageHandle"],
+    ["westGTNDefenseCoverageHandle", "FLO_WestGTN_DefenseCoverageHandle"],
+    ["eastGTNDefenseCoverageHandle", "FLO_EastGTN_DefenseCoverageHandle"],
+    ["westGTNTempoHandle", "FLO_WestGTN_TempoHandle"],
+    ["eastGTNTempoHandle", "FLO_EastGTN_TempoHandle"],
+    ["westGTNForceGrowthHandle", "FLO_WestGTN_ForceGrowthHandle"],
+    ["eastGTNForceGrowthHandle", "FLO_EastGTN_ForceGrowthHandle"],
+    ["westGTNGarrisonHandle", "FLO_WestGTN_GarrisonHandle"],
+    ["eastGTNGarrisonHandle", "FLO_EastGTN_GarrisonHandle"],
     ["moneyHandle", "FLO_MoneyHandle"],
     ["reputationHandle", "FLO_ReputationHandle"]
 ];
@@ -97,12 +103,18 @@ private _requiredConfigKeys = [
     "friendlyHandle",
     "enemyHandle",
     "civilianHandle",
-    "difficultyHandle",
-    "gtnAttackCoverageHandle",
-    "gtnDefenseCoverageHandle",
-    "gtnTempoHandle",
-    "gtnForceGrowthHandle",
-    "gtnGarrisonHandle",
+    "westDifficultyHandle",
+    "eastDifficultyHandle",
+    "westGTNAttackCoverageHandle",
+    "eastGTNAttackCoverageHandle",
+    "westGTNDefenseCoverageHandle",
+    "eastGTNDefenseCoverageHandle",
+    "westGTNTempoHandle",
+    "eastGTNTempoHandle",
+    "westGTNForceGrowthHandle",
+    "eastGTNForceGrowthHandle",
+    "westGTNGarrisonHandle",
+    "eastGTNGarrisonHandle",
     "moneyHandle",
     "reputationHandle",
     "objectiveSizeThreshold",
@@ -147,7 +159,8 @@ private _missionConfig = createHashMapFromArray [
     ["bluforFaction", _savedConfig get "FLO_FriendlyHandle"],
     ["opforFaction", _savedConfig get "FLO_EnemyHandle"],
     ["civFaction", _savedConfig get "FLO_CivilianHandle"],
-    ["difficulty", _savedConfig get "FLO_DifficultyHandle"],
+    ["westDifficultyHandle", _savedConfig get "FLO_WestDifficultyHandle"],
+    ["eastDifficultyHandle", _savedConfig get "FLO_EastDifficultyHandle"],
     ["startingFunds", _savedConfig get "FLO_MoneyHandle"],
     ["startingReputation", _savedConfig get "FLO_ReputationHandle"],
     ["startingTerritoryWestRatio", _configData get "startingTerritoryWestRatio"],

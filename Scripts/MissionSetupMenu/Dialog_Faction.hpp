@@ -17,7 +17,7 @@
 
 // Dialog dimensions
 #define FACTION_DIALOG_W            (58 * GUI_GRID_W)
-#define FACTION_DIALOG_H            (24.2 * GUI_GRID_H)
+#define FACTION_DIALOG_H            (26.4 * GUI_GRID_H)
 #define FACTION_DIALOG_X            (safeZoneX + safeZoneW/2 - FACTION_DIALOG_W/2)
 #define FACTION_DIALOG_Y            (safeZoneY + safeZoneH/2 - FACTION_DIALOG_H/2)
 
@@ -37,7 +37,7 @@
 
 // Card heights
 #define FACTION_CARD_FACTIONS_H     (4.4 * GUI_GRID_H)
-#define FACTION_CARD_COMMANDER_H    (6.8 * GUI_GRID_H)
+#define FACTION_CARD_COMMANDER_H    (8.9 * GUI_GRID_H)
 #define FACTION_CARD_MISC_H         (6.8 * GUI_GRID_H)
 
 // Card positions
@@ -56,6 +56,12 @@
 #define FACTION_HALF_FIELD_W        ((FACTION_HALF_W - FACTION_FIELD_GAP_X) / 2)
 #define FACTION_HALF_FIELD_X1(_cardX) (_cardX)
 #define FACTION_HALF_FIELD_X2(_cardX) (_cardX + FACTION_HALF_FIELD_W + FACTION_FIELD_GAP_X)
+#define FACTION_SIDE_W              ((FACTION_FULL_W - FACTION_CARD_GAP_X) / 2)
+#define FACTION_SIDE_X1             (FACTION_FULL_X)
+#define FACTION_SIDE_X2             (FACTION_SIDE_X1 + FACTION_SIDE_W + FACTION_CARD_GAP_X)
+#define FACTION_SIDE_FIELD_W        ((FACTION_SIDE_W - FACTION_FIELD_GAP_X) / 2)
+#define FACTION_SIDE_FIELD_X1(_cardX) (_cardX)
+#define FACTION_SIDE_FIELD_X2(_cardX) (_cardX + FACTION_SIDE_FIELD_W + FACTION_FIELD_GAP_X)
 
 // ============================================================================
 // DIALOG-SPECIFIC CONTROL CLASSES
@@ -265,125 +271,259 @@ class FLO_FactionSelectDialog
 		class CardCommanderHint: FLO_RscText_Muted
 		{
 			idc = FLO_IDC_NONE;
-			text = "These settings shape attack tempo, defensive hold strength, and long-term growth.";
+			text = "Configure each side's commander separately so BLUFOR and OPFOR do not share the same posture.";
 			x = FACTION_FULL_X + (0.8 * GUI_GRID_W);
 			y = FACTION_CARD_COMMANDER_Y + (1.0 * GUI_GRID_H);
 			w = FACTION_FULL_W - (1.6 * GUI_GRID_W);
 			h = FACTION_LABEL_H;
 		};
 
-		class LabelStartingZones: FLO_RscText_Label
+		class CommanderWestTitle: FLO_RscText_Title
+		{
+			idc = FLO_IDC_NONE;
+			text = "BLUFOR / WEST";
+			x = FACTION_SIDE_X1;
+			y = FACTION_CARD_COMMANDER_Y + (1.75 * GUI_GRID_H);
+			w = FACTION_SIDE_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class CommanderEastTitle: FLO_RscText_Title
+		{
+			idc = FLO_IDC_NONE;
+			text = "OPFOR / EAST";
+			x = FACTION_SIDE_X2;
+			y = FACTION_CARD_COMMANDER_Y + (1.75 * GUI_GRID_H);
+			w = FACTION_SIDE_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class LabelWestAttackCoverage: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Attack Coverage";
-			x = FACTION_THIRD_X1;
-			y = FACTION_CARD_COMMANDER_Y + (1.9 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboStartingZones: FLO_FactionCombo
+		class ComboWestAttackCoverage: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_PRESENCE;
-			x = FACTION_THIRD_X1;
-			y = FACTION_CARD_COMMANDER_Y + (2.6 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
-			tooltip = "Set how heavily each AI commander fills per-objective attack caps across the frontline";
+			idc = FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How heavily the WEST commander fills per-objective attack caps";
 		};
 
-		class LabelGTNDefenseOps: FLO_RscText_Label
+		class LabelWestDefenseCoverage: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Defense Coverage";
-			x = FACTION_THIRD_X2;
-			y = FACTION_CARD_COMMANDER_Y + (1.9 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboGTNDefenseOps: FLO_FactionCombo
+		class ComboWestDefenseCoverage: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_GTN_DEFENSE;
-			x = FACTION_THIRD_X2;
-			y = FACTION_CARD_COMMANDER_Y + (2.6 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
-			tooltip = "Set how heavily each AI commander fills defensive slots across held objectives";
+			idc = FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How heavily the WEST commander fills defensive slots";
 		};
 
-		class LabelStartingDifficulty: FLO_RscText_Label
+		class LabelWestAggression: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Aggression";
-			x = FACTION_THIRD_X3;
-			y = FACTION_CARD_COMMANDER_Y + (1.9 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboStartingDifficulty: FLO_FactionCombo
+		class ComboWestAggression: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_DIFFICULTY;
-			x = FACTION_THIRD_X3;
-			y = FACTION_CARD_COMMANDER_Y + (2.6 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
-			tooltip = "Set commander willingness to launch attacks with partial force";
+			idc = FLO_IDC_FACTION_COMBO_WEST_AGGRESSION;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How willing the WEST commander is to launch attacks with partial force";
 		};
 
-		class LabelGTNTempo: FLO_RscText_Label
+		class LabelWestTempo: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Tempo";
-			x = FACTION_THIRD_X1;
-			y = FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboGTNTempo: FLO_FactionCombo
+		class ComboWestTempo: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_GTN_TEMPO;
-			x = FACTION_THIRD_X1;
-			y = FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
-			tooltip = "Set how often commanders run decision cycles (mission speed)";
+			idc = FLO_IDC_FACTION_COMBO_WEST_TEMPO;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How often the WEST commander runs full decision cycles";
 		};
 
-		class LabelGTNForceGrowth: FLO_RscText_Label
+		class LabelWestForceGrowth: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Force Growth";
-			x = FACTION_THIRD_X2;
-			y = FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboGTNForceGrowth: FLO_FactionCombo
+		class ComboWestForceGrowth: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH;
-			x = FACTION_THIRD_X2;
-			y = FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
-			tooltip = "How many additional reinforcement slots a side earns whenever it captures an objective";
+			idc = FLO_IDC_FACTION_COMBO_WEST_FORCE_GROWTH;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How many extra force slots WEST earns after secure captures";
 		};
 
-		class LabelGTNGarrison: FLO_RscText_Label
+		class LabelWestGarrison: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Baseline Garrison";
-			x = FACTION_THIRD_X3;
-			y = FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboGTNGarrison: FLO_FactionCombo
+		class ComboWestGarrison: FLO_FactionCombo
 		{
-			idc = FLO_IDC_FACTION_COMBO_GTN_GARRISON;
-			x = FACTION_THIRD_X3;
-			y = FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H);
-			w = FACTION_THIRD_W;
-			tooltip = "Standing defenders held at owned objectives before surplus groups are committed elsewhere";
+			idc = FLO_IDC_FACTION_COMBO_WEST_GARRISON;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1);
+			y = FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "Standing defenders WEST keeps before sending groups elsewhere";
+		};
+
+		class LabelEastAttackCoverage: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Attack Coverage";
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboEastAttackCoverage: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_EAST_ATTACK_COVERAGE;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How heavily the EAST commander fills per-objective attack caps";
+		};
+
+		class LabelEastDefenseCoverage: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Defense Coverage";
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboEastDefenseCoverage: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_EAST_DEFENSE_COVERAGE;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How heavily the EAST commander fills defensive slots";
+		};
+
+		class LabelEastAggression: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Aggression";
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboEastAggression: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_EAST_AGGRESSION;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How willing the EAST commander is to launch attacks with partial force";
+		};
+
+		class LabelEastTempo: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Tempo";
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboEastTempo: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_EAST_TEMPO;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How often the EAST commander runs full decision cycles";
+		};
+
+		class LabelEastForceGrowth: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Force Growth";
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboEastForceGrowth: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH;
+			x = FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "How many extra force slots EAST earns after secure captures";
+		};
+
+		class LabelEastGarrison: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "Baseline Garrison";
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			h = FACTION_LABEL_H;
+		};
+
+		class ComboEastGarrison: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_EAST_GARRISON;
+			x = FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2);
+			y = FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H);
+			w = FACTION_SIDE_FIELD_W;
+			tooltip = "Standing defenders EAST keeps before sending groups elsewhere";
 		};
 
 		// ====================================================================

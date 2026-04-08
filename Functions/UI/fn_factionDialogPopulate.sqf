@@ -18,18 +18,24 @@
  * FLO_IDC_FACTION_COMBO_PLAYER     = 1955
  * FLO_IDC_FACTION_COMBO_ENEMY      = 1956
  * FLO_IDC_FACTION_COMBO_CIVILIAN   = 1957
- * FLO_IDC_FACTION_COMBO_PRESENCE   = 1958
+ * FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE = 1958
  * FLO_IDC_FACTION_COMBO_RESOURCES  = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
- * FLO_IDC_FACTION_COMBO_DIFFICULTY = 1961
- * FLO_IDC_FACTION_COMBO_GTN_DEFENSE = 1962
- * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
+ * FLO_IDC_FACTION_COMBO_WEST_AGGRESSION = 1961
+ * FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE = 1962
+ * FLO_IDC_FACTION_COMBO_WEST_TEMPO = 1963
  * FLO_IDC_FACTION_COMBO_OBJ_SIZE = 1964
  * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
- * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
- * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
+ * FLO_IDC_FACTION_COMBO_WEST_FORCE_GROWTH = 1966
+ * FLO_IDC_FACTION_COMBO_WEST_GARRISON = 1967
  * FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP = 1968
  * FLO_IDC_FACTION_COMBO_TERRITORY_RATIO = 1969
+ * FLO_IDC_FACTION_COMBO_EAST_ATTACK_COVERAGE = 1970
+ * FLO_IDC_FACTION_COMBO_EAST_DEFENSE_COVERAGE = 1971
+ * FLO_IDC_FACTION_COMBO_EAST_AGGRESSION = 1972
+ * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
+ * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
+ * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
  */
 
 disableSerialization;
@@ -124,10 +130,9 @@ private _civilianFactions = [
 [_civilianCombo, _civilianFactions, 0] call _fnc_addItems;
 
 // ============================================================================
-// AI COMMANDER ATTACK COVERAGE (IDC 1958)
+// AI COMMANDER POSTURE OPTIONS
 // ============================================================================
 
-private _attackCoverageCombo = _display displayCtrl 1958;
 private _attackCoverageOptions = [
 	"Minimal Coverage",
 	"Balanced Coverage",
@@ -135,7 +140,63 @@ private _attackCoverageOptions = [
 	"Maximum Coverage"
 ];
 
-[_attackCoverageCombo, _attackCoverageOptions, 1] call _fnc_addItems;
+private _difficultyOptions = [
+	"LOW _ Cautious Commander",
+	"MEDIUM _ Balanced Commander",
+	"HIGH _ Aggressive Commander"
+];
+
+private _defenseOpsOptions = [
+	"Minimal Coverage",
+	"Balanced Coverage",
+	"Layered Coverage",
+	"Maximum Coverage"
+];
+
+private _tempoOptions = [
+	"10s",
+	"14s",
+	"20s",
+	"28s"
+];
+
+private _forceGrowthOptions = [
+    "None _ 0 Groups Per Capture",
+    "Low _ 1 Group Per Capture",
+    "Standard _ 2 Groups Per Capture",
+    "High _ 3 Groups Per Capture"
+];
+
+private _garrisonOptions = [
+    "Light _ 1 Rear / 2 Front",
+    "Standard _ 1 Rear / 3 Front",
+    "Heavy _ 2 Rear / 3 Front",
+    "Fortified _ 2 Rear / 4 Front"
+];
+
+{
+    [_display displayCtrl _x, _attackCoverageOptions, 1] call _fnc_addItems;
+} forEach [1958, 1970];
+
+{
+    [_display displayCtrl _x, _defenseOpsOptions, 1] call _fnc_addItems;
+} forEach [1962, 1971];
+
+{
+    [_display displayCtrl _x, _difficultyOptions, 1] call _fnc_addItems;
+} forEach [1961, 1972];
+
+{
+    [_display displayCtrl _x, _tempoOptions, 2] call _fnc_addItems;
+} forEach [1963, 1973];
+
+{
+    [_display displayCtrl _x, _forceGrowthOptions, 2] call _fnc_addItems;
+} forEach [1966, 1974];
+
+{
+    [_display displayCtrl _x, _garrisonOptions, 1] call _fnc_addItems;
+} forEach [1967, 1975];
 
 // ============================================================================
 // STARTING RESOURCES (IDC 1959)
@@ -158,47 +219,6 @@ private _reputationOptions = [
 ];
 
 [_reputationCombo, _reputationOptions, 1] call _fnc_addItems;
-
-// ============================================================================
-// AI COMMANDER AGGRESSION (IDC 1961)
-// ============================================================================
-
-private _difficultyCombo = _display displayCtrl 1961;
-private _difficultyOptions = [
-	"LOW _ Cautious Commander",
-	"MEDIUM _ Balanced Commander",
-	"HIGH _ Aggressive Commander"
-];
-
-[_difficultyCombo, _difficultyOptions, 1] call _fnc_addItems;
-
-// ============================================================================
-// AI COMMANDER DEFENSE COVERAGE (IDC 1962)
-// ============================================================================
-
-private _defenseOpsCombo = _display displayCtrl 1962;
-private _defenseOpsOptions = [
-	"Minimal Coverage",
-	"Balanced Coverage",
-	"Layered Coverage",
-	"Maximum Coverage"
-];
-
-[_defenseOpsCombo, _defenseOpsOptions, 1] call _fnc_addItems;
-
-// ============================================================================
-// AI COMMANDER TEMPO (IDC 1963)
-// ============================================================================
-
-private _tempoCombo = _display displayCtrl 1963;
-private _tempoOptions = [
-	"10s",
-	"14s",
-	"20s",
-	"28s"
-];
-
-[_tempoCombo, _tempoOptions, 2] call _fnc_addItems;
 
 // ============================================================================
 // OBJECTIVE SIZE THRESHOLD (IDC 1964)
@@ -233,42 +253,18 @@ private _virtualizationUnitCapOptions = ["100", "150", "200", "250", "300", "350
 
 private _territoryRatioCombo = _display displayCtrl 1969;
 private _territoryRatioOptions = [
+    "10% BLUFOR / 90% OPFOR",
+    "20% BLUFOR / 80% OPFOR",
     "30% BLUFOR / 70% OPFOR",
     "40% BLUFOR / 60% OPFOR",
     "50% BLUFOR / 50% OPFOR",
     "60% BLUFOR / 40% OPFOR",
-    "70% BLUFOR / 30% OPFOR"
+    "70% BLUFOR / 30% OPFOR",
+    "80% BLUFOR / 20% OPFOR",
+    "90% BLUFOR / 10% OPFOR"
 ];
 
-[_territoryRatioCombo, _territoryRatioOptions, 2] call _fnc_addItems;
-
-// ============================================================================
-// COMMANDER FORCE GROWTH (IDC 1966)
-// ============================================================================
-
-private _forceGrowthCombo = _display displayCtrl 1966;
-private _forceGrowthOptions = [
-    "None _ 0 Groups Per Capture",
-    "Low _ 1 Group Per Capture",
-    "Standard _ 2 Groups Per Capture",
-    "High _ 3 Groups Per Capture"
-];
-
-[_forceGrowthCombo, _forceGrowthOptions, 2] call _fnc_addItems;
-
-// ============================================================================
-// BASELINE GARRISON (IDC 1967)
-// ============================================================================
-
-private _garrisonCombo = _display displayCtrl 1967;
-private _garrisonOptions = [
-    "Light _ 1 Rear / 2 Front",
-    "Standard _ 1 Rear / 3 Front",
-    "Heavy _ 2 Rear / 3 Front",
-    "Fortified _ 2 Rear / 4 Front"
-];
-
-[_garrisonCombo, _garrisonOptions, 1] call _fnc_addItems;
+[_territoryRatioCombo, _territoryRatioOptions, 4] call _fnc_addItems;
 
 ["UI", 3, "Faction dialog dropdowns populated"] call FLO_fnc_log;
 

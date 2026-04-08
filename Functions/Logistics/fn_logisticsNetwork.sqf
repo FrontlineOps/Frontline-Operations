@@ -19,7 +19,6 @@ if (!isServer) exitWith {};
 if (!isNil "FLO_Logistics_Networks" && {FLO_Logistics_Networks isEqualType createHashMap} && {count (keys FLO_Logistics_Networks) > 0}) exitWith {};
 
 FLO_Logistics_Networks = createHashMap;
-private _groupsPerObjectiveCapture = FLO_GTN_ForceGrowthHandle get "value";
 
 private _logisticsClass = [
     ["#type", "LogisticsNetwork"],
@@ -65,7 +64,7 @@ private _logisticsClass = [
     ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
     ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
     ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
-    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _groupsPerObjectiveCapture],
+    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", 0],
     ["OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS", 1800],
 
     ["_initialComposition", nil],
@@ -273,6 +272,7 @@ if (!isNil "FLO_SavedGameData" && {FLO_SavedGameData isEqualType createHashMap})
     private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
     private _savedPayload = _savedBySide getOrDefault [_sideKey, false];
     private _net = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
+    _net set ["OBJECTIVE_CAPTURE_FORCE_GROWTH", (([_side, "forceGrowth"] call FLO_fnc_gtnGetSideCommanderHandle) get "value")];
     FLO_Logistics_Networks set [_sideKey, _net];
 } forEach [east, west];
 

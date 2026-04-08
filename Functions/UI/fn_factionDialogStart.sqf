@@ -19,18 +19,24 @@
  * FLO_IDC_FACTION_COMBO_PLAYER     = 1955
  * FLO_IDC_FACTION_COMBO_ENEMY      = 1956
  * FLO_IDC_FACTION_COMBO_CIVILIAN   = 1957
- * FLO_IDC_FACTION_COMBO_PRESENCE   = 1958
+ * FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE = 1958
  * FLO_IDC_FACTION_COMBO_RESOURCES  = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
- * FLO_IDC_FACTION_COMBO_DIFFICULTY = 1961
- * FLO_IDC_FACTION_COMBO_GTN_DEFENSE = 1962
- * FLO_IDC_FACTION_COMBO_GTN_TEMPO = 1963
+ * FLO_IDC_FACTION_COMBO_WEST_AGGRESSION = 1961
+ * FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE = 1962
+ * FLO_IDC_FACTION_COMBO_WEST_TEMPO = 1963
  * FLO_IDC_FACTION_COMBO_OBJ_SIZE = 1964
  * FLO_IDC_FACTION_COMBO_VIRT_DIST = 1965
- * FLO_IDC_FACTION_COMBO_GTN_FORCE_GROWTH = 1966
- * FLO_IDC_FACTION_COMBO_GTN_GARRISON = 1967
+ * FLO_IDC_FACTION_COMBO_WEST_FORCE_GROWTH = 1966
+ * FLO_IDC_FACTION_COMBO_WEST_GARRISON = 1967
  * FLO_IDC_FACTION_COMBO_VIRT_UNIT_CAP = 1968
  * FLO_IDC_FACTION_COMBO_TERRITORY_RATIO = 1969
+ * FLO_IDC_FACTION_COMBO_EAST_ATTACK_COVERAGE = 1970
+ * FLO_IDC_FACTION_COMBO_EAST_DEFENSE_COVERAGE = 1971
+ * FLO_IDC_FACTION_COMBO_EAST_AGGRESSION = 1972
+ * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
+ * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
+ * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -56,34 +62,46 @@ private _fnc_getSelection = {
 private _playerFaction = [1955] call _fnc_getSelection;
 private _enemyFaction = [1956] call _fnc_getSelection;
 private _civilianFaction = [1957] call _fnc_getSelection;
-private _attackCoverage = [1958] call _fnc_getSelection;
+private _westAttackCoverage = [1958] call _fnc_getSelection;
 private _resources = [1959] call _fnc_getSelection;
 private _reputation = [1960] call _fnc_getSelection;
-private _difficulty = [1961] call _fnc_getSelection;
-private _defenseCoverage = [1962] call _fnc_getSelection;
-private _tempo = [1963] call _fnc_getSelection;
+private _westDifficulty = [1961] call _fnc_getSelection;
+private _westDefenseCoverage = [1962] call _fnc_getSelection;
+private _westTempo = [1963] call _fnc_getSelection;
 private _objectiveSize = [1964] call _fnc_getSelection;
 private _virtualizationDistance = [1965] call _fnc_getSelection;
-private _forceGrowth = [1966] call _fnc_getSelection;
-private _garrison = [1967] call _fnc_getSelection;
+private _westForceGrowth = [1966] call _fnc_getSelection;
+private _westGarrison = [1967] call _fnc_getSelection;
 private _virtualizationUnitCap = [1968] call _fnc_getSelection;
 private _territoryRatio = [1969] call _fnc_getSelection;
+private _eastAttackCoverage = [1970] call _fnc_getSelection;
+private _eastDefenseCoverage = [1971] call _fnc_getSelection;
+private _eastDifficulty = [1972] call _fnc_getSelection;
+private _eastTempo = [1973] call _fnc_getSelection;
+private _eastForceGrowth = [1974] call _fnc_getSelection;
+private _eastGarrison = [1975] call _fnc_getSelection;
 
 // Validate selections
 if (_playerFaction isEqualTo "" ||
     _enemyFaction isEqualTo "" ||
     _civilianFaction isEqualTo "" ||
-    _attackCoverage isEqualTo "" ||
+    _westAttackCoverage isEqualTo "" ||
     _resources isEqualTo "" ||
     _reputation isEqualTo "" ||
-    _difficulty isEqualTo "" ||
-    _defenseCoverage isEqualTo "" ||
-    _tempo isEqualTo "" ||
+    _westDifficulty isEqualTo "" ||
+    _westDefenseCoverage isEqualTo "" ||
+    _westTempo isEqualTo "" ||
     _objectiveSize isEqualTo "" ||
     _virtualizationDistance isEqualTo "" ||
-    _forceGrowth isEqualTo "" ||
-    _garrison isEqualTo "" ||
+    _westForceGrowth isEqualTo "" ||
+    _westGarrison isEqualTo "" ||
     _virtualizationUnitCap isEqualTo "" ||
+    _eastAttackCoverage isEqualTo "" ||
+    _eastDefenseCoverage isEqualTo "" ||
+    _eastDifficulty isEqualTo "" ||
+    _eastTempo isEqualTo "" ||
+    _eastForceGrowth isEqualTo "" ||
+    _eastGarrison isEqualTo "" ||
     _territoryRatio isEqualTo "") exitWith {
 	
 	["UI", 2, "Faction dialog validation failed - empty selections"] call FLO_fnc_log;
@@ -99,8 +117,103 @@ _display closeDisplay 1;
 	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
 
 // Execute mission setup
-[_playerFaction, _enemyFaction, _civilianFaction, _attackCoverage, _resources, _reputation, _difficulty, _defenseCoverage, _tempo, _objectiveSize, _virtualizationDistance, _forceGrowth, _garrison, _virtualizationUnitCap, _territoryRatio] spawn {
-	params ["_playerFaction", "_enemyFaction", "_civilianFaction", "_attackCoverage", "_resources", "_reputation", "_difficulty", "_defenseCoverage", "_tempo", "_objectiveSize", "_virtualizationDistance", "_forceGrowth", "_garrison", "_virtualizationUnitCap", "_territoryRatio"];
+[
+    _playerFaction,
+    _enemyFaction,
+    _civilianFaction,
+    _westAttackCoverage,
+    _resources,
+    _reputation,
+    _westDifficulty,
+    _westDefenseCoverage,
+    _westTempo,
+    _objectiveSize,
+    _virtualizationDistance,
+    _westForceGrowth,
+    _westGarrison,
+    _virtualizationUnitCap,
+    _territoryRatio,
+    _eastAttackCoverage,
+    _eastDefenseCoverage,
+    _eastDifficulty,
+    _eastTempo,
+    _eastForceGrowth,
+    _eastGarrison
+] spawn {
+	params [
+        "_playerFaction",
+        "_enemyFaction",
+        "_civilianFaction",
+        "_westAttackCoverage",
+        "_resources",
+        "_reputation",
+        "_westDifficulty",
+        "_westDefenseCoverage",
+        "_westTempo",
+        "_objectiveSize",
+        "_virtualizationDistance",
+        "_westForceGrowth",
+        "_westGarrison",
+        "_virtualizationUnitCap",
+        "_territoryRatio",
+        "_eastAttackCoverage",
+        "_eastDefenseCoverage",
+        "_eastDifficulty",
+        "_eastTempo",
+        "_eastForceGrowth",
+        "_eastGarrison"
+    ];
+
+    private _fnc_buildScalarHandle = {
+        params ["_selection", "_map"];
+        createHashMapFromArray [
+            ["value", _map get _selection],
+            ["name", _selection]
+        ]
+    };
+
+    private _fnc_buildGarrisonHandle = {
+        params ["_selection"];
+
+        switch (_selection) do {
+            case "Light _ 1 Rear / 2 Front": {
+                createHashMapFromArray [
+                    ["name", _selection],
+                    ["rearBaseGroups", 1],
+                    ["frontlineBaseGroups", 2],
+                    ["priorityBonusGroups", 0],
+                    ["hotBonusGroups", 1]
+                ]
+            };
+            case "Standard _ 1 Rear / 3 Front": {
+                createHashMapFromArray [
+                    ["name", _selection],
+                    ["rearBaseGroups", 1],
+                    ["frontlineBaseGroups", 3],
+                    ["priorityBonusGroups", 0],
+                    ["hotBonusGroups", 1]
+                ]
+            };
+            case "Heavy _ 2 Rear / 3 Front": {
+                createHashMapFromArray [
+                    ["name", _selection],
+                    ["rearBaseGroups", 2],
+                    ["frontlineBaseGroups", 3],
+                    ["priorityBonusGroups", 0],
+                    ["hotBonusGroups", 1]
+                ]
+            };
+            case "Fortified _ 2 Rear / 4 Front": {
+                createHashMapFromArray [
+                    ["name", _selection],
+                    ["rearBaseGroups", 2],
+                    ["frontlineBaseGroups", 4],
+                    ["priorityBonusGroups", 0],
+                    ["hotBonusGroups", 2]
+                ]
+            };
+        };
+    };
 
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
@@ -115,110 +228,53 @@ _display closeDisplay 1;
 		default {9};
 	};
 
-	// Process commander aggression
-	private _difficultyValue = switch (_difficulty) do {
-		case "LOW _ Cautious Commander": {0.5};
-		case "MEDIUM _ Balanced Commander": {1};
-		case "HIGH _ Aggressive Commander": {1.5};
-		default {1};
-	};
-
 	// Process resources
 	private _resourceValue = parseNumber _resources;
 
-	// Process GTN attack and defense coverage.
-	private _attackCoverageValue = switch (_attackCoverage) do {
-		case "Minimal Coverage": {0.5};
-		case "Balanced Coverage": {0.75};
-		case "Layered Coverage": {1};
-		case "Maximum Coverage": {1.25};
-		default {0.75};
-	};
+    private _difficultyMap = createHashMapFromArray [
+        ["LOW _ Cautious Commander", 0.5],
+        ["MEDIUM _ Balanced Commander", 1],
+        ["HIGH _ Aggressive Commander", 1.5]
+    ];
 
-	private _defenseOpsValue = switch (_defenseCoverage) do {
-		case "Minimal Coverage": {0.5};
-		case "Balanced Coverage": {0.75};
-		case "Layered Coverage": {1};
-		case "Maximum Coverage": {1.25};
-		default {0.75};
-	};
+    private _coverageMap = createHashMapFromArray [
+        ["Minimal Coverage", 0.5],
+        ["Balanced Coverage", 0.75],
+        ["Layered Coverage", 1],
+        ["Maximum Coverage", 1.25]
+    ];
 
-	// Process GTN commander update tempo (seconds)
-	private _tempoValue = switch (_tempo) do {
-		case "10s": {10};
-		case "14s": {14};
-		case "20s": {20};
-		case "28s": {28};
-		default {20};
-	};
+    private _tempoMap = createHashMapFromArray [
+        ["10s", 10],
+        ["14s", 14],
+        ["20s", 20],
+        ["28s", 28]
+    ];
 
-	private _forceGrowthValue = switch (_forceGrowth) do {
-		case "None _ 0 Groups Per Capture": {0};
-		case "Low _ 1 Group Per Capture": {1};
-		case "Standard _ 2 Groups Per Capture": {2};
-		case "High _ 3 Groups Per Capture": {3};
-		default {2};
-	};
+    private _forceGrowthMap = createHashMapFromArray [
+        ["None _ 0 Groups Per Capture", 0],
+        ["Low _ 1 Group Per Capture", 1],
+        ["Standard _ 2 Groups Per Capture", 2],
+        ["High _ 3 Groups Per Capture", 3]
+    ];
 
-	private _garrisonHandle = switch (_garrison) do {
-		case "Light _ 1 Rear / 2 Front": {
-			createHashMapFromArray [
-				["name", _garrison],
-				["rearBaseGroups", 1],
-				["frontlineBaseGroups", 2],
-				["priorityBonusGroups", 0],
-				["hotBonusGroups", 1]
-			]
-		};
-		case "Standard _ 1 Rear / 3 Front": {
-			createHashMapFromArray [
-				["name", _garrison],
-				["rearBaseGroups", 1],
-				["frontlineBaseGroups", 3],
-				["priorityBonusGroups", 0],
-				["hotBonusGroups", 1]
-			]
-		};
-		case "Heavy _ 2 Rear / 3 Front": {
-			createHashMapFromArray [
-				["name", _garrison],
-				["rearBaseGroups", 2],
-				["frontlineBaseGroups", 3],
-				["priorityBonusGroups", 0],
-				["hotBonusGroups", 1]
-			]
-		};
-		case "Fortified _ 2 Rear / 4 Front": {
-			createHashMapFromArray [
-				["name", _garrison],
-				["rearBaseGroups", 2],
-				["frontlineBaseGroups", 4],
-				["priorityBonusGroups", 0],
-				["hotBonusGroups", 2]
-			]
-		};
-		default {
-			createHashMapFromArray [
-				["name", "Standard _ 1 Rear / 3 Front"],
-				["rearBaseGroups", 1],
-				["frontlineBaseGroups", 3],
-				["priorityBonusGroups", 0],
-				["hotBonusGroups", 1]
-			]
-		};
-	};
+    private _westDifficultyHandle = [_westDifficulty, _difficultyMap] call _fnc_buildScalarHandle;
+    private _eastDifficultyHandle = [_eastDifficulty, _difficultyMap] call _fnc_buildScalarHandle;
+    private _westAttackCoverageHandle = [_westAttackCoverage, _coverageMap] call _fnc_buildScalarHandle;
+    private _eastAttackCoverageHandle = [_eastAttackCoverage, _coverageMap] call _fnc_buildScalarHandle;
+    private _westDefenseCoverageHandle = [_westDefenseCoverage, _coverageMap] call _fnc_buildScalarHandle;
+    private _eastDefenseCoverageHandle = [_eastDefenseCoverage, _coverageMap] call _fnc_buildScalarHandle;
+    private _westTempoHandle = [_westTempo, _tempoMap] call _fnc_buildScalarHandle;
+    private _eastTempoHandle = [_eastTempo, _tempoMap] call _fnc_buildScalarHandle;
+    private _westForceGrowthHandle = [_westForceGrowth, _forceGrowthMap] call _fnc_buildScalarHandle;
+    private _eastForceGrowthHandle = [_eastForceGrowth, _forceGrowthMap] call _fnc_buildScalarHandle;
+    private _westGarrisonHandle = [_westGarrison] call _fnc_buildGarrisonHandle;
+    private _eastGarrisonHandle = [_eastGarrison] call _fnc_buildGarrisonHandle;
 
 	private _objectiveSizeThreshold = _objectiveSize;
 	private _virtualizationDistanceValue = parseNumber _virtualizationDistance;
     private _virtualizationUnitCapValue = parseNumber _virtualizationUnitCap;
-    private _territoryRatioWestValue = switch (_territoryRatio) do {
-        case "30% BLUFOR / 70% OPFOR": {0.3};
-        case "40% BLUFOR / 60% OPFOR": {0.4};
-        case "50% BLUFOR / 50% OPFOR": {0.5};
-        case "60% BLUFOR / 40% OPFOR": {0.6};
-        case "70% BLUFOR / 30% OPFOR": {0.7};
-        default {0.5};
-    };
+    private _territoryRatioWestValue = (parseNumber ((_territoryRatio splitString "%") select 0)) / 100;
 
 	// Legacy compatibility value (not consumed by current systems)
 	private _enemyPresence = 2;
@@ -270,12 +326,18 @@ _display closeDisplay 1;
 		["enemyHandle", createHashMapFromArray [["name", _enemyFaction]]],
 		["civilianHandle", createHashMapFromArray [["name", _civilianFaction]]],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
-		["difficultyHandle", createHashMapFromArray [["value", _difficultyValue], ["name", _difficulty]]],
-		["gtnAttackCoverageHandle", createHashMapFromArray [["value", _attackCoverageValue], ["name", _attackCoverage]]],
-		["gtnDefenseCoverageHandle", createHashMapFromArray [["value", _defenseOpsValue], ["name", _defenseCoverage]]],
-		["gtnTempoHandle", createHashMapFromArray [["value", _tempoValue], ["name", _tempo]]],
-		["gtnForceGrowthHandle", createHashMapFromArray [["value", _forceGrowthValue], ["name", _forceGrowth]]],
-		["gtnGarrisonHandle", _garrisonHandle],
+		["westDifficultyHandle", _westDifficultyHandle],
+		["eastDifficultyHandle", _eastDifficultyHandle],
+		["westGTNAttackCoverageHandle", _westAttackCoverageHandle],
+		["eastGTNAttackCoverageHandle", _eastAttackCoverageHandle],
+		["westGTNDefenseCoverageHandle", _westDefenseCoverageHandle],
+		["eastGTNDefenseCoverageHandle", _eastDefenseCoverageHandle],
+		["westGTNTempoHandle", _westTempoHandle],
+		["eastGTNTempoHandle", _eastTempoHandle],
+		["westGTNForceGrowthHandle", _westForceGrowthHandle],
+		["eastGTNForceGrowthHandle", _eastForceGrowthHandle],
+		["westGTNGarrisonHandle", _westGarrisonHandle],
+		["eastGTNGarrisonHandle", _eastGarrisonHandle],
 		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
 		["enemyPresence", _enemyPresence],
 		["objectiveSizeThreshold", _objectiveSizeThreshold],

@@ -33,12 +33,24 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_EnemyHandle = _configData get "enemyHandle";
         FLO_CivilianHandle = _configData get "civilianHandle";
         FLO_ReputationHandle = _configData get "reputationHandle";
-        FLO_DifficultyHandle = _configData get "difficultyHandle";
-        FLO_GTN_AttackCoverageHandle = _configData get "gtnAttackCoverageHandle";
-        FLO_GTN_DefenseCoverageHandle = _configData get "gtnDefenseCoverageHandle";
-        FLO_GTN_TempoHandle = _configData get "gtnTempoHandle";
-        FLO_GTN_ForceGrowthHandle = _configData get "gtnForceGrowthHandle";
-        FLO_GTN_GarrisonHandle = _configData get "gtnGarrisonHandle";
+        FLO_WestDifficultyHandle = _configData get "westDifficultyHandle";
+        FLO_EastDifficultyHandle = _configData get "eastDifficultyHandle";
+        FLO_WestGTN_AttackCoverageHandle = _configData get "westGTNAttackCoverageHandle";
+        FLO_EastGTN_AttackCoverageHandle = _configData get "eastGTNAttackCoverageHandle";
+        FLO_WestGTN_DefenseCoverageHandle = _configData get "westGTNDefenseCoverageHandle";
+        FLO_EastGTN_DefenseCoverageHandle = _configData get "eastGTNDefenseCoverageHandle";
+        FLO_WestGTN_TempoHandle = _configData get "westGTNTempoHandle";
+        FLO_EastGTN_TempoHandle = _configData get "eastGTNTempoHandle";
+        FLO_WestGTN_ForceGrowthHandle = _configData get "westGTNForceGrowthHandle";
+        FLO_EastGTN_ForceGrowthHandle = _configData get "eastGTNForceGrowthHandle";
+        FLO_WestGTN_GarrisonHandle = _configData get "westGTNGarrisonHandle";
+        FLO_EastGTN_GarrisonHandle = _configData get "eastGTNGarrisonHandle";
+        FLO_DifficultyHandle = FLO_EastDifficultyHandle;
+        FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
+        FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
+        FLO_GTN_TempoHandle = FLO_EastGTN_TempoHandle;
+        FLO_GTN_ForceGrowthHandle = FLO_EastGTN_ForceGrowthHandle;
+        FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
         FLO_MoneyHandle = _configData get "moneyHandle";
         EnemyPrec = _configData get "enemyPrec";
         FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
@@ -50,6 +62,18 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         publicVariable "FLO_EnemyHandle";
         publicVariable "FLO_CivilianHandle";
         publicVariable "FLO_ReputationHandle";
+        publicVariable "FLO_WestDifficultyHandle";
+        publicVariable "FLO_EastDifficultyHandle";
+        publicVariable "FLO_WestGTN_AttackCoverageHandle";
+        publicVariable "FLO_EastGTN_AttackCoverageHandle";
+        publicVariable "FLO_WestGTN_DefenseCoverageHandle";
+        publicVariable "FLO_EastGTN_DefenseCoverageHandle";
+        publicVariable "FLO_WestGTN_TempoHandle";
+        publicVariable "FLO_EastGTN_TempoHandle";
+        publicVariable "FLO_WestGTN_ForceGrowthHandle";
+        publicVariable "FLO_EastGTN_ForceGrowthHandle";
+        publicVariable "FLO_WestGTN_GarrisonHandle";
+        publicVariable "FLO_EastGTN_GarrisonHandle";
         publicVariable "FLO_DifficultyHandle";
         publicVariable "FLO_GTN_AttackCoverageHandle";
         publicVariable "FLO_GTN_DefenseCoverageHandle";
@@ -122,12 +146,18 @@ private _requiredFields = [
     "enemyHandle",
     "civilianHandle",
     "reputationHandle",
-    "difficultyHandle",
-    "gtnAttackCoverageHandle",
-    "gtnDefenseCoverageHandle",
-    "gtnTempoHandle",
-    "gtnForceGrowthHandle",
-    "gtnGarrisonHandle",
+    "westDifficultyHandle",
+    "eastDifficultyHandle",
+    "westGTNAttackCoverageHandle",
+    "eastGTNAttackCoverageHandle",
+    "westGTNDefenseCoverageHandle",
+    "eastGTNDefenseCoverageHandle",
+    "westGTNTempoHandle",
+    "eastGTNTempoHandle",
+    "westGTNForceGrowthHandle",
+    "eastGTNForceGrowthHandle",
+    "westGTNGarrisonHandle",
+    "eastGTNGarrisonHandle",
     "moneyHandle",
     "enemyPresence",
     "objectiveSizeThreshold",
@@ -156,16 +186,40 @@ publicVariable "FLO_CivilianHandle";
 
 // Set required config values
 FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
-FLO_DifficultyHandle = FLO_MissionConfig get "difficultyHandle";
-FLO_GTN_AttackCoverageHandle = FLO_MissionConfig get "gtnAttackCoverageHandle";
-FLO_GTN_DefenseCoverageHandle = FLO_MissionConfig get "gtnDefenseCoverageHandle";
-FLO_GTN_TempoHandle = FLO_MissionConfig get "gtnTempoHandle";
-FLO_GTN_ForceGrowthHandle = FLO_MissionConfig get "gtnForceGrowthHandle";
-FLO_GTN_GarrisonHandle = FLO_MissionConfig get "gtnGarrisonHandle";
+FLO_WestDifficultyHandle = FLO_MissionConfig get "westDifficultyHandle";
+FLO_EastDifficultyHandle = FLO_MissionConfig get "eastDifficultyHandle";
+FLO_WestGTN_AttackCoverageHandle = FLO_MissionConfig get "westGTNAttackCoverageHandle";
+FLO_EastGTN_AttackCoverageHandle = FLO_MissionConfig get "eastGTNAttackCoverageHandle";
+FLO_WestGTN_DefenseCoverageHandle = FLO_MissionConfig get "westGTNDefenseCoverageHandle";
+FLO_EastGTN_DefenseCoverageHandle = FLO_MissionConfig get "eastGTNDefenseCoverageHandle";
+FLO_WestGTN_TempoHandle = FLO_MissionConfig get "westGTNTempoHandle";
+FLO_EastGTN_TempoHandle = FLO_MissionConfig get "eastGTNTempoHandle";
+FLO_WestGTN_ForceGrowthHandle = FLO_MissionConfig get "westGTNForceGrowthHandle";
+FLO_EastGTN_ForceGrowthHandle = FLO_MissionConfig get "eastGTNForceGrowthHandle";
+FLO_WestGTN_GarrisonHandle = FLO_MissionConfig get "westGTNGarrisonHandle";
+FLO_EastGTN_GarrisonHandle = FLO_MissionConfig get "eastGTNGarrisonHandle";
+FLO_DifficultyHandle = FLO_EastDifficultyHandle;
+FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
+FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
+FLO_GTN_TempoHandle = FLO_EastGTN_TempoHandle;
+FLO_GTN_ForceGrowthHandle = FLO_EastGTN_ForceGrowthHandle;
+FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
 FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
 EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
 publicVariable "FLO_ReputationHandle";
+publicVariable "FLO_WestDifficultyHandle";
+publicVariable "FLO_EastDifficultyHandle";
+publicVariable "FLO_WestGTN_AttackCoverageHandle";
+publicVariable "FLO_EastGTN_AttackCoverageHandle";
+publicVariable "FLO_WestGTN_DefenseCoverageHandle";
+publicVariable "FLO_EastGTN_DefenseCoverageHandle";
+publicVariable "FLO_WestGTN_TempoHandle";
+publicVariable "FLO_EastGTN_TempoHandle";
+publicVariable "FLO_WestGTN_ForceGrowthHandle";
+publicVariable "FLO_EastGTN_ForceGrowthHandle";
+publicVariable "FLO_WestGTN_GarrisonHandle";
+publicVariable "FLO_EastGTN_GarrisonHandle";
 publicVariable "FLO_DifficultyHandle";
 publicVariable "FLO_GTN_AttackCoverageHandle";
 publicVariable "FLO_GTN_DefenseCoverageHandle";

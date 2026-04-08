@@ -61,6 +61,7 @@ class FLO {
         class gtnBuildEnemyEngagementPicture {};
         class gtnBuildGroupEngagementContext {};
         class gtnGetCachedReserveBands {};
+        class gtnGetSideCommanderHandle {};
         class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};

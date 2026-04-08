@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 17;
+private _saveVersion = 18;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -77,13 +77,19 @@ try {
     _cfg set ["enemyHandle", FLO_EnemyHandle];
     _cfg set ["civilianHandle", FLO_CivilianHandle];
     _cfg set ["moneyHandle", FLO_MoneyHandle];
-    _cfg set ["difficultyHandle", FLO_DifficultyHandle];
     _cfg set ["reputationHandle", FLO_ReputationHandle];
-    _cfg set ["gtnAttackCoverageHandle", FLO_GTN_AttackCoverageHandle];
-    _cfg set ["gtnDefenseCoverageHandle", FLO_GTN_DefenseCoverageHandle];
-    _cfg set ["gtnTempoHandle", FLO_GTN_TempoHandle];
-    _cfg set ["gtnForceGrowthHandle", FLO_GTN_ForceGrowthHandle];
-    _cfg set ["gtnGarrisonHandle", FLO_GTN_GarrisonHandle];
+    _cfg set ["westDifficultyHandle", FLO_WestDifficultyHandle];
+    _cfg set ["eastDifficultyHandle", FLO_EastDifficultyHandle];
+    _cfg set ["westGTNAttackCoverageHandle", FLO_WestGTN_AttackCoverageHandle];
+    _cfg set ["eastGTNAttackCoverageHandle", FLO_EastGTN_AttackCoverageHandle];
+    _cfg set ["westGTNDefenseCoverageHandle", FLO_WestGTN_DefenseCoverageHandle];
+    _cfg set ["eastGTNDefenseCoverageHandle", FLO_EastGTN_DefenseCoverageHandle];
+    _cfg set ["westGTNTempoHandle", FLO_WestGTN_TempoHandle];
+    _cfg set ["eastGTNTempoHandle", FLO_EastGTN_TempoHandle];
+    _cfg set ["westGTNForceGrowthHandle", FLO_WestGTN_ForceGrowthHandle];
+    _cfg set ["eastGTNForceGrowthHandle", FLO_EastGTN_ForceGrowthHandle];
+    _cfg set ["westGTNGarrisonHandle", FLO_WestGTN_GarrisonHandle];
+    _cfg set ["eastGTNGarrisonHandle", FLO_EastGTN_GarrisonHandle];
     _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
     _cfg set ["virtualizationUnitCap", FLO_VirtualizationUnitCap];

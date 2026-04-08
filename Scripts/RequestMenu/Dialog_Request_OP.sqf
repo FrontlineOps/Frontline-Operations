@@ -109,7 +109,7 @@ FLO_fnc_updateInformation = {
     };
 
     private _aggr = "100";
-    private _AGGRSCORE = FLO_DifficultyHandle get "value";  
+    private _AGGRSCORE = FLO_EastDifficultyHandle get "value";
     _aggr = _AGGRSCORE * 6.25;
 
     ctrlSetText [1000, format["Resources : %1", _Money]];

@@ -49,12 +49,12 @@ private _capabilityAnalyzer = call FLO_fnc_gtnCapabilityAnalyzer;
 private _artilleryManager = call FLO_fnc_gtnArtilleryManager;
 
 // Defense & Offensive Data
-private _tempoInterval = FLO_GTN_TempoHandle get "value";
-private _attackCoverage = FLO_GTN_AttackCoverageHandle get "value";
+private _tempoInterval = ([_ownSide, "tempo"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
+private _attackCoverage = ([_ownSide, "attackCoverage"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
 private _attackTrackCount = 1;
-private _defenseCoverage = FLO_GTN_DefenseCoverageHandle get "value";
+private _defenseCoverage = ([_ownSide, "defenseCoverage"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
 private _defenseTrackCount = 1;
-private _garrisonHandle = FLO_GTN_GarrisonHandle;
+private _garrisonHandle = [_ownSide, "garrison"] call FLO_fnc_gtnGetSideCommanderHandle;
 private _garrisonRearBaseGroups = _garrisonHandle get "rearBaseGroups";
 private _garrisonFrontlineBaseGroups = _garrisonHandle get "frontlineBaseGroups";
 private _garrisonPriorityBonusGroups = _garrisonHandle get "priorityBonusGroups";
