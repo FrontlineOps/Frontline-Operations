@@ -31,13 +31,21 @@ if ([_airPos, 3000, _detectingSide] call FLO_fnc_gtnCanSideObserveArea) exitWith
 private _groups = FLO_virtualGroups get "_groups";
 private _radarGroupIds = ["queryRadius", [_airPos, 50000, _detectingSide, true]] call FLO_fnc_virtualizationSpatialIndex;
 
-(_radarGroupIds findIf {
+private _canDetect = false;
+{
     private _groupData = _groups get _x;
-    if ((_groupData get "side") != _detectingSide) exitWith { false };
+    if ((_groupData get "side") != _detectingSide) then {
+        continue;
+    };
 
     private _groupType = _groupData get "groupType";
-    if !(_groupType in ["static_aa", "radar", "mobile_aa"]) exitWith { false };
+    if !(_groupType in ["static_aa", "radar", "mobile_aa"]) then {
+        continue;
+    };
 
-    private _isDetecting = (_groupData get "alwaysActive") || (_groupData get "isActive");
-    _isDetecting
-}) >= 0
+    if ((_groupData get "alwaysActive") || (_groupData get "isActive")) exitWith {
+        _canDetect = true;
+    };
+} forEach _radarGroupIds;
+
+_canDetect
