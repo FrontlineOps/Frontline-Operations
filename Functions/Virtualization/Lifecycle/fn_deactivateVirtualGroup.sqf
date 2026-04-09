@@ -58,7 +58,7 @@ private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualiza
 _syncResult params ["_tracksAssets", "_syncedCount"];
 
 [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
-[_groupData, _realGroup] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+[_groupData, _realGroup, _syncedCount <= 0] call FLO_fnc_virtualizationDeleteRealGroupAssets;
 private _groupType = _groupData get "groupType";
 
 if (_syncedCount <= 0) exitWith {

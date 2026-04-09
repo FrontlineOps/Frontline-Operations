@@ -566,6 +566,17 @@ if (!isNil "FLO_fnc_gtnCommanderVisualDebug" && {FLO_GTN_CommanderDebugEnabled})
 diag_log "[FLO_INIT_P5] Legacy mission content retired";
 
 // ============================================
+// Aftermath Cleanup
+// ============================================
+diag_log "[FLO_INIT_P5] Starting aftermath cleanup...";
+if (!isNil "FLO_fnc_aftermathCleanupManager") then {
+    ["start"] call FLO_fnc_aftermathCleanupManager;
+    diag_log "[FLO_INIT_P5] Aftermath cleanup started";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_aftermathCleanupManager not found";
+};
+
+// ============================================
 // Abandoned Vehicle Cleanup
 // ============================================
 diag_log "[FLO_INIT_P5] Starting abandoned vehicle cleanup...";

@@ -2,7 +2,7 @@
  * Function: FLO_fnc_vehicleCleanupManager
  * Author: Frontline Operations Development Group
  * Description:
- *   Manages the abandoned derelict vehicle cleanup worker.
+ *   Manages FLO-owned abandoned live vehicle cleanup for empty derelicts.
  *
  * Arguments:
  * 0: Mode <STRING> - "init", "start", "stop"
@@ -20,10 +20,12 @@ if (isNil "FLO_VehicleCleanup") then {
         ["enabled", false],
         ["pfhId", -1],
         ["interval", 60],
+        ["discoveryInterval", 180],
+        ["nextDiscoveryAt", 0],
         ["graceTime", 600],
-        ["playerSafeRadius", 150],
+        ["playerSafeRadius", 0],
         ["installationSafeRadius", 500],
-        ["candidateSince", createHashMap]
+        ["candidates", createHashMap]
     ];
 };
 
@@ -38,15 +40,19 @@ switch (toLower _mode) do {
     case "start": {
         if (_state get "enabled") exitWith { true };
 
+        _state set ["playerSafeRadius", FLO_AftermathCleanup get "playerEvidenceRadius"];
+        _state set ["nextDiscoveryAt", 0];
         _state set ["enabled", true];
         private _interval = _state get "interval";
         private _pfhId = [FLO_fnc_vehicleCleanupRun, _interval, []] call CBA_fnc_addPerFrameHandler;
         _state set ["pfhId", _pfhId];
 
         ["VEHICLE_CLEANUP", 3, format [
-            "Vehicle cleanup started (interval=%1s grace=%2s)",
+            "Vehicle cleanup started (interval=%1s discovery=%2s grace=%3s radius=%4m)",
             _interval,
-            _state get "graceTime"
+            _state get "discoveryInterval",
+            _state get "graceTime",
+            _state get "playerSafeRadius"
         ]] call FLO_fnc_log;
         true
     };
@@ -60,7 +66,8 @@ switch (toLower _mode) do {
             [_pfhId] call CBA_fnc_removePerFrameHandler;
             _state set ["pfhId", -1];
         };
-        _state set ["candidateSince", createHashMap];
+        _state set ["nextDiscoveryAt", 0];
+        _state set ["candidates", createHashMap];
 
         ["VEHICLE_CLEANUP", 3, "Vehicle cleanup stopped"] call FLO_fnc_log;
         true

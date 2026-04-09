@@ -17,19 +17,9 @@ RespawnDelay = 7; // Respawn delay
 RespawnDialog = 0; // Scoreboard
 respawnTemplates[] = {"MenuPosition"}; 
 
-corpseManagerMode = 3; // Default: 0 for SP, 2 for MP
-corpseLimit = 30; // Default: 15
-corpseRemovalMinTime = 60; // seconds. Default: 10
-corpseRemovalMaxTime = 600; // seconds. Default: 3600
-weaponholderManagerMode = 3;
-weaponholderLimit = 50;
-weaponholderRemovalMinTime = 1200;
-weaponholderRemovalMaxTime = 3600;
-wreckManagerMode = 3; // Default: 0 for SP, 2 for MP
-wreckLimit = 10; // seconds. Default: 15
-wreckRemovalMinTime = 60; // seconds. Default: 10
-wreckRemovalMaxTime = 900; // seconds. Default: 36000 (10 hours)
-minPlayerDistance[] = {300, 1200, 300, 60, 120, 300}; // {minDistance, maxDistance, minTime, maxTime, minCount, maxCount}
+corpseManagerMode = 0; // FLO owns corpse cleanup.
+weaponholderManagerMode = 0; // FLO owns dropped weapon cleanup.
+wreckManagerMode = 0; // FLO owns wreck cleanup.
 
 #include "Scripts\defines.hpp"
 #include "IDS_Logistics\CfgLogistics.hpp"

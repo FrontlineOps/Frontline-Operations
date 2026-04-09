@@ -331,7 +331,20 @@ class FLO {
         file = "Functions\Utilities\Vehicle";
         class placeVehicleWithCrew      {};
         class vehicleConfigureRequestedVehicle {};
+    };
+
+    class UtilitiesAftermath {
+        file = "Functions\Utilities\Aftermath";
+        class aftermathCleanupManager   {};
+        class aftermathCleanupRun       {};
+        class aftermathIsPositionInHotObjective {};
+        class aftermathRegisterEntity   {};
+        class aftermathShouldCleanupEntity {};
+        class aftermathShouldPreserveEvidence {};
+        class vehicleCleanupBuildContext {};
+        class vehicleCleanupDiscoverCandidates {};
         class vehicleCleanupManager     {};
+        class vehicleCleanupProcessCandidates {};
         class vehicleCleanupRun         {};
         class vehicleShouldCleanup      {};
     };

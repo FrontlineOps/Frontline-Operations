@@ -83,12 +83,14 @@ class VirtualizationLifecycle {
     class deactivateVirtualGroup           {};
     class activateSavedVirtualGroup        {};
     class virtualizationCollectRealGroupVehicles {};
+    class virtualizationConvertAssetCrewToInfantryRemnant {};
     class virtualizationDeactivateMountedPassengerGroup {};
     class virtualizationDeactivateMountedPassengers {};
     class virtualizationCaptureRealGroupPosition {};
     class virtualizationCaptureRealGroupRuntimeState {};
     class virtualizationCaptureRealGroupWaypoints {};
     class virtualizationDeleteRealGroupAssets {};
+    class virtualizationResolveActiveStraggler {};
     class virtualizationRequirePoolEntries {};
     class virtualizationGetGroundCombatVehiclePool {};
     class virtualizationResolveCrewType    {};

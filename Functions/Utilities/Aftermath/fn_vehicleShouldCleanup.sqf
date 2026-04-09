@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Determines whether an empty vehicle should be treated as an abandoned
- *   derelict and become eligible for cleanup.
+ *   derelict and become eligible for FLO-owned live vehicle cleanup.
  *
  * Arguments:
  * 0: Vehicle <OBJECT>
@@ -44,6 +44,7 @@ private _vehiclePos = getPosATL _vehicle;
 if ((_playerPositions findIf { _vehiclePos distance2D _x <= _playerSafeRadius }) > -1) exitWith { false };
 
 if ((_installationPositions findIf { _vehiclePos distance2D _x <= _installationSafeRadius }) > -1) exitWith { false };
+if ([_vehiclePos] call FLO_fnc_aftermathIsPositionInHotObjective) exitWith { false };
 
 private _combatVehicle = _vehicle isKindOf "Tank"
     || {_vehicle isKindOf "Wheeled_APC_F"}

@@ -33,7 +33,16 @@ if (!isNull _realGroup) then {
     private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationSyncRealGroupOutcome;
     _syncResult params ["", "_syncedCount"];
 
+    private _preserveEvidence = false;
+    if (_syncedCount <= 0) then {
+        _preserveEvidence = [units _realGroup] call FLO_fnc_aftermathShouldPreserveEvidence;
+    };
+
     {
+        if (_preserveEvidence && {!alive _x}) then {
+            [_x, "corpse"] call FLO_fnc_aftermathRegisterEntity;
+            continue;
+        };
         _x hideObjectGlobal true;
         deleteVehicle _x;
     } forEach units _realGroup;

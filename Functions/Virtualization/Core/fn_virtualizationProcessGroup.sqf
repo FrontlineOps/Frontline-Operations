@@ -92,6 +92,6 @@ _isActive = _groupData get "isActive";
 _realGroup = _groupData get "realGroup";
 
 if (_isActive && {!isNull _realGroup}) then {
-    [_groupId, _groupData, _realGroup, _tracksAssets, _replacementState, _now, _virtStats] call FLO_fnc_virtualizationProcessActiveState;
+    [_groupId, _groupData, _realGroup, _tracksAssets, _replacementState, _nearestDist, _now, _virtStats] call FLO_fnc_virtualizationProcessActiveState;
 };
 

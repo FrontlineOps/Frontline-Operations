@@ -2,7 +2,7 @@
  * Function: FLO_fnc_virtualizationProcessActiveState
  */
 
-params ["_groupId", "_groupData", "_realGroup", "_tracksAssets", "_replacementState", "_now", "_virtStats"];
+params ["_groupId", "_groupData", "_realGroup", "_tracksAssets", "_replacementState", "_nearestDist", "_now", "_virtStats"];
 
 private _leader = leader _realGroup;
 if (!isNull _leader && {alive _leader}) then {
@@ -37,6 +37,10 @@ if (!isNull _leader && {alive _leader}) then {
     };
 };
 
+if ([_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationConvertAssetCrewToInfantryRemnant) then {
+    _tracksAssets = false;
+};
+
 private _eliminated = if (_tracksAssets) then {
     count ([_groupData, _realGroup] call FLO_fnc_virtualizationGetRealAssetVehicles) == 0
 } else {
@@ -48,6 +52,18 @@ if (_eliminated) then {
     [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
     _virtStats set ["eliminatedGroupsTotal", (_virtStats get "eliminatedGroupsTotal") + 1];
     _virtStats set ["eliminatedGroupsThisBatch", (_virtStats get "eliminatedGroupsThisBatch") + 1];
+    true exitWith {};
+};
+
+if ([
+    _groupId,
+    _groupData,
+    _realGroup,
+    _tracksAssets,
+    _nearestDist,
+    _virtStats
+] call FLO_fnc_virtualizationResolveActiveStraggler) exitWith {
+    true
 };
 
 true

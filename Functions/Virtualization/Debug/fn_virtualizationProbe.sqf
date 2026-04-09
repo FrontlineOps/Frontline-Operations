@@ -52,6 +52,8 @@ private _perf = FLO_VirtUpdate get "perf";
     ["missionHoldSkipsThisBatch", _stats get "missionHoldSkipsThisBatch"],
     ["eliminatedGroupsTotal", _stats get "eliminatedGroupsTotal"],
     ["eliminatedGroupsThisBatch", _stats get "eliminatedGroupsThisBatch"],
+    ["stragglerResolvesTotal", _stats get "stragglerResolvesTotal"],
+    ["stragglerResolvesThisBatch", _stats get "stragglerResolvesThisBatch"],
     ["slowBatchCount", _stats get "slowBatchCount"],
     ["slowGroupCount", _stats get "slowGroupCount"],
     ["slowBatchThresholdMs", _perf get "slowBatchThresholdMs"],

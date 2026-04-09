@@ -49,6 +49,8 @@ createHashMapFromArray [
     ["missionHoldSkipsThisBatch", 0],
     ["eliminatedGroupsTotal", 0],
     ["eliminatedGroupsThisBatch", 0],
+    ["stragglerResolvesTotal", 0],
+    ["stragglerResolvesThisBatch", 0],
     ["slowBatchCount", 0],
     ["slowGroupCount", 0]
 ]

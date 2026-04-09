@@ -12,6 +12,10 @@ private _unitCount = _groupData get "unitCount";
 private _realGroup = grpNull;
 
 switch (true) do {
+    case (_groupType isEqualTo "infantry" && {_comp isNotEqualTo []}): {
+        _realGroup = [_side, _groupType, _position, _comp] call FLO_fnc_virtualizationSpawnFromComposition;
+    };
+
     case (_groupType isEqualTo "infantry"): {
         _realGroup = [_position, _side, _groupCfg, _unitCount, _pools get "groundInfantryUnits", _pools get "sideKey"] call FLO_fnc_virtualizationSpawnInfantryGroup;
     };
