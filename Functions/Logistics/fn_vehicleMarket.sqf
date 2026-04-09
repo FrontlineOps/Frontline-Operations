@@ -147,9 +147,9 @@ if (_action == "sell") exitWith {
     };
     
     // Transaction
-    private _current = FLO_MoneyHandle getOrDefault ["value", 0];
+    private _current = FLO_MoneyHandle get "value";
     FLO_MoneyHandle set ["value", _current + _price];
-    publicVariable "FLO_MoneyHandle";
+    [(_current + _price)] call FLO_fnc_publishMoneyState;
     
     // Notification
     private _name = getText (configFile >> "CfgVehicles" >> (typeOf _vehicle) >> "displayName");

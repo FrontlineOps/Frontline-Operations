@@ -111,6 +111,7 @@ private _fnc_notify = {
 
     // Send to all players
     private _formattedText = format ["<t size='%1' color='%2'>%3</t>", _size, _color, _message];
+    ["dynamicTextBroadcasts", 1] call FLO_fnc_netDebugRecord;
     [_formattedText, _duration] remoteExec ["FLO_fnc_showDynamicText", 0];
 
     // Play warning sound for urgent notifications

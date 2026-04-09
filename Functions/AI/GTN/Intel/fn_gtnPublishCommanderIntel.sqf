@@ -25,21 +25,51 @@ private _metrics = createHashMapFromArray [
 if (!isServer || {isNil "_gtnCommander"}) exitWith { _metrics };
 
 private _worldState = _gtnCommander get "_worldState";
+private _targetSide = _gtnCommander get "_ownSide";
 private _sideKey = _gtnCommander get "_sideKey";
 private _picture = [_worldState] call FLO_fnc_gtnBuildCommanderIntelPicture;
 private _groupMarkers = _picture get "enemyGroups";
 private _concentrationMarkers = _picture get "enemyConcentrations";
 private _friendlyGroupMarkers = _picture get "friendlyGroups";
 private _supportMarkers = _picture get "supportMarkers";
+private _targetOwners = [_targetSide] call FLO_fnc_gtnGetSideClientOwners;
+private _ownerSignatureParts = _targetOwners apply { str _x };
+_ownerSignatureParts sort true;
+private _ownerSignature = _ownerSignatureParts joinString ",";
+private _publishSignature = [
+    _sideKey,
+    _groupMarkers,
+    _concentrationMarkers,
+    _friendlyGroupMarkers,
+    _supportMarkers
+] call FLO_fnc_gtnBuildCommanderIntelPublishSignature;
+private _forceRefreshInterval = ((_gtnCommander get "_config") get "intelPublishForceRefreshInterval") max 1;
+private _lastPublishedAt = _gtnCommander get "_lastCommanderIntelPublishedAt";
+private _signatureChanged = _publishSignature != (_gtnCommander get "_lastCommanderIntelPublishSignature");
+private _ownersChanged = _ownerSignature != (_gtnCommander get "_lastCommanderIntelOwnerSignature");
+private _refreshDue = _lastPublishedAt < 0 || {diag_tickTime - _lastPublishedAt >= _forceRefreshInterval};
 
 _gtnCommander set ["_lastCommanderIntelPicture", _picture];
 
-_metrics set ["published", true];
 _metrics set ["groupCount", count _groupMarkers];
 _metrics set ["concentrationCount", count _concentrationMarkers];
 _metrics set ["friendlyGroupCount", count _friendlyGroupMarkers];
 _metrics set ["supportMarkerCount", count _supportMarkers];
+_metrics set ["targetCount", count _targetOwners];
 
-[_sideKey, _groupMarkers, _concentrationMarkers, _friendlyGroupMarkers, _supportMarkers] remoteExecCall ["FLO_fnc_gtnSyncCommanderIntelMarkers", 0, false];
+if ((count _targetOwners) == 0) exitWith { _metrics };
+if !(_signatureChanged || {_ownersChanged} || {_refreshDue}) exitWith { _metrics };
+
+_metrics set ["published", true];
+
+[_sideKey, _groupMarkers, _concentrationMarkers, _friendlyGroupMarkers, _supportMarkers] remoteExecCall ["FLO_fnc_gtnSyncCommanderIntelMarkers", _targetOwners, false];
+
+_gtnCommander set ["_lastCommanderIntelPublishSignature", _publishSignature];
+_gtnCommander set ["_lastCommanderIntelOwnerSignature", _ownerSignature];
+_gtnCommander set ["_lastCommanderIntelPublishedAt", diag_tickTime];
+
+["commanderIntelPublishes", 1] call FLO_fnc_netDebugRecord;
+["commanderIntelMarkers", (count _groupMarkers) + (count _concentrationMarkers) + (count _friendlyGroupMarkers) + (count _supportMarkers)] call FLO_fnc_netDebugRecord;
+["commanderIntelTargets", count _targetOwners] call FLO_fnc_netDebugRecord;
 
 _metrics

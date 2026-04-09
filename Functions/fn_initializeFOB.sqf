@@ -138,7 +138,7 @@ private _fnc_setupArsenal = {
                 ["AmmoboxInit", [_building, true]] call BIS_fnc_arsenal;
             };
             
-            [_building] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, true];
+            [_building] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, format ["FLO_CRATE_ACT_%1", netId _building]];
             [_config get "type", 3, "Arsenal unrestricted initialized"] call FLO_fnc_log;
         } catch {
             [_config get "type", 1, format["Failed to setup unrestricted arsenal: %1", _exception]] call FLO_fnc_log;

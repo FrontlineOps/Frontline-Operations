@@ -28,6 +28,8 @@ waitUntil { player == player };
 
 FLO_ClientFinalizeDone = true;
 
+[] call FLO_fnc_applyMissionConfigLocally;
+
 // Create respawn marker if needed
 private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
 private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
@@ -103,6 +105,7 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
 // Initialize client-side systems
 diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
 
+[] call FLO_fnc_initObjectiveRuntimeStateEvents;
 [] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
 [] call FLO_fnc_gtnRefreshPlayerSupportActions;
 if (!FLO_GTN_CommanderSupplyRespawnHandlerAdded) then {

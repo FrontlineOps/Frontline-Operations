@@ -107,6 +107,8 @@ if ((count _westOwned) == 0 || {(count _eastOwned) == 0}) then {
 } forEach _allObjectives;
 
 publicVariable "FLO_Objectives";
+FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
+publicVariable "FLO_ObjectiveRuntimeState";
 
 ["OBJECTIVE", 2, format ["Seeded ownership from start position: WEST=%1 EAST=%2 ratio=%3 (anchor=%4)",
     ({((FLO_Objectives get _x) get "owner") isEqualTo west} count _allObjectives),

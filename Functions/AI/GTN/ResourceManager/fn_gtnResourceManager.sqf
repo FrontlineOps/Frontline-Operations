@@ -17,6 +17,7 @@ private _resourceManager = createHashMapObject [[
     ["_gtnCommander", nil], // Backward compatibility alias (EAST commander)
     ["_gtnCommandersBySide", createHashMap],
     ["_virtGroupRemovedEH", -1],
+    ["_dirtyEventEhIds", createHashMap],
     ["_loopPfhsBySide", createHashMap],
 
     ["_sideKey", {
@@ -56,6 +57,55 @@ private _resourceManager = createHashMapObject [[
         }] call CBA_fnc_addEventHandler;
 
         _self set ["_virtGroupRemovedEH", _newEhId];
+    }],
+
+    ["_markCommanderDirty", {
+        params [["_side", sideUnknown], ["_reason", "", [""]], ["_payload", [], [[]]]];
+        if !(_side in [east, west]) exitWith { false };
+
+        private _commander = _self call ["_getCommanderBySide", [_side]];
+        if (isNil "_commander") exitWith { false };
+
+        [_commander, _reason, _payload] call FLO_fnc_gtnMarkCommanderStateDirty;
+    }],
+
+    ["_bindDirtyEvents", {
+        private _ehIds = _self get "_dirtyEventEhIds";
+        if (count (keys _ehIds) > 0) exitWith {};
+
+        missionNamespace setVariable ["FLO_GTN_ResourceManagerRef", _self];
+
+        _ehIds set ["objectiveFlipped", ["FLO_Objective_Flipped", {
+            params ["_objectiveId", "_previousOwner", "_newOwner"];
+
+            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            if (isNil "_mgr") exitWith {};
+
+            if (_previousOwner in [east, west]) then {
+                _mgr call ["_markCommanderDirty", [_previousOwner, "OBJECTIVE_FLIPPED", [_objectiveId, _previousOwner, _newOwner]]];
+            };
+            if (_newOwner in [east, west]) then {
+                _mgr call ["_markCommanderDirty", [_newOwner, "OBJECTIVE_FLIPPED", [_objectiveId, _previousOwner, _newOwner]]];
+            };
+        }] call CBA_fnc_addEventHandler];
+
+        _ehIds set ["supplyChainChanged", ["FLO_Logistics_SupplyChainChanged", {
+            params ["_managedSide", "_hqObjectiveId", "_nodeIds", "_signature"];
+
+            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            if (isNil "_mgr") exitWith {};
+
+            _mgr call ["_markCommanderDirty", [_managedSide, "SUPPLY_CHAIN_CHANGED", [_hqObjectiveId, _nodeIds, _signature]]];
+        }] call CBA_fnc_addEventHandler];
+
+        _ehIds set ["artilleryMissionStateChanged", ["FLO_GTN_ArtilleryMissionStateChanged", {
+            params ["_side", "_missionId", "_state"];
+
+            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            if (isNil "_mgr") exitWith {};
+
+            _mgr call ["_markCommanderDirty", [_side, "ARTILLERY_STATE_CHANGED", [_missionId, _state]]];
+        }] call CBA_fnc_addEventHandler];
     }],
 
     ["_startCommanderLoop", {
@@ -146,6 +196,7 @@ private _resourceManager = createHashMapObject [[
         // Keep commander objects server-local. They contain circular references
         // and are not safe to publicVariable.
         FLO_GTN_CommandersBySide = _self get "_gtnCommandersBySide";
+        _self call ["_bindDirtyEvents", []];
 
         // Publish only lightweight side status for clients/debug UI.
         private _pubState = createHashMapFromArray [

@@ -33,6 +33,9 @@ FLO_GTN_PlayerSupportPendingType = "";
 FLO_GTN_PlayerSupportCancelWatcherRunning = false;
 FLO_ClientFinalizeDone = false;
 
+[] call FLO_fnc_initMissionConfigEvents;
+[] call FLO_fnc_initMoneyStateEvents;
+
 [] spawn {
     waitUntil {
         sleep 1;

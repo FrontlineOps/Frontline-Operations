@@ -74,7 +74,6 @@ private _pfhId = [{
     private _supportAvailability = _classification get "supportAvailability";
     private _zones = [_classification] call FLO_fnc_gtnCombatGetZones;
     private _engagedNow = createHashMap;
-    private _eventsChanged = false;
     private _liveAreaRadius = FLO_virtualGroups get "_activationDistance";
 
     {
@@ -209,7 +208,6 @@ private _pfhId = [{
             count _eastRefs,
             count _westRefs
         ] call FLO_fnc_gtnCombatRecordEvent;
-        _eventsChanged = true;
 
         [_event, _combatMarkerTTL] call FLO_fnc_gtnCombatUpdateMarker;
 
@@ -242,11 +240,6 @@ private _pfhId = [{
     } forEach (keys _groups);
 
     call FLO_fnc_gtnCombatCleanupMarkers;
-
-    if (_eventsChanged) then {
-        publicVariable "FLO_GTN_CombatEvents";
-        publicVariable "FLO_GTN_CombatLastByObjective";
-    };
 
     private _dt = diag_tickTime - _cycleStart;
     if (_dt > _perfLogThreshold) then {

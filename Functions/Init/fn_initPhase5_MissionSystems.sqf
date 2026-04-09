@@ -396,7 +396,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                             };
                         } forEach _items;
 
-                        [_crate, true, [0,2,0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
+                        [_crate, true, [0,2,0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, _crate];
                         _loadedCrates = _loadedCrates + 1;
                     };
                 };

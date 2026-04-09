@@ -154,20 +154,13 @@ if ("structureTypes" in _saveData) then {
 FLO_SavedGameData = _saveData;
 publicVariable "FLO_SavedGameData";
 
-// Create FLO_MissionConfig equivalent for Phase Manager
-private _missionConfig = createHashMapFromArray [
-    ["bluforFaction", _savedConfig get "FLO_FriendlyHandle"],
-    ["opforFaction", _savedConfig get "FLO_EnemyHandle"],
-    ["civFaction", _savedConfig get "FLO_CivilianHandle"],
-    ["westDifficultyHandle", _savedConfig get "FLO_WestDifficultyHandle"],
-    ["eastDifficultyHandle", _savedConfig get "FLO_EastDifficultyHandle"],
-    ["startingFunds", _savedConfig get "FLO_MoneyHandle"],
-    ["startingReputation", _savedConfig get "FLO_ReputationHandle"],
-    ["startingTerritoryWestRatio", _configData get "startingTerritoryWestRatio"],
-    ["isLoadedSave", true]  // Flag to indicate this is from a save
-];
-
 ["SAVE_DETECT", 3, format ["Valid save found with %1 faction handles", _foundHandles]] call FLO_fnc_log;
+private _missionConfig = createHashMap;
+{
+    _missionConfig set [_x, _configData get _x];
+} forEach (keys _configData);
+_missionConfig set ["enemyPresence", _configData get "enemyPrec"];
+
 ["SAVE_DETECT", 5, format ["Loaded config: %1", _missionConfig]] call FLO_fnc_log;
 
 [true, _missionConfig]

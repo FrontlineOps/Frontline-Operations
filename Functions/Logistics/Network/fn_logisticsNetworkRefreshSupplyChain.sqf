@@ -32,6 +32,7 @@ private _minDeliveries = _net get "SUPPLY_NODE_MIN_DELIVERIES";
 private _promotionDeliveryCount = _net get "SUPPLY_NODE_PROMOTION_DELIVERY_COUNT";
 private _minActiveFriendlyCount = _net get "SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT";
 private _depthMeters = _net get "SUPPLY_CHAIN_DEPTH_METERS";
+private _previousSignature = _net get "_lastSupplyNodeSignature";
 
 {
     private _objectiveId = _x;
@@ -59,6 +60,9 @@ if (_hqObjectiveId == "") exitWith {
     _net set ["_supplyRouteInfo", _routeInfo];
     _net set ["_activeSupplyNodes", _activeNodes];
     _net set ["_lastSupplyNodeSignature", ""];
+    if (_previousSignature != "") then {
+        ["FLO_Logistics_SupplyChainChanged", [_managedSide, "", [], ""]] call CBA_fnc_localEvent;
+    };
     _activeNodes
 };
 
@@ -149,7 +153,7 @@ _net set ["_activeSupplyNodes", _activeNodes];
 private _nodeIds = keys _activeNodes;
 _nodeIds sort true;
 private _signature = format ["%1|%2", _hqObjectiveId, _nodeIds joinString ","];
-if (_signature != (_net get "_lastSupplyNodeSignature")) then {
+if (_signature != _previousSignature) then {
     _net set ["_lastSupplyNodeSignature", _signature];
     ["LOGISTICS", 3, format [
         "Supply chain %1: HQ=%2 activeNodes=%3",
@@ -157,6 +161,7 @@ if (_signature != (_net get "_lastSupplyNodeSignature")) then {
         _hqObjectiveId,
         _nodeIds
     ]] call FLO_fnc_log;
+    ["FLO_Logistics_SupplyChainChanged", [_managedSide, _hqObjectiveId, _nodeIds, _signature]] call CBA_fnc_localEvent;
 };
 
 _activeNodes

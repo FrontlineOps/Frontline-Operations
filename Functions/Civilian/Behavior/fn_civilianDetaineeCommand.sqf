@@ -113,14 +113,14 @@ switch (toUpper _mode) do {
         _unit moveInCargo (_vehicles select 0);
         private _vehicle = _vehicles select 0;
         if !(_vehicle getVariable ["FLO_DetaineeUnloadActionAdded", false]) then {
-            [_vehicle, [
+            [_vehicle, "DETAINEE_UNLOAD", [[
                 "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Unload Detainees",
                 {
                     params ["_target", "_caller"];
                     ["UNLOAD_ALL", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];
                 },
                 nil, 0, true, true, "", "({side _x == civilian && captive _x && alive _x} count crew _target) > 0", 5, false, "", ""
-            ]] remoteExec ["addAction", 0, true];
+            ]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, _vehicle];
             _vehicle setVariable ["FLO_DetaineeUnloadActionAdded", true, true];
         };
 

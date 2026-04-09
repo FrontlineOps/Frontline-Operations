@@ -140,7 +140,13 @@ private _gtnCommander = createHashMapObject [[
     ["_playerSupportPlayerCooldowns", createHashMap],
     ["_playerSupportObjectiveLocks", createHashMap],
     ["_playerSupportRequestSeq", 0],
+    ["_intelDirty", true],
     ["_lastIntelPublishAt", -1],
+    ["_lastIntelDirtyAt", -1],
+    ["_lastIntelDirtyReason", ""],
+    ["_lastCommanderIntelPublishSignature", ""],
+    ["_lastCommanderIntelOwnerSignature", ""],
+    ["_lastCommanderIntelPublishedAt", -1],
     ["_lastGarrisonRunAt", -1],
     ["_lastGarrisonSignature", ""],
     ["_lastEngagementSweepAt", -1],
@@ -154,6 +160,7 @@ private _gtnCommander = createHashMapObject [[
         ["defenseLeaseSeconds", 300], // Release long-idle DEFEND groups back into the task pool
         ["availabilityCacheMaxAgeSeconds", 20], // Rebuild the availability scan on a cadence even if no direct dirty event fired
         ["intelPublishMinInterval", 30], // Commander COP publishing is player-facing and does not need a full refresh every cycle
+        ["intelPublishForceRefreshInterval", 180], // Re-send unchanged commander COP state periodically so late-joining clients catch up
         ["garrisonRefreshMinSeconds", 30], // Baseline garrison floor only needs a strategic refresh cadence unless objective demand changed
         ["engagementFullSweepMinSeconds", 20], // Fresh opportunistic target acquisition runs slower than engagement maintenance
         ["attackCoverageMultiplier", _attackCoverage], // Scales per-objective attack caps without multiplying ATK tracks
@@ -393,14 +400,23 @@ private _gtnCommander = createHashMapObject [[
             ["friendlyGroupCount", 0],
             ["supportMarkerCount", 0]
         ];
+        private _intelDirty = _self get "_intelDirty";
+        private _intelOwnerParts = ([_self get "_ownSide"] call FLO_fnc_gtnGetSideClientOwners) apply { str _x };
+        _intelOwnerParts sort true;
+        private _intelOwnerSignature = _intelOwnerParts joinString ",";
         private _intelPublishDue = (_self get "_lastIntelPublishAt") < 0
+            || {_intelDirty}
             || {_enemyIntelSensed}
             || {_supportAssetsSensed}
+            || {_intelOwnerSignature != (_self get "_lastCommanderIntelOwnerSignature")}
             || {_now - (_self get "_lastIntelPublishAt") >= (((_self get "_config") get "intelPublishMinInterval") max 1)};
         _tPhase = diag_tickTime;
         if (_intelPublishDue) then {
             _intelPublishMetrics = [_self] call FLO_fnc_gtnPublishCommanderIntel;
-            _self set ["_lastIntelPublishAt", _now];
+            if (_intelPublishMetrics get "published") then {
+                _self set ["_lastIntelPublishAt", _now];
+                _self set ["_intelDirty", false];
+            };
         };
         _phaseMs set ["intelPublish", (diag_tickTime - _tPhase) * 1000];
 

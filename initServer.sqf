@@ -42,8 +42,6 @@ private _globalVars = createHashMapFromArray [
     ["FLO_GTN_CommanderDebugRunning", false],
     ["FLO_GTN_CommanderDebugMarkers", createHashMap],
     ["FLO_GTN_CombatDebugEnabled", true],
-    ["FLO_GTN_CombatEvents", []],
-    ["FLO_GTN_CombatLastByObjective", createHashMap],
     ["FLO_GTN_AttackHandle", createHashMapFromArray [["value", 4], ["name", "Conservative"]]],
     ["FLO_GTN_DefenseHandle", createHashMapFromArray [["value", 4], ["name", "Minimal Coverage"]]],
     ["FLO_GTN_TempoHandle", createHashMapFromArray [["value", 10], ["name", "10s"]]]
@@ -54,6 +52,15 @@ private _globalVars = createHashMapFromArray [
     missionNamespace setVariable [_x, _y];
     publicVariable _x;
 } forEach _globalVars;
+
+private _serverOnlyVars = createHashMapFromArray [
+    ["FLO_GTN_CombatEvents", []],
+    ["FLO_GTN_CombatLastByObjective", createHashMap]
+];
+
+{
+    missionNamespace setVariable [_x, _y];
+} forEach _serverOnlyVars;
 
 // Initialize world center position
 Centerposition = [worldSize / 2, worldSize / 2, 0];

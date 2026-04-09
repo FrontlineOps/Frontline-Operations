@@ -48,7 +48,36 @@ if (_message != "") then {
     [_message, "warning", false, _targetSide] call FLO_fnc_sendNotification;
 };
 
-[_sideKey, _alertId, _alertType, _position, _radius, _duration, _payload] remoteExecCall ["FLO_fnc_gtnSyncAlertMarkers", 0, false];
+if (isNil "FLO_GTN_PendingAlertPublishes") then {
+    FLO_GTN_PendingAlertPublishes = createHashMapFromArray [
+        ["EAST", []],
+        ["WEST", []]
+    ];
+};
+if (isNil "FLO_GTN_AlertBatchScheduled") then {
+    FLO_GTN_AlertBatchScheduled = createHashMapFromArray [
+        ["EAST", false],
+        ["WEST", false]
+    ];
+};
+
+(FLO_GTN_PendingAlertPublishes get _sideKey) pushBack [
+    _sideKey,
+    _alertId,
+    _alertType,
+    _position,
+    _radius,
+    _duration,
+    _payload
+];
+
+if !(FLO_GTN_AlertBatchScheduled get _sideKey) then {
+    FLO_GTN_AlertBatchScheduled set [_sideKey, true];
+    [{
+        params ["_queuedSideKey"];
+        [_queuedSideKey] call FLO_fnc_gtnFlushAlertQueue;
+    }, [_sideKey], 0.25] call CBA_fnc_waitAndExecute;
+};
 
 createHashMapFromArray [
     ["id", _alertId],

@@ -13,7 +13,6 @@ if (!isServer) exitWith { false };
 
 diag_log "[FLO_INIT_P1] Waiting for mission configuration...";
 FLO_VirtualizationUnitCap = 200;
-publicVariable "FLO_VirtualizationUnitCap";
 
 // Check if this is a saved game (FLO_IsLoadedSave flag set by Phase 0)
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
@@ -57,35 +56,14 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_VirtualizationDistance = _configData get "virtualizationDistance";
         FLO_VirtualizationUnitCap = _configData get "virtualizationUnitCap";
         FLO_StartingTerritoryWestRatio = _configData get "startingTerritoryWestRatio";
-
-        publicVariable "FLO_FriendlyHandle";
-        publicVariable "FLO_EnemyHandle";
-        publicVariable "FLO_CivilianHandle";
-        publicVariable "FLO_ReputationHandle";
-        publicVariable "FLO_WestDifficultyHandle";
-        publicVariable "FLO_EastDifficultyHandle";
-        publicVariable "FLO_WestGTN_AttackCoverageHandle";
-        publicVariable "FLO_EastGTN_AttackCoverageHandle";
-        publicVariable "FLO_WestGTN_DefenseCoverageHandle";
-        publicVariable "FLO_EastGTN_DefenseCoverageHandle";
-        publicVariable "FLO_WestGTN_TempoHandle";
-        publicVariable "FLO_EastGTN_TempoHandle";
-        publicVariable "FLO_WestGTN_ForceGrowthHandle";
-        publicVariable "FLO_EastGTN_ForceGrowthHandle";
-        publicVariable "FLO_WestGTN_GarrisonHandle";
-        publicVariable "FLO_EastGTN_GarrisonHandle";
-        publicVariable "FLO_DifficultyHandle";
-        publicVariable "FLO_GTN_AttackCoverageHandle";
-        publicVariable "FLO_GTN_DefenseCoverageHandle";
-        publicVariable "FLO_GTN_TempoHandle";
-        publicVariable "FLO_GTN_ForceGrowthHandle";
-        publicVariable "FLO_GTN_GarrisonHandle";
-        publicVariable "FLO_MoneyHandle";
-        publicVariable "EnemyPrec";
-        publicVariable "FLO_ObjectiveSizeThreshold";
-        publicVariable "FLO_VirtualizationDistance";
-        publicVariable "FLO_VirtualizationUnitCap";
-        publicVariable "FLO_StartingTerritoryWestRatio";
+        private _missionConfig = createHashMap;
+        {
+            _missionConfig set [_x, _configData get _x];
+        } forEach (keys _configData);
+        _missionConfig set ["enemyPresence", _configData get "enemyPrec"];
+        FLO_MissionConfig = _missionConfig;
+        publicVariable "FLO_MissionConfig";
+        [] call FLO_fnc_publishMoneyState;
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
             FLO_FriendlyHandle get "name",
@@ -180,10 +158,6 @@ FLO_FriendlyHandle = FLO_MissionConfig get "friendlyHandle";
 FLO_EnemyHandle = FLO_MissionConfig get "enemyHandle";
 FLO_CivilianHandle = FLO_MissionConfig get "civilianHandle";
 
-publicVariable "FLO_FriendlyHandle";
-publicVariable "FLO_EnemyHandle";
-publicVariable "FLO_CivilianHandle";
-
 // Set required config values
 FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
 FLO_WestDifficultyHandle = FLO_MissionConfig get "westDifficultyHandle";
@@ -207,41 +181,16 @@ FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
 FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
 EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
-publicVariable "FLO_ReputationHandle";
-publicVariable "FLO_WestDifficultyHandle";
-publicVariable "FLO_EastDifficultyHandle";
-publicVariable "FLO_WestGTN_AttackCoverageHandle";
-publicVariable "FLO_EastGTN_AttackCoverageHandle";
-publicVariable "FLO_WestGTN_DefenseCoverageHandle";
-publicVariable "FLO_EastGTN_DefenseCoverageHandle";
-publicVariable "FLO_WestGTN_TempoHandle";
-publicVariable "FLO_EastGTN_TempoHandle";
-publicVariable "FLO_WestGTN_ForceGrowthHandle";
-publicVariable "FLO_EastGTN_ForceGrowthHandle";
-publicVariable "FLO_WestGTN_GarrisonHandle";
-publicVariable "FLO_EastGTN_GarrisonHandle";
-publicVariable "FLO_DifficultyHandle";
-publicVariable "FLO_GTN_AttackCoverageHandle";
-publicVariable "FLO_GTN_DefenseCoverageHandle";
-publicVariable "FLO_GTN_TempoHandle";
-publicVariable "FLO_GTN_ForceGrowthHandle";
-publicVariable "FLO_GTN_GarrisonHandle";
-publicVariable "FLO_MoneyHandle";
-publicVariable "EnemyPrec";
-
 private _objectiveSizeThreshold = FLO_MissionConfig get "objectiveSizeThreshold";
 FLO_ObjectiveSizeThreshold = _objectiveSizeThreshold;
-publicVariable "FLO_ObjectiveSizeThreshold";
 
 private _virtualizationDistance = FLO_MissionConfig get "virtualizationDistance";
 FLO_VirtualizationDistance = _virtualizationDistance;
-publicVariable "FLO_VirtualizationDistance";
 private _virtualizationUnitCap = FLO_MissionConfig get "virtualizationUnitCap";
 FLO_VirtualizationUnitCap = _virtualizationUnitCap;
-publicVariable "FLO_VirtualizationUnitCap";
 private _startingTerritoryWestRatio = FLO_MissionConfig get "startingTerritoryWestRatio";
 FLO_StartingTerritoryWestRatio = _startingTerritoryWestRatio;
-publicVariable "FLO_StartingTerritoryWestRatio";
+[] call FLO_fnc_publishMoneyState;
 diag_log format [
     "[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3 territoryRatio=%4",
     FLO_ObjectiveSizeThreshold,

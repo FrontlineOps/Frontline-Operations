@@ -49,6 +49,13 @@ private _sequence = [
     ["ARTY", _shotText, 4]
 ];
 
-[_requestSide, _missionId, _sequence] remoteExecCall ["FLO_fnc_gtnQueueArtilleryRadioMission", 0, false];
+private _targetOwners = [_requestSide] call FLO_fnc_gtnGetSideClientOwners;
+if (count _targetOwners == 0) exitWith { false };
+
+[_requestSide, _missionId, _sequence] remoteExecCall ["FLO_fnc_gtnQueueArtilleryRadioMission", _targetOwners, false];
+
+["artilleryRadioMissions", 1] call FLO_fnc_netDebugRecord;
+["artilleryRadioLines", count _sequence] call FLO_fnc_netDebugRecord;
+["artilleryRadioTargets", count _targetOwners] call FLO_fnc_netDebugRecord;
 
 true

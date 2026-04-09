@@ -7,7 +7,7 @@ if ((typeOf player == _officerType) || (typeOf player == "B_G_officer_F")) then 
     if (_Money >= _Cost) then {
         private _NewMoney = _Money - _Cost;
         FLO_MoneyHandle set ["value", _NewMoney];
-        publicVariable "FLO_MoneyHandle";
+        [_NewMoney] call FLO_fnc_publishMoneyState;
 
         private _NewScore = 15;
         FLO_ReputationHandle set ["value", _NewScore];

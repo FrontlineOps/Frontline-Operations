@@ -7,7 +7,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
         // Deduct cost
         private _newMoney = _money - Cost;
         FLO_MoneyHandle set ["value", _newMoney];
-        publicVariable "FLO_MoneyHandle";
+        [_newMoney] call FLO_fnc_publishMoneyState;
 
         // Create FOB container
         private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
@@ -27,8 +27,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             };
         };
         
-        // Add cancel action
-        [CreatedVEH, [
+        [CreatedVEH, "FOB_DEPLOYABLE", [[
             "<t color='#FF0000'>CANCEL</t>",
             {
                 params ["_target"];
@@ -36,10 +35,9 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 _target enableSimulation true;
                 deleteVehicle _target;
                 
-                // Refund cost
                 private _newMoney = (FLO_MoneyHandle get "value") + Cost;
                 FLO_MoneyHandle set ["value", _newMoney];
-                publicVariable "FLO_MoneyHandle";
+                [_newMoney] call FLO_fnc_publishMoneyState;
             },
             nil,
             3,
@@ -47,23 +45,16 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             true,
             "",
             "true"
-        ]] remoteExec ["addAction", 0, true];
-        
-        // Add place action
-        [CreatedVEH, [
+        ], [
             "<t color='#FF0000'>PLACE</t>",
             {
                 params ["_target"];
-                // Place the FOB container
                 detach _target;
                 _target enableSimulation true;
-                
-                // End placement mode
                 CursorTracker = false;
                 _target allowDamage true;
-                
-                // Add unpack action
-                [_target, [
+
+                [_target, "FOB_DEPLOYABLE", [[
                     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
                     "Scripts\PObjectives\FOBUNPACK.sqf",
                     nil,
@@ -76,7 +67,16 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                     false,
                     "",
                     ""
-                ]] remoteExec ["addAction", 0, true];
+                ], [
+                    "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>",
+                    { [player, true] call IDS_Logistics_fnc_initBuildCamera; },
+                    nil,
+                    1.4,
+                    false,
+                    true,
+                    "",
+                    "!IDS_Logistics_isHolding"
+                ]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, _target];
             },
             nil,
             3,
@@ -84,11 +84,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             true,
             "",
             "true"
-        ]] remoteExec ["addAction", 0, true];
-
-        CreatedVEH setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-
-        [CreatedVEH, [
+        ], [
             "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>", 
             { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
             nil, 
@@ -97,7 +93,9 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             true, 
             "", 
             "!IDS_Logistics_isHolding"
-        ]] remoteExec ["addAction", 0, true];
+        ]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, CreatedVEH];
+
+        CreatedVEH setVariable ["IDS_Logistics_isPlacedEntity", true, true];
     } else {
         hint "Not enough Resources";
     };

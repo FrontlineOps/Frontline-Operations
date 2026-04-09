@@ -140,6 +140,7 @@ INF_REQUEST = {
     
     // Deduct the cost
     FLO_MoneyHandle set ["value", _Money - _Cost];
+    [(_Money - _Cost)] call FLO_fnc_publishMoneyState;
     
     // Find spawn position
     private _FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
@@ -246,6 +247,7 @@ VEH_REQUEST = {
     
     // Deduct cost
     FLO_MoneyHandle set ["value", _Money - CostV];
+    [(_Money - CostV)] call FLO_fnc_publishMoneyState;
     
     // Create vehicle
     private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 100];
@@ -287,6 +289,7 @@ VEH_REQUEST = {
             // Refund cost
             private _Money = FLO_MoneyHandle get "value";
             FLO_MoneyHandle set ["value", _Money + CostV];
+            [(_Money + CostV)] call FLO_fnc_publishMoneyState;
             
             deleteVehicle CreatedVEHREF;
             

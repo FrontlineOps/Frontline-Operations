@@ -337,7 +337,7 @@ INF_REQUEST = {
     };
     
     FLO_MoneyHandle set ["value", _Money - _Cost];
-    publicVariable "FLO_MoneyHandle";
+    [(_Money - _Cost)] call FLO_fnc_publishMoneyState;
 
     private _FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
     private _pos = _FOBB getRelPos [13, 270];
@@ -420,7 +420,7 @@ VEH_REQUEST = {
     };
     
     FLO_MoneyHandle set ["value", _Money - CostV];
-    publicVariable "FLO_MoneyHandle";
+    [(_Money - CostV)] call FLO_fnc_publishMoneyState;
 
     private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 100];
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
@@ -461,7 +461,7 @@ VEH_REQUEST = {
             // Refund cost
             private _Money = FLO_MoneyHandle get "value";
             FLO_MoneyHandle set ["value", _Money + CostV];
-            publicVariable "FLO_MoneyHandle";
+            [(_Money + CostV)] call FLO_fnc_publishMoneyState;
 
             deleteVehicle CreatedVEHREF;
             

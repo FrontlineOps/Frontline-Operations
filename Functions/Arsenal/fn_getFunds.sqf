@@ -12,10 +12,4 @@
 
 if (!isServer) exitWith {0};
 
-private _Money = 0;
-if (!isNil "FLO_MoneyHandle") then {
-    _Money = FLO_MoneyHandle get "value";
-    if (isNil "_Money") then { _Money = 0; };
-};
-
-_Money
+FLO_MoneyHandle get "value"

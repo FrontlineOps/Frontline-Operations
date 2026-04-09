@@ -134,7 +134,7 @@ if (_moneyValue < _intelCost) exitWith {
 };
 
 FLO_MoneyHandle set ["value", _moneyValue - _intelCost];
-publicVariable "FLO_MoneyHandle";
+[(_moneyValue - _intelCost)] call FLO_fnc_publishMoneyState;
 
 if (count (keys _groupData) > 0) then {
     _groupData set ["civilianLastIntelAt", diag_tickTime];

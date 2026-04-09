@@ -42,6 +42,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         } forEach (keys FLO_Objectives);
 
         publicVariable "FLO_Objectives";
+        FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
+        publicVariable "FLO_ObjectiveRuntimeState";
 
         diag_log format ["[FLO_INIT_P3] Restored %1 objectives from save", count FLO_Objectives];
     };
@@ -65,6 +67,8 @@ if (!isNil "FLO_Objectives" && {count FLO_Objectives > 0}) exitWith {
 // Initialize objectives as HashMap
 FLO_Objectives = createHashMap;
 publicVariable "FLO_Objectives";
+FLO_ObjectiveRuntimeState = createHashMap;
+publicVariable "FLO_ObjectiveRuntimeState";
 
 // Use objective indexer
 diag_log "[FLO_INIT_P3] Calling FLO_fnc_objectiveIndexer...";
@@ -92,6 +96,8 @@ if (count keys FLO_Objectives == 0) exitWith {
     false
 };
 diag_log format ["[FLO_INIT_P3] Objective indexer created %1 objectives", count keys FLO_Objectives];
+FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
+publicVariable "FLO_ObjectiveRuntimeState";
 
 // Seed initial EAST/WEST ownership for new runs.
 diag_log "[FLO_INIT_P3] Seeding initial objective ownership...";

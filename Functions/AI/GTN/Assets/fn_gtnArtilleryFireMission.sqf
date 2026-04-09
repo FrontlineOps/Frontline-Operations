@@ -39,7 +39,11 @@ if (count (keys _firePlan) > 0) then {
 if (count _vehiclePlans == 0) exitWith {
     ["GTN Artillery", 1, format["Artillery %1 - no valid vehicles found in group of %2 units", _gid, count units _realGroup]] call FLO_fnc_log;
     [_gdata] call FLO_fnc_virtualizationClearMissionLock;
+    private _missionRecord = (_mgr get "missions") get _gid;
     (_mgr get "missions") deleteAt _gid;
+    if (!isNil "_missionRecord") then {
+        ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "COMPLETED"]] call CBA_fnc_localEvent;
+    };
 };
 
 ["GTN Artillery", 3, format["Artillery %1 - found %2 valid guns", _gid, count _vehiclePlans]] call FLO_fnc_log;

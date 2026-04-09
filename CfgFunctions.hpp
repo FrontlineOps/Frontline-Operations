@@ -13,8 +13,10 @@ class FLO {
     class Init {
         file = "Functions\Init";
 
+        class applyMissionConfigLocally {};
         class detectSavedGame       {};
         class initFactionSplitMixedInfantryPool {};
+        class initMissionConfigEvents {};
         class initPhaseManager      {};
         class initPhase1_MissionConfig {};
         class initPhase2_Factions   {};
@@ -60,6 +62,8 @@ class FLO {
         class gtnApplyGroupEngagement {};
         class gtnBuildEnemyEngagementPicture {};
         class gtnBuildGroupEngagementContext {};
+        class gtnGetSideClientOwners {};
+        class gtnMarkCommanderStateDirty {};
         class gtnGetCachedReserveBands {};
         class gtnGetSideCommanderHandle {};
         class gtnBuildObservedRealEnemyTarget {};
@@ -83,6 +87,7 @@ class FLO {
 
         class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
+        class gtnBuildCommanderIntelPublishSignature {};
         class gtnBuildFriendlyCommanderGroupMarkers {};
         class gtnBuildFriendlySupplyNodeMarkers {};
         class gtnBuildFriendlySupportMarkers {};
@@ -101,8 +106,10 @@ class FLO {
 
         class gtnCanSideObserveArea {};
         class gtnCanSideDetectAirThreat {};
+        class gtnFlushAlertQueue {};
         class gtnPublishAlert {};
         class gtnSyncAlertMarkers {};
+        class gtnSyncAlertBatch {};
         class gtnAlertIncomingArtillery {};
         class gtnAlertIncomingAircraft {};
         class gtnAlertCivilianReport {};
@@ -255,13 +262,16 @@ class FLO {
     class ObjectiveUtilities {
         file = "Functions\Objective\Utilities";
 
+        class buildObjectiveRuntimeState {};
         class getRandomObjectivePos   {};
         class getNearestObjective     {};
+        class initObjectiveRuntimeStateEvents {};
         class getObjectiveNearPlayer  {};
         class getObjectivePosition    {};
         class isPositionInObjective   {};
         class createObjectiveMarker   {};
         class refreshRespawnMarkersByTerritory {};
+        class syncObjectiveRuntimeState {};
     };
 
     #include "Functions\Logistics\CfgFunctions.hpp"
@@ -270,14 +280,17 @@ class FLO {
         file = "Functions\Arsenal";
 
         class harvestFactionGear        {};
+        class initMoneyStateEvents      {};
         class isHeavyWeapon             {};
         class restrictedArsenal         {};
+        class publishMoneyState         {};
         class addCratePurchaseActions   {};
         class cancelCrate               {};
         class checkCratePurchase        {};
         class finalizeCrate             {};
         class getFunds                  {};
         class placeCrate                {};
+        class syncMoneyState            {};
         class purchaseCrate             {};
         class updateFunds               {};
     };
@@ -285,6 +298,9 @@ class FLO {
     class UtilitiesDebug {
         file = "Functions\Utilities\Debug";
         class log                       {};
+        class netDebugDump             {};
+        class netDebugRecord           {};
+        class netDebugSnapshot         {};
     };
 
     class UtilitiesSystem {

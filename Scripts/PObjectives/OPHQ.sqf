@@ -5,7 +5,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
     if (_money >= Cost) then {
         private _newMoney = _money - Cost;
         FLO_MoneyHandle set ["value", _newMoney];
-        publicVariable "FLO_MoneyHandle";
+        [_newMoney] call FLO_fnc_publishMoneyState;
 
         private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 1000];
         private _createdVEH = createVehicle ["B_Slingload_01_Repair_F", _pos, [], 0, "NONE"];
@@ -25,7 +25,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             }
         };
 
-        private _ind01 = [CreatedVEH, [
+        [CreatedVEH, "OP_DEPLOYABLE", [[
             "<t color='#FF0000'>CANCEL</t>",
             {
                 params ["_target"];
@@ -35,7 +35,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 
                 private _newMoney = (FLO_MoneyHandle get "value") + Cost;
                 FLO_MoneyHandle set ["value", _newMoney];
-                publicVariable "FLO_MoneyHandle";
+                [_newMoney] call FLO_fnc_publishMoneyState;
             },
             nil,
             3,
@@ -43,9 +43,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             true,
             "",
             "true"
-        ]] remoteExec ["addAction", 0, true];
-
-        private _ind02 = [CreatedVEH, [
+        ], [
             "<t color='#FF0000'>PLACE</t>",
             {
                 params ["_target"];
@@ -54,7 +52,7 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                 CursorTracker = false;
                 _target allowDamage true;
                 
-                [_target, [
+                [_target, "OP_DEPLOYABLE", [[
                     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
                     "Scripts\PObjectives\OPUNPACK.sqf",
                     nil,
@@ -67,7 +65,16 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
                     false,
                     "",
                     ""
-                ]] remoteExec ["addAction", 0, true];
+                ], [
+                    "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>",
+                    { [player, true] call IDS_Logistics_fnc_initBuildCamera; },
+                    nil,
+                    1.4,
+                    false,
+                    true,
+                    "",
+                    "!IDS_Logistics_isHolding"
+                ]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, _target];
             },
             nil,
             3,
@@ -75,24 +82,18 @@ if ((typeOf player == F_Officer) || (typeOf player == "B_G_officer_F")) then {
             true,
             "",
             "true"
-        ]] remoteExec ["addAction", 0, true];
-
-        // Store action IDs globally for the completion function to access
-        Ind01 = _ind01;
-        Ind02 = _ind02;
-
-        CreatedVEH setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-
-        [CreatedVEH, [
-            "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>", 
-            { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
-            nil, 
-            1.4, 
-            false, 
+        ], [
+            "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>",
+            { [player, true] call IDS_Logistics_fnc_initBuildCamera; },
+            nil,
+            1.4,
+            false,
             true, 
             "", 
             "!IDS_Logistics_isHolding"
-        ]] remoteExec ["addAction", 0, true];
+        ]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, CreatedVEH];
+
+        CreatedVEH setVariable ["IDS_Logistics_isPlacedEntity", true, true];
 
     } else {
         hint "Not enough Resources";

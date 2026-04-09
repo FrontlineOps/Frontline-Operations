@@ -4,8 +4,9 @@
  * Description:
  *   Continuously checks unit presence at objectives and flips ownership
  *   when one side holds dominance for a period of time.
- *   Updates FLO_Objectives which is publicVariable'd for client UI sync.
- *   Fires CBA target events to clients when they enter/leave objectives.
+ *   Updates authoritative objective runtime state on the server.
+ *   Fires CBA owner events for capture UI and publishes a lightweight runtime
+ *   state map to clients instead of rebroadcasting full FLO_Objectives.
  *
  * Arguments: None
  *
@@ -29,10 +30,13 @@ private _captureTime = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
 // 0.5s is reasonable for capture logic; clients poll faster for UI
 private _updateInterval = 0.5;
 private _targetInactiveRefresh = 2;
+private _runtimeSyncInterval = 2;
 
 // Track which objective each player is in (for CBA event firing)
 FLO_PlayerObjectiveStates = createHashMap;
 private _objectiveLastUpdateTimes = createHashMap;
+private _lastRuntimeSyncAt = diag_tickTime - _runtimeSyncInterval;
+private _dirtyRuntimeObjectiveIds = createHashMap;
 
 // Initialize inactive update index
 private _inactiveMonitorIndex = 0;
@@ -53,7 +57,6 @@ while {true} do {
         };
     };
 
-    private _dataChanged = false;
     private _activeObjectives = [];
     private _liveObjectives = [];
     private _allPlayers = allPlayers;
@@ -162,7 +165,12 @@ while {true} do {
         private _pos = _objRecord get "position";
         private _radius = _objRecord get "radius";
         private _owner = _objRecord get "owner";
-        private _progress = _objRecord get "captureProgress";
+        private _previousProgress = _objRecord get "captureProgress";
+        private _progress = _previousProgress;
+        private _previousBluforCount = _objRecord get "bluforCount";
+        private _previousOpforCount = _objRecord get "opforCount";
+        private _previousContested = _objRecord get "contested";
+        private _previousUnderAttack = _objRecord get "underAttack";
         private _bluforCount = 0;
         private _opforCount = 0;
         private _useLiveCounting = _id in _liveObjectives;
@@ -272,15 +280,41 @@ while {true} do {
         _objRecord set ["contested", _contested];
         _objRecord set ["underAttack", _underAttack];
         _objRecord set ["captureTime", _captureTime]; // Ensure fresh config
-        _dataChanged = true;
+
+        if (
+            (abs (_previousProgress - _progress)) > 0.01
+            || {_previousBluforCount != _bluforCount}
+            || {_previousOpforCount != _opforCount}
+            || {_previousContested != _contested}
+            || {_previousUnderAttack != _underAttack}
+        ) then {
+            _dirtyRuntimeObjectiveIds set [_id, true];
+        };
     };
 
     // === EXECUTE UPDATES ===
     { [_x, _currentTime] call _fnc_updateObjective; } forEach _objectivesToUpdate;
 
-    // === SYNC & UI ===
-    if (_dataChanged) then {
-        publicVariable "FLO_Objectives";
+    // === LIGHTWEIGHT CLIENT RUNTIME SYNC ===
+    if ((count (keys _dirtyRuntimeObjectiveIds)) > 0 && {(_currentTime - _lastRuntimeSyncAt) >= _runtimeSyncInterval}) then {
+        {
+            private _objectiveId = _x;
+            private _objective = FLO_Objectives get _objectiveId;
+
+            FLO_ObjectiveRuntimeState set [_objectiveId, createHashMapFromArray [
+                ["captureProgress", _objective get "captureProgress"],
+                ["bluforCount", _objective get "bluforCount"],
+                ["opforCount", _objective get "opforCount"],
+                ["contested", _objective get "contested"],
+                ["underAttack", _objective get "underAttack"]
+            ]];
+        } forEach (keys _dirtyRuntimeObjectiveIds);
+
+        publicVariable "FLO_ObjectiveRuntimeState";
+        _lastRuntimeSyncAt = _currentTime;
+        ["objectiveRuntimeSyncs", 1] call FLO_fnc_netDebugRecord;
+        ["objectiveRuntimeObjectives", count (keys _dirtyRuntimeObjectiveIds)] call FLO_fnc_netDebugRecord;
+        _dirtyRuntimeObjectiveIds = createHashMap;
     };
 
     // UI Event Logic (Optimized to only check Active Objectives close to players)

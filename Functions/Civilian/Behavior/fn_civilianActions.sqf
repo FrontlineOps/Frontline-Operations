@@ -38,8 +38,7 @@ params ["_civUnits"];
     }];
     _unit setVariable ["FLO_CivilianKilledEhId", _killedEhId];
 
-    private _jipId = format ["FLO_CIV_ACT_%1", netId _unit];
-    [_unit, _isProtester, _isDetained] remoteExec ["FLO_fnc_civilianConfigureActionsLocal", 0, _jipId];
+    [_unit, _isProtester, _isDetained] remoteExec ["FLO_fnc_civilianConfigureActionsLocal", 0, _unit];
 
     if (!_isProtester && {!_isDetained} && {!isNil "FLO_CivilianManager"}) then {
         if (FLO_CivilianManager call ["shouldFlee", [getPosATL _unit]]) then {

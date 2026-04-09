@@ -140,7 +140,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 };
 
                 if (!isNil "FLO_GTNArtilleryManager") then {
+                    private _missionRecord = (FLO_GTNArtilleryManager get "missions") get _gid;
                     (FLO_GTNArtilleryManager get "missions") deleteAt _gid;
+                    if (!isNil "_missionRecord") then {
+                        ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "COMPLETED"]] call CBA_fnc_localEvent;
+                    };
                 };
             };
         }],
@@ -408,6 +412,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
                 private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, createHashMap, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
                 (_self get "missions") set [_gid, _missionRecord];
+                ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "STARTED"]] call CBA_fnc_localEvent;
                 if (_cooldownKey != "") then {
                     (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
                 };
@@ -467,6 +472,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
             // Register mission
             private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, _firePlan, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
             (_self get "missions") set [_gid, _missionRecord];
+            ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "STARTED"]] call CBA_fnc_localEvent;
             if (_cooldownKey != "") then {
                 (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
             };
@@ -492,7 +498,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
             private _gdata = _groups get _gid;
 
             if (isNil "_gdata") exitWith {
+                private _missionRecord = (_self get "missions") get _gid;
                 (_self get "missions") deleteAt _gid;
+                if (!isNil "_missionRecord") then {
+                    ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "COMPLETED"]] call CBA_fnc_localEvent;
+                };
             };
 
             private _realGroup = _gdata get "realGroup";
@@ -531,7 +541,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 };
 
                 if (!isNil "FLO_GTNArtilleryManager") then {
+                    private _missionRecord = (FLO_GTNArtilleryManager get "missions") get _gid;
                     (FLO_GTNArtilleryManager get "missions") deleteAt _gid;
+                    if (!isNil "_missionRecord") then {
+                        ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "COMPLETED"]] call CBA_fnc_localEvent;
+                    };
                 };
 
                 ["GTN Artillery", 3, format["Artillery %1 mission fully complete, revirtualized", _gid]] call FLO_fnc_log;

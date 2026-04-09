@@ -80,6 +80,7 @@ if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {
 
 // Broadcast change
 publicVariable "FLO_Objectives";
+["FLO_Objective_Flipped", [_objectiveId, _previousOwner, _newOwner]] call CBA_fnc_localEvent;
 
 // Log the flip
 ["OBJECTIVE", 3, format ["Objective %1 flipped from %2 to %3", _objectiveId, _previousOwner, _newOwner]] call FLO_fnc_log;
