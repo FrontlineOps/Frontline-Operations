@@ -263,6 +263,7 @@ class VirtualizationDebug {
     class virtualizationDebugRunBatch      {};
     class virtualizationProbe             {};
     class virtualizationProbeOwnership    {};
+    class virtualizationWarnSuspiciousActivation {};
     class virtualizationDebugUpdateMarker {};
 };
 

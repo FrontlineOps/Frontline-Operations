@@ -30,6 +30,7 @@ if (_attachedTo != "") then {
 
 // Extract data from group
 private _position = _groupData get "position";
+private _requestedPosition = +_position;
 private _groupType = _groupData get "groupType";
 private _side = _groupData get "side";
 private _unitCount = _groupData get "unitCount";
@@ -101,6 +102,8 @@ _realGroup setVariable ["FLO_virtualGroupId", _groupId];
 if (_isTransport) then {
     [_groupId, _groupData, _realGroup, _position, _spawnPools] call FLO_fnc_virtualizationLoadTransportPassengers;
 };
+
+[_groupId, _groupData, _requestedPosition, _position, _realGroup] call FLO_fnc_virtualizationWarnSuspiciousActivation;
 
 [_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;
 
