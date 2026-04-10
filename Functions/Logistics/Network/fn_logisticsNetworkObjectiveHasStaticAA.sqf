@@ -23,5 +23,14 @@ private _groups = FLO_virtualGroups get "_groups";
     ((_gData get "groupType") isEqualTo "static_aa") &&
     {(_gData get "side") isEqualTo _managedSide} &&
     {(_gData get "unitCount") > 0} &&
-    {(_gData get "homeObjective") isEqualTo _objectiveId}
+    {
+        private _replacementState = _gData get "replacementState";
+        if (_replacementState isEqualTo "AA_DEPLOY") exitWith {
+            ((_gData get "reinforcementRequestedObjective") isEqualTo _objectiveId) ||
+            {(_gData get "homeObjective") isEqualTo _objectiveId}
+        };
+
+        ((_gData get "homeObjective") isEqualTo _objectiveId) &&
+        {(_gData get "isActive")}
+    }
 }) != -1

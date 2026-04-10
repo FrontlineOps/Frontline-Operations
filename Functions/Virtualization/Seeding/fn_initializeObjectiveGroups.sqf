@@ -53,10 +53,10 @@ private _plannedObjectives = keys _spawnPlan;
 
         if ((_groupData get "groupType") == "static_aa") then {
             _groupData set ["alwaysActive", true];
-            if ([_groupId, _groupData] call FLO_fnc_virtualizationTryActivateGroup) then {
+            if ([_groupId, _groupData] call FLO_fnc_virtualizationForceActivateGroup) then {
                 ["VIRTUALIZATION", 3, format["Static AA %1 activated immediately (always-on)", _groupId]] call FLO_fnc_log;
             } else {
-                ["VIRTUALIZATION", 3, format["Static AA %1 flagged always-on but deferred by activation cap", _groupId]] call FLO_fnc_log;
+                ["VIRTUALIZATION", 2, format["Static AA %1 failed forced always-on activation during seeding", _groupId]] call FLO_fnc_log;
             };
         };
     } forEach _objectiveGroups;

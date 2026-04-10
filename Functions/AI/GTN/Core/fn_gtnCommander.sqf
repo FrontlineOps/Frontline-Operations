@@ -2384,19 +2384,24 @@ private _gtnCommander = createHashMapObject [[
             if (count _targetPos < 2) then { continue };
             if ((_gData get "position") distance2D _targetPos > 120) then { continue };
 
-            [_gData, "AA_HOLD"] call FLO_fnc_virtualizationClearReplacementTransit;
+            if !(_gData get "isActive") then {
+                if !([_groupId, _gData] call FLO_fnc_virtualizationForceActivateGroup) then {
+                    ["GTN", 2, format [
+                        "Static AA %1 reached deployment objective %2 but forced activation failed",
+                        _groupId,
+                        [_gData] call FLO_fnc_virtualizationGetAATargetObjective
+                    ]] call FLO_fnc_log;
+                    continue;
+                };
+            };
+
             _gData set ["forceVirtual", false];
+            [_gData, "AA_HOLD"] call FLO_fnc_virtualizationClearReplacementTransit;
             _gData set ["waypoints", []];
             _gData set ["currentWaypointIndex", 0];
             _gData set ["noWaypoints", true];
             [_gData, "DEPLOYED", _targetPos, [_gData] call FLO_fnc_virtualizationGetAATargetObjective, _gData get "isStrategicAA"] call FLO_fnc_virtualizationSetAADeployState;
             _gData set ["alwaysActive", true];
-
-            if !(_gData get "isActive") then {
-                if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
-                    continue;
-                };
-            };
 
             private _realGroup = _gData get "realGroup";
             if (!isNull _realGroup) then {
