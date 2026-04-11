@@ -173,7 +173,7 @@ private _fnc_addActions = {
         "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
         {
             if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
-                [player, player, true] call ace_arsenal_fnc_openBox;
+                [player, player, false] call ace_arsenal_fnc_openBox;
             } else {
                 ["Open", true] spawn BIS_fnc_arsenal;
             };
