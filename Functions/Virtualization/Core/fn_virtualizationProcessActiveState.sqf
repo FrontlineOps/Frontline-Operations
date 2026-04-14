@@ -47,12 +47,12 @@ private _eliminated = if (_tracksAssets) then {
     ({alive _x} count units _realGroup) == 0
 };
 
-if (_eliminated) then {
+if (_eliminated) exitWith {
     ["VIRTUALIZATION", 3, format["Group %1 eliminated - deactivating for cleanup", _groupId]] call FLO_fnc_log;
     [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
     _virtStats set ["eliminatedGroupsTotal", (_virtStats get "eliminatedGroupsTotal") + 1];
     _virtStats set ["eliminatedGroupsThisBatch", (_virtStats get "eliminatedGroupsThisBatch") + 1];
-    true exitWith {};
+    true
 };
 
 if ([
