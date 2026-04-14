@@ -14,6 +14,10 @@
 
 params ["_net"];
 
+if ((_net get "_supplyChainDirty") || {_net get "_objectiveSideIndexDirty"}) then {
+    [_net] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+};
+
 private _activeNodes = _net get "_activeSupplyNodes";
 if ((count (keys _activeNodes)) == 0) exitWith { [] };
 

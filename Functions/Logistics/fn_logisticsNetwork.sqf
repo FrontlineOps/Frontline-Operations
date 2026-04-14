@@ -62,6 +62,7 @@ private _logisticsClass = [
     ["SUPPLY_NODE_PROMOTION_DELIVERY_COUNT", 4],
     ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
     ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
+    ["SUPPLY_CHAIN_SOFT_REFRESH_INTERVAL", 60],
     ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
     ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
     ["OBJECTIVE_CAPTURE_FORCE_GROWTH", 0],
@@ -86,6 +87,9 @@ private _logisticsClass = [
     ["_supplyRouteInfo", createHashMap],
     ["_activeSupplyNodes", createHashMap],
     ["_lastSupplyNodeSignature", ""],
+    ["_supplyChainDirty", true],
+    ["_objectiveSideIndexDirty", true],
+    ["_lastSupplyChainRefreshAt", -1],
     ["_managedObjectiveIds", []],
     ["_enemyObjectiveIds", []],
     ["_targetPicture", createHashMap],
@@ -150,6 +154,14 @@ private _logisticsClass = [
 
     ["_refreshSupplyChain", {
         [_self] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+    }],
+
+    ["_ensureSupplyChainFresh", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+    }],
+
+    ["_markSupplyChainDirty", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
     }],
 
     ["_refreshObjectiveSideIndex", {

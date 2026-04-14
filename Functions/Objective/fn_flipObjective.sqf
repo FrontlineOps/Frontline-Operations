@@ -74,6 +74,14 @@ if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {
     };
 };
 
+if (!isNil "FLO_Logistics_Networks") then {
+    {
+        private _sideKey = _x;
+        if !(_sideKey in FLO_Logistics_Networks) then { continue };
+        [FLO_Logistics_Networks get _sideKey] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
+    } forEach ["EAST", "WEST"];
+};
+
 // Update marker using centralized function
 [_objectiveId, _obj] call FLO_fnc_createObjectiveMarker;
 [] call FLO_fnc_refreshRespawnMarkersByTerritory;
