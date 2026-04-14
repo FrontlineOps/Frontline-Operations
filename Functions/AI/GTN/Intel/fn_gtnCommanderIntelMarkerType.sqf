@@ -26,6 +26,10 @@ switch (_groupType) do {
     case "mobile_aa";
     case "static_aa": { format ["%1_antiair", _prefix] };
     case "artillery": { format ["%1_art", _prefix] };
+    case "helicopter": { format ["%1_air", _prefix] };
+    case "jet";
+    case "air": { format ["%1_plane", _prefix] };
+    case "radar": { format ["%1_installation", _prefix] };
     case "infantry": { format ["%1_inf", _prefix] };
     default { format ["%1_unknown", _prefix] };
 }
