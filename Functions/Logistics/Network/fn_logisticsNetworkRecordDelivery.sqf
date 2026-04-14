@@ -37,7 +37,8 @@ private _nextDeliveryCount = _deliveryCount + 1;
 _deliveryCounts set [_deliveryObjectiveId, _nextDeliveryCount];
 _net set ["_supplyNodeDeliveries", _deliveryCounts];
 
-private _activeNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+[_net, false] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
+private _activeNodes = [_net, true] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
 private _isActive = _deliveryObjectiveId in _activeNodes;
 private _promotionSuffix = "";
 

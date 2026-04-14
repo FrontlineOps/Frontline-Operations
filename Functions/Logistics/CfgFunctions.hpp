@@ -33,6 +33,7 @@ class LogisticsNetwork {
     class logisticsNetworkCanDispatchToObjective {};
     class logisticsNetworkCheckAndReplace {};
     class logisticsNetworkDescribeObjectiveSupplyRole {};
+    class logisticsNetworkEnsureSupplyChainFresh {};
     class logisticsNetworkFindSupplyAdvanceObjectives {};
     class logisticsNetworkGetCachedSpawnPosition {};
     class logisticsNetworkFindSupplySourceObjective {};
@@ -56,6 +57,7 @@ class LogisticsNetwork {
     class logisticsNetworkPickSpawnSourceObjective {};
     class logisticsNetworkProcessPendingCaptureGrowth {};
     class logisticsNetworkReplenishTransportReserves {};
+    class logisticsNetworkMarkSupplyChainDirty {};
     class logisticsNetworkRecordDelivery {};
     class logisticsNetworkRecordReplacement {};
     class logisticsNetworkRecordTargetDispatch {};

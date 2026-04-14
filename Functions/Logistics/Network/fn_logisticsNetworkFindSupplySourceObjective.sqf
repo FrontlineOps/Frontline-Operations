@@ -28,8 +28,12 @@ if ((_targetObjective get "owner") isNotEqualTo _managedSide) exitWith { "" };
 
 private _routeInfo = _net get "_supplyRouteInfo";
 private _activeNodes = _net get "_activeSupplyNodes";
-if ((count (keys _routeInfo)) == 0 && {(count (keys _activeNodes)) == 0}) then {
-    _activeNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+if (
+    (_net get "_supplyChainDirty")
+    || {_net get "_objectiveSideIndexDirty"}
+    || {(count (keys _routeInfo)) == 0 && {(count (keys _activeNodes)) == 0}}
+) then {
+    _activeNodes = [_net] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
     _routeInfo = _net get "_supplyRouteInfo";
 };
 if ((count (keys _activeNodes)) == 0) exitWith { "" };

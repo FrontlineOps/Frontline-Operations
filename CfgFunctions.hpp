@@ -131,9 +131,11 @@ class FLO {
         class gtnBuildSupportCooldownKey {};
         class gtnOpenPlayerSupportRequestMap {};
         class gtnProcessPlayerSupportRequests {};
+        class gtnRegisterPlayerSupportEvents {};
         class gtnRefreshPlayerSupportActions {};
         class gtnResolveSupportObjective {};
         class gtnSubmitPlayerSupportRequest {};
+        class gtnSubmitPlayerSupportRequestServer {};
         class gtnValidatePlayerSupportRequest {};
     };
 
