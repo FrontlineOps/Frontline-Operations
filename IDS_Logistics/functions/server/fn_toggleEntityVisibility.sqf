@@ -29,11 +29,13 @@ private _entity = objectFromNetId _netId;
 if (isNull _entity) exitWith { diag_log format ["IDS Logistics Error: Entity with netId %1 not found", _netId]; };
 
 if (_hide) then {
-    // Just hide it, don't delete (keeps all the entity properties intact)
-    [_entity, true] remoteExecCall ["hideObject", 0, true];
-    [_entity, false] remoteExecCall ["enableSimulationGlobal", 0, true];
+    _entity hideObjectGlobal true;
+    _entity enableSimulationGlobal false;
 } else {
-    // Restore visibility
-    [_entity, false] remoteExecCall ["hideObject", 0, true];
-    [_entity, true] remoteExecCall ["enableSimulationGlobal", 0, true];
+    _entity hideObjectGlobal false;
+    _entity enableSimulationGlobal true;
+};
+
+if (!isNil "FLO_fnc_netDebugRecord") then {
+    ["idsVisibilityToggles", 1] call FLO_fnc_netDebugRecord;
 };

@@ -1,5 +1,4 @@
 mission.sqm
 .vscode
-node_modules
-package.json
-package-lock.json
+AGENTS.md
+docs

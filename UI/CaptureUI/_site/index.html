@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLO Capture UI</title>
+    <script>
+        Promise.all([
+            A3API.RequestFile("UI\\CaptureUI\\_site\\styles.css"),
+            A3API.RequestFile("UI\\CaptureUI\\_site\\script.js")
+        ]).then(([css, js]) => {
+            const style = document.createElement('style');
+            style.textContent = css;
+            document.head.appendChild(style);
+
+            const script = document.createElement('script');
+            script.text = js;
+            document.head.appendChild(script);
+        });
+    </script>
+</head>
+<body>
+    <div id="capture-container" class="capture-container hidden">
+        <div class="capture-bar-wrapper">
+            <div class="capture-bar">
+                <div id="red-bar" class="bar red-bar"></div>
+                <div id="blue-bar" class="bar blue-bar"></div>
+                <div id="separator" class="separator"></div>
+            </div>
+            <div class="bar-glow" id="bar-glow"></div>
+        </div>
+        <div id="objective-label" class="objective-label"></div>
+        <div id="status-text" class="status-text"></div>
+    </div>
+</body>
+</html>
+

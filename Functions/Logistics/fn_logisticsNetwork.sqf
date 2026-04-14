@@ -2,144 +2,278 @@
  * Function: FLO_fnc_logisticsNetwork
  * Author: Frontline Operations Development Group
  * Description:
- * Simple logistics system that replaces destroyed virtual groups.
- * Monitors virtual groups and creates replacements when needed.
-*/
+ *   Initializes side-scoped logistics network objects for EAST and WEST.
+ *   The network maintains replacement queues, dispatch cadence, and
+ *   reinforcement state while delegating operational logic to registered
+ *   helper functions under Functions\Logistics\Network.
+ *
+ * Arguments:
+ *   None
+ *
+ * Return Value:
+ *   None
+ */
 
 if (!isServer) exitWith {};
 
-// Initialize the Logistics Network object if it doesn't exist
-if (isNil "FLO_Logistics_Network") then {
-    private _logisticsNetworkClass = [
-        ["#type", "LogisticsNetwork"],
-        
-        ["lastUpdate", time],
-        ["initialComposition", createHashMap],
-        
-        ["#create", {
-            _self set ["lastUpdate", time];
-            
-            // Wait for virtualization system to initialize
-            waitUntil { !isNil "FLO_virtualGroups" && {!isNil "InitializationOG"} && {InitializationOG}};
-            
-            // Store initial group composition
-            private _allGroups = FLO_virtualGroups get "_groups";
-            private _initialComposition = createHashMap;
-            
-            {
-                private _groupType = _y get "groupType";
-                _initialComposition set [_groupType, (_initialComposition getOrDefault [_groupType, 0]) + 1];
-            } forEach _allGroups;
-            
-            _self set ["initialComposition", _initialComposition];
-            
-            ["LOGISTICS", 3, format["Network initialized with composition: %1", _initialComposition]] call FLO_fnc_log;
-        
-            // Start the update loop
-            [] spawn {
-                while {true} do {
-                    FLO_Logistics_Network call ["checkAndReplaceGroups", []];
-                    sleep 300; // Check every 5 minutes
-                };
-            };
-        }],
-        
-        ["checkAndReplaceGroups", {
-            // Get all groups
-            private _allGroups = FLO_virtualGroups get "_groups";
-            private _destroyedGroups = [];
-            private _currentComposition = createHashMap;
-            
-            // Count current groups by type
-            {
-                private _groupType = _y get "groupType";
-                _currentComposition set [_groupType, (_currentComposition getOrDefault [_groupType, 0]) + 1];
-            } forEach _allGroups;
-            
-            // Compare with initial composition and find missing types
-            private _initialComposition = _self get "initialComposition";
-            {
-                private _groupType = _x;
-                private _currentCount = _currentComposition getOrDefault [_groupType, 0];
-                private _targetCount = _initialComposition getOrDefault [_groupType, 0];
-                
-                // If we have fewer groups of this type than initial, add them to destroyed list
-                for "_i" from _currentCount to (_targetCount - 1) do {
-                    _destroyedGroups pushBack ["", _groupType];
-                };
-                
-            } forEach (keys _initialComposition);
-            
-            // Replace destroyed groups if we have resources
-            if (count _destroyedGroups > 0) then {
-                private _resources = FLO_OPFOR_Resources call ["getResources", []];
+if (!isNil "FLO_Logistics_Networks" && {FLO_Logistics_Networks isEqualType createHashMap} && {count (keys FLO_Logistics_Networks) > 0}) exitWith {};
 
-                // All OPFOR objectives
-                private _opforObjs = keys FLO_Objectives select {
-                    (FLO_Objectives get _x getOrDefault ["owner", east]) isEqualTo east
-                };
+FLO_Logistics_Networks = createHashMap;
 
-                if (count _opforObjs == 0) exitWith {};
+private _logisticsClass = [
+    ["#type", "LogisticsNetwork"],
 
-                // Determine spawn objective farthest from players
-                private _spawnObjective = [_opforObjs, [], {
-                    private _pos = (FLO_Objectives get _x get "position");
-                    private _dist = 0; { _dist = _dist + (_pos distance2D _x); } forEach allPlayers;
-                    -_dist
-                }, "ASCEND"] call BIS_fnc_sortBy select 0;
+    ["GROUP_COSTS", createHashMapFromArray [
+        ["infantry", 6],
+        ["motorized", 12],
+        ["mechanized", 24],
+        ["mobile_aa", 28],
+        ["armor", 32],
+        ["helicopter", 24],
+        ["air", 32],
+        ["jet", 36],
+        ["artillery", 42],
+        ["static_aa", 64]
+    ]],
 
-                // Objectives with nearby BLUFOR presence
-                private _reinforceObjs = _opforObjs select {
-                    private _pos = (FLO_Objectives get _x get "position");
-                    private _near = allPlayers select { side _x == west && _x distance2D _pos < 2000 };
-                    count _near > 0
-                };
+    ["CHECK_INTERVAL", 15],
+    ["BLUFOR_DETECT_RANGE", 2000],
+    ["DISPATCH_MIN_INTERVAL", 30],
+    ["DISPATCH_MAX_INTERVAL", 90],
+    ["DISPATCH_BATCH_MIN", 12],
+    ["DISPATCH_BATCH_MAX", 64],
+    ["DISPATCH_TIME_BUDGET_MS", 200],
+    ["DISPATCH_BACKLOG_RETRY_INTERVAL", 15],
+    ["REINFORCEMENT_RECENT_TARGET_WINDOW", 300],
+    ["REINFORCEMENT_OBJECTIVE_SECURE_RATIO", 1.75],
+    ["REINFORCEMENT_OBJECTIVE_PRESSURE_PER_GROUP", 10],
+    ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MIN", 1],
+    ["REINFORCEMENT_OBJECTIVE_INBOUND_CAP_MAX", 4],
+    ["REINFORCEMENT_OBJECTIVE_BATCH_CAP_MAX", 2],
+    ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO", 0.65],
+    ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
+    ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
+    ["SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS", 14000],
+    ["SUPPLY_CHAIN_DEPTH_METERS", 1500],
+    ["SUPPLY_ADVANCE_OBJECTIVE_INBOUND_CAP", 2],
+    ["SUPPLY_ADVANCE_OBJECTIVE_BATCH_CAP", 1],
+    ["SUPPLY_ADVANCE_DEPTH_BAND_SIZE", 1],
+    ["SUPPLY_NODE_MIN_DELIVERIES", 2],
+    ["SUPPLY_NODE_PROMOTION_DELIVERY_COUNT", 4],
+    ["SUPPLY_NODE_MIN_ACTIVE_FRIENDLY_COUNT", 6],
+    ["SUPPLY_NODE_RESET_FRIENDLY_COUNT", 2],
+    ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
+    ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
+    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", 0],
+    ["OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS", 1800],
 
-                if (count _reinforceObjs == 0) exitWith {};
+    ["_initialComposition", nil],
+    ["_lastUpdate", 0],
+    ["_stats", nil],
+    ["_enabled", true],
+    ["_lastReinforcementTarget", ""],
+    ["_recentReinforcementDispatches", []],
+    ["_sideContext", sideUnknown],
+    ["_managedSide", east],
+    ["_managedSideKey", "EAST"],
+    ["_enemySide", west],
+    ["_reinforcementQueue", []],
+    ["_nextDispatchAt", 0],
+    ["_loopStarted", false],
+    ["_loopPfhId", -1],
+    ["_hqObjectiveId", ""],
+    ["_supplyNodeDeliveries", createHashMap],
+    ["_supplyRouteInfo", createHashMap],
+    ["_activeSupplyNodes", createHashMap],
+    ["_lastSupplyNodeSignature", ""],
+    ["_managedObjectiveIds", []],
+    ["_enemyObjectiveIds", []],
+    ["_targetPicture", createHashMap],
+    ["_spawnRoadCache", createHashMap],
+    ["_dispatchRoleCache", createHashMap],
+    ["_dispatchBranchCache", createHashMap],
+    ["_dispatchEnemyDistanceCache", createHashMap],
+    ["_dispatchSourceableCache", createHashMap],
+    ["_dispatchDeliveryObjectiveCache", createHashMap],
 
-                {
-                    _x params ["", "_groupType"];
-                    private _groupCost = switch (_groupType) do {
-                        case "infantry": { 4 };
-                        case "motorized": { 9 };
-                        case "mechanized": { 12 };
-                        case "armor": { 16 };
-                        case "helicopter": { 19 };
-                        case "air": { 24 };
-                        case "artillery": { 14 };
-                        default { 4 };
-                    };
+    ["#create", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkCreate;
+    }],
 
-                    if (_resources >= _groupCost) then {
-                        private _reinforceObjective = selectRandom _reinforceObjs;
-                        private _spawnPos = FLO_Objectives get _spawnObjective get "position";
-                        private _reinforcePos = FLO_Objectives get _reinforceObjective get "position";
+    ["_setManagedSide", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkSetManagedSide;
+    }],
 
-                        // Waypoints from cached objective link
-                        private _path = [_spawnObjective, _reinforceObjective] call FLO_fnc_getObjectivePath;
-                        if (count _path == 0) then { _path = [_reinforcePos]; };
-                        private _wps = [];
-                        { _wps pushBack [_x, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]; } forEach _path;
+    ["_refreshManagedSide", {
+        [_self] call FLO_fnc_logisticsNetworkRefreshManagedSide;
+    }],
 
-                        private _unitCount = [_groupType] call FLO_fnc_getGroupTypeCount;
-                        if ((FLO_OPFOR_Resources call ["spendResources", [_groupCost, "reinforcement"]]) isEqualTo true) then {
-                            private _newGroupId = [_spawnPos, _groupType, nil, _reinforceObjective, _unitCount] call FLO_fnc_createVirtualGroup;
-                            if (_newGroupId != "") then {
-                                private _groupData = (FLO_virtualGroups get "_groups") get _newGroupId;
-                                _groupData set ["isReinforcing", true];
-                                [_newGroupId, _wps, false] call FLO_fnc_updateVirtualGroupWaypoints;
+    ["_getManagedResourceObject", {
+        FLO_SideResources get (_self get "_managedSideKey")
+    }],
 
-                                ["LOGISTICS", 3, format["Created replacement %1 group from %2 to %3",
-                                    _groupType, _spawnObjective, _reinforceObjective]] call FLO_fnc_log;
-                                _resources = _resources - _groupCost;
-                            };
-                        };
-                    };
-                } forEach _destroyedGroups;
-            };
-        }]
-    ];
-    
-    // Create and initialize the network
-    FLO_Logistics_Network = createHashMapObject [_logisticsNetworkClass];
+    ["_objectiveHasStaticAA", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkObjectiveHasStaticAA;
+    }],
+
+    ["_objectiveIsCollapsePressure", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkObjectiveIsCollapsePressure;
+    }],
+
+    ["_getRearAATargets", {
+        [_self] call FLO_fnc_logisticsNetworkGetRearAATargets;
+    }],
+
+    ["_captureInitialComposition", {
+        [_self] call FLO_fnc_logisticsNetworkGetComposition;
+    }],
+
+    ["_getCurrentComposition", {
+        [_self] call FLO_fnc_logisticsNetworkGetComposition;
+    }],
+
+    ["_applyObjectiveCaptureGrowth", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkApplyObjectiveCaptureGrowth;
+    }],
+
+    ["_processPendingCaptureGrowth", {
+        [_self] call FLO_fnc_logisticsNetworkProcessPendingCaptureGrowth;
+    }],
+
+    ["_pickBestTarget", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkPickBestTarget;
+    }],
+
+    ["_pickHQObjective", {
+        [_self] call FLO_fnc_logisticsNetworkPickHQObjective;
+    }],
+
+    ["_refreshSupplyChain", {
+        [_self] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+    }],
+
+    ["_refreshObjectiveSideIndex", {
+        [_self] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
+    }],
+
+    ["_describeObjectiveSupplyRole", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
+    }],
+
+    ["_buildTargetPicture", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkBuildTargetPicture;
+    }],
+
+    ["_findSupplyAdvanceObjectives", {
+        [_self] call FLO_fnc_logisticsNetworkFindSupplyAdvanceObjectives;
+    }],
+
+    ["_getCachedSpawnPosition", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkGetCachedSpawnPosition;
+    }],
+
+    ["_buildInboundObjectiveCounts", {
+        [_self] call FLO_fnc_logisticsNetworkBuildInboundObjectiveCounts;
+    }],
+
+    ["_buildRecentDispatchCounts", {
+        [_self] call FLO_fnc_logisticsNetworkBuildRecentDispatchCounts;
+    }],
+
+    ["_canDispatchToObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkCanDispatchToObjective;
+    }],
+
+    ["_pickDeliveryObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkPickDeliveryObjective;
+    }],
+
+    ["_pickSpawnSourceObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkPickSpawnSourceObjective;
+    }],
+
+    ["_findSupplySourceObjective", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkFindSupplySourceObjective;
+    }],
+
+    ["_findSpawnPosition", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkFindSpawnPosition;
+    }],
+
+    ["_findReinforcementTargets", {
+        [_self] call FLO_fnc_logisticsNetworkFindReinforcementTargets;
+    }],
+
+    ["_createReplacement", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkCreateReplacement;
+    }],
+
+    ["_recordReplacement", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkRecordReplacement;
+    }],
+
+    ["_recordTargetDispatch", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkRecordTargetDispatch;
+    }],
+
+    ["_replenishTransportReserves", {
+        [_self] call FLO_fnc_logisticsNetworkReplenishTransportReserves;
+    }],
+
+    ["_recordDelivery", {
+        ([_self] + _this) call FLO_fnc_logisticsNetworkRecordDelivery;
+    }],
+
+    ["_startMainLoop", {
+        [_self] call FLO_fnc_logisticsNetworkStartMainLoop;
+    }],
+
+    ["_checkAndReplace", {
+        [_self] call FLO_fnc_logisticsNetworkCheckAndReplace;
+    }],
+
+    ["getStats", {
+        _self get "_stats"
+    }],
+
+    ["forceCheck", {
+        [_self] call FLO_fnc_logisticsNetworkCheckAndReplace;
+    }],
+
+    ["setEnabled", {
+        params ["_enabled"];
+        _self set ["_enabled", _enabled];
+        ["LOGISTICS", 3, format ["Logistics network %1", if (_enabled) then { "enabled" } else { "disabled" }]] call FLO_fnc_log;
+    }],
+
+    ["serialize", {
+        createHashMapFromArray [
+            ["initialComposition", _self get "_initialComposition"],
+            ["stats", _self get "_stats"],
+            ["lastReinforcementTarget", _self get "_lastReinforcementTarget"],
+            ["reinforcementQueue", _self get "_reinforcementQueue"],
+            ["nextDispatchAt", _self get "_nextDispatchAt"],
+            ["hqObjectiveId", _self get "_hqObjectiveId"],
+            ["supplyNodeDeliveries", _self get "_supplyNodeDeliveries"]
+        ]
+    }]
+];
+
+private _savedBySide = createHashMap;
+if (!isNil "FLO_SavedGameData" && {FLO_SavedGameData isEqualType createHashMap}) then {
+    private _savedMap = FLO_SavedGameData getOrDefault ["logisticsNetworkBySide", createHashMap];
+    if (_savedMap isEqualType createHashMap) then {
+        _savedBySide = _savedMap;
+    };
 };
+
+{
+    private _side = _x;
+    private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _savedPayload = _savedBySide getOrDefault [_sideKey, false];
+    private _net = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
+    _net set ["OBJECTIVE_CAPTURE_FORCE_GROWTH", (([_side, "forceGrowth"] call FLO_fnc_gtnGetSideCommanderHandle) get "value")];
+    FLO_Logistics_Networks set [_sideKey, _net];
+} forEach [east, west];
+
+["LOGISTICS", 2, "Logistics Networks initialized for EAST/WEST contexts"] call FLO_fnc_log;

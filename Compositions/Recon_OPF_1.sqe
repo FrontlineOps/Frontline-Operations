@@ -100,7 +100,7 @@ class items
 										flags=4;
 										class Attributes
 										{
-											init="call{[  " \n " this,             " \n " ""Gather Intel"",            " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_connect_ca.paa"",   " \n " ""\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_connect_ca.paa"",   " \n " ""_this distance _target < 3"",        " \n " ""_caller distance _target < 3"",        " \n " {},              " \n " {},               " \n " { " \n "     objtIntl = _this select 0 ; " \n "     publicVariable ""objtIntl""; " \n " " \n "     objtIntlid = _this select 2 ; " \n "     publicVariable ""objtIntlid""; " \n "  " \n "        [ objtIntl, objtIntlid ] remoteExec [""BIS_fnc_holdActionRemove"", 0, true];  " \n "[] call FLO_fnc_militaryIntel;  " \n "RCN1 = 1; " \n " },     " \n " {},               " \n " [],              " \n " 3,             " \n " 0,              " \n " true,              " \n " false              " \n "] remoteExec [""BIS_fnc_holdActionAdd"", 0, this]; }";
+											
 										};
 										id=369;
 										type="MapBoard_altis_F";

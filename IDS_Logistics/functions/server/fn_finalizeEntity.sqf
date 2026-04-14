@@ -50,7 +50,7 @@ if (_originalNetId != "") then {
         _existingEntity setVectorUp _vectorUp;
         
         // Re-enable collisions and simulation
-        [_player, _existingEntity] remoteExecCall ["enableCollisionWith", 0];
+        [_player, _existingEntity] remoteExecCall ["enableCollisionWith", owner _player, false];
         _existingEntity enableSimulationGlobal true;
 
         _existingEntity addEventHandler ["Killed", {

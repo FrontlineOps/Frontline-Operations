@@ -12,9 +12,6 @@
     Returns:
         None
 */
-
-if (!isServer) exitWith {};
-
 params ["_crate", "_pos", "_dir", "_items"];
 
 // Make crate visible
@@ -35,7 +32,29 @@ clearItemCargoGlobal _crate;
 clearBackpackCargoGlobal _crate;
 
 {
-    _x params ["_item", "_count"];
+    private ["_item", "_count"];
+    
+    if (_x isEqualType []) then {
+        _x params ["_i", "_c"];
+        _item = _i;
+        _count = _c;
+    } else {
+        _item = _x;
+        // Default counts if only classname provided
+        if (isClass (configFile >> "CfgMagazines" >> _item)) then {
+            _count = 10;
+        } else {
+            if (isClass (configFile >> "CfgWeapons" >> _item)) then {
+                _count = 2; // 2 Launchers/Rifles per crate
+            } else {
+                if (isClass (configFile >> "CfgVehicles" >> _item)) then {
+                    _count = 5; // Backpacks
+                } else {
+                    _count = 10; // Generic items
+                };
+            };
+        };
+    };
     
     if (isClass (configFile >> "CfgWeapons" >> _item)) then {
         _crate addWeaponCargoGlobal [_item, _count];
@@ -53,7 +72,7 @@ clearBackpackCargoGlobal _crate;
 } forEach _items;
 
 // Make draggable with ACE
-[_crate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, true];
+[_crate, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, _crate];
 
 // Allow damage after a delay
 [{

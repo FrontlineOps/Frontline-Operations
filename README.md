@@ -1,316 +1,287 @@
-# FLO: Frontline Operations - Altis
+# FLO: Frontline Operations
 
-**Current Version**: 1.6.1
+FLO is a persistent Arma 3 frontline campaign mission built around dynamic objectives, AI command, virtualization, logistics, civilians, and long-running saves. It is designed for long sessions where one human-controlled side fights a campaign while the rest of the theater keeps moving in the background.
 
-A dynamic frontline operations mission for Arma 3 that creates an evolving battlefield with intelligent OPFOR forces, logistics systems, and garrison management.
+## What FLO Does
 
-## Features
-- Dynamic frontline system with intelligent OPFOR forces
-- Advanced logistics and supply network
-- Garrison management system
-- Intel gathering and radio tower control mechanics
-- Automated resource management for OPFOR forces
-- Dynamic vehicle spawning system
-- Virtualized artillery asset manager for shoot-and-scoot fire missions
-- Virtual artillery fire support via `FLO_fnc_requestVirtualArtillery`
-- AI Commander automatically calls artillery during assaults (warning notifications)
-- Air Tasking Order system uses existing virtual aircraft for CAS and strike missions (no new spawns)
-- Virtual air asset manager acquires aircraft already present in the virtualization system
-- Customizable faction loadouts and equipment
-- Extensible side mission framework for intel events including POW rescue, intel gathering, convoy ambushes, patrol sweeps and sabotage missions
+- Runs a persistent campaign with save/load support.
+- Builds a living frontline instead of one static mission start.
+- Uses AI commanders for `EAST` and `WEST` to manage attacks, defense, support, and reserves.
+- Virtualizes most of the battlefield so large campaigns can keep running without simulating every unit live all the time.
+- Uses logistics and supply networks so destroyed forces are replaced through actual resources and supply chains instead of free respawns.
+- Supports custom friendly, enemy, and civilian factions through mission-root faction files.
 
-## Setup Instructions
+## Main Features
 
-### Basic Mission Setup
-1. Download the mission files (MAKE SURE YOU UNPACK THE PBO)
-2. Place in your Arma 3 missions folder: `Documents/Arma 3 (Or Other Profile)/missions/`
-3. Load the mission in the Arma 3 editor to customize settings
+### Persistent Campaign
 
-### Faction Customization
+- The campaign can be started fresh or loaded from a previous save.
+- Objective ownership, virtual groups, logistics state, and mission configuration persist across saves.
+- The battlefield keeps evolving instead of resetting every session.
 
-#### OPFOR Forces Setup
-- There are two ways to make factions. 
-1. For people using it for individual Unit/Community Usage. I recommend using the files:
-- `CUSTOM_CIVILIAN_FACTION, CUSTOM_FRIENDLY_FACTION, CUSTOM_ENEMY_FACTION`
-2. Create a new faction file in `Scripts/factions/` (e.g., `opf_custom.sqf`) with the following structure. This is useful for people wanting to contribute to the Github by adding new factions that be used by everyone.
+### Dynamic Frontline
+
+- Objectives are linked into a real frontline and rear area network.
+- Towns, villages, military sites, and clusters change ownership over time.
+- Frontline pressure, contested sectors, and reinforcement needs update during the session.
+- Newly captured sectors do not immediately become perfect launchpads. Capture growth is delayed, repeated breakthroughs fatigue the attacking commander, and overextended lanes stage more slowly.
+
+### Dual AI Commanders
+
+- FLO runs one GTN commander for each military side.
+- Commanders build a maintained world state, allocate forces, protect threatened sectors, request support, and launch attacks.
+- The enemy side is not just a pile of spawned patrols. It is managed as a campaign opponent.
+
+### Virtualized Battlefield
+
+- Ground, air, artillery, and transport groups exist in a persistent virtual registry.
+- Groups become real near players and return to virtual state when they safely leave the activation range.
+- Orders, routes, transport attachments, mission locks, and runtime state are preserved across activation cycles.
+- This lets the mission run large theaters without having to keep every unit fully simulated.
+
+### Logistics and Reinforcements
+
+- Each side has its own logistics network and supply chain.
+- The network selects an HQ, promotes forward supply nodes, and dispatches replacements from rear areas.
+- Replacements spend side resources instead of appearing for free.
+- Capturing territory only expands long-term force growth after the new owner actually holds and consolidates the sector.
+- Rear-area support assets such as artillery and aircraft are only considered available when they are actually secure.
+- Transport reserve pools are maintained separately from frontline combat forces.
+
+### Custom Transport System
+
+- Infantry can be assigned ground or air transport for longer operational moves.
+- Live dismounts are staged more safely for trucks, APCs, and helicopters.
+- Carriers can revirtualize after transport work instead of being held active forever.
+
+### Civilian Population and Behavior
+
+- Civilians are no longer just random walkers.
+- Civilian groups are seeded with roles such as residents, vendors, workers, watchers, wanderers, and drivers.
+- Settlements can have moving civilians, anchored building civilians, market activity, and parked civilian vehicles.
+- Civilian behavior changes with local control, threat, recent combat, and reputation.
+- Civilians can flee, shelter, protest, or return to normal routines depending on local conditions.
+
+### Civilian Intel and Interaction
+
+- Players can ask civilians about local activity.
+- Civilian reports can cover patrol sightings, vehicle movement, checkpoint rumors, safe routes, and hostile reports.
+- Civilian intel is local and uncertain rather than omniscient.
+- Civilians can also offer missions, react to detention, and support interrogation gameplay.
+
+### Player-Requested Commander Support
+
+- Players can request commander-managed artillery, CAS, and CAP.
+- Requests go through the side commander instead of directly spawning support effects.
+- Support requests use map clicks, cooldowns, queueing, and HQ radio messages.
+- Approved support reuses the real GTN artillery and air systems.
+
+### Battlefield Intel Pickups
+
+- Enemy units can carry intel items such as phones, secret files, and flash drives.
+- Picking these up can reveal enemy commander targets, supply nodes, or HQ information on the map for a limited time.
+- These reveals are temporary and side-only rather than permanent full-map knowledge.
+
+### Commander Intel and Supply Visibility
+
+- The commander COP publishes friendly support and supply information.
+- Friendly supply nodes and HQ markers can be shown on the map.
+- Players can locally toggle supply-node visibility so the map does not have to stay cluttered.
+
+## What Players Can Expect
+
+- One side is the active human faction for the session.
+- The first connected `EAST` or `WEST` player locks the active player side.
+- Players on the opposite military side are moved to spectator.
+- The campaign is built for multiplayer, hosted MP, dedicated servers, and long-running co-op sessions.
+- Support, logistics, and AI pressure continue to matter even when players move away from one area.
+
+## Mission Setup
+
+On a fresh start, the commander configures the campaign through the mission setup flow.
+
+Current setup options include:
+
+- friendly faction
+- enemy faction
+- civilian faction
+- player start position
+- difficulty and reputation handles
+- separate BLUFOR/WEST and OPFOR/EAST commander posture settings for aggression, tempo, attack coverage, defense coverage, force growth, and baseline garrison
+- enemy presence
+- objective size threshold
+- virtualization distance
+- virtualization unit cap
+- starting territory ratio from `10/90` up to `90/10`
+
+On a loaded save, the saved configuration is restored automatically and the setup dialog is skipped.
+
+## Requirements
+
+- Arma 3
+- CBA
+- any faction-specific mods required by the faction files you select
+
+FLO can run in singleplayer, hosted multiplayer, or on a dedicated server, but it is primarily built around multiplayer campaign sessions.
+
+## Quick Start
+
+1. Put the mission source in your Arma 3 profile `missions` folder, or pack it as a PBO for a server.
+2. Open the mission in Eden Editor if you want to inspect or customize it.
+3. Launch it in multiplayer preview, hosted MP, or on a dedicated server.
+4. On a fresh start, complete the mission setup flow as the commander.
+5. On a loaded save, let the mission restore the campaign state and continue from there.
+
+## Session Model
+
+| Topic | Behavior |
+|------|----------|
+| Active human side | One military side per session |
+| Opposing military side | Spectator-only for human players |
+| Fresh start | Resets campaign state and opens mission setup |
+| Loaded save | Restores saved campaign state and skips setup |
+| Campaign authority | Server-owned startup and persistent systems |
+
+## Initialization Pipeline
+
+All authoritative startup work runs on the server through [`Functions/Init/fn_initPhaseManager.sqf`](Functions/Init/fn_initPhaseManager.sqf).
+
+| Phase | Name | Purpose |
+|------|------|---------|
+| 0 | Save Detection | Detects existing save data and restores saved mission config when present |
+| 1 | Mission Config | Waits for commander setup on fresh start, or restores saved mission config |
+| 2 | Factions | Loads faction scripts and builds the runtime faction catalog |
+| 3 | Objectives | Indexes map objectives or restores saved objective state |
+| 4 | Virtualization | Seeds or restores virtual groups, reserves, and registry state |
+| 5 | Mission Systems | Starts GTN, logistics, routing, civilians, support systems, and client-facing systems |
+
+Clients wait for `FLO_MissionReady` and then finalize local UI, map intel, and player-side actions.
+
+## Faction Customization
+
+The main customization entry points are:
+
+- [`CUSTOM_PLAYER_FACTION.sqf`](CUSTOM_PLAYER_FACTION.sqf)
+- [`CUSTOM_ENEMY_FACTION.sqf`](CUSTOM_ENEMY_FACTION.sqf)
+- [`CUSTOM_CIVILIAN_FACTION.sqf`](CUSTOM_CIVILIAN_FACTION.sqf)
+
+Phase 2 builds `FLO_FactionCatalog` from those files, and that catalog feeds:
+
+- commander force pools
+- objective seeding
+- virtualization spawn pools
+- logistics replacements
+- transport reserves
+- civilian population templates
+
+### Objective Templates
+
+Objective templates control what kind of groups a subtype can seed.
 
 ```sqf
-// Vehicle Arrays
-East_Ground_Vehicles_Light = [
-    "O_MRAP_02_F",
-    "O_MRAP_02_hmg_F"
-];
-
-East_Ground_Vehicles_Heavy = [
-    "O_MBT_02_cannon_F",
-    "O_APC_Tracked_02_cannon_F"
-];
-
-East_Air_Heli = [
-    "O_Heli_Attack_02_F",
-    "O_Heli_Light_02_F"
-];
-
-// Infantry Arrays
-East_Units = [
-    "O_Soldier_F",
-    "O_Soldier_GL_F",
-    "O_Soldier_AR_F"
-];
-
-// ... other arrays
-```
-
-### Map Configuration
-
-The mission uses an automatic objective system that identifies and indexes map locations and structures. The system consists of two main components:
-
-#### 1. Physical Objectives (`FLO_Objectives`)
-Physical objectives are automatically generated by `FLO_fnc_indexObjectives` based on map locations and structures. The system:
-
-1. **Location Types**:
-   - Civilian: NameCityCapital, NameCity, NameVillage
-   - Military: NameLocal, NameMarine
-
-2. **Structure Detection**:
-   - Automatically detects buildings and structures within each location
-   - Ignores power line structures (PowerLines_base_F)
-   - Scans for: HeliH, AirportBase, Strategic, House_F, House_Small, House, HouseBase, Church
-
-3. **Dynamic Radius Calculation (Note: THESE ARE CONFIGURATION)**:
-   - Minimum radius: 90 meters
-   - Maximum radius: 300 meters
-   - Grows radius in 30-meter steps until structure density drops
-   - Minimum growth threshold: 2 structures per step
-
-4. **Objective Properties**:
-   - Position: Location center
-   - Type: Civilian or Military
-   - Subtype: Capital, City, Village, Local, Marine
-   - Priority: Based on structure count (1-100)
-   - Radius: Dynamic based on structure density
-   - Structures: List of buildings in the area
-   - Owner: Default to East (OPFOR)
-
-5. **Objective Linking**:
-   - Links objectives within 5km of each other
-   - Creates a network of connected objectives
-   - Used for mission generation and AI behavior
-
-#### 2. Virtual Objectives (`FLO_VirtualObjectives`)
-Virtual objectives are generated by `FLO_fnc_indexVirtualObjectives` to cover areas not included in physical objectives. The system:
-
-1. **Structure Clustering**:
-   - Uses a grid-based approach (100m grid size)
-   - Identifies clusters of structures not covered by physical objectives
-   - Minimum cluster size based on OPFOR_Objective_Size_Threshold:
-     - Small: 4 structures
-     - Medium: 8 structures
-     - Large: 12 structures
-     - Huge: 24 structures
-
-2. **Cluster Processing**:
-   - Calculates centroid for each cluster
-   - Determines radius based on structure spread
-   - Minimum radius: 90 meters
-   - Maximum radius: 300 meters
-   - Adds padding to ensure coverage
-
-3. **Virtual Objective Properties**:
-   - Type: "virtual"
-   - Subtype: "cluster"
-   - Position: Cluster centroid
-   - Priority: Based on structure count
-   - Structures: All buildings in the cluster
-   - Owner: Default to East (OPFOR)
-
-#### Objective System Features
-
-1. **Automatic Indexing**
-   - Physical objectives indexed on mission start
-   - Virtual objectives generated to fill gaps
-   - Both stored in HashMaps for efficient access
-
-2. **Debug Support**
-   - Optional debug markers for both physical and virtual objectives
-   - Shows objective boundaries and structure positions
-   - Displays priority values and coverage areas
-
-#### Best Practices for Map Setup
-
-1. **Structure Placement**
-   - Place buildings in logical clusters
-   - Consider minimum cluster size for virtual objectives
-   - Avoid sparse placement that might create too many small objectives
-
-2. **Location Considerations**
-   - Use named locations (cities, villages) for better objective identification
-   - Consider terrain features when placing structures
-   - Ensure adequate spacing between major locations
-
-3. **Performance Optimization**
-   - Avoid excessive structure density
-   - Consider the impact of large objective radii
-   - Balance between coverage and performance
-
-#### Objective Density Control
-
-The system automatically scales based on:
-- Map size (`worldSize`)
-- Structure density
-- OPFOR_Objective_Size_Threshold setting
-
-To adjust objective density:
-1. Modify the OPFOR_Objective_Size_Threshold parameter
-2. Adjust structure placement in the editor
-3. Consider the impact on mission generation and AI behavior
-
-#### 3. Spawn Positions:
-- Spawn Positions will be selected when you first join the mission as the Company Commander. You will be prompted with the Dialog Menu in which you can 
-select Faction, Starting Aggression levels, Starting Civilian Relations, and More.
-
-## Customization Tips
-
-### Resource System
-- Adjust OPFOR resource generation in `Functions/Logistics/fn_opforResources.sqf`
-
-### Intel System
-- Modify intel decay rates and bonuses in `Functions/Logistics/fn_intelSystem.sqf`
-- Adjust radio tower benefits in the intel system
-
-### Performance Settings
-- Configure view distance in `initServer.sqf`
-- Adjust dynamic spawning ranges in garrison manager
-
-### Arsenal Customization
-The mission uses a restricted arsenal system (`fn_restrictedArsenal.sqf`) that works with both ACE and vanilla arsenals. It can be disabled & enabled in Lobby Parameters before Mission Start. You can customize available equipment in the following categories:
-
-#### Weapons and Attachments
-```sqf
-// Modify these arrays in fn_restrictedArsenal.sqf
-private _rifles = [
-    "arifle_MX_F",
-    "arifle_MXC_F",
-    // ... add or remove weapons
-];
-
-private _launchers = [
-    "launch_B_Titan_F",
-    // ... add or remove launchers
-];
-
-private _attachments = [
-    "optic_Hamr",
-    "acc_flashlight",
-    // ... add or remove attachments
+OPFOR_Objective_Groups = [
+    ["capital", [
+        ["infantry", 12],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["armor", 1],
+        ["artillery", 1]
+    ]],
+    ["city", [
+        ["infantry", 7],
+        ["motorized", 2]
+    ]]
 ];
 ```
 
-#### Equipment
+### Group Counts
+
+Group-count tables control the physical strength of each virtual group type.
+
 ```sqf
-private _uniforms = [
-    "U_B_CombatUniform_mcam",
-    // ... add or remove uniforms
-];
-
-private _vests = [
-    "V_PlateCarrier1_rgr",
-    // ... add or remove vests
-];
-
-private _headgear = [
-    "H_HelmetB",
-    // ... add or remove headgear
-];
-
-private _backpacks = [
-    "B_AssaultPack_mcamo",
-    // ... add or remove backpacks
+OPFOR_Group_Counts = [
+    ["infantry", 10],
+    ["motorized", 2],
+    ["mechanized", 2],
+    ["armor", 2],
+    ["artillery", 1]
 ];
 ```
 
-#### Items and Equipment
+### Side-Wide Objective Caps
+
+Use side-wide caps when an asset type is allowed in templates, but should not appear at every eligible objective.
+
 ```sqf
-private _medicalItems = [
-    "kat_AFAK",
-    // ... add or remove medical items
+West_Objective_Group_Type_Caps = [
+    ["artillery", 5]
 ];
 
-private _toolItems = [
-    "ACE_CableTie",
-    // ... add or remove tools
-];
-
-private _navigationItems = [
-    "ItemMap",
-    "ItemGPS",
-    // ... add or remove navigation items
+East_Objective_Group_Type_Caps = [
+    ["artillery", 5]
 ];
 ```
 
-#### Ammunition and Explosives
-```sqf
-private _magazines = [
-    "30Rnd_65x39_caseless_mag",
-    // ... add or remove magazines
-];
+### Transport Reserve Counts
 
-private _grenades = [
-    "HandGrenade",
-    "SmokeShell",
-    // ... add or remove grenades
-];
+Dedicated transport reserve pools are configured separately from frontline groups.
+
+```sqf
+West_Transport_Reserve_Ground_Count = 20;
+West_Transport_Reserve_Air_Count = 10;
+
+East_Transport_Reserve_Ground_Count = 20;
+East_Transport_Reserve_Air_Count = 10;
 ```
 
-#### Implementation Notes:
-1. The arsenal system automatically:
-   - Works with both ACE and vanilla arsenals
-   - Applies to all arsenal boxes, FOBs, and OPs
-   - Updates dynamically when new FOBs/OPs are created
+### Save/Load Note
 
-2. Mod Compatibility:
-   - Supports ACE items and medical equipment
-   - Compatible with TFAR radio systems
-   - Works with KAT Advanced Medical items
-   - Supports custom mod items (just add their classnames)
+Changing faction files does not automatically reseed an old save with newly-added groups. Loaded saves restore saved virtual groups first. If you add new template group types after a save already exists, you usually need either:
 
-3. To add new items:
-   - Find the appropriate category in `fn_restrictedArsenal.sqf`
-   - Add the classname to the corresponding array
-   - Items will be available in all arsenals automatically
+- a mission reset with the `FreshStart` lobby parameter, or
+- a targeted backfill call such as:
 
-4. Performance Optimization:
-   - Arsenal restrictions are applied only once per box
-   - Uses efficient event handlers to manage updates
-   - Prevents duplicate initialization
+```sqf
+[west, ["city"], ["artillery", "jet", "helicopter"]] call FLO_fnc_backfillObjectiveTemplateGroups;
+```
 
-## Side Mission Framework
+## Runtime Configuration
 
-The mission includes a modular side mission system. Missions are
-registered via `FLO_fnc_registerSideMission` and started with
-`FLO_fnc_startSideMission`. Default missions are defined in
-`Functions/SideMissions` and are loaded automatically on server start.
+### Lobby Parameters
 
-Default missions currently available:
+| Parameter | Meaning |
+|-----------|---------|
+| `AutoSaveSwitch` | Enables or disables mission auto-save |
+| `AutoSaveInterval` | Auto-save cadence |
+| `FreshStart` | Load saved progress or reset mission progress |
+| `RestrictedArsenal` | Enables the restricted arsenal flow |
+| `RagequitBlocker` | Prevents abort while unconscious |
+| `DisableSystemChat` | Hides system chat |
 
-- Pilot Rescue
-- Squad Rescue
-- Convoy Interdiction
-- Custom Convoy
-- Patrol Sweep
-- Sabotage Tech
-- POW Rescue
-- Intel Gathering
+### Commander Campaign Config
 
-## Contributing
+On a fresh start, the commander setup flow publishes:
 
-Feel free to contribute improvements or report issues on our GitHub repository.
+- faction handles
+- difficulty and reputation handles
+- GTN attack, defense, tempo, growth, and garrison settings
+- enemy presence
+- objective size threshold
+- virtualization distance
+- virtualization unit cap
+- player start position
+- starting territory ratio
+
+## Repository Layout
+
+| Path | Purpose |
+|------|---------|
+| [`Functions/Init`](Functions/Init) | Server phase manager and client finalization |
+| [`Functions/AI/GTN`](Functions/AI/GTN) | Commanders, world state, combat, support, alerts, and player support |
+| [`Functions/Virtualization`](Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
+| [`Functions/Logistics`](Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
+| [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, and markers |
 
 ## License
 
-This mission is available under the GNU GENERAL PUBLIC LICENSE.
-
-## Credits
-
-- Created by Frontline Operations Development Group
-- Special thanks to the Early Supporters for being there for literal years of support.
+FLO is distributed under the GNU General Public License v3.0. See [`LICENSE`](LICENSE).

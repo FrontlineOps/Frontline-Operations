@@ -1,4 +1,42 @@
+// ============================================================================
+// SAF WOODLAND FACTION - BLUFOR (FFAA Mod)
+// Spanish Armed Forces in woodland camouflage
+// ============================================================================
+
+/*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = F_Officer + all F_Assault_* roles
+ *   groundSpecOps    = all F_Recon_* + all F_Diver_* roles
+ *   groundMotorized  = F_Car_List + F_MRAP_List
+ *   groundMechanized = F_APC_List
+ *   groundArmor      = F_Tank_List
+ *   groundTransport  = F_Truck_List
+ *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
+ *   groundArtillery  = F_Artillery_List
+ *   airTransport     = F_Heli_List + F_Heli_Respawn_List
+ *   transportReserveAirCount = West_Transport_Reserve_Air_Count
+ *   airHeli          = F_Heli_Gunship_List
+ *   airJet           = F_Plane_List
+ *   airDrone         = F_UAV_List
+ *   groundDrone      = F_UGV_List
+ *   staticAA         = F_SAM_List
+ *   radar            = F_RADAR
+ *   boat             = F_Boat_List
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above. You do not need to define separate West_* pools here.
+ */
+// ============================================================================
+// INFANTRY UNITS
+// ============================================================================
+// F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
+// All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
 F_Officer = "ffaa_bripac_oficial";
+
 F_Assault_Eng = "ffaa_brilat_ingeniero";
 F_Assault_TL = "ffaa_bripac_jefe_peloton";
 F_Assault_SL = "ffaa_bripac_jefe_escuadra";
@@ -8,12 +46,10 @@ F_Assault_AT = "ffaa_bripac_proveedor_alcotan";
 F_Assault_Amm = "ffaa_bripac_fusilero_mochila";
 F_Assault_Mg = "ffaa_bripac_tirador_ameli";
 F_Assault_Med = "ffaa_bripac_medico";
-F_Assault_Uav= "ffaa_bripac_operador_UAV";
-
+F_Assault_Uav = "ffaa_bripac_operador_UAV";
 
 F_Recon_Snp = "ffaa_bripac_francotirador_barrett";
 F_Recon_Sct = "ffaa_bripac_observador";
-
 F_Recon_TL = "ffaa_et_moe_lider";
 F_Recon_Mrk = "ffaa_et_moe_tirador";
 F_Recon_AT = "ffaa_et_moe_at";
@@ -26,85 +62,223 @@ F_Diver_TL = "B_diver_TL_F";
 F_Diver_Rfl = "B_diver_F";
 F_Diver_Eod = "B_diver_exp_F";
 
-if (isClass (configfile >> "CfgFactionClasses" >> "mas_esp_amulti") == true ) then {
-F_Recon_Snp = "B_mas_esp_recon_M_F";
-F_Recon_Sct = "B_mas_esp_recon_AA_F";
-F_Recon_TL = "B_mas_esp_recon_F";
-F_Recon_Mrk = "B_mas_esp_recon_exp_F";
-F_Recon_AT = "B_mas_esp_recon_AT_F";
-F_Recon_Mg = "B_mas_esp_recon_medic_F";
-F_Diver_TL = "B_mas_esp_diverUn_exp_F";
-F_Diver_Rfl = "B_mas_esp_diverUn_rec_F";
-		}; 
+// ============================================================================
+// SQUAD COMPOSITIONS
+// ============================================================================
+F_ASSLT_ENG = [F_Assault_Eng, F_Assault_AT, F_Assault_Eod];
+F_ASSLT_TEAM = [F_Assault_TL, F_Assault_Eod, F_Assault_AT, F_Assault_Mg, F_Assault_Mrk, F_Assault_Amm];
+F_ASSLT_SQD = [F_Assault_SL, F_Assault_Eod, F_Assault_AT, F_Assault_Mg, F_Assault_Mrk, F_Assault_Amm, F_Assault_Med, F_Assault_AT, F_Assault_Mg, F_Assault_Mrk, F_Assault_Uav];
+F_SNP_TEAM = [F_Recon_Snp, F_Recon_Sct];
+F_RCN_TEAM = [F_Recon_TL, F_Recon_AT, F_Recon_Mrk, F_Recon_Mg];
+F_RCN_SQD = [F_Recon_TL, F_Recon_AT, F_Recon_Eod, F_Recon_Mg, F_Recon_Eng, F_Recon_Mrk];
+F_DVR_TEAM = [F_Diver_TL, F_Diver_Eod, F_Diver_Rfl, F_Diver_Eod];
+F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 
+// ============================================================================
+// BASE STRUCTURES
+// ============================================================================
+// F_RADAR feeds the commander radar pool.
 F_RADAR = "I_E_Radar_System_01_F";
 F_HQ_01 = "Land_Cargo_HQ_V1_F";
 F_HQ_C_01 = "Land_TripodScreen_01_large_F";
-F_OP_01 = "Land_Cargo_House_V1_F" ;
-F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F" ;
+F_OP_01 = "Land_Cargo_House_V1_F";
+F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F";
 
-F_Bike_01 = "B_T_Quadbike_01_F";
+// ============================================================================
+// VEHICLE LISTS - Format: [[classname, price], ...]
+// ============================================================================
+// These same lists also feed commander/virtualization pools as described above.
 
-F_ABT_01 = "B_Boat_Armed_01_minigun_F";
+F_Bike_List = [
+    ["B_T_Quadbike_01_F", 5]
+];
 
-F_UAV_01 = "ffaa_ea_reaper";
-F_UAV_02 = "B_UAV_05_F";
-F_UAV_03 = "B_T_UAV_03_dynamicLoadout_F";
-F_UGV_01 = "B_UGV_01_rcws_F";
+// groundMotorized
+F_Car_List = [
+    ["ffaa_et_vamtac_ume", 25],
+    ["ffaa_et_vamtac_m2", 50],
+    ["ffaa_et_vamtac_lag40", 60],
+    ["ffaa_et_vamtac_tow", 70],
+    ["ffaa_et_vamtac_cardom", 80],
+    ["ffaa_et_vamtac_mistral", 90]
+];
 
-F_turret_01 = "ffaa_m2_ship_tripode";
-F_turret_02 = "ffaa_lag40_tripode";
-F_turret_03 = "ffaa_tow_tripode";
+// groundMotorized
+F_MRAP_List = [
+    ["ffaa_et_lince_ambulancia", 50],
+    ["ffaa_et_lince_m2", 70],
+    ["ffaa_et_lince_lag40", 100],
+    ["ffaa_et_rg31_samson", 120]
+];
 
-F_Car_01 = "ffaa_et_vamtac_ume";
-F_Car_02 = "ffaa_et_vamtac_m2";
-F_Car_03 = "ffaa_et_vamtac_lag40";
-F_Car_04 = "ffaa_et_vamtac_tow";
-F_Car_05 = "ffaa_et_vamtac_cardom";
-F_Car_06 = "ffaa_et_vamtac_mistral";
+// groundTransport
+F_Truck_List = [
+    ["ffaa_et_m250_carga_blin", 65]
+];
+West_Transport_Reserve_Ground_Count = 20;
 
-F_MRAP_01 = "ffaa_et_lince_ambulancia";
-F_MRAP_02 = "ffaa_et_lince_m2";
-F_MRAP_03 = "ffaa_et_lince_lag40";
-F_MRAP_04 = "ffaa_et_rg31_samson";
-F_MRAP_05 = "";
-F_MRAP_06 = "";
+F_Truck_Ammo_List = [
+    ["ffaa_et_m250_sistema_nasams_blin", 100]
+];
 
-F_Truck_01 = "ffaa_et_m250_carga_blin";
-F_Truck_02 = "ffaa_et_m250_combustible_blin";
-F_Truck_03 = "ffaa_et_m250_sistema_nasams_blin";
-F_Truck_04 = "ffaa_et_m250_repara_municion_blin";
-F_Truck_05 = "ffaa_et_lince_ambulancia";
-F_Truck_06 = "";
+F_Truck_Construction_List = [
+    ["ffaa_et_m250_repara_municion_blin", 100]
+];
 
-F_APC_01 = "ffaa_et_toa_mando";
-F_APC_02 = "ffaa_et_toa_ambulancia";
-F_APC_03 = "ffaa_et_toa_zapador";
-F_APC_04 = "ffaa_et_toa_spike";
-F_APC_05 = "ffaa_et_pizarro_mauser";
-F_APC_06 = "";
+F_Truck_Respawn_List = [
+    ["ffaa_et_lince_ambulancia", 150]
+];
 
-F_TNK_01= "ffaa_et_leopardo";
-F_TNK_02= "";
-F_TNK_03= "";
-F_TNK_04= "";
+// groundMechanized
+F_APC_List = [
+    ["ffaa_et_toa_mando", 200],
+    ["ffaa_et_toa_ambulancia", 150],
+    ["ffaa_et_toa_zapador", 200],
+    ["ffaa_et_toa_spike", 300],
+    ["ffaa_et_pizarro_mauser", 400]
+];
 
-F_Art_00 = "B_T_Mortar_01_F";
-F_Art_01 = "B_T_MBT_01_arty_F";
-F_Art_02 = "B_T_MBT_01_mlrs_F";
+// groundArmor
+F_Tank_List = [
+    ["ffaa_et_leopardo", 650]
+];
 
-F_Heli_01 = "";
-F_Heli_02 = "ffaa_famet_ec135";
-F_Heli_03 = "";
-F_Heli_04 = "ffaa_nh90_tth_transport";
-F_Heli_05 = "ffaa_nh90_tth_cargo";
+// groundArtillery
+F_Artillery_List = [
+    ["B_T_Mortar_01_F", 75],
+    ["B_T_MBT_01_arty_F", 400],
+    ["B_T_MBT_01_mlrs_F", 500]
+];
 
-F_Heli_06_G = "ffaa_famet_tigre";
-F_Heli_07_G = "";
+// airTransport
+F_Heli_List = [
+    ["ffaa_famet_ec135", 250],
+    ["ffaa_nh90_tth_transport", 400],
+    ["ffaa_nh90_tth_cargo", 450]
+];
+West_Transport_Reserve_Air_Count = 10;
 
-F_Plane_01_CAS = "B_Plane_CAS_01_dynamicLoadout_F";
-F_Plane_02_CAS = "ffaa_ar_harrier";
-F_Plane_03 = "ffaa_ea_hercules";
-F_Plane_04 = "ffaa_ea_hercules_cargo";
-F_Plane_05 = "";
-F_Plane_06 = "";
+// airTransport
+F_Heli_Respawn_List = [];
+
+// airHeli
+F_Heli_Gunship_List = [
+    ["ffaa_famet_tigre", 750]
+];
+
+// airJet
+F_Plane_List = [
+    ["B_Plane_CAS_01_dynamicLoadout_F", 1500],
+    ["ffaa_ar_harrier", 1600],
+    ["ffaa_ea_hercules", 1200],
+    ["ffaa_ea_hercules_cargo", 1200]
+];
+
+// boat
+F_Boat_List = [
+    ["B_Boat_Armed_01_minigun_F", 150]
+];
+
+// airDrone
+F_UAV_List = [
+    ["ffaa_ea_reaper", 80],
+    ["B_UAV_05_F", 80],
+    ["B_T_UAV_03_dynamicLoadout_F", 80]
+];
+
+// groundDrone
+F_UGV_List = [
+    ["B_UGV_01_rcws_F", 55]
+];
+
+F_Container_List = [
+    ["B_Slingload_01_Medevac_F", 35],
+    ["B_Slingload_01_Ammo_F", 35],
+    ["B_Slingload_01_Repair_F", 100],
+    ["B_Slingload_01_Fuel_F", 35]
+];
+
+F_Turret_List = [
+    ["ffaa_m2_ship_tripode", 35],
+    ["ffaa_lag40_tripode", 35],
+    ["ffaa_tow_tripode", 35]
+];
+
+// staticAA
+F_SAM_List = [
+    ["B_SAM_System_01_F", 500],
+    ["B_SAM_System_02_F", 500],
+    ["B_SAM_System_03_F", 500],
+    ["B_AAA_System_01_F", 500]
+];
+
+/*
+ * BLUFOR Virtualization Objective Configuration
+ * This section defines how many of each unit type should spawn at different
+ * objective subtypes produced by the objective indexing system. Subtypes
+ * include "capital", "city", "village", "local", "marine" and "cluster".
+ *
+ * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
+ */
+BLUFOR_Objective_Groups = [
+    // Capital objectives - highest concentration of defenders
+    ["capital", [
+        ["infantry", 12],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["air", 1],
+        ["armor", 1],
+        ["artillery", 1],
+        ["static_aa", 1],
+        ["mobile_aa", 1]
+    ]],
+
+    // Major cities
+    ["city", [
+        ["infantry", 7],
+        ["motorized", 2]
+    ]],
+
+    // Villages
+    ["village", [
+        ["infantry", 3]
+    ]],
+
+    // Small local objectives
+    // These tend to be military bases, strategic infrastructure, or other military-like objectives
+    ["local", [
+        ["infantry", 6],
+        ["motorized", 2],
+        ["mechanized", 1],
+        ["mobile_aa", 1]
+    ]],
+
+    // Coastal or marine facilities
+    ["marine", [
+        ["infantry", 3],
+        ["motorized", 1]
+    ]],
+
+    // Automatically generated clusters
+    ["cluster", [
+        ["infantry", 2]
+    ]]
+];
+
+/*
+ * Group Type Unit/Vehicle Counts
+ * Defines how many physical units/vehicles should be in each type of group
+ */
+BLUFOR_Group_Counts = [
+    ["infantry", 10],          // Number of individual soldiers
+    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
+    ["mechanized", 2],        // Number of APCs/IFVs
+    ["armor", 2],             // Number of tanks
+    ["helicopter", 1],        // Number of helicopters
+    ["jet", 1],               // Number of jets
+    ["air", 1],               // Number of aircraft
+    ["artillery", 3],         // Number of artillery pieces
+    ["mobile_aa", 1],         // Number of mobile AA vehicles
+    ["static_aa", 1]          // Number of static SAM launchers
+];
+

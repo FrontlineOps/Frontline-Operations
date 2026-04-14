@@ -15,12 +15,41 @@ if (!hasInterface) exitWith {};
 
 // Initialize loading screen with fade effect
 titleText ["Frontline Operations Group Presents...", "BLACK IN", 9999];
-5 fadeSound 0;
+// 5 fadeSound 0; I spy with my little eye... what do we have here, sound fix?
 
 sleep 1;
 
 // Initialize mission state
 StartingLocationDone = false;
+FLO_GTN_ShowSupplyMarkers = true;
+FLO_GTN_CommanderSupplyToggleActionId = -1;
+FLO_GTN_CommanderSupplyToggleActionOwner = objNull;
+FLO_GTN_LastCommanderIntelSyncArgs = [];
+FLO_GTN_CommanderSupplyRespawnHandlerAdded = false;
+FLO_GTN_PlayerSupportActionIds = [];
+FLO_GTN_PlayerSupportActionOwner = objNull;
+FLO_GTN_PlayerSupportMapClickEhId = -1;
+FLO_GTN_PlayerSupportPendingType = "";
+FLO_GTN_PlayerSupportCancelWatcherRunning = false;
+FLO_ClientFinalizeDone = false;
+
+[] call FLO_fnc_initMissionConfigEvents;
+[] call FLO_fnc_initMoneyStateEvents;
+
+[] spawn {
+    waitUntil {
+        sleep 1;
+        !isNull player
+        && {player == player}
+        && {!isNil "FLO_MissionReady"}
+        && {FLO_MissionReady}
+    };
+
+    if (!FLO_ClientFinalizeDone) then {
+        ["INIT_CLIENT", 3, "Mission-ready watchdog firing local client finalize"] call FLO_fnc_log;
+        ["FLO_INIT_COMPLETE", []] call FLO_fnc_initClientFinalize;
+    };
+};
 
 // ============================================================================
 // MISSION LOADING SEQUENCE
@@ -38,33 +67,60 @@ if (time > _loadTimeout) then {
 };
 
 // ============================================================================
-// SAVE GAME DETECTION
+// SAVE GAME DETECTION - Wait for server's Phase 0 detection
 // ============================================================================
 
-// Save game detection
-private _fnc_detectSaveGame = {
-    // Check for existing BLUFOR installations (indicates saved game)
-    private _bluforMarkers = allMapMarkers select {markerType _x isEqualTo "b_installation"};
-    private _installationCount = count _bluforMarkers;
+// Wait for server to complete Phase 0 (save detection) with timeout
+private _fnc_waitForSaveDetection = {
+    private _startTime = diag_tickTime;
+    private _timeout = 30; // 30 second timeout for save detection
 
-    if (_installationCount > 0) then {
-        ["INIT_CLIENT", 3, format ["Detected %1 existing installations - loading from save", _installationCount]] call FLO_fnc_log;
+    ["INIT_CLIENT", 3, "Waiting for server save detection..."] call FLO_fnc_log;
+
+    // Wait for the server to broadcast FLO_IsLoadedSave (happens in Phase 0)
+    // We MUST wait for Phase 1 or later - that's when we know Phase 0 is COMPLETE
+    // and all publicVariables from Phase 0 have been sent
+    waitUntil {
+        sleep 0.3;
+        private _serverPastPhase0 = !isNil "FLO_InitPhase" && {FLO_InitPhase >= 1};
+        private _timedOut = (diag_tickTime - _startTime) > _timeout;
+
+        _serverPastPhase0 || _timedOut
+    };
+
+    // Wait for network sync - publicVariable can take a moment to arrive
+    // This is critical on dedicated servers where network latency matters
+    sleep 1.0;
+
+    // Additional wait to ensure FLO_IsLoadedSave has synced
+    private _syncStart = diag_tickTime;
+    waitUntil {
+        sleep 0.1;
+        !isNil "FLO_IsLoadedSave" || (diag_tickTime - _syncStart) > 5
+    };
+
+    // Check if this is a saved game from server's detection
+    private _isSavedGame = !isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave};
+
+    ["INIT_CLIENT", 3, format ["Save detection result: FLO_IsLoadedSave=%1, isSavedGame=%2", FLO_IsLoadedSave, _isSavedGame]] call FLO_fnc_log;
+
+    if (_isSavedGame) then {
+        ["INIT_CLIENT", 3, "Server detected saved game - skipping faction dialog"] call FLO_fnc_log;
         StartingLocationDone = true;
-        publicVariable "StartingLocationDone";
-        true
     } else {
-        ["INIT_CLIENT", 3, "No existing installations found - fresh mission start"] call FLO_fnc_log;
-        false
-    }
+        ["INIT_CLIENT", 3, "Server detected fresh start"] call FLO_fnc_log;
+    };
+
+    _isSavedGame
 };
 
-private _isSavedGame = call _fnc_detectSaveGame;
+private _isSavedGame = call _fnc_waitForSaveDetection;
 
 // ============================================================================
 // FRESH START INITIALIZATION
 // ============================================================================
 
-if (!StartingLocationDone) then {
+if (!_isSavedGame && !StartingLocationDone) then {
     // Commander validation
     private _fnc_validateCommander = {
         if (isNil "TheCommander") then {
@@ -88,34 +144,93 @@ if (!StartingLocationDone) then {
 
     call _fnc_validateCommander;
 
-    // Launch faction selection for commander
-    if (_player isEqualTo TheCommander) then {
-        ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
-        execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+    // Check if this is a loaded save - if so, skip the faction dialog
+    // Wait briefly for server to set FLO_IsLoadedSave
+    private _saveCheckStart = diag_tickTime;
+    waitUntil { sleep 0.2; !isNil "FLO_IsLoadedSave" || (diag_tickTime - _saveCheckStart > 5) };
+
+    private _isLoadedSave = !isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave};
+
+    if (_isLoadedSave) then {
+        ["INIT_CLIENT", 3, "Loading from saved game - skipping faction selection dialog"] call FLO_fnc_log;
+        StartingLocationDone = true;
     } else {
-        ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+        private _shouldOpenFactionDialog = [] call FLO_fnc_shouldOpenFactionDialog;
+        if (!_shouldOpenFactionDialog) then {
+            ["INIT_CLIENT", 3, "Mission setup already in progress or complete - skipping faction selection dialog"] call FLO_fnc_log;
+            StartingLocationDone = true;
+        };
+
+        // Launch faction selection for commander (fresh start only)
+        if (_shouldOpenFactionDialog) then {
+            if (_player isEqualTo TheCommander) then {
+                ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
+                execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+            } else {
+                ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+            };
+        };
     };
 };
 
 // ============================================================================
-// FACTION INITIALIZATION
+// WAIT FOR SERVER PHASE MANAGER
 // ============================================================================
-
-// Wait for starting location configuration
-waitUntil {sleep 0.1; StartingLocationDone};
-
-// Update loading status
-hintSilent "LOADING . . . ";
-
-// Initialize faction system
-F_Init = false;
-execVM "Scripts\Init\init_groups.sqf";
 
 // Disable saving during initialization
 enableSaving [false, false];
 
-// Wait for faction initialization
-waitUntil {sleep 0.1; F_Init};
+// Wait for server Phase Manager to complete all initialization
+// This replaces the old fragmented approach (init_groups, init_Markers, etc.)
+private _fnc_waitForPhaseManager = {
+    private _startTime = diag_tickTime;
+    private _timeout = 600; // 10 minute timeout
+
+    waitUntil {
+        sleep 1;
+
+        // Show progress to player based on current phase
+        if (!isNil "FLO_InitPhase") then {
+            private _phaseName = switch (FLO_InitPhase) do {
+                case 0: { "Waiting for configuration..." };
+                case 1: { "Loading factions..." };
+                case 2: { "Configuring factions..." };
+                case 3: { "Indexing objectives..." };
+                case 4: { "Setting up OPFOR forces..." };
+                case 5: { "Starting mission systems..." };
+                case 99: { "Ready!" };
+                case -1: { "ERROR" };
+                default { "Initializing..." };
+            };
+            hintSilent format ["Mission Setup: %1", _phaseName];
+        } else {
+            hintSilent "Waiting for server...";
+        };
+
+        // Check for completion or error
+        private _ready = !isNil "FLO_MissionReady" && {FLO_MissionReady};
+        private _error = !isNil "FLO_InitPhase" && {FLO_InitPhase == -1};
+        private _timedOut = (diag_tickTime - _startTime) > _timeout;
+
+        _ready || _error || _timedOut
+    };
+
+    // Handle result
+    if (!isNil "FLO_MissionReady" && {FLO_MissionReady}) then {
+        ["INIT_CLIENT", 3, "Phase Manager completed - mission ready"] call FLO_fnc_log;
+        true
+    } else {
+        if (!isNil "FLO_InitPhase" && {FLO_InitPhase == -1}) then {
+            private _error = if (!isNil "FLO_InitError") then { FLO_InitError } else { "Unknown error" };
+            ["INIT_CLIENT", 1, format ["Phase Manager failed: %1", _error]] call FLO_fnc_log;
+        } else {
+            ["INIT_CLIENT", 1, "Phase Manager timeout"] call FLO_fnc_log;
+        };
+        false
+    }
+};
+
+private _phaseSuccess = call _fnc_waitForPhaseManager;
 
 // ============================================================================
 // USER INTERFACE SETUP
@@ -179,34 +294,16 @@ private _fnc_initCTab = {
 call _fnc_initCTab;
 
 // ============================================================================
-// MISSION READINESS WAIT
+// MISSION READINESS CHECK
 // ============================================================================
 
-// Wait for mission systems to be ready
-private _fnc_waitForMissionReady = {
-    private _startTime = time;
-    private _timeout = 300; // 5 minute timeout
-
-    waitUntil {
-        sleep 0.5;
-
-        // Check multiple conditions for mission readiness
-        private _markerReady = (MarLOCC isEqualTo 1);
-        private _installationsExist = (count (allMapMarkers select {markerType _x isEqualTo "b_installation"}) > 0);
-        private _respawnExists = (count (allMapMarkers select {markerType _x isEqualTo "b_unknown"}) > 0);
-        private _timeoutReached = (time - _startTime > _timeout);
-
-        if (_timeoutReached) then {
-            ["INIT_CLIENT", 1, "Mission readiness timeout reached"] call FLO_fnc_log;
-        };
-
-        _markerReady || _installationsExist || _respawnExists || _timeoutReached
-    };
-
+// Note: We already waited for Phase Manager above, but do a final sanity check
+if (!_phaseSuccess) then {
+    ["INIT_CLIENT", 1, "Mission initialization failed - some features may not work correctly"] call FLO_fnc_log;
+    hint "Warning: Mission initialization encountered errors.\nSome features may not work correctly.";
+} else {
     ["INIT_CLIENT", 3, "Mission readiness confirmed"] call FLO_fnc_log;
 };
-
-call _fnc_waitForMissionReady;
 
 // ============================================================================
 // CLIENT FEATURE INITIALIZATION
@@ -242,6 +339,43 @@ private _fnc_initClientFeatures = {
 call _fnc_initClientFeatures;
 
 // ============================================================================
+// VEHICLE SCRAPYARD ACTION
+// ============================================================================
+
+FLO_fnc_addHoldAction_Client = {
+    params ["_veh"];
+
+    [
+        _veh,                                          // Target
+        "Scrap Vehicle",                               // Title
+        "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_unloadDevice_ca.paa", // Idle Icon
+        "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_unloadDevice_ca.paa", // Progress Icon
+        "alive _target && _this distance _target < 15 && count (crew _target) == 0 && {(nearestObjects [_target, ['Land_Cargo_HQ_V1_F', 'Land_Cargo_HQ_V2_F', 'Land_Cargo_HQ_V3_F'], 100]) isNotEqualTo []}", // Condition Show: Near FOB (100m)
+        "true",                                        // Condition Progress
+        {},                                            // Code Start
+        {},                                            // Code Progress
+        { 
+            params ["_target", "_caller", "_actionId", "_arguments"];
+            [_target, "open_menu"] call FLO_fnc_vehicleMarket; 
+        }, // Code Completed
+        {},                                            // Code Interrupted
+        [],                                            // Arguments
+        1,                                             // Duration
+        10,                                            // Priority
+        false,                                         // Remove Completed
+        false                                          // Show Unconscious
+    ] call BIS_fnc_holdActionAdd;
+    
+    _veh setVariable ["FLO_ScrapActionAdded_Hold", true];
+    // systemChat format ["DEBUG: Hold Action Init: %1", typeOf _veh];
+};
+
+// Register for classes using the Global Function
+["LandVehicle", "init", { params ["_veh"]; [_veh] call FLO_fnc_addHoldAction_Client }, true, [], true] call CBA_fnc_addClassEventHandler;
+["Air", "init", { params ["_veh"]; [_veh] call FLO_fnc_addHoldAction_Client }, true, [], true] call CBA_fnc_addClassEventHandler;
+["Ship", "init", { params ["_veh"]; [_veh] call FLO_fnc_addHoldAction_Client }, true, [], true] call CBA_fnc_addClassEventHandler;
+
+// ============================================================================
 // FINAL CLIENT INITIALIZATION
 // ============================================================================
 
@@ -271,6 +405,10 @@ private _fnc_finalizeInit = {
             waitUntil { !isNil "IDS_NotificationClass" };
             IDS_NotificationClass call ["init", []];
         };
+
+        // Initialize Capture Balance UI (updates pushed from server)
+        ["init"] call FLO_fnc_captureUI;
+        ["INIT_CLIENT", 3, "Capture UI initialized"] call FLO_fnc_log;
 
     } catch {
         ["INIT_CLIENT", 1, format ["Error in final initialization: %1", _exception]] call FLO_fnc_log;

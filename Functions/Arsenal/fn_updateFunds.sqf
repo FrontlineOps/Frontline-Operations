@@ -9,21 +9,14 @@
     Returns:
         Number - New funds balance after update
 */
-
-if (!isServer) exitWith {0};
-
 params ["_amount"];
 
-private _Money = 0;
-if (!isNil "FLO_MoneyHandle") then {
-    _Money = FLO_MoneyHandle get "value";
-    if (isNil "_Money") then { _Money = 0; };
-};
+private _Money = FLO_MoneyHandle get "value";
 
 // Calculate new money value
 private _NewMoney = _Money + _amount;
 FLO_MoneyHandle set ["value", _NewMoney];
-publicVariable "FLO_MoneyHandle";
+[_NewMoney] call FLO_fnc_publishMoneyState;
 
 // Return new balance
 _NewMoney

@@ -1,6 +1,6 @@
 params ["_pos"]; 
 
-private _AGGRSCORE = FLO_DifficultyHandle get "value";
+private _AGGRSCORE = FLO_EastDifficultyHandle get "value";
 
 private _mines = [];
 private _mineCount = 10; // Default mine count

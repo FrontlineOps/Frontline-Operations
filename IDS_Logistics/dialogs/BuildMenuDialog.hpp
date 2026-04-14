@@ -8,7 +8,6 @@ class IDS_Logistics_BuildMenuDialog {
 
     class RscObject
     {
-        access = 0;
         type = CT_OBJECT;
         scale = 1;
         direction[] = {0,0,1};
@@ -35,7 +34,6 @@ class IDS_Logistics_BuildMenuDialog {
             enableZoom = 0;
             zoomDuration = 0.001;
             shadow = 0;
-            access = 0;
         };
     };
     

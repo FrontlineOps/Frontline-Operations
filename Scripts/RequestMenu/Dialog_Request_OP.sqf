@@ -1,4 +1,25 @@
-createDialog "supr_RequestsMenu";
+/*
+ * OP (Observation Post) Request Menu Dialog Initialization
+ * Author: Frontline Operations
+ *
+ * Description:
+ * Initializes the Request Menu dialog for Observation Posts with a
+ * limited set of items (containers and static weapons only).
+ *
+ * IDC Reference (from UI/constants.hpp):
+ * - Supplies List: 2103 (FLO_IDC_REQUEST_LIST_SUPPLIES)
+ * - IDD: 1599 (FLO_IDD_REQUEST)
+ */
+
+// Wait for faction data to be available (broadcast from server)
+if (isNil "F_Init" || {!F_Init}) then {
+    hint "Waiting for faction data...";
+    waitUntil {sleep 0.5; !isNil "F_Init" && {F_Init}};
+    hintSilent "";
+};
+
+// Open the Request Menu dialog
+createDialog "FLO_RequestMenuDialog";
 waitUntil {dialog};
 
 // Helper function to add items to a list box
@@ -12,22 +33,35 @@ FLO_fnc_addListBoxItem = {
         ["_picture", "", [""]],
         ["_color", [1,1,1,1], [[]]]
     ];
-    
+
     // Get display name from config if available, otherwise use provided displayName
     private _configDisplayName = getText (configFile >> "CfgVehicles" >> _className >> "displayName");
     if (_configDisplayName == "") then {
         _configDisplayName = _displayName;
     };
-    
+
     private _txt = format ["%1$ | %2 (%3)", _cost, _configDisplayName, _category];
-    private _index = lbAdd [_idc, _txt];            
-    lbSetColor [_idc, _index, _color];   
-    lbSetData [_idc, _index, _className];             
-    lbSetValue [_idc, _index, _cost];             
-    lbSetPictureRight [_idc, _index, _picture]; 
+    private _index = lbAdd [_idc, _txt];
+    lbSetColor [_idc, _index, _color];
+    lbSetData [_idc, _index, _className];
+    lbSetValue [_idc, _index, _cost];
+    lbSetPictureRight [_idc, _index, _picture];
+    // IDD 1599 = FLO_IDD_REQUEST (from UI/constants.hpp)
     (findDisplay 1599 displayCtrl _idc) lbSetPictureRightColor [_index, _color];
-    
+
     _index
+};
+
+// Helper function to check prerequisites and add item
+FLO_fnc_addConditionalItem = {
+    params [
+        ["_condition", true, [true]],
+        ["_params", [], [[]]]
+    ];
+
+    if (_condition) then {
+        _params call FLO_fnc_addListBoxItem;
+    };
 };
 
 // Helper to add vehicles from a list where each entry can be a classname or
@@ -75,7 +109,7 @@ FLO_fnc_updateInformation = {
     };
 
     private _aggr = "100";
-    private _AGGRSCORE = FLO_DifficultyHandle get "value";  
+    private _AGGRSCORE = FLO_EastDifficultyHandle get "value";
     _aggr = _AGGRSCORE * 6.25;
 
     ctrlSetText [1000, format["Resources : %1", _Money]];
@@ -106,6 +140,7 @@ INF_REQUEST = {
     
     // Deduct the cost
     FLO_MoneyHandle set ["value", _Money - _Cost];
+    [(_Money - _Cost)] call FLO_fnc_publishMoneyState;
     
     // Find spawn position
     private _FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
@@ -212,13 +247,14 @@ VEH_REQUEST = {
     
     // Deduct cost
     FLO_MoneyHandle set ["value", _Money - CostV];
+    [(_Money - CostV)] call FLO_fnc_publishMoneyState;
     
     // Create vehicle
     private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 100];
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
     
     // Apply vehicle-specific configurations
-    [CreatedVEH, _VehName] call FLO_fnc_configureVehicle;
+    [CreatedVEH, _VehName] call FLO_fnc_vehicleConfigureRequestedVehicle;
     
     // Setup placement system
     CursorTracker = true;
@@ -253,6 +289,7 @@ VEH_REQUEST = {
             // Refund cost
             private _Money = FLO_MoneyHandle get "value";
             FLO_MoneyHandle set ["value", _Money + CostV];
+            [(_Money + CostV)] call FLO_fnc_publishMoneyState;
             
             deleteVehicle CreatedVEHREF;
             
@@ -323,77 +360,4 @@ VEH_REQUEST = {
     ]);
     
     closeDialog 0;
-};
-
-// Helper function to configure specific vehicle types
-FLO_fnc_configureVehicle = {
-    params ["_vehicle", "_VehName"];
-    
-    // Apply Stryker textures
-    if ((_VehName == "rhsusf_stryker_m1126_m2_d") or (_VehName == "rhsusf_stryker_m1126_mk19_d") or (_VehName == "rhsusf_stryker_m1134_d")) then {
-        [_vehicle, ["Tan", 1]] call BIS_fnc_initVehicle;
-    };
-    
-    // Apply textures to MRZR in woodland environment
-    if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ CUP + RHS") or 
-         (markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ RHS")) && 
-         (_VehName == "rhsusf_mrzr4_d")) then {
-        [_vehicle, ["mud_olive", 1]] call BIS_fnc_initVehicle;
-    };
-    
-    // Configure repair slingload container
-    if (_VehName == "B_Slingload_01_Repair_F") then {
-        [_vehicle, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-            "Scripts\PObjectives\OPUNPACK.sqf",
-            nil,
-            0,
-            true,
-            true,
-            "",
-            "true",
-            40,
-            false,
-            "",
-            ""
-        ]] remoteExec ["addAction", 0, true];
-    };
-    
-    // Configure mobile workshop (F_Truck_04)
-    private _MOBSERName = missionNamespace getVariable "F_Truck_04";
-    if (_VehName == _MOBSERName) then {
-        if (!isNil "_vehicle" && {!isNull _vehicle}) then {
-            [_vehicle, [
-                "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode", 
-                { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
-                nil, 
-                1.4, 
-                false, 
-                true, 
-                "", 
-                "!IDS_Logistics_isHolding"
-            ]] remoteExec ["addAction", 0, true];
-        };
-    };
-    
-    // Configure ammo truck (F_Truck_03)
-    _MOBSERName = missionNamespace getVariable "F_Truck_03";
-    if (_VehName == _MOBSERName) then {
-        [_vehicle, [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil,
-            1,
-            true,
-            true,
-            "",
-            "_this distance _target < 10"
-        ]] remoteExec ["addAction", 0, true];
-    };
 };

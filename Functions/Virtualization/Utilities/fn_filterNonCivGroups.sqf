@@ -17,9 +17,9 @@
 params ["_groupsMap"];
 private _result = createHashMap;
 {
-    private _groupType = _y getOrDefault ["groupType", ""];
+    private _groupType = _y get "groupType";
     if (!(_groupType in ["civilian", "civilianVehicle"])) then {
         _result set [_x, _y];
     };
 } forEach _groupsMap;
-_result 
+_result

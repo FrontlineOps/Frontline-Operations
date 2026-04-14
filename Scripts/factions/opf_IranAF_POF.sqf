@@ -1,205 +1,133 @@
-// OPFOR Iranian Armed Forces Faction Definition
-// Used for both physical and virtual spawning through the virtualization system
+// ============================================================================
+// IRANIAN AF FACTION - OPFOR (POF Mod)
+// Iranian Armed Forces
+// ============================================================================
 
 /*
- * Unit and Vehicle Type Definitions
- * These arrays define what types of units and vehicles can spawn in the mission.
-*/
-
-// Predefined Groups from the config
-// Used as the primary groups for the virtualization system
-East_Groups = [
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = East_Ground_Infantry
+ *   groundSpecOps    = East_Ground_SpecOps
+ *   groundMotorized  = East_Ground_Motorized
+ *   groundMechanized = East_Ground_Mechanized
+ *   groundArmor      = East_Ground_Armor
+ *   groundTransport  = East_Ground_Transport
+ *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
+ *   groundArtillery  = East_Ground_Artillery
+ *   airTransport     = East_Air_Transport
+ *   transportReserveAirCount = East_Transport_Reserve_Air_Count
+ *   airHeli          = East_Air_Heli
+ *   airJet           = East_Air_Jet
+ *   airDrone         = East_Air_Drone
+ *   mobileAA         = East_Mobile_AA
+ *   staticAA         = East_Static_AA
+ *   radar            = East_Radar
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above.
+ */
+// ============================================================================
+// INFANTRY
+// ============================================================================
+// Mixed infantry source for groundInfantry.
+// Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
     (configfile >> "CfgGroups" >> "East" >> "LOP_IRAN" >> "Infantry" >> "LOP_IRAN_Infantry_Patrol"),
     (configfile >> "CfgGroups" >> "East" >> "LOP_IRAN" >> "Infantry" >> "LOP_IRAN_Infantry_Squad"),
     (configfile >> "CfgGroups" >> "East" >> "LOP_IRAN" >> "Infantry" >> "LOP_IRAN_Infantry_ATTeam"),
-    (configfile >> "CfgGroups" >> "East" >> "LOP_IRAN" >> "Infantry" >> "LOP_IRAN_Infantry_AATeam")
+    (configfile >> "CfgGroups" >> "East" >> "LOP_IRAN" >> "Infantry" >> "LOP_IRAN_Infantry_AATeam"),
+    "LOP_IRAN_Infantry_Rifleman", "LOP_IRAN_Infantry_Rifleman",
+    "LOP_IRAN_Infantry_AR", "LOP_IRAN_Infantry_AR",
+    "LOP_IRAN_Infantry_GL", "LOP_IRAN_Infantry_GL",
+    "LOP_IRAN_Infantry_TL",
+    "LOP_IRAN_Infantry_SL",
+    "LOP_IRAN_Infantry_Marksman",
+    "LOP_IRAN_Infantry_AT",
+    "LOP_IRAN_Infantry_AA",
+    "LOP_IRAN_Infantry_Corpsman"
+];
+// groundSpecOps
+East_Ground_SpecOps = [];
+
+// Fire observer pool for artillery support logic.
+East_FireObserver = ["LOP_IRAN_Infantry_SL"];
+
+// ============================================================================
+// VEHICLE ARRAYS
+// ============================================================================
+// groundMotorized
+East_Ground_Motorized = [
+    "LOP_IRAN_UAZ_DshKM", "LOP_IRAN_UAZ_AGS", "LOP_IRAN_UAZ_SPG",
+    "LOP_IRAN_M113_W", "LOP_IRAN_BTR60"
 ];
 
-// Ambient/Civilian-Like Ground Vehicles
-East_Ground_Vehicles_Ambient = [
-    "LOP_IRAN_UAZ",
-    "LOP_IRAN_Ural",
-    "LOP_IRAN_UAZ_Open",
-    "LOP_IRAN_KAMAZ_Transport",
-    "LOP_IRAN_UAZ_DshKM",
-    "LOP_IRAN_UAZ_AGS",
-    "LOP_IRAN_UAZ_SPG"
+// groundMechanized
+East_Ground_Mechanized = [
+    "LOP_IRAN_BMP1", "LOP_IRAN_BMP2", "LOP_IRAN_M113_W",
+    "LOP_IRAN_BTR60", "LOP_IRAN_T72BA", "LOP_IRAN_ZSU234"
+];
+// groundArmor
+East_Ground_Armor = [
+    "LOP_IRAN_BMP1", "LOP_IRAN_BMP2", "LOP_IRAN_M113_W",
+    "LOP_IRAN_BTR60", "LOP_IRAN_T72BA", "LOP_IRAN_ZSU234"
 ];
 
-// Light Military Ground Vehicles
-East_Ground_Vehicles_Light = [
-    "LOP_IRAN_UAZ_DshKM",
-    "LOP_IRAN_UAZ_AGS",
-    "LOP_IRAN_UAZ_SPG",
-    "LOP_IRAN_M113_W",
-    "LOP_IRAN_BTR60",
-    "LOP_IRAN_M113_W"
-];
-
-// Heavy Ground Vehicles and Tanks
-East_Ground_Vehicles_Heavy = [
-    "LOP_IRAN_BMP1",
-    "LOP_IRAN_BMP2",
-    "LOP_IRAN_M113_W",
-    "LOP_IRAN_BTR60",
-    "LOP_IRAN_T72BA",
-    "LOP_IRAN_ZSU234"
-];
-
-// Transport Ground Vehicles
+// groundTransport
 East_Ground_Transport = [
-    "LOP_IRAN_UAZ",
-    "LOP_IRAN_Ural",
-    "LOP_IRAN_UAZ_Open",
-    "LOP_IRAN_KAMAZ_Transport"
+    "LOP_IRAN_UAZ", "LOP_IRAN_Ural", "LOP_IRAN_UAZ_Open", "LOP_IRAN_KAMAZ_Transport"
 ];
+East_Transport_Reserve_Ground_Count = 20;
 
-// Transport Air Vehicles
-East_Air_Transport = [
-    "LOP_IRAN_CH47F",
-    "LOP_IRAN_UH1Y"
-];
+// groundArtillery
+East_Ground_Artillery = ["LOP_IRAN_BM21", "LOP_IRAN_2S1"];
 
-// Armed Helicopters
-East_Air_Heli = [
-    "LOP_IRAN_AH1Z_CS",
-    "LOP_IRAN_AH1Z_GS",
-    "LOP_IRAN_UH1Y_Armed"
-];
+// airTransport
+East_Air_Transport = ["LOP_IRAN_CH47F", "LOP_IRAN_UH1Y"];
+East_Transport_Reserve_Air_Count = 10;
 
-// Fixed-Wing Aircraft
-East_Air_Jet = [
-    "LOP_IRAN_MIG21Bis"
-];
+// airHeli
+East_Air_Heli = ["LOP_IRAN_AH1Z_CS", "LOP_IRAN_AH1Z_GS", "LOP_IRAN_UH1Y_Armed"];
 
-// Artillery Units
-East_Ground_Artillery = [
-    "LOP_IRAN_BM21",
-    "LOP_IRAN_2S1"
-];
+// airJet
+East_Air_Jet = ["LOP_IRAN_MIG21Bis"];
 
-// Drone Units
-East_Air_Drone = [
-    "O_UAV_01_F",
-    "O_UAV_02_dynamicLoadout_F"
-];
+// airDrone
+East_Air_Drone = ["O_UAV_01_F", "O_UAV_02_dynamicLoadout_F"];
 
-// Individual Infantry Units
-East_Units = [
-    // Regular infantry (high frequency)
-    "LOP_IRAN_Infantry_Rifleman", "LOP_IRAN_Infantry_Rifleman",     // Regular rifleman
-    "LOP_IRAN_Infantry_AR", "LOP_IRAN_Infantry_AR",                 // Autorifleman
-    "LOP_IRAN_Infantry_GL", "LOP_IRAN_Infantry_GL",                 // Grenadier
-    
-    // Support roles (medium frequency)
-    "LOP_IRAN_Infantry_TL",                                         // Team Leader
-    "LOP_IRAN_Infantry_SL",                                         // Squad Leader
-    "LOP_IRAN_Infantry_Marksman",                                   // Marksman
-    
-    // Specialists (low frequency)
-    "LOP_IRAN_Infantry_AT",                                         // AT Specialist
-    "LOP_IRAN_Infantry_AA",                                         // AA Specialist
-    "LOP_IRAN_Infantry_Corpsman"                                    // Medic
-];
+// mobileAA
+East_Mobile_AA = ["LOP_IRAN_ZSU234"];
 
-// Fire Observer Units for Artillery
-East_FireObserver = [
-    "LOP_IRAN_Infantry_SL"
-];
+// staticAA
+East_Static_AA = ["O_SAM_System_04_F"];
 
-// Officer Units
-East_Units_Officers = [
-    "LOP_IRAN_Infantry_Officer"
-];
+// radar
+East_Radar = ["O_Radar_System_02_F"];
 
-/*
- * OPFOR Virtualization Objective Configuration
- * This section defines how many of each unit type should spawn at different objective types
- * These are the default settings that will be used by the virtualization system
-*/
-
-// Structure: [objective type, [[group type, count], [group type, count], ...]]
+// ============================================================================
+// GARRISON CONFIGURATION
+// ============================================================================
 OPFOR_Objective_Groups = [
-    // Support objectives - mix of infantry and light vehicles
-    ["o_support", [
-        ["infantry", 3], 
-        ["motorized", 2]
-    ]],
-    
-    // Neutral support objectives - lighter security
-    ["n_support", [
-        ["infantry", 2], 
-        ["motorized", 1]
-    ]],
-    
-    // Installation objectives - mix of infantry and heavy vehicles
-    ["o_installation", [
-        ["infantry", 4], 
-        ["mechanized", 2],
-        ["armor", 1]
-    ]],
-    
-    // Neutral installation objectives
-    ["n_installation", [
-        ["infantry", 3], 
-        ["mechanized", 1]
-    ]],
-    
-    // Anti-air objectives - AA vehicles and infantry
-    ["o_antiair", [
-        ["infantry", 2],
-        ["motorized", 1],
-        ["air", 1]
-    ]],
-    
-    // Service objectives - light vehicles and infantry
-    ["o_service", [
-        ["infantry", 2],
-        ["motorized", 2]
-    ]],
-    
-    // Power plant objectives - infantry defense
-    ["loc_Power", [
-        ["infantry", 3],
-        ["motorized", 1]
-    ]],
-    
-    // Ruins objectives - light infantry presence
-    ["loc_Ruin", [
-        ["infantry", 1]
-    ]],
-    
-    // Recon objectives - small infantry and light vehicles
-    ["o_recon", [
-        ["infantry", 2],
-        ["motorized", 1],
-        ["helicopter", 1]
-    ]],
-    
-    // Infantry objectives - heavier infantry presence
-    ["o_inf", [
-        ["infantry", 4],
-        ["motorized", 1]
-    ]]
+    ["capital", [["infantry", 12], ["motorized", 2], ["mechanized", 1], ["air", 1], ["armor", 1], ["artillery", 1], ["mobile_aa", 1], ["static_aa", 1]]],
+    ["city", [["infantry", 7], ["motorized", 2]]],
+    ["village", [["infantry", 3]]],
+    ["local", [["infantry", 6], ["motorized", 2], ["mechanized", 1], ["mobile_aa", 1]]],
+    ["marine", [["infantry", 3], ["motorized", 1]]],
+    ["cluster", [["infantry", 2]]]
 ];
 
-/*
- * Group Type Unit/Vehicle Counts
- * Defines how many physical units/vehicles should be in each type of group
- */
 OPFOR_Group_Counts = [
-    ["infantry", 8],           // Number of individual soldiers
-    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
-    ["mechanized", 1],        // Number of APCs/IFVs
-    ["armor", 1],             // Number of tanks
-    ["helicopter", 1],        // Number of helicopters
-    ["jet", 1],               // Number of jets
-    ["air", 1],               // Number of aircraft
-    ["artillery", 1]          // Number of artillery pieces
+    ["infantry", 10],
+    ["motorized", 1],
+    ["mechanized", 1],
+    ["armor", 1],
+    ["helicopter", 1],
+    ["jet", 1],
+    ["air", 1],
+    ["artillery", 3],
+    ["mobile_aa", 1],
+    ["static_aa", 1]
 ];
 
-/*
- * Configure activation distance for the virtualization system
- * This is the distance in meters that a player needs to be from a virtual group for it to physically spawn in the game
- */ 
-OPFOR_Virtualization_Distance = 2000;

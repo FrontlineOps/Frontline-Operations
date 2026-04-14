@@ -37,7 +37,7 @@ private _entity = createVehicleLocal [_className, [0,0,0], [], 0, "CAN_COLLIDE"]
 
 // Disable simulation and collision
 _entity enableSimulationGlobal false;
-[player, _entity] remoteExecCall ["disableCollisionWith", 0, true]; // JIP compatible
+player disableCollisionWith _entity;
 
 // Set holding state
 IDS_Logistics_isHolding = true;

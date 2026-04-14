@@ -42,7 +42,7 @@ sleep 1;
 private _container = createVehicle ["B_Slingload_01_Repair_F", _buildingPos, [], 0, "NONE"];
 _container setDir _buildingDir;
 
-[_container, [
+[_container, "OP_DEPLOYABLE", [[
     "<t font='PuristaBold' color='#FF0000' size='1.15'>Move OP</t>", 
     { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
     nil, 
@@ -51,10 +51,7 @@ _container setDir _buildingDir;
     true, 
     "", 
     "!IDS_Logistics_isHolding"
-]] remoteExec ["addAction", 0, true];
-
-// Add unpack action
-[_container, [
+], [
     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
     "Scripts\PObjectives\OPUNPACK.sqf",
     nil,
@@ -67,4 +64,4 @@ _container setDir _buildingDir;
     false,
     "",
     ""
-]] remoteExec ["addAction", 0, true];
+]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, _container];

@@ -37,7 +37,7 @@ sleep 1;
 private _fobContainer = createVehicle ["B_Slingload_01_Cargo_F", _pos, [], 0, "NONE"];
 _fobContainer setDir _dir;
 
-[_fobContainer, [
+[_fobContainer, "FOB_DEPLOYABLE", [[
     "<t font='PuristaBold' color='#FF0000' size='1.15'>Move FOB</t>", 
     { [player, true] call IDS_Logistics_fnc_initBuildCamera; }, 
     nil, 
@@ -46,10 +46,7 @@ _fobContainer setDir _dir;
     true, 
     "", 
     "!IDS_Logistics_isHolding"
-]] remoteExec ["addAction", 0, true];
-
-// Add unpack action to FOB container
-[_fobContainer, [
+], [
     "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack FOB",
     "Scripts\PObjectives\FOBUNPACK.sqf",
     nil,
@@ -62,4 +59,4 @@ _fobContainer setDir _dir;
     false,
     "",
     ""
-]] remoteExec ["addAction", 0, true];
+]]] remoteExec ["FLO_fnc_configureObjectActionsLocal", 0, _fobContainer];

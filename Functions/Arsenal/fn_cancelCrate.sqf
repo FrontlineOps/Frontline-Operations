@@ -10,9 +10,6 @@
     Returns:
         None
 */
-
-if (!isServer) exitWith {};
-
 params ["_crate", "_cost"];
 
 // Refund cost

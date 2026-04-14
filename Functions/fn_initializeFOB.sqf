@@ -79,8 +79,10 @@ private _fnc_createMarker = {
         [_type, 3, format["Using restored %1 marker %2", _type, _markerName]] call FLO_fnc_log;
     } else {
         // Create a new marker
+        private _activeSide = FLO_ActivePlayerSide;
+        private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
         private _relpos = _building getRelPos [12, 0];
-        _markerName = "respawn_west" + (str (getPos _building));
+        _markerName = format ["respawn_%1_%2", _respawnKey, str (getPosATL _building)];
         _building setVariable [_markerVariable, _markerName, true];
 
         // Check if marker already exists
@@ -107,6 +109,7 @@ private _fnc_createMarker = {
 // ============================================================================
 
 private _markerName = [_fobBuilding, _config, _preserveMarker] call _fnc_createMarker;
+[] call FLO_fnc_refreshRespawnMarkersByTerritory;
 
 // ============================================================================
 // ARSENAL AND ACTIONS SETUP
@@ -116,13 +119,29 @@ private _fnc_setupArsenal = {
     params ["_building", "_config"];
 
     private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
-    if (_restrictedArsenal isEqualTo 0) then {
+    
+    // Check if we should restrict the arsenal
+    if (_restrictedArsenal == 0) then {
         try {
             [_building] call FLO_fnc_restrictArsenalBox;
-            [_building] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, true];
             [_config get "type", 3, "Arsenal restrictions applied"] call FLO_fnc_log;
         } catch {
-            [_config get "type", 1, format["Failed to setup arsenal: %1", _exception]] call FLO_fnc_log;
+            [_config get "type", 1, format["Failed to setup restricted arsenal: %1", _exception]] call FLO_fnc_log;
+        };
+    } else {
+        // Unrestricted - initialize full arsenal
+        try {
+            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                [_building, true] call ace_arsenal_fnc_initBox;
+                [_building, true] call ace_arsenal_fnc_addVirtualItems;
+            } else {
+                ["AmmoboxInit", [_building, true]] call BIS_fnc_arsenal;
+            };
+            
+            [_building] remoteExec ["FLO_fnc_addCratePurchaseActions", 0, format ["FLO_CRATE_ACT_%1", netId _building]];
+            [_config get "type", 3, "Arsenal unrestricted initialized"] call FLO_fnc_log;
+        } catch {
+            [_config get "type", 1, format["Failed to setup unrestricted arsenal: %1", _exception]] call FLO_fnc_log;
         };
     };
 };
@@ -131,24 +150,14 @@ private _fnc_addActions = {
     params ["_building", "_config"];
 
     private _type = _config get "type";
+    private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+    
     private _actions = [
         // Build Mode Action
         [
             "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
             { [player] call IDS_Logistics_fnc_initBuildCamera; },
             nil, 1.4, false, true, "", "!IDS_Logistics_isHolding"
-        ],
-        // Arsenal Action
-        [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil, 1, true, true, "", "_this distance _target < 10"
         ],
         // Pack Action (FOB-specific with commander check)
         [
@@ -162,22 +171,75 @@ private _fnc_addActions = {
             "Scripts\RequestMenu\Dialog_Request.sqf", nil, 99999, true, true, "", "", 40, false, "", ""
         ]
     ];
+    
+    // Always add Arsenal action
+    _actions pushBack [
+        "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+        {
+            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                [player, player, false] call ace_arsenal_fnc_openBox;
+            } else {
+                ["Open", true] spawn BIS_fnc_arsenal;
+            };
+        },
+        nil, 1, true, true, "", "_this distance _target < 10"
+    ];
 
     // Add all actions with error handling
-    {
-        try {
-            [_building, _x] remoteExec ["addAction", 0, true];
-        } catch {
-            [_type, 1, format["Failed to add action %1: %2", _forEachIndex, _exception]] call FLO_fnc_log;
-        };
-    } forEach _actions;
+    try {
+        [_building, "FOB_MAIN", _actions] remoteExec [
+            "FLO_fnc_configureObjectActionsLocal",
+            0,
+            format ["FLO_OBJ_ACT_%1_FOB_MAIN", netId _building]
+        ];
+    } catch {
+        [_type, 1, format["Failed to configure main actions: %1", _exception]] call FLO_fnc_log;
+    };
 
     [_type, 3, format["Added %1 actions to %2", count _actions, _type]] call FLO_fnc_log;
+};
+
+// Add commander actions to the FOB container (screen/board)
+private _fnc_addContainerActions = {
+    params ["_building", "_config"];
+
+    private _type = _config get "type";
+    private _containerType = if (!isNil "F_HQ_C_01") then { F_HQ_C_01 } else { "Land_Cargo20_military_green_F" };
+
+    // Find nearby FOB container
+    private _containers = nearestObjects [_building, [_containerType], 25];
+    if (count _containers == 0) exitWith {
+        [_type, 2, "No FOB container found nearby for commander actions"] call FLO_fnc_log;
+    };
+
+    private _container = _containers select 0;
+    private _commanderCondition = "player isEqualTo TheCommander";
+
+    // Commander-only actions for the container/board
+    private _containerActions = [
+        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, nil, 4, true, true, "", _commanderCondition],
+        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, nil, 4, true, true, "", _commanderCondition],
+        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, nil, 6, true, true, "", _commanderCondition],
+        ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, nil, 3, true, true, "", _commanderCondition]
+    ];
+
+    try {
+        [_container, "FOB_CONTAINER", _containerActions] remoteExec [
+            "FLO_fnc_configureObjectActionsLocal",
+            0,
+            format ["FLO_OBJ_ACT_%1_FOB_CONTAINER", netId _container]
+        ];
+    } catch {
+        [_type, 1, format["Failed to configure container actions: %1", _exception]] call FLO_fnc_log;
+    };
+
+    [_type, 3, format["Added %1 commander actions to container", count _containerActions]] call FLO_fnc_log;
 };
 
 // Execute setup functions
 [_fobBuilding, _config] call _fnc_setupArsenal;
 [_fobBuilding, _config] call _fnc_addActions;
+[_fobBuilding, _config] call _fnc_addContainerActions;
 
 // ============================================================================
 // TRIGGER SETUP
@@ -204,8 +266,10 @@ private _fnc_createTriggers = {
                 if (_civilian getUnitTrait 'engineer') then {
                     [50, 'STR_FLO_INSURGENT'] call FLO_fnc_sendRewardNotification;
                     [50] call FLO_fnc_addReward;
+                    private _reportSide = missionNamespace getVariable ['FLO_ActivePlayerSide', west];
+                    if !(_reportSide in [east, west]) then { _reportSide = west; };
+                    [_civilian, _reportSide] call FLO_fnc_gtnAlertCivilianReport;
                     deleteVehicle _civilian;
-                    [] call FLO_fnc_civilianIntel;
                     [0.35, 'increase'] call FLO_fnc_adjustReputation;
                 } else {
                     [0, 'STR_FLO_CIVILIAN'] call FLO_fnc_sendRewardNotification;
@@ -234,7 +298,7 @@ private _fnc_createTriggers = {
                 if (!isNull _resource) then {
                     deleteVehicle _resource;
                     [100, 'STR_FLO_RESOURCE'] call FLO_fnc_sendRewardNotification;
-                    [100, thisTrigger] execVM 'Scripts\Reward_Supplies.sqf';
+                    [100] call FLO_fnc_addReward;
                 };
             ", _searchRadiusLarge], ""
         ];
@@ -322,10 +386,34 @@ _fobBuilding addEventHandler ["Killed", {
 
     while {alive _fob} do {
         try {
-            // Optimized unit counting using nearEntities
+            // Dedicated-safe unit counting: nearEntities + player fallback.
+            private _fobPos = getPosATL _fob;
             private _nearUnits = _fob nearEntities [["Man", "LandVehicle"], _areaRadius];
-            private _bluforCount = {alive _x && side _x isEqualTo west} count _nearUnits;
-            private _opforCount = {alive _x && side _x isEqualTo east} count _nearUnits;
+            private _bluforCount = 0;
+            private _opforCount = 0;
+
+            {
+                if (!alive _x) then { continue };
+                if ((_x distance2D _fobPos) > _areaRadius) then { continue };
+
+                private _uSide = side _x;
+                if (isPlayer _x) then {
+                    _uSide = side group _x;
+                };
+
+                if (_uSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+                if (_uSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+            } forEach _nearUnits;
+
+            {
+                if (!alive _x) then { continue };
+                if ((_x distance2D _fobPos) > _areaRadius) then { continue };
+                if (_x in _nearUnits) then { continue };
+
+                private _pSide = side group _x;
+                if (_pSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
+                if (_pSide isEqualTo east) then { _opforCount = _opforCount + 1 };
+            } forEach allPlayers;
 
             if (_opforCount > _bluforCount && _opforCount > 0) then {
                 // Create status marker if needed

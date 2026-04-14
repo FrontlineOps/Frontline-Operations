@@ -52,7 +52,7 @@ _localEntity setVariable ["IDS_Logistics_isPickedUp", true];
 
 // Disable simulation and collision
 _localEntity enableSimulationGlobal false;
-[player, _localEntity] remoteExecCall ["disableCollisionWith", 0, true]; // JIP compatible
+player disableCollisionWith _localEntity;
 
 // Setup holding state
 IDS_Logistics_isHolding = true;

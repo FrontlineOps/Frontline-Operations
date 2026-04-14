@@ -5,62 +5,94 @@
 // Used for both physical and virtual spawning through the virtualization system
 
 /*
+ * HOW THIS FILE FEEDS THE COMMANDER / VIRTUALIZATION
+ *
+ * You only edit the faction data in this file. Phase 2 builds the runtime pools
+ * from these sections automatically:
+ *
+ *   groundInfantry   = East_Ground_Infantry
+ *   groundSpecOps    = East_Ground_SpecOps
+ *   groundMotorized  = East_Ground_Motorized
+ *   groundMechanized = East_Ground_Mechanized
+ *   groundArmor      = East_Ground_Armor
+ *   groundTransport  = East_Ground_Transport
+ *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
+ *   groundArtillery  = East_Ground_Artillery
+ *   airTransport     = East_Air_Transport
+ *   transportReserveAirCount = East_Transport_Reserve_Air_Count
+ *   airHeli          = East_Air_Heli
+ *   airJet           = East_Air_Jet
+ *   airDrone         = East_Air_Drone
+ *   mobileAA         = East_Mobile_AA
+ *   staticAA         = East_Static_AA
+ *   radar            = East_Radar
+ *   objectiveGroupTypeCaps = East_Objective_Group_Type_Caps
+ *
+ * If you want to change what the commander can spawn, change the source data
+ * that feeds the category above.
+ *
+ * Optional side-wide objective seeding caps:
+ *   East_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
+ * These caps apply across all owned seeded objectives combined, not per city.
+ */
+
+/*
  * Unit and Vehicle Type Definitions
  * These arrays define what types of units and vehicles can spawn in the mission.
-*/
+ */
 
-// Predefined Groups from the config
-// Used as the primary groups for the virtualization system
-East_Groups = [
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSentry"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
-(configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons")
+// Mixed infantry source for groundInfantry.
+// Entries may be full CfgGroups configs or individual unit classnames.
+East_Ground_Infantry = [
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSentry"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AT"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfTeam_AA"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad"),
+    (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "HAF_InfSquad_Weapons"),
+    "I_soldier_F", "I_soldier_F", "I_soldier_F", "I_soldier_F",
+    "I_Soldier_AR_F", "I_Soldier_AR_F",
+    "I_Soldier_CQ_F", "I_Soldier_CQ_F",
+    "I_Soldier_GL_F", "I_Soldier_GL_F",
+    "I_medic_F", "I_medic_F",
+    "I_Soldier_MG_F", "I_Soldier_MG_F",
+    "I_Soldier_M_F",
+    "I_Soldier_A_F",
+    "I_Soldier_LAT_F",
+    "I_Soldier_LAT2_F",
+    "I_Soldier_AT_F",
+    "I_Soldier_AA_F"
 ];
-// Ambient/Civilian-Like Ground Vehicles
-East_Ground_Vehicles_Ambient = ["I_MRAP_03_F"]; 
-// Light Military Ground Vehicles
-East_Ground_Vehicles_Light = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F", "I_APC_Wheeled_03_cannon_F"];
-// Heavy Ground Vehicles and Tanks
-East_Ground_Vehicles_Heavy = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F", "I_LT_01_AA_F", "I_APC_tracked_03_cannon_v2_F"]; 
-// Transport Ground Vehicles
+// groundSpecOps
+East_Ground_SpecOps = [];
+// groundMotorized
+East_Ground_Motorized = ["I_MRAP_03_F", "I_MRAP_03_gmg_F", "I_MRAP_03_hmg_F"];
+// groundMechanized
+East_Ground_Mechanized = ["I_APC_Wheeled_03_cannon_F", "I_APC_tracked_03_cannon_v2_F"];
+// groundArmor
+East_Ground_Armor = ["I_MBT_03_cannon_F", "I_LT_01_cannon_F", "I_LT_01_AT_F"];
+// groundTransport
 East_Ground_Transport = ["I_MRAP_03_F", "I_Truck_02_transport_F", "I_Truck_02_covered_F"]; 
-// Transport Air Vehicles
+East_Transport_Reserve_Ground_Count = 20;
+// airTransport
 East_Air_Transport = ["I_Heli_Transport_02_F", "Aegis_I_Heli_Transport_02_Heavy_F", "I_Heli_Light_01_F", "I_Heli_light_03_unarmed_F"];
-// Armed Helicopters
+East_Transport_Reserve_Air_Count = 10;
+// airHeli
 East_Air_Heli = ["I_Heli_Attack_03_F", "I_Heli_Light_01_dynamicLoadout_F", "I_Heli_light_03_dynamicLoadout_F"]; 
-// Fixed-Wing Aircraft
+// airJet
 East_Air_Jet = ["I_Plane_Fighter_04_F", "I_Plane_Fighter_03_dynamicLoadout_F"]; 
-// Artillery Units
+// groundArtillery
 East_Ground_Artillery = ["O_MBT_02_arty_F"]; 
-// Drone Units
+// airDrone
 East_Air_Drone = ["I_UAV_01_F"]; 
-// Individual Infantry Units
-East_Units = [
-    // Regular infantry (high frequency)
-    "I_soldier_F", "I_soldier_F", "I_soldier_F", "I_soldier_F",  // Regular rifleman
-    "I_Soldier_AR_F", "I_Soldier_AR_F",                          // Autorifleman
-    "I_Soldier_CQ_F", "I_Soldier_CQ_F",                          // CQB specialist
-    "I_Soldier_GL_F", "I_Soldier_GL_F",                          // Grenadier
-    
-    // Support roles (medium frequency)
-    "I_medic_F", "I_medic_F",                                    // Medic
-    "I_Soldier_MG_F", "I_Soldier_MG_F",              // Machine gunner
-    "I_Soldier_M_F",                                             // Marksman
-    "I_Soldier_A_F",                                             // Ammo bearer
-    
-    // Specialists (low frequency)
-    "I_Soldier_LAT_F",                                           // Light AT
-    "I_Soldier_LAT2_F",                                          // Light AT
-    "I_Soldier_AT_F",                                            // AT Specialist
-    "I_Soldier_AA_F"                                             // AA Specialist
-];
-// Fire Observer Units for Artillery
+// mobileAA
+East_Mobile_AA = ["I_LT_01_AA_F"];
+// staticAA
+East_Static_AA = ["O_SAM_System_04_F"];
+// radar
+East_Radar = ["O_Radar_System_02_F"];
+// Fire observer pool for artillery support logic.
 East_FireObserver = ["I_RadioOperator_F"];
-// Officer Units
-East_Units_Officers = ["I_officer_F"];
 
 /*
  * OPFOR Virtualization Objective Configuration
@@ -78,7 +110,9 @@ OPFOR_Objective_Groups = [
         ["mechanized", 1],
         ["air", 1],
         ["armor", 1],
-        ["artillery", 1]
+        ["artillery", 1],
+        ["static_aa", 1],
+        ["mobile_aa", 1]
     ]],
 
     // Major cities
@@ -97,7 +131,8 @@ OPFOR_Objective_Groups = [
     ["local", [
         ["infantry", 6],
         ["motorized", 2],
-        ["mechanized", 1]
+        ["mechanized", 1],
+        ["mobile_aa", 1]
     ]],
 
     // Coastal or marine facilities
@@ -113,6 +148,19 @@ OPFOR_Objective_Groups = [
 ];
 
 /*
+ * Optional side-wide objective seeding caps:
+ *   East_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
+ * These caps apply across all owned seeded objectives combined.
+ */
+East_Objective_Group_Type_Caps = [
+    ["jet", 10],
+    ["helicopter", 10],
+    ["artillery", 5],
+    ["static_aa", 3],
+    ["mobile_aa", 20]
+];
+
+/*
  * Group Type Unit/Vehicle Counts
  * Defines how many physical units/vehicles should be in each type of group
  */
@@ -124,19 +172,8 @@ OPFOR_Group_Counts = [
     ["helicopter", 1],        // Number of helicopters
     ["jet", 1],               // Number of jets
     ["air", 1],               // Number of aircraft
-    ["artillery", 1]         // Number of artillery pieces (Probably always keep this at 1)
+    ["artillery", 3],         // Number of artillery pieces
+    ["mobile_aa", 1],         // Number of mobile AA vehicles
+    ["static_aa", 1]          // Number of static SAM launchers
 ];
 
-/*
- * Cluster Size Threshold Configuration
- * Defines the minimum number of structures required to form a objective
- * Options: "Small" (4), "Medium" (8), "Large" (12), "Huge" (24)
- * Default: "Medium"
- */
-OPFOR_Objective_Size_Threshold = "Medium";
-
-/*
- * Configure activation distance for the virtualization system
- * This is the distance in meters that a player needs to be from a virtual group for it to physically spawn in the game
- */ 
-OPFOR_Virtualization_Distance = 2000;

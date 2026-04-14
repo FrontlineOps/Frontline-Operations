@@ -1,7 +1,16 @@
 /*
  * FLO Server Initialization Script
  * Author: Frontline Operations Development Group
- * Description: Server initialization
+ * Description: Server initialization using the centralized Phase Manager.
+ *              This replaces the old fragmented initialization with a robust,
+ *              deterministic sequence that eliminates race conditions.
+ *
+ * The Phase Manager handles:
+ *   Phase 1: Mission Config - Wait for faction dialog, receive config
+ *   Phase 2: Factions - Load faction scripts
+ *   Phase 3: Objectives - Index all map objectives
+ *   Phase 4: Virtualization - Setup virtualization and OPFOR groups
+ *   Phase 5: Mission Systems - Start side missions, AI commander, etc.
  */
 
 if (!isServer) exitWith {};
@@ -18,7 +27,24 @@ private _globalVars = createHashMapFromArray [
     ["ConVLocc", 0],
     ["FLO_Objectives_Debug", false],
     ["StartingLocationDone", false],
-    ["F_Init", false]
+    ["F_Init", false],
+    ["InitializationOG", false],
+    ["FLO_MissionReady", false],
+    ["FLO_SideResources", createHashMap],
+    ["FLO_SideResourceState", createHashMap],
+    ["FLO_ActivePlayerSide", sideUnknown],
+    ["FLO_MissionSides", [east, west]],
+    ["FLO_FactionCatalog", createHashMap],
+    ["FLO_GTN_CommandersBySide", createHashMap],
+    ["FLO_GTN_CommandersBySideState", createHashMap],
+    ["FLO_GTN_EnablePlayerTaskBridge", true],
+    ["FLO_GTN_CommanderDebugEnabled", false],
+    ["FLO_GTN_CommanderDebugRunning", false],
+    ["FLO_GTN_CommanderDebugMarkers", createHashMap],
+    ["FLO_GTN_CombatDebugEnabled", true],
+    ["FLO_GTN_AttackHandle", createHashMapFromArray [["value", 4], ["name", "Conservative"]]],
+    ["FLO_GTN_DefenseHandle", createHashMapFromArray [["value", 4], ["name", "Minimal Coverage"]]],
+    ["FLO_GTN_TempoHandle", createHashMapFromArray [["value", 10], ["name", "10s"]]]
 ];
 
 // Set and publish global variables
@@ -27,135 +53,79 @@ private _globalVars = createHashMapFromArray [
     publicVariable _x;
 } forEach _globalVars;
 
-// Initialize world center position (fix case sensitivity issue)
+private _serverOnlyVars = createHashMapFromArray [
+    ["FLO_GTN_CombatEvents", []],
+    ["FLO_GTN_CombatLastByObjective", createHashMap]
+];
+
+{
+    missionNamespace setVariable [_x, _y];
+} forEach _serverOnlyVars;
+
+// Initialize world center position
 Centerposition = [worldSize / 2, worldSize / 2, 0];
 
 // ============================================================================
-// EARLY INITIALIZATION
+// COMMANDER SYNCHRONIZATION
+// ============================================================================
+// On dedicated servers, TheCommander is set by mission.sqm when a player takes that slot.
+// We need to explicitly publicVariable it to ensure all clients can see it for action conditions.
+[] spawn {
+    // Wait for a player to take the Commander slot
+    waitUntil {sleep 1; !isNil "TheCommander" && {!isNull TheCommander}};
+
+    // Explicitly publicVariable to ensure all clients (including JIP) can see it
+    publicVariable "TheCommander";
+    diag_log format ["[FLO_INIT] TheCommander synchronized: %1", name TheCommander];
+
+    // Also monitor for commander changes (if player disconnects and reconnects)
+    private _lastCommander = TheCommander;
+    while {true} do {
+        sleep 30;
+        if (!isNil "TheCommander" && {!isNull TheCommander} && {TheCommander != _lastCommander}) then {
+            _lastCommander = TheCommander;
+            publicVariable "TheCommander";
+            diag_log format ["[FLO_INIT] TheCommander updated: %1", name TheCommander];
+        };
+    };
+};
+
+// ============================================================================
+// EARLY INITIALIZATION (Pre-Phase Manager)
 // ============================================================================
 
 // Initialize Heartbeat System
 [] spawn FLO_fnc_heartbeat;
 
-// ============================================================================
-// MISSION LOADING SEQUENCE
-// ============================================================================
-
 // Wait for mission to be fully loaded
+// MissionLoadedLitterally is set by init.sqf or CBA
 waitUntil {sleep 0.1; !isNil "MissionLoadedLitterally" && {MissionLoadedLitterally}};
 
-// Wait for starting location configuration
-waitUntil {sleep 0.1; StartingLocationDone};
+diag_log "[FLO_INIT] Mission loaded, starting Phase Manager...";
 
 // ============================================================================
-// FACTION INITIALIZATION (DEDICATED SERVER)
+// PHASE MANAGER - CENTRALIZED INITIALIZATION
 // ============================================================================
 
-if (isDedicated) then {
-    execVM "Scripts\Init\init_groups.sqf";
-    setViewDistance 3000; // Required for AI knowsAbout calculations
+// The phase manager runs ALL initialization in proper sequence:
+[] spawn {
+    // Give the engine a moment to settle
     sleep 1;
-    waitUntil {sleep 0.1; F_Init};
+
+    // Run the centralized phase manager
+    private _success = [] call FLO_fnc_initPhaseManager;
+
+    if (_success) then {
+        diag_log "[FLO_INIT] Phase Manager completed successfully";
+    } else {
+        diag_log format ["[FLO_INIT] Phase Manager FAILED: %1", FLO_InitError];
+        // Notify players of failure
+        [format ["Mission initialization failed: %1", FLO_InitError]] remoteExec ["hint", 0];
+    };
 };
 
 // ============================================================================
-// CONFIG CACHE INITIALIZATION
-// ============================================================================
-
-// Wait for faction arrays to be initialized
-waitUntil {
-    sleep 0.1;
-    !isNil "East_Units" &&
-    !isNil "East_Air_Transport" &&
-    !isNil "East_Ground_Vehicles_Light"
-};
-
-// Initialize config cache with categorized data
-private _fnc_initConfigCache = {
-    private _helipads = [
-        "Land_HelipadCircle_F", "Land_HelipadCivil_F", "Heli_H_rescue",
-        "Land_HelipadRescue_F", "Land_HelipadSquare_F", "HeliHRescue",
-        "Heli_H_civil", "HeliHCivil", "HeliH"
-    ];
-
-    private _vehicles = [
-        East_Air_Heli, East_Ground_Transport, East_Ground_Vehicles_Light,
-        East_Ground_Vehicles_Heavy, East_Ground_Vehicles_Ambient,
-        East_Air_Transport, East_Air_Jet, East_Ground_Artillery, East_Air_Drone
-    ];
-
-    private _buildings = [
-        "House", "Land_MilOffices_V1_F", "Land_Cargo_Tower_V3_F",
-        "Land_Cargo_Tower_V2_F", "Land_Cargo_Tower_V1_F", "Land_Cargo_HQ_V3_F",
-        "Land_Cargo_HQ_V2_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V3_F",
-        "Land_Cargo_House_V1_F"
-    ];
-
-    private _sovBuildings = [
-        // Markers and indicators
-        "Sign_Pointer_Cyan_F", "Land_Garbage_square3_F", "Land_Garbage_line_F",
-        "Sign_Pointer_Yellow_F", "Sign_Sphere10cm_F", "Sign_Pointer_Blue_F",
-        "Land_InvisibleBarrier_F", "Land_HelipadEmpty_F",
-        // Military equipment
-        "O_Radar_System_02_F", "O_G_Mortar_01_F", "O_G_HMG_02_high_F",
-        // Command and control
-        "Land_TripodScreen_01_large_black_F", "Land_vn_b_prop_mapstand_01",
-        "MapBoard_altis_F", "Land_Laptop_device_F", "Land_Map_Malden_F",
-        "Land_Document_01_F", "Land_File2_F",
-        // Structures
-        "Land_i_Barracks_V1_F", "Land_u_Barracks_V2_F", "Land_i_Barracks_V2_F",
-        "Land_Barracks_01_grey_F", "Land_Barracks_01_dilapidated_F",
-        "Land_vn_controltower_01_f", "Land_Radar_F", "Land_TTowerBig_1_F",
-        "Land_TTowerBig_2_F",
-        // Screens and displays
-        "Land_TripodScreen_01_large_F", "Land_TripodScreen_01_large_sand_F",
-        "Land_TripodScreen_01_dual_v2_sand_F", "Land_TripodScreen_01_dual_v2_F",
-        // Supply containers
-        "Box_FIA_Support_F", "Box_FIA_Ammo_F", "Land_PowerGenerator_F",
-        "Land_Barracks_01_camo_F", "Land_vn_barracks_01_camo_f",
-        // Cargo structures
-        "Land_Cargo_House_V1_F", "Land_Cargo_Tower_V1_F", "Land_Cargo_Tower_V3_F",
-        "Land_Cargo_Tower_V2_F", "Land_Cargo_House_V3_F", "Land_Cargo_HQ_V3_F",
-        "Land_Cargo_HQ_V1_F",
-        // Slingload containers
-        "B_Slingload_01_Cargo_F", "B_Slingload_01_Repair_F",
-        // Ammo boxes
-        "VirtualReammoBox_small_F", "Box_NATO_WpsSpecial_F",
-        "Box_NATO_AmmoOrd_F", "Box_NATO_Ammo_F", "Box_NATO_Wps_F"
-    ];
-
-    private _hqBuildings = [
-        "Land_Cargo_HQ_V3_F", "Land_Cargo_HQ_V1_F", "Land_Cargo_House_V1_F",
-        "Land_Cargo_House_V3_F", "Land_Cargo_HQ_V3_ruins_F",
-        "Land_Cargo_HQ_V1_ruins_F", "Land_Cargo_House_V1_ruins_F",
-        "Land_Cargo_House_V3_ruins_F", "House"
-    ];
-
-    private _bunkers = [
-        "Land_BagBunker_Large_F", "Land_BagBunker_Small_F",
-        "Land_Cargo_House_V3_F", "Land_Cargo_House_V1_F",
-        "Land_Cargo_Patrol_V3_F", "Land_Cargo_Patrol_V2_F",
-        "Land_Cargo_Patrol_V1_F"
-    ];
-
-    createHashMapFromArray [
-        ["helipads", _helipads],
-        ["tyres", ["Land_Tyre_F"]],
-        ["vehicles", _vehicles],
-        ["units", East_Units],
-        ["fireObservers", East_FireObserver],
-        ["buildings", _buildings],
-        ["SOVbuildings", _sovBuildings],
-        ["HQbuildings", _hqBuildings],
-        ["bunkers", _bunkers]
-    ]
-};
-
-FLO_configCache = call _fnc_initConfigCache;
-publicVariable "FLO_configCache";
-
-// ============================================================================
-// BACKGROUND SYSTEMS INITIALIZATION
+// BACKGROUND SYSTEMS (Run independently - these continue after Phase Manager)
 // ============================================================================
 
 // Resource and Objective monitoring system
@@ -177,7 +147,8 @@ private _fnc_initResourceLoop = {
 
                 {
                     private _objData = FLO_Objectives get _x;
-                    if (!isNil "_objData" && {(_objData get "owner") isEqualTo west}) then {
+                    private _activeSide = FLO_ActivePlayerSide;
+                    if ((_objData get "owner") isEqualTo _activeSide) then {
                         _bluforCount = _bluforCount + 1;
                     };
                 } forEach _objectiveKeys;
@@ -227,11 +198,9 @@ private _fnc_initConvoyLoop = {
                         if (!isNull _leadVehicle &&
                             {alive _leadVehicle} &&
                             {time - _lastPathUpdate > _pathUpdateCooldown}) then {
-
-                            // Clear existing waypoints safely
-                            while {count (waypoints _convoyGroup) > 0} do {
-                                deleteWaypoint [_convoyGroup, 0];
-                            };
+                            
+                            // Clear existing waypoints
+                            [_convoyGroup] call CBA_fnc_clearWaypoints;
 
                             // Calculate path
                             private _destMarker = getMarkerPos "ConvoyDest";
@@ -319,10 +288,16 @@ remoteExec ["FLO_fnc_MissionStartup", 2];
 // ============================================================================
 
 private _fnc_initAutoSave = {
+    // Prevent multiple auto-save loops from running
+    if (!isNil "FLO_AutoSaveRunning" && {FLO_AutoSaveRunning}) exitWith {
+        ["AUTOSAVE", 4, "Auto-save loop already running - skipping duplicate"] call FLO_fnc_log;
+    };
+
     private _autoSaveEnabled = "AutoSaveSwitch" call BIS_fnc_getParamValue;
     private _autoSaveInterval = "AutoSaveInterval" call BIS_fnc_getParamValue;
 
     if (_autoSaveEnabled isEqualTo 1) then {
+        FLO_AutoSaveRunning = true;
         ["AUTOSAVE", 3, format ["Auto-save enabled with %1 second interval", _autoSaveInterval]] call FLO_fnc_log;
 
         [] spawn {
@@ -349,58 +324,6 @@ private _fnc_initAutoSave = {
 };
 
 call _fnc_initAutoSave;
-
-// ============================================================================
-// MISSION SYSTEMS INITIALIZATION
-// ============================================================================
-
-// Initialize systems in dependency order with error handling
-private _fnc_initSystems = {
-    private _systems = [
-        ["Intel System", {[] call FLO_fnc_intelSystem}],
-        ["Side Missions", {[] call FLO_fnc_registerDefaultMissions}],
-        ["Mission Queue", {[] call FLO_fnc_missionQueue}],
-        ["Background Events", {[] call FLO_fnc_backgroundEvents}],
-        ["OPFOR Resources", {[] call FLO_fnc_opforResources}],
-        ["Logistics Network", {[] call FLO_fnc_logisticsNetwork}],
-        ["AI Commander Analyzer", {FLO_AICommander_UnitCapabilityAnalyzer = call FLO_fnc_aiCommanderUnitCapabilityAnalyzer}],
-        ["AI Commander", {
-            FLO_AICommander = [] call FLO_fnc_aiCommander;
-            [FLO_AICommander, false] call FLO_fnc_aiCommanderStagingDebug;
-        }]
-    ];
-
-    {
-        _x params ["_systemName", "_initCode"];
-
-        try {
-            ["INIT", 3, format ["Initializing %1...", _systemName]] call FLO_fnc_log;
-            call _initCode;
-            ["INIT", 3, format ["%1 initialized successfully", _systemName]] call FLO_fnc_log;
-        } catch {
-            ["INIT", 1, format ["Failed to initialize %1: %2", _systemName, _exception]] call FLO_fnc_log;
-        };
-
-        sleep 0.1; // Small delay between system initializations
-    } forEach _systems;
-};
-
-call _fnc_initSystems;
-
-// ============================================================================
-// CONDITIONAL SYSTEMS
-// ============================================================================
-
-// Initialize purchase crate system if arsenal is unrestricted
-private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
-if (_restrictedArsenal isEqualTo 0) then {
-    try {
-        [] call FLO_fnc_purchaseCrate;
-        ["INIT", 3, "Purchase crate system initialized (unrestricted arsenal)"] call FLO_fnc_log;
-    } catch {
-        ["INIT", 1, format ["Failed to initialize purchase crate system: %1", _exception]] call FLO_fnc_log;
-    };
-};
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION SYSTEMS

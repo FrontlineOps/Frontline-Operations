@@ -1,4 +1,30 @@
-createDialog "supr_RequestsMenu";
+/*
+ * Request Menu Dialog Initialization
+ * Author: Frontline Operations
+ *
+ * Description:
+ * Initializes the Request Menu dialog, populating lists with available
+ * vehicles, supplies, and equipment based on player permissions and
+ * nearby infrastructure (radar systems).
+ *
+ * IDC Reference (from UI/constants.hpp):
+ * - Resources Text:   1000 (FLO_IDC_REQUEST_RESOURCES)
+ * - Resistance Text:  1001 (FLO_IDC_REQUEST_RESISTANCE)
+ * - Aggression Text:  1002 (FLO_IDC_REQUEST_AGGRESSION)
+ * - Ground List:      2101 (FLO_IDC_REQUEST_LIST_GROUND)
+ * - Air/Sea List:     2102 (FLO_IDC_REQUEST_LIST_AIR)
+ * - Supplies List:    2103 (FLO_IDC_REQUEST_LIST_SUPPLIES)
+ */
+
+// Wait for faction data to be available (broadcast from server)
+if (isNil "F_Init" || {!F_Init}) then {
+    hint "Waiting for faction data...";
+    waitUntil {sleep 0.5; !isNil "F_Init" && {F_Init}};
+    hintSilent "";
+};
+
+// Open the Request Menu dialog
+createDialog "FLO_RequestMenuDialog";
 waitUntil {dialog};
 
 // Helper function to add items to a list box
@@ -26,9 +52,10 @@ FLO_fnc_addListBoxItem = {
     lbSetColor [_idc, _index, _color];   
     lbSetData [_idc, _index, _className];             
     lbSetValue [_idc, _index, _cost];             
-    lbSetPictureRight [_idc, _index, _picture]; 
+    lbSetPictureRight [_idc, _index, _picture];
+    // IDD 1599 = FLO_IDD_REQUEST (from UI/constants.hpp)
     (findDisplay 1599 displayCtrl _idc) lbSetPictureRightColor [_index, _color];
-    
+
     _index
 };
 
@@ -59,7 +86,7 @@ FLO_fnc_updateInformation = {
     };
 
     private _aggr = "100";
-    private _AGGRSCORE = FLO_DifficultyHandle get "value";  
+    private _AGGRSCORE = FLO_EastDifficultyHandle get "value";
     _aggr = _AGGRSCORE * 6.25;
 
     ctrlSetText [1000, format["Resources : %1 ", _Money]];
@@ -310,7 +337,8 @@ INF_REQUEST = {
     };
     
     FLO_MoneyHandle set ["value", _Money - _Cost];
-    
+    [(_Money - _Cost)] call FLO_fnc_publishMoneyState;
+
     private _FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
     private _pos = _FOBB getRelPos [13, 270];
     
@@ -327,7 +355,9 @@ INF_REQUEST = {
         NEWUNIT addItem 'optic_Hamr';
     } else {
         // Squad request
-        GRPReq = [_pos, west, _SQDName] call BIS_fnc_spawnGroup;
+        private _requestSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+        if !(_requestSide in [east, west]) then { _requestSide = side player };
+        GRPReq = [_pos, _requestSide, _SQDName] call BIS_fnc_spawnGroup;
         
         // Process all units in squad
         {
@@ -344,7 +374,7 @@ INF_REQUEST = {
         private _headlessClients = entities "HeadlessClient_F";
         private _humanPlayers = allPlayers - _headlessClients;
         hcRemoveAllGroups player;
-        {player hcRemoveGroup _x;} forEach (allGroups select {side _x == west});
+        {player hcRemoveGroup _x;} forEach (allGroups select {side _x == _requestSide});
         private _GRPs = (allGroups select {(side _x == (side player)) && !(((units _x) select 0) in switchableUnits)});
         
         if (count _humanPlayers == 1) then {
@@ -390,12 +420,13 @@ VEH_REQUEST = {
     };
     
     FLO_MoneyHandle set ["value", _Money - CostV];
-    
+    [(_Money - CostV)] call FLO_fnc_publishMoneyState;
+
     private _pos = [getPosATL player select 0, getPosATL player select 1, (getPosATL player select 2) + 100];
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
     
     // Apply vehicle-specific configurations
-    [_VehName, CreatedVEH] call FLO_fnc_configureVehicle;
+    [CreatedVEH, _VehName] call FLO_fnc_vehicleConfigureRequestedVehicle;
     
     // Setup placement system
     CursorTracker = true;
@@ -430,7 +461,8 @@ VEH_REQUEST = {
             // Refund cost
             private _Money = FLO_MoneyHandle get "value";
             FLO_MoneyHandle set ["value", _Money + CostV];
-            
+            [(_Money + CostV)] call FLO_fnc_publishMoneyState;
+
             deleteVehicle CreatedVEHREF;
             
             // Remove all actions
@@ -502,118 +534,3 @@ VEH_REQUEST = {
     closeDialog 0;
 };
 
-// Helper function to configure specific vehicle types
-FLO_fnc_configureVehicle = {
-    params ["_VehName", "_vehicle"];
-    
-    // Apply Stryker textures
-    if ((_VehName == "rhsusf_stryker_m1126_m2_d") or (_VehName == "rhsusf_stryker_m1126_mk19_d") or (_VehName == "rhsusf_stryker_m1134_d")) then {
-        [_vehicle, ["Tan", 1]] call BIS_fnc_initVehicle;
-    };
-    
-    // Apply textures to MRZR in woodland environment
-    if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ CUP + RHS") or 
-         (markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ RHS")) && 
-         (_VehName == "rhsusf_mrzr4_d")) then {
-        [_vehicle, ["mud_olive", 1]] call BIS_fnc_initVehicle;
-    };
-    
-    // Configure repair slingload container
-    if (_VehName == "B_Slingload_01_Repair_F") then {
-        [_vehicle, [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>UnPack OP",
-            "Scripts\PObjectives\OPUNPACK.sqf",
-            nil,
-            0,
-            true,
-            true,
-            "",
-            "true",
-            40,
-            false,
-            "",
-            ""
-        ]] remoteExec ["addAction", 0, true];
-    };
-    
-    // Configure mobile workshop (F_Truck_04)
-    _MOBSERName = missionNamespace getVariable "F_Truck_04";
-    if (_VehName == _MOBSERName) then {
-        if (!isNil "_vehicle" && {!isNull _vehicle}) then {
-            [_vehicle, [
-                "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode", 
-                { [player] call IDS_Logistics_fnc_initBuildCamera; }, 
-                nil, 
-                1.4, 
-                false, 
-                true, 
-                "", 
-                "!IDS_Logistics_isHolding"
-            ]] remoteExec ["addAction", 0, true];
-        };
-    };
-    
-    // Configure ammo truck (F_Truck_03)
-    _MOBSERName = missionNamespace getVariable "F_Truck_03";
-    if (_VehName == _MOBSERName) then {
-        [_vehicle, [
-            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-            {
-                if (isClass (configfile >> "ace_arsenal_loadoutsDisplay") == true) then {
-                    [player, player, true] call ace_arsenal_fnc_openBox;
-                } else {
-                    ["Open", true] spawn BIS_fnc_arsenal;
-                };
-            },
-            nil,
-            1,
-            true,
-            true,
-            "",
-            "_this distance _target < 10"
-        ]] remoteExec ["addAction", 0, true];
-    };
-};
-
-// Helper function to place vehicle with crew
-FLO_fnc_placeVehicleWithCrew = {
-    params ["_vehicle", "_reference"];
-    
-    detach _vehicle;
-    _vehicle setVehiclePosition [getPos _reference, [], 0, "CAN_COLLIDE"];
-    _vehicle enableSimulation true;
-    CursorTracker = false;
-    deleteVehicle _reference;
-    _vehicle enableSimulation true;
-    _vehicle allowDamage true;
-    
-    // Create crew
-    private _vehicleConfig = (configFile >> "CfgVehicles" >> typeOf _vehicle);
-    private _crewType = [west, _vehicleConfig] call BIS_fnc_selectCrew;
-    private _crewFull = createVehicleCrew _vehicle;
-    private _crewSelCnt = count (units _crewFull) - 1;
-    deleteVehicleCrew _vehicle;
-    
-    private _group = createGroup West;
-    for "_x" from 0 to _crewSelCnt do {
-        private _unit = _group createUnit [_crewType, [0,0,0], [], 0, "CAN_COLLIDE"];
-    };
-    
-    {_x moveInAny _vehicle} forEach units _group;
-    
-    // Disable Vcom AI for helicopters
-    private _isHeli = false;
-    {
-        private _heliName = missionNamespace getVariable _x;
-        if (typeOf _vehicle == _heliName) exitWith {_isHeli = true};
-    } forEach ["F_Heli_01", "F_Heli_02", "F_Heli_03", "F_Heli_04", "F_Heli_05"];
-    
-    if (_isHeli) then {
-        _group setVariable ["Vcm_Disable", true];
-    };
-    
-    // Add to high command
-    TheCommander hcSetGroup [_group];
-};
-
-   
