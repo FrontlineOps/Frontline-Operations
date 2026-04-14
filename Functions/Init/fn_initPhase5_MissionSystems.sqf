@@ -549,6 +549,17 @@ if (!isNil "FLO_fnc_gtnPlayerTaskBridge" && {FLO_GTN_EnablePlayerTaskBridge}) th
 };
 
 // ============================================
+// GTN Player Support Events
+// ============================================
+diag_log "[FLO_INIT_P5] Registering GTN player support events...";
+if (!isNil "FLO_fnc_gtnRegisterPlayerSupportEvents") then {
+    [] call FLO_fnc_gtnRegisterPlayerSupportEvents;
+    diag_log "[FLO_INIT_P5] GTN player support events registered";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_gtnRegisterPlayerSupportEvents not found";
+};
+
+// ============================================
 // GTN Commander Visual Debug
 // ============================================
 diag_log "[FLO_INIT_P5] Evaluating GTN commander visual debug...";
