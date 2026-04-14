@@ -14,7 +14,12 @@
 
 params ["_net", "_managedSide"];
 
+private _previousManagedSide = _net get "_managedSide";
 private _ctx = [_managedSide] call FLO_fnc_gtnSideContext;
 _net set ["_managedSide", _ctx get "ownSide"];
 _net set ["_managedSideKey", _ctx get "sideKey"];
 _net set ["_enemySide", _ctx get "enemySide"];
+
+if (_previousManagedSide isNotEqualTo (_ctx get "ownSide")) then {
+    [_net] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
+};

@@ -65,7 +65,7 @@ private _perf = createHashMapFromArray [
 
 private _phaseT0 = diag_tickTime;
 [_net] call FLO_fnc_logisticsNetworkRefreshManagedSide;
-private _activeSupplyNodes = [_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+private _activeSupplyNodes = [_net] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
 _perf set ["refreshMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["hqObjective", _net get "_hqObjectiveId"];
 _perf set ["supplyNodeCount", count (keys _activeSupplyNodes)];

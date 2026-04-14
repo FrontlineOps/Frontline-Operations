@@ -21,6 +21,10 @@ if (_objectiveId == "") exitWith { "" };
 private _branchCache = _net get "_dispatchBranchCache";
 if (_objectiveId in _branchCache) exitWith { _branchCache get _objectiveId };
 
+if ((_net get "_supplyChainDirty") || {_net get "_objectiveSideIndexDirty"}) then {
+    [_net] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+};
+
 private _routeInfo = _net get "_supplyRouteInfo";
 if !(_objectiveId in _routeInfo) exitWith {
     _branchCache set [_objectiveId, ""];

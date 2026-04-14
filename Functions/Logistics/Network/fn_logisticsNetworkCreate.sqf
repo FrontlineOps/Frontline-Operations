@@ -48,6 +48,9 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_supplyRouteInfo", createHashMap];
     _net set ["_activeSupplyNodes", createHashMap];
     _net set ["_lastSupplyNodeSignature", ""];
+    _net set ["_supplyChainDirty", true];
+    _net set ["_objectiveSideIndexDirty", true];
+    _net set ["_lastSupplyChainRefreshAt", -1];
 
     private _savedNextDispatchAt = _savedStateOverride getOrDefault ["nextDispatchAt", -1];
     private _maxAllowedDelay = _net get "DISPATCH_MAX_INTERVAL";
@@ -81,6 +84,9 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_supplyRouteInfo", createHashMap];
     _net set ["_activeSupplyNodes", createHashMap];
     _net set ["_lastSupplyNodeSignature", ""];
+    _net set ["_supplyChainDirty", true];
+    _net set ["_objectiveSideIndexDirty", true];
+    _net set ["_lastSupplyChainRefreshAt", -1];
 
     private _minInterval = _net get "DISPATCH_MIN_INTERVAL";
     private _maxInterval = _net get "DISPATCH_MAX_INTERVAL";
@@ -88,5 +94,5 @@ if (_savedStateOverride isEqualType createHashMap) then {
     _net set ["_lastUpdate", time];
 };
 
-[_net] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+[_net, true] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
 [_net] call FLO_fnc_logisticsNetworkStartMainLoop;

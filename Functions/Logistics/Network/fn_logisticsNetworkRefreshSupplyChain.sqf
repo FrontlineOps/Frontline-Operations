@@ -17,12 +17,7 @@
 
 params ["_net"];
 
-_net set ["_targetPicture", createHashMap];
-_net set ["_dispatchRoleCache", createHashMap];
-_net set ["_dispatchBranchCache", createHashMap];
-_net set ["_dispatchEnemyDistanceCache", createHashMap];
-_net set ["_dispatchSourceableCache", createHashMap];
-_net set ["_dispatchDeliveryObjectiveCache", createHashMap];
+[_net, false] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
 
 private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = if (_managedSide isEqualTo east) then { "opforCount" } else { "bluforCount" };
@@ -49,7 +44,10 @@ private _previousSignature = _net get "_lastSupplyNodeSignature";
 
 _net set ["_supplyNodeDeliveries", _deliveryCounts];
 
-[_net] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
+if (_net get "_objectiveSideIndexDirty") then {
+    [_net] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
+    _net set ["_objectiveSideIndexDirty", false];
+};
 private _hqObjectiveId = [_net] call FLO_fnc_logisticsNetworkPickHQObjective;
 _net set ["_hqObjectiveId", _hqObjectiveId];
 
@@ -60,6 +58,8 @@ if (_hqObjectiveId == "") exitWith {
     _net set ["_supplyRouteInfo", _routeInfo];
     _net set ["_activeSupplyNodes", _activeNodes];
     _net set ["_lastSupplyNodeSignature", ""];
+    _net set ["_supplyChainDirty", false];
+    _net set ["_lastSupplyChainRefreshAt", diag_tickTime];
     if (_previousSignature != "") then {
         ["FLO_Logistics_SupplyChainChanged", [_managedSide, "", [], ""]] call CBA_fnc_localEvent;
     };
@@ -149,6 +149,8 @@ while {_frontierIndex < count _frontier} do {
 
 _net set ["_supplyRouteInfo", _routeInfo];
 _net set ["_activeSupplyNodes", _activeNodes];
+_net set ["_supplyChainDirty", false];
+_net set ["_lastSupplyChainRefreshAt", diag_tickTime];
 
 private _nodeIds = keys _activeNodes;
 _nodeIds sort true;

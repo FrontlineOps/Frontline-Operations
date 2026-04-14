@@ -26,6 +26,7 @@ params [
 
 private _package = createHashMap;
 if (_objectiveId == "") exitWith { _package };
+if !(_reportingSide in [east, west]) exitWith { _package };
 
 if (!isNil "FLO_CivilianManager") then {
     private _memory = [
