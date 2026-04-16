@@ -76,6 +76,13 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - Support requests use map clicks, cooldowns, queueing, and HQ radio messages.
 - Approved support reuses the real GTN artillery and air systems.
 
+### Commander Player Tasks
+
+- The GTN commander publishes one primary and one secondary side-wide task for the active human faction.
+- Player tasking is intentionally sticky so the current order is held for a minimum window instead of being replaced on every scoring wobble.
+- Defend tasks only close after the sector stays calm for a sustained window, instead of succeeding on a single quiet sample.
+- Task scoring follows the main player concentration more than a single distant outlier, so one scout or pilot does not yank the whole side's orders as easily.
+
 ### Battlefield Intel Pickups
 
 - Enemy units can carry intel items such as phones, secret files, and flash drives.
