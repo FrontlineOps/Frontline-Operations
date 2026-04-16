@@ -23,7 +23,6 @@ params [
 private _metrics = createHashMapFromArray [
     ["phase", ""],
     ["phaseObjective", ""],
-    ["signatureSkips", 0],
     ["poolCount", 0],
     ["candidateObjectives", 0],
     ["assignedGroups", 0],
@@ -67,7 +66,6 @@ private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 
 private _tCandidateBuild = diag_tickTime;
 private _candidateObjectives = [];
-private _candidateSignatureParts = [];
 {
     private _objectiveId = _x;
     private _objective = _frontlineObjectives get _objectiveId;
@@ -100,10 +98,8 @@ private _candidateSignatureParts = [];
     private _reserveBandKeys = keys _reserveBands;
     _reserveBandKeys sort true;
 
-    private _reserveBandSignatureParts = [];
     private _bandedSourceObjectives = [];
     {
-        _reserveBandSignatureParts pushBack format ["%1:%2", _x, _reserveBands get _x];
         _bandedSourceObjectives pushBack [_reserveBands get _x, _x];
     } forEach _reserveBandKeys;
     _bandedSourceObjectives sort true;
@@ -121,19 +117,6 @@ private _candidateSignatureParts = [];
         ["activeAttackers", _activeAttackers],
         ["deficit", _deficit]
     ]);
-
-    _candidateSignatureParts pushBack format [
-        "%1|%2|%3|%4|%5|%6|%7|%8|%9",
-        _objectiveId,
-        _deficit,
-        _activeAttackers,
-        _pressure,
-        _objective get "priority",
-        round (_selectionDist / 50),
-        if (_phasePreferred) then { 1 } else { 0 },
-        if (_sectorMatch) then { 1 } else { 0 },
-        _reserveBandSignatureParts joinString ","
-    ];
 } forEach (keys _frontlineObjectives);
 _metrics set ["candidateBuildMs", (diag_tickTime - _tCandidateBuild) * 1000];
 
@@ -158,7 +141,6 @@ private _poolEntries = [];
 private _poolEntryById = createHashMap;
 private _poolBucketsByHomeObjective = createHashMap;
 private _fallbackPoolIds = [];
-private _poolSignatureParts = [];
 
 {
     private _groupId = _x;
@@ -186,36 +168,7 @@ private _poolSignatureParts = [];
         _bucket pushBack _groupId;
         _poolBucketsByHomeObjective set [_homeObjective, _bucket];
     };
-
-    _poolSignatureParts pushBack format [
-        "%1|%2|%3|%4",
-        _groupId,
-        _homeObjective,
-        round (((_groupPos select 0) max 0) / 100),
-        round (((_groupPos select 1) max 0) / 100)
-    ];
 } forEach _pool;
-
-_candidateSignatureParts sort true;
-_poolSignatureParts sort true;
-
-private _tSignature = diag_tickTime;
-private _allocationSignature = format [
-    "%1|%2|%3|%4|%5",
-    _phaseObjectiveId,
-    count _candidateObjectives,
-    count _poolEntries,
-    _candidateSignatureParts joinString ";",
-    _poolSignatureParts joinString ";"
-];
-_metrics set ["signatureMs", (diag_tickTime - _tSignature) * 1000];
-
-if (_allocationSignature == (_track get "lastAttackAllocationSignature")) exitWith {
-    _metrics set ["signatureSkips", 1];
-    _metrics set ["remainingPool", count _poolEntries];
-    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
-    _metrics
-};
 
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
@@ -329,20 +282,18 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
     } forEach _candidateObjectives;
 };
 
-_track set ["lastAttackAllocationSignature", _allocationSignature];
 _track set ["groupPool", _poolEntries];
 _metrics set ["remainingPool", count _poolEntries];
 _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 ["GTN", 3, format[
-    "Track %1 frontline attack allocation: assigned=%2 opened=%3 reinforced=%4 candidates=%5 remaining=%6 skipped=%7",
+    "Track %1 frontline attack allocation: assigned=%2 opened=%3 reinforced=%4 candidates=%5 remaining=%6",
     _track get "id",
     _metrics get "assignedGroups",
     _metrics get "openedObjectives",
     _metrics get "reinforcedObjectives",
     _metrics get "candidateObjectives",
-    _metrics get "remainingPool",
-    _metrics get "signatureSkips"
+    _metrics get "remainingPool"
 ]] call FLO_fnc_log;
 
 if ((_metrics get "totalMs") >= 20) then {

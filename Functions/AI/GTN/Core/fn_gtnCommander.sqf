@@ -78,8 +78,7 @@ for "_i" from 1 to _attackTrackCount do {
         ["phaseChangedAt", 0],
         ["phaseUntil", 0],
         ["phaseObjectiveId", ""],
-        ["phaseStagingGoal", 0],
-        ["lastAttackAllocationSignature", ""]
+        ["phaseStagingGoal", 0]
     ]);
 };
 
