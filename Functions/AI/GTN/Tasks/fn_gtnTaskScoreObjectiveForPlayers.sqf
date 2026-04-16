@@ -3,8 +3,9 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Scores an objective for player-facing GTN tasks using player proximity,
- *   objective subtype, and frontline pressure so tasks stay anchored to the
- *   local fight instead of defaulting to large rear-area objectives.
+ *   local player concentration, objective subtype, and frontline pressure so
+ *   tasks stay anchored to the local fight instead of defaulting to large
+ *   rear-area objectives or one distant outlier player.
  *
  * Arguments:
  *   0: Objective ID <STRING>
@@ -28,17 +29,23 @@ params [
 ];
 
 private _objectivePos = _objectiveData get "position";
-private _nearestPlayerDist = 1e9;
+private _playerDistances = _playerPositions apply { _objectivePos distance2D _x };
+_playerDistances sort true;
 
-{
-    private _dist = _objectivePos distance2D _x;
-    if (_dist < _nearestPlayerDist) then {
-        _nearestPlayerDist = _dist;
+private _nearestPlayerDist = _playerDistances param [0, 1e9];
+private _distanceBasis = _nearestPlayerDist;
+private _nearestSampleCount = (count _playerDistances) min 3;
+if (_nearestSampleCount > 0) then {
+    private _distanceTotal = 0;
+    for "_i" from 0 to (_nearestSampleCount - 1) do {
+        _distanceTotal = _distanceTotal + (_playerDistances select _i);
     };
-} forEach _playerPositions;
+    _distanceBasis = _distanceTotal / _nearestSampleCount;
+};
 
 if (_nearestPlayerDist isEqualTo 1e9) then {
     _nearestPlayerDist = 6000;
+    _distanceBasis = 6000;
 };
 
 private _subtype = toLower (_objectiveData get "subtype");
@@ -91,7 +98,15 @@ private _subtypeScore = switch (_role) do {
     };
 };
 
-private _distanceScore = linearConversion [600, 7000, _nearestPlayerDist, 52, 0, true];
+private _supportingPlayerCount = {
+    _x <= 2500
+} count _playerDistances;
+private _distanceScore = linearConversion [600, 7000, _distanceBasis, 52, 0, true];
+private _supportBonus = if (_supportingPlayerCount > 0) then {
+    linearConversion [1, 4, _supportingPlayerCount, 0, 14, true]
+} else {
+    0
+};
 private _frontlineBonus = 0;
 private _frontlineEnemy = false;
 
@@ -126,8 +141,8 @@ private _pressureBonus = switch (_role) do {
 };
 
 private _farPenalty = 0;
-if (_nearestPlayerDist > 4500) then {
-    _farPenalty = linearConversion [4500, 9000, _nearestPlayerDist, 8, 30, true];
+if (_distanceBasis > 4500) then {
+    _farPenalty = linearConversion [4500, 9000, _distanceBasis, 8, 30, true];
 };
 
-_subtypeScore + _distanceScore + _frontlineBonus + _pressureBonus + (_priority * 0.2) - _farPenalty
+_subtypeScore + _distanceScore + _supportBonus + _frontlineBonus + _pressureBonus + (_priority * 0.2) - _farPenalty
