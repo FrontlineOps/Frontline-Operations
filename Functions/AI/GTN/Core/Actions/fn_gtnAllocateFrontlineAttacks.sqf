@@ -23,17 +23,22 @@ params [
 private _metrics = createHashMapFromArray [
     ["phase", ""],
     ["phaseObjective", ""],
-    ["signatureSkips", 0],
     ["poolCount", 0],
     ["candidateObjectives", 0],
     ["assignedGroups", 0],
     ["openedObjectives", 0],
     ["reinforcedObjectives", 0],
-    ["remainingPool", 0]
+    ["remainingPool", 0],
+    ["candidateBuildMs", 0],
+    ["signatureMs", 0],
+    ["selectionMs", 0],
+    ["orderMs", 0],
+    ["totalMs", 0]
 ];
 
 if (isNil "_cmdr" || {isNil "_track"}) exitWith { _metrics };
 
+private _tTotal = diag_tickTime;
 private _phase = _track get "phase";
 private _phaseObjectiveId = _track get "phaseObjectiveId";
 _metrics set ["phase", _phase];
@@ -59,8 +64,8 @@ private _assignmentLimit = ((_cmdr get "_config") get "attackAssignmentsPerCycle
 private _activeAttackCounts = _assignmentCache get "attackCounts";
 private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 
+private _tCandidateBuild = diag_tickTime;
 private _candidateObjectives = [];
-private _candidateSignatureParts = [];
 {
     private _objectiveId = _x;
     private _objective = _frontlineObjectives get _objectiveId;
@@ -93,10 +98,8 @@ private _candidateSignatureParts = [];
     private _reserveBandKeys = keys _reserveBands;
     _reserveBandKeys sort true;
 
-    private _reserveBandSignatureParts = [];
     private _bandedSourceObjectives = [];
     {
-        _reserveBandSignatureParts pushBack format ["%1:%2", _x, _reserveBands get _x];
         _bandedSourceObjectives pushBack [_reserveBands get _x, _x];
     } forEach _reserveBandKeys;
     _bandedSourceObjectives sort true;
@@ -114,20 +117,8 @@ private _candidateSignatureParts = [];
         ["activeAttackers", _activeAttackers],
         ["deficit", _deficit]
     ]);
-
-    _candidateSignatureParts pushBack format [
-        "%1|%2|%3|%4|%5|%6|%7|%8|%9",
-        _objectiveId,
-        _deficit,
-        _activeAttackers,
-        _pressure,
-        _objective get "priority",
-        round (_selectionDist / 50),
-        if (_phasePreferred) then { 1 } else { 0 },
-        if (_sectorMatch) then { 1 } else { 0 },
-        _reserveBandSignatureParts joinString ","
-    ];
 } forEach (keys _frontlineObjectives);
+_metrics set ["candidateBuildMs", (diag_tickTime - _tCandidateBuild) * 1000];
 
 _metrics set ["candidateObjectives", count _candidateObjectives];
 if ((count _candidateObjectives) == 0) exitWith { _metrics };
@@ -150,7 +141,6 @@ private _poolEntries = [];
 private _poolEntryById = createHashMap;
 private _poolBucketsByHomeObjective = createHashMap;
 private _fallbackPoolIds = [];
-private _poolSignatureParts = [];
 
 {
     private _groupId = _x;
@@ -178,33 +168,7 @@ private _poolSignatureParts = [];
         _bucket pushBack _groupId;
         _poolBucketsByHomeObjective set [_homeObjective, _bucket];
     };
-
-    _poolSignatureParts pushBack format [
-        "%1|%2|%3|%4",
-        _groupId,
-        _homeObjective,
-        round (((_groupPos select 0) max 0) / 100),
-        round (((_groupPos select 1) max 0) / 100)
-    ];
 } forEach _pool;
-
-_candidateSignatureParts sort true;
-_poolSignatureParts sort true;
-
-private _allocationSignature = format [
-    "%1|%2|%3|%4|%5",
-    _phaseObjectiveId,
-    count _candidateObjectives,
-    count _poolEntries,
-    _candidateSignatureParts joinString ";",
-    _poolSignatureParts joinString ";"
-];
-
-if (_allocationSignature == (_track get "lastAttackAllocationSignature")) exitWith {
-    _metrics set ["signatureSkips", 1];
-    _metrics set ["remainingPool", count _poolEntries];
-    _metrics
-};
 
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
@@ -227,6 +191,7 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
         private _reserveBands = _x get "reserveBands";
         private _bandedSourceObjectives = _x get "bandedSourceObjectives";
 
+        private _tSelection = diag_tickTime;
         private _bestGroupId = "";
         private _bestBand = 10;
         private _bestDist = 1e12;
@@ -282,10 +247,15 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
                 } forEach (_poolBucketsByHomeObjective get _homeObjectiveId);
             } forEach _poolHomeObjectiveIds;
         };
+        _metrics set ["selectionMs", (_metrics get "selectionMs") + ((diag_tickTime - _tSelection) * 1000)];
 
         if (_bestGroupId == "") then { continue };
 
-        if (_cmdr call ["_orderGroupAttack", [_bestGroupId, _objectivePos, _objectiveId]]) then {
+        private _tOrder = diag_tickTime;
+        private _ordered = _cmdr call ["_orderGroupAttack", [_bestGroupId, _objectivePos, _objectiveId]];
+        _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
+
+        if (_ordered) then {
             _poolEntryById deleteAt _bestGroupId;
             _poolEntries deleteAt (_poolEntries find _bestGroupId);
             _x set ["deficit", _deficit - 1];
@@ -312,19 +282,36 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
     } forEach _candidateObjectives;
 };
 
-_track set ["lastAttackAllocationSignature", _allocationSignature];
 _track set ["groupPool", _poolEntries];
 _metrics set ["remainingPool", count _poolEntries];
+_metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 ["GTN", 3, format[
-    "Track %1 frontline attack allocation: assigned=%2 opened=%3 reinforced=%4 candidates=%5 remaining=%6 skipped=%7",
+    "Track %1 frontline attack allocation: assigned=%2 opened=%3 reinforced=%4 candidates=%5 remaining=%6",
     _track get "id",
     _metrics get "assignedGroups",
     _metrics get "openedObjectives",
     _metrics get "reinforcedObjectives",
     _metrics get "candidateObjectives",
-    _metrics get "remainingPool",
-    _metrics get "signatureSkips"
+    _metrics get "remainingPool"
 ]] call FLO_fnc_log;
+
+if ((_metrics get "totalMs") >= 20) then {
+    diag_log format [
+        "[FLO][PERF] GTN attack allocation %1 track=%2 phaseObjective=%3 candidates=%4 pool=%5 assigned=%6 remaining=%7 build=%8 sig=%9 select=%10 order=%11 total=%12",
+        _cmdr get "_sideKey",
+        _track get "id",
+        _phaseObjectiveId,
+        _metrics get "candidateObjectives",
+        _metrics get "poolCount",
+        _metrics get "assignedGroups",
+        _metrics get "remainingPool",
+        _metrics get "candidateBuildMs",
+        _metrics get "signatureMs",
+        _metrics get "selectionMs",
+        _metrics get "orderMs",
+        _metrics get "totalMs"
+    ];
+};
 
 _metrics

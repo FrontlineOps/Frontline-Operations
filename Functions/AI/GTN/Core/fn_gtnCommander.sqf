@@ -78,8 +78,7 @@ for "_i" from 1 to _attackTrackCount do {
         ["phaseChangedAt", 0],
         ["phaseUntil", 0],
         ["phaseObjectiveId", ""],
-        ["phaseStagingGoal", 0],
-        ["lastAttackAllocationSignature", ""]
+        ["phaseStagingGoal", 0]
     ]);
 };
 
@@ -126,6 +125,7 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCacheBuiltAt", -1],
     ["_forceBaselineTotalGroups", 0],
     ["_attackFrontlineObjectives", createHashMap],
+    ["_attackSourceObjectivesCache", createHashMap],
     ["_attackPressureProfiles", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
     ["_objectiveAssignmentCache", createHashMapFromArray [
@@ -1747,10 +1747,28 @@ private _gtnCommander = createHashMapObject [[
         private _objectives = _ws get "_objectives";
         private _objective = _objectives get _objectiveId;
         private _ownSide = _self get "_ownSide";
+        private _linkedObjectives = _objective get "linkedObjectives";
+        private _cache = _self get "_attackSourceObjectivesCache";
+        private _ownerSignatureParts = [format ["self:%1", _objective get "owner"]];
+        {
+            _ownerSignatureParts pushBack format ["%1:%2", _x, (_objectives get _x) get "owner"];
+        } forEach _linkedObjectives;
+        private _ownerSignature = _ownerSignatureParts joinString "|";
 
-        (_objective get "linkedObjectives") select {
+        if (_objectiveId in _cache) then {
+            private _cachedEntry = _cache get _objectiveId;
+            private _cachedSignature = _cachedEntry select 0;
+            if (_cachedSignature == _ownerSignature) exitWith {
+                _cachedEntry select 1
+            };
+        };
+
+        private _sourceObjectives = _linkedObjectives select {
             ((_objectives get _x) get "owner") isEqualTo _ownSide
-        }
+        };
+        _cache set [_objectiveId, [_ownerSignature, _sourceObjectives]];
+
+        _sourceObjectives
     }],
 
     ["_refreshAttackFrontline", {

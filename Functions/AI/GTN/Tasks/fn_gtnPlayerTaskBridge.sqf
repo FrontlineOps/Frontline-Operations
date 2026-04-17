@@ -20,6 +20,12 @@ if (_interval < 5) then { _interval = 5 };
 if (!isNil "FLO_GTN_PlayerTaskBridgeRunning" && {FLO_GTN_PlayerTaskBridgeRunning}) exitWith { true };
 FLO_GTN_PlayerTaskBridgeRunning = true;
 
+private _primaryMinHoldSeconds = 180;
+private _secondaryMinHoldSeconds = 120;
+private _primaryReplaceScoreDelta = 18;
+private _secondaryReplaceScoreDelta = 14;
+private _defendQuietHoldSeconds = 45;
+
 if (isNil "FLO_GTN_PlayerTasks") then {
     FLO_GTN_PlayerTasks = createHashMap;
 };
@@ -122,6 +128,9 @@ private _fnc_clearPrimaryTaskState = {
     _state set ["primaryRef", ""];
     _state set ["primaryKind", ""];
     _state set ["primaryObjId", ""];
+    _state set ["primaryScore", 0];
+    _state set ["primaryAssignedAt", -1];
+    _state set ["primaryCalmStartedAt", -1];
 };
 
 private _fnc_clearSecondaryTaskState = {
@@ -131,6 +140,8 @@ private _fnc_clearSecondaryTaskState = {
     _state set ["secondaryKind", ""];
     _state set ["secondaryObjId", ""];
     _state set ["secondaryTargets", []];
+    _state set ["secondaryScore", 0];
+    _state set ["secondaryAssignedAt", -1];
 };
 
 private _fnc_restoreLegacyRefState = {
@@ -193,9 +204,14 @@ private _fnc_countAliveTargets = {
     } count _targets
 };
 
-[ _interval, _fnc_sideKey, _fnc_enemySide, _fnc_normalizeSide, _fnc_taskTypeFromKind, _fnc_taskTitle, _fnc_taskDesc, _fnc_deleteTaskIfPresent, _fnc_taskMissing, _fnc_clearPrimaryTaskState, _fnc_clearSecondaryTaskState, _fnc_restoreLegacyRefState, _fnc_publishTask, _fnc_markTaskSucceeded, _fnc_countAliveTargets ] spawn {
+[ _interval, _primaryMinHoldSeconds, _secondaryMinHoldSeconds, _primaryReplaceScoreDelta, _secondaryReplaceScoreDelta, _defendQuietHoldSeconds, _fnc_sideKey, _fnc_enemySide, _fnc_normalizeSide, _fnc_taskTypeFromKind, _fnc_taskTitle, _fnc_taskDesc, _fnc_deleteTaskIfPresent, _fnc_taskMissing, _fnc_clearPrimaryTaskState, _fnc_clearSecondaryTaskState, _fnc_restoreLegacyRefState, _fnc_publishTask, _fnc_markTaskSucceeded, _fnc_countAliveTargets ] spawn {
     params [
         "_interval",
+        "_primaryMinHoldSeconds",
+        "_secondaryMinHoldSeconds",
+        "_primaryReplaceScoreDelta",
+        "_secondaryReplaceScoreDelta",
+        "_defendQuietHoldSeconds",
         "_fnc_sideKey",
         "_fnc_enemySide",
         "_fnc_normalizeSide",
@@ -257,8 +273,13 @@ private _fnc_countAliveTargets = {
                 ["secondaryRef", ""],
                 ["primaryKind", ""],
                 ["primaryObjId", ""],
+                ["primaryScore", 0],
+                ["primaryAssignedAt", -1],
+                ["primaryCalmStartedAt", -1],
                 ["secondaryKind", ""],
                 ["secondaryObjId", ""],
+                ["secondaryScore", 0],
+                ["secondaryAssignedAt", -1],
                 ["secondaryTargets", []],
                 ["lastNoTaskLog", 0]
             ];
@@ -268,10 +289,17 @@ private _fnc_countAliveTargets = {
         // Migration keys for existing state saved before completion tracking was added.
         if (isNil {_state get "primaryKind"}) then { _state set ["primaryKind", ""]; };
         if (isNil {_state get "primaryObjId"}) then { _state set ["primaryObjId", ""]; };
+        if (isNil {_state get "primaryScore"}) then { _state set ["primaryScore", 0]; };
+        if (isNil {_state get "primaryAssignedAt"}) then { _state set ["primaryAssignedAt", -1]; };
+        if (isNil {_state get "primaryCalmStartedAt"}) then { _state set ["primaryCalmStartedAt", -1]; };
         if (isNil {_state get "secondaryKind"}) then { _state set ["secondaryKind", ""]; };
         if (isNil {_state get "secondaryObjId"}) then { _state set ["secondaryObjId", ""]; };
+        if (isNil {_state get "secondaryScore"}) then { _state set ["secondaryScore", 0]; };
+        if (isNil {_state get "secondaryAssignedAt"}) then { _state set ["secondaryAssignedAt", -1]; };
         if (isNil {_state get "secondaryTargets"}) then { _state set ["secondaryTargets", []]; };
         if (isNil {_state get "lastNoTaskLog"}) then { _state set ["lastNoTaskLog", 0]; };
+
+        private _cycleNow = diag_tickTime;
 
         // Recover slot kind/objective from legacy refs so completion works on pre-existing tasks.
         [_state, "primaryKind", "primaryObjId", "primaryRef"] call _fnc_restoreLegacyRefState;
@@ -311,10 +339,22 @@ private _fnc_countAliveTargets = {
                 private _primaryComplete = false;
                 switch (_activePrimaryKind) do {
                     case "capture": {
+                        _state set ["primaryCalmStartedAt", -1];
                         _primaryComplete = _owner isEqualTo _activeSide;
                     };
                     case "defend": {
-                        _primaryComplete = (_owner isEqualTo _activeSide) && {_enemyCount <= 0};
+                        if ((_owner isEqualTo _activeSide) && {_enemyCount <= 0}) then {
+                            private _primaryCalmStartedAt = _state get "primaryCalmStartedAt";
+                            if (_primaryCalmStartedAt < 0) then {
+                                _state set ["primaryCalmStartedAt", _cycleNow];
+                            };
+                            _primaryComplete = (_cycleNow - (_state get "primaryCalmStartedAt")) >= _defendQuietHoldSeconds;
+                        } else {
+                            _state set ["primaryCalmStartedAt", -1];
+                        };
+                    };
+                    default {
+                        _state set ["primaryCalmStartedAt", -1];
                     };
                 };
 
@@ -422,82 +462,167 @@ private _fnc_countAliveTargets = {
         _destroyRanked sort false;
         _destroyCandidates = _destroyRanked apply { _x select 1 };
 
-        private _primaryKind = "";
-        private _primaryObjId = "";
-        private _primaryData = nil;
+        private _currentPrimaryRef = _state get "primaryRef";
+        private _currentPrimaryKind = _state get "primaryKind";
+        private _currentPrimaryObjId = _state get "primaryObjId";
+        private _currentPrimaryScore = _state get "primaryScore";
+        private _currentPrimaryAssignedAt = _state get "primaryAssignedAt";
 
-        if (count _defendCandidates > 0) then {
-            private _bestDefend = _defendCandidates select 0;
-            _primaryObjId = _bestDefend select 0;
-            _primaryData = _bestDefend select 2;
-            _primaryKind = "defend";
-        } else {
-            if (count _captureCandidates > 0) then {
-                private _bestCapture = _captureCandidates select 0;
-                _primaryObjId = _bestCapture select 0;
-                _primaryData = _bestCapture select 2;
-                _primaryKind = "capture";
+        private _desiredPrimaryKind = "";
+        private _desiredPrimaryObjId = "";
+        private _desiredPrimaryData = nil;
+        private _desiredPrimaryScore = -1e9;
+
+        private _bestDefend = _defendCandidates param [0, []];
+        if (count _bestDefend > 0) then {
+            _desiredPrimaryKind = "defend";
+            _desiredPrimaryObjId = _bestDefend select 0;
+            _desiredPrimaryData = _bestDefend select 2;
+            _desiredPrimaryScore = _bestDefend select 1;
+        };
+
+        private _bestCapture = _captureCandidates param [0, []];
+        if (count _bestCapture > 0 && {(_desiredPrimaryObjId == "") || {(_bestCapture select 1) > _desiredPrimaryScore}}) then {
+            _desiredPrimaryKind = "capture";
+            _desiredPrimaryObjId = _bestCapture select 0;
+            _desiredPrimaryData = _bestCapture select 2;
+            _desiredPrimaryScore = _bestCapture select 1;
+        };
+
+        private _currentPrimaryCandidate = [];
+        switch (_currentPrimaryKind) do {
+            case "defend": {
+                _currentPrimaryCandidate = (_defendCandidates select { (_x select 0) == _currentPrimaryObjId }) param [0, []];
+            };
+            case "capture": {
+                _currentPrimaryCandidate = (_captureCandidates select { (_x select 0) == _currentPrimaryObjId }) param [0, []];
+            };
+        };
+        if (count _currentPrimaryCandidate > 0) then {
+            _currentPrimaryScore = _currentPrimaryCandidate select 1;
+        };
+
+        private _newPrimaryKind = _desiredPrimaryKind;
+        private _newPrimaryObjId = _desiredPrimaryObjId;
+        private _newPrimaryData = _desiredPrimaryData;
+        private _newPrimaryScore = _desiredPrimaryScore;
+        private _newPrimaryRef = if (_newPrimaryObjId != "") then { _newPrimaryKind + "_" + _newPrimaryObjId } else { "" };
+        private _primaryHoldActive = _currentPrimaryRef != "" && {_currentPrimaryAssignedAt >= 0} && {(_cycleNow - _currentPrimaryAssignedAt) < _primaryMinHoldSeconds};
+
+        if (_currentPrimaryRef != "" && {_newPrimaryRef != _currentPrimaryRef}) then {
+            if (_primaryHoldActive || {_newPrimaryRef == ""} || {_newPrimaryScore < (_currentPrimaryScore + _primaryReplaceScoreDelta)}) then {
+                _newPrimaryKind = _currentPrimaryKind;
+                _newPrimaryObjId = _currentPrimaryObjId;
+                _newPrimaryData = FLO_Objectives get _currentPrimaryObjId;
+                _newPrimaryScore = _currentPrimaryScore;
+                _newPrimaryRef = _currentPrimaryRef;
             };
         };
 
-        private _secondaryKind = "";
-        private _secondaryObjId = "";
-        private _secondaryData = nil;
-        private _secondaryMeta = createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]];
-        private _secondaryTargets = [];
+        private _currentSecondaryRef = _state get "secondaryRef";
+        private _currentSecondaryKind = _state get "secondaryKind";
+        private _currentSecondaryObjId = _state get "secondaryObjId";
+        private _currentSecondaryScore = _state get "secondaryScore";
+        private _currentSecondaryAssignedAt = _state get "secondaryAssignedAt";
+        private _currentSecondaryTargets = _state get "secondaryTargets";
 
-        // Secondary prefers known high-value assets from commander intel.
+        private _selectedSecondary = [];
+
         {
             private _objId = _x select 0;
-            private _objData = _x select 2;
-            private _meta = _x select 3;
-            if (_objId != _primaryObjId) exitWith {
-                _secondaryKind = "destroy";
-                _secondaryObjId = _objId;
-                _secondaryData = _objData;
-                _secondaryMeta = _meta;
-                _secondaryTargets = _x select 4;
+            if (_objId != _newPrimaryObjId) exitWith {
+                _selectedSecondary = _x;
             };
         } forEach _destroyCandidates;
 
+        private _currentSecondaryCandidate = [];
+        if (_currentSecondaryKind isEqualTo "destroy") then {
+            _currentSecondaryCandidate = (_destroyCandidates select { (_x select 0) == _currentSecondaryObjId }) param [0, []];
+        };
+        if (count _currentSecondaryCandidate > 0) then {
+            _currentSecondaryScore = _currentSecondaryCandidate select 1;
+            _currentSecondaryTargets = _currentSecondaryCandidate select 4;
+        };
+
+        private _newSecondaryKind = "";
+        private _newSecondaryObjId = "";
+        private _newSecondaryData = nil;
+        private _newSecondaryScore = -1e9;
+        private _newSecondaryMeta = createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]];
+        private _newSecondaryTargets = [];
+        if (count _selectedSecondary > 0) then {
+            _newSecondaryKind = "destroy";
+            _newSecondaryObjId = _selectedSecondary select 0;
+            _newSecondaryData = _selectedSecondary select 2;
+            _newSecondaryScore = _selectedSecondary select 1;
+            _newSecondaryMeta = _selectedSecondary select 3;
+            _newSecondaryTargets = _selectedSecondary select 4;
+        };
+        private _newSecondaryRef = if (_newSecondaryObjId != "") then { _newSecondaryKind + "_" + _newSecondaryObjId } else { "" };
+        private _secondaryHoldActive = _currentSecondaryRef != "" && {_currentSecondaryAssignedAt >= 0} && {(_cycleNow - _currentSecondaryAssignedAt) < _secondaryMinHoldSeconds};
+
+        if (_currentSecondaryRef != "" && {_newSecondaryRef != _currentSecondaryRef}) then {
+            if (_secondaryHoldActive || {_newSecondaryRef == ""} || {_newSecondaryScore < (_currentSecondaryScore + _secondaryReplaceScoreDelta)}) then {
+                _newSecondaryKind = _currentSecondaryKind;
+                _newSecondaryObjId = _currentSecondaryObjId;
+                _newSecondaryData = FLO_Objectives get _currentSecondaryObjId;
+                _newSecondaryScore = _currentSecondaryScore;
+                _newSecondaryMeta = createHashMapFromArray [["targetLabel", ""], ["targetCount", count _currentSecondaryTargets]];
+                _newSecondaryTargets = _currentSecondaryTargets;
+                _newSecondaryRef = _currentSecondaryRef;
+            };
+        };
+
         // Update primary task slot.
-        private _newPrimaryRef = if (_primaryObjId != "") then { _primaryKind + "_" + _primaryObjId } else { "" };
         private _oldPrimaryId = _state get "primaryTaskId";
         private _primaryNeedsPublish = ((_state get "primaryRef") != _newPrimaryRef) || {[_oldPrimaryId] call _fnc_taskMissing};
         if (_primaryNeedsPublish) then {
             [_oldPrimaryId] call _fnc_deleteTaskIfPresent;
             [_state] call _fnc_clearPrimaryTaskState;
 
-            if (_newPrimaryRef != "" && {!isNil "_primaryData"}) then {
-                private _newPrimaryId = [_activeSide, "PRIMARY", _primaryKind, _primaryObjId, _primaryData] call _fnc_publishTask;
+            if (_newPrimaryRef != "" && {!isNil "_newPrimaryData"}) then {
+                private _newPrimaryId = [_activeSide, "PRIMARY", _newPrimaryKind, _newPrimaryObjId, _newPrimaryData] call _fnc_publishTask;
                 _state set ["primaryTaskId", _newPrimaryId];
                 _state set ["primaryRef", _newPrimaryRef];
-                _state set ["primaryKind", _primaryKind];
-                _state set ["primaryObjId", _primaryObjId];
-                ["GTN_TASKS", 3, format["Assigned primary task %1 (%2)", _newPrimaryRef, _newPrimaryId]] call FLO_fnc_log;
+                _state set ["primaryKind", _newPrimaryKind];
+                _state set ["primaryObjId", _newPrimaryObjId];
+                _state set ["primaryScore", _newPrimaryScore];
+                _state set ["primaryAssignedAt", _cycleNow];
+                _state set ["primaryCalmStartedAt", -1];
+                ["GTN_TASKS", 3, format["Assigned primary task %1 (%2, score=%3)", _newPrimaryRef, _newPrimaryId, _newPrimaryScore]] call FLO_fnc_log;
+            };
+        } else {
+            if ((_state get "primaryRef") != "") then {
+                _state set ["primaryScore", _newPrimaryScore];
             };
         };
 
         // Update secondary task slot.
-        private _newSecondaryRef = if (_secondaryObjId != "") then { _secondaryKind + "_" + _secondaryObjId } else { "" };
         private _oldSecondaryId = _state get "secondaryTaskId";
         private _secondaryNeedsPublish = ((_state get "secondaryRef") != _newSecondaryRef) || {[_oldSecondaryId] call _fnc_taskMissing};
         if (_secondaryNeedsPublish) then {
             [_oldSecondaryId] call _fnc_deleteTaskIfPresent;
             [_state] call _fnc_clearSecondaryTaskState;
 
-            if (_newSecondaryRef != "" && {!isNil "_secondaryData"}) then {
-                private _markedTargets = _secondaryTargets;
+            if (_newSecondaryRef != "" && {!isNil "_newSecondaryData"}) then {
+                private _markedTargets = _newSecondaryTargets;
 
-                if ((_secondaryKind != "destroy") || {(count _markedTargets) > 0}) then {
-                    private _newSecondaryId = [_activeSide, "SECONDARY", _secondaryKind, _secondaryObjId, _secondaryData, _secondaryMeta] call _fnc_publishTask;
+                if ((_newSecondaryKind != "destroy") || {(count _markedTargets) > 0}) then {
+                    private _newSecondaryId = [_activeSide, "SECONDARY", _newSecondaryKind, _newSecondaryObjId, _newSecondaryData, _newSecondaryMeta] call _fnc_publishTask;
                     _state set ["secondaryTaskId", _newSecondaryId];
                     _state set ["secondaryRef", _newSecondaryRef];
-                    _state set ["secondaryKind", _secondaryKind];
-                    _state set ["secondaryObjId", _secondaryObjId];
+                    _state set ["secondaryKind", _newSecondaryKind];
+                    _state set ["secondaryObjId", _newSecondaryObjId];
+                    _state set ["secondaryScore", _newSecondaryScore];
+                    _state set ["secondaryAssignedAt", _cycleNow];
                     _state set ["secondaryTargets", _markedTargets];
-                    ["GTN_TASKS", 3, format["Assigned secondary task %1 (%2, targets=%3)", _newSecondaryRef, _newSecondaryId, count _markedTargets]] call FLO_fnc_log;
+                    ["GTN_TASKS", 3, format["Assigned secondary task %1 (%2, score=%3, targets=%4)", _newSecondaryRef, _newSecondaryId, _newSecondaryScore, count _markedTargets]] call FLO_fnc_log;
                 };
+            };
+        } else {
+            if ((_state get "secondaryRef") != "") then {
+                _state set ["secondaryScore", _newSecondaryScore];
+                _state set ["secondaryTargets", _newSecondaryTargets];
             };
         };
 
