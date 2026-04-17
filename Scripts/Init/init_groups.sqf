@@ -66,53 +66,8 @@ switch (_bluFaction) do {
 	case "CUSTOM_PLAYER_FACTION": {
 		call compileScript ["CUSTOM_PLAYER_FACTION.sqf"];
 	};
-	case "BAF _ Desert _ AEW": {
-		call compileScript ["Scripts\factions\blu_BAF_Desert_AEW.sqf"];
-	};
-	case "BAF _ Woodland _ AEW": {
-		call compileScript ["Scripts\factions\blu_BAF_Wood_AEW.sqf"];
-	};
-	case "GAF _ Desert _ BW": {
-		call compileScript ["Scripts\factions\blu_GAF_Desert_BW.sqf"];
-	};
-	case "GAF _ Woodland _ AEW": {
-		call compileScript ["Scripts\factions\blu_GAF_Wood_AEW.sqf"];
-	};
-	case "GAF _ Woodland _ BW": {
-		call compileScript ["Scripts\factions\blu_GAF_Wood_BW.sqf"];
-	};
-	case "IAF _ Woodland _ AEW": {
-		call compileScript ["Scripts\factions\blu_IAF_Wood_AEW.sqf"];
-	};
-	case "LDF _ Woodland _ AEW": {
-		call compileScript ["Scripts\factions\blu_LDF_Wood_AEW.sqf"];
-	};
 	case "NATO _ Desert": {
 		call compileScript ["Scripts\factions\blu_NATODesert.sqf"];
-	};
-	case "NATO _ Woodland": {
-		call compileScript ["Scripts\factions\blu_NATOWood.sqf"];
-	};
-	case "SAF _ Woodland _ FFAA": {
-		call compileScript ["Scripts\factions\blu_SAF_Wood_FFAA.sqf"];
-	};
-	case "US _ Desert _ AEW": {
-		call compileScript ["Scripts\factions\blu_US_Desert_AEW.sqf"];
-	};
-	case "US _ Desert _ CUP RHS": {
-		call compileScript ["Scripts\factions\blu_US_Desert_CUP_RHS.sqf"];
-	};
-	case "US _ PFSOG": {
-		call compileScript ["Scripts\factions\blu_US_PFSOG.sqf"];
-	};
-	case "US _ Woodland _ AEW": {
-		call compileScript ["Scripts\factions\blu_US_Wood_AEW.sqf"];
-	};
-	case "US _ Woodland _ CUP RHS": {
-		call compileScript ["Scripts\factions\blu_US_Wood_CUP_RHS.sqf"];
-	};
-	case "Western Sahara": {
-		call compileScript ["Scripts\factions\blu_WesternSahara.sqf"];
 	};
 	default {
 		["INIT_FACTIONS", 1, format["Unknown friendly faction: %1", _bluFaction]] call FLO_fnc_log;
@@ -130,59 +85,8 @@ switch (_opfFaction) do {
 	case "CUSTOM_ENEMY_FACTION": {
 		call compileScript ["CUSTOM_ENEMY_FACTION.sqf"];
 	};
-	case "AAF _ Woodland": {
-		call compileScript ["Scripts\factions\opf_AAF_Wood.sqf"];
-	};
-	case "Afghan AF _ CUP": {
-		call compileScript ["Scripts\factions\opf_AfghanAF_CUP.sqf"];
-	};
-	case "Afghan Insurgents _ CUP": {
-		call compileScript ["Scripts\factions\opf_AfghanIns_CUP.sqf"];
-	};
-	case "African Insurgents _ POF": {
-		call compileScript ["Scripts\factions\opf_AfricaIns_POF.sqf"];
-	};
 	case "CSAT _ Desert": {
 		call compileScript ["Scripts\factions\opf_CSATDesert.sqf"];
-	};
-	case "CSAT _ Woodland": {
-		call compileScript ["Scripts\factions\opf_CSATWood.sqf"];
-	};
-	case "East Europe Insurgents _ Desert _ AEW": {
-		call compileScript ["Scripts\factions\opf_EastEuropeIns_Desert_AEW.sqf"];
-	};
-	case "East Europe Insurgents _ Woodland _ AEW": {
-		call compileScript ["Scripts\factions\opf_EastEuropeIns_Wood_AEW.sqf"];
-	};
-	case "ISIS _ POF": {
-		call compileScript ["Scripts\factions\opf_ISIS_POF.sqf"];
-	};
-	case "Iran AF _ POF": {
-		call compileScript ["Scripts\factions\opf_IranAF_POF.sqf"];
-	};
-	case "LDF _ Woodland": {
-		call compileScript ["Scripts\factions\opf_LDF_Wood.sqf"];
-	};
-	case "NVA _ PFSOG": {
-		call compileScript ["Scripts\factions\opf_NVA_PFSOG.sqf"];
-	};
-	case "Russia AF _ Desert _ RHS": {
-		call compileScript ["Scripts\factions\opf_RussiaAF_Desert_RHS.sqf"];
-	};
-	case "Russia AF _ Woodland _ RHS": {
-		call compileScript ["Scripts\factions\opf_RussiaAF_Wood_RHS.sqf"];
-	};
-	case "SFF _ Desert _ Western Sahara": {
-		call compileScript ["Scripts\factions\opf_SFF_Desert_WesternSahara.sqf"];
-	};
-	case "Syndikat _ Woodland": {
-		call compileScript ["Scripts\factions\opf_Syndikat_Wood.sqf"];
-	};
-	case "Syrian AF _ POF": {
-		call compileScript ["Scripts\factions\opf_SyrianAF_POF.sqf"];
-	};
-	case "TTI _ Desert _ Western Sahara": {
-		call compileScript ["Scripts\factions\opf_TTI_Desert_WesternSahara.sqf"];
 	};
 	default {
 		["INIT_FACTIONS", 1, format["Unknown enemy faction: %1 - loading defaults", _opfFaction]] call FLO_fnc_log;
@@ -226,29 +130,8 @@ switch (_civFaction) do {
 	case "CUSTOM_CIVILIAN_FACTION": {
 		call compileScript ["CUSTOM_CIVILIAN_FACTION.sqf"];
 	};
-	case "Asian Civilians": {
-		call compileScript ["Scripts\factions\civ_Asia.sqf"];
-	};
-	case "East Europe Civilians": {
-		call compileScript ["Scripts\factions\civ_EastEurope.sqf"];
-	};
-	case "East Europe Civilians _ CUP": {
-		call compileScript ["Scripts\factions\civ_EastEuropeCUP.sqf"];
-	};
 	case "Greek Civilians": {
 		call compileScript ["Scripts\factions\civ_Greek.sqf"];
-	};
-	case "Middle East Civilians _ CUP": {
-		call compileScript ["Scripts\factions\civ_MiddleEastCUP.sqf"];
-	};
-	case "Tanoan Civilians": {
-		call compileScript ["Scripts\factions\civ_Tanoa.sqf"];
-	};
-	case "Vietnamese Civilians": {
-		call compileScript ["Scripts\factions\civ_Vietnam.sqf"];
-	};
-	case "Western Sahara Civilians": {
-		call compileScript ["Scripts\factions\civ_WesternSahara.sqf"];
 	};
 	default {
 		["INIT_FACTIONS", 1, format["Unknown civilian faction: %1", _civFaction]] call FLO_fnc_log;

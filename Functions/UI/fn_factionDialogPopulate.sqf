@@ -61,25 +61,10 @@ private _fnc_addItems = {
 private _playerCombo = _display displayCtrl 1955;
 private _playerFactions = [
 	"CUSTOM_PLAYER_FACTION",
-	"BAF _ Desert _ AEW",
-	"BAF _ Woodland _ AEW",
-	"GAF _ Desert _ BW",
-	"GAF _ Woodland _ AEW",
-	"GAF _ Woodland _ BW",
-	"IAF _ Woodland _ AEW",
-	"LDF _ Woodland _ AEW",
-	"NATO _ Desert",
-	"NATO _ Woodland",
-	"SAF _ Woodland _ FFAA",
-	"US _ Desert _ AEW",
-	"US _ Desert _ CUP RHS",
-	"US _ PFSOG",
-	"US _ Woodland _ AEW",
-	"US _ Woodland _ CUP RHS",
-	"Western Sahara"
+	"NATO _ Desert"
 ];
 
-[_playerCombo, _playerFactions, 0] call _fnc_addItems;
+[_playerCombo, _playerFactions, 1] call _fnc_addItems;
 
 // ============================================================================
 // ENEMY FACTION (IDC 1956)
@@ -88,27 +73,10 @@ private _playerFactions = [
 private _enemyCombo = _display displayCtrl 1956;
 private _enemyFactions = [
 	"CUSTOM_ENEMY_FACTION",
-	"AAF _ Woodland",
-	"Afghan AF _ CUP",
-	"Afghan Insurgents _ CUP",
-	"African Insurgents _ POF",
-	"CSAT _ Desert",
-	"CSAT _ Woodland",
-	"East Europe Insurgents _ Desert _ AEW",
-	"East Europe Insurgents _ Woodland _ AEW",
-	"ISIS _ POF",
-	"Iran AF _ POF",
-	"LDF _ Woodland",
-	"NVA _ PFSOG",
-	"Russia AF _ Desert _ RHS",
-	"Russia AF _ Woodland _ RHS",
-	"SFF _ Desert _ Western Sahara",
-	"Syndikat _ Woodland",
-	"Syrian AF _ POF",
-	"TTI _ Desert _ Western Sahara"
+	"CSAT _ Desert"
 ];
 
-[_enemyCombo, _enemyFactions, 0] call _fnc_addItems;
+[_enemyCombo, _enemyFactions, 1] call _fnc_addItems;
 
 // ============================================================================
 // CIVILIAN FACTION (IDC 1957)
@@ -117,17 +85,10 @@ private _enemyFactions = [
 private _civilianCombo = _display displayCtrl 1957;
 private _civilianFactions = [
 	"CUSTOM_CIVILIAN_FACTION",
-	"Asian Civilians",
-	"East Europe Civilians",
-	"East Europe Civilians _ CUP",
-	"Greek Civilians",
-	"Middle East Civilians _ CUP",
-	"Tanoan Civilians",
-	"Vietnamese Civilians",
-	"Western Sahara Civilians"
+	"Greek Civilians"
 ];
 
-[_civilianCombo, _civilianFactions, 0] call _fnc_addItems;
+[_civilianCombo, _civilianFactions, 1] call _fnc_addItems;
 
 // ============================================================================
 // AI COMMANDER POSTURE OPTIONS
