@@ -65,21 +65,6 @@ private _fnc_loadFaction = {
 private _bluFaction = FLO_FriendlyHandle get "name";
 private _bluPath = switch (_bluFaction) do {
     case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
-    case "NATO _ Woodland": { "Scripts\factions\blu_NATOWood.sqf" };
-    case "BAF _ Desert _ AEW": { "Scripts\factions\blu_BAF_Desert_AEW.sqf" };
-    case "BAF _ Woodland _ AEW": { "Scripts\factions\blu_BAF_Wood_AEW.sqf" };
-    case "US _ Desert _ AEW": { "Scripts\factions\blu_US_Desert_AEW.sqf" };
-    case "US _ Woodland _ AEW": { "Scripts\factions\blu_US_Wood_AEW.sqf" };
-    case "US _ Desert _ CUP RHS": { "Scripts\factions\blu_US_Desert_CUP_RHS.sqf" };
-    case "US _ Woodland _ CUP RHS": { "Scripts\factions\blu_US_Wood_CUP_RHS.sqf" };
-    case "GAF _ Desert _ BW": { "Scripts\factions\blu_GAF_Desert_BW.sqf" };
-    case "GAF _ Woodland _ AEW": { "Scripts\factions\blu_GAF_Wood_AEW.sqf" };
-    case "GAF _ Woodland _ BW": { "Scripts\factions\blu_GAF_Wood_BW.sqf" };
-    case "IAF _ Woodland _ AEW": { "Scripts\factions\blu_IAF_Wood_AEW.sqf" };
-    case "LDF _ Woodland _ AEW": { "Scripts\factions\blu_LDF_Wood_AEW.sqf" };
-    case "SAF _ Woodland _ FFAA": { "Scripts\factions\blu_SAF_Wood_FFAA.sqf" };
-    case "US _ PFSOG": { "Scripts\factions\blu_US_PFSOG.sqf" };
-    case "Western Sahara": { "Scripts\factions\blu_WesternSahara.sqf" };
     default { "CUSTOM_PLAYER_FACTION.sqf" };
 };
 [_bluFaction, _bluPath] call _fnc_loadFaction;
@@ -88,23 +73,6 @@ private _bluPath = switch (_bluFaction) do {
 private _opfFaction = FLO_EnemyHandle get "name";
 private _opfPath = switch (_opfFaction) do {
     case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
-    case "CSAT _ Woodland": { "Scripts\factions\opf_CSATWood.sqf" };
-    case "AAF _ Woodland": { "Scripts\factions\opf_AAF_Wood.sqf" };
-    case "LDF _ Woodland": { "Scripts\factions\opf_LDF_Wood.sqf" };
-    case "Syndikat _ Woodland": { "Scripts\factions\opf_Syndikat_Wood.sqf" };
-    case "Russia AF _ Desert _ RHS": { "Scripts\factions\opf_RussiaAF_Desert_RHS.sqf" };
-    case "Russia AF _ Woodland _ RHS": { "Scripts\factions\opf_RussiaAF_Wood_RHS.sqf" };
-    case "Afghan AF _ CUP": { "Scripts\factions\opf_AfghanAF_CUP.sqf" };
-    case "Afghan Insurgents _ CUP": { "Scripts\factions\opf_AfghanIns_CUP.sqf" };
-    case "African Insurgents _ POF": { "Scripts\factions\opf_AfricaIns_POF.sqf" };
-    case "East Europe Insurgents _ Desert _ AEW": { "Scripts\factions\opf_EastEuropeIns_Desert_AEW.sqf" };
-    case "East Europe Insurgents _ Woodland _ AEW": { "Scripts\factions\opf_EastEuropeIns_Wood_AEW.sqf" };
-    case "ISIS _ POF": { "Scripts\factions\opf_ISIS_POF.sqf" };
-    case "Iran AF _ POF": { "Scripts\factions\opf_IranAF_POF.sqf" };
-    case "NVA _ PFSOG": { "Scripts\factions\opf_NVA_PFSOG.sqf" };
-    case "SFF _ Desert _ Western Sahara": { "Scripts\factions\opf_SFF_Desert_WesternSahara.sqf" };
-    case "Syrian AF _ POF": { "Scripts\factions\opf_SyrianAF_POF.sqf" };
-    case "TTI _ Desert _ Western Sahara": { "Scripts\factions\opf_TTI_Desert_WesternSahara.sqf" };
     default { "CUSTOM_ENEMY_FACTION.sqf" };
 };
 [_opfFaction, _opfPath] call _fnc_loadFaction;
@@ -113,13 +81,6 @@ private _opfPath = switch (_opfFaction) do {
 private _civFaction = FLO_CivilianHandle get "name";
 private _civPath = switch (_civFaction) do {
     case "Greek Civilians": { "Scripts\factions\civ_Greek.sqf" };
-    case "Asian Civilians": { "Scripts\factions\civ_Asia.sqf" };
-    case "East Europe Civilians": { "Scripts\factions\civ_EastEurope.sqf" };
-    case "East Europe Civilians _ CUP": { "Scripts\factions\civ_EastEuropeCUP.sqf" };
-    case "Middle East Civilians _ CUP": { "Scripts\factions\civ_MiddleEastCUP.sqf" };
-    case "Tanoan Civilians": { "Scripts\factions\civ_Tanoa.sqf" };
-    case "Vietnamese Civilians": { "Scripts\factions\civ_Vietnam.sqf" };
-    case "Western Sahara Civilians": { "Scripts\factions\civ_WesternSahara.sqf" };
     default { "CUSTOM_CIVILIAN_FACTION.sqf" };
 };
 [_civFaction, _civPath] call _fnc_loadFaction;
