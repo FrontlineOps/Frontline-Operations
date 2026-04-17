@@ -75,6 +75,17 @@ if ((_vehicleClass in _arsenalVehicleTypes) and !(_vehicle getVariable ["FLO_Ars
             params ["_target", "_caller", "_actionId", "_arguments"];
 
             if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+                private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+
+                [_target, true] call ace_arsenal_fnc_initBox;
+                [_target, true] call ace_arsenal_fnc_removeVirtualItems;
+
+                if (_restrictedArsenal == 0) then {
+                    [_target, FLO_arsenal_allowedItems] call ace_arsenal_fnc_addVirtualItems;
+                } else {
+                    [_target, true] call ace_arsenal_fnc_addVirtualItems;
+                };
+
                 [_target, _caller, false] call ace_arsenal_fnc_openBox;
             } else {
                 ["Open", true] spawn BIS_fnc_arsenal;
