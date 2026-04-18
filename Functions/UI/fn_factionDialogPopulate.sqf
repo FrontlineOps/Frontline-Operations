@@ -61,7 +61,13 @@ private _fnc_addItems = {
 private _playerCombo = _display displayCtrl 1955;
 private _playerFactions = [
 	"CUSTOM_PLAYER_FACTION",
-	"NATO _ Desert"
+	"NATO _ Desert",
+	"AAF _ Woodland",
+	"ADF _ Re-Cut",
+	"BWMod _ RHSUSAF",
+	"UAF _ CUP-UAFVP",
+	"USMC _ Current Issue",
+	"USMC _ CUP-EF"
 ];
 
 [_playerCombo, _playerFactions, 1] call _fnc_addItems;
@@ -73,7 +79,10 @@ private _playerFactions = [
 private _enemyCombo = _display displayCtrl 1956;
 private _enemyFactions = [
 	"CUSTOM_ENEMY_FACTION",
-	"CSAT _ Desert"
+	"CSAT _ Desert",
+	"Grozovia _ 3CB",
+	"IAF _ CUP-EF",
+	"Russian AF _ CUP"
 ];
 
 [_enemyCombo, _enemyFactions, 1] call _fnc_addItems;

@@ -65,6 +65,12 @@ private _fnc_loadFaction = {
 private _bluFaction = FLO_FriendlyHandle get "name";
 private _bluPath = switch (_bluFaction) do {
     case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
+    case "AAF _ Woodland": { "Scripts\factions\blu_AAF.sqf" };
+    case "ADF _ Re-Cut": { "Scripts\factions\blu_ADF_RC.sqf" };
+    case "BWMod _ RHSUSAF": { "Scripts\factions\blu_BW_RHS.sqf" };
+    case "UAF _ CUP-UAFVP": { "Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
+    case "USMC _ Current Issue": { "Scripts\factions\blu_USMC_CI.sqf" };
+    case "USMC _ CUP-EF": { "Scripts\factions\blu_USMC_CUP_EF.sqf" };
     default { "CUSTOM_PLAYER_FACTION.sqf" };
 };
 [_bluFaction, _bluPath] call _fnc_loadFaction;
@@ -73,6 +79,9 @@ private _bluPath = switch (_bluFaction) do {
 private _opfFaction = FLO_EnemyHandle get "name";
 private _opfPath = switch (_opfFaction) do {
     case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
+    case "Grozovia _ 3CB": { "Scripts\factions\opf_Grozovia_3CB.sqf" };
+    case "IAF _ CUP-EF": { "Scripts\factions\opf_IAF_CUP_EF.sqf" };
+    case "Russian AF _ CUP": { "Scripts\factions\opf_RU_CUP.sqf" };
     default { "CUSTOM_ENEMY_FACTION.sqf" };
 };
 [_opfFaction, _opfPath] call _fnc_loadFaction;

@@ -27,6 +27,7 @@ This README is based on the actual classnames inside the current `.sqf` files, n
 
 | File | Side | Required mods / DLC |
 | --- | --- | --- |
+| `blu_AAF.sqf` | BLUFOR | `None` |
 | `blu_ADF_RC.sqf` | BLUFOR | `ADF Re-Cut [Beta]`, `CBA_A3` |
 | `blu_BW_RHS.sqf` | BLUFOR | `BWMod`, `CBA_A3`, `RHSUSAF` |
 | `blu_USMC_CUP_EF.sqf` | BLUFOR | `CUP Units`, `CUP Vehicles`, `CUP Weapons`, `(CUP-EF) United States Marine Corps`, `Arma 3 Creator DLC: Expeditionary Forces` |

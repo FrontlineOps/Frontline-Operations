@@ -69,6 +69,24 @@ switch (_bluFaction) do {
 	case "NATO _ Desert": {
 		call compileScript ["Scripts\factions\blu_NATODesert.sqf"];
 	};
+	case "AAF _ Woodland": {
+		call compileScript ["Scripts\factions\blu_AAF.sqf"];
+	};
+	case "ADF _ Re-Cut": {
+		call compileScript ["Scripts\factions\blu_ADF_RC.sqf"];
+	};
+	case "BWMod _ RHSUSAF": {
+		call compileScript ["Scripts\factions\blu_BW_RHS.sqf"];
+	};
+	case "UAF _ CUP-UAFVP": {
+		call compileScript ["Scripts\factions\blu_UAF_CUP_UAFVP.sqf"];
+	};
+	case "USMC _ Current Issue": {
+		call compileScript ["Scripts\factions\blu_USMC_CI.sqf"];
+	};
+	case "USMC _ CUP-EF": {
+		call compileScript ["Scripts\factions\blu_USMC_CUP_EF.sqf"];
+	};
 	default {
 		["INIT_FACTIONS", 1, format["Unknown friendly faction: %1", _bluFaction]] call FLO_fnc_log;
 	};
@@ -87,6 +105,15 @@ switch (_opfFaction) do {
 	};
 	case "CSAT _ Desert": {
 		call compileScript ["Scripts\factions\opf_CSATDesert.sqf"];
+	};
+	case "Grozovia _ 3CB": {
+		call compileScript ["Scripts\factions\opf_Grozovia_3CB.sqf"];
+	};
+	case "IAF _ CUP-EF": {
+		call compileScript ["Scripts\factions\opf_IAF_CUP_EF.sqf"];
+	};
+	case "Russian AF _ CUP": {
+		call compileScript ["Scripts\factions\opf_RU_CUP.sqf"];
 	};
 	default {
 		["INIT_FACTIONS", 1, format["Unknown enemy faction: %1 - loading defaults", _opfFaction]] call FLO_fnc_log;
