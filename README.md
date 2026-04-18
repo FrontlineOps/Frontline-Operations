@@ -171,6 +171,7 @@ The main customization entry points are:
 - [`CUSTOM_PLAYER_FACTION.sqf`](CUSTOM_PLAYER_FACTION.sqf)
 - [`CUSTOM_ENEMY_FACTION.sqf`](CUSTOM_ENEMY_FACTION.sqf)
 - [`CUSTOM_CIVILIAN_FACTION.sqf`](CUSTOM_CIVILIAN_FACTION.sqf)
+- [`Scripts/factions/README.md`](Scripts/factions/README.md) for built-in preset dependencies and required mods
 
 Phase 2 builds `FLO_FactionCatalog` from those files, and that catalog feeds:
 

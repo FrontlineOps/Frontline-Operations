@@ -1,6 +1,6 @@
 // ============================================================================
-// NATO DESERT FACTION - BLUFOR
-// Vanilla Arma 3 NATO units in desert camouflage
+// UAF FACTION - BLUFOR (CUP)
+// Ukrainian Armed Forces in MM14 camouflage
 // ============================================================================
 
 /*
@@ -35,32 +35,33 @@
 // ============================================================================
 // F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
 // All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
-F_Officer = "B_officer_F";
+F_Officer = "Flex_CUP_UAF_officer";    // Officer
 
-F_Assault_Eng = "B_engineer_F";
-F_Assault_TL = "B_Soldier_TL_F";
-F_Assault_SL = "B_Soldier_SL_F";
-F_Assault_Eod = "B_soldier_exp_F";
-F_Assault_Mrk = "B_Sharpshooter_F";
-F_Assault_AT = "B_soldier_LAT_F";
-F_Assault_Amm = "B_Soldier_A_F";
-F_Assault_Mg = "B_soldier_AR_F";
-F_Assault_Med = "B_medic_F";
-F_Assault_Uav = "B_soldier_UAV_F";
+F_Assault_Eng = "Flex_CUP_UAF_mechanic";    // Engineer
+F_Assault_TL = "Flex_CUP_UAF_teamleader";    // Assault Squad Leader 
+F_Assault_SL = "Flex_CUP_UAF_teamleader";    // Assault Platoon Leader 
+F_Assault_Eod = "Flex_CUP_UAF_demolition";    // Explosive Specialist
+F_Assault_Mrk = "Flex_CUP_UAF_marksman";    // Marksman 
+F_Assault_AT = "Flex_CUP_UAF_antitank";    // Anti Tank 
+F_Assault_Amm = "Flex_CUP_UAF_assistant";    // Ammo Bearer 
+F_Assault_Mg = "Flex_CUP_UAF_machinegunner";    // Auto Rifleman    
+F_Assault_Med = "Flex_CUP_UAF_medic";    // Medic
+F_Assault_Uav = "Flex_CUP_UAF_rifleman_uav";    // UAV operator
 
-F_Recon_Snp = "B_Recon_Sharpshooter_F";
-F_Recon_Sct = "B_recon_F";
-F_Recon_TL = "B_Patrol_Soldier_TL_F";
-F_Recon_Mrk = "B_Patrol_Soldier_M_F";
-F_Recon_AT = "B_recon_LAT_F";
-F_Recon_Mg = "B_Patrol_Soldier_MG_F";
-F_Recon_Eod = "B_recon_exp_F";
-F_Recon_Med = "B_Patrol_Medic_F";
-F_Recon_Eng = "B_Patrol_Engineer_F";
+F_Recon_Snp = "Flex_CUP_UAF_marksman";    // Recon Sniper 
+F_Recon_Sct = "Flex_CUP_UAF_radioman";    // Recon Spotter  
 
-F_Diver_TL = "B_diver_TL_F";
-F_Diver_Rfl = "B_diver_F";
-F_Diver_Eod = "B_diver_exp_F";
+F_Recon_TL = "Flex_CUP_UAF_teamleader";    // Recon Squad Leader 
+F_Recon_Mrk = "Flex_CUP_UAF_marksman";   // Recon Marksman
+F_Recon_AT = "Flex_CUP_UAF_antitank";   // Recon AntiTank
+F_Recon_Mg = "Flex_CUP_UAF_machinegunner";    // Recon Auto Rifleman
+F_Recon_Eod = "Flex_CUP_UAF_demolition";    // Recon Explosive specialist
+F_Recon_Med = "Flex_CUP_UAF_medic";    // Recon Medic  
+F_Recon_Eng = "Flex_CUP_UAF_mechanic";    // Recon Engineer
+
+F_Diver_TL = "B_diver_TL_F";    // Diver Team Leader
+F_Diver_Rfl = "B_diver_F";    // Diver operator 
+F_Diver_Eod = "B_diver_exp_F";    // Diver Explosive specialist
 
 // ============================================================================
 // SQUAD COMPOSITIONS
@@ -78,11 +79,11 @@ F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 // BASE STRUCTURES
 // ============================================================================
 // F_RADAR feeds the commander radar pool.
-F_RADAR = "B_Radar_System_01_F";
-F_HQ_01 = "Land_Cargo_HQ_V3_F";
-F_HQ_C_01 = "Land_TripodScreen_01_large_sand_F";
-F_OP_01 = "Land_Cargo_House_V3_F";
-F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";
+F_RADAR = "I_E_Radar_System_01_F";
+F_HQ_01 = "Land_Cargo_HQ_V1_F";
+F_HQ_C_01 = "Land_TripodScreen_01_large_F";
+F_OP_01 = "Land_Cargo_House_V1_F";
+F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F";
 
 // ============================================================================
 // VEHICLE LISTS - Format: [[classname, price], ...]
@@ -90,90 +91,116 @@ F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";
 // These same lists also feed commander/virtualization pools as described above.
 
 F_Bike_List = [
-    ["B_Quadbike_01_F", 5]
+    ["B_T_Quadbike_01_F", 50]
 ];
 
 // groundMotorized
 F_Car_List = [
-    ["B_LSV_01_unarmed_F", 250],
-    ["B_LSV_01_armed_F", 500],
-    ["B_LSV_01_AT_F", 600]
+    ["Flex_CUP_UAF_UAZ_Unarmed", 250],
+    ["Flex_CUP_UAF_UAZ_AMB", 250],
+    ["Flex_CUP_UAF_UAZ_Open", 250],
+    ["Flex_CUP_UAF_UAZ_MG", 500],
+    ["Flex_CUP_UAF_UAZ_SPG9", 600],
+    ["Flex_CUP_UAF_UAZ_AGS30", 750],
+    ["Flex_CUP_UAF_UAZ_METIS", 750],
+    ["Flex_CUP_UAF_Tigr_233014", 500],
+    ["Flex_CUP_UAF_Tigr_M_233114", 600],
+    ["Flex_CUP_UAF_Tigr_233014_PK", 750],
+    ["Flex_CUP_UAF_Tigr_M_233114_PK", 850],
+    ["Flex_CUP_UAF_Tigr_M_233114_KORD", 1000],
+    ["Flex_CUP_UAF_Novator", 500],
+    ["Flex_CUP_UAF_Novator_ATGM", 1000],
+    ["Flex_CUP_UAF_nM1151_Unarmed_DF", 500],
+    ["Flex_CUP_UAF_nM1151_ogpk_m2_DF", 850],
+    ["Flex_CUP_UAF_nM1151_ogpk_m240_DF", 750],
+    ["Flex_CUP_UAF_nM1151_ogpk_mk19_DF", 1250]
 ];
 
 // groundMotorized
 F_MRAP_List = [
-    ["B_MRAP_01_F", 500],
-    ["B_MRAP_01_hmg_F", 700],
-    ["B_MRAP_01_gmg_F", 1000]
+    ["Flex_CUP_UAF_Shrek", 500],
+    ["Flex_CUP_UAF_Fiona", 600],
+    ["Flex_CUP_UAF_Dozor", 750],
+    ["Flex_CUP_UAF_Dozor_Armed", 1250]
 ];
 
 // groundTransport
 F_Truck_List = [
-    ["B_Truck_01_transport_F", 650],
-    ["B_Truck_01_covered_F", 650]
+    ["Flex_CUP_UAF_Ural_Open", 650],
+    ["Flex_CUP_UAF_Ural", 650]
 ];
+
 West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
-    ["B_Truck_01_ammo_F", 1000]
+    ["Flex_CUP_UAF_Ural_Reammo", 1000]
 ];
 
 F_Truck_Construction_List = [
-    ["B_Truck_01_Repair_F", 1000]
+    ["Flex_CUP_UAF_Ural_Repair", 1000]
 ];
 
 F_Truck_Respawn_List = [
-    ["B_Truck_01_medical_F", 1500]
+    ["Flex_CUP_UAF_Fiona_Ambulance", 1500]
 ];
 
 // groundMechanized
 F_APC_List = [
-    ["B_APC_Tracked_01_rcws_F", 2500],
-    ["B_APC_Tracked_01_AA_F", 2000],
-    ["B_APC_Tracked_01_CRV_F", 2000],
-    ["B_APC_Wheeled_01_cannon_F", 3500],
-    ["B_AFV_Wheeled_01_up_cannon_F", 4000]
+    ["Flex_CUP_UAF_MTLB_pk", 2000],
+    ["Flex_CUP_UAF_BRDM2_HQ", 2000],
+    ["Flex_CUP_UAF_BRDM2", 2500],
+    ["Flex_CUP_UAF_BRDM2_ATGM", 3500],
+    ["Flex_CUP_UAF_BMP1U", 4000],
+    ["Flex_CUP_UAF_BTR60", 3500],
+    ["Flex_CUP_UAF_BTR3", 4000],
+    ["Flex_CUP_UAF_BTR4", 4500],
+    ["Flex_CUP_UAF_M2Bradley", 5000],
+    ["Flex_CUP_UAF_M2A3Bradley", 5500]
 ];
 
 // groundArmor
 F_Tank_List = [
-    ["B_MBT_01_cannon_F", 5000],
-    ["B_MBT_01_TUSK_F", 6500]
+    ["Flex_CUP_UAF_Leopard_1A3GRN", 6500],
+    ["Flex_CUP_UAF_Leopard2A4_ERA", 8000],
+    ["Flex_CUP_UAF_Leopard2A6", 8500],
+    ["Flex_CUP_UAF_M1A1_TUSK", 8250],
+    ["Flex_CUP_UAF_T64BV1", 6500],
+    ["Flex_CUP_UAF_T64BM2", 7500],
+    ["Flex_CUP_UAF_T84M", 8000]
 ];
 
 // groundArtillery
 F_Artillery_List = [
-    ["B_Mortar_01_F", 750],
-    ["B_MBT_01_arty_F", 4000],
-    ["B_MBT_01_mlrs_F", 5000]
+    ["Flex_CUP_UAF_2b14_82mm", 750],
+    ["Flex_CUP_UAF_D30", 1500],    
+    ["Flex_CUP_UAF_2S17", 4000],
+    ["Flex_CUP_UAF_BM21", 5000]
 ];
 
 // airTransport
 F_Heli_List = [
-    ["B_Heli_Light_01_F", 2500],
-    ["B_Heli_Transport_01_F", 2000],
-    ["B_Heli_Transport_03_F", 4000]
+    ["Flex_CUP_UAF_Mi17", 2500],
+    ["CUP_B_MH6J_USA", 2000]
 ];
 West_Transport_Reserve_Air_Count = 10;
 
 // airTransport
 F_Heli_Respawn_List = [
-    ["B_Heli_Transport_01_medevac_F", 550]
+    ["CUP_B_Mi17_medevac_AFU", 5500],
+    ["CUP_B_Mi24_D_MEV_Dynamic_AFU", 7500]
 ];
 
 // airHeli
 F_Heli_Gunship_List = [
-    ["B_Heli_Light_01_dynamicLoadout_F", 500],
-    ["B_Heli_Attack_01_dynamicLoadout_F", 750]
+    ["Flex_CUP_UAF_Mi24_D", 10000],
+    ["Flex_CUP_UAF_Mi171Sh", 6500],
+    ["B_Heli_Light_01_dynamicLoadout_F", 4500]
 ];
 
 // airJet
 F_Plane_List = [
-    ["B_Plane_CAS_01_dynamicLoadout_F", 15000],
-    ["B_Plane_Fighter_01_F", 18000],
-    ["B_T_VTOL_01_infantry_F", 12000],
-    ["B_T_VTOL_01_vehicle_F", 12000],
-    ["B_T_VTOL_01_armed_F", 16000]
+    ["Flex_CUP_UAF_Mig29", 15000],
+    ["Flex_CUP_UAF_F16A", 18000]
 ];
 
 // boat
@@ -183,27 +210,31 @@ F_Boat_List = [
 
 // airDrone
 F_UAV_List = [
-    ["B_UAV_02_dynamicLoadout_F", 800],
-    ["B_UAV_05_F", 800],
-    ["B_T_UAV_03_dynamicLoadout_F", 800]
+    ["Flex_CUP_UAF_UAV", 800]
 ];
 
 // groundDrone
 F_UGV_List = [
-    ["B_UGV_01_rcws_F", 550]
+    ["Flex_CUP_UAF_RSVK", 550],
+    ["Flex_CUP_UAF_RSVK_Armed", 800]
 ];
 
 F_Container_List = [
     ["B_Slingload_01_Medevac_F", 350],
     ["B_Slingload_01_Ammo_F", 350],
-    ["B_Slingload_01_Repair_F", 500],
+    ["B_Slingload_01_Repair_F", 1000],
     ["B_Slingload_01_Fuel_F", 350]
 ];
 
 F_Turret_List = [
-    ["B_HMG_01_high_F", 350],
-    ["B_GMG_01_high_F", 350],
-    ["B_static_AT_F", 350]
+    ["Flex_CUP_UAF_DSHKM", 350],
+    ["Flex_CUP_UAF_DSHKM_MiniTriPod", 350],
+    ["Flex_CUP_UAF_HMG_high", 350],
+    ["Flex_CUP_UAF_AGS", 650],
+    ["Flex_CUP_UAF_SPG9", 500],
+    ["Flex_CUP_UAF_D30_AT", 1000],
+    ["Flex_CUP_UAF_ZU23", 2000],
+    ["Flex_CUP_UAF_Igla_AA_pod", 2500]
 ];
 
 // staticAA
@@ -286,15 +317,16 @@ West_Objective_Group_Type_Caps = [
     ["mobile_aa", 20]
 ];
 
+
 /*
  * Group Type Unit/Vehicle Counts
  * Defines how many physical units/vehicles should be in each type of group
  */
 BLUFOR_Group_Counts = [
     ["infantry", 10],          // Number of individual soldiers
-    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
-    ["mechanized", 2],        // Number of APCs/IFVs
-    ["armor", 2],             // Number of tanks
+    ["motorized", 1],         // Number of armed vehicles (MRAP, GMG, etc.)
+    ["mechanized", 1],        // Number of APCs/IFVs
+    ["armor", 1],             // Number of tanks
     ["helicopter", 1],        // Number of helicopters
     ["jet", 1],               // Number of jets
     ["air", 1],               // Number of aircraft
