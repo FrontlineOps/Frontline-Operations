@@ -119,6 +119,10 @@ private _gtnCommander = createHashMapObject [[
     
     ["_tracks", _tracks],
     ["_nextTrackExecutionIndex", 0],
+    ["_strategicOrderBudgetRemaining", 0],
+    ["_strategicOrderBudgetIssued", 0],
+    ["_strategicOrderBudgetSkipped", 0],
+    ["_strategicOrderBudgetByType", createHashMap],
     ["_availabilityCacheDirty", true],
     ["_availabilityCandidates", []],
     ["_availabilityOwnSideTotal", 0],
@@ -127,11 +131,14 @@ private _gtnCommander = createHashMapObject [[
     ["_attackFrontlineObjectives", createHashMap],
     ["_attackSourceObjectivesCache", createHashMap],
     ["_attackPressureProfiles", createHashMap],
+    ["_attackCapCache", createHashMap],
     ["_attackObjectiveReservations", createHashMap],
     ["_objectiveAssignmentCache", createHashMapFromArray [
         ["attackCounts", createHashMap],
         ["garrisonCounts", createHashMap],
         ["defenderCounts", createHashMap],
+        ["garrisonGroupsByObjective", createHashMap],
+        ["garrisonPositionsByObjective", createHashMap],
         ["claimedPositionsByObjective", createHashMap]
     ]],
     ["_reserveBandsCache", createHashMap],
@@ -246,8 +253,10 @@ private _gtnCommander = createHashMapObject [[
         ["engagementSaturationPenalty", 60], // Saturated contacts should be strongly deprioritized against other valid targets
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
-        ["attackAssignmentsPerCycle", 6], // One attack primitive only orders a bounded number of groups so one commander slice does not monopolize the scheduler
-        ["defenseAssignmentsPerCycle", 6], // One defense primitive only orders a bounded number of groups so surge defense spreads across updates
+        ["strategicOrderAssignmentsPerCycle", 4], // Shared cap for new ATTACK/DEFEND/GARRISON route orders so one cycle cannot dump many path requests
+        ["attackAssignmentsPerCycle", 2], // One attack primitive only orders a bounded number of groups so one commander slice does not monopolize the scheduler
+        ["defenseAssignmentsPerCycle", 2], // One defense primitive only orders a bounded number of groups so surge defense spreads across updates
+        ["garrisonAssignmentsPerCycle", 2], // Baseline garrison fill spreads standing-order route requests across cycles without starving mobile orders
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
     ]],
     
@@ -326,6 +335,7 @@ private _gtnCommander = createHashMapObject [[
         private _now = diag_tickTime;
         _self set ["_lastUpdate", _now];
         _self set ["_attackPressureProfiles", createHashMap];
+        _self set ["_attackCapCache", createHashMap];
         private _perf = _self get "_perf";
         private _phaseMs = createHashMapFromArray [
             ["normalizeTasked", 0],
@@ -362,6 +372,7 @@ private _gtnCommander = createHashMapObject [[
         private _stats = _self get "_stats";
         _stats set ["cyclesRun", (_stats get "cyclesRun") + 1];
         private _cycleIndex = _stats get "cyclesRun";
+        _self call ["_resetStrategicOrderBudget", []];
         
         ["GTN", 3, format["GTN Cycle %1 starting", _cycleIndex]] call FLO_fnc_log;
 
@@ -560,7 +571,8 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAS", _frontlineCASMetrics],
             ["playerSupport", _playerSupportMetrics],
             ["defenseLeases", _leaseMetrics],
-            ["staticAA", _staticAAMetrics]
+            ["staticAA", _staticAAMetrics],
+            ["strategicOrderBudget", _self call ["_getStrategicOrderBudgetMetrics", []]]
         ];
 
         _perf set ["lastCycleMs", _dtMs];
@@ -676,6 +688,17 @@ private _gtnCommander = createHashMapObject [[
                 _garrisonMetrics get "reinforcedObjectives",
                 _garrisonMetrics get "reserveBandBuilds",
                 _garrisonMetrics get "assignmentPasses"
+            ];
+
+            private _orderBudgetMetrics = _metrics get "strategicOrderBudget";
+            diag_log format [
+                "[FLO][PERF] GTN commander %1 orderBudget | limit=%2 issued=%3 remaining=%4 skipped=%5 byType=%6",
+                _self get "_sideKey",
+                _orderBudgetMetrics get "limit",
+                _orderBudgetMetrics get "issued",
+                _orderBudgetMetrics get "remaining",
+                _orderBudgetMetrics get "skipped",
+                _orderBudgetMetrics get "byType"
             ];
 
             if (_wsRan) then {
@@ -1494,6 +1517,46 @@ private _gtnCommander = createHashMapObject [[
         _bestObj
     }],
 
+    ["_resetStrategicOrderBudget", {
+        private _limit = ((_self get "_config") get "strategicOrderAssignmentsPerCycle") max 0;
+        _self set ["_strategicOrderBudgetRemaining", _limit];
+        _self set ["_strategicOrderBudgetIssued", 0];
+        _self set ["_strategicOrderBudgetSkipped", 0];
+        _self set ["_strategicOrderBudgetByType", createHashMap];
+    }],
+
+    ["_hasStrategicOrderBudget", {
+        (_self get "_strategicOrderBudgetRemaining") > 0
+    }],
+
+    ["_consumeStrategicOrderBudget", {
+        params [["_orderType", "UNKNOWN", [""]]];
+
+        private _remaining = _self get "_strategicOrderBudgetRemaining";
+        if (_remaining <= 0) exitWith {
+            _self set ["_strategicOrderBudgetSkipped", (_self get "_strategicOrderBudgetSkipped") + 1];
+            false
+        };
+
+        _self set ["_strategicOrderBudgetRemaining", _remaining - 1];
+        _self set ["_strategicOrderBudgetIssued", (_self get "_strategicOrderBudgetIssued") + 1];
+
+        private _byType = _self get "_strategicOrderBudgetByType";
+        private _count = if (_orderType in _byType) then { _byType get _orderType } else { 0 };
+        _byType set [_orderType, _count + 1];
+        true
+    }],
+
+    ["_getStrategicOrderBudgetMetrics", {
+        createHashMapFromArray [
+            ["limit", ((_self get "_config") get "strategicOrderAssignmentsPerCycle") max 0],
+            ["issued", _self get "_strategicOrderBudgetIssued"],
+            ["remaining", _self get "_strategicOrderBudgetRemaining"],
+            ["skipped", _self get "_strategicOrderBudgetSkipped"],
+            ["byType", _self get "_strategicOrderBudgetByType"]
+        ]
+    }],
+
     // Groups currently tasked by GTN (prevent AI Commander from using them)
     ["_gtnTaskedGroups", []],
 
@@ -1787,6 +1850,11 @@ private _gtnCommander = createHashMapObject [[
         params ["_objectiveId"];
         if (_objectiveId == "") exitWith { 0 };
 
+        private _capCache = _self get "_attackCapCache";
+        if (_objectiveId in _capCache) exitWith {
+            _capCache get _objectiveId
+        };
+
         private _ws = _self get "_worldState";
         private _objectives = _ws call ["_getObjectives", []];
         if !(_objectiveId in _objectives) exitWith { 0 };
@@ -1813,6 +1881,7 @@ private _gtnCommander = createHashMapObject [[
         private _pressureProfile = [_self, _objectiveId] call FLO_fnc_gtnGetAttackPressureProfile;
         _cap = ceil (_cap * (_pressureProfile get "capMultiplier"));
         _cap = (_cap max 1) min (_config get "attackObjectiveHardCap");
+        _capCache set [_objectiveId, _cap];
         _cap
     }],
 
@@ -2059,7 +2128,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Order group to attack using virtualization waypoints
     ["_orderGroupAttack", {
-        params ["_groupId", "_pos", ["_objectiveId", ""]];
+        params ["_groupId", "_pos", ["_objectiveId", ""], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
@@ -2115,6 +2184,11 @@ private _gtnCommander = createHashMapObject [[
             true
         };
 
+        if (_consumeAssignmentBudget && {!(_self call ["_consumeStrategicOrderBudget", ["ATTACK"]])}) exitWith {
+            ["GTN", 4, format["Skipped ATTACK order for %1: strategic order budget exhausted", _groupId]] call FLO_fnc_log;
+            false
+        };
+
         private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
 
         private _waypoints = [
@@ -2146,7 +2220,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Order group to defend using virtualization waypoints
     ["_orderGroupDefend", {
-        params ["_groupId", "_pos", ["_objectiveId", ""], ["_skipSaturationCheck", false, [true]]];
+        params ["_groupId", "_pos", ["_objectiveId", ""], ["_skipSaturationCheck", false, [true]], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
@@ -2210,6 +2284,11 @@ private _gtnCommander = createHashMapObject [[
 
         if (_saturated) exitWith { false };
 
+        if (_consumeAssignmentBudget && {!(_self call ["_consumeStrategicOrderBudget", ["DEFEND"]])}) exitWith {
+            ["GTN", 4, format["Skipped DEFEND order for %1: strategic order budget exhausted", _groupId]] call FLO_fnc_log;
+            false
+        };
+
         private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
 
         private _waypoints = [
@@ -2252,7 +2331,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Order group to hold a standing garrison on an owned objective.
     ["_orderGroupGarrison", {
-        params ["_groupId", "_pos", ["_objectiveId", ""]];
+        params ["_groupId", "_pos", ["_objectiveId", ""], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
         private _gData = _groups getOrDefault [_groupId, nil];
@@ -2296,6 +2375,11 @@ private _gtnCommander = createHashMapObject [[
             FLO_GTN_OrderNoOps set ["GARRISON", (FLO_GTN_OrderNoOps getOrDefault ["GARRISON", 0]) + 1];
             _self call ["_taskGroups", [[_groupId]]];
             true
+        };
+
+        if (_consumeAssignmentBudget && {!(_self call ["_consumeStrategicOrderBudget", ["GARRISON"]])}) exitWith {
+            ["GTN", 4, format["Skipped GARRISON order for %1: strategic order budget exhausted", _groupId]] call FLO_fnc_log;
+            false
         };
 
         private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];

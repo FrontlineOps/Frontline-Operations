@@ -33,6 +33,7 @@ private _pool = +(_track get "groupPool");
 _metrics set ["poolCount", count _pool];
 _metrics set ["remainingPool", count _pool];
 if ((count _pool) == 0) exitWith { _metrics };
+if !(_cmdr call ["_hasStrategicOrderBudget", []]) exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
@@ -139,13 +140,19 @@ private _poolEntries = [];
 private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 
-scopeName "defenseAllocation";
 while {_continueAllocation && {(count _poolEntries) > 0}} do {
     _continueAllocation = false;
+    private _stopAllocation = false;
 
     {
+        if (_stopAllocation) then { continue };
         if ((_metrics get "assignedGroups") >= _assignmentLimit) then {
-            breakOut "defenseAllocation";
+            _stopAllocation = true;
+            continue;
+        };
+        if !(_cmdr call ["_hasStrategicOrderBudget", []]) then {
+            _stopAllocation = true;
+            continue;
         };
 
         private _deficit = _x get "deficit";
@@ -185,7 +192,7 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
         };
         private _defendPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
 
-        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId, true]]) then {
+        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId, true, true]]) then {
             _poolEntries deleteAt _bestIndex;
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
@@ -210,6 +217,10 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
             _poolEntries deleteAt _bestIndex;
         };
     } forEach _candidateObjectives;
+
+    if (_stopAllocation) then {
+        _continueAllocation = false;
+    };
 };
 
 _pool = _poolEntries apply { _x select 0 };

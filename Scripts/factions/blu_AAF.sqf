@@ -1,6 +1,6 @@
 // ============================================================================
-// NATO DESERT FACTION - BLUFOR
-// Vanilla Arma 3 NATO units in desert camouflage
+// AAF WOODLAND FACTION - BLUFOR (Vanilla)
+// Altis Armed Forces in woodland camouflage
 // ============================================================================
 
 /*
@@ -35,28 +35,28 @@
 // ============================================================================
 // F_Officer + all F_Assault_* roles feed the commander groundInfantry pool.
 // All F_Recon_* and F_Diver_* roles feed the commander groundSpecOps pool.
-F_Officer = "B_officer_F";
+F_Officer = "I_officer_F";
 
-F_Assault_Eng = "B_engineer_F";
-F_Assault_TL = "B_Soldier_TL_F";
-F_Assault_SL = "B_Soldier_SL_F";
-F_Assault_Eod = "B_soldier_exp_F";
-F_Assault_Mrk = "B_Sharpshooter_F";
-F_Assault_AT = "B_soldier_LAT_F";
-F_Assault_Amm = "B_Soldier_A_F";
-F_Assault_Mg = "B_soldier_AR_F";
-F_Assault_Med = "B_medic_F";
-F_Assault_Uav = "B_soldier_UAV_F";
+F_Assault_Eng = "I_engineer_F";
+F_Assault_TL = "I_Soldier_TL_F";
+F_Assault_SL = "I_Soldier_SL_F";
+F_Assault_Eod = "I_Soldier_exp_F";
+F_Assault_Mrk = "I_Soldier_M_F";
+F_Assault_AT = "I_Soldier_LAT2_F";
+F_Assault_Amm = "I_Soldier_A_F";
+F_Assault_Mg = "I_Soldier_AR_F";
+F_Assault_Med = "I_medic_F";
+F_Assault_Uav = "I_Soldier_F";
 
-F_Recon_Snp = "B_Recon_Sharpshooter_F";
-F_Recon_Sct = "B_recon_F";
-F_Recon_TL = "B_Patrol_Soldier_TL_F";
-F_Recon_Mrk = "B_Patrol_Soldier_M_F";
-F_Recon_AT = "B_recon_LAT_F";
-F_Recon_Mg = "B_Patrol_Soldier_MG_F";
-F_Recon_Eod = "B_recon_exp_F";
-F_Recon_Med = "B_Patrol_Medic_F";
-F_Recon_Eng = "B_Patrol_Engineer_F";
+F_Recon_Snp = "I_Sniper_F";
+F_Recon_Sct = "I_Spotter_F";
+F_Recon_TL = "I_Soldier_SL_F";
+F_Recon_Mrk = "I_Soldier_M_F";
+F_Recon_AT = "I_Soldier_LAT2_F";
+F_Recon_Mg = "I_Soldier_AR_F";
+F_Recon_Eod = "I_Soldier_exp_F";
+F_Recon_Med = "I_medic_F";
+F_Recon_Eng = "I_engineer_F";
 
 F_Diver_TL = "B_diver_TL_F";
 F_Diver_Rfl = "B_diver_F";
@@ -79,10 +79,10 @@ F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
 // ============================================================================
 // F_RADAR feeds the commander radar pool.
 F_RADAR = "B_Radar_System_01_F";
-F_HQ_01 = "Land_Cargo_HQ_V3_F";
-F_HQ_C_01 = "Land_TripodScreen_01_large_sand_F";
-F_OP_01 = "Land_Cargo_House_V3_F";
-F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";
+F_HQ_01 = "Land_Cargo_HQ_V1_F";
+F_HQ_C_01 = "Land_TripodScreen_01_large_F";
+F_OP_01 = "Land_Cargo_House_V1_F";
+F_OP_C_01 = "Land_TripodScreen_01_dual_v2_F";
 
 // ============================================================================
 // VEHICLE LISTS - Format: [[classname, price], ...]
@@ -90,128 +90,113 @@ F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";
 // These same lists also feed commander/virtualization pools as described above.
 
 F_Bike_List = [
-    ["B_Quadbike_01_F", 5]
+    ["I_Quadbike_01_F", 50]
 ];
 
 // groundMotorized
 F_Car_List = [
-    ["B_LSV_01_unarmed_F", 250],
-    ["B_LSV_01_armed_F", 500],
-    ["B_LSV_01_AT_F", 600]
+    ["I_MRAP_03_F", 500],
+    ["I_MRAP_03_hmg_F", 700],
+    ["I_MRAP_03_gmg_F", 1000]
 ];
 
 // groundMotorized
 F_MRAP_List = [
-    ["B_MRAP_01_F", 500],
-    ["B_MRAP_01_hmg_F", 700],
-    ["B_MRAP_01_gmg_F", 1000]
+    ["I_APC_Wheeled_03_cannon_F", 3500],
+    ["I_LT_01_cannon_F", 3500],
+    ["I_LT_01_AA_F", 3000]
 ];
 
 // groundTransport
 F_Truck_List = [
-    ["B_Truck_01_transport_F", 650],
-    ["B_Truck_01_covered_F", 650]
+    ["I_Truck_02_transport_F", 650],
+    ["I_Truck_02_covered_F", 650]
 ];
 West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
-    ["B_Truck_01_ammo_F", 1000]
+    ["I_Truck_02_ammo_F", 1000]
 ];
 
 F_Truck_Construction_List = [
-    ["B_Truck_01_Repair_F", 1000]
+    ["I_Truck_02_box_F", 1000]
 ];
 
 F_Truck_Respawn_List = [
-    ["B_Truck_01_medical_F", 1500]
+    ["I_Truck_02_medical_F", 1500]
 ];
 
 // groundMechanized
 F_APC_List = [
-    ["B_APC_Tracked_01_rcws_F", 2500],
-    ["B_APC_Tracked_01_AA_F", 2000],
-    ["B_APC_Tracked_01_CRV_F", 2000],
-    ["B_APC_Wheeled_01_cannon_F", 3500],
-    ["B_AFV_Wheeled_01_up_cannon_F", 4000]
+    ["I_APC_tracked_03_cannon_F", 3500]
 ];
 
 // groundArmor
 F_Tank_List = [
-    ["B_MBT_01_cannon_F", 5000],
-    ["B_MBT_01_TUSK_F", 6500]
+    ["I_MBT_03_cannon_F", 5000]
 ];
 
 // groundArtillery
 F_Artillery_List = [
-    ["B_Mortar_01_F", 750],
-    ["B_MBT_01_arty_F", 4000],
-    ["B_MBT_01_mlrs_F", 5000]
+    ["I_Mortar_01_F", 750],
+    ["I_Truck_02_MRL_F", 5000],
+    ["O_MBT_02_arty_F", 4000]
 ];
 
 // airTransport
 F_Heli_List = [
-    ["B_Heli_Light_01_F", 2500],
-    ["B_Heli_Transport_01_F", 2000],
-    ["B_Heli_Transport_03_F", 4000]
+    ["I_Heli_Transport_02_F", 2500],
+    ["I_Heli_light_03_unarmed_F", 2000]
 ];
 West_Transport_Reserve_Air_Count = 10;
 
 // airTransport
 F_Heli_Respawn_List = [
-    ["B_Heli_Transport_01_medevac_F", 550]
+    ["I_Heli_Transport_02_F", 5500]
 ];
 
 // airHeli
 F_Heli_Gunship_List = [
-    ["B_Heli_Light_01_dynamicLoadout_F", 500],
-    ["B_Heli_Attack_01_dynamicLoadout_F", 750]
+    ["I_Heli_light_03_dynamicLoadout_F", 7500]
 ];
 
 // airJet
 F_Plane_List = [
-    ["B_Plane_CAS_01_dynamicLoadout_F", 15000],
-    ["B_Plane_Fighter_01_F", 18000],
-    ["B_T_VTOL_01_infantry_F", 12000],
-    ["B_T_VTOL_01_vehicle_F", 12000],
-    ["B_T_VTOL_01_armed_F", 16000]
+    ["I_Plane_Fighter_03_dynamicLoadout_F", 15000],
+    ["I_Plane_Fighter_04_F", 18000]
 ];
 
 // boat
-F_Boat_List = [
-    ["B_Boat_Armed_01_minigun_F", 1500]
-];
+F_Boat_List = [];
 
 // airDrone
 F_UAV_List = [
-    ["B_UAV_02_dynamicLoadout_F", 800],
-    ["B_UAV_05_F", 800],
-    ["B_T_UAV_03_dynamicLoadout_F", 800]
+    ["I_UAV_01_F", 800],
+    ["I_UAV_02_dynamicLoadout_F", 1500]
 ];
 
 // groundDrone
 F_UGV_List = [
-    ["B_UGV_01_rcws_F", 550]
+    ["I_UGV_01_rcws_F", 550]
 ];
 
 F_Container_List = [
     ["B_Slingload_01_Medevac_F", 350],
     ["B_Slingload_01_Ammo_F", 350],
-    ["B_Slingload_01_Repair_F", 500],
+    ["B_Slingload_01_Repair_F", 1000],
     ["B_Slingload_01_Fuel_F", 350]
 ];
 
 F_Turret_List = [
-    ["B_HMG_01_high_F", 350],
-    ["B_GMG_01_high_F", 350],
-    ["B_static_AT_F", 350]
+    ["I_HMG_01_high_F", 350],
+    ["I_GMG_01_high_F", 350],
+    ["I_static_AT_F", 350]
 ];
 
 // staticAA
 F_SAM_List = [
-    ["B_SAM_System_01_F", 35000],
-    ["B_SAM_System_02_F", 35000],
-    ["B_SAM_System_03_F", 35000],
-    ["B_AAA_System_01_F", 35000]
+    ["I_static_AA_F", 2500],
+    ["B_SAM_System_03_F", 35000]
 ];
 
 /*
@@ -223,10 +208,9 @@ F_SAM_List = [
  * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
  */
 BLUFOR_Objective_Groups = [
-    // Capital objectives - highest concentration of defenders
     ["capital", [
         ["infantry", 12],
-        ["motorized", 2],
+        ["motorized", 1],
         ["mechanized", 1],
         ["air", 1],
         ["armor", 1],
@@ -234,56 +218,26 @@ BLUFOR_Objective_Groups = [
         ["static_aa", 1],
         ["mobile_aa", 1]
     ]],
-
-    // Major cities
     ["city", [
         ["infantry", 7],
-        ["motorized", 2],
-        ["mechanized", 1],
-        ["air", 1],
-        ["armor", 1],
-        ["artillery", 1],
-        ["static_aa", 1],
-        ["mobile_aa", 1]
+        ["motorized", 1]
     ]],
-
-    // Villages
     ["village", [
         ["infantry", 3]
     ]],
-
-    // Small local objectives
-    // These tend to be military bases, strategic infrastructure, or other military-like objectives
     ["local", [
         ["infantry", 6],
-        ["motorized", 2],
+        ["motorized", 1],
         ["mechanized", 1],
         ["mobile_aa", 1]
     ]],
-
-    // Coastal or marine facilities
     ["marine", [
         ["infantry", 3],
         ["motorized", 1]
     ]],
-
-    // Automatically generated clusters
     ["cluster", [
         ["infantry", 2]
     ]]
-];
-
-/*
- * Optional side-wide objective seeding caps:
- *   West_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
- * These caps apply across all owned seeded objectives combined.
- */
-West_Objective_Group_Type_Caps = [
-    ["jet", 10],
-    ["helicopter", 10],
-    ["artillery", 5],
-    ["static_aa", 3],
-    ["mobile_aa", 20]
 ];
 
 /*
@@ -291,15 +245,14 @@ West_Objective_Group_Type_Caps = [
  * Defines how many physical units/vehicles should be in each type of group
  */
 BLUFOR_Group_Counts = [
-    ["infantry", 10],          // Number of individual soldiers
-    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
-    ["mechanized", 2],        // Number of APCs/IFVs
-    ["armor", 2],             // Number of tanks
-    ["helicopter", 1],        // Number of helicopters
-    ["jet", 1],               // Number of jets
-    ["air", 1],               // Number of aircraft
-    ["artillery", 3],         // Number of artillery pieces
-    ["mobile_aa", 1],         // Number of mobile AA vehicles
-    ["static_aa", 1]          // Number of static SAM launchers
+    ["infantry", 10],
+    ["motorized", 1],
+    ["mechanized", 1],
+    ["armor", 1],
+    ["helicopter", 1],
+    ["jet", 1],
+    ["air", 1],
+    ["artillery", 3],
+    ["mobile_aa", 1],
+    ["static_aa", 1]
 ];
-

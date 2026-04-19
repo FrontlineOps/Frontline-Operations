@@ -162,6 +162,18 @@ private _executor = createHashMapObject [[
                 _trackId,
                 _execMs
             ];
+
+            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
+            private _primMetrics = _primData getOrDefault ["metrics", createHashMap];
+            if ((count (keys _primMetrics)) > 0) then {
+                diag_log format [
+                    "[FLO][PERF] GTN executor %1 primitive %2 track=%3 metrics=%4",
+                    _self get "_sideKey",
+                    _taskId,
+                    _trackId,
+                    _primMetrics
+                ];
+            };
         };
 
         private _active = _self get "_activeExecutions";
