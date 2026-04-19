@@ -30,6 +30,7 @@ private _metrics = createHashMapFromArray [
     ["reinforcedObjectives", 0],
     ["remainingPool", 0],
     ["candidateBuildMs", 0],
+    ["reserveBandMs", 0],
     ["signatureMs", 0],
     ["selectionMs", 0],
     ["orderMs", 0],
@@ -49,6 +50,7 @@ _metrics set ["poolCount", count _pool];
 _metrics set ["remainingPool", count _pool];
 if ((count _pool) == 0) exitWith { _metrics };
 if (_phase != "assault") exitWith { _metrics };
+if !(_cmdr call ["_hasStrategicOrderBudget", []]) exitWith { _metrics };
 
 private _ownSide = _cmdr get "_ownSide";
 private _groups = FLO_virtualGroups get "_groups";
@@ -92,23 +94,12 @@ private _candidateObjectives = [];
     private _sectorMatch = (count _trackSectorObjectives) == 0
         || {(count (_sourceObjectives arrayIntersect _trackSectorObjectives)) > 0};
     private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
-    private _reserveBands = [_cmdr, _sourceObjectives, _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
     private _phasePreferred = _phaseObjectiveId != "" && {_objectiveId == _phaseObjectiveId};
-
-    private _reserveBandKeys = keys _reserveBands;
-    _reserveBandKeys sort true;
-
-    private _bandedSourceObjectives = [];
-    {
-        _bandedSourceObjectives pushBack [_reserveBands get _x, _x];
-    } forEach _reserveBandKeys;
-    _bandedSourceObjectives sort true;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
-        ["reserveBands", _reserveBands],
-        ["bandedSourceObjectives", _bandedSourceObjectives],
+        ["sourceObjectives", _sourceObjectives],
         ["phasePreferred", _phasePreferred],
         ["sectorMatch", _sectorMatch],
         ["selectionDist", _selectionDist],
@@ -174,13 +165,19 @@ private _assignedByObjective = createHashMap;
 private _continueAllocation = true;
 private _poolHomeObjectiveIds = keys _poolBucketsByHomeObjective;
 
-scopeName "attackAllocation";
 while {_continueAllocation && {(count _poolEntries) > 0}} do {
     _continueAllocation = false;
+    private _stopAllocation = false;
 
     {
+        if (_stopAllocation) then { continue };
         if ((_metrics get "assignedGroups") >= _assignmentLimit) then {
-            breakOut "attackAllocation";
+            _stopAllocation = true;
+            continue;
+        };
+        if !(_cmdr call ["_hasStrategicOrderBudget", []]) then {
+            _stopAllocation = true;
+            continue;
         };
 
         private _deficit = _x get "deficit";
@@ -188,8 +185,29 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
-        private _reserveBands = _x get "reserveBands";
-        private _bandedSourceObjectives = _x get "bandedSourceObjectives";
+        private _reserveBands = if ("reserveBands" in _x) then {
+            _x get "reserveBands"
+        } else {
+            private _tReserve = diag_tickTime;
+            private _bands = [_cmdr, (_x get "sourceObjectives"), _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
+            _metrics set ["reserveBandMs", (_metrics get "reserveBandMs") + ((diag_tickTime - _tReserve) * 1000)];
+            _x set ["reserveBands", _bands];
+            _bands
+        };
+        private _bandedSourceObjectives = if ("bandedSourceObjectives" in _x) then {
+            _x get "bandedSourceObjectives"
+        } else {
+            private _reserveBandKeys = keys _reserveBands;
+            _reserveBandKeys sort true;
+
+            private _banded = [];
+            {
+                _banded pushBack [_reserveBands get _x, _x];
+            } forEach _reserveBandKeys;
+            _banded sort true;
+            _x set ["bandedSourceObjectives", _banded];
+            _banded
+        };
 
         private _tSelection = diag_tickTime;
         private _bestGroupId = "";
@@ -252,7 +270,7 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
         if (_bestGroupId == "") then { continue };
 
         private _tOrder = diag_tickTime;
-        private _ordered = _cmdr call ["_orderGroupAttack", [_bestGroupId, _objectivePos, _objectiveId]];
+        private _ordered = _cmdr call ["_orderGroupAttack", [_bestGroupId, _objectivePos, _objectiveId, true]];
         _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
 
         if (_ordered) then {
@@ -280,6 +298,10 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
             _poolEntries deleteAt (_poolEntries find _bestGroupId);
         };
     } forEach _candidateObjectives;
+
+    if (_stopAllocation) then {
+        _continueAllocation = false;
+    };
 };
 
 _track set ["groupPool", _poolEntries];
@@ -298,7 +320,7 @@ _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 if ((_metrics get "totalMs") >= 20) then {
     diag_log format [
-        "[FLO][PERF] GTN attack allocation %1 track=%2 phaseObjective=%3 candidates=%4 pool=%5 assigned=%6 remaining=%7 build=%8 sig=%9 select=%10 order=%11 total=%12",
+        "[FLO][PERF] GTN attack allocation %1 track=%2 phaseObjective=%3 candidates=%4 pool=%5 assigned=%6 remaining=%7 build=%8 reserve=%9 sig=%10 select=%11 order=%12 total=%13",
         _cmdr get "_sideKey",
         _track get "id",
         _phaseObjectiveId,
@@ -307,6 +329,7 @@ if ((_metrics get "totalMs") >= 20) then {
         _metrics get "assignedGroups",
         _metrics get "remainingPool",
         _metrics get "candidateBuildMs",
+        _metrics get "reserveBandMs",
         _metrics get "signatureMs",
         _metrics get "selectionMs",
         _metrics get "orderMs",

@@ -32,7 +32,6 @@ This README is based on the actual classnames inside the current `.sqf` files, n
 | `blu_BW_RHS.sqf` | BLUFOR | `BWMod`, `CBA_A3`, `RHSUSAF` |
 | `blu_USMC_CUP_EF.sqf` | BLUFOR | `CUP Units`, `CUP Vehicles`, `CUP Weapons`, `(CUP-EF) United States Marine Corps`, `Arma 3 Creator DLC: Expeditionary Forces` |
 | `blu_NATODesert.sqf` | BLUFOR | `None` |
-| `ind_AAF.sqf` | BLUFOR/INDFOR | `None` |
 | `blu_UAF_CUP_UAFVP.sqf` | BLUFOR | `CUP Units`, `CUP Vehicles`, `CUP Weapons`, `(CUP) Ukrainian Armed Forces`, `UAF Vehicles Pack`, `UAF Vehicles Pack [CUP Compat]` |
 | `blu_USMC_CI.sqf` | BLUFOR | `Current Issue - (USMC Troops)`, `RHSUSAF` |
 | `civ_Greek.sqf` | CIVILIAN | `None` |

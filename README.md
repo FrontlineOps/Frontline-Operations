@@ -30,6 +30,7 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 
 - FLO runs one GTN commander for each military side.
 - Commanders build a maintained world state, allocate forces, protect threatened sectors, request support, and launch attacks.
+- New ATTACK, DEFEND, and GARRISON route orders are budgeted per commander cycle so large reallocations spread out instead of generating one large burst. Defaults are 4 total new strategic route orders per commander cycle, with attack, defense, and garrison each capped at 2.
 - The enemy side is not just a pile of spawned patrols. It is managed as a campaign opponent.
 
 ### Virtualized Battlefield

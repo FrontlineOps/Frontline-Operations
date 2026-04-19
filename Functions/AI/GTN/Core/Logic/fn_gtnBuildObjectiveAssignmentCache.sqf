@@ -19,6 +19,8 @@ private _cache = createHashMapFromArray [
     ["attackCounts", createHashMap],
     ["garrisonCounts", createHashMap],
     ["defenderCounts", createHashMap],
+    ["garrisonGroupsByObjective", createHashMap],
+    ["garrisonPositionsByObjective", createHashMap],
     ["claimedPositionsByObjective", createHashMap]
 ];
 
@@ -29,6 +31,8 @@ private _ownSide = _cmdr get "_ownSide";
 private _attackCounts = _cache get "attackCounts";
 private _garrisonCounts = _cache get "garrisonCounts";
 private _defenderCounts = _cache get "defenderCounts";
+private _garrisonGroupsByObjective = _cache get "garrisonGroupsByObjective";
+private _garrisonPositionsByObjective = _cache get "garrisonPositionsByObjective";
 private _claimedPositionsByObjective = _cache get "claimedPositionsByObjective";
 
 {
@@ -53,7 +57,16 @@ private _claimedPositionsByObjective = _cache get "claimedPositionsByObjective";
 
     if (_order == "GARRISON") then {
         private _objectiveId = _gData get "garrisonObjective";
-        if (_objectiveId == "") then { continue };
+        if (_objectiveId == "") then {
+            private _invalidGarrisonBucket = if ("" in _garrisonGroupsByObjective) then {
+                _garrisonGroupsByObjective get ""
+            } else {
+                []
+            };
+            _invalidGarrisonBucket pushBack _x;
+            _garrisonGroupsByObjective set ["", _invalidGarrisonBucket];
+            continue;
+        };
 
         private _garrisonCount = if (_objectiveId in _garrisonCounts) then {
             _garrisonCounts get _objectiveId
@@ -61,6 +74,14 @@ private _claimedPositionsByObjective = _cache get "claimedPositionsByObjective";
             0
         };
         _garrisonCounts set [_objectiveId, _garrisonCount + 1];
+
+        private _garrisonGroupBucket = if (_objectiveId in _garrisonGroupsByObjective) then {
+            _garrisonGroupsByObjective get _objectiveId
+        } else {
+            []
+        };
+        _garrisonGroupBucket pushBack _x;
+        _garrisonGroupsByObjective set [_objectiveId, _garrisonGroupBucket];
 
         private _defenderCount = if (_objectiveId in _defenderCounts) then {
             _defenderCounts get _objectiveId
@@ -73,6 +94,14 @@ private _claimedPositionsByObjective = _cache get "claimedPositionsByObjective";
         if !(_claimPos isEqualType [] && {count _claimPos >= 2}) then {
             _claimPos = _gData get "position";
         };
+
+        private _garrisonPositionBucket = if (_objectiveId in _garrisonPositionsByObjective) then {
+            _garrisonPositionsByObjective get _objectiveId
+        } else {
+            []
+        };
+        _garrisonPositionBucket pushBack _claimPos;
+        _garrisonPositionsByObjective set [_objectiveId, _garrisonPositionBucket];
 
         private _bucket = if (_objectiveId in _claimedPositionsByObjective) then {
             _claimedPositionsByObjective get _objectiveId
