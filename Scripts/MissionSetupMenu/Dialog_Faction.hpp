@@ -17,7 +17,7 @@
 
 // Dialog dimensions
 #define FACTION_DIALOG_W            (58 * GUI_GRID_W)
-#define FACTION_DIALOG_H            (26.4 * GUI_GRID_H)
+#define FACTION_DIALOG_H            (33.4 * GUI_GRID_H)
 #define FACTION_DIALOG_X            (safeZoneX + safeZoneW/2 - FACTION_DIALOG_W/2)
 #define FACTION_DIALOG_Y            (safeZoneY + safeZoneH/2 - FACTION_DIALOG_H/2)
 
@@ -38,12 +38,14 @@
 // Card heights
 #define FACTION_CARD_FACTIONS_H     (4.4 * GUI_GRID_H)
 #define FACTION_CARD_COMMANDER_H    (8.9 * GUI_GRID_H)
+#define FACTION_CARD_COMPOSITION_H  (7.6 * GUI_GRID_H)
 #define FACTION_CARD_MISC_H         (6.8 * GUI_GRID_H)
 
 // Card positions
 #define FACTION_CARD_FACTIONS_Y     (FACTION_CONTENT_Y)
 #define FACTION_CARD_COMMANDER_Y    (FACTION_CARD_FACTIONS_Y + FACTION_CARD_FACTIONS_H + FACTION_CARD_GAP_Y)
-#define FACTION_CARD_MISC_Y         (FACTION_CARD_COMMANDER_Y + FACTION_CARD_COMMANDER_H + FACTION_CARD_GAP_Y)
+#define FACTION_CARD_COMPOSITION_Y  (FACTION_CARD_COMMANDER_Y + FACTION_CARD_COMMANDER_H + FACTION_CARD_GAP_Y)
+#define FACTION_CARD_MISC_Y         (FACTION_CARD_COMPOSITION_Y + FACTION_CARD_COMPOSITION_H + FACTION_CARD_GAP_Y)
 
 // Field sizing
 #define FACTION_ROW_H               (1.2 * GUI_GRID_H)
@@ -62,6 +64,16 @@
 #define FACTION_SIDE_FIELD_W        ((FACTION_SIDE_W - FACTION_FIELD_GAP_X) / 2)
 #define FACTION_SIDE_FIELD_X1(_cardX) (_cardX)
 #define FACTION_SIDE_FIELD_X2(_cardX) (_cardX + FACTION_SIDE_FIELD_W + FACTION_FIELD_GAP_X)
+#define FACTION_TUNE_TABLE_W        ((FACTION_FULL_W - FACTION_CARD_GAP_X) / 2)
+#define FACTION_TUNE_TABLE_X1       (FACTION_FULL_X + (0.8 * GUI_GRID_W))
+#define FACTION_TUNE_TABLE_X2       (FACTION_FULL_X + FACTION_TUNE_TABLE_W + FACTION_CARD_GAP_X)
+#define FACTION_TUNE_LABEL_W        (FACTION_TUNE_TABLE_W - (9.6 * GUI_GRID_W))
+#define FACTION_TUNE_WEST_W         (4.0 * GUI_GRID_W)
+#define FACTION_TUNE_EAST_W         (4.0 * GUI_GRID_W)
+#define FACTION_TUNE_WEST_X(_tableX) (_tableX + FACTION_TUNE_LABEL_W + (0.4 * GUI_GRID_W))
+#define FACTION_TUNE_EAST_X(_tableX) (_tableX + FACTION_TUNE_LABEL_W + FACTION_TUNE_WEST_W + (0.8 * GUI_GRID_W))
+#define FACTION_TUNE_ROW_Y(_row)    (FACTION_CARD_COMPOSITION_Y + ((2.15 + (_row * 0.62)) * GUI_GRID_H))
+#define FACTION_TUNE_CELL_H         (0.58 * GUI_GRID_H)
 
 // ============================================================================
 // DIALOG-SPECIFIC CONTROL CLASSES
@@ -72,6 +84,20 @@ class FLO_FactionCombo: FLO_RscCombo
 	h = FACTION_ROW_H;
 	colorSelectBackground[] = FLO_COLOR_PRIMARY;
 	wholeHeight = 12 * GUI_GRID_H;
+};
+
+class FLO_FactionTuneEdit: FLO_RscEdit
+{
+	h = FACTION_TUNE_CELL_H;
+	style = ST_CENTER;
+	colorBackground[] = FLO_COLOR_INPUT_BG;
+	sizeEx = FLO_FONT_SIZE_XS;
+};
+
+class FLO_FactionTuneLabel: FLO_RscText_Label
+{
+	h = FACTION_TUNE_CELL_H;
+	sizeEx = FLO_FONT_SIZE_XS;
 };
 
 class FLO_FactionCard: FLO_RscSurface
@@ -524,6 +550,374 @@ class FLO_FactionSelectDialog
 			y = FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H);
 			w = FACTION_SIDE_FIELD_W;
 			tooltip = "Standing defenders EAST keeps before sending groups elsewhere";
+		};
+
+		// ====================================================================
+		// CARD: COMPOSITION TUNING
+		// ====================================================================
+
+		class CardCompositionBg: FLO_FactionCard
+		{
+			idc = FLO_IDC_NONE;
+			x = FACTION_FULL_X;
+			y = FACTION_CARD_COMPOSITION_Y;
+			w = FACTION_FULL_W;
+			h = FACTION_CARD_COMPOSITION_H;
+		};
+
+		class CardCompositionFrame: FLO_FactionCardFrame
+		{
+			idc = FLO_IDC_NONE;
+			x = FACTION_FULL_X;
+			y = FACTION_CARD_COMPOSITION_Y;
+			w = FACTION_FULL_W;
+			h = FACTION_CARD_COMPOSITION_H;
+		};
+
+		class CardCompositionTitle: FLO_RscText_Title
+		{
+			idc = FLO_IDC_NONE;
+			text = "BLUFOR / OPFOR COMPOSITION TUNING";
+			x = FACTION_FULL_X + (0.8 * GUI_GRID_W);
+			y = FACTION_CARD_COMPOSITION_Y + (0.35 * GUI_GRID_H);
+			w = FACTION_FULL_W - (1.6 * GUI_GRID_W);
+			h = FACTION_LABEL_H;
+		};
+
+		class CardCompositionHint: FLO_RscText_Muted
+		{
+			idc = FLO_IDC_NONE;
+			text = "Optional per-side numeric overrides. Leave blank to use generated faction values.";
+			x = FACTION_FULL_X + (0.8 * GUI_GRID_W);
+			y = FACTION_CARD_COMPOSITION_Y + (1.0 * GUI_GRID_H);
+			w = FACTION_FULL_W - (1.6 * GUI_GRID_W);
+			h = FACTION_LABEL_H;
+		};
+
+		class TuneHeaderMetricLeft: FLO_FactionTuneLabel
+		{
+			idc = FLO_IDC_NONE;
+			text = "Metric";
+			x = FACTION_TUNE_TABLE_X1;
+			y = FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H);
+			w = FACTION_TUNE_LABEL_W;
+		};
+
+		class TuneHeaderWestLeft: FLO_FactionTuneLabel
+		{
+			idc = FLO_IDC_NONE;
+			text = "BLUFOR";
+			x = FACTION_TUNE_WEST_X(FACTION_TUNE_TABLE_X1);
+			y = FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H);
+			w = FACTION_TUNE_WEST_W;
+		};
+
+		class TuneHeaderEastLeft: FLO_FactionTuneLabel
+		{
+			idc = FLO_IDC_NONE;
+			text = "OPFOR";
+			x = FACTION_TUNE_EAST_X(FACTION_TUNE_TABLE_X1);
+			y = FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H);
+			w = FACTION_TUNE_EAST_W;
+		};
+
+		class TuneHeaderMetricRight: TuneHeaderMetricLeft
+		{
+			x = FACTION_TUNE_TABLE_X2;
+		};
+
+		class TuneHeaderWestRight: TuneHeaderWestLeft
+		{
+			x = FACTION_TUNE_WEST_X(FACTION_TUNE_TABLE_X2);
+		};
+
+		class TuneHeaderEastRight: TuneHeaderEastLeft
+		{
+			x = FACTION_TUNE_EAST_X(FACTION_TUNE_TABLE_X2);
+		};
+
+		class TuneLabelGroundReserve: FLO_FactionTuneLabel
+		{
+			idc = FLO_IDC_NONE;
+			text = "Ground Transport Reserve";
+			x = FACTION_TUNE_TABLE_X1;
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_TUNE_LABEL_W;
+		};
+		class TuneWestGroundReserve: FLO_FactionTuneEdit
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_RESERVE_GROUND;
+			x = FACTION_TUNE_WEST_X(FACTION_TUNE_TABLE_X1);
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_TUNE_WEST_W;
+			tooltip = "Override BLUFOR ground transport reserve count";
+		};
+		class TuneEastGroundReserve: FLO_FactionTuneEdit
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_RESERVE_GROUND;
+			x = FACTION_TUNE_EAST_X(FACTION_TUNE_TABLE_X1);
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_TUNE_EAST_W;
+			tooltip = "Override OPFOR ground transport reserve count";
+		};
+
+		class TuneLabelAirReserve: TuneLabelGroundReserve
+		{
+			text = "Air Transport Reserve";
+			y = FACTION_TUNE_ROW_Y(1);
+		};
+		class TuneWestAirReserve: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_RESERVE_AIR;
+			y = FACTION_TUNE_ROW_Y(1);
+			tooltip = "Override BLUFOR air transport reserve count";
+		};
+		class TuneEastAirReserve: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_RESERVE_AIR;
+			y = FACTION_TUNE_ROW_Y(1);
+			tooltip = "Override OPFOR air transport reserve count";
+		};
+
+		class TuneLabelArtilleryCap: TuneLabelGroundReserve
+		{
+			text = "Artillery Cap";
+			y = FACTION_TUNE_ROW_Y(2);
+		};
+		class TuneWestArtilleryCap: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_CAP_ARTILLERY;
+			y = FACTION_TUNE_ROW_Y(2);
+			tooltip = "Override BLUFOR artillery objective cap";
+		};
+		class TuneEastArtilleryCap: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_CAP_ARTILLERY;
+			y = FACTION_TUNE_ROW_Y(2);
+			tooltip = "Override OPFOR artillery objective cap";
+		};
+
+		class TuneLabelStaticAACap: TuneLabelGroundReserve
+		{
+			text = "Static AA Cap";
+			y = FACTION_TUNE_ROW_Y(3);
+		};
+		class TuneWestStaticAACap: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_CAP_STATIC_AA;
+			y = FACTION_TUNE_ROW_Y(3);
+			tooltip = "Override BLUFOR static AA objective cap";
+		};
+		class TuneEastStaticAACap: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_CAP_STATIC_AA;
+			y = FACTION_TUNE_ROW_Y(3);
+			tooltip = "Override OPFOR static AA objective cap";
+		};
+
+		class TuneLabelMobileAACap: TuneLabelGroundReserve
+		{
+			text = "Mobile AA Cap";
+			y = FACTION_TUNE_ROW_Y(4);
+		};
+		class TuneWestMobileAACap: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_CAP_MOBILE_AA;
+			y = FACTION_TUNE_ROW_Y(4);
+			tooltip = "Override BLUFOR mobile AA objective cap";
+		};
+		class TuneEastMobileAACap: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_CAP_MOBILE_AA;
+			y = FACTION_TUNE_ROW_Y(4);
+			tooltip = "Override OPFOR mobile AA objective cap";
+		};
+
+		class TuneLabelInfantryCount: TuneLabelGroundReserve
+		{
+			text = "Infantry Count";
+			y = FACTION_TUNE_ROW_Y(5);
+		};
+		class TuneWestInfantryCount: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_INFANTRY;
+			y = FACTION_TUNE_ROW_Y(5);
+			tooltip = "Override BLUFOR infantry group count";
+		};
+		class TuneEastInfantryCount: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_INFANTRY;
+			y = FACTION_TUNE_ROW_Y(5);
+			tooltip = "Override OPFOR infantry group count";
+		};
+
+		class TuneLabelMotorizedCount: TuneLabelGroundReserve
+		{
+			text = "Motorized Count";
+			y = FACTION_TUNE_ROW_Y(6);
+		};
+		class TuneWestMotorizedCount: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_MOTORIZED;
+			y = FACTION_TUNE_ROW_Y(6);
+			tooltip = "Override BLUFOR motorized group count";
+		};
+		class TuneEastMotorizedCount: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_MOTORIZED;
+			y = FACTION_TUNE_ROW_Y(6);
+			tooltip = "Override OPFOR motorized group count";
+		};
+
+		class TuneLabelMechanizedCount: TuneLabelGroundReserve
+		{
+			text = "Mechanized Count";
+			y = FACTION_TUNE_ROW_Y(7);
+		};
+		class TuneWestMechanizedCount: TuneWestGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_MECHANIZED;
+			y = FACTION_TUNE_ROW_Y(7);
+			tooltip = "Override BLUFOR mechanized group count";
+		};
+		class TuneEastMechanizedCount: TuneEastGroundReserve
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_MECHANIZED;
+			y = FACTION_TUNE_ROW_Y(7);
+			tooltip = "Override OPFOR mechanized group count";
+		};
+
+		class TuneLabelArmorCount: FLO_FactionTuneLabel
+		{
+			idc = FLO_IDC_NONE;
+			text = "Ground Armor Count";
+			x = FACTION_TUNE_TABLE_X2;
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_TUNE_LABEL_W;
+		};
+		class TuneWestArmorCount: FLO_FactionTuneEdit
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_ARMOR;
+			x = FACTION_TUNE_WEST_X(FACTION_TUNE_TABLE_X2);
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_TUNE_WEST_W;
+			tooltip = "Override BLUFOR armor group count";
+		};
+		class TuneEastArmorCount: FLO_FactionTuneEdit
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_ARMOR;
+			x = FACTION_TUNE_EAST_X(FACTION_TUNE_TABLE_X2);
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_TUNE_EAST_W;
+			tooltip = "Override OPFOR armor group count";
+		};
+
+		class TuneLabelHelicopterCount: TuneLabelArmorCount
+		{
+			text = "Helicopter Count";
+			y = FACTION_TUNE_ROW_Y(1);
+		};
+		class TuneWestHelicopterCount: TuneWestArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_HELICOPTER;
+			y = FACTION_TUNE_ROW_Y(1);
+			tooltip = "Override BLUFOR helicopter group count";
+		};
+		class TuneEastHelicopterCount: TuneEastArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_HELICOPTER;
+			y = FACTION_TUNE_ROW_Y(1);
+			tooltip = "Override OPFOR helicopter group count";
+		};
+
+		class TuneLabelJetCount: TuneLabelArmorCount
+		{
+			text = "Jet Count";
+			y = FACTION_TUNE_ROW_Y(2);
+		};
+		class TuneWestJetCount: TuneWestArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_JET;
+			y = FACTION_TUNE_ROW_Y(2);
+			tooltip = "Override BLUFOR jet group count";
+		};
+		class TuneEastJetCount: TuneEastArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_JET;
+			y = FACTION_TUNE_ROW_Y(2);
+			tooltip = "Override OPFOR jet group count";
+		};
+
+		class TuneLabelAirCount: TuneLabelArmorCount
+		{
+			text = "Air Count";
+			y = FACTION_TUNE_ROW_Y(3);
+		};
+		class TuneWestAirCount: TuneWestArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_AIR;
+			y = FACTION_TUNE_ROW_Y(3);
+			tooltip = "Override BLUFOR combined air group count";
+		};
+		class TuneEastAirCount: TuneEastArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_AIR;
+			y = FACTION_TUNE_ROW_Y(3);
+			tooltip = "Override OPFOR combined air group count";
+		};
+
+		class TuneLabelArtilleryCount: TuneLabelArmorCount
+		{
+			text = "Artillery Count";
+			y = FACTION_TUNE_ROW_Y(4);
+		};
+		class TuneWestArtilleryCount: TuneWestArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_ARTILLERY;
+			y = FACTION_TUNE_ROW_Y(4);
+			tooltip = "Override BLUFOR artillery group count";
+		};
+		class TuneEastArtilleryCount: TuneEastArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_ARTILLERY;
+			y = FACTION_TUNE_ROW_Y(4);
+			tooltip = "Override OPFOR artillery group count";
+		};
+
+		class TuneLabelMobileAACount: TuneLabelArmorCount
+		{
+			text = "Mobile AA Count";
+			y = FACTION_TUNE_ROW_Y(5);
+		};
+		class TuneWestMobileAACount: TuneWestArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_MOBILE_AA;
+			y = FACTION_TUNE_ROW_Y(5);
+			tooltip = "Override BLUFOR mobile AA group count";
+		};
+		class TuneEastMobileAACount: TuneEastArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_MOBILE_AA;
+			y = FACTION_TUNE_ROW_Y(5);
+			tooltip = "Override OPFOR mobile AA group count";
+		};
+
+		class TuneLabelStaticAACount: TuneLabelArmorCount
+		{
+			text = "Static AA Count";
+			y = FACTION_TUNE_ROW_Y(6);
+		};
+		class TuneWestStaticAACount: TuneWestArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_WEST_COUNT_STATIC_AA;
+			y = FACTION_TUNE_ROW_Y(6);
+			tooltip = "Override BLUFOR static AA group count";
+		};
+		class TuneEastStaticAACount: TuneEastArmorCount
+		{
+			idc = FLO_IDC_FACTION_EDIT_EAST_COUNT_STATIC_AA;
+			y = FACTION_TUNE_ROW_Y(6);
+			tooltip = "Override OPFOR static AA group count";
 		};
 
 		// ====================================================================

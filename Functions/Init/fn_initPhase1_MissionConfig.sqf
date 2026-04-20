@@ -44,6 +44,14 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_EastGTN_ForceGrowthHandle = _configData get "eastGTNForceGrowthHandle";
         FLO_WestGTN_GarrisonHandle = _configData get "westGTNGarrisonHandle";
         FLO_EastGTN_GarrisonHandle = _configData get "eastGTNGarrisonHandle";
+        FLO_WestFactionTuningHandle = createHashMap;
+        if ("westFactionTuningHandle" in _configData) then {
+            FLO_WestFactionTuningHandle = _configData get "westFactionTuningHandle";
+        };
+        FLO_EastFactionTuningHandle = createHashMap;
+        if ("eastFactionTuningHandle" in _configData) then {
+            FLO_EastFactionTuningHandle = _configData get "eastFactionTuningHandle";
+        };
         FLO_DifficultyHandle = FLO_EastDifficultyHandle;
         FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
         FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
@@ -172,6 +180,14 @@ FLO_WestGTN_ForceGrowthHandle = FLO_MissionConfig get "westGTNForceGrowthHandle"
 FLO_EastGTN_ForceGrowthHandle = FLO_MissionConfig get "eastGTNForceGrowthHandle";
 FLO_WestGTN_GarrisonHandle = FLO_MissionConfig get "westGTNGarrisonHandle";
 FLO_EastGTN_GarrisonHandle = FLO_MissionConfig get "eastGTNGarrisonHandle";
+FLO_WestFactionTuningHandle = createHashMap;
+if ("westFactionTuningHandle" in FLO_MissionConfig) then {
+    FLO_WestFactionTuningHandle = FLO_MissionConfig get "westFactionTuningHandle";
+};
+FLO_EastFactionTuningHandle = createHashMap;
+if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
+    FLO_EastFactionTuningHandle = FLO_MissionConfig get "eastFactionTuningHandle";
+};
 FLO_DifficultyHandle = FLO_EastDifficultyHandle;
 FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
 FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
