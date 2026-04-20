@@ -23,8 +23,8 @@ _vehicle enableSimulation true;
 _vehicle allowDamage true;
 
 // Create crew
-private _vehicleConfig = (configFile >> "CfgVehicles" >> typeOf _vehicle);
-private _crewType = [west, _vehicleConfig] call BIS_fnc_selectCrew;
+// Create crew - Professional crew resolving
+private _crewType = if (!isNil "F_Crew") then { F_Crew } else { [west, _vehicleConfig] call BIS_fnc_selectCrew };
 private _crewFull = createVehicleCrew _vehicle;
 private _crewSelCnt = count (units _crewFull) - 1;
 deleteVehicleCrew _vehicle;

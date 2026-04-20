@@ -25,7 +25,7 @@ params [
 
 private _createdUnit = objNull;
 private _spawnPools = [_side] call FLO_fnc_virtualizationGetSpawnPools;
-private _poolUnits = _spawnPools get "units";
+private _poolUnits = _spawnPools get "crewUnits";
 private _sideKey = _spawnPools get "sideKey";
 
 // Determine if this is a vehicle or infantry based on config

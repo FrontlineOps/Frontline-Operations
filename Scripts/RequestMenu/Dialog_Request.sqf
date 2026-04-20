@@ -253,6 +253,19 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
             [2102, _veh, _veh, "BOAT", _price, "Screens\FOBA\naval_ca.paa", [1,1,1,1]]
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Boat_List;
+
+    // INFANTRY SECTION - Populated from faction configuration (with safety checks)
+    if (!isNil "F_Infantry_List" && {F_Infantry_List isEqualType []}) then {
+        {
+            private _unit = _x select 0;
+            private _price = _x select 1;
+            
+            // Only add if the unit class actually exists in installed mods
+            if (isClass (configFile >> "CfgVehicles" >> _unit)) then {
+                [2102, _unit, _unit, "INFANTRY", _price, "\A3\Ui_f\data\GUI\Cfg\Ranks\private_gs.paa", [0.4, 1, 0.4, 1]] call FLO_fnc_addListBoxItem;
+            };
+        } forEach F_Infantry_List;
+    };
     
     // Radar-dependent UAVs
     if (_hasRadar) then {
@@ -277,25 +290,29 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
         ] call FLO_fnc_addConditionalItem;
     } forEach F_UGV_List;
 
-    {
-        private _veh = _x select 0;
-        private _price = _x select 1;
-        [
-            _veh != "",
-            [2103, _veh, _veh, "CONTAINER", _price, "Screens\FOBA\container_ca.paa", [1,1,1,1]]
-        ] call FLO_fnc_addConditionalItem;
-    } forEach F_Container_List;
-
+    // Containers
+    if (!isNil "F_Container_List") then {
+        {
+            private _veh = _x select 0;
+            private _price = _x select 1;
+            [
+                _veh != "",
+                [2103, _veh, _veh, "CONTAINER", _price, "Screens\FOBA\container_ca.paa", [1,1,1,1]]
+            ] call FLO_fnc_addConditionalItem;
+        } forEach F_Container_List;
+    };
 
     // Turrets
-    {
-        private _veh = _x select 0;
-        private _price = _x select 1;
-        [
-            _veh != "",
-            [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]]
-        ] call FLO_fnc_addConditionalItem;
-    } forEach F_Turret_List;
+    if (!isNil "F_Turret_List") then {
+        {
+            private _veh = _x select 0;
+            private _price = _x select 1;
+            [
+                _veh != "",
+                [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [1,1,1,1]]
+            ] call FLO_fnc_addConditionalItem;
+        } forEach F_Turret_List;
+    };
 
     if (_hasRadar) then {
         // SAM and AAA systems
@@ -323,12 +340,11 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
 
 // Optimized INF_REQUEST function
 INF_REQUEST = {
-    private _CTRL = 2100;
+    params ["_CTRL"];
     private _index = lbCurSel _CTRL;
+    if (_index == -1) exitWith { hint "Please select an item first"; };
     private _Name = lbData [_CTRL, _index];
     private _Cost = lbValue [_CTRL, _index];
-    private _SQDName = missionNamespace getVariable _Name;
-
     private _Money = FLO_MoneyHandle get "value";
     
     if (_Money < _Cost) exitWith {
@@ -339,21 +355,33 @@ INF_REQUEST = {
     FLO_MoneyHandle set ["value", _Money - _Cost];
     [(_Money - _Cost)] call FLO_fnc_publishMoneyState;
 
-    private _FOBB = nearestObjects [position player, [F_OP_01], 150] select 0;
-    private _pos = _FOBB getRelPos [13, 270];
+    private _pos = player getRelPos [5, 0];
+    private _FOBB = nearestObjects [position player, [F_OP_01], 150];
+    if (count _FOBB > 0) then {
+        _pos = (_FOBB select 0) getRelPos [10, 270];
+    };
     
-    if (_Cost == 3) then {
+    // Check if it's a single unit (class exists in CfgVehicles)
+    private _configDisplayName = getText (configFile >> "CfgVehicles" >> _Name >> "displayName");
+    if (isClass (configFile >> "CfgVehicles" >> _Name)) then {
         // Single unit request
-        NEWUNIT = group player createUnit [_SQDName, _pos, [], 0, "FORM"];
+        private _newUnit = (group player) createUnit [_Name, _pos, [], 2, "NONE"];
+        [_newUnit] joinSilent (group player);
         
         // Add comm menu items
         {
-            [NEWUNIT, _x, nil, nil, ''] call BIS_fnc_addCommMenuItem;
+            [player, _x, nil, nil, ''] call BIS_fnc_addCommMenuItem;
         } forEach ['MENU_COMMS_SUPPLYDROP', 'MENU_COMMS_UAV_RECON', 'MENU_COMMS_CAS_HELI', 'MENU_COMMS_ARTI'];
         
-        NEWUNIT linkItem 'B_UavTerminal';
-        NEWUNIT addItem 'optic_Hamr';
+        _newUnit linkItem 'B_UavTerminal';
+        diag_log format ["[REQUEST] Spawned individual unit %1 into player group", _Name];
+        hint format ["Recruited: %1", _configDisplayName];
+        closeDialog 0;
     } else {
+        // Squad request (data is a variable name in missionNamespace)
+        private _SQDName = missionNamespace getVariable [_Name, []];
+        if (_SQDName isEqualTo []) exitWith { diag_log format ["[REQUEST][ERROR] Failed to find squad group for %1", _Name]; };
+
         // Squad request
         private _requestSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
         if !(_requestSide in [east, west]) then { _requestSide = side player };
@@ -409,9 +437,17 @@ INF_REQUEST = {
 VEH_REQUEST = {
     params ["_CTRL"];
     private _index = lbCurSel _CTRL;
-    private _VehName = lbData [_CTRL, _index];
-    CostV = lbValue [_CTRL, _index];
+    if (_index == -1) exitWith { hint "Please select an item first"; };
     
+    private _VehName = lbData [_CTRL, _index];
+    private _displayName = lbText [_CTRL, _index];
+    
+    // REDIRECT: If it's infantry, use the immediate spawn function instead of placement
+    if (("INFANTRY" in _displayName) || ("SQUAD" in _displayName)) exitWith {
+        [_CTRL] call INF_REQUEST;
+    };
+
+    CostV = lbValue [_CTRL, _index];
     private _Money = FLO_MoneyHandle get "value";
     
     if (_Money < CostV) exitWith {

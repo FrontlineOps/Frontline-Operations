@@ -49,7 +49,7 @@ switch (true) do {
     };
 
     default {
-        throw format ["[VIRTUALIZATION] Unknown group type %1 for virtual group %2", _groupType, _groupId];
+        diag_log format ["[VIRTUALIZATION][ERROR] Unknown group type %1 for virtual group %2. Skipping spawn.", _groupType, _groupId];
     };
 };
 

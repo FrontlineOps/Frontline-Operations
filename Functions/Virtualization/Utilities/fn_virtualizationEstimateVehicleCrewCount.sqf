@@ -5,8 +5,9 @@
 params ["_vehicleClass"];
 
 private _cfg = configFile >> "CfgVehicles" >> _vehicleClass;
-if !(isClass _cfg) then {
-    throw format ["FLO_fnc_virtualizationEstimateVehicleCrewCount: invalid vehicle class '%1'", _vehicleClass];
+if !(isClass _cfg) exitWith {
+    diag_log format ["[VIRTUALIZATION][WARN] Invalid vehicle class for crew estimation: %1", _vehicleClass];
+    3 // Fallback to standard crew count estimate
 };
 
 private _crewCount = if (getNumber (_cfg >> "hasDriver") == 0) then { 0 } else { 1 };

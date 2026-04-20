@@ -9,7 +9,9 @@ private _realGroup = grpNull;
 if (_groupCfg isEqualType [] && {count _groupCfg > 0}) then {
     private _selectedCfg = selectRandom _groupCfg;
     if (isClass _selectedCfg) then {
-        _realGroup = [_position, _side, _selectedCfg] call BIS_fnc_spawnGroup;
+        // If it's a squad config, spawn it. If it's a single classname, wrap it in an array so spawnGroup handles it as a group of one.
+        private _spawnTarget = if (isClass (configFile >> "CfgGroups" >> "West" >> "BLU_F" >> "Infantry" >> (configName _selectedCfg))) then { _selectedCfg } else { [configName _selectedCfg] };
+        _realGroup = [_position, _side, _spawnTarget] call BIS_fnc_spawnGroup;
     };
 };
 
