@@ -54,7 +54,7 @@ East_Ground_Infantry = [
     (configfile >> "CfgGroups" >> "East" >> "UK3CB_GAF_O" >> "Infantry" >> "UK3CB_GAF_O_AT_Squad"),
     (configfile >> "CfgGroups" >> "East" >> "UK3CB_GAF_O" >> "SpecOps" >> "UK3CB_GAF_O_Recon_SpecSquad"),
     (configfile >> "CfgGroups" >> "East" >> "UK3CB_GAF_O" >> "SpecOps" >> "UK3CB_GAF_O_Recon_SpecTeam"),
-    (configfile >> "CfgGroups" >> "East" >> "UK3CB_GAF_O" >> "SpecOps" >> "UK3CB_GAF_O_SpecSniperTeam"),
+    (configfile >> "CfgGroups" >> "East" >> "UK3CB_GAF_O" >> "SpecOps" >> "UK3CB_GAF_O_SpecSniperTeam")
 ];
 // groundSpecOps
 East_Ground_SpecOps = [];
@@ -63,7 +63,7 @@ East_Ground_Motorized = ["UK3CB_GAF_O_Offroad_AT", "UK3CB_GAF_O_UAZ_MG", "UK3CB_
 // groundMechanized
 East_Ground_Mechanized = ["UK3CB_GAF_O_BMD1", "UK3CB_GAF_O_BMD1K", "UK3CB_GAF_O_BMD1P", "UK3CB_GAF_O_BMD1PK", "UK3CB_GAF_O_BMD1R", "UK3CB_GAF_O_BMD2", "UK3CB_GAF_O_BMP1", "UK3CB_GAF_O_BMP2", "UK3CB_GAF_O_BMP2K", "UK3CB_GAF_O_BRM1K", "UK3CB_GAF_O_MTLB_Cannon", "UK3CB_GAF_O_MTLB_BMP", "UK3CB_GAF_O_MTLB_KPVT", "UK3CB_GAF_O_MTLB_PKT"];
 // groundArmor
-East_Ground_Armor = ["UK3CB_GAF_O_T55", "UK3CB_GAF_O_T72A", "UK3CB_GAF_O_T72B", "UK3CB_GAF_O_T72BA", "UK3CB_GAF_O_T72BB" "UK3CB_GAF_O_T72BC", "UK3CB_GAF_O_T80", "UK3CB_GAF_O_T80A", "UK3CB_GAF_O_T80B", "UK3CB_GAF_O_T80BK", "UK3CB_GAF_O_T80BV", "UK3CB_GAF_O_T80BVK", "UK3CB_GAF_O_T80U", "UK3CB_GAF_O_T80UK" ];
+East_Ground_Armor = ["UK3CB_GAF_O_T55", "UK3CB_GAF_O_T72A", "UK3CB_GAF_O_T72B", "UK3CB_GAF_O_T72BA", "UK3CB_GAF_O_T72BB", "UK3CB_GAF_O_T72BC", "UK3CB_GAF_O_T80", "UK3CB_GAF_O_T80A", "UK3CB_GAF_O_T80B", "UK3CB_GAF_O_T80BK", "UK3CB_GAF_O_T80BV", "UK3CB_GAF_O_T80BVK", "UK3CB_GAF_O_T80U", "UK3CB_GAF_O_T80UK" ];
 // groundTransport
 East_Ground_Transport = ["UK3CB_GAF_O_Offroad_Covered", "UK3CB_GAF_O_Offroad", "UK3CB_GAF_O_Ural"];
 East_Transport_Reserve_Ground_Count = 20;
