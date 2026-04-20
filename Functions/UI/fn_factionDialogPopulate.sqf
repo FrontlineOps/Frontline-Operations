@@ -36,7 +36,7 @@
  * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
  * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
  * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
- * FLO_IDC_FACTION_EDIT_*_TUNING = 2050-2079
+ * FLO_IDC_FACTION_EDIT_*_COMPOSITION = 2050-2093
  */
 
 disableSerialization;
@@ -257,9 +257,18 @@ private _territoryRatioOptions = [
 
 [_territoryRatioCombo, _territoryRatioOptions, 4] call _fnc_addItems;
 
-for "_idc" from 2050 to 2079 do {
-    (_display displayCtrl _idc) ctrlSetText "";
-};
+_playerCombo ctrlAddEventHandler ["LBSelChanged", {
+    params ["_ctrl"];
+    [ctrlParent _ctrl, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
+}];
+
+_enemyCombo ctrlAddEventHandler ["LBSelChanged", {
+    params ["_ctrl"];
+    [ctrlParent _ctrl, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
+}];
+
+[_display, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
+[_display, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
 
 ["UI", 3, format [
     "Faction dialog dropdowns populated (auto military=%1, auto civilian=%2)",

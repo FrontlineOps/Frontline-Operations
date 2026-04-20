@@ -37,7 +37,7 @@
  * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
  * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
  * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
- * FLO_IDC_FACTION_EDIT_*_TUNING = 2050-2079
+ * FLO_IDC_FACTION_EDIT_*_COMPOSITION = 2050-2093
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -117,48 +117,16 @@ if (_playerFaction isEqualTo "" ||
 	_startBtn ctrlEnable true;
 };
 
-private _westFactionTuningSpecs = [
-    [2050, "scalar", "transportReserveGroundCount"],
-    [2051, "scalar", "transportReserveAirCount"],
-    [2052, "cap", "artillery"],
-    [2053, "cap", "static_aa"],
-    [2054, "cap", "mobile_aa"],
-    [2055, "count", "infantry"],
-    [2056, "count", "motorized"],
-    [2057, "count", "mechanized"],
-    [2058, "count", "armor"],
-    [2059, "count", "helicopter"],
-    [2060, "count", "jet"],
-    [2061, "count", "air"],
-    [2062, "count", "artillery"],
-    [2063, "count", "mobile_aa"],
-    [2064, "count", "static_aa"]
-];
-private _eastFactionTuningSpecs = [
-    [2065, "scalar", "transportReserveGroundCount"],
-    [2066, "scalar", "transportReserveAirCount"],
-    [2067, "cap", "artillery"],
-    [2068, "cap", "static_aa"],
-    [2069, "cap", "mobile_aa"],
-    [2070, "count", "infantry"],
-    [2071, "count", "motorized"],
-    [2072, "count", "mechanized"],
-    [2073, "count", "armor"],
-    [2074, "count", "helicopter"],
-    [2075, "count", "jet"],
-    [2076, "count", "air"],
-    [2077, "count", "artillery"],
-    [2078, "count", "mobile_aa"],
-    [2079, "count", "static_aa"]
-];
+private _westFactionTuningSpecs = ["BLUFOR"] call FLO_fnc_factionGetTuningFieldSpecs;
+private _eastFactionTuningSpecs = ["OPFOR"] call FLO_fnc_factionGetTuningFieldSpecs;
 
 private _westFactionTuningParse = [_display, "BLUFOR", _westFactionTuningSpecs] call FLO_fnc_factionBuildTuningHandle;
 private _eastFactionTuningParse = [_display, "OPFOR", _eastFactionTuningSpecs] call FLO_fnc_factionBuildTuningHandle;
 
 if (!(_westFactionTuningParse get "valid") || {!(_eastFactionTuningParse get "valid")}) exitWith {
     private _errors = (_westFactionTuningParse get "errors") + (_eastFactionTuningParse get "errors");
-    ["UI", 2, format ["Faction tuning validation failed: %1", _errors]] call FLO_fnc_log;
-    hint format ["Composition tuning is invalid:\n%1", _errors joinString "\n"];
+    ["UI", 2, format ["Force composition validation failed: %1", _errors]] call FLO_fnc_log;
+    hint format ["Force composition is invalid:\n%1", _errors joinString "\n"];
     _startBtn ctrlEnable true;
 };
 

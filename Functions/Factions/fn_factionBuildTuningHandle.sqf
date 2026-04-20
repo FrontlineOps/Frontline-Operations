@@ -2,7 +2,7 @@
  * Function: FLO_fnc_factionBuildTuningHandle
  * Author: Frontline Operations Development Group
  * Description:
- *   Builds validated faction tuning overrides from mission setup edit controls.
+ *   Builds validated faction composition values from mission setup edit controls.
  *
  * Arguments:
  *   0: Dialog display <DISPLAY>
@@ -43,7 +43,9 @@ private _fnc_isUnsignedInt = {
     private _ctrl = _display displayCtrl _idc;
     private _text = [ctrlText _ctrl] call _fnc_compact;
 
-    if (_text != "") then {
+    if (_text == "") then {
+        _errors pushBack format ["%1: %2 must be set", _sideLabel, _key];
+    } else {
         if !([_text] call _fnc_isUnsignedInt) then {
             _errors pushBack format ["%1: %2 must be a non-negative whole number", _sideLabel, _key];
         } else {
