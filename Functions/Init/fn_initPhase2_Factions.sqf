@@ -553,6 +553,19 @@ private _westCatalog = createHashMapFromArray [
     ["groupCounts", BLUFOR_Group_Counts]
 ];
 
+private _eastFactionTuningHandle = createHashMap;
+if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
+    _eastFactionTuningHandle = FLO_MissionConfig get "eastFactionTuningHandle";
+};
+
+private _westFactionTuningHandle = createHashMap;
+if ("westFactionTuningHandle" in FLO_MissionConfig) then {
+    _westFactionTuningHandle = FLO_MissionConfig get "westFactionTuningHandle";
+};
+
+[_eastCatalog, _eastFactionTuningHandle, "OPFOR"] call FLO_fnc_factionApplyTuningOverrides;
+[_westCatalog, _westFactionTuningHandle, "BLUFOR"] call FLO_fnc_factionApplyTuningOverrides;
+
 FLO_FactionCatalog = createHashMapFromArray [
     ["EAST", _eastCatalog],
     ["WEST", _westCatalog]

@@ -90,6 +90,8 @@ try {
     _cfg set ["eastGTNForceGrowthHandle", FLO_EastGTN_ForceGrowthHandle];
     _cfg set ["westGTNGarrisonHandle", FLO_WestGTN_GarrisonHandle];
     _cfg set ["eastGTNGarrisonHandle", FLO_EastGTN_GarrisonHandle];
+    if (!isNil "FLO_WestFactionTuningHandle") then { _cfg set ["westFactionTuningHandle", FLO_WestFactionTuningHandle]; };
+    if (!isNil "FLO_EastFactionTuningHandle") then { _cfg set ["eastFactionTuningHandle", FLO_EastFactionTuningHandle]; };
     _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
     _cfg set ["virtualizationUnitCap", FLO_VirtualizationUnitCap];

@@ -308,6 +308,8 @@ class FLO {
         class factionBuildAutoMilitaryCatalog {};
         class factionClassifyVehicle {};
         class factionGetGroupConfigs {};
+        class factionApplyTuningOverrides {};
+        class factionBuildTuningHandle {};
         class factionPickUnitByRole {};
     };
 

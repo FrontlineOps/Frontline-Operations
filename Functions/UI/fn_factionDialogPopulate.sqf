@@ -36,6 +36,7 @@
  * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
  * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
  * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
+ * FLO_IDC_FACTION_EDIT_*_TUNING = 2050-2079
  */
 
 disableSerialization;
@@ -255,6 +256,10 @@ private _territoryRatioOptions = [
 ];
 
 [_territoryRatioCombo, _territoryRatioOptions, 4] call _fnc_addItems;
+
+for "_idc" from 2050 to 2079 do {
+    (_display displayCtrl _idc) ctrlSetText "";
+};
 
 ["UI", 3, format [
     "Faction dialog dropdowns populated (auto military=%1, auto civilian=%2)",
