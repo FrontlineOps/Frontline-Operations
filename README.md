@@ -183,6 +183,14 @@ Phase 2 builds `FLO_FactionCatalog` from those files, and that catalog feeds:
 - transport reserves
 - civilian population templates
 
+### Auto-Generated Compatible Factions
+
+The mission setup UI also appends `[AUTO]` faction entries generated from the currently loaded `CfgFactionClasses` and `CfgVehicles` config data. These entries do not create new `.sqf` preset files. They build a runtime FLO catalog directly from compatible config classes.
+
+Military auto factions are included when they have spawnable `Man` units. FLO uses any matching all-infantry `CfgGroups` entries when present, then classifies same-faction vehicles into motorized, mechanized, armor, transport, artillery, air, AA, drone, boat, and radar pools. Civilian auto factions use spawnable civilian `Man` units and civilian vehicles.
+
+Curated presets remain the preferred path for tuned balance, prices, and exact doctrine. `[AUTO]` entries are a compatibility path for loaded mods that have usable faction config but no FLO preset yet.
+
 ### Objective Templates
 
 Objective templates control what kind of groups a subtype can seed.
@@ -287,6 +295,7 @@ On a fresh start, the commander setup flow publishes:
 |------|---------|
 | [`Functions/Init`](Functions/Init) | Server phase manager and client finalization |
 | [`Functions/AI/GTN`](Functions/AI/GTN) | Commanders, world state, combat, support, alerts, and player support |
+| [`Functions/Factions`](Functions/Factions) | Runtime auto-generated faction compatibility and catalog builders |
 | [`Functions/Virtualization`](Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
 | [`Functions/Logistics`](Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
 | [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, and markers |

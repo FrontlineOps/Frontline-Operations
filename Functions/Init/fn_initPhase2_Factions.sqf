@@ -61,38 +61,79 @@ private _fnc_loadFaction = {
     };
 };
 
-// Load friendly faction
-private _bluFaction = FLO_FriendlyHandle get "name";
-private _bluPath = switch (_bluFaction) do {
-    case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
-    case "AAF _ Woodland": { "Scripts\factions\blu_AAF.sqf" };
-    case "ADF _ Re-Cut": { "Scripts\factions\blu_ADF_RC.sqf" };
-    case "BWMod _ RHSUSAF": { "Scripts\factions\blu_BW_RHS.sqf" };
-    case "UAF _ CUP-UAFVP": { "Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
-    case "USMC _ Current Issue": { "Scripts\factions\blu_USMC_CI.sqf" };
-    case "USMC _ CUP-EF": { "Scripts\factions\blu_USMC_CUP_EF.sqf" };
-    default { "CUSTOM_PLAYER_FACTION.sqf" };
+private _fnc_handleSource = {
+    params ["_handle"];
+    if ("source" in _handle) exitWith { _handle get "source" };
+    "preset"
 };
-[_bluFaction, _bluPath] call _fnc_loadFaction;
+
+private _loadedOk = true;
+
+// Load friendly faction
+private _bluHandle = FLO_FriendlyHandle;
+private _bluFaction = _bluHandle get "name";
+if (([_bluHandle] call _fnc_handleSource) isEqualTo "auto") then {
+    _loadedOk = [_bluHandle, "friendly"] call FLO_fnc_factionApplyAutoGlobals;
+} else {
+    private _bluPath = switch (_bluFaction) do {
+        case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
+        case "AAF _ Woodland": { "Scripts\factions\blu_AAF.sqf" };
+        case "ADF _ Re-Cut": { "Scripts\factions\blu_ADF_RC.sqf" };
+        case "BWMod _ RHSUSAF": { "Scripts\factions\blu_BW_RHS.sqf" };
+        case "UAF _ CUP-UAFVP": { "Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
+        case "USMC _ Current Issue": { "Scripts\factions\blu_USMC_CI.sqf" };
+        case "USMC _ CUP-EF": { "Scripts\factions\blu_USMC_CUP_EF.sqf" };
+        default { "CUSTOM_PLAYER_FACTION.sqf" };
+    };
+    _loadedOk = [_bluFaction, _bluPath] call _fnc_loadFaction;
+};
+if (!_loadedOk) exitWith {
+    FLO_InitError = format ["Friendly faction loading failed: %1", _bluFaction];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    false
+};
 
 // Load enemy faction
-private _opfFaction = FLO_EnemyHandle get "name";
-private _opfPath = switch (_opfFaction) do {
-    case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
-    case "Grozovia _ 3CB": { "Scripts\factions\opf_Grozovia_3CB.sqf" };
-    case "IAF _ CUP-EF": { "Scripts\factions\opf_IAF_CUP_EF.sqf" };
-    case "Russian AF _ CUP": { "Scripts\factions\opf_RU_CUP.sqf" };
-    default { "CUSTOM_ENEMY_FACTION.sqf" };
+private _opfHandle = FLO_EnemyHandle;
+private _opfFaction = _opfHandle get "name";
+if (([_opfHandle] call _fnc_handleSource) isEqualTo "auto") then {
+    _loadedOk = [_opfHandle, "enemy"] call FLO_fnc_factionApplyAutoGlobals;
+} else {
+    private _opfPath = switch (_opfFaction) do {
+        case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
+        case "Grozovia _ 3CB": { "Scripts\factions\opf_Grozovia_3CB.sqf" };
+        case "IAF _ CUP-EF": { "Scripts\factions\opf_IAF_CUP_EF.sqf" };
+        case "Russian AF _ CUP": { "Scripts\factions\opf_RU_CUP.sqf" };
+        default { "CUSTOM_ENEMY_FACTION.sqf" };
+    };
+    _loadedOk = [_opfFaction, _opfPath] call _fnc_loadFaction;
 };
-[_opfFaction, _opfPath] call _fnc_loadFaction;
+if (!_loadedOk) exitWith {
+    FLO_InitError = format ["Enemy faction loading failed: %1", _opfFaction];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    false
+};
 
 // Load civilian faction
-private _civFaction = FLO_CivilianHandle get "name";
-private _civPath = switch (_civFaction) do {
-    case "Greek Civilians": { "Scripts\factions\civ_Greek.sqf" };
-    default { "CUSTOM_CIVILIAN_FACTION.sqf" };
+private _civHandle = FLO_CivilianHandle;
+private _civFaction = _civHandle get "name";
+if (([_civHandle] call _fnc_handleSource) isEqualTo "auto") then {
+    _loadedOk = [_civHandle, "civilian"] call FLO_fnc_factionApplyAutoGlobals;
+} else {
+    private _civPath = switch (_civFaction) do {
+        case "Greek Civilians": { "Scripts\factions\civ_Greek.sqf" };
+        default { "CUSTOM_CIVILIAN_FACTION.sqf" };
+    };
+    _loadedOk = [_civFaction, _civPath] call _fnc_loadFaction;
 };
-[_civFaction, _civPath] call _fnc_loadFaction;
+if (!_loadedOk) exitWith {
+    FLO_InitError = format ["Civilian faction loading failed: %1", _civFaction];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    false
+};
 
 // Default civilian vehicles if not set by faction
 if (isNil "CivVehArray") then {

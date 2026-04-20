@@ -297,6 +297,20 @@ class FLO {
         class updateFunds               {};
     };
 
+    class Factions {
+        file = "Functions\Factions";
+
+        class factionApplyAutoEnemyGlobals {};
+        class factionApplyAutoFriendlyGlobals {};
+        class factionApplyAutoGlobals {};
+        class factionBuildAutoCivilianCatalog {};
+        class factionBuildAutoIndex {};
+        class factionBuildAutoMilitaryCatalog {};
+        class factionClassifyVehicle {};
+        class factionGetGroupConfigs {};
+        class factionPickUnitByRole {};
+    };
+
     class UtilitiesDebug {
         file = "Functions\Utilities\Debug";
         class log                       {};
