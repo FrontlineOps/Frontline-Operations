@@ -117,22 +117,6 @@ private _fnc_defaults = {
     ]
 };
 
-if ((_data find "auto|") == 0) exitWith {
-    private _objectiveGroups = call _fnc_objectiveGroups;
-    private _catalog = [_data select [5]] call FLO_fnc_factionBuildAutoMilitaryCatalog;
-    if ((count keys _catalog) > 0) then {
-        _objectiveGroups = _catalog get "objectiveGroups";
-    };
-
-    [
-        10,
-        4,
-        _objectiveGroups,
-        [true, 4, 12] call _fnc_caps,
-        [1, 1, 8] call _fnc_counts
-    ] call _fnc_defaults
-};
-
 private _objectiveGroups = call _fnc_objectiveGroups;
 
 switch (toUpper _sideLabel) do {

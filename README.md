@@ -199,7 +199,7 @@ Curated presets remain the preferred path for tuned balance, prices, and exact d
 
 ### Objective Templates
 
-Objective templates control what kind of groups a subtype can seed. Curated, custom, and auto-generated faction defaults are loaded through `FLO_fnc_factionGetCompositionDefaults`, then mission setup always sends the typed Objective Groups values with the rest of the numeric force composition tuning. Faction `.sqf` files do not define `BLUFOR_Objective_Groups` or `OPFOR_Objective_Groups`.
+Objective templates control what kind of groups a subtype can seed. Curated, custom, and auto-generated factions use the same standard numeric defaults from `FLO_fnc_factionGetCompositionDefaults`, then mission setup always sends the typed Objective Groups values with the rest of the numeric force composition tuning. Faction `.sqf` files do not define `BLUFOR_Objective_Groups` or `OPFOR_Objective_Groups`.
 
 ### Numeric Force Composition
 
