@@ -49,6 +49,7 @@ private _registerFaction = {
 
     if !(_side in [0, 1, 2, 3]) exitWith {
         _droppedBadSide = _droppedBadSide + 1;
+        ["FACTIONS", 2, format ["DETAIL drop=%1 reason=badSide side=%2", _className, _side]] call FLO_fnc_log;
     };
 
     private _displayName = getText (_facCfg >> "displayName");
@@ -130,6 +131,7 @@ private _byClass = createHashMap;
 
     if (_classLower in _blacklist) then {
         _droppedBlacklist = _droppedBlacklist + 1;
+        ["FACTIONS", 2, format ["DETAIL drop=%1 reason=blacklist", _className]] call FLO_fnc_log;
         continue;
     };
 
@@ -140,6 +142,7 @@ private _byClass = createHashMap;
 
     if (_unitCount <= 0) then {
         _droppedNoUnits = _droppedNoUnits + 1;
+        ["FACTIONS", 2, format ["DETAIL drop=%1 reason=noUnits side=%2", _className, _sideLabels select _side]] call FLO_fnc_log;
         continue;
     };
 
@@ -157,6 +160,15 @@ private _byClass = createHashMap;
     private _sideLabel = _sideLabels select _side;
     private _compat = if (_cfgGroupCount > 0) then { "CfgGroups" } else { "CfgVehicles" };
     private _label = format ["[AUTO] %1 - %2 (%3)", _sideLabel, _displayName, _className];
+    ["FACTIONS", 2, format [
+        "DETAIL keep=%1 side=%2 compatibility=%3 units=%4 vehicles=%5 cfgGroups=%6",
+        _className,
+        _sideLabel,
+        _compat,
+        _unitCount,
+        _vehicleCount,
+        _cfgGroupCount
+    ]] call FLO_fnc_log;
     private _entry = createHashMapFromArray [
         ["label", _label],
         ["class", _className],

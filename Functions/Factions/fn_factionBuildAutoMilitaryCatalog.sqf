@@ -40,6 +40,7 @@ private _vehiclePools = createHashMapFromArray [
 ];
 
 private _factionLower = toLower _factionClass;
+private _rejectedRadarAssets = [];
 
 {
     private _vehCfg = _x;
@@ -59,14 +60,43 @@ private _factionLower = toLower _factionClass;
         _vehiclePools set [_x, _pool];
     } forEach ([_className] call FLO_fnc_factionClassifyVehicle);
 
-    if (getNumber (_vehCfg >> "radarType") > 0 || {getNumber (_vehCfg >> "reportRemoteTargets") > 0}) then {
+    private _hasRadarConfig = getNumber (_vehCfg >> "radarType") > 0 || {getNumber (_vehCfg >> "reportRemoteTargets") > 0};
+    private _isDedicatedRadarAsset = (
+        (_className isKindOf "LandVehicle") ||
+        {_className isKindOf "StaticWeapon"}
+    ) && {
+        ((toLower _className) find "radar") >= 0 ||
+        {((toLower (getText (_vehCfg >> "displayName"))) find "radar") >= 0}
+    };
+
+    if (_isDedicatedRadarAsset && {_hasRadarConfig}) then {
         private _radarPool = _vehiclePools get "radar";
         _radarPool pushBackUnique _className;
         _vehiclePools set ["radar", _radarPool];
+    } else {
+        if (_hasRadarConfig) then {
+            _rejectedRadarAssets pushBackUnique _className;
+        };
     };
 } forEach ("true" configClasses (configFile >> "CfgVehicles"));
 
 _units = _units arrayIntersect _units;
+
+["FACTIONS", 2, format [
+    "DETAIL catalog=%1 units=%2 infantryGroups=%3 specOpsGroups=%4 motorized=%5 mechanized=%6 armor=%7 mobileAA=%8 staticAA=%9 radar=%10 airJet=%11 rejectedRadar=%12",
+    _factionClass,
+    count _units,
+    count _infantryGroups,
+    count _specOpsGroups,
+    _vehiclePools get "groundMotorized",
+    _vehiclePools get "groundMechanized",
+    _vehiclePools get "groundArmor",
+    _vehiclePools get "mobileAA",
+    _vehiclePools get "staticAA",
+    _vehiclePools get "radar",
+    _vehiclePools get "airJet",
+    _rejectedRadarAssets
+]] call FLO_fnc_log;
 
 private _specOpsUnits = [];
 if (_specOpsGroups isNotEqualTo []) then {

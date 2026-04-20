@@ -7,7 +7,11 @@ params ["_groupId", "_groupData", "_position", "_side", "_unitCount", "_pools"];
 private _sideKey = _pools get "sideKey";
 private _unitPool = _pools get "units";
 private _staticAAPool = _pools get "staticAA";
-private _radarPool = _pools get "radar";
+private _radarPool = (_pools get "radar") select {
+    !(_x isKindOf "Air") &&
+    {!(_x isKindOf "Ship")} &&
+    {(_x isKindOf "LandVehicle") || {_x isKindOf "StaticWeapon"}}
+};
 
 [_unitPool, "units", _sideKey, "static_aa"] call FLO_fnc_virtualizationRequirePoolEntries;
 [_staticAAPool, "staticAA", _sideKey, "static_aa"] call FLO_fnc_virtualizationRequirePoolEntries;

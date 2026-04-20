@@ -189,6 +189,8 @@ The mission setup UI also appends `[AUTO]` faction entries generated from the cu
 
 Military auto factions are included when they have spawnable `Man` units. FLO uses any matching all-infantry `CfgGroups` entries when present, then classifies same-faction vehicles into motorized, mechanized, armor, transport, artillery, air, AA, drone, boat, and radar pools. Civilian auto factions use spawnable civilian `Man` units and civilian vehicles.
 
+Auto-faction keep/drop and selected-catalog diagnostics are emitted through `FLO_fnc_log` as `FACTIONS` warning-level logs (`FLO_Debug_Level >= 2`).
+
 Curated presets remain the preferred path for tuned balance, prices, and exact doctrine. `[AUTO]` entries are a compatibility path for loaded mods that have usable faction config but no FLO preset yet.
 
 ### Objective Templates
