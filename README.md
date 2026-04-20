@@ -191,9 +191,9 @@ Military auto factions are included when they have spawnable `Man` units. FLO us
 
 Auto-faction keep/drop and selected-catalog diagnostics are emitted through `FLO_fnc_log` as `FACTIONS` warning-level logs (`FLO_Debug_Level >= 2`).
 
-Mission setup includes an optional BLUFOR / OPFOR Composition Tuning card. Each row accepts a non-negative whole number per side. Leave a field blank to keep the curated or auto-generated value for that metric. The card can override ground and air transport reserve counts, objective group type caps for `artillery`, `static_aa`, and `mobile_aa`, and group counts for `infantry`, `motorized`, `mechanized`, `armor`, `helicopter`, `jet`, `air`, `artillery`, `mobile_aa`, and `static_aa`.
+Mission setup includes a Per Numeric Force Composition card. Each row is prefilled with default faction values and accepts a non-negative whole number per side. The card controls ground and air transport reserve counts, objective group type caps, and group counts for `infantry`, `motorized`, `mechanized`, `armor`, `helicopter`, `jet`, `air`, `artillery`, `mobile_aa`, and `static_aa`.
 
-Composition overrides merge into the generated catalog by key. For example, setting only OPFOR Ground Armor Count to `1` changes only the `armor` entry in `OPFOR_Group_Counts`; it does not replace the rest of the generated group count list.
+Composition values apply by key. For example, setting OPFOR Armor Count to `1` changes only the `armor` entry in `OPFOR_Group_Counts`; it does not replace the rest of the group count list.
 
 Curated presets remain the preferred path for tuned balance, prices, and exact doctrine. `[AUTO]` entries are a compatibility path for loaded mods that have usable faction config but no FLO preset yet.
 

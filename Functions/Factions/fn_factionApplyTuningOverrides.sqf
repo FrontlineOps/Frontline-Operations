@@ -2,12 +2,12 @@
  * Function: FLO_fnc_factionApplyTuningOverrides
  * Author: Frontline Operations Development Group
  * Description:
- *   Applies validated mission setup faction tuning overrides to a side catalog
+ *   Applies validated mission setup faction composition values to a side catalog
  *   and mirrors the tuned values back to legacy side globals.
  *
  * Arguments:
  *   0: Side faction catalog <HASHMAP>
- *   1: Tuning overrides <HASHMAP>
+ *   1: Tuning values <HASHMAP>
  *   2: Side label <STRING>
  *
  * Return Value:
@@ -25,23 +25,32 @@ if ((count keys _tuning) == 0) exitWith { true };
 private _fnc_mergePairs = {
     params ["_basePairs", "_overridePairs"];
 
-    private _merged = createHashMap;
+    private _overrideMap = createHashMap;
+    private _overrideOrder = [];
     {
         if (_x isEqualType [] && {count _x >= 2}) then {
-            _merged set [_x select 0, _x select 1];
+            private _key = _x select 0;
+            _overrideMap set [_key, _x select 1];
+            _overrideOrder pushBackUnique _key;
+        };
+    } forEach _overridePairs;
+
+    private _seen = createHashMap;
+    private _result = [];
+    {
+        if (_x isEqualType [] && {count _x >= 2}) then {
+            private _key = _x select 0;
+            private _value = if (_key in _overrideMap) then { _overrideMap get _key } else { _x select 1 };
+            _result pushBack [_key, _value];
+            _seen set [_key, true];
         };
     } forEach _basePairs;
 
     {
-        if (_x isEqualType [] && {count _x >= 2}) then {
-            _merged set [_x select 0, _x select 1];
+        if !(_x in _seen) then {
+            _result pushBack [_x, _overrideMap get _x];
         };
-    } forEach _overridePairs;
-
-    private _result = [];
-    {
-        _result pushBack [_x, _y];
-    } forEach _merged;
+    } forEach _overrideOrder;
 
     _result
 };
@@ -83,7 +92,7 @@ switch (_sideLabel) do {
 };
 
 ["FACTIONS", 2, format [
-    "Applied %1 faction tuning overrides: %2",
+    "Applied %1 force composition values: %2",
     _sideLabel,
     keys _tuning
 ]] call FLO_fnc_log;

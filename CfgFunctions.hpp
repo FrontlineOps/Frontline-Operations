@@ -308,6 +308,8 @@ class FLO {
         class factionBuildAutoMilitaryCatalog {};
         class factionClassifyVehicle {};
         class factionGetGroupConfigs {};
+        class factionGetCompositionDefaults {};
+        class factionGetTuningFieldSpecs {};
         class factionApplyTuningOverrides {};
         class factionBuildTuningHandle {};
         class factionPickUnitByRole {};
@@ -380,6 +382,7 @@ class FLO {
         class shouldOpenFactionDialog {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
+        class factionDialogFillCompositionDefaults {};
         class factionDialogPopulate   {};
         class factionDialogStart      {};
         class captureUI               {};
