@@ -122,7 +122,7 @@ private _addTemplate = {
     if ((_vehiclePools get "groundMechanized") isNotEqualTo [] && {_subtype in ["capital", "city", "local"]}) then {
         _groupsForSubtype pushBack ["mechanized", 1];
     };
-    if ((_vehiclePools get "groundArmor") isNotEqualTo [] && {_subtype in ["capital", "local"]}) then {
+    if ((_vehiclePools get "groundArmor") isNotEqualTo [] && {_subtype in ["capital", "city", "local"]}) then {
         _groupsForSubtype pushBack ["armor", 1];
     };
     if (((_vehiclePools get "airHeli") + (_vehiclePools get "airJet")) isNotEqualTo [] && {_subtype in ["capital", "city"]}) then {
@@ -143,7 +143,7 @@ private _addTemplate = {
 };
 
 ["capital", 10] call _addTemplate;
-["city", 6] call _addTemplate;
+["city", 10] call _addTemplate;
 ["village", 3] call _addTemplate;
 ["local", 5] call _addTemplate;
 ["marine", 3] call _addTemplate;

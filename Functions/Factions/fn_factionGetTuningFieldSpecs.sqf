@@ -47,7 +47,7 @@ private _fnc_buildSpecs = {
     _specs
 };
 
-switch (toUpper _sideLabel) do {
+private _specs = switch (toUpper _sideLabel) do {
     case "BLUFOR": {
         [2050, 2051, 2052, 2062] call _fnc_buildSpecs
     };
@@ -59,3 +59,5 @@ switch (toUpper _sideLabel) do {
         []
     };
 };
+
+_specs + ([_sideLabel] call FLO_fnc_factionGetObjectiveGroupFieldSpecs)

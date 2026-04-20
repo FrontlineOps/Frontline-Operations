@@ -28,6 +28,8 @@ if (_eh >= 0) then {
 
 // Clear dialog reference
 uiNamespace setVariable ["FLO_FactionDialog", displayNull];
+uiNamespace setVariable ["FLO_FactionObjectiveGroupControls", []];
+uiNamespace setVariable ["FLO_FactionCompositionTab", "composition"];
 
 ["UI", 3, "Faction dialog unloaded"] call FLO_fnc_log;
 

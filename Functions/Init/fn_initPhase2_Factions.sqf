@@ -283,22 +283,33 @@ private _fnc_collectDirectUnitVars = {
     _units
 };
 
-private _fnc_extractObjectiveGroupCaps = {
-    params [["_caps", []]];
+private _fnc_buildCompositionDefaults = {
+    params ["_handle", "_sideLabel"];
 
-    if !(_caps isEqualType []) exitWith { [] };
+    private _selection = _handle get "name";
+    private _source = if ("source" in _handle) then { _handle get "source" } else { "preset" };
+    private _data = if (_source isEqualTo "auto") then {
+        format ["auto|%1", _handle get "factionClass"]
+    } else {
+        format ["preset|%1", _selection]
+    };
 
-    private _result = [];
-    {
-        if !(_x isEqualType [] && {count _x >= 2}) then { continue };
-        private _groupType = _x select 0;
-        private _cap = _x select 1;
-        if !(_groupType isEqualType "") then { continue };
-        if !(_cap isEqualType 0) then { continue };
-        _result pushBack [_groupType, _cap max 0];
-    } forEach _caps;
+    [_sideLabel, _selection, _data] call FLO_fnc_factionGetCompositionDefaults
+};
 
-    _result
+private _eastFactionCompositionDefaults = [_opfHandle, "OPFOR"] call _fnc_buildCompositionDefaults;
+private _westFactionCompositionDefaults = [_bluHandle, "BLUFOR"] call _fnc_buildCompositionDefaults;
+
+private _eastFactionCompositionHandle = if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
+    FLO_MissionConfig get "eastFactionTuningHandle"
+} else {
+    _eastFactionCompositionDefaults
+};
+
+private _westFactionCompositionHandle = if ("westFactionTuningHandle" in FLO_MissionConfig) then {
+    FLO_MissionConfig get "westFactionTuningHandle"
+} else {
+    _westFactionCompositionDefaults
 };
 
 private _westInfantryVars = [
@@ -366,13 +377,6 @@ private _eastMobileAA = [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } e
 private _eastStaticAA = [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call _fnc_extractVehicleClasses;
 private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call _fnc_extractVehicleClasses;
 private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses;
-private _eastTransportReserveGroundCount = if (!isNil "East_Transport_Reserve_Ground_Count") then { East_Transport_Reserve_Ground_Count } else { 20 };
-private _eastTransportReserveAirCount = if (!isNil "East_Transport_Reserve_Air_Count") then { East_Transport_Reserve_Air_Count } else { 10 };
-private _eastObjectiveGroupTypeCaps = if (!isNil "East_Objective_Group_Type_Caps") then {
-    [East_Objective_Group_Type_Caps] call _fnc_extractObjectiveGroupCaps
-} else {
-    []
-};
 
 private _westGroundMotorized = if (!isNil "West_Ground_Motorized") then {
     [West_Ground_Motorized] call _fnc_extractVehicleClasses
@@ -448,13 +452,6 @@ private _westBoat = if (!isNil "West_Boat") then {
 } else {
     [["F_Boat_List"]] call _fnc_buildPoolFromVars
 };
-private _westTransportReserveGroundCount = if (!isNil "West_Transport_Reserve_Ground_Count") then { West_Transport_Reserve_Ground_Count } else { 20 };
-private _westTransportReserveAirCount = if (!isNil "West_Transport_Reserve_Air_Count") then { West_Transport_Reserve_Air_Count } else { 10 };
-private _westObjectiveGroupTypeCaps = if (!isNil "West_Objective_Group_Type_Caps") then {
-    [West_Objective_Group_Type_Caps] call _fnc_extractObjectiveGroupCaps
-} else {
-    []
-};
 private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
@@ -503,21 +500,21 @@ private _eastCatalog = createHashMapFromArray [
     ["groundMechanized", _eastGroundMechanized],
     ["groundArmor", _eastGroundArmor],
     ["groundTransport", _eastGroundTransport],
-    ["transportReserveGroundCount", _eastTransportReserveGroundCount],
+    ["transportReserveGroundCount", _eastFactionCompositionDefaults get "transportReserveGroundCount"],
     ["groundArtillery", _eastGroundArtillery],
     ["airHeli", _eastAirHeli],
     ["airJet", _eastAirJet],
     ["airTransport", _eastAirTransport],
-    ["transportReserveAirCount", _eastTransportReserveAirCount],
+    ["transportReserveAirCount", _eastFactionCompositionDefaults get "transportReserveAirCount"],
     ["airDrone", _eastAirDrone],
     ["groundDrone", _eastGroundDrone],
     ["mobileAA", _eastMobileAA],
     ["staticAA", _eastStaticAA],
     ["boat", _eastBoat],
     ["radar", _eastRadar],
-    ["objectiveGroups", OPFOR_Objective_Groups],
-    ["objectiveGroupTypeCaps", _eastObjectiveGroupTypeCaps],
-    ["groupCounts", OPFOR_Group_Counts]
+    ["objectiveGroups", _eastFactionCompositionDefaults get "objectiveGroups"],
+    ["objectiveGroupTypeCaps", _eastFactionCompositionDefaults get "objectiveGroupTypeCaps"],
+    ["groupCounts", _eastFactionCompositionDefaults get "groupCounts"]
 ];
 
 private _westCatalog = createHashMapFromArray [
@@ -532,12 +529,12 @@ private _westCatalog = createHashMapFromArray [
     ["groundMechanized", _westGroundMechanized],
     ["groundArmor", _westGroundArmor],
     ["groundTransport", _westGroundTransport],
-    ["transportReserveGroundCount", _westTransportReserveGroundCount],
+    ["transportReserveGroundCount", _westFactionCompositionDefaults get "transportReserveGroundCount"],
     ["groundArtillery", _westGroundArtillery],
     ["airHeli", _westAirHeli],
     ["airJet", _westAirJet],
     ["airTransport", _westAirTransport],
-    ["transportReserveAirCount", _westTransportReserveAirCount],
+    ["transportReserveAirCount", _westFactionCompositionDefaults get "transportReserveAirCount"],
     ["airDrone", _westAirDrone],
     ["groundDrone", _westGroundDrone],
     ["mobileAA", _westMobileAA],
@@ -548,23 +545,13 @@ private _westCatalog = createHashMapFromArray [
     ["logisticsRespawn", _westLogisticsRespawn],
     ["containers", _westContainers],
     ["radar", _westRadar],
-    ["objectiveGroups", BLUFOR_Objective_Groups],
-    ["objectiveGroupTypeCaps", _westObjectiveGroupTypeCaps],
-    ["groupCounts", BLUFOR_Group_Counts]
+    ["objectiveGroups", _westFactionCompositionDefaults get "objectiveGroups"],
+    ["objectiveGroupTypeCaps", _westFactionCompositionDefaults get "objectiveGroupTypeCaps"],
+    ["groupCounts", _westFactionCompositionDefaults get "groupCounts"]
 ];
 
-private _eastFactionTuningHandle = createHashMap;
-if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
-    _eastFactionTuningHandle = FLO_MissionConfig get "eastFactionTuningHandle";
-};
-
-private _westFactionTuningHandle = createHashMap;
-if ("westFactionTuningHandle" in FLO_MissionConfig) then {
-    _westFactionTuningHandle = FLO_MissionConfig get "westFactionTuningHandle";
-};
-
-[_eastCatalog, _eastFactionTuningHandle, "OPFOR"] call FLO_fnc_factionApplyTuningOverrides;
-[_westCatalog, _westFactionTuningHandle, "BLUFOR"] call FLO_fnc_factionApplyTuningOverrides;
+[_eastCatalog, _eastFactionCompositionHandle, "OPFOR"] call FLO_fnc_factionApplyTuningOverrides;
+[_westCatalog, _westFactionCompositionHandle, "BLUFOR"] call FLO_fnc_factionApplyTuningOverrides;
 
 FLO_FactionCatalog = createHashMapFromArray [
     ["EAST", _eastCatalog],

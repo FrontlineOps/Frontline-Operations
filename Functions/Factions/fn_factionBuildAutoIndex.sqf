@@ -198,8 +198,8 @@ FLO_AutoFactionIndex = createHashMapFromArray [
     ["byClass", _byClass]
 ];
 
-diag_log format [
-    "[FLO][FACTIONS] Auto faction index: scanned=%1 military=%2 civilian=%3 dropped(badSide)=%4 dropped(noUnits)=%5 dropped(blacklist)=%6 timeMs=%7",
+["FACTIONS", 2, format [
+    "Auto faction index: scanned=%1 military=%2 civilian=%3 dropped(badSide)=%4 dropped(noUnits)=%5 dropped(blacklist)=%6 timeMs=%7",
     _totalScanned,
     count _military,
     count _civilian,
@@ -207,6 +207,6 @@ diag_log format [
     _droppedNoUnits,
     _droppedBlacklist,
     (diag_tickTime - _t0) * 1000
-];
+]] call FLO_fnc_log;
 
 FLO_AutoFactionIndex
