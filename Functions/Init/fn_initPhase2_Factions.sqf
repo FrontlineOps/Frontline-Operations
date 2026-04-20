@@ -509,14 +509,74 @@ private _westCatalog = createHashMapFromArray [
     ["radar", _westRadar],
     ["objectiveGroups", BLUFOR_Objective_Groups],
     ["objectiveGroupTypeCaps", _westObjectiveGroupTypeCaps],
-    ["groupCounts", BLUFOR_Group_Counts]
+    ["groupCounts", BLUFOR_Group_Counts],
+    // Faction crew resolving: prioritize custom F_Crew, fallback to infantry pool
+    ["crewUnits", if (!isNil "F_Crew") then { [F_Crew] } else { _westInfantryUnits }],
+    ["sideKey", "WEST"]
 ];
 
+// East catalog crew resolving
+private _eastCrewUnits = if (!isNil "East_Crew") then { [East_Crew] } else { _eastInfantryUnits };
+if (!isNil "_eastCatalog") then {
+    _eastCatalog set ["crewUnits", _eastCrewUnits];
+    _eastCatalog set ["sideKey", "EAST"];
+};
+
+// FINALIZING CATALOG
 FLO_FactionCatalog = createHashMapFromArray [
     ["EAST", _eastCatalog],
     ["WEST", _westCatalog]
 ];
+
+// ============================================================================
+// AUTOMATIC TRANSPORT CAPACITY DISCOVERY
+// ============================================================================
+if (isNil "FLO_Transport_CapacityEstimates") then {
+    FLO_Transport_CapacityEstimates = createHashMap;
+};
+
+private _fnc_registerListCapacities = {
+    params ["_varNames"];
+    {
+        private _list = missionNamespace getVariable [_x, []];
+        {
+            private _c = if (_x isEqualType []) then { if (count _x > 0) then { _x select 0 } else { "" } } else { _x };
+            if (_c != "" && {isClass (configFile >> "CfgVehicles" >> _c)}) then {
+                if !(_c in FLO_Transport_CapacityEstimates) then {
+                    private _total = [_c, true] call BIS_fnc_crewCount;
+                    private _crew = [_c, false] call BIS_fnc_crewCount;
+                    FLO_Transport_CapacityEstimates set [_c, (_total - _crew) max 0];
+                };
+            };
+        } forEach _list;
+    } forEach _varNames;
+};
+
+// Scan all relevant vehicle lists
+[
+    ["F_Bike_List", "F_Car_List", "F_MRAP_List", "F_Truck_List", 
+    "F_Truck_Construction_List", "F_Truck_Ammo_List", "F_Truck_Respawn_List",
+    "F_APC_List", "F_Tank_List", "F_Heli_List", "F_Heli_Respawn_List",
+    "East_Ground_Motorized", "East_Ground_Mechanized", "East_Ground_Transport", "East_Air_Transport"]
+] call _fnc_registerListCapacities;
+
+// FAIL-SAFE: Ensure every vehicle in the catalog has an estimate (default to 4 if missing)
+{
+    private _catalog = _y;
+    {
+        private _vKey = _x;
+        private _units = _catalog getOrDefault [_vKey, []];
+        {
+            private _cName = if (_x isEqualType []) then { _x select 0 } else { _x };
+            if (_cName != "" && {!(_cName in FLO_Transport_CapacityEstimates)}) then {
+                FLO_Transport_CapacityEstimates set [_cName, 4]; // Default safety fallback
+            };
+        } forEach _units;
+    } forEach ["groundMotorized", "groundMechanized", "groundTransport", "airTransport", "boat"];
+} forEach FLO_FactionCatalog;
+
 publicVariable "FLO_FactionCatalog";
+publicVariable "FLO_Transport_CapacityEstimates";
 
 // Mark factions as loaded
 F_Init = true;
