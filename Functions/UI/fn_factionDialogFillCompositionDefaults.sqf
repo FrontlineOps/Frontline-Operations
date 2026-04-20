@@ -37,6 +37,12 @@ private _data = _combo lbData _selectedIndex;
 private _defaults = [_sideLabel, _selection, _data] call FLO_fnc_factionGetCompositionDefaults;
 private _capValues = createHashMapFromArray (_defaults get "objectiveGroupTypeCaps");
 private _countValues = createHashMapFromArray (_defaults get "groupCounts");
+private _objectiveGroups = _defaults get "objectiveGroups";
+private _objectiveValues = createHashMap;
+{
+    _x params ["_subtype", "_groups"];
+    _objectiveValues set [_subtype, createHashMapFromArray _groups];
+} forEach _objectiveGroups;
 
 {
     _x params ["_idc", "_category", "_key"];
@@ -45,6 +51,11 @@ private _countValues = createHashMapFromArray (_defaults get "groupCounts");
         case "scalar": { _defaults get _key };
         case "cap": { _capValues get _key };
         case "count": { _countValues get _key };
+        case "objective": {
+            private _groupType = _x select 3;
+            private _groups = _objectiveValues get _key;
+            if (_groupType in _groups) then { _groups get _groupType } else { 0 }
+        };
         default {
             ["UI", 1, format ["Unknown %1 composition category '%2' for %3", _sideLabel, _category, _key]] call FLO_fnc_log;
             0

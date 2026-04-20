@@ -19,7 +19,7 @@ params [
 ];
 
 if !("factionClass" in _handle) exitWith {
-    diag_log format ["[FLO][FACTIONS] Auto faction handle missing factionClass for role %1", _role];
+    ["FACTIONS", 2, format ["Auto faction handle missing factionClass for role %1", _role]] call FLO_fnc_log;
     false
 };
 
@@ -31,37 +31,37 @@ if (_role isEqualTo "civilian") exitWith {
     private _vehicles = _civCatalog get "vehicles";
 
     if (_men isEqualTo []) exitWith {
-        diag_log format ["[FLO][FACTIONS] Auto civilian faction %1 has no spawnable men", _factionClass];
+        ["FACTIONS", 2, format ["Auto civilian faction %1 has no spawnable men", _factionClass]] call FLO_fnc_log;
         false
     };
 
     CivMenArray = _men;
     CivVehArray = _vehicles;
 
-    diag_log format [
-        "[FLO][FACTIONS] Applied auto civilian faction %1: men=%2 vehicles=%3",
+    ["FACTIONS", 2, format [
+        "Applied auto civilian faction %1: men=%2 vehicles=%3",
         _factionClass,
         count CivMenArray,
         count CivVehArray
-    ];
+    ]] call FLO_fnc_log;
 
     true
 };
 
 if !(_role in ["friendly", "enemy"]) exitWith {
-    diag_log format ["[FLO][FACTIONS] Unknown auto faction role %1 for %2", _role, _factionClass];
+    ["FACTIONS", 2, format ["Unknown auto faction role %1 for %2", _role, _factionClass]] call FLO_fnc_log;
     false
 };
 
 private _catalog = [_factionClass] call FLO_fnc_factionBuildAutoMilitaryCatalog;
 if ((count keys _catalog) == 0) exitWith {
-    diag_log format ["[FLO][FACTIONS] Failed to build auto military catalog for %1", _factionClass];
+    ["FACTIONS", 2, format ["Failed to build auto military catalog for %1", _factionClass]] call FLO_fnc_log;
     false
 };
 
 private _units = _catalog get "groundInfantryUnits";
 if (_units isEqualTo []) exitWith {
-    diag_log format ["[FLO][FACTIONS] Auto military faction %1 has no spawnable infantry units", _factionClass];
+    ["FACTIONS", 2, format ["Auto military faction %1 has no spawnable infantry units", _factionClass]] call FLO_fnc_log;
     false
 };
 
@@ -72,8 +72,8 @@ private _applied = switch (_role) do {
 
 if (!_applied) exitWith { false };
 
-diag_log format [
-    "[FLO][FACTIONS] Applied auto %1 faction %2: units=%3 groups=%4 motorized=%5 mechanized=%6 armor=%7 air=%8",
+["FACTIONS", 2, format [
+    "Applied auto %1 faction %2: units=%3 groups=%4 motorized=%5 mechanized=%6 armor=%7 air=%8",
     _role,
     _factionClass,
     count (_catalog get "groundInfantryUnits"),
@@ -82,6 +82,6 @@ diag_log format [
     count (_catalog get "groundMechanized"),
     count (_catalog get "groundArmor"),
     count ((_catalog get "airHeli") + (_catalog get "airJet"))
-];
+]] call FLO_fnc_log;
 
 true

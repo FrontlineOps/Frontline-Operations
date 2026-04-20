@@ -25,6 +25,8 @@ private _errors = [];
 private _overrides = createHashMap;
 private _caps = [];
 private _counts = [];
+private _objectiveGroupOrder = [];
+private _objectiveGroupRows = createHashMap;
 
 private _fnc_compact = {
     params ["_value"];
@@ -61,6 +63,17 @@ private _fnc_isUnsignedInt = {
                 case "count": {
                     _counts pushBack [_key, _value];
                 };
+                case "objective": {
+                    private _groupType = _x select 3;
+                    if !(_key in _objectiveGroupRows) then {
+                        _objectiveGroupRows set [_key, []];
+                        _objectiveGroupOrder pushBack _key;
+                    };
+                    if (_value > 0) then {
+                        private _objectiveGroups = _objectiveGroupRows get _key;
+                        _objectiveGroups pushBack [_groupType, _value];
+                    };
+                };
                 default {
                     _errors pushBack format ["%1: unknown tuning category '%2' for %3", _sideLabel, _category, _key];
                 };
@@ -74,6 +87,13 @@ if (_caps isNotEqualTo []) then {
 };
 if (_counts isNotEqualTo []) then {
     _overrides set ["groupCounts", _counts];
+};
+if (_objectiveGroupOrder isNotEqualTo []) then {
+    private _objectiveGroups = [];
+    {
+        _objectiveGroups pushBack [_x, _objectiveGroupRows get _x];
+    } forEach _objectiveGroupOrder;
+    _overrides set ["objectiveGroups", _objectiveGroups];
 };
 
 createHashMapFromArray [

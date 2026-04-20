@@ -309,6 +309,7 @@ class FLO {
         class factionClassifyVehicle {};
         class factionGetGroupConfigs {};
         class factionGetCompositionDefaults {};
+        class factionGetObjectiveGroupFieldSpecs {};
         class factionGetTuningFieldSpecs {};
         class factionApplyTuningOverrides {};
         class factionBuildTuningHandle {};
@@ -382,8 +383,10 @@ class FLO {
         class shouldOpenFactionDialog {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
+        class factionDialogCreateObjectiveGroupControls {};
         class factionDialogFillCompositionDefaults {};
         class factionDialogPopulate   {};
+        class factionDialogShowCompositionTab {};
         class factionDialogStart      {};
         class captureUI               {};
         class initCaptureUIEvents     {};

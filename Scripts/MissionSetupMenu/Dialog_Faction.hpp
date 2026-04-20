@@ -75,6 +75,12 @@
 #define FACTION_TUNE_EAST_X(_tableX) (_tableX + FACTION_TUNE_LABEL_W + FACTION_TUNE_WEST_W + (0.6 * GUI_GRID_W))
 #define FACTION_TUNE_ROW_Y(_row)    (FACTION_CARD_COMPOSITION_Y + ((2.45 + (_row * 0.72)) * GUI_GRID_H))
 #define FACTION_TUNE_CELL_H         (0.62 * GUI_GRID_H)
+#define FACTION_TAB_W               (7.4 * GUI_GRID_W)
+#define FACTION_TAB_H               (0.66 * GUI_GRID_H)
+#define FACTION_TAB_GAP             (0.35 * GUI_GRID_W)
+#define FACTION_TAB_Y               (FACTION_CARD_COMPOSITION_Y + (0.42 * GUI_GRID_H))
+#define FACTION_TAB_X_OBJECTIVES    (FACTION_FULL_X + FACTION_FULL_W - (0.8 * GUI_GRID_W) - FACTION_TAB_W)
+#define FACTION_TAB_X_COMPOSITION   (FACTION_TAB_X_OBJECTIVES - FACTION_TAB_GAP - FACTION_TAB_W)
 
 // ============================================================================
 // DIALOG-SPECIFIC CONTROL CLASSES
@@ -104,6 +110,12 @@ class FLO_FactionTuneLabel: FLO_RscText_Label
 class FLO_FactionTuneSection: FLO_FactionTuneLabel
 {
 	colorText[] = FLO_COLOR_TEXT_TITLE;
+};
+
+class FLO_FactionTabButton: FLO_RscButton_Secondary
+{
+	h = FACTION_TAB_H;
+	sizeEx = FLO_FONT_SIZE_XS;
 };
 
 class FLO_FactionCard: FLO_RscSurface
@@ -593,11 +605,44 @@ class FLO_FactionSelectDialog
 		class CardCompositionHint: FLO_RscText_Muted
 		{
 			idc = FLO_IDC_NONE;
-			text = "Default faction values load here; edit any number before mission start.";
+			text = "Default faction values load here; use tabs to edit composition and objective groups.";
 			x = FACTION_FULL_X + (0.8 * GUI_GRID_W);
 			y = FACTION_CARD_COMPOSITION_Y + (1.0 * GUI_GRID_H);
 			w = FACTION_FULL_W - (1.6 * GUI_GRID_W);
 			h = FACTION_LABEL_H;
+		};
+
+		class ButtonCompositionTab: FLO_FactionTabButton
+		{
+			idc = FLO_IDC_FACTION_BTN_COMPOSITION_TAB;
+			text = "COMPOSITION";
+			x = FACTION_TAB_X_COMPOSITION;
+			y = FACTION_TAB_Y;
+			w = FACTION_TAB_W;
+			action = "['composition'] call FLO_fnc_factionDialogShowCompositionTab";
+			tooltip = "Show reserve, cap, and group count fields";
+		};
+
+		class ButtonObjectiveGroupsTab: FLO_FactionTabButton
+		{
+			idc = FLO_IDC_FACTION_BTN_OBJECTIVE_GROUPS_TAB;
+			text = "OBJECTIVE GROUPS";
+			x = FACTION_TAB_X_OBJECTIVES;
+			y = FACTION_TAB_Y;
+			w = FACTION_TAB_W;
+			action = "['objectives'] call FLO_fnc_factionDialogShowCompositionTab";
+			tooltip = "Show objective subtype group templates";
+		};
+
+		class CompositionContentAnchor: FLO_FactionTuneLabel
+		{
+			idc = FLO_IDC_FACTION_COMPOSITION_ANCHOR;
+			text = "";
+			x = FACTION_TUNE_RESERVE_X;
+			y = FACTION_TUNE_ROW_Y(0);
+			w = FACTION_FULL_W - (1.6 * GUI_GRID_W);
+			h = FACTION_TUNE_CELL_H;
+			colorText[] = {0, 0, 0, 0};
 		};
 
 		class TuneSectionReserves: FLO_FactionTuneSection

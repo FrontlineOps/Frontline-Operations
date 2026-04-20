@@ -11,7 +11,7 @@
  *
  * Return Value:
  *   HASHMAP with transportReserveGroundCount, transportReserveAirCount,
- *   objectiveGroupTypeCaps, and groupCounts.
+ *   objectiveGroups, objectiveGroupTypeCaps, and groupCounts.
  */
 
 params [
@@ -64,25 +64,76 @@ private _fnc_counts = {
     ]
 };
 
+private _fnc_objectiveGroups = {
+    [
+        ["capital", [
+            ["infantry", 12],
+            ["motorized", 2],
+            ["mechanized", 1],
+            ["air", 1],
+            ["armor", 1],
+            ["artillery", 1],
+            ["static_aa", 1],
+            ["mobile_aa", 1]
+        ]],
+        ["city", [
+            ["infantry", 12],
+            ["motorized", 2],
+            ["mechanized", 1],
+            ["air", 1],
+            ["armor", 1],
+            ["artillery", 1],
+            ["static_aa", 1],
+            ["mobile_aa", 1]
+        ]],
+        ["village", [
+            ["infantry", 3]
+        ]],
+        ["local", [
+            ["infantry", 6],
+            ["motorized", 2],
+            ["mechanized", 1],
+            ["mobile_aa", 1]
+        ]],
+        ["marine", [
+            ["infantry", 3],
+            ["motorized", 1]
+        ]],
+        ["cluster", [
+            ["infantry", 2]
+        ]]
+    ]
+};
+
 private _fnc_defaults = {
-    params ["_groundReserve", "_airReserve", "_caps", "_counts"];
+    params ["_groundReserve", "_airReserve", "_objectiveGroups", "_caps", "_counts"];
 
     createHashMapFromArray [
         ["transportReserveGroundCount", _groundReserve],
         ["transportReserveAirCount", _airReserve],
+        ["objectiveGroups", _objectiveGroups],
         ["objectiveGroupTypeCaps", _caps],
         ["groupCounts", _counts]
     ]
 };
 
 if ((_data find "auto|") == 0) exitWith {
+    private _objectiveGroups = call _fnc_objectiveGroups;
+    private _catalog = [_data select [5]] call FLO_fnc_factionBuildAutoMilitaryCatalog;
+    if ((count keys _catalog) > 0) then {
+        _objectiveGroups = _catalog get "objectiveGroups";
+    };
+
     [
         10,
         4,
+        _objectiveGroups,
         [true, 4, 12] call _fnc_caps,
         [1, 1, 8] call _fnc_counts
     ] call _fnc_defaults
 };
+
+private _objectiveGroups = call _fnc_objectiveGroups;
 
 switch (toUpper _sideLabel) do {
     case "BLUFOR": {
@@ -93,20 +144,16 @@ switch (toUpper _sideLabel) do {
             [true, 3, 20] call _fnc_caps
         };
 
-        [20, 10, _caps, [_maneuverCount, 3, 10] call _fnc_counts] call _fnc_defaults
+        [20, 10, _objectiveGroups, _caps, [_maneuverCount, 3, 10] call _fnc_counts] call _fnc_defaults
     };
     case "OPFOR": {
         private _maneuverCount = if (_selection isEqualTo "CUSTOM_ENEMY_FACTION") then { 2 } else { 1 };
-        private _caps = if (_selection isEqualTo "CSAT _ Desert") then {
-            [false, 3, 20] call _fnc_caps
-        } else {
-            [true, 3, 20] call _fnc_caps
-        };
+        private _caps = [true, 3, 20] call _fnc_caps;
 
-        [20, 10, _caps, [_maneuverCount, 3, 10] call _fnc_counts] call _fnc_defaults
+        [20, 10, _objectiveGroups, _caps, [_maneuverCount, 3, 10] call _fnc_counts] call _fnc_defaults
     };
     default {
         ["FACTIONS", 1, format ["Unknown force composition side '%1' for %2", _sideLabel, _selection]] call FLO_fnc_log;
-        [20, 10, [true, 3, 20] call _fnc_caps, [1, 3, 10] call _fnc_counts] call _fnc_defaults
+        [20, 10, _objectiveGroups, [true, 3, 20] call _fnc_caps, [1, 3, 10] call _fnc_counts] call _fnc_defaults
     };
 };

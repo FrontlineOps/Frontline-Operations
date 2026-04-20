@@ -15,10 +15,8 @@
  *   groundMechanized = East_Ground_Mechanized
  *   groundArmor      = East_Ground_Armor
  *   groundTransport  = East_Ground_Transport
- *   transportReserveGroundCount = East_Transport_Reserve_Ground_Count
  *   groundArtillery  = East_Ground_Artillery
  *   airTransport     = East_Air_Transport
- *   transportReserveAirCount = East_Transport_Reserve_Air_Count
  *   airHeli          = East_Air_Heli
  *   airJet           = East_Air_Jet
  *   airDrone         = East_Air_Drone
@@ -85,7 +83,6 @@ East_Ground_Transport = [
     "O_MRAP_02_F", "O_Truck_03_transport_F",
     "O_Truck_02_transport_F", "O_LSV_02_unarmed_F"
 ];
-East_Transport_Reserve_Ground_Count = 20;
 
 // groundArtillery
 East_Ground_Artillery = ["O_MBT_02_arty_F"];
@@ -95,7 +92,6 @@ East_Air_Transport = [
     "O_Heli_Light_02_dynamicLoadout_F", "O_Heli_Light_02_unarmed_F",
     "O_Heli_Transport_04_covered_F"
 ];
-East_Transport_Reserve_Air_Count = 10;
 
 // airHeli
 East_Air_Heli = [
@@ -116,29 +112,3 @@ East_Static_AA = ["O_SAM_System_04_F"];
 
 // radar
 East_Radar = ["O_Radar_System_02_F"];
-
-// ============================================================================
-// GARRISON CONFIGURATION
-// ============================================================================
-OPFOR_Objective_Groups = [
-    ["capital", [["infantry", 12], ["motorized", 2], ["mechanized", 1], ["air", 1], ["armor", 1], ["artillery", 1], ["mobile_aa", 1], ["static_aa", 1]]],
-    ["city", [["infantry", 7], ["motorized", 2]]],
-    ["village", [["infantry", 3]]],
-    ["local", [["infantry", 6], ["motorized", 2], ["mechanized", 1], ["mobile_aa", 1]]],
-    ["marine", [["infantry", 3], ["motorized", 1]]],
-    ["cluster", [["infantry", 2]]]
-];
-
-OPFOR_Group_Counts = [
-    ["infantry", 10],
-    ["motorized", 1],
-    ["mechanized", 1],
-    ["armor", 1],
-    ["helicopter", 1],
-    ["jet", 1],
-    ["air", 1],
-    ["artillery", 3],
-    ["mobile_aa", 1],         // Number of mobile AA vehicles
-    ["static_aa", 1]          // Number of static SAM launchers
-];
-
