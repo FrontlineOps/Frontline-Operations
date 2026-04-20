@@ -76,13 +76,21 @@ FLO_Transport_AirDropMinThreatSignals = 2;
 // in addition to the minimum threat signal count.
 FLO_Transport_AirDropRequireEnemyNearby = true;
 
-// Fallback capacity estimates by group type
-FLO_Transport_CapacityEstimates = createHashMapFromArray [
+// Fallback capacity estimates by group type - Merged to preserve automated class discovery
+private _groupFallbacks = createHashMapFromArray [
     ["motorized", 8],
     ["mechanized", 8],
     ["helicopter", 12],
     ["armor", 0],
     ["truck", 10]
 ];
+
+if (isNil "FLO_Transport_CapacityEstimates") then {
+    FLO_Transport_CapacityEstimates = _groupFallbacks;
+} else {
+    FLO_Transport_CapacityEstimates merge _groupFallbacks;
+};
+
+publicVariable "FLO_Transport_CapacityEstimates";
 
 ["TRANSPORT", 3, "Transport configuration initialized"] call FLO_fnc_log;
