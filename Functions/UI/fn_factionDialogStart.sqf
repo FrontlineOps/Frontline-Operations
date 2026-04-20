@@ -37,6 +37,7 @@
  * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
  * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
  * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
+ * FLO_IDC_FACTION_EDIT_*_COMPOSITION = 2050-2093
  * FLO_IDC_FACTION_BTN_START        = 1600
  */
 
@@ -55,31 +56,38 @@ _startBtn ctrlEnable false;
 private _fnc_getSelection = {
 	params ["_idc"];
 	private _ctrl = _display displayCtrl _idc;
-	_ctrl lbText (lbCurSel _ctrl)
+    private _idx = lbCurSel _ctrl;
+	[_ctrl lbText _idx, _ctrl lbData _idx]
 };
 
 // Get all selections using numeric IDCs
-private _playerFaction = [1955] call _fnc_getSelection;
-private _enemyFaction = [1956] call _fnc_getSelection;
-private _civilianFaction = [1957] call _fnc_getSelection;
-private _westAttackCoverage = [1958] call _fnc_getSelection;
-private _resources = [1959] call _fnc_getSelection;
-private _reputation = [1960] call _fnc_getSelection;
-private _westDifficulty = [1961] call _fnc_getSelection;
-private _westDefenseCoverage = [1962] call _fnc_getSelection;
-private _westTempo = [1963] call _fnc_getSelection;
-private _objectiveSize = [1964] call _fnc_getSelection;
-private _virtualizationDistance = [1965] call _fnc_getSelection;
-private _westForceGrowth = [1966] call _fnc_getSelection;
-private _westGarrison = [1967] call _fnc_getSelection;
-private _virtualizationUnitCap = [1968] call _fnc_getSelection;
-private _territoryRatio = [1969] call _fnc_getSelection;
-private _eastAttackCoverage = [1970] call _fnc_getSelection;
-private _eastDefenseCoverage = [1971] call _fnc_getSelection;
-private _eastDifficulty = [1972] call _fnc_getSelection;
-private _eastTempo = [1973] call _fnc_getSelection;
-private _eastForceGrowth = [1974] call _fnc_getSelection;
-private _eastGarrison = [1975] call _fnc_getSelection;
+private _playerFactionSelection = [1955] call _fnc_getSelection;
+private _enemyFactionSelection = [1956] call _fnc_getSelection;
+private _civilianFactionSelection = [1957] call _fnc_getSelection;
+private _playerFaction = _playerFactionSelection select 0;
+private _enemyFaction = _enemyFactionSelection select 0;
+private _civilianFaction = _civilianFactionSelection select 0;
+private _playerFactionData = _playerFactionSelection select 1;
+private _enemyFactionData = _enemyFactionSelection select 1;
+private _civilianFactionData = _civilianFactionSelection select 1;
+private _westAttackCoverage = ([1958] call _fnc_getSelection) select 0;
+private _resources = ([1959] call _fnc_getSelection) select 0;
+private _reputation = ([1960] call _fnc_getSelection) select 0;
+private _westDifficulty = ([1961] call _fnc_getSelection) select 0;
+private _westDefenseCoverage = ([1962] call _fnc_getSelection) select 0;
+private _westTempo = ([1963] call _fnc_getSelection) select 0;
+private _objectiveSize = ([1964] call _fnc_getSelection) select 0;
+private _virtualizationDistance = ([1965] call _fnc_getSelection) select 0;
+private _westForceGrowth = ([1966] call _fnc_getSelection) select 0;
+private _westGarrison = ([1967] call _fnc_getSelection) select 0;
+private _virtualizationUnitCap = ([1968] call _fnc_getSelection) select 0;
+private _territoryRatio = ([1969] call _fnc_getSelection) select 0;
+private _eastAttackCoverage = ([1970] call _fnc_getSelection) select 0;
+private _eastDefenseCoverage = ([1971] call _fnc_getSelection) select 0;
+private _eastDifficulty = ([1972] call _fnc_getSelection) select 0;
+private _eastTempo = ([1973] call _fnc_getSelection) select 0;
+private _eastForceGrowth = ([1974] call _fnc_getSelection) select 0;
+private _eastGarrison = ([1975] call _fnc_getSelection) select 0;
 
 // Validate selections
 if (_playerFaction isEqualTo "" ||
@@ -108,6 +116,22 @@ if (_playerFaction isEqualTo "" ||
 	hint "Please select all options before starting the mission.";
 	_startBtn ctrlEnable true;
 };
+
+private _westFactionTuningSpecs = ["BLUFOR"] call FLO_fnc_factionGetTuningFieldSpecs;
+private _eastFactionTuningSpecs = ["OPFOR"] call FLO_fnc_factionGetTuningFieldSpecs;
+
+private _westFactionTuningParse = [_display, "BLUFOR", _westFactionTuningSpecs] call FLO_fnc_factionBuildTuningHandle;
+private _eastFactionTuningParse = [_display, "OPFOR", _eastFactionTuningSpecs] call FLO_fnc_factionBuildTuningHandle;
+
+if (!(_westFactionTuningParse get "valid") || {!(_eastFactionTuningParse get "valid")}) exitWith {
+    private _errors = (_westFactionTuningParse get "errors") + (_eastFactionTuningParse get "errors");
+    ["UI", 2, format ["Force composition validation failed: %1", _errors]] call FLO_fnc_log;
+    hint format ["Force composition is invalid:\n%1", _errors joinString "\n"];
+    _startBtn ctrlEnable true;
+};
+
+private _westFactionTuningHandle = _westFactionTuningParse get "overrides";
+private _eastFactionTuningHandle = _eastFactionTuningParse get "overrides";
 
 // Close dialog
 _display closeDisplay 1;
@@ -138,7 +162,12 @@ _display closeDisplay 1;
     _eastDifficulty,
     _eastTempo,
     _eastForceGrowth,
-    _eastGarrison
+    _eastGarrison,
+    _playerFactionData,
+    _enemyFactionData,
+    _civilianFactionData,
+    _westFactionTuningHandle,
+    _eastFactionTuningHandle
 ] spawn {
 	params [
         "_playerFaction",
@@ -161,8 +190,29 @@ _display closeDisplay 1;
         "_eastDifficulty",
         "_eastTempo",
         "_eastForceGrowth",
-        "_eastGarrison"
+        "_eastGarrison",
+        "_playerFactionData",
+        "_enemyFactionData",
+        "_civilianFactionData",
+        "_westFactionTuningHandle",
+        "_eastFactionTuningHandle"
     ];
+
+    private _fnc_buildFactionHandle = {
+        params ["_selection", "_data"];
+
+        private _handle = createHashMapFromArray [
+            ["name", _selection],
+            ["source", "preset"]
+        ];
+
+        if ((_data find "auto|") == 0) then {
+            _handle set ["source", "auto"];
+            _handle set ["factionClass", _data select [5]];
+        };
+
+        _handle
+    };
 
     private _fnc_buildScalarHandle = {
         params ["_selection", "_map"];
@@ -322,9 +372,9 @@ _display closeDisplay 1;
 	// ============================================================================
 
 	FLO_MissionConfig = createHashMapFromArray [
-		["friendlyHandle", createHashMapFromArray [["name", _playerFaction]]],
-		["enemyHandle", createHashMapFromArray [["name", _enemyFaction]]],
-		["civilianHandle", createHashMapFromArray [["name", _civilianFaction]]],
+		["friendlyHandle", [_playerFaction, _playerFactionData] call _fnc_buildFactionHandle],
+		["enemyHandle", [_enemyFaction, _enemyFactionData] call _fnc_buildFactionHandle],
+		["civilianHandle", [_civilianFaction, _civilianFactionData] call _fnc_buildFactionHandle],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["westDifficultyHandle", _westDifficultyHandle],
 		["eastDifficultyHandle", _eastDifficultyHandle],
@@ -338,6 +388,8 @@ _display closeDisplay 1;
 		["eastGTNForceGrowthHandle", _eastForceGrowthHandle],
 		["westGTNGarrisonHandle", _westGarrisonHandle],
 		["eastGTNGarrisonHandle", _eastGarrisonHandle],
+		["westFactionTuningHandle", _westFactionTuningHandle],
+		["eastFactionTuningHandle", _eastFactionTuningHandle],
 		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
 		["enemyPresence", _enemyPresence],
 		["objectiveSizeThreshold", _objectiveSizeThreshold],

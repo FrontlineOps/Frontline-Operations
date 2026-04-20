@@ -61,38 +61,79 @@ private _fnc_loadFaction = {
     };
 };
 
-// Load friendly faction
-private _bluFaction = FLO_FriendlyHandle get "name";
-private _bluPath = switch (_bluFaction) do {
-    case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
-    case "AAF _ Woodland": { "Scripts\factions\blu_AAF.sqf" };
-    case "ADF _ Re-Cut": { "Scripts\factions\blu_ADF_RC.sqf" };
-    case "BWMod _ RHSUSAF": { "Scripts\factions\blu_BW_RHS.sqf" };
-    case "UAF _ CUP-UAFVP": { "Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
-    case "USMC _ Current Issue": { "Scripts\factions\blu_USMC_CI.sqf" };
-    case "USMC _ CUP-EF": { "Scripts\factions\blu_USMC_CUP_EF.sqf" };
-    default { "CUSTOM_PLAYER_FACTION.sqf" };
+private _fnc_handleSource = {
+    params ["_handle"];
+    if ("source" in _handle) exitWith { _handle get "source" };
+    "preset"
 };
-[_bluFaction, _bluPath] call _fnc_loadFaction;
+
+private _loadedOk = true;
+
+// Load friendly faction
+private _bluHandle = FLO_FriendlyHandle;
+private _bluFaction = _bluHandle get "name";
+if (([_bluHandle] call _fnc_handleSource) isEqualTo "auto") then {
+    _loadedOk = [_bluHandle, "friendly"] call FLO_fnc_factionApplyAutoGlobals;
+} else {
+    private _bluPath = switch (_bluFaction) do {
+        case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
+        case "AAF _ Woodland": { "Scripts\factions\blu_AAF.sqf" };
+        case "ADF _ Re-Cut": { "Scripts\factions\blu_ADF_RC.sqf" };
+        case "BWMod _ RHSUSAF": { "Scripts\factions\blu_BW_RHS.sqf" };
+        case "UAF _ CUP-UAFVP": { "Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
+        case "USMC _ Current Issue": { "Scripts\factions\blu_USMC_CI.sqf" };
+        case "USMC _ CUP-EF": { "Scripts\factions\blu_USMC_CUP_EF.sqf" };
+        default { "CUSTOM_PLAYER_FACTION.sqf" };
+    };
+    _loadedOk = [_bluFaction, _bluPath] call _fnc_loadFaction;
+};
+if (!_loadedOk) exitWith {
+    FLO_InitError = format ["Friendly faction loading failed: %1", _bluFaction];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    false
+};
 
 // Load enemy faction
-private _opfFaction = FLO_EnemyHandle get "name";
-private _opfPath = switch (_opfFaction) do {
-    case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
-    case "Grozovia _ 3CB": { "Scripts\factions\opf_Grozovia_3CB.sqf" };
-    case "IAF _ CUP-EF": { "Scripts\factions\opf_IAF_CUP_EF.sqf" };
-    case "Russian AF _ CUP": { "Scripts\factions\opf_RU_CUP.sqf" };
-    default { "CUSTOM_ENEMY_FACTION.sqf" };
+private _opfHandle = FLO_EnemyHandle;
+private _opfFaction = _opfHandle get "name";
+if (([_opfHandle] call _fnc_handleSource) isEqualTo "auto") then {
+    _loadedOk = [_opfHandle, "enemy"] call FLO_fnc_factionApplyAutoGlobals;
+} else {
+    private _opfPath = switch (_opfFaction) do {
+        case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
+        case "Grozovia _ 3CB": { "Scripts\factions\opf_Grozovia_3CB.sqf" };
+        case "IAF _ CUP-EF": { "Scripts\factions\opf_IAF_CUP_EF.sqf" };
+        case "Russian AF _ CUP": { "Scripts\factions\opf_RU_CUP.sqf" };
+        default { "CUSTOM_ENEMY_FACTION.sqf" };
+    };
+    _loadedOk = [_opfFaction, _opfPath] call _fnc_loadFaction;
 };
-[_opfFaction, _opfPath] call _fnc_loadFaction;
+if (!_loadedOk) exitWith {
+    FLO_InitError = format ["Enemy faction loading failed: %1", _opfFaction];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    false
+};
 
 // Load civilian faction
-private _civFaction = FLO_CivilianHandle get "name";
-private _civPath = switch (_civFaction) do {
-    case "Greek Civilians": { "Scripts\factions\civ_Greek.sqf" };
-    default { "CUSTOM_CIVILIAN_FACTION.sqf" };
+private _civHandle = FLO_CivilianHandle;
+private _civFaction = _civHandle get "name";
+if (([_civHandle] call _fnc_handleSource) isEqualTo "auto") then {
+    _loadedOk = [_civHandle, "civilian"] call FLO_fnc_factionApplyAutoGlobals;
+} else {
+    private _civPath = switch (_civFaction) do {
+        case "Greek Civilians": { "Scripts\factions\civ_Greek.sqf" };
+        default { "CUSTOM_CIVILIAN_FACTION.sqf" };
+    };
+    _loadedOk = [_civFaction, _civPath] call _fnc_loadFaction;
 };
-[_civFaction, _civPath] call _fnc_loadFaction;
+if (!_loadedOk) exitWith {
+    FLO_InitError = format ["Civilian faction loading failed: %1", _civFaction];
+    publicVariable "FLO_InitError";
+    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    false
+};
 
 // Default civilian vehicles if not set by faction
 if (isNil "CivVehArray") then {
@@ -242,22 +283,33 @@ private _fnc_collectDirectUnitVars = {
     _units
 };
 
-private _fnc_extractObjectiveGroupCaps = {
-    params [["_caps", []]];
+private _fnc_buildCompositionDefaults = {
+    params ["_handle", "_sideLabel"];
 
-    if !(_caps isEqualType []) exitWith { [] };
+    private _selection = _handle get "name";
+    private _source = if ("source" in _handle) then { _handle get "source" } else { "preset" };
+    private _data = if (_source isEqualTo "auto") then {
+        format ["auto|%1", _handle get "factionClass"]
+    } else {
+        format ["preset|%1", _selection]
+    };
 
-    private _result = [];
-    {
-        if !(_x isEqualType [] && {count _x >= 2}) then { continue };
-        private _groupType = _x select 0;
-        private _cap = _x select 1;
-        if !(_groupType isEqualType "") then { continue };
-        if !(_cap isEqualType 0) then { continue };
-        _result pushBack [_groupType, _cap max 0];
-    } forEach _caps;
+    [_sideLabel, _selection, _data] call FLO_fnc_factionGetCompositionDefaults
+};
 
-    _result
+private _eastFactionCompositionDefaults = [_opfHandle, "OPFOR"] call _fnc_buildCompositionDefaults;
+private _westFactionCompositionDefaults = [_bluHandle, "BLUFOR"] call _fnc_buildCompositionDefaults;
+
+private _eastFactionCompositionHandle = if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
+    FLO_MissionConfig get "eastFactionTuningHandle"
+} else {
+    _eastFactionCompositionDefaults
+};
+
+private _westFactionCompositionHandle = if ("westFactionTuningHandle" in FLO_MissionConfig) then {
+    FLO_MissionConfig get "westFactionTuningHandle"
+} else {
+    _westFactionCompositionDefaults
 };
 
 private _westInfantryVars = [
@@ -325,13 +377,6 @@ private _eastMobileAA = [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } e
 private _eastStaticAA = [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call _fnc_extractVehicleClasses;
 private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call _fnc_extractVehicleClasses;
 private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses;
-private _eastTransportReserveGroundCount = if (!isNil "East_Transport_Reserve_Ground_Count") then { East_Transport_Reserve_Ground_Count } else { 20 };
-private _eastTransportReserveAirCount = if (!isNil "East_Transport_Reserve_Air_Count") then { East_Transport_Reserve_Air_Count } else { 10 };
-private _eastObjectiveGroupTypeCaps = if (!isNil "East_Objective_Group_Type_Caps") then {
-    [East_Objective_Group_Type_Caps] call _fnc_extractObjectiveGroupCaps
-} else {
-    []
-};
 
 private _westGroundMotorized = if (!isNil "West_Ground_Motorized") then {
     [West_Ground_Motorized] call _fnc_extractVehicleClasses
@@ -407,13 +452,6 @@ private _westBoat = if (!isNil "West_Boat") then {
 } else {
     [["F_Boat_List"]] call _fnc_buildPoolFromVars
 };
-private _westTransportReserveGroundCount = if (!isNil "West_Transport_Reserve_Ground_Count") then { West_Transport_Reserve_Ground_Count } else { 20 };
-private _westTransportReserveAirCount = if (!isNil "West_Transport_Reserve_Air_Count") then { West_Transport_Reserve_Air_Count } else { 10 };
-private _westObjectiveGroupTypeCaps = if (!isNil "West_Objective_Group_Type_Caps") then {
-    [West_Objective_Group_Type_Caps] call _fnc_extractObjectiveGroupCaps
-} else {
-    []
-};
 private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars;
 private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
@@ -462,21 +500,21 @@ private _eastCatalog = createHashMapFromArray [
     ["groundMechanized", _eastGroundMechanized],
     ["groundArmor", _eastGroundArmor],
     ["groundTransport", _eastGroundTransport],
-    ["transportReserveGroundCount", _eastTransportReserveGroundCount],
+    ["transportReserveGroundCount", _eastFactionCompositionDefaults get "transportReserveGroundCount"],
     ["groundArtillery", _eastGroundArtillery],
     ["airHeli", _eastAirHeli],
     ["airJet", _eastAirJet],
     ["airTransport", _eastAirTransport],
-    ["transportReserveAirCount", _eastTransportReserveAirCount],
+    ["transportReserveAirCount", _eastFactionCompositionDefaults get "transportReserveAirCount"],
     ["airDrone", _eastAirDrone],
     ["groundDrone", _eastGroundDrone],
     ["mobileAA", _eastMobileAA],
     ["staticAA", _eastStaticAA],
     ["boat", _eastBoat],
     ["radar", _eastRadar],
-    ["objectiveGroups", OPFOR_Objective_Groups],
-    ["objectiveGroupTypeCaps", _eastObjectiveGroupTypeCaps],
-    ["groupCounts", OPFOR_Group_Counts]
+    ["objectiveGroups", _eastFactionCompositionDefaults get "objectiveGroups"],
+    ["objectiveGroupTypeCaps", _eastFactionCompositionDefaults get "objectiveGroupTypeCaps"],
+    ["groupCounts", _eastFactionCompositionDefaults get "groupCounts"]
 ];
 
 private _westCatalog = createHashMapFromArray [
@@ -491,12 +529,12 @@ private _westCatalog = createHashMapFromArray [
     ["groundMechanized", _westGroundMechanized],
     ["groundArmor", _westGroundArmor],
     ["groundTransport", _westGroundTransport],
-    ["transportReserveGroundCount", _westTransportReserveGroundCount],
+    ["transportReserveGroundCount", _westFactionCompositionDefaults get "transportReserveGroundCount"],
     ["groundArtillery", _westGroundArtillery],
     ["airHeli", _westAirHeli],
     ["airJet", _westAirJet],
     ["airTransport", _westAirTransport],
-    ["transportReserveAirCount", _westTransportReserveAirCount],
+    ["transportReserveAirCount", _westFactionCompositionDefaults get "transportReserveAirCount"],
     ["airDrone", _westAirDrone],
     ["groundDrone", _westGroundDrone],
     ["mobileAA", _westMobileAA],
@@ -507,10 +545,13 @@ private _westCatalog = createHashMapFromArray [
     ["logisticsRespawn", _westLogisticsRespawn],
     ["containers", _westContainers],
     ["radar", _westRadar],
-    ["objectiveGroups", BLUFOR_Objective_Groups],
-    ["objectiveGroupTypeCaps", _westObjectiveGroupTypeCaps],
-    ["groupCounts", BLUFOR_Group_Counts]
+    ["objectiveGroups", _westFactionCompositionDefaults get "objectiveGroups"],
+    ["objectiveGroupTypeCaps", _westFactionCompositionDefaults get "objectiveGroupTypeCaps"],
+    ["groupCounts", _westFactionCompositionDefaults get "groupCounts"]
 ];
+
+[_eastCatalog, _eastFactionCompositionHandle, "OPFOR"] call FLO_fnc_factionApplyTuningOverrides;
+[_westCatalog, _westFactionCompositionHandle, "BLUFOR"] call FLO_fnc_factionApplyTuningOverrides;
 
 FLO_FactionCatalog = createHashMapFromArray [
     ["EAST", _eastCatalog],

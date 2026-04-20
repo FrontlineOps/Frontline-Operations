@@ -297,6 +297,25 @@ class FLO {
         class updateFunds               {};
     };
 
+    class Factions {
+        file = "Functions\Factions";
+
+        class factionApplyAutoEnemyGlobals {};
+        class factionApplyAutoFriendlyGlobals {};
+        class factionApplyAutoGlobals {};
+        class factionBuildAutoCivilianCatalog {};
+        class factionBuildAutoIndex {};
+        class factionBuildAutoMilitaryCatalog {};
+        class factionClassifyVehicle {};
+        class factionGetGroupConfigs {};
+        class factionGetCompositionDefaults {};
+        class factionGetObjectiveGroupFieldSpecs {};
+        class factionGetTuningFieldSpecs {};
+        class factionApplyTuningOverrides {};
+        class factionBuildTuningHandle {};
+        class factionPickUnitByRole {};
+    };
+
     class UtilitiesDebug {
         file = "Functions\Utilities\Debug";
         class log                       {};
@@ -364,7 +383,10 @@ class FLO {
         class shouldOpenFactionDialog {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
+        class factionDialogCreateObjectiveGroupControls {};
+        class factionDialogFillCompositionDefaults {};
         class factionDialogPopulate   {};
+        class factionDialogShowCompositionTab {};
         class factionDialogStart      {};
         class captureUI               {};
         class initCaptureUIEvents     {};

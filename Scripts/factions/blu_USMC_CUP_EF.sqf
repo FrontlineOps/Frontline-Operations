@@ -12,25 +12,19 @@
  *   groundMechanized = F_APC_List
  *   groundArmor      = F_Tank_List
  *   groundTransport  = F_Truck_List
- *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
  *   groundArtillery  = F_Artillery_List
  *   airTransport     = F_Heli_List + F_Heli_Respawn_List
- *   transportReserveAirCount = West_Transport_Reserve_Air_Count
  *   airHeli          = F_Heli_Gunship_List
  *   airJet           = F_Plane_List
  *   airDrone         = F_UAV_List
  *   groundDrone      = F_UGV_List
  *   staticAA         = F_SAM_List
  *   radar            = F_RADAR
- *   objectiveGroupTypeCaps = West_Objective_Group_Type_Caps
  *   boat             = F_Boat_List
  *
  * If you want to change what the commander can spawn, change the source data
  * that feeds the category above. You do not need to define separate West_* pools here.
  *
- * Optional side-wide objective seeding caps:
- *   West_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
- * These caps apply across all owned seeded objectives combined, not per city.
  */
 
 // Flex_CUP_USMC faction units
@@ -133,7 +127,6 @@ F_Truck_List = [
     ["Flex_CUP_USMC_nM997", 400],
     ["Flex_CUP_USMC_nM997_DF", 400]
 ];
-West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Construction_List = [
     ["Flex_CUP_USMC_nM1038_Repair", 1000],
@@ -185,7 +178,6 @@ F_Heli_List = [
     ["Flex_CUP_USMC_MV22_RAMPGUN", 4500],
     ["Flex_CUP_USMC_MV22_VIV", 4500]
 ];
-West_Transport_Reserve_Air_Count = 10;
 
 // airTransport - Medevac
 F_Heli_Respawn_List = [
@@ -279,92 +271,3 @@ F_RCN_SQD = [F_Recon_TL, F_Recon_AT, F_Recon_Eod, F_Recon_Mg, F_Recon_Eng, F_Rec
 F_DVR_TEAM = [F_Diver_TL, F_Diver_Eod, F_Diver_Rfl, F_Diver_Sct, F_Diver_Pt];
 
 F_OFFICER_TEAM = [F_Officer, F_Assault_Amm];
-
-/*
- * BLUFOR Virtualization Objective Configuration
- * This section defines how many of each unit type should spawn at different
- * objective subtypes produced by the objective indexing system. Subtypes
- * include "capital", "city", "village", "local", "marine" and "cluster".
- *
- * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
- */
-BLUFOR_Objective_Groups = [
-    // Capital objectives - highest concentration of defenders
-    ["capital", [
-        ["infantry", 12],
-        ["motorized", 2],
-        ["mechanized", 1],
-        ["air", 1],
-        ["armor", 1],
-        ["artillery", 1],
-        ["static_aa", 1],
-        ["mobile_aa", 1]
-    ]],
-
-    // Major cities
-    ["city", [
-        ["infantry", 7],
-        ["motorized", 2],
-        ["mechanized", 1],
-        ["air", 1],
-        ["armor", 1],
-        ["artillery", 1],
-        ["static_aa", 1],
-        ["mobile_aa", 1]
-    ]],
-
-    // Villages
-    ["village", [
-        ["infantry", 3]
-    ]],
-
-    // Small local objectives
-    // These tend to be military bases, strategic infrastructure, or other military-like objectives
-    ["local", [
-        ["infantry", 6],
-        ["motorized", 2],
-        ["mechanized", 1],
-        ["mobile_aa", 1]
-    ]],
-
-    // Coastal or marine facilities
-    ["marine", [
-        ["infantry", 3],
-        ["motorized", 1]
-    ]],
-
-    // Automatically generated clusters
-    ["cluster", [
-        ["infantry", 2]
-    ]]
-];
-
-/*
- * Optional side-wide objective seeding caps:
- *   West_Objective_Group_Type_Caps = [["artillery", 5], ["jet", 3]]
- * These caps apply across all owned seeded objectives combined.
- */
-West_Objective_Group_Type_Caps = [
-    ["jet", 10],
-    ["helicopter", 10],
-    ["artillery", 5],
-    ["static_aa", 3],
-    ["mobile_aa", 20]
-];
-
-/*
- * Group Type Unit/Vehicle Counts
- * Defines how many physical units/vehicles should be in each type of group
- */
-BLUFOR_Group_Counts = [
-    ["infantry", 10],          // Number of individual soldiers
-    ["motorized", 2],         // Number of armed vehicles (MRAP, GMG, etc.)
-    ["mechanized", 2],        // Number of APCs/IFVs
-    ["armor", 2],             // Number of tanks
-    ["helicopter", 1],        // Number of helicopters
-    ["jet", 1],               // Number of jets
-    ["air", 1],               // Number of aircraft
-    ["artillery", 3],         // Number of artillery pieces
-    ["mobile_aa", 1],         // Number of mobile AA vehicles
-    ["static_aa", 1]          // Number of static SAM launchers
-];

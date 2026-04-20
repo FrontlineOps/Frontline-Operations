@@ -36,6 +36,7 @@
  * FLO_IDC_FACTION_COMBO_EAST_TEMPO = 1973
  * FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH = 1974
  * FLO_IDC_FACTION_COMBO_EAST_GARRISON = 1975
+ * FLO_IDC_FACTION_EDIT_*_COMPOSITION = 2050-2093
  */
 
 disableSerialization;
@@ -45,13 +46,33 @@ if (isNull _display) exitWith {
 	["UI", 1, "Cannot populate faction dialog - display is null"] call FLO_fnc_log;
 };
 
-// Helper function to add items to a combo box
+private _autoFactionIndex = [] call FLO_fnc_factionBuildAutoIndex;
+private _autoMilitaryFactions = _autoFactionIndex get "military";
+private _autoCivilianFactions = _autoFactionIndex get "civilian";
+
+// Helper function to add text-only items to a combo box
 private _fnc_addItems = {
 	params ["_ctrl", "_items", "_defaultIndex"];
 	{
 		_ctrl lbAdd _x;
 	} forEach _items;
 	_ctrl lbSetCurSel _defaultIndex;
+};
+
+private _fnc_addFactionItems = {
+    params ["_ctrl", "_presets", "_autoEntries", "_defaultIndex"];
+
+    {
+        private _idx = _ctrl lbAdd _x;
+        _ctrl lbSetData [_idx, format ["preset|%1", _x]];
+    } forEach _presets;
+
+    {
+        private _idx = _ctrl lbAdd (_x get "label");
+        _ctrl lbSetData [_idx, format ["auto|%1", _x get "class"]];
+    } forEach _autoEntries;
+
+    _ctrl lbSetCurSel _defaultIndex;
 };
 
 // ============================================================================
@@ -70,7 +91,7 @@ private _playerFactions = [
 	"USMC _ CUP-EF"
 ];
 
-[_playerCombo, _playerFactions, 1] call _fnc_addItems;
+[_playerCombo, _playerFactions, _autoMilitaryFactions, 1] call _fnc_addFactionItems;
 
 // ============================================================================
 // ENEMY FACTION (IDC 1956)
@@ -85,7 +106,7 @@ private _enemyFactions = [
 	"Russian AF _ CUP"
 ];
 
-[_enemyCombo, _enemyFactions, 1] call _fnc_addItems;
+[_enemyCombo, _enemyFactions, _autoMilitaryFactions, 1] call _fnc_addFactionItems;
 
 // ============================================================================
 // CIVILIAN FACTION (IDC 1957)
@@ -97,7 +118,7 @@ private _civilianFactions = [
 	"Greek Civilians"
 ];
 
-[_civilianCombo, _civilianFactions, 1] call _fnc_addItems;
+[_civilianCombo, _civilianFactions, _autoCivilianFactions, 1] call _fnc_addFactionItems;
 
 // ============================================================================
 // AI COMMANDER POSTURE OPTIONS
@@ -236,5 +257,24 @@ private _territoryRatioOptions = [
 
 [_territoryRatioCombo, _territoryRatioOptions, 4] call _fnc_addItems;
 
-["UI", 3, "Faction dialog dropdowns populated"] call FLO_fnc_log;
+_playerCombo ctrlAddEventHandler ["LBSelChanged", {
+    params ["_ctrl"];
+    [ctrlParent _ctrl, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
+}];
+
+_enemyCombo ctrlAddEventHandler ["LBSelChanged", {
+    params ["_ctrl"];
+    [ctrlParent _ctrl, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
+}];
+
+[_display] call FLO_fnc_factionDialogCreateObjectiveGroupControls;
+[_display, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
+[_display, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
+["composition"] call FLO_fnc_factionDialogShowCompositionTab;
+
+["UI", 3, format [
+    "Faction dialog dropdowns populated (auto military=%1, auto civilian=%2)",
+    count _autoMilitaryFactions,
+    count _autoCivilianFactions
+]] call FLO_fnc_log;
 

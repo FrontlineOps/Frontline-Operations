@@ -183,69 +183,31 @@ Phase 2 builds `FLO_FactionCatalog` from those files, and that catalog feeds:
 - transport reserves
 - civilian population templates
 
+### Auto-Generated Compatible Factions
+
+The mission setup UI also appends `[AUTO]` faction entries generated from the currently loaded `CfgFactionClasses` and `CfgVehicles` config data. These entries do not create new `.sqf` preset files. They build a runtime FLO catalog directly from compatible config classes.
+
+Military auto factions are included when they have spawnable `Man` units. FLO uses any matching all-infantry `CfgGroups` entries when present, then classifies same-faction vehicles into motorized, mechanized, armor, transport, artillery, air, AA, drone, boat, and radar pools. Civilian auto factions use spawnable civilian `Man` units and civilian vehicles.
+
+Auto-faction keep/drop and selected-catalog diagnostics are emitted through `FLO_fnc_log` as `FACTIONS` warning-level logs (`FLO_Debug_Level >= 2`).
+
+Mission setup includes a Per Numeric Force Composition card. Each row is prefilled with default faction values and accepts a non-negative whole number per side. The Composition tab controls ground and air transport reserve counts, objective group type caps, and group counts for `infantry`, `motorized`, `mechanized`, `armor`, `helicopter`, `jet`, `air`, `artillery`, `mobile_aa`, and `static_aa`. The Objective Groups tab controls per-objective subtype templates for `capital`, `city`, `village`, `local`, `marine`, and `cluster` objectives.
+
+Composition values apply by key. For example, setting OPFOR Armor Count to `1` changes only that side's `armor` count; it does not replace the rest of the group count list.
+
+Curated presets remain the preferred path for tuned balance, prices, and exact doctrine. `[AUTO]` entries are a compatibility path for loaded mods that have usable faction config but no FLO preset yet.
+
 ### Objective Templates
 
-Objective templates control what kind of groups a subtype can seed.
+Objective templates control what kind of groups a subtype can seed. Curated, custom, and auto-generated factions use the same standard numeric defaults from `FLO_fnc_factionGetCompositionDefaults`, then mission setup always sends the typed Objective Groups values with the rest of the numeric force composition tuning. Faction `.sqf` files do not define `BLUFOR_Objective_Groups` or `OPFOR_Objective_Groups`.
 
-```sqf
-OPFOR_Objective_Groups = [
-    ["capital", [
-        ["infantry", 12],
-        ["motorized", 2],
-        ["mechanized", 1],
-        ["armor", 1],
-        ["artillery", 1]
-    ]],
-    ["city", [
-        ["infantry", 7],
-        ["motorized", 2]
-    ]]
-];
-```
+### Numeric Force Composition
 
-### Group Counts
-
-Group-count tables control the physical strength of each virtual group type.
-
-```sqf
-OPFOR_Group_Counts = [
-    ["infantry", 10],
-    ["motorized", 2],
-    ["mechanized", 2],
-    ["armor", 2],
-    ["artillery", 1]
-];
-```
-
-### Side-Wide Objective Caps
-
-Use side-wide caps when an asset type is allowed in templates, but should not appear at every eligible objective.
-
-```sqf
-West_Objective_Group_Type_Caps = [
-    ["artillery", 5]
-];
-
-East_Objective_Group_Type_Caps = [
-    ["artillery", 5]
-];
-```
-
-### Transport Reserve Counts
-
-Dedicated transport reserve pools are configured separately from frontline groups.
-
-```sqf
-West_Transport_Reserve_Ground_Count = 20;
-West_Transport_Reserve_Air_Count = 10;
-
-East_Transport_Reserve_Ground_Count = 20;
-East_Transport_Reserve_Air_Count = 10;
-```
+Group counts, objective caps, and transport reserve counts are configured through the mission setup Per Numeric Force Composition card. Faction `.sqf` files define available units and vehicles; they do not need to define `BLUFOR_Group_Counts`, `OPFOR_Group_Counts`, side-wide objective cap globals, or transport reserve count globals.
 
 ### Save/Load Note
 
-Changing faction files does not automatically reseed an old save with newly-added groups. Loaded saves restore saved virtual groups first. If you add new template group types after a save already exists, you usually need either:
+Changing centralized objective templates or faction vehicle pools does not automatically reseed an old save with newly-added groups. Loaded saves restore saved virtual groups first. If you add new template group types after a save already exists, you usually need either:
 
 - a mission reset with the `FreshStart` lobby parameter, or
 - a targeted backfill call such as:
@@ -287,9 +249,11 @@ On a fresh start, the commander setup flow publishes:
 |------|---------|
 | [`Functions/Init`](Functions/Init) | Server phase manager and client finalization |
 | [`Functions/AI/GTN`](Functions/AI/GTN) | Commanders, world state, combat, support, alerts, and player support |
+| [`Functions/Factions`](Functions/Factions) | Runtime auto-generated faction compatibility and catalog builders |
 | [`Functions/Virtualization`](Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
 | [`Functions/Logistics`](Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
 | [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, and markers |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | GitHub commit message rules and contribution expectations |
 
 ## License
 

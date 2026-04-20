@@ -15,10 +15,8 @@
  *   groundMechanized = F_APC_List
  *   groundArmor      = F_Tank_List
  *   groundTransport  = F_Truck_List
- *   transportReserveGroundCount = West_Transport_Reserve_Ground_Count
  *   groundArtillery  = F_Artillery_List
  *   airTransport     = F_Heli_List + F_Heli_Respawn_List
- *   transportReserveAirCount = West_Transport_Reserve_Air_Count
  *   airHeli          = F_Heli_Gunship_List
  *   airJet           = F_Plane_List
  *   airDrone         = F_UAV_List
@@ -112,7 +110,6 @@ F_Truck_List = [
     ["I_Truck_02_transport_F", 650],
     ["I_Truck_02_covered_F", 650]
 ];
-West_Transport_Reserve_Ground_Count = 20;
 
 F_Truck_Ammo_List = [
     ["I_Truck_02_ammo_F", 1000]
@@ -148,7 +145,6 @@ F_Heli_List = [
     ["I_Heli_Transport_02_F", 2500],
     ["I_Heli_light_03_unarmed_F", 2000]
 ];
-West_Transport_Reserve_Air_Count = 10;
 
 // airTransport
 F_Heli_Respawn_List = [
@@ -197,62 +193,4 @@ F_Turret_List = [
 F_SAM_List = [
     ["I_static_AA_F", 2500],
     ["B_SAM_System_03_F", 35000]
-];
-
-/*
- * BLUFOR Virtualization Objective Configuration
- * This section defines how many of each unit type should spawn at different
- * objective subtypes produced by the objective indexing system. Subtypes
- * include "capital", "city", "village", "local", "marine" and "cluster".
- *
- * Structure: [objective subtype, [[group type, count], [group type, count], ...]]
- */
-BLUFOR_Objective_Groups = [
-    ["capital", [
-        ["infantry", 12],
-        ["motorized", 1],
-        ["mechanized", 1],
-        ["air", 1],
-        ["armor", 1],
-        ["artillery", 1],
-        ["static_aa", 1],
-        ["mobile_aa", 1]
-    ]],
-    ["city", [
-        ["infantry", 7],
-        ["motorized", 1]
-    ]],
-    ["village", [
-        ["infantry", 3]
-    ]],
-    ["local", [
-        ["infantry", 6],
-        ["motorized", 1],
-        ["mechanized", 1],
-        ["mobile_aa", 1]
-    ]],
-    ["marine", [
-        ["infantry", 3],
-        ["motorized", 1]
-    ]],
-    ["cluster", [
-        ["infantry", 2]
-    ]]
-];
-
-/*
- * Group Type Unit/Vehicle Counts
- * Defines how many physical units/vehicles should be in each type of group
- */
-BLUFOR_Group_Counts = [
-    ["infantry", 10],
-    ["motorized", 1],
-    ["mechanized", 1],
-    ["armor", 1],
-    ["helicopter", 1],
-    ["jet", 1],
-    ["air", 1],
-    ["artillery", 3],
-    ["mobile_aa", 1],
-    ["static_aa", 1]
 ];
