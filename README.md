@@ -290,6 +290,7 @@ On a fresh start, the commander setup flow publishes:
 | [`Functions/Virtualization`](Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
 | [`Functions/Logistics`](Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
 | [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, and markers |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | GitHub commit message rules and contribution expectations |
 
 ## License
 
