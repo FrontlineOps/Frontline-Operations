@@ -110,55 +110,7 @@ if (_officer != "") then {
     _officers pushBack _officer;
 };
 
-private _objectiveGroups = [];
-private _addTemplate = {
-    params ["_subtype", "_infantryCount"];
-
-    private _groupsForSubtype = [["infantry", _infantryCount]];
-
-    if ((_vehiclePools get "groundMotorized") isNotEqualTo []) then {
-        _groupsForSubtype pushBack ["motorized", if (_subtype in ["capital", "city", "local"]) then { 1 } else { 0 }];
-    };
-    if ((_vehiclePools get "groundMechanized") isNotEqualTo [] && {_subtype in ["capital", "city", "local"]}) then {
-        _groupsForSubtype pushBack ["mechanized", 1];
-    };
-    if ((_vehiclePools get "groundArmor") isNotEqualTo [] && {_subtype in ["capital", "city", "local"]}) then {
-        _groupsForSubtype pushBack ["armor", 1];
-    };
-    if (((_vehiclePools get "airHeli") + (_vehiclePools get "airJet")) isNotEqualTo [] && {_subtype in ["capital", "city"]}) then {
-        _groupsForSubtype pushBack ["air", 1];
-    };
-    if ((_vehiclePools get "groundArtillery") isNotEqualTo [] && {_subtype in ["capital", "city"]}) then {
-        _groupsForSubtype pushBack ["artillery", 1];
-    };
-    if ((_vehiclePools get "staticAA") isNotEqualTo [] && {_subtype in ["capital", "city"]}) then {
-        _groupsForSubtype pushBack ["static_aa", 1];
-    };
-    if ((_vehiclePools get "mobileAA") isNotEqualTo [] && {_subtype in ["capital", "city", "local"]}) then {
-        _groupsForSubtype pushBack ["mobile_aa", 1];
-    };
-
-    _groupsForSubtype = _groupsForSubtype select { (_x select 1) > 0 };
-    _objectiveGroups pushBack [_subtype, _groupsForSubtype];
-};
-
-["capital", 10] call _addTemplate;
-["city", 10] call _addTemplate;
-["village", 3] call _addTemplate;
-["local", 5] call _addTemplate;
-["marine", 3] call _addTemplate;
-["cluster", 2] call _addTemplate;
-
-private _objectiveCaps = [];
-if ((_vehiclePools get "groundArtillery") isNotEqualTo []) then {
-    _objectiveCaps pushBack ["artillery", 5];
-};
-if ((_vehiclePools get "staticAA") isNotEqualTo []) then {
-    _objectiveCaps pushBack ["static_aa", 4];
-};
-if ((_vehiclePools get "mobileAA") isNotEqualTo []) then {
-    _objectiveCaps pushBack ["mobile_aa", 12];
-};
+private _compositionDefaults = ["BLUFOR", "AUTO_STANDARD", "preset|AUTO_STANDARD"] call FLO_fnc_factionGetCompositionDefaults;
 
 createHashMapFromArray [
     ["source", "auto"],
@@ -174,30 +126,19 @@ createHashMapFromArray [
     ["groundMechanized", _vehiclePools get "groundMechanized"],
     ["groundArmor", _vehiclePools get "groundArmor"],
     ["groundTransport", _vehiclePools get "groundTransport"],
-    ["transportReserveGroundCount", if ((_vehiclePools get "groundTransport") isEqualTo []) then { 0 } else { 10 }],
+    ["transportReserveGroundCount", _compositionDefaults get "transportReserveGroundCount"],
     ["groundArtillery", _vehiclePools get "groundArtillery"],
     ["airHeli", _vehiclePools get "airHeli"],
     ["airJet", _vehiclePools get "airJet"],
     ["airTransport", _vehiclePools get "airTransport"],
-    ["transportReserveAirCount", if ((_vehiclePools get "airTransport") isEqualTo []) then { 0 } else { 4 }],
+    ["transportReserveAirCount", _compositionDefaults get "transportReserveAirCount"],
     ["airDrone", _vehiclePools get "airDrone"],
     ["groundDrone", _vehiclePools get "groundDrone"],
     ["mobileAA", _vehiclePools get "mobileAA"],
     ["staticAA", _vehiclePools get "staticAA"],
     ["boat", _vehiclePools get "boat"],
     ["radar", _vehiclePools get "radar"],
-    ["objectiveGroups", _objectiveGroups],
-    ["objectiveGroupTypeCaps", _objectiveCaps],
-    ["groupCounts", [
-        ["infantry", 8],
-        ["motorized", 1],
-        ["mechanized", 1],
-        ["armor", 1],
-        ["helicopter", 1],
-        ["jet", 1],
-        ["air", 1],
-        ["artillery", 1],
-        ["mobile_aa", 1],
-        ["static_aa", 1]
-    ]]
+    ["objectiveGroups", _compositionDefaults get "objectiveGroups"],
+    ["objectiveGroupTypeCaps", _compositionDefaults get "objectiveGroupTypeCaps"],
+    ["groupCounts", _compositionDefaults get "groupCounts"]
 ]
