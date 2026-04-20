@@ -20,14 +20,18 @@ params [["_classOrType", "", [""]]];
 
 if (_classOrType == "") exitWith { 0 };
 
-// Try config lookup first
+// Try config lookup first (if capacity > 0)
 private _cfg = configFile >> "CfgVehicles" >> _classOrType;
-if (isClass _cfg) exitWith {
-    getNumber (_cfg >> "transportSoldier")
+if (isClass _cfg) then {
+    private _cfgCap = getNumber (_cfg >> "transportSoldier");
+    if (_cfgCap > 0) exitWith { _cfgCap };
 };
 
-if !(_classOrType in FLO_Transport_CapacityEstimates) then {
-    throw format ["[TRANSPORT] Missing capacity estimate for %1", _classOrType];
+// Falls back to discovered estimates or type-based defaults
+if (_classOrType in FLO_Transport_CapacityEstimates) exitWith {
+    FLO_Transport_CapacityEstimates get _classOrType
 };
 
-FLO_Transport_CapacityEstimates get _classOrType
+// Final safety default
+diag_log format ["[TRANSPORT][WARN] Missing capacity estimate for %1 - Using default (4)", _classOrType];
+4
