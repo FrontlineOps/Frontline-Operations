@@ -150,7 +150,7 @@ private _fnc_addActions = {
     params ["_building", "_config"];
 
     private _type = _config get "type";
-    private _restrictedArsenal = "RestrictedArsenal" call BIS_fnc_getParamValue;
+    private _hasAceArsenal = isClass (configFile >> "ace_arsenal_loadoutsDisplay");
     
     private _actions = [
         // Build Mode Action
@@ -172,20 +172,16 @@ private _fnc_addActions = {
         ]
     ];
     
-    // Always add Arsenal action
-    _actions pushBack [
-        "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
-        {
-            params ["_target", "_caller", "_actionId", "_arguments"];
-
-            if (isClass (configFile >> "ace_arsenal_loadoutsDisplay")) then {
+    if (_hasAceArsenal) then {
+        _actions pushBack [
+            "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
+            {
+                params ["_target", "_caller", "_actionId", "_arguments"];
                 [_target, _caller, false] call ace_arsenal_fnc_openBox;
-            } else {
-                ["Open", true] spawn BIS_fnc_arsenal;
-            };
-        },
-        nil, 1, true, true, "", "_this distance _target < 10"
-    ];
+            },
+            nil, 1, true, true, "", "_this distance _target < 10"
+        ];
+    };
 
     // Add all actions with error handling
     try {

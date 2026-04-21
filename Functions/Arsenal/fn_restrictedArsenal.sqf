@@ -86,37 +86,15 @@ FLO_fnc_restrictArsenalBox = {
     params ["_box"];
     
     if (FLO_hasAceArsenal) then {
-        // Initialize ACE Arsenal first (this is key for FOBs/OPs)
-        [_box, true] remoteExec ["ace_arsenal_fnc_initBox", 0];
-        
-        // Wait a frame to ensure initialization is complete
-        [{
-            params ["_box"];
-            // Clear everything first
-            [_box, true] call ace_arsenal_fnc_removeVirtualItems;
-            // Add only our allowed items
-            [_box, FLO_arsenal_allowedItems] call ace_arsenal_fnc_addVirtualItems;
-        }, [_box], 0.1] call CBA_fnc_waitAndExecute;
+        [_box, true, true] call FLO_fnc_applyAceRestrictedArsenalCargo;
     } else {
-        // Clear and set up vanilla arsenal
-        ["AmmoboxInit", [_box, false]] call BIS_fnc_arsenal;
-        
-        // Split items by type for vanilla arsenal
-        private _weapons = FLO_arsenal_allowedItems select {_x isKindOf ["Rifle", configFile >> "CfgWeapons"] || 
-                                                         _x isKindOf ["Launcher", configFile >> "CfgWeapons"] ||
-                                                         _x isKindOf ["Pistol", configFile >> "CfgWeapons"]};
-        private _items = FLO_arsenal_allowedItems select {_x isKindOf ["ItemCore", configFile >> "CfgWeapons"] ||
-                                                        _x isKindOf ["Equipment", configFile >> "CfgWeapons"] ||
-                                                        _x isKindOf ["Uniform_Base", configFile >> "CfgWeapons"] ||
-                                                        _x isKindOf ["VestItem", configFile >> "CfgWeapons"] ||
-                                                        _x isKindOf ["HeadgearItem", configFile >> "CfgWeapons"]};
-        private _magazines = FLO_arsenal_allowedItems select {_x isKindOf ["CA_Magazine", configFile >> "CfgMagazines"]};
-        private _backpacks = FLO_arsenal_allowedItems select {_x isKindOf ["Bag_Base", configFile >> "CfgVehicles"]};
-        
-        [_box, _weapons] call BIS_fnc_addVirtualWeaponCargo;
-        [_box, _items] call BIS_fnc_addVirtualItemCargo;
-        [_box, _magazines] call BIS_fnc_addVirtualMagazineCargo;
-        [_box, _backpacks] call BIS_fnc_addVirtualBackpackCargo;
+        if !(_box getVariable ["FLO_VanillaRestrictedArsenalActionConfigured", false]) then {
+            ["AmmoboxExit", _box] call BIS_fnc_arsenal;
+            ["AmmoboxInit", [_box, false, { _this distance _target < 10 }]] call BIS_fnc_arsenal;
+            _box setVariable ["FLO_VanillaRestrictedArsenalActionConfigured", true];
+        };
+
+        [_box] call FLO_fnc_applyVanillaRestrictedArsenalCargo;
     };
 };
 
@@ -126,7 +104,10 @@ if (FLO_hasAceArsenal) then {
     ["ace_arsenal_displayOpened", {
         params ["_display"];
         private _box = ace_arsenal_currentBox;
-        [_box] call FLO_fnc_restrictArsenalBox;
+        [{
+            params ["_box"];
+            [_box, false, false] call FLO_fnc_applyAceRestrictedArsenalCargo;
+        }, [_box]] call CBA_fnc_execNextFrame;
     }] call CBA_fnc_addEventHandler;
 } else {
     // Vanilla Arsenal event handler
@@ -149,6 +130,24 @@ addMissionEventHandler ["EntityCreated", {
         }, [_entity], 0.1] call CBA_fnc_waitAndExecute;
     };
 }];
+
+// Apply restrictions to FOBs/OPs that already exist before this client finished init
+private _existingArsenalTypes = [];
+if (!isNil "F_HQ_01") then {
+    _existingArsenalTypes pushBack F_HQ_01;
+};
+if (!isNil "F_OP_01") then {
+    _existingArsenalTypes pushBack F_OP_01;
+};
+
+private _existingArsenalBoxes = [];
+{
+    _existingArsenalBoxes append (allMissionObjects _x);
+} forEach _existingArsenalTypes;
+
+{
+    [_x] call FLO_fnc_restrictArsenalBox;
+} forEach (_existingArsenalBoxes arrayIntersect _existingArsenalBoxes);
 
 // Mark as initialized to prevent multiple executions
 FLO_arsenal_initialized = true;
