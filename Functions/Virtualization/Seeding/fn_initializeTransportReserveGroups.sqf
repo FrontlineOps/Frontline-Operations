@@ -49,13 +49,14 @@ if (_groundTransportPool isEqualTo [] && {_airTransportPool isEqualTo []}) exitW
     []
 };
 
-private _spawnContext = [_side, _net] call FLO_fnc_transportResolveReserveSpawnContext;
+private _spawnContext = [_side, _net, true] call FLO_fnc_transportResolveReserveSpawnContext;
 _spawnContext params ["_spawnObjectiveIds", "_reserveObjectiveId", "_reservePos"];
 if (_reserveObjectiveId isEqualTo "") exitWith { [] };
 
 private _createdGroups = [];
 private _groups = FLO_virtualGroups get "_groups";
 private _activeSupplyNodes = _net get "_activeSupplyNodes";
+private _reserveSpawnNodeInfo = _net get "_supplyRouteInfo";
 private _currentGround = 0;
 private _currentAir = 0;
 private _groundByObjective = createHashMap;
@@ -100,7 +101,7 @@ private _airToCreate = (_airReserveCount - _currentAir) max 0;
 
 if (_groundTransportPool isNotEqualTo []) then {
     for "_i" from 1 to _groundToCreate do {
-        private _spawnObjectiveId = [_spawnObjectiveIds, _groundByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
+        private _spawnObjectiveId = [_spawnObjectiveIds, _groundByObjective, _reserveSpawnNodeInfo, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
         private _objectiveReserveCount = if (_spawnObjectiveId in _groundByObjective) then {
             _groundByObjective get _spawnObjectiveId
         } else {
@@ -132,7 +133,7 @@ if (_groundTransportPool isNotEqualTo []) then {
 
 if (_airTransportPool isNotEqualTo []) then {
     for "_i" from 1 to _airToCreate do {
-        private _spawnObjectiveId = [_spawnObjectiveIds, _airByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
+        private _spawnObjectiveId = [_spawnObjectiveIds, _airByObjective, _reserveSpawnNodeInfo, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
         private _objectiveReserveCount = if (_spawnObjectiveId in _airByObjective) then {
             _airByObjective get _spawnObjectiveId
         } else {
