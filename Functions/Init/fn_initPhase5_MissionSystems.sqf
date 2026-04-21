@@ -311,6 +311,16 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         _veh setDamage (_attr getOrDefault ["damage", 0]);
                         _veh lock (_attr getOrDefault ["locked", 0]);
                         _veh setVariable ["FLO_SaveID", _vehId, true];
+                        if (_attr getOrDefault ["requestMenuVehicle", false]) then {
+                            _veh setVariable ["FLO_RequestMenuVehicle", true, true];
+                        };
+                        if (_attr getOrDefault ["mobileRespawnVehicle", false]) then {
+                            _veh setVariable ["FLO_MobileRespawnVehicle", true, true];
+                        };
+                        private _supportVehicleRoles = _attr getOrDefault ["supportVehicleRoles", []];
+                        if (_supportVehicleRoles isNotEqualTo []) then {
+                            _veh setVariable ["FLO_SupportVehicleRoles", _supportVehicleRoles, true];
+                        };
 
                         // Load hitpoint damages
                         private _damagedHitpoints = _attr getOrDefault ["damagedHitpoints", []];

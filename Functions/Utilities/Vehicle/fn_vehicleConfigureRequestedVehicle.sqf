@@ -1,19 +1,27 @@
 /*
  * Author: Frontline Operations
  * Description:
- * Applies support-vehicle setup for visuals, service actions, and medical flags.
+ * Applies request-menu vehicle setup for visuals, service actions, and medical flags.
  *
  * Arguments:
  * 0: _vehicle (Object) - Spawned vehicle
  * 1: _vehicleClass (String) - Vehicle classname
+ * 2: _fromRequestMenu (Bool) - True when the vehicle was created by a request menu
  *
  * Return Value:
  * None
  */
 
-params ["_vehicle", "_vehicleClass"];
+params [
+    ["_vehicle", objNull, [objNull]],
+    ["_vehicleClass", "", [""]],
+    ["_fromRequestMenu", false, [false]]
+];
 
 if (isNull _vehicle) exitWith {};
+if (_vehicleClass == "") then {
+    _vehicleClass = typeOf _vehicle;
+};
 
 // Apply Stryker textures.
 if ((_vehicleClass == "rhsusf_stryker_m1126_m2_d") or (_vehicleClass == "rhsusf_stryker_m1126_mk19_d") or (_vehicleClass == "rhsusf_stryker_m1134_d")) then {
@@ -24,6 +32,12 @@ if ((_vehicleClass == "rhsusf_stryker_m1126_m2_d") or (_vehicleClass == "rhsusf_
 if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ CUP + RHS") or (markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ RHS")) and (_vehicleClass == "rhsusf_mrzr4_d")) then {
     [_vehicle, ["mud_olive", 1]] call BIS_fnc_initVehicle;
 };
+
+if (_fromRequestMenu) then {
+    _vehicle setVariable ["FLO_RequestMenuVehicle", true, true];
+};
+
+if !(_vehicle getVariable ["FLO_RequestMenuVehicle", false]) exitWith {};
 
 if ((_vehicleClass == "B_Slingload_01_Repair_F") and !(_vehicle getVariable ["FLO_OPUnpackActionAdded", false])) then {
     _vehicle setVariable ["FLO_OPUnpackActionAdded", true, true];
@@ -49,6 +63,10 @@ if ((_vehicleClass == "B_Slingload_01_Repair_F") and !(_vehicle getVariable ["FL
 
 private _constructionVehicleTypes = F_Truck_Construction_List apply { _x # 0 };
 if ((_vehicleClass in _constructionVehicleTypes) and !(_vehicle getVariable ["FLO_BuildActionAdded", false])) then {
+    private _supportRoles = _vehicle getVariable ["FLO_SupportVehicleRoles", []];
+    _supportRoles pushBackUnique "build";
+    _vehicle setVariable ["FLO_SupportVehicleRoles", _supportRoles, true];
+
     _vehicle setVariable ["FLO_BuildActionAdded", true, true];
     [_vehicle, "VEHICLE_BUILD", [[
         "<img size=2 color='#FF0000' image='\a3\ui_f\data\igui\cfg\simpletasks\types\Use_ca.paa'/><t font='PuristaBold' color='#FF0000'>Build Mode",
@@ -68,6 +86,10 @@ if ((_vehicleClass in _constructionVehicleTypes) and !(_vehicle getVariable ["FL
 
 private _arsenalVehicleTypes = F_Truck_Ammo_List apply { _x # 0 };
 if ((_vehicleClass in _arsenalVehicleTypes) and !(_vehicle getVariable ["FLO_ArsenalActionAdded", false])) then {
+    private _supportRoles = _vehicle getVariable ["FLO_SupportVehicleRoles", []];
+    _supportRoles pushBackUnique "arsenal";
+    _vehicle setVariable ["FLO_SupportVehicleRoles", _supportRoles, true];
+
     _vehicle setVariable ["FLO_ArsenalActionAdded", true, true];
     [_vehicle, "VEHICLE_ARSENAL", [[
         "<img size=2 color='#FFE258' image='Screens\FOBA\mg_ca.paa'/><t font='PuristaBold' color='#FFE258'>ARSENAL",
@@ -108,8 +130,12 @@ if ((_vehicleClass in _arsenalVehicleTypes) and !(_vehicle getVariable ["FLO_Ars
     ];
 };
 
-private _medicalVehicleTypes = F_Truck_Respawn_List apply { _x # 0 };
+private _medicalVehicleTypes = (F_Truck_Respawn_List + F_Heli_Respawn_List) apply { _x # 0 };
 if ((_vehicleClass in _medicalVehicleTypes) and !(_vehicle getVariable ["FLO_MedicalSupportConfigured", false])) then {
+    private _supportRoles = _vehicle getVariable ["FLO_SupportVehicleRoles", []];
+    _supportRoles pushBackUnique "respawn";
+    _vehicle setVariable ["FLO_SupportVehicleRoles", _supportRoles, true];
+    _vehicle setVariable ["FLO_MobileRespawnVehicle", true, true];
     _vehicle setVariable ["FLO_MedicalSupportConfigured", true, true];
     _vehicle setVariable ["ace_medical_isMedicalVehicle", true, true];
     _vehicle setVariable ["ace_medical_isMedicalFacility", true, true];
