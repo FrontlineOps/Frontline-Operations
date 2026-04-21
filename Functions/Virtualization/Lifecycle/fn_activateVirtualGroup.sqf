@@ -106,6 +106,7 @@ if (_isTransport) then {
 [_groupId, _groupData, _requestedPosition, _position, _realGroup] call FLO_fnc_virtualizationWarnSuspiciousActivation;
 
 [_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;
+[_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationParkIdleHelicopter;
 
 // Fire activation event for GTN/AI Commander integration
 ["FLO_Virtualization_GroupActivated", [_groupId, _groupData, _realGroup]] call CBA_fnc_localEvent;

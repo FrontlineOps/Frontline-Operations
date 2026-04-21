@@ -2,7 +2,7 @@
  * Function: FLO_fnc_virtualizationSpawnAirGroup
  */
 
-params ["_position", "_side", "_unitCount", "_groupType", "_pools"];
+params ["_position", "_side", "_unitCount", "_groupType", "_pools", "_groupData"];
 
 private _sideKey = _pools get "sideKey";
 private _unitPool = _pools get "units";
@@ -25,13 +25,25 @@ private _airPool = switch (_groupType) do {
 };
 
 private _realGroup = createGroup [_side, true];
+private _spawnParkedHelicopters = _groupType == "helicopter"
+    && { count (_groupData get "waypoints") == 0 }
+    && { (_groupData get "missionLock") == "" }
+    && { (_groupData get "replacementState") == "" }
+    && { !(_groupData get "engagementActive") }
+    && { count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers) == 0 }
+    && { (_groupData get "state") == "idle" || { _groupData get "transportRole" } };
 
 for "_i" from 1 to _unitCount do {
     private _aircraftType = selectRandom _airPool;
-    private _spawnHeight = if (_groupType isEqualTo "jet") then { 500 } else { 100 };
-    private _spawnPos = [(_position select 0) + (50 * _i), (_position select 1), _spawnHeight];
+    private _spawnParked = _spawnParkedHelicopters && { _aircraftType isKindOf "Helicopter" };
+    private _spawnPos = if (_spawnParked) then {
+        [_position, _aircraftType, _i - 1, 600] call FLO_fnc_virtualizationResolveIdleHelicopterParkPos
+    } else {
+        private _spawnHeight = if (_groupType isEqualTo "jet") then { 500 } else { 100 };
+        [(_position select 0) + (50 * _i), (_position select 1), _spawnHeight]
+    };
     private _crewType = [_aircraftType, _unitPool, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
-    [_realGroup, _aircraftType, _spawnPos, _crewType, true] call FLO_fnc_virtualizationCreateCrewedVehicle;
+    [_realGroup, _aircraftType, _spawnPos, _crewType, !_spawnParked] call FLO_fnc_virtualizationCreateCrewedVehicle;
 };
 
 _realGroup
