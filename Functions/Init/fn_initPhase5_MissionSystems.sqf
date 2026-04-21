@@ -507,7 +507,7 @@ if (!FLO_IsLoadedSave) then {
     {
         [_x] call FLO_fnc_initializeTransportReserveGroups;
     } forEach _missionSides;
-    diag_log "[FLO_INIT_P5] Transport reserve carriers seeded from active supply nodes";
+    diag_log "[FLO_INIT_P5] Transport reserve carriers seeded from staging objectives";
 };
 
 // ============================================
