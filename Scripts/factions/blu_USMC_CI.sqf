@@ -147,7 +147,7 @@ F_Heli_Gunship_List = [
 // airJet
 F_Plane_List = [
     ["rhsusf_f22", 20000],
-    ["RHS_A10", 18000],
+    ["RHS_A10", 18000]
 ];
 
 // boat
@@ -155,7 +155,7 @@ F_Boat_List = [];
 
 // airDrone
 F_UAV_List = [
-    ["B_UAV_05_F", 15000],
+    ["B_UAV_05_F", 15000]
 ];
 
 // groundDrone
