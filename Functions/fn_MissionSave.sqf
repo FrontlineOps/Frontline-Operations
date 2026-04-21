@@ -151,7 +151,10 @@ try {
                         ["type", typeOf _veh], ["posATL", getPosATL _veh], ["fuel", fuel _veh],
                         ["damage", damage _veh], ["damagedHitpoints", [_veh] call _fnc_getCompressedDamage],
                         ["vectorDirAndUp", [vectorDir _veh, vectorUp _veh]], ["locked", locked _veh], ["engineOn", isEngineOn _veh],
-                        ["hadAICrew", _hadAICrew]
+                        ["hadAICrew", _hadAICrew],
+                        ["requestMenuVehicle", _veh getVariable ["FLO_RequestMenuVehicle", false]],
+                        ["mobileRespawnVehicle", _veh getVariable ["FLO_MobileRespawnVehicle", false]],
+                        ["supportVehicleRoles", _veh getVariable ["FLO_SupportVehicleRoles", []]]
                     ]];
                 };
             };

@@ -426,7 +426,7 @@ VEH_REQUEST = {
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
     
     // Apply vehicle-specific configurations
-    [CreatedVEH, _VehName] call FLO_fnc_vehicleConfigureRequestedVehicle;
+    [CreatedVEH, _VehName, true] call FLO_fnc_vehicleConfigureRequestedVehicle;
     
     // Setup placement system
     CursorTracker = true;

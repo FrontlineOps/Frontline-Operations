@@ -157,12 +157,6 @@ private _opSlingloads = allMissionObjects "B_Slingload_01_Repair_F";
 
 ["STARTUP", 3, "Starting mobile respawn marker system..."] call FLO_fnc_log;
 
-// Build respawn vehicle type set and store globally for spawned code
-private _respawnVehicleTypes = [];
-if (count F_Truck_Respawn_List > 0) then { _respawnVehicleTypes append (F_Truck_Respawn_List apply { _x # 0 }); };
-if (count F_Heli_Respawn_List > 0) then { _respawnVehicleTypes append (F_Heli_Respawn_List apply { _x # 0 }); };
-FLO_RespawnVehicleTypeSet = createHashMapFromArray (_respawnVehicleTypes apply { [_x, true] });
-
 // Spawn respawn marker loop with error handling
 [] spawn {
     private _counter = 0;
@@ -175,8 +169,8 @@ FLO_RespawnVehicleTypeSet = createHashMapFromArray (_respawnVehicleTypes apply {
             };
             { deleteMarker _x } forEach _oldMarkers;
 
-            // Find alive respawn vehicles and create markers
-            private _respawnVehs = vehicles select { alive _x && { (FLO_RespawnVehicleTypeSet getOrDefault [typeOf _x, false]) } };
+            // Find requested mobile respawn vehicles and create markers
+            private _respawnVehs = vehicles select { alive _x && { _x getVariable ["FLO_MobileRespawnVehicle", false] } };
             private _activeSide = FLO_ActivePlayerSide;
             private _respawnKey = if (_activeSide isEqualTo east) then { "east" } else { "west" };
             private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
@@ -219,20 +213,7 @@ FLO_RespawnVehicleTypeSet = createHashMapFromArray (_respawnVehicleTypes apply {
 
 ["STARTUP", 3, "Initializing mobile service stations..."] call FLO_fnc_log;
 
-// Construction vehicles - find by type
-private _constructionVehicles = [];
-{ _constructionVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Construction_List;
-
-// Arsenal vehicles
-private _arsenalVehicles = [];
-{ _arsenalVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Ammo_List;
-
-// Medical/respawn vehicles
-private _medicalVehicles = [];
-{ _medicalVehicles append (allMissionObjects (_x # 0)); } forEach F_Truck_Respawn_List;
-
-private _supportVehicles = (_constructionVehicles + _arsenalVehicles + _medicalVehicles);
-_supportVehicles = _supportVehicles arrayIntersect _supportVehicles;
+private _supportVehicles = vehicles select { _x getVariable ["FLO_RequestMenuVehicle", false] };
 
 {
     if (!isNull _x) then {
@@ -240,7 +221,7 @@ _supportVehicles = _supportVehicles arrayIntersect _supportVehicles;
     };
 } forEach _supportVehicles;
 
-["STARTUP", 3, format ["Initialized %1 construction, %2 arsenal, and %3 medical vehicles", count _constructionVehicles, count _arsenalVehicles, count _medicalVehicles]] call FLO_fnc_log;
+["STARTUP", 3, format ["Initialized %1 requested support vehicles", count _supportVehicles]] call FLO_fnc_log;
 
 // ============================================================================
 // CLEANUP MAP OBJECTS
