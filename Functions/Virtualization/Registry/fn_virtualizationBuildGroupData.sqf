@@ -56,6 +56,7 @@ private _groupData = createHashMapFromArray [
     ["autoPatrol", false],
     ["patrolConfig", []],
     ["noWaypoints", false],
+    ["idleHelicopterParked", false],
     ["virtualSpeed", 0],
     ["lastMoveTime", -1],
     ["virtualMoveCarryMeters", 0],

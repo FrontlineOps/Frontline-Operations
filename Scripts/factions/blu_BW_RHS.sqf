@@ -51,7 +51,7 @@ F_Recon_AT = "BWA3_recon_LAT_Fleck";   // Recon AntiTank
 F_Recon_Mg = "BWA3_recon_Fleck";    // Recon Auto Rifleman
 F_Recon_Eod = "BWA3_recon_Pioneer_Fleck";    // Recon Explosive specialist
 F_Recon_Med = "BWA3_recon_Medic_Fleck";    // Recon Medic
-F_Recon_Eng = "BWA3_recon_Fleck ";    // Recon Engineer
+F_Recon_Eng = "BWA3_recon_Fleck";    // Recon Engineer
 
 F_Diver_TL = "B_diver_TL_F";    // Diver Team Leader
 F_Diver_Rfl = "B_diver_F";    // Diver operator
@@ -108,7 +108,7 @@ F_Truck_Respawn_List = [
 
 // groundMechanized
 F_APC_List = [
-    ["BWA3_Puma_Fleck", 2000],
+    ["BWA3_Puma_Fleck", 2000]
 ];
 
 // groundArmor
@@ -139,7 +139,7 @@ F_Heli_Gunship_List = [
 // airJet
 F_Plane_List = [
     ["rhsusf_f22", 20000],
-    ["RHS_A10", 18000],
+    ["RHS_A10", 18000]
 ];
 
 // boat

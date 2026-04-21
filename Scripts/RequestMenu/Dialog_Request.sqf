@@ -167,83 +167,77 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Truck_Respawn_List;
     
-    // APCs - Only if radar is nearby
-    private _hasRadar = count (nearestObjects [position player, ["B_Radar_System_01_F", "I_E_Radar_System_01_F"], 500]) > 0;
-    
-    if (_hasRadar) then {
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2101, _veh, _veh, "APC", _price, "\A3\armor_f_beta\APC_Tracked_01\Data\UI\APC_Tracked_01_AA_ca.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_APC_List;
-        
-        // TANKS - Only if radar is nearby
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2101, _veh, _veh, "TANK", _price, "Screens\FOBA\tank_ca.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_Tank_List;
-        
-        // ARTILLERY - Only if radar is nearby
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2101, _veh, _veh, "ARTILLERY", _price, "Screens\FOBA\tank_ca.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_Artillery_List;
-    };
-    
-    // AIR/SEA SECTION - HELICOPTERS - Only if radar is nearby
-    if (_hasRadar) then {
-        // Regular helicopters (Blue)
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2102, _veh, _veh, "HELI", _price, "\A3\Air_F_Beta\Heli_Transport_01\Data\UI\Heli_Transport_01_base_CA.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_Heli_List;
-        
-        // Respawn helicopter (Yellow-Green)
-        private _heliRespawn = F_Heli_Respawn_List;
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2102, _veh, _veh, "HELI RESPAWN", _price, "\A3\Air_F_Beta\Heli_Transport_01\Data\UI\Heli_Transport_01_base_CA.paa", [0.9,1,0,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach _heliRespawn;
-        
-        // Gunship helicopters
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2102, _veh, _veh, "HELI GUNSHIP", _price, "\A3\Air_F_Beta\Heli_Transport_01\Data\UI\Heli_Transport_01_base_CA.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_Heli_Gunship_List;
-        
-        // Regular planes
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2102, _veh, _veh, "PLANE", _price, "Screens\FOBA\plane_ca.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_Plane_List;
-    };
+    // APCs
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2101, _veh, _veh, "APC", _price, "\A3\armor_f_beta\APC_Tracked_01\Data\UI\APC_Tracked_01_AA_ca.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_APC_List;
+
+    // TANKS
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2101, _veh, _veh, "TANK", _price, "Screens\FOBA\tank_ca.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Tank_List;
+
+    // ARTILLERY
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2101, _veh, _veh, "ARTILLERY", _price, "Screens\FOBA\tank_ca.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Artillery_List;
+
+    // AIR/SEA SECTION - HELICOPTERS
+    // Regular helicopters (Blue)
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2102, _veh, _veh, "HELI", _price, "\A3\Air_F_Beta\Heli_Transport_01\Data\UI\Heli_Transport_01_base_CA.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Heli_List;
+
+    // Respawn helicopter (Yellow-Green)
+    private _heliRespawn = F_Heli_Respawn_List;
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2102, _veh, _veh, "HELI RESPAWN", _price, "\A3\Air_F_Beta\Heli_Transport_01\Data\UI\Heli_Transport_01_base_CA.paa", [0.9,1,0,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach _heliRespawn;
+
+    // Gunship helicopters
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2102, _veh, _veh, "HELI GUNSHIP", _price, "\A3\Air_F_Beta\Heli_Transport_01\Data\UI\Heli_Transport_01_base_CA.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Heli_Gunship_List;
+
+    // Regular planes
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2102, _veh, _veh, "PLANE", _price, "Screens\FOBA\plane_ca.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_Plane_List;
 
     {
         private _veh = _x select 0;
@@ -253,21 +247,17 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
             [2102, _veh, _veh, "BOAT", _price, "Screens\FOBA\naval_ca.paa", [1,1,1,1]]
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Boat_List;
-    
-    // Radar-dependent UAVs
-    if (_hasRadar) then {
-        // Custom UAVs
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2103, _veh, _veh, "UAV", _price, "Screens\FOBA\uav_05_icon_ca.paa", [1,1,1,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_UAV_List;
-    
-    };
-    
+
+    // Custom UAVs
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2103, _veh, _veh, "UAV", _price, "Screens\FOBA\uav_05_icon_ca.paa", [1,1,1,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_UAV_List;
+
     {
         private _veh = _x select 0;
         private _price = _x select 1;
@@ -297,17 +287,15 @@ if (((typeOf player == "B_G_officer_F") or (typeOf player == F_Officer) or (lead
         ] call FLO_fnc_addConditionalItem;
     } forEach F_Turret_List;
 
-    if (_hasRadar) then {
-        // SAM and AAA systems
-        {
-            private _veh = _x select 0;
-            private _price = _x select 1;
-            [
-                _veh != "",
-                [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [0.2,0.6,0.99,1]]
-            ] call FLO_fnc_addConditionalItem;
-        } forEach F_SAM_List;
-    };
+    // SAM and AAA systems
+    {
+        private _veh = _x select 0;
+        private _price = _x select 1;
+        [
+            _veh != "",
+            [2103, _veh, _veh, "STATIC", _price, "Screens\FOBA\icon_HMG_02_ca.paa", [0.2,0.6,0.99,1]]
+        ] call FLO_fnc_addConditionalItem;
+    } forEach F_SAM_List;
 
     
     // RADAR system
@@ -426,7 +414,7 @@ VEH_REQUEST = {
     CreatedVEH = createVehicle [_VehName, _pos, [], 0, 'NONE'];
     
     // Apply vehicle-specific configurations
-    [CreatedVEH, _VehName] call FLO_fnc_vehicleConfigureRequestedVehicle;
+    [CreatedVEH, _VehName, true] call FLO_fnc_vehicleConfigureRequestedVehicle;
     
     // Setup placement system
     CursorTracker = true;

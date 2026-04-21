@@ -33,9 +33,7 @@ if ((crew _vehicle) isNotEqualTo []) exitWith { false };
 if (_vehicle getVariable ["FLO_NoVehicleCleanup", false]) exitWith { false };
 if (_vehicle getVariable ["IDS_Logistics_isPlacedEntity", false]) exitWith { false };
 
-if (!isNil "FLO_RespawnVehicleTypeSet" && {FLO_RespawnVehicleTypeSet isEqualType createHashMap}) then {
-    if !(isNil { FLO_RespawnVehicleTypeSet get (typeOf _vehicle) }) exitWith { false };
-};
+if (_vehicle getVariable ["FLO_MobileRespawnVehicle", false]) exitWith { false };
 
 private _vehicleKey = str _vehicle;
 if !(isNil { _trackedVehicleKeys get _vehicleKey }) exitWith { false };

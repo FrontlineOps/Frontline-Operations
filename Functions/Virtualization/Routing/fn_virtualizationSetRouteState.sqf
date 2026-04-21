@@ -15,6 +15,7 @@ _groupData set ["waypoints", _waypoints];
 _groupData set ["pathSource", _sourceTag];
 _groupData set ["patrolConfig", []];
 _groupData set ["autoPatrol", false];
+_groupData set ["idleHelicopterParked", false];
 _groupData set ["currentWaypointIndex", 0];
 _groupData set ["lastMoveTime", diag_tickTime];
 _groupData set ["virtualMoveCarryMeters", 0];

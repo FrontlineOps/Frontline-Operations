@@ -20,7 +20,8 @@ params [
     ["_unitType", "", [""]],
     ["_position", [0,0,0], [[]]],
     ["_side", east, [east]],
-    ["_groupType", "", [""]]
+    ["_groupType", "", [""]],
+    ["_spawnParkedHelicopter", false, [false]]
 ];
 
 private _createdUnit = objNull;
@@ -38,10 +39,11 @@ private _isVehicle = getNumber (configFile >> "CfgVehicles" >> _unitType >> "isV
 // Handle based on groupType and unit class
 switch (true) do {
     case (_unitType isKindOf "Air"): {
+        private _spawnParked = _spawnParkedHelicopter && { _unitType isKindOf "Helicopter" };
         private _spawnHeight = if (_unitType isKindOf "Plane") then {500} else {100};
-        private _spawnPos = [_position select 0, _position select 1, _spawnHeight];
+        private _spawnPos = if (_spawnParked) then { _position } else { [_position select 0, _position select 1, _spawnHeight] };
         private _crewType = [_unitType, _poolUnits, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
-        _createdUnit = [_realGroup, _unitType, _spawnPos, _crewType, true] call FLO_fnc_virtualizationCreateCrewedVehicle;
+        _createdUnit = [_realGroup, _unitType, _spawnPos, _crewType, !_spawnParked] call FLO_fnc_virtualizationCreateCrewedVehicle;
     };
 
     case (_isVehicle): {

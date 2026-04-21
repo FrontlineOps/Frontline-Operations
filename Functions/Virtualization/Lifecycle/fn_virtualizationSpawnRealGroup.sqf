@@ -13,7 +13,7 @@ private _realGroup = grpNull;
 
 switch (true) do {
     case (_groupType isEqualTo "infantry" && {_comp isNotEqualTo []}): {
-        _realGroup = [_side, _groupType, _position, _comp] call FLO_fnc_virtualizationSpawnFromComposition;
+        _realGroup = [_side, _groupType, _position, _comp, _groupData] call FLO_fnc_virtualizationSpawnFromComposition;
     };
 
     case (_groupType isEqualTo "infantry"): {
@@ -29,11 +29,11 @@ switch (true) do {
     };
 
     case (_comp isNotEqualTo []): {
-        _realGroup = [_side, _groupType, _position, _comp] call FLO_fnc_virtualizationSpawnFromComposition;
+        _realGroup = [_side, _groupType, _position, _comp, _groupData] call FLO_fnc_virtualizationSpawnFromComposition;
     };
 
     case (_groupType in ["helicopter", "jet", "air"]): {
-        _realGroup = [_position, _side, _unitCount, _groupType, _pools] call FLO_fnc_virtualizationSpawnAirGroup;
+        _realGroup = [_position, _side, _unitCount, _groupType, _pools, _groupData] call FLO_fnc_virtualizationSpawnAirGroup;
     };
 
     case (_groupType isEqualTo "artillery"): {

@@ -334,7 +334,9 @@ _display closeDisplay 1;
 
 	HQLOCC = 0;
 	publicVariable "HQLOCC";
-	hint "Choose Your Starting Point";
+	private _startLocationPrompt = "<t size='1.35' color='#ff3b3b' font='PuristaBold'>SELECT STARTING FOB LOCATION</t><br/><t size='0.9' color='#ffffff'>Left-click the map to place your starting FOB and begin the campaign.</t>";
+	hint "Select your starting FOB location on the map.";
+	[_startLocationPrompt, 0, 0.18, 9999, 0, 0, 9010] spawn BIS_fnc_dynamicText;
 	openMap [true, true];
 
 	// Add map click handler for starting location
@@ -345,6 +347,7 @@ _display closeDisplay 1;
 		removeMissionEventHandler ["MapSingleClick", FLO_mapClickDFD];
 
 		player setPos _pos;
+		["", 0, 0.18, 0.1, 0, 0, 9010] spawn BIS_fnc_dynamicText;
 		hintSilent "LOADING...";
 		HQLOCC = 1;
 		publicVariable "HQLOCC";
