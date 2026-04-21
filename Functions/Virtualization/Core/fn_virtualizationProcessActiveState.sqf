@@ -18,6 +18,7 @@ if (!isNull _leader && {alive _leader}) then {
     };
 
     [_groupId, _groupData, _realGroup] call FLO_fnc_transportProcessActiveCarrier;
+    [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationParkIdleHelicopter;
 
     if (_replacementState == "REINFORCE") then {
         private _reinforcementTargetPos = _groupData get "reinforcementTargetPos";

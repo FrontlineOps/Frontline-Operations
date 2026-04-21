@@ -99,6 +99,8 @@ class VirtualizationLifecycle {
     class virtualizationSyncRealGroupOutcome {};
     class virtualizationAssignIntelItem {};
     class virtualizationCreateCrewedVehicle {};
+    class virtualizationParkIdleHelicopter {};
+    class virtualizationResolveIdleHelicopterParkPos {};
     class virtualizationSpawnFromComposition {};
     class virtualizationSpawnInfantryGroup {};
     class virtualizationSpawnGroundCombatGroup {};
