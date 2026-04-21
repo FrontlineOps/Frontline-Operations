@@ -32,8 +32,11 @@ if (!isNil "FOBB") then {
 // ACE3 ARSENAL INTEGRATION
 // ============================================================================
 
-// Enable ACE Arsenal on the OP if ACE3 is loaded
-if (isClass (configFile >> "CfgPatches" >> "ace_main")) then {
+// Enable full ACE Arsenal on the OP only when restricted arsenal is disabled
+if (
+    isClass (configFile >> "CfgPatches" >> "ace_main") &&
+    {("RestrictedArsenal" call BIS_fnc_getParamValue) != 0}
+) then {
     if (!isNil "FOBB") then {
         [FOBB, true] remoteExec ["ace_arsenal_fnc_initBox", 0];
         ["INIT_OP", 3, "ACE Arsenal enabled on OP"] call FLO_fnc_log;

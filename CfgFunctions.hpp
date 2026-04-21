@@ -284,6 +284,8 @@ class FLO {
         class harvestFactionGear        {};
         class initMoneyStateEvents      {};
         class isHeavyWeapon             {};
+        class applyAceRestrictedArsenalCargo {};
+        class applyVanillaRestrictedArsenalCargo {};
         class restrictedArsenal         {};
         class publishMoneyState         {};
         class addCratePurchaseActions   {};
