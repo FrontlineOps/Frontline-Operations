@@ -406,27 +406,30 @@ private _fnc_countAliveTargets = {
             } else {
                 _objData get "opforCount"
             };
+            private _frontlineEnemy = false;
+            if (_owner isEqualTo _enemySide) then {
+                {
+                    private _linkedObjective = FLO_Objectives get _x;
+                    if (isNil "_linkedObjective") then { continue };
+                    private _linkedOwner = _linkedObjective get "owner";
+                    _linkedOwner = [_linkedOwner] call _fnc_normalizeSide;
+                    if (_linkedOwner isEqualTo _activeSide) exitWith {
+                        _frontlineEnemy = true;
+                    };
+                } forEach (_objData get "linkedObjectives");
+            };
+
             private _objectiveState = createHashMap;
             if (!isNil "_worldObjectives" && {_objId in _worldObjectives}) then {
                 _objectiveState = _worldObjectives get _objId;
             };
             if ((count _objectiveState) > 0) then {
-                private _frontlineEnemy = false;
-                if (_owner isEqualTo _enemySide) then {
-                    {
-                        if !(_x in _worldObjectives) then { continue };
-                        private _linkedObjective = _worldObjectives get _x;
-                        if ((_linkedObjective get "owner") isEqualTo _activeSide) exitWith {
-                            _frontlineEnemy = true;
-                        };
-                    } forEach (_objectiveState get "linkedObjectives");
-                };
                 _objectiveState set ["frontlineEnemy", _frontlineEnemy];
             };
 
             if (_owner isEqualTo _enemySide) then {
                 private _captureScore = [_objId, _objData, _playerPositions, "capture", _objectiveState, nil] call FLO_fnc_gtnTaskScoreObjectiveForPlayers;
-                _captureCandidates pushBack [_objId, _captureScore, _objData];
+                _captureCandidates pushBack [_objId, _captureScore, _objData, _frontlineEnemy];
 
                 private _destroyInfo = createHashMap;
                 if (!isNil "_cmdr") then {
@@ -440,7 +443,7 @@ private _fnc_countAliveTargets = {
                         ["targetCount", _destroyInfo get "targetCount"],
                         ["taskPos", _destroyInfo get "taskPos"]
                     ];
-                    _destroyCandidates pushBack [_objId, _destroyScore, _objData, _meta, _destroyInfo get "targets"];
+                    _destroyCandidates pushBack [_objId, _destroyScore, _objData, _meta, _destroyInfo get "targets", _frontlineEnemy];
                 };
             };
 
@@ -449,6 +452,16 @@ private _fnc_countAliveTargets = {
                 _defendCandidates pushBack [_objId, _defendScore, _objData];
             };
         } forEach (keys FLO_Objectives);
+
+        private _frontlineCaptureCandidates = _captureCandidates select { _x select 3 };
+        if ((count _frontlineCaptureCandidates) > 0) then {
+            _captureCandidates = _frontlineCaptureCandidates;
+        };
+
+        private _frontlineDestroyCandidates = _destroyCandidates select { _x select 5 };
+        if ((count _frontlineDestroyCandidates) > 0) then {
+            _destroyCandidates = _frontlineDestroyCandidates;
+        };
 
         private _captureRanked = _captureCandidates apply { [_x select 1, _x] };
         _captureRanked sort false;
@@ -508,9 +521,10 @@ private _fnc_countAliveTargets = {
         private _newPrimaryScore = _desiredPrimaryScore;
         private _newPrimaryRef = if (_newPrimaryObjId != "") then { _newPrimaryKind + "_" + _newPrimaryObjId } else { "" };
         private _primaryHoldActive = _currentPrimaryRef != "" && {_currentPrimaryAssignedAt >= 0} && {(_cycleNow - _currentPrimaryAssignedAt) < _primaryMinHoldSeconds};
+        private _primaryCanHoldCurrent = (_currentPrimaryKind != "capture") || {(count _currentPrimaryCandidate) > 0};
 
         if (_currentPrimaryRef != "" && {_newPrimaryRef != _currentPrimaryRef}) then {
-            if (_primaryHoldActive || {_newPrimaryRef == ""} || {_newPrimaryScore < (_currentPrimaryScore + _primaryReplaceScoreDelta)}) then {
+            if (_primaryCanHoldCurrent && {_primaryHoldActive || {_newPrimaryRef == ""} || {_newPrimaryScore < (_currentPrimaryScore + _primaryReplaceScoreDelta)}}) then {
                 _newPrimaryKind = _currentPrimaryKind;
                 _newPrimaryObjId = _currentPrimaryObjId;
                 _newPrimaryData = FLO_Objectives get _currentPrimaryObjId;
@@ -560,9 +574,10 @@ private _fnc_countAliveTargets = {
         };
         private _newSecondaryRef = if (_newSecondaryObjId != "") then { _newSecondaryKind + "_" + _newSecondaryObjId } else { "" };
         private _secondaryHoldActive = _currentSecondaryRef != "" && {_currentSecondaryAssignedAt >= 0} && {(_cycleNow - _currentSecondaryAssignedAt) < _secondaryMinHoldSeconds};
+        private _secondaryCanHoldCurrent = (_currentSecondaryKind != "destroy") || {(count _currentSecondaryCandidate) > 0};
 
         if (_currentSecondaryRef != "" && {_newSecondaryRef != _currentSecondaryRef}) then {
-            if (_secondaryHoldActive || {_newSecondaryRef == ""} || {_newSecondaryScore < (_currentSecondaryScore + _secondaryReplaceScoreDelta)}) then {
+            if (_secondaryCanHoldCurrent && {_secondaryHoldActive || {_newSecondaryRef == ""} || {_newSecondaryScore < (_currentSecondaryScore + _secondaryReplaceScoreDelta)}}) then {
                 _newSecondaryKind = _currentSecondaryKind;
                 _newSecondaryObjId = _currentSecondaryObjId;
                 _newSecondaryData = FLO_Objectives get _currentSecondaryObjId;
