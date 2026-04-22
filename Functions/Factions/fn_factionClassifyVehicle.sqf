@@ -22,21 +22,37 @@ if (_className isKindOf "Man") exitWith { [] };
 
 private _cnLower = toLower _className;
 private _dnLower = toLower (getText (_cfg >> "displayName"));
+private _vcLower = toLower (getText (_cfg >> "vehicleClass"));
+private _ecLower = toLower (getText (_cfg >> "editorCategory"));
+private _esLower = toLower (getText (_cfg >> "editorSubcategory"));
+private _textLower = [_cnLower, _dnLower, _vcLower, _ecLower, _esLower] joinString " ";
+private _tokenText = " " + ((_textLower splitString " _-/().,[]") joinString " ") + " ";
 private _cats = [];
 
 private _hasText = {
     params ["_needle"];
-    (_cnLower find _needle) >= 0 || {(_dnLower find _needle) >= 0}
+    (_textLower find _needle) >= 0
+};
+
+private _hasToken = {
+    params ["_needle"];
+    (_tokenText find (" " + _needle + " ")) >= 0
 };
 
 private _isAA = {
-    (["aa"] call _hasText) ||
+    (["aa"] call _hasToken) ||
     {["sam"] call _hasText} ||
     {["anti_air"] call _hasText} ||
     {["antiair"] call _hasText} ||
     {["zu23"] call _hasText} ||
+    {["zu 23"] call _hasText} ||
+    {["zsu"] call _hasText} ||
+    {["2s6"] call _hasText} ||
     {["tunguska"] call _hasText} ||
-    {["shilka"] call _hasText}
+    {["shilka"] call _hasText} ||
+    {["igla"] call _hasText} ||
+    {["stinger"] call _hasText} ||
+    {["tor"] call _hasToken}
 };
 
 private _isArtillery = {
@@ -92,18 +108,33 @@ if (_className isKindOf "Ship") exitWith {
 
 if (_className isKindOf "LandVehicle") then {
     private _transport = getNumber (_cfg >> "transportSoldier");
-    private _armor = getNumber (_cfg >> "armor");
+    private _landIsAA = call _isAA;
+    private _landIsArtillery = call _isArtillery;
 
-    if (call _isArtillery) then {
+    if (_landIsArtillery) then {
         _cats pushBack "groundArtillery";
     };
 
-    if (call _isAA) then {
+    if (_landIsAA) then {
         _cats pushBack "mobileAA";
     };
 
+    if (_landIsAA || {_landIsArtillery}) exitWith {
+        _cats arrayIntersect _cats
+    };
+
     if (_className isKindOf "Tank") then {
-        if (_transport > 0 || {_armor < 500} || {["apc"] call _hasText} || {["ifv"] call _hasText}) then {
+        private _isTroopCarrier = _transport > 0 ||
+            {["apc"] call _hasText} ||
+            {["ifv"] call _hasText} ||
+            {["aav"] call _hasText} ||
+            {["bmd"] call _hasText} ||
+            {["bmp"] call _hasText} ||
+            {["btr"] call _hasText} ||
+            {["m113"] call _hasText} ||
+            {["mtlb"] call _hasText};
+
+        if (_isTroopCarrier) then {
             _cats pushBack "groundMechanized";
         } else {
             _cats pushBack "groundArmor";
