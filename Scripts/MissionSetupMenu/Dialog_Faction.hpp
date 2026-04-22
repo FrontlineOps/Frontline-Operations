@@ -17,7 +17,7 @@
 
 // Dialog dimensions
 #define FACTION_DIALOG_W            (58 * GUI_GRID_W)
-#define FACTION_DIALOG_H            (36.6 * GUI_GRID_H)
+#define FACTION_DIALOG_H            (42.0 * GUI_GRID_H)
 #define FACTION_DIALOG_X            (safeZoneX + safeZoneW/2 - FACTION_DIALOG_W/2)
 #define FACTION_DIALOG_Y            (safeZoneY + safeZoneH/2 - FACTION_DIALOG_H/2)
 
@@ -36,7 +36,7 @@
 #define FACTION_HALF_X2             (FACTION_FULL_X + FACTION_HALF_W + FACTION_CARD_GAP_X)
 
 // Card heights
-#define FACTION_CARD_FACTIONS_H     (4.4 * GUI_GRID_H)
+#define FACTION_CARD_FACTIONS_H     (9.0 * GUI_GRID_H)
 #define FACTION_CARD_COMMANDER_H    (8.9 * GUI_GRID_H)
 #define FACTION_CARD_COMPOSITION_H  (10.8 * GUI_GRID_H)
 #define FACTION_CARD_MISC_H         (6.8 * GUI_GRID_H)
@@ -91,6 +91,17 @@ class FLO_FactionCombo: FLO_RscCombo
 	h = FACTION_ROW_H;
 	colorSelectBackground[] = FLO_COLOR_PRIMARY;
 	wholeHeight = 12 * GUI_GRID_H;
+};
+
+class FLO_FactionMultiList: FLO_RscListBox
+{
+	style = LB_MULTI;
+	h = 5.75 * GUI_GRID_H;
+	rowHeight = 0.58 * GUI_GRID_H;
+	sizeEx = FLO_FONT_SIZE_XS;
+	colorSelectBackground[] = FLO_COLOR_PRIMARY;
+	colorSelectBackground2[] = FLO_COLOR_PRIMARY;
+	tooltip = "Select one faction, or select multiple auto factions from the same config side to merge their pools.";
 };
 
 class FLO_FactionTuneEdit: FLO_RscEdit
@@ -216,7 +227,7 @@ class FLO_FactionSelectDialog
 		class CardFactionsHint: FLO_RscText_Muted
 		{
 			idc = FLO_IDC_NONE;
-			text = "These define the three sides present in the campaign.";
+			text = "These define the three sides present in the campaign. Select multiple compatible auto factions to merge their pools.";
 			x = FACTION_FULL_X + (0.8 * GUI_GRID_W);
 			y = FACTION_CARD_FACTIONS_Y + (1.0 * GUI_GRID_H);
 			w = FACTION_FULL_W - (1.6 * GUI_GRID_W);
@@ -226,58 +237,58 @@ class FLO_FactionSelectDialog
 		class LabelPlayerFaction: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Player Faction";
+			text = "Player Faction(s)";
 			x = FACTION_THIRD_X1;
 			y = FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboPlayerFaction: FLO_FactionCombo
+		class ComboPlayerFaction: FLO_FactionMultiList
 		{
 			idc = FLO_IDC_FACTION_COMBO_PLAYER;
 			x = FACTION_THIRD_X1;
 			y = FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
-			tooltip = "Select the player faction";
+			tooltip = "Select one player faction, or multiple compatible auto factions to merge BLUFOR pools.";
 		};
 
 		class LabelEnemyFaction: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Enemy Faction";
+			text = "Enemy Faction(s)";
 			x = FACTION_THIRD_X2;
 			y = FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboEnemyFaction: FLO_FactionCombo
+		class ComboEnemyFaction: FLO_FactionMultiList
 		{
 			idc = FLO_IDC_FACTION_COMBO_ENEMY;
 			x = FACTION_THIRD_X2;
 			y = FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
-			tooltip = "Select the enemy faction";
+			tooltip = "Select one enemy faction, or multiple compatible auto factions to merge OPFOR pools.";
 		};
 
 		class LabelCivilianFaction: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Civilian Faction";
+			text = "Civilian Faction(s)";
 			x = FACTION_THIRD_X3;
 			y = FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
 			h = FACTION_LABEL_H;
 		};
 
-		class ComboCivilianFaction: FLO_FactionCombo
+		class ComboCivilianFaction: FLO_FactionMultiList
 		{
 			idc = FLO_IDC_FACTION_COMBO_CIVILIAN;
 			x = FACTION_THIRD_X3;
 			y = FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H);
 			w = FACTION_THIRD_W;
-			tooltip = "Select the civilian faction";
+			tooltip = "Select one civilian faction, or multiple compatible auto factions to merge civilian pools.";
 		};
 
 		// ====================================================================

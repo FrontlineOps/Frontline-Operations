@@ -27,7 +27,16 @@ if (isNull _display) exitWith {
 };
 
 private _combo = _display displayCtrl _comboIdc;
-private _selectedIndex = lbCurSel _combo;
+private _selectedIndexes = if ((ctrlType _combo) == 5) then {
+    lbSelection _combo
+} else {
+    []
+};
+private _selectedIndex = if (_selectedIndexes isNotEqualTo []) then {
+    _selectedIndexes select 0
+} else {
+    lbCurSel _combo
+};
 if (_selectedIndex < 0) exitWith {
     ["UI", 1, format ["Cannot fill %1 composition defaults - no faction selected", _sideLabel]] call FLO_fnc_log;
 };

@@ -68,11 +68,12 @@ private _fnc_handleSource = {
 };
 
 private _loadedOk = true;
+private _autoSources = ["auto", "auto_multi"];
 
 // Load friendly faction
 private _bluHandle = FLO_FriendlyHandle;
 private _bluFaction = _bluHandle get "name";
-if (([_bluHandle] call _fnc_handleSource) isEqualTo "auto") then {
+if (([_bluHandle] call _fnc_handleSource) in _autoSources) then {
     _loadedOk = [_bluHandle, "friendly"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _bluPath = switch (_bluFaction) do {
@@ -97,7 +98,7 @@ if (!_loadedOk) exitWith {
 // Load enemy faction
 private _opfHandle = FLO_EnemyHandle;
 private _opfFaction = _opfHandle get "name";
-if (([_opfHandle] call _fnc_handleSource) isEqualTo "auto") then {
+if (([_opfHandle] call _fnc_handleSource) in _autoSources) then {
     _loadedOk = [_opfHandle, "enemy"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _opfPath = switch (_opfFaction) do {
@@ -119,7 +120,7 @@ if (!_loadedOk) exitWith {
 // Load civilian faction
 private _civHandle = FLO_CivilianHandle;
 private _civFaction = _civHandle get "name";
-if (([_civHandle] call _fnc_handleSource) isEqualTo "auto") then {
+if (([_civHandle] call _fnc_handleSource) in _autoSources) then {
     _loadedOk = [_civHandle, "civilian"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _civPath = switch (_civFaction) do {

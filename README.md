@@ -113,6 +113,7 @@ Current setup options include:
 - friendly faction
 - enemy faction
 - civilian faction
+- multiple compatible auto military or civilian factions can be selected for the same side; FLO merges their detected pools into one side catalog
 - player start position
 - difficulty and reputation handles
 - separate BLUFOR/WEST and OPFOR/EAST commander posture settings for aggression, tempo, attack coverage, defense coverage, force growth, and baseline garrison

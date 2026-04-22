@@ -18,20 +18,38 @@ params [
     ["_role", "", [""]]
 ];
 
-if !("factionClass" in _handle) exitWith {
-    ["FACTIONS", 2, format ["Auto faction handle missing factionClass for role %1", _role]] call FLO_fnc_log;
+private _source = if ("source" in _handle) then { _handle get "source" } else { "auto" };
+private _factionClasses = if ("factionClasses" in _handle) then {
+    +(_handle get "factionClasses")
+} else {
+    if ("factionClass" in _handle) then { [_handle get "factionClass"] } else { [] }
+};
+_factionClasses = _factionClasses select { _x isEqualType "" && {_x != ""} };
+_factionClasses = _factionClasses arrayIntersect _factionClasses;
+
+if (_factionClasses isEqualTo []) exitWith {
+    ["FACTIONS", 2, format ["Auto faction handle missing faction class data for role %1", _role]] call FLO_fnc_log;
     false
 };
 
-private _factionClass = _handle get "factionClass";
+private _factionClass = _factionClasses select 0;
+private _factionLabel = if (count _factionClasses > 1) then {
+    _factionClasses joinString " + "
+} else {
+    _factionClass
+};
 
 if (_role isEqualTo "civilian") exitWith {
-    private _civCatalog = [_factionClass] call FLO_fnc_factionBuildAutoCivilianCatalog;
+    private _civCatalog = if (_source isEqualTo "auto_multi" || {count _factionClasses > 1}) then {
+        [_factionClasses] call FLO_fnc_factionBuildMergedAutoCivilianCatalog
+    } else {
+        [_factionClass] call FLO_fnc_factionBuildAutoCivilianCatalog
+    };
     private _men = _civCatalog get "men";
     private _vehicles = _civCatalog get "vehicles";
 
     if (_men isEqualTo []) exitWith {
-        ["FACTIONS", 2, format ["Auto civilian faction %1 has no spawnable men", _factionClass]] call FLO_fnc_log;
+        ["FACTIONS", 2, format ["Auto civilian faction %1 has no spawnable men", _factionLabel]] call FLO_fnc_log;
         false
     };
 
@@ -40,7 +58,7 @@ if (_role isEqualTo "civilian") exitWith {
 
     ["FACTIONS", 2, format [
         "Applied auto civilian faction %1: men=%2 vehicles=%3",
-        _factionClass,
+        _factionLabel,
         count CivMenArray,
         count CivVehArray
     ]] call FLO_fnc_log;
@@ -53,9 +71,13 @@ if !(_role in ["friendly", "enemy"]) exitWith {
     false
 };
 
-private _catalog = [_factionClass] call FLO_fnc_factionBuildAutoMilitaryCatalog;
+private _catalog = if (_source isEqualTo "auto_multi" || {count _factionClasses > 1}) then {
+    [_factionClasses] call FLO_fnc_factionBuildMergedAutoMilitaryCatalog
+} else {
+    [_factionClass] call FLO_fnc_factionBuildAutoMilitaryCatalog
+};
 if ((count keys _catalog) == 0) exitWith {
-    ["FACTIONS", 2, format ["Failed to build auto military catalog for %1", _factionClass]] call FLO_fnc_log;
+    ["FACTIONS", 2, format ["Failed to build auto military catalog for %1", _factionLabel]] call FLO_fnc_log;
     false
 };
 
@@ -75,7 +97,7 @@ if (!_applied) exitWith { false };
 ["FACTIONS", 2, format [
     "Applied auto %1 faction %2: units=%3 groups=%4 motorized=%5 mechanized=%6 armor=%7 air=%8",
     _role,
-    _factionClass,
+    _factionLabel,
     count (_catalog get "groundInfantryUnits"),
     count (_catalog get "groundInfantryGroups"),
     count (_catalog get "groundMotorized"),
