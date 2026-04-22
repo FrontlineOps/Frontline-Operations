@@ -20,8 +20,6 @@ params [
     ["_sideLabel", "", [""]]
 ];
 
-if ((count keys _tuning) == 0) exitWith { true };
-
 private _fnc_mergePairs = {
     params ["_basePairs", "_overridePairs"];
 
@@ -55,24 +53,34 @@ private _fnc_mergePairs = {
     _result
 };
 
-{
-    if (_x in _tuning) then {
-        _catalog set [_x, _tuning get _x];
-    };
-} forEach [
-    "transportReserveGroundCount",
-    "transportReserveAirCount",
-    "objectiveGroups"
-];
+if ((count keys _tuning) > 0) then {
+    {
+        if (_x in _tuning) then {
+            _catalog set [_x, _tuning get _x];
+        };
+    } forEach [
+        "transportReserveGroundCount",
+        "transportReserveAirCount",
+        "objectiveGroups"
+    ];
 
-{
-    if (_x in _tuning) then {
-        _catalog set [_x, [_catalog get _x, _tuning get _x] call _fnc_mergePairs];
-    };
-} forEach [
-    "objectiveGroupTypeCaps",
-    "groupCounts"
-];
+    {
+        if (_x in _tuning) then {
+            _catalog set [_x, [_catalog get _x, _tuning get _x] call _fnc_mergePairs];
+        };
+    } forEach [
+        "objectiveGroupTypeCaps",
+        "groupCounts"
+    ];
+
+    ["FACTIONS", 2, format [
+        "Applied %1 force composition values: %2",
+        _sideLabel,
+        keys _tuning
+    ]] call FLO_fnc_log;
+};
+
+[_catalog, _sideLabel] call FLO_fnc_factionSanitizeCompositionForCatalog;
 
 switch (_sideLabel) do {
     case "OPFOR": {
@@ -90,11 +98,5 @@ switch (_sideLabel) do {
         BLUFOR_Group_Counts = _catalog get "groupCounts";
     };
 };
-
-["FACTIONS", 2, format [
-    "Applied %1 force composition values: %2",
-    _sideLabel,
-    keys _tuning
-]] call FLO_fnc_log;
 
 true
