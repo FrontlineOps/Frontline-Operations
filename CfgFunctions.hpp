@@ -307,6 +307,8 @@ class FLO {
         class factionApplyAutoGlobals {};
         class factionBuildAutoCivilianCatalog {};
         class factionBuildAutoIndex {};
+        class factionBuildMergedAutoCivilianCatalog {};
+        class factionBuildMergedAutoMilitaryCatalog {};
         class factionBuildAutoMilitaryCatalog {};
         class factionClassifyVehicle {};
         class factionGetGroupConfigs {};
@@ -387,6 +389,7 @@ class FLO {
         class factionDialogOnUnload   {};
         class factionDialogCreateObjectiveGroupControls {};
         class factionDialogFillCompositionDefaults {};
+        class factionDialogNormalizeMultiSelection {};
         class factionDialogPopulate   {};
         class factionDialogShowCompositionTab {};
         class factionDialogStart      {};

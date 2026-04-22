@@ -57,19 +57,78 @@ private _fnc_getSelection = {
 	params ["_idc"];
 	private _ctrl = _display displayCtrl _idc;
     private _idx = lbCurSel _ctrl;
+    if (_idx < 0) exitWith { ["", ""] };
 	[_ctrl lbText _idx, _ctrl lbData _idx]
 };
 
+private _fnc_getSelections = {
+    params ["_idc"];
+    private _ctrl = _display displayCtrl _idc;
+    private _indexes = if ((ctrlType _ctrl) == 5) then {
+        lbSelection _ctrl
+    } else {
+        []
+    };
+
+    if (_indexes isEqualTo [] && {lbCurSel _ctrl >= 0}) then {
+        _indexes = [lbCurSel _ctrl];
+    };
+
+    _indexes apply { [_ctrl lbText _x, _ctrl lbData _x] }
+};
+
+private _fnc_joinSelectionNames = {
+    params ["_selections"];
+    (_selections apply { _x select 0 }) joinString " + "
+};
+
+private _fnc_validateFactionSelections = {
+    params ["_label", "_selections"];
+
+    private _errors = [];
+    if (_selections isEqualTo []) exitWith {
+        [format ["%1 faction must be selected", _label]]
+    };
+
+    private _presetSelections = _selections select { !(((_x select 1) find "auto|") == 0) };
+    if (count _selections > 1 && {_presetSelections isNotEqualTo []}) then {
+        _errors pushBack format ["%1 presets cannot be combined with other factions", _label];
+    };
+
+    private _autoClasses = [];
+    {
+        private _data = _x select 1;
+        if ((_data find "auto|") == 0) then {
+            _autoClasses pushBack (_data select [5]);
+        };
+    } forEach _selections;
+
+    if (count _autoClasses > 1) then {
+        private _autoSides = [];
+        {
+            private _cfg = configFile >> "CfgFactionClasses" >> _x;
+            if !(isClass _cfg) then {
+                _cfg = missionConfigFile >> "CfgFactionClasses" >> _x;
+            };
+            private _side = getNumber (_cfg >> "side");
+            _autoSides pushBackUnique _side;
+        } forEach _autoClasses;
+
+        if (count _autoSides > 1) then {
+            _errors pushBack format ["%1 merged auto factions must come from the same config side", _label];
+        };
+    };
+
+    _errors
+};
+
 // Get all selections using numeric IDCs
-private _playerFactionSelection = [1955] call _fnc_getSelection;
-private _enemyFactionSelection = [1956] call _fnc_getSelection;
-private _civilianFactionSelection = [1957] call _fnc_getSelection;
-private _playerFaction = _playerFactionSelection select 0;
-private _enemyFaction = _enemyFactionSelection select 0;
-private _civilianFaction = _civilianFactionSelection select 0;
-private _playerFactionData = _playerFactionSelection select 1;
-private _enemyFactionData = _enemyFactionSelection select 1;
-private _civilianFactionData = _civilianFactionSelection select 1;
+private _playerFactionSelections = [1955] call _fnc_getSelections;
+private _enemyFactionSelections = [1956] call _fnc_getSelections;
+private _civilianFactionSelections = [1957] call _fnc_getSelections;
+private _playerFaction = [_playerFactionSelections] call _fnc_joinSelectionNames;
+private _enemyFaction = [_enemyFactionSelections] call _fnc_joinSelectionNames;
+private _civilianFaction = [_civilianFactionSelections] call _fnc_joinSelectionNames;
 private _westAttackCoverage = ([1958] call _fnc_getSelection) select 0;
 private _resources = ([1959] call _fnc_getSelection) select 0;
 private _reputation = ([1960] call _fnc_getSelection) select 0;
@@ -88,6 +147,17 @@ private _eastDifficulty = ([1972] call _fnc_getSelection) select 0;
 private _eastTempo = ([1973] call _fnc_getSelection) select 0;
 private _eastForceGrowth = ([1974] call _fnc_getSelection) select 0;
 private _eastGarrison = ([1975] call _fnc_getSelection) select 0;
+
+private _selectionErrors =
+    (["Player", _playerFactionSelections] call _fnc_validateFactionSelections) +
+    (["Enemy", _enemyFactionSelections] call _fnc_validateFactionSelections) +
+    (["Civilian", _civilianFactionSelections] call _fnc_validateFactionSelections);
+
+if (_selectionErrors isNotEqualTo []) exitWith {
+    ["UI", 2, format ["Faction dialog validation failed: %1", _selectionErrors]] call FLO_fnc_log;
+    hint format ["Faction selection is invalid:\n%1", _selectionErrors joinString "\n"];
+    _startBtn ctrlEnable true;
+};
 
 // Validate selections
 if (_playerFaction isEqualTo "" ||
@@ -163,9 +233,9 @@ _display closeDisplay 1;
     _eastTempo,
     _eastForceGrowth,
     _eastGarrison,
-    _playerFactionData,
-    _enemyFactionData,
-    _civilianFactionData,
+    _playerFactionSelections,
+    _enemyFactionSelections,
+    _civilianFactionSelections,
     _westFactionTuningHandle,
     _eastFactionTuningHandle
 ] spawn {
@@ -191,24 +261,34 @@ _display closeDisplay 1;
         "_eastTempo",
         "_eastForceGrowth",
         "_eastGarrison",
-        "_playerFactionData",
-        "_enemyFactionData",
-        "_civilianFactionData",
+        "_playerFactionSelections",
+        "_enemyFactionSelections",
+        "_civilianFactionSelections",
         "_westFactionTuningHandle",
         "_eastFactionTuningHandle"
     ];
 
     private _fnc_buildFactionHandle = {
-        params ["_selection", "_data"];
+        params ["_selections"];
+
+        private _selection = (_selections apply { _x select 0 }) joinString " + ";
+        private _data = (_selections select 0) select 1;
 
         private _handle = createHashMapFromArray [
             ["name", _selection],
             ["source", "preset"]
         ];
 
-        if ((_data find "auto|") == 0) then {
-            _handle set ["source", "auto"];
-            _handle set ["factionClass", _data select [5]];
+        if (count _selections > 1) then {
+            private _factionClasses = _selections apply { (_x select 1) select [5] };
+            _handle set ["source", "auto_multi"];
+            _handle set ["factionClass", _factionClasses select 0];
+            _handle set ["factionClasses", _factionClasses];
+        } else {
+            if ((_data find "auto|") == 0) then {
+                _handle set ["source", "auto"];
+                _handle set ["factionClass", _data select [5]];
+            };
         };
 
         _handle
@@ -375,9 +455,9 @@ _display closeDisplay 1;
 	// ============================================================================
 
 	FLO_MissionConfig = createHashMapFromArray [
-		["friendlyHandle", [_playerFaction, _playerFactionData] call _fnc_buildFactionHandle],
-		["enemyHandle", [_enemyFaction, _enemyFactionData] call _fnc_buildFactionHandle],
-		["civilianHandle", [_civilianFaction, _civilianFactionData] call _fnc_buildFactionHandle],
+		["friendlyHandle", [_playerFactionSelections] call _fnc_buildFactionHandle],
+		["enemyHandle", [_enemyFactionSelections] call _fnc_buildFactionHandle],
+		["civilianHandle", [_civilianFactionSelections] call _fnc_buildFactionHandle],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["westDifficultyHandle", _westDifficultyHandle],
 		["eastDifficultyHandle", _eastDifficultyHandle],

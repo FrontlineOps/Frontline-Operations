@@ -50,13 +50,22 @@ private _autoFactionIndex = [] call FLO_fnc_factionBuildAutoIndex;
 private _autoMilitaryFactions = _autoFactionIndex get "military";
 private _autoCivilianFactions = _autoFactionIndex get "civilian";
 
+private _fnc_selectDefault = {
+    params ["_ctrl", "_defaultIndex"];
+
+    _ctrl lbSetCurSel _defaultIndex;
+    if ((ctrlType _ctrl) == 5) then {
+        _ctrl lbSetSelected [_defaultIndex, true];
+    };
+};
+
 // Helper function to add text-only items to a combo box
 private _fnc_addItems = {
 	params ["_ctrl", "_items", "_defaultIndex"];
 	{
 		_ctrl lbAdd _x;
 	} forEach _items;
-	_ctrl lbSetCurSel _defaultIndex;
+	[_ctrl, _defaultIndex] call _fnc_selectDefault;
 };
 
 private _fnc_addFactionItems = {
@@ -72,7 +81,7 @@ private _fnc_addFactionItems = {
         _ctrl lbSetData [_idx, format ["auto|%1", _x get "class"]];
     } forEach _autoEntries;
 
-    _ctrl lbSetCurSel _defaultIndex;
+    [_ctrl, _defaultIndex] call _fnc_selectDefault;
 };
 
 // ============================================================================
@@ -258,13 +267,20 @@ private _territoryRatioOptions = [
 [_territoryRatioCombo, _territoryRatioOptions, 4] call _fnc_addItems;
 
 _playerCombo ctrlAddEventHandler ["LBSelChanged", {
-    params ["_ctrl"];
+    params ["_ctrl", "_selectedIndex"];
+    [_ctrl, _selectedIndex] call FLO_fnc_factionDialogNormalizeMultiSelection;
     [ctrlParent _ctrl, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
 }];
 
 _enemyCombo ctrlAddEventHandler ["LBSelChanged", {
-    params ["_ctrl"];
+    params ["_ctrl", "_selectedIndex"];
+    [_ctrl, _selectedIndex] call FLO_fnc_factionDialogNormalizeMultiSelection;
     [ctrlParent _ctrl, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
+}];
+
+_civilianCombo ctrlAddEventHandler ["LBSelChanged", {
+    params ["_ctrl", "_selectedIndex"];
+    [_ctrl, _selectedIndex] call FLO_fnc_factionDialogNormalizeMultiSelection;
 }];
 
 [_display] call FLO_fnc_factionDialogCreateObjectiveGroupControls;
