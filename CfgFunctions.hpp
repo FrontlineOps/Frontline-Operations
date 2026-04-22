@@ -318,6 +318,7 @@ class FLO {
         class factionApplyTuningOverrides {};
         class factionBuildTuningHandle {};
         class factionPickUnitByRole {};
+        class factionSanitizeCompositionForCatalog {};
     };
 
     class UtilitiesDebug {
