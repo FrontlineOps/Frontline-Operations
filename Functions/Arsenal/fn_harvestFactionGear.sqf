@@ -11,18 +11,9 @@
 
 private _harvestedGear = [];
 private _processedUnits = [];
-
-// List of variables to check
-private _unitVars = [
-    "F_Officer", 
-    "F_Assault_Eng", "F_Assault_TL", "F_Assault_SL", "F_Assault_Eod",
-    "F_Assault_Mrk", "F_Assault_AT", "F_Assault_Amm", "F_Assault_Mg", 
-    "F_Assault_Med", "F_Assault_Uav", 
-    "F_Recon_Snp", "F_Recon_Sct", 
-    "F_Recon_TL", "F_Recon_Mrk", "F_Recon_AT", "F_Recon_Mg", 
-    "F_Recon_Eod", "F_Recon_Med", "F_Recon_Eng", 
-    "F_Diver_TL", "F_Diver_Rfl", "F_Diver_Eod"
-];
+private _candidateUnitClasses = [];
+private _catalogUnitCount = 0;
+private _legacyUnitCount = 0;
 
 // Helper to extract items from a container class (like a pre-configured backpack)
 private _fnc_processContainer = {
@@ -83,58 +74,148 @@ private _fnc_processWeapon = {
     };
 };
 
-{
-    // Check if variable exists and is a string (classname)
-    if (!isNil _x) then {
-        private _unitClass = missionNamespace getVariable [_x, ""];
-        
-        if (_unitClass != "" && {isClass (configFile >> "CfgVehicles" >> _unitClass)}) then {
-            // Avoid processing same class multiple times
-            if !(_unitClass in _processedUnits) then {
-                _processedUnits pushBack _unitClass;
-                
-                private _cfg = configFile >> "CfgVehicles" >> _unitClass;
-                
-                // --- Weapons ---
-                private _weapons = getArray (_cfg >> "weapons");
-                {
-                    [_x] call _fnc_processWeapon;
-                } forEach _weapons;
-                
-                // --- Magazines ---
-                private _magazines = getArray (_cfg >> "magazines");
-                {
-                    if (_x != "") then { _harvestedGear pushBack _x; };
-                } forEach _magazines;
-                
-                // --- Items (Inventory) ---
-                private _items = getArray (_cfg >> "items");
-                {
-                    if (_x != "") then { _harvestedGear pushBack _x; };
-                } forEach _items;
-                
-                // --- Linked Items (Vest, Helmet, etc.) ---
-                private _linkedItems = getArray (_cfg >> "linkedItems");
-                {
-                    if (_x != "") then { _harvestedGear pushBack _x; };
-                } forEach _linkedItems;
-                
-                // --- Uniform ---
-                private _uniform = getText (_cfg >> "uniformClass");
-                if (_uniform != "") then { _harvestedGear pushBack _uniform; };
-                
-                // --- Backpack ---
-                private _backpack = getText (_cfg >> "backpack");
-                if (_backpack != "") then { 
-                    _harvestedGear pushBack _backpack; 
-                    
-                    // Also check if the backpack implies extra items (pre-configured)
-                    [_backpack] call _fnc_processContainer;
+private _fnc_addCandidateUnit = {
+    params ["_unitClass"];
+
+    if !(_unitClass isEqualType "") exitWith {};
+    if (_unitClass == "") exitWith {};
+    if !(isClass (configFile >> "CfgVehicles" >> _unitClass)) exitWith {};
+    if !(_unitClass isKindOf "Man") exitWith {};
+
+    _candidateUnitClasses pushBackUnique _unitClass;
+};
+
+private _fnc_collectUnitsFromValue = {
+    params ["_value"];
+
+    if (_value isEqualType "") exitWith {
+        [_value] call _fnc_addCandidateUnit;
+    };
+
+    if !(_value isEqualType []) exitWith {};
+
+    {
+        [_x] call _fnc_collectUnitsFromValue;
+    } forEach _value;
+};
+
+private _fnc_collectUnitsFromCatalog = {
+    params ["_catalog"];
+    if !(_catalog isEqualType createHashMap) exitWith {};
+
+    {
+        if (_x in _catalog) then {
+            {
+                [_x] call _fnc_addCandidateUnit;
+            } forEach (_catalog get _x);
+        };
+    } forEach ["units", "officers", "groundInfantryUnits", "groundSpecOpsUnits"];
+
+    {
+        if (_x in _catalog) then {
+            {
+                private _crewClass = getText (configFile >> "CfgVehicles" >> _x >> "crew");
+                if (_crewClass != "") then {
+                    [_crewClass] call _fnc_addCandidateUnit;
                 };
+            } forEach (_catalog get _x);
+        };
+    } forEach [
+        "groundMotorized",
+        "groundMechanized",
+        "groundArmor",
+        "groundTransport",
+        "groundArtillery",
+        "airHeli",
+        "airJet",
+        "airTransport",
+        "airDrone",
+        "groundDrone",
+        "mobileAA",
+        "staticAA",
+        "boat",
+        "radar"
+    ];
+};
+
+if (!isNil "FLO_FactionCatalog" && {"WEST" in FLO_FactionCatalog}) then {
+    [FLO_FactionCatalog get "WEST"] call _fnc_collectUnitsFromCatalog;
+    _catalogUnitCount = count _candidateUnitClasses;
+};
+
+if (
+    _candidateUnitClasses isEqualTo []
+    && {!isNil "FLO_FriendlyHandle"}
+    && {FLO_FriendlyHandle isEqualType createHashMap}
+) then {
+    private _source = if ("source" in FLO_FriendlyHandle) then { FLO_FriendlyHandle get "source" } else { "" };
+    private _localCatalog = createHashMap;
+
+    if (_source in ["auto", "auto_multi"]) then {
+        private _factionClasses = if ("factionClasses" in FLO_FriendlyHandle) then {
+            +(FLO_FriendlyHandle get "factionClasses")
+        } else {
+            if ("factionClass" in FLO_FriendlyHandle) then { [FLO_FriendlyHandle get "factionClass"] } else { [] }
+        };
+        _factionClasses = _factionClasses select { _x isEqualType "" && {_x != ""} };
+        _factionClasses = _factionClasses arrayIntersect _factionClasses;
+
+        if (_factionClasses isNotEqualTo []) then {
+            _localCatalog = if (_source isEqualTo "auto_multi" || {count _factionClasses > 1}) then {
+                [_factionClasses] call FLO_fnc_factionBuildMergedAutoMilitaryCatalog
+            } else {
+                [_factionClasses select 0] call FLO_fnc_factionBuildAutoMilitaryCatalog
             };
         };
     };
-} forEach _unitVars;
+
+    if ((count keys _localCatalog) > 0) then {
+        [_localCatalog] call _fnc_collectUnitsFromCatalog;
+        _catalogUnitCount = count _candidateUnitClasses;
+    };
+};
+
+{
+    if ((_x select [0, 2]) == "F_") then {
+        [missionNamespace getVariable _x] call _fnc_collectUnitsFromValue;
+    };
+} forEach (allVariables missionNamespace);
+
+_legacyUnitCount = (count _candidateUnitClasses) - _catalogUnitCount;
+
+{
+    private _unitClass = _x;
+    if !(_unitClass in _processedUnits) then {
+        _processedUnits pushBack _unitClass;
+
+        private _cfg = configFile >> "CfgVehicles" >> _unitClass;
+
+        {
+            [_x] call _fnc_processWeapon;
+        } forEach ((getArray (_cfg >> "weapons")) + (getArray (_cfg >> "respawnWeapons")));
+
+        {
+            if (_x != "") then { _harvestedGear pushBack _x; };
+        } forEach ((getArray (_cfg >> "magazines")) + (getArray (_cfg >> "respawnMagazines")));
+
+        {
+            if (_x != "") then { _harvestedGear pushBack _x; };
+        } forEach ((getArray (_cfg >> "items")) + (getArray (_cfg >> "respawnItems")));
+
+        {
+            if (_x != "") then { _harvestedGear pushBack _x; };
+        } forEach ((getArray (_cfg >> "linkedItems")) + (getArray (_cfg >> "respawnLinkedItems")));
+
+        private _uniform = getText (_cfg >> "uniformClass");
+        if (_uniform != "") then { _harvestedGear pushBack _uniform; };
+
+        private _backpack = getText (_cfg >> "backpack");
+        if (_backpack != "") then {
+            _harvestedGear pushBack _backpack;
+            [_backpack] call _fnc_processContainer;
+        };
+    };
+} forEach _candidateUnitClasses;
 
 // --- Mod Integration: KAT & ACM ---
 // we directly scan valid configuration tables for items matching the prefixes.
@@ -160,6 +241,12 @@ private _configRoots = ["CfgWeapons", "CfgMagazines", "CfgVehicles", "CfgGlasses
 _harvestedGear = _harvestedGear select {_x != ""};
 _harvestedGear = _harvestedGear arrayIntersect _harvestedGear;
 
-["ARSENAL", 3, format ["Harvested %1 unique items (Faction + Mods)", count _harvestedGear]] call FLO_fnc_log;
+["ARSENAL", 3, format [
+    "Harvested %1 unique items from %2 unit classes (catalogUnits=%3 legacyAdds=%4)",
+    count _harvestedGear,
+    count _processedUnits,
+    _catalogUnitCount,
+    _legacyUnitCount
+]] call FLO_fnc_log;
 
 _harvestedGear
