@@ -15,6 +15,36 @@ private _candidateUnitClasses = [];
 private _catalogUnitCount = 0;
 private _legacyUnitCount = 0;
 
+private _fnc_addGearClass = {
+    params ["_className"];
+
+    if !(_className isEqualType "") exitWith {};
+    if (_className == "") exitWith {};
+
+    if (
+        isClass (configFile >> "CfgWeapons" >> _className)
+        || {isClass (configFile >> "CfgMagazines" >> _className)}
+        || {isClass (configFile >> "CfgVehicles" >> _className)}
+        || {isClass (configFile >> "CfgGlasses" >> _className)}
+    ) then {
+        _harvestedGear pushBack _className;
+    };
+};
+
+private _fnc_collectGearFromValue = {
+    params ["_value"];
+
+    if (_value isEqualType "") exitWith {
+        [_value] call _fnc_addGearClass;
+    };
+
+    if !(_value isEqualType []) exitWith {};
+
+    {
+        [_x] call _fnc_collectGearFromValue;
+    } forEach _value;
+};
+
 // Helper to extract items from a container class (like a pre-configured backpack)
 private _fnc_processContainer = {
     params ["_containerClass"];
@@ -27,13 +57,13 @@ private _fnc_processContainer = {
     // TransportMagazines
     private _transportMagazines = "true" configClasses (_cfgContent >> "TransportMagazines");
     {
-        _harvestedGear pushBack (getText (_x >> "magazine"));
+        [(getText (_x >> "magazine"))] call _fnc_addGearClass;
     } forEach _transportMagazines;
     
     // TransportItems
     private _transportItems = "true" configClasses (_cfgContent >> "TransportItems");
     {
-        _harvestedGear pushBack (getText (_x >> "name"));
+        [(getText (_x >> "name"))] call _fnc_addGearClass;
     } forEach _transportItems;
     
     // TransportWeapons
@@ -50,7 +80,7 @@ private _fnc_processContainer = {
     {
         private _bag = getText (_x >> "backpack");
         if (_bag != "") then {
-            _harvestedGear pushBack _bag;
+            [_bag] call _fnc_addGearClass;
             [_bag] call _fnc_processContainer;
         };
     } forEach _transportBackpacks;
@@ -61,7 +91,7 @@ private _fnc_processWeapon = {
     params ["_weaponClass"];
     
     if (_weaponClass == "") exitWith {};
-    _harvestedGear pushBack _weaponClass;
+    [_weaponClass] call _fnc_addGearClass;
     
     private _cfgWeapon = configFile >> "CfgWeapons" >> _weaponClass;
     if (isClass _cfgWeapon) then {
@@ -69,8 +99,21 @@ private _fnc_processWeapon = {
         private _linkedItems = "true" configClasses (_cfgWeapon >> "LinkedItems");
         {
             private _item = getText (_x >> "item");
-            if (_item != "") then { _harvestedGear pushBack _item; };
+            [_item] call _fnc_addGearClass;
         } forEach _linkedItems;
+
+        {
+            [_x] call _fnc_addGearClass;
+        } forEach (getArray (_cfgWeapon >> "magazines"));
+
+        {
+            private _muzzle = _x;
+            if (_muzzle != "this" && {isClass (_cfgWeapon >> _muzzle)}) then {
+                {
+                    [_x] call _fnc_addGearClass;
+                } forEach (getArray (_cfgWeapon >> _muzzle >> "magazines"));
+            };
+        } forEach (getArray (_cfgWeapon >> "muzzles"));
     };
 };
 
@@ -195,23 +238,32 @@ _legacyUnitCount = (count _candidateUnitClasses) - _catalogUnitCount;
         } forEach ((getArray (_cfg >> "weapons")) + (getArray (_cfg >> "respawnWeapons")));
 
         {
-            if (_x != "") then { _harvestedGear pushBack _x; };
+            [_x] call _fnc_addGearClass;
         } forEach ((getArray (_cfg >> "magazines")) + (getArray (_cfg >> "respawnMagazines")));
 
         {
-            if (_x != "") then { _harvestedGear pushBack _x; };
+            [_x] call _fnc_addGearClass;
         } forEach ((getArray (_cfg >> "items")) + (getArray (_cfg >> "respawnItems")));
 
         {
-            if (_x != "") then { _harvestedGear pushBack _x; };
+            [_x] call _fnc_addGearClass;
         } forEach ((getArray (_cfg >> "linkedItems")) + (getArray (_cfg >> "respawnLinkedItems")));
 
+        {
+            [_x] call _fnc_collectGearFromValue;
+        } forEach [
+            getArray (_cfg >> "headgearList"),
+            getArray (_cfg >> "uniformList"),
+            getArray (_cfg >> "vestList"),
+            getArray (_cfg >> "backpackList")
+        ];
+
         private _uniform = getText (_cfg >> "uniformClass");
-        if (_uniform != "") then { _harvestedGear pushBack _uniform; };
+        [_uniform] call _fnc_addGearClass;
 
         private _backpack = getText (_cfg >> "backpack");
         if (_backpack != "") then {
-            _harvestedGear pushBack _backpack;
+            [_backpack] call _fnc_addGearClass;
             [_backpack] call _fnc_processContainer;
         };
     };

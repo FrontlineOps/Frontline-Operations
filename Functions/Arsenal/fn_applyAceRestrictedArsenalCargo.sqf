@@ -4,8 +4,8 @@
     Description:
         Applies the FLO restricted arsenal whitelist to an ACE arsenal box.
         When reset is true, the box is reinitialized with only the whitelist.
-        When reset is false, existing virtual items are removed by classname so
-        the ACE arsenal interaction is not removed.
+        When reset is false, the whitelist is re-applied without rebuilding the
+        ACE interaction.
 
     Arguments:
         0: Arsenal object <OBJECT>
@@ -32,20 +32,6 @@ if (_allowedItems isEqualTo []) exitWith {
     false
 };
 
-private _configItemsFlat = uiNamespace getVariable ["ace_arsenal_configItemsFlat", createHashMap];
-private _allowedNormalized = (_allowedItems select {_x isEqualType ""}) apply {
-    _x call ace_common_fnc_getConfigName
-};
-_allowedNormalized = _allowedNormalized - [""];
-_allowedNormalized = _allowedNormalized apply {
-    if (_x in _configItemsFlat) then {
-        _x
-    } else {
-        _x call ace_arsenal_fnc_baseWeapon
-    }
-};
-_allowedNormalized = (_allowedNormalized select {_x in _configItemsFlat}) arrayIntersect _allowedNormalized;
-
 if (_resetBox) exitWith {
     [_box, _global] call ace_arsenal_fnc_removeBox;
     [_box, _allowedItems, _global] call ace_arsenal_fnc_initBox;
@@ -53,12 +39,5 @@ if (_resetBox) exitWith {
 };
 
 [_box, _allowedItems, _global] call ace_arsenal_fnc_addVirtualItems;
-
-private _currentItems = [_box] call ace_arsenal_fnc_getVirtualItems;
-private _currentItemNames = keys _currentItems;
-private _itemsToRemove = _currentItemNames - _allowedNormalized;
-if (_itemsToRemove isNotEqualTo []) then {
-    [_box, _itemsToRemove, _global] call ace_arsenal_fnc_removeVirtualItems;
-};
 
 true
