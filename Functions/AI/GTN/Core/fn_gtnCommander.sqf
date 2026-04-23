@@ -253,10 +253,10 @@ private _gtnCommander = createHashMapObject [[
         ["engagementSaturationPenalty", 60], // Saturated contacts should be strongly deprioritized against other valid targets
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
-        ["strategicOrderAssignmentsPerCycle", 4], // Shared cap for new ATTACK/DEFEND/GARRISON route orders so one cycle cannot dump many path requests
-        ["attackAssignmentsPerCycle", 2], // One attack primitive only orders a bounded number of groups so one commander slice does not monopolize the scheduler
-        ["defenseAssignmentsPerCycle", 2], // One defense primitive only orders a bounded number of groups so surge defense spreads across updates
-        ["garrisonAssignmentsPerCycle", 2], // Baseline garrison fill spreads standing-order route requests across cycles without starving mobile orders
+        ["strategicOrderAssignmentsPerCycle", 4], // Shared 10-second baseline cap for new ATTACK/DEFEND/GARRISON route orders
+        ["attackAssignmentsPerCycle", 2], // 10-second baseline attack assignment cap for one commander slice
+        ["defenseAssignmentsPerCycle", 2], // 10-second baseline defense assignment cap for one commander slice
+        ["garrisonAssignmentsPerCycle", 2], // 10-second baseline garrison assignment cap for one commander slice
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
     ]],
     
@@ -1518,7 +1518,7 @@ private _gtnCommander = createHashMapObject [[
     }],
 
     ["_resetStrategicOrderBudget", {
-        private _limit = ((_self get "_config") get "strategicOrderAssignmentsPerCycle") max 0;
+        private _limit = [_self, "strategicOrderAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
         _self set ["_strategicOrderBudgetRemaining", _limit];
         _self set ["_strategicOrderBudgetIssued", 0];
         _self set ["_strategicOrderBudgetSkipped", 0];
@@ -1548,8 +1548,9 @@ private _gtnCommander = createHashMapObject [[
     }],
 
     ["_getStrategicOrderBudgetMetrics", {
+        private _limit = [_self, "strategicOrderAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
         createHashMapFromArray [
-            ["limit", ((_self get "_config") get "strategicOrderAssignmentsPerCycle") max 0],
+            ["limit", _limit],
             ["issued", _self get "_strategicOrderBudgetIssued"],
             ["remaining", _self get "_strategicOrderBudgetRemaining"],
             ["skipped", _self get "_strategicOrderBudgetSkipped"],

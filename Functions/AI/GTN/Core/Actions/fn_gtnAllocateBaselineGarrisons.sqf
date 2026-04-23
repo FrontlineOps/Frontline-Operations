@@ -38,7 +38,7 @@ private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
-private _assignmentLimit = ((_cmdr get "_config") get "garrisonAssignmentsPerCycle") max 0;
+private _assignmentLimit = [_cmdr, "garrisonAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
 private _assignableGroupTypes = ["infantry", "motorized", "mechanized", "armor"];
 private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 

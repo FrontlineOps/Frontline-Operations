@@ -43,7 +43,7 @@ private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _objectives = _ws call ["_getObjectives", []];
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");
 private _fallbackBand = _reserveGraphDepth + 1;
-private _assignmentLimit = ((_cmdr get "_config") get "defenseAssignmentsPerCycle");
+private _assignmentLimit = [_cmdr, "defenseAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
 private _claimedPositionsByObjective = createHashMap;
 private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 {
