@@ -31,4 +31,18 @@ if (!_spawnValid) then {
     ["VIRTUALIZATION", 2, format ["%1 spawn fallback used for group %2", _label, _groupId]] call FLO_fnc_log;
 };
 
+private _preClearancePos = +_spawnPos;
+_spawnPos = [_spawnPos] call FLO_fnc_getSafeUnvirtualizePos;
+if ((_spawnPos distance2D _preClearancePos) > 1) then {
+    private _adjustedMeters = (round ((_spawnPos distance2D _preClearancePos) * 10)) / 10;
+    ["VIRTUALIZATION", 2, format [
+        "%1 spawn position adjusted for player clearance group=%2 original=%3 adjusted=%4 moved=%5m",
+        _label,
+        _groupId,
+        _preClearancePos,
+        _spawnPos,
+        _adjustedMeters
+    ]] call FLO_fnc_log;
+};
+
 _spawnPos

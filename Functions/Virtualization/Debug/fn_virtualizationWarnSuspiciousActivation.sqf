@@ -44,26 +44,32 @@ private _closestSpawnVehicle = objNull;
 } forEach _eligiblePlayers;
 
 private _distanceCollapse = _requestedNearestDist - _spawnNearestDist;
-private _isSuspicious = (_spawnNearestDist < 100) || {_distanceCollapse > 300};
+private _clearanceMeters = 150;
+private _isSuspicious = (_spawnNearestDist < _clearanceMeters) || {_distanceCollapse > 300};
 if (!_isSuspicious) exitWith { false };
 
 private _closestSpawnPos = if (isNull _closestSpawnVehicle) then { [] } else { getPosATL _closestSpawnVehicle };
+private _requestedNearestRounded = (round (_requestedNearestDist * 10)) / 10;
+private _anchorNearestRounded = (round (_anchorNearestDist * 10)) / 10;
+private _spawnNearestRounded = (round (_spawnNearestDist * 10)) / 10;
+private _collapseRounded = (round (_distanceCollapse * 10)) / 10;
 ["VIRTUALIZATION", 2, format [
-    "Suspicious activation %1 type=%2 requestedPos=%3 requestedNearest=%.1fm anchorPos=%4 anchorNearest=%.1fm closestSpawnPos=%5 closestSpawnNearest=%.1fm collapse=%.1fm activationDeferred=%6 missionLock=%7 activeUnits=%8/%9 nearestPlayer=%10",
+    "Suspicious activation %1 type=%2 requestedPos=%3 requestedNearest=%4m anchorPos=%5 anchorNearest=%6m closestSpawnPos=%7 closestSpawnNearest=%8m collapse=%9m activationDeferred=%10 missionLock=%11 activeUnits=%12/%13 nearestPlayer=%14 clearance=%15m",
     _groupId,
     _groupData get "groupType",
     _requestedPos,
-    _requestedNearestDist,
+    _requestedNearestRounded,
     _spawnAnchorPos,
-    _anchorNearestDist,
+    _anchorNearestRounded,
     _closestSpawnPos,
-    _spawnNearestDist,
-    _distanceCollapse,
+    _spawnNearestRounded,
+    _collapseRounded,
     _groupData get "activationDeferred",
     _groupData get "missionLock",
     FLO_VirtUpdate get "activeUnitCount",
     FLO_virtualGroups get "_activationUnitCap",
-    if (isNull _nearestPlayer) then { "<none>" } else { name _nearestPlayer }
+    if (isNull _nearestPlayer) then { "<none>" } else { name _nearestPlayer },
+    _clearanceMeters
 ] ] call FLO_fnc_log;
 
 true

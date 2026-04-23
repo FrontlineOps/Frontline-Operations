@@ -71,10 +71,43 @@ if (_attachedPassengerCount > 0) then {
 };
 _groupData set ["unitCount", _recoverableCount];
 [_groupData, _recoverableComp] call FLO_fnc_virtualizationSetAssetComposition;
+[_groupData, grpNull, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
 [_groupData] call FLO_fnc_virtualizationClearRealGroup;
 [_groupData] call FLO_fnc_virtualizationClearRealVehicles;
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
+
+private _activationDistance = FLO_virtualGroups get "_activationDistance";
+private _cachedPlayers = FLO_VirtUpdate get "cachedPlayerPositions";
+private _orphanPos = +(_groupData get "position");
+private _nearestPlayerDist = 1e10;
+{
+    _x params ["_playerPos", "_inAir"];
+    if (!_inAir) then {
+        private _dist = _orphanPos distance2D _playerPos;
+        if (_dist < _nearestPlayerDist) then {
+            _nearestPlayerDist = _dist;
+        };
+    };
+} forEach _cachedPlayers;
+
+if (_nearestPlayerDist <= _activationDistance) then {
+    private _deferredPos = [_orphanPos, _activationDistance] call FLO_fnc_virtualizationComputeDeferredActivationPos;
+    [FLO_virtualGroups, _groupId, _deferredPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+    _groupData set ["activationDeferred", true];
+    _groupData set ["activationDeferredAt", diag_tickTime];
+    _groupData set ["activationDeferredPos", _deferredPos];
+
+    ["VIRTUALIZATION", 2, format [
+        "Deferred orphan repair reactivation for %1 (%2) originalPos=%3 deferredPos=%4 nearestPlayer=%5m activationDistance=%6m",
+        _groupId,
+        _groupType,
+        _orphanPos,
+        _deferredPos,
+        (round (_nearestPlayerDist * 10)) / 10,
+        _activationDistance
+    ]] call FLO_fnc_log;
+};
 
 if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
     [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
