@@ -66,6 +66,7 @@ class FLO {
         class gtnMarkCommanderStateDirty {};
         class gtnGetCachedReserveBands {};
         class gtnGetSideCommanderHandle {};
+        class gtnGetTempoScaledAssignmentLimit {};
         class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
         class gtnDistanceToSegment2D {};
