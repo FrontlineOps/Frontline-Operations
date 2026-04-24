@@ -24,11 +24,17 @@ private _metrics = createHashMapFromArray [
     ["assignedGroups", 0],
     ["openedObjectives", 0],
     ["reinforcedObjectives", 0],
-    ["remainingPool", 0]
+    ["remainingPool", 0],
+    ["candidateBuildMs", 0],
+    ["reserveBandMs", 0],
+    ["selectionMs", 0],
+    ["orderMs", 0],
+    ["totalMs", 0]
 ];
 
 if (isNil "_cmdr" || {isNil "_track"}) exitWith { _metrics };
 
+private _tTotal = diag_tickTime;
 private _pool = +(_track get "groupPool");
 _metrics set ["poolCount", count _pool];
 _metrics set ["remainingPool", count _pool];
@@ -51,6 +57,7 @@ private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 } forEach (_assignmentCache get "claimedPositionsByObjective");
 private _defenderCounts = _assignmentCache get "defenderCounts";
 
+private _tCandidateBuild = diag_tickTime;
 private _candidateObjectives = [];
 {
     private _objectiveId = _x;
@@ -95,12 +102,10 @@ private _candidateObjectives = [];
     };
 
     private _pressure = ((_enemyCount - (_objective get "friendlyCount")) max 0) + (if (_underAttack) then { 4 } else { 0 });
-    private _reserveBands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
 
     _candidateObjectives pushBack (createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["objectivePos", _objective get "position"],
-        ["reserveBands", _reserveBands],
         ["priority", _objective get "priority"],
         ["pressureBand", _pressureBand],
         ["pressure", _pressure],
@@ -108,6 +113,7 @@ private _candidateObjectives = [];
         ["deficit", _deficit]
     ]);
 } forEach _objectives;
+_metrics set ["candidateBuildMs", (diag_tickTime - _tCandidateBuild) * 1000];
 
 _metrics set ["candidateObjectives", count _candidateObjectives];
 if ((count _candidateObjectives) == 0) exitWith { _metrics };
@@ -160,8 +166,17 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
-        private _reserveBands = _x get "reserveBands";
+        private _reserveBands = if ("reserveBands" in _x) then {
+            _x get "reserveBands"
+        } else {
+            private _tReserve = diag_tickTime;
+            private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
+            _metrics set ["reserveBandMs", (_metrics get "reserveBandMs") + ((diag_tickTime - _tReserve) * 1000)];
+            _x set ["reserveBands", _bands];
+            _bands
+        };
 
+        private _tSelection = diag_tickTime;
         private _bestGroupId = "";
         private _bestIndex = -1;
         private _bestBand = 10;
@@ -182,6 +197,7 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
                 _bestDist = _distToObjective;
             };
         };
+        _metrics set ["selectionMs", (_metrics get "selectionMs") + ((diag_tickTime - _tSelection) * 1000)];
 
         if (_bestGroupId == "") then { continue };
 
@@ -192,7 +208,11 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
         };
         private _defendPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
 
-        if (_cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId, true, true]]) then {
+        private _tOrder = diag_tickTime;
+        private _ordered = _cmdr call ["_orderGroupDefend", [_bestGroupId, _defendPos, _objectiveId, true, true]];
+        _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
+
+        if (_ordered) then {
             _poolEntries deleteAt _bestIndex;
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
@@ -226,6 +246,7 @@ while {_continueAllocation && {(count _poolEntries) > 0}} do {
 _pool = _poolEntries apply { _x select 0 };
 _track set ["groupPool", _pool];
 _metrics set ["remainingPool", count _pool];
+_metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 ["GTN", 3, format[
     "Track %1 frontline defense allocation: assigned=%2 opened=%3 reinforced=%4 candidates=%5 remaining=%6",
@@ -236,5 +257,22 @@ _metrics set ["remainingPool", count _pool];
     _metrics get "candidateObjectives",
     _metrics get "remainingPool"
 ]] call FLO_fnc_log;
+
+if ((_metrics get "totalMs") >= 20) then {
+    diag_log format [
+        "[FLO][PERF] GTN defense allocation %1 track=%2 candidates=%3 pool=%4 assigned=%5 remaining=%6 build=%7 reserve=%8 select=%9 order=%10 total=%11",
+        _cmdr get "_sideKey",
+        _track get "id",
+        _metrics get "candidateObjectives",
+        _metrics get "poolCount",
+        _metrics get "assignedGroups",
+        _metrics get "remainingPool",
+        _metrics get "candidateBuildMs",
+        _metrics get "reserveBandMs",
+        _metrics get "selectionMs",
+        _metrics get "orderMs",
+        _metrics get "totalMs"
+    ];
+};
 
 _metrics

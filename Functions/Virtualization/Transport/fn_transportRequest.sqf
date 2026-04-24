@@ -59,7 +59,7 @@ private _currentPos = _infData get "position";
 private _unitCount = _infData get "unitCount";
 private _side = _infData get "side";
 private _infantryIsActive = _infData get "isActive";
-private _requiredActivation = if (_infantryIsActive) then { "ACTIVE" } else { "VIRTUAL" };
+private _activationKey = if (_infantryIsActive) then { "Active" } else { "Virtual" };
 private _groundCarrierTypes = ["motorized", "mechanized"];
 private _airCarrierTypes = ["helicopter"];
 
@@ -74,77 +74,27 @@ if (!_forceTransport && _distance < FLO_Transport_MinDistance) exitWith {
 private _transportId = "";
 private _transportData = createHashMap;
 private _hasTransportData = false;
+private _requestCandidates = [
+    _unitCount,
+    _currentPos,
+    _side,
+    _groundCarrierTypes,
+    _airCarrierTypes
+] call FLO_fnc_transportFindRequestCandidates;
 
 // Prefer dedicated reserve carriers first in the passenger's current activation state.
-if (_allowGroundTransport && {_infantryIsActive}) then {
-    _transportId = [
-        _unitCount,
-        _currentPos,
-        _side,
-        3000,
-        "ACTIVE",
-        _groundCarrierTypes,
-        true
-    ] call FLO_fnc_transportPoolFind;
-
+if (_allowGroundTransport) then {
+    _transportId = _requestCandidates get format ["groundAvailable%1Dedicated", _activationKey];
     if (_transportId == "") then {
-        _transportId = [
-            _unitCount,
-            _currentPos,
-            _side,
-            FLO_Transport_SearchRadius,
-            "ACTIVE",
-            _groundCarrierTypes,
-            true
-        ] call FLO_fnc_transportPoolFindExisting;
-    };
-};
-if (_allowGroundTransport && {!_infantryIsActive}) then {
-    _transportId = [
-        _unitCount,
-        _currentPos,
-        _side,
-        3000,
-        "VIRTUAL",
-        _groundCarrierTypes,
-        true
-    ] call FLO_fnc_transportPoolFind;
-
-    if (_transportId == "") then {
-        _transportId = [
-            _unitCount,
-            _currentPos,
-            _side,
-            FLO_Transport_SearchRadius,
-            "VIRTUAL",
-            _groundCarrierTypes,
-            true
-        ] call FLO_fnc_transportPoolFindExisting;
+        _transportId = _requestCandidates get format ["groundExisting%1Dedicated", _activationKey];
     };
 };
 
 // Active squads can activate a virtual reserve carrier on demand.
 if (_allowGroundTransport && {_transportId == ""} && {_infantryIsActive}) then {
-    _transportId = [
-        _unitCount,
-        _currentPos,
-        _side,
-        3000,
-        "VIRTUAL",
-        _groundCarrierTypes,
-        true
-    ] call FLO_fnc_transportPoolFind;
-
+    _transportId = _requestCandidates get "groundAvailableVirtualDedicated";
     if (_transportId == "") then {
-        _transportId = [
-            _unitCount,
-            _currentPos,
-            _side,
-            FLO_Transport_SearchRadius,
-            "VIRTUAL",
-            _groundCarrierTypes,
-            true
-        ] call FLO_fnc_transportPoolFindExisting;
+        _transportId = _requestCandidates get "groundExistingVirtualDedicated";
     };
 
     if (_transportId != "") then {
@@ -160,99 +110,25 @@ if (_allowGroundTransport && {_transportId == ""} && {_infantryIsActive}) then {
 
 // Fall back to any available ground carrier, including organic combat vehicles.
 if (_allowGroundTransport && {_transportId == ""}) then {
-    _transportId = [
-        _unitCount,
-        _currentPos,
-        _side,
-        3000,
-        _requiredActivation,
-        _groundCarrierTypes,
-        false
-    ] call FLO_fnc_transportPoolFind;
+    _transportId = _requestCandidates get format ["groundAvailable%1Fallback", _activationKey];
 };
 
 if (_allowGroundTransport && {_transportId == ""}) then {
-    _transportId = [
-        _unitCount,
-        _currentPos,
-        _side,
-        FLO_Transport_SearchRadius,
-        _requiredActivation,
-        _groundCarrierTypes,
-        false
-    ] call FLO_fnc_transportPoolFindExisting;
+    _transportId = _requestCandidates get format ["groundExisting%1Fallback", _activationKey];
 };
 
 // Long-haul fallback: request dedicated airlift if no ground carrier is available.
 if (_allowAirTransport && {_transportId == ""} && {(_distance >= FLO_Transport_AirPickupMinDistance) || _forceAirTransport}) then {
-    if (_infantryIsActive) then {
-        _transportId = [
-            _unitCount,
-            _currentPos,
-            _side,
-            FLO_Transport_AirSearchRadius,
-            "ACTIVE",
-            _airCarrierTypes,
-            true
-        ] call FLO_fnc_transportPoolFind;
-
-        if (_transportId == "") then {
-            _transportId = [
-                _unitCount,
-                _currentPos,
-                _side,
-                FLO_Transport_AirSearchRadius,
-                "ACTIVE",
-                _airCarrierTypes,
-                true
-            ] call FLO_fnc_transportPoolFindExisting;
-        };
-    } else {
-        _transportId = [
-            _unitCount,
-            _currentPos,
-            _side,
-            FLO_Transport_AirSearchRadius,
-            "VIRTUAL",
-            _airCarrierTypes,
-            true
-        ] call FLO_fnc_transportPoolFind;
-
-        if (_transportId == "") then {
-            _transportId = [
-                _unitCount,
-                _currentPos,
-                _side,
-                FLO_Transport_AirSearchRadius,
-                "VIRTUAL",
-                _airCarrierTypes,
-                true
-            ] call FLO_fnc_transportPoolFindExisting;
-        };
+    _transportId = _requestCandidates get format ["airAvailable%1Dedicated", _activationKey];
+    if (_transportId == "") then {
+        _transportId = _requestCandidates get format ["airExisting%1Dedicated", _activationKey];
     };
 };
 
 if (_allowAirTransport && {_transportId == ""} && {((_distance >= FLO_Transport_AirPickupMinDistance) || _forceAirTransport)} && {_infantryIsActive}) then {
-    _transportId = [
-        _unitCount,
-        _currentPos,
-        _side,
-        FLO_Transport_AirSearchRadius,
-        "VIRTUAL",
-        _airCarrierTypes,
-        true
-    ] call FLO_fnc_transportPoolFind;
-
+    _transportId = _requestCandidates get "airAvailableVirtualDedicated";
     if (_transportId == "") then {
-        _transportId = [
-            _unitCount,
-            _currentPos,
-            _side,
-            FLO_Transport_AirSearchRadius,
-            "VIRTUAL",
-            _airCarrierTypes,
-            true
-        ] call FLO_fnc_transportPoolFindExisting;
+        _transportId = _requestCandidates get "airExistingVirtualDedicated";
     };
 
     if (_transportId != "") then {

@@ -39,18 +39,19 @@ private _bestCapacity = 0;
     private _commanderOrder = _gData get "commanderOrder";
     if (_commanderOrder != "" && {!(_commanderOrder in ["PATROL", "DEFEND", "", "TRANSPORT"])}) then { continue };
 
-    private _pickupCapacity = [_gData] call FLO_fnc_transportGetPickupCapacity;
-    if (_pickupCapacity < _requiredCapacity) then { continue };
-
     private _position = _gData get "position";
     private _dist = _position distance2D _nearPos;
     private _priority = if (_gData get "transportRole") then { 0 } else { 1 };
-    if (_priority < _bestPriority || {_priority == _bestPriority && {_dist < _bestDist}}) then {
-        _bestPriority = _priority;
-        _bestDist = _dist;
-        _bestGroup = _groupId;
-        _bestCapacity = _pickupCapacity;
-    };
+    if (_dist > _maxDistance) then { continue };
+    if (_priority > _bestPriority || {_priority == _bestPriority && {_dist >= _bestDist}}) then { continue };
+
+    private _pickupCapacity = [_gData] call FLO_fnc_transportGetPickupCapacity;
+    if (_pickupCapacity < _requiredCapacity) then { continue };
+
+    _bestPriority = _priority;
+    _bestDist = _dist;
+    _bestGroup = _groupId;
+    _bestCapacity = _pickupCapacity;
 } forEach _groups;
 
 if (_bestGroup != "") then {

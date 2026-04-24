@@ -153,6 +153,7 @@ class VirtualizationTransport {
     class transportCarrierBlocksDeactivation {};
     class transportPool         {};
     class transportPoolClaim    {};
+    class transportFindRequestCandidates {};
     class transportPoolFind     {};
     class transportPoolFindExisting {};
     class transportPoolRelease  {};

@@ -132,6 +132,7 @@ private _gtnCommander = createHashMapObject [[
     ["_attackSourceObjectivesCache", createHashMap],
     ["_attackPressureProfiles", createHashMap],
     ["_attackCapCache", createHashMap],
+    ["_lastFriendlyObjectiveOwnershipSignature", ""],
     ["_attackObjectiveReservations", createHashMap],
     ["_objectiveAssignmentCache", createHashMapFromArray [
         ["attackCounts", createHashMap],
@@ -253,9 +254,9 @@ private _gtnCommander = createHashMapObject [[
         ["engagementSaturationPenalty", 60], // Saturated contacts should be strongly deprioritized against other valid targets
         ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
         ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
-        ["strategicOrderAssignmentsPerCycle", 4], // Shared 10-second baseline cap for new ATTACK/DEFEND/GARRISON route orders
-        ["attackAssignmentsPerCycle", 2], // 10-second baseline attack assignment cap for one commander slice
-        ["defenseAssignmentsPerCycle", 2], // 10-second baseline defense assignment cap for one commander slice
+        ["strategicOrderAssignmentsPerCycle", 6], // Shared 10-second baseline cap for new ATTACK/DEFEND/GARRISON route orders
+        ["attackAssignmentsPerCycle", 3], // 10-second baseline attack assignment cap for one commander slice
+        ["defenseAssignmentsPerCycle", 3], // 10-second baseline defense assignment cap for one commander slice
         ["garrisonAssignmentsPerCycle", 2], // 10-second baseline garrison assignment cap for one commander slice
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
     ]],
@@ -271,6 +272,7 @@ private _gtnCommander = createHashMapObject [[
     ["_perf", createHashMapFromArray [
         ["enabled", true],
         ["logThresholdMs", 20],
+        ["orderLogThresholdMs", 8],
         ["lastCycleMs", 0],
         ["peakCycleMs", 0],
         ["slowCycles", 0],
@@ -386,6 +388,8 @@ private _gtnCommander = createHashMapObject [[
         private _enemyIntelSensed = _wsRan && { _wsMeta get "enemyIntelSenseRan" };
         private _supportAssetsSensed = _wsRan && { _wsMeta get "supportSenseRan" };
         private _objectives = _ws call ["_getObjectives", []];
+        private _friendlyOwnershipSignature = [_objectives, _self get "_ownSide"] call FLO_fnc_gtnBuildFriendlyObjectiveOwnershipSignature;
+        private _friendlyOwnershipChanged = _friendlyOwnershipSignature != (_self get "_lastFriendlyObjectiveOwnershipSignature");
         private _garrisonSignature = [_objectives, _self get "_ownSide", _self get "_enemySide"] call FLO_fnc_gtnBuildObjectiveDemandSignature;
         private _garrisonSignatureChanged = _garrisonSignature != (_self get "_lastGarrisonSignature");
 
@@ -400,8 +404,10 @@ private _gtnCommander = createHashMapObject [[
         ]] call FLO_fnc_log;
 
         _self call ["_refreshAttackFrontline", []];
-        if (_garrisonSignatureChanged) then {
+        if (_friendlyOwnershipChanged) then {
             _self set ["_reserveBandsCache", createHashMap];
+            _self set ["_attackSourceObjectivesCache", createHashMap];
+            _self set ["_lastFriendlyObjectiveOwnershipSignature", _friendlyOwnershipSignature];
         };
 
         // Publish the maintained commander COP to players as non-debug local intel markers.
@@ -1813,24 +1819,15 @@ private _gtnCommander = createHashMapObject [[
         private _ownSide = _self get "_ownSide";
         private _linkedObjectives = _objective get "linkedObjectives";
         private _cache = _self get "_attackSourceObjectivesCache";
-        private _ownerSignatureParts = [format ["self:%1", _objective get "owner"]];
-        {
-            _ownerSignatureParts pushBack format ["%1:%2", _x, (_objectives get _x) get "owner"];
-        } forEach _linkedObjectives;
-        private _ownerSignature = _ownerSignatureParts joinString "|";
 
-        if (_objectiveId in _cache) then {
-            private _cachedEntry = _cache get _objectiveId;
-            private _cachedSignature = _cachedEntry select 0;
-            if (_cachedSignature == _ownerSignature) exitWith {
-                _cachedEntry select 1
-            };
+        if (_objectiveId in _cache) exitWith {
+            _cache get _objectiveId
         };
 
         private _sourceObjectives = _linkedObjectives select {
             ((_objectives get _x) get "owner") isEqualTo _ownSide
         };
-        _cache set [_objectiveId, [_ownerSignature, _sourceObjectives]];
+        _cache set [_objectiveId, _sourceObjectives];
 
         _sourceObjectives
     }],
@@ -2158,14 +2155,6 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
-        private _attackPos = _pos;
-        if (_objectiveId != "") then {
-            private _randomAttackPos = [_objectiveId] call FLO_fnc_getRandomObjectivePos;
-            if !(_randomAttackPos isEqualTo [0, 0, 0]) then {
-                _attackPos = _randomAttackPos;
-            };
-        };
-
         private _existingTarget = _gData get "orderTargetPos";
         private _existingAttackObjective = _gData get "attackObjective";
         private _hasRouteContext = (count (_gData get "waypoints") > 0) || {(_gData get "pathToken") >= 0};
@@ -2174,10 +2163,29 @@ private _gtnCommander = createHashMapObject [[
             (_gData get "commanderOrder") == "ATTACK"
             && {!_engagementRouteActive}
             && {_hasRouteContext}
-            && {
-                (_objectiveId != "" && {_existingAttackObjective == _objectiveId})
-                || {count _existingTarget >= 2 && {_existingTarget distance2D _attackPos < 60}}
-            }
+            && {_objectiveId != ""}
+            && {_existingAttackObjective == _objectiveId}
+        ) exitWith {
+            if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
+            FLO_GTN_OrderNoOps set ["ATTACK", (FLO_GTN_OrderNoOps getOrDefault ["ATTACK", 0]) + 1];
+            _self call ["_taskGroups", [[_groupId]]];
+            true
+        };
+
+        private _attackPos = _pos;
+        if (_objectiveId != "") then {
+            private _randomAttackPos = [_objectiveId] call FLO_fnc_getRandomObjectivePos;
+            if !(_randomAttackPos isEqualTo [0, 0, 0]) then {
+                _attackPos = _randomAttackPos;
+            };
+        };
+
+        if (
+            (_gData get "commanderOrder") == "ATTACK"
+            && {!_engagementRouteActive}
+            && {_hasRouteContext}
+            && {_objectiveId == ""}
+            && {count _existingTarget >= 2 && {_existingTarget distance2D _attackPos < 60}}
         ) exitWith {
             if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
             FLO_GTN_OrderNoOps set ["ATTACK", (FLO_GTN_OrderNoOps getOrDefault ["ATTACK", 0]) + 1];
@@ -2197,9 +2205,18 @@ private _gtnCommander = createHashMapObject [[
             [_attackPos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 50]
         ];
 
+        private _orderStart = diag_tickTime;
+        private _tRoute = diag_tickTime;
         [_groupId, _waypoints, false, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
+        private _routeMs = (diag_tickTime - _tRoute) * 1000;
+        private _tAssign = diag_tickTime;
         [_gData, _attackPos, _objectiveId] call FLO_fnc_virtualizationAssignAttackOrder;
+        private _assignMs = (diag_tickTime - _tAssign) * 1000;
+        private _tTransport = diag_tickTime;
         [_groupId, _gData, _attackPos, "ATTACK"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
+        private _transportMs = (diag_tickTime - _tTransport) * 1000;
+        private _orderMs = (diag_tickTime - _orderStart) * 1000;
+        [_self, "ATTACK", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {
             private _assignmentCache = _self get "_objectiveAssignmentCache";
@@ -2297,10 +2314,19 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "GUARD", "AWARE", "FULL", _formation, "YELLOW", 60]
         ];
 
+        private _orderStart = diag_tickTime;
+        private _tRoute = diag_tickTime;
         [_groupId, _waypoints, false, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
+        private _routeMs = (diag_tickTime - _tRoute) * 1000;
         private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
+        private _tAssign = diag_tickTime;
         [_gData, _pos, _objectiveId, diag_tickTime, diag_tickTime + _leaseSeconds] call FLO_fnc_virtualizationAssignDefendOrder;
+        private _assignMs = (diag_tickTime - _tAssign) * 1000;
+        private _tTransport = diag_tickTime;
         [_groupId, _gData, _pos, "DEFEND"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
+        private _transportMs = (diag_tickTime - _tTransport) * 1000;
+        private _orderMs = (diag_tickTime - _orderStart) * 1000;
+        [_self, "DEFEND", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {
             private _assignmentCache = _self get "_objectiveAssignmentCache";
@@ -2389,9 +2415,18 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "GUARD", "SAFE", "LIMITED", _formation, "GREEN", 50]
         ];
 
+        private _orderStart = diag_tickTime;
+        private _tRoute = diag_tickTime;
         [_groupId, _waypoints, false, true, "GTN_GARRISON"] call FLO_fnc_updateVirtualGroupWaypoints;
+        private _routeMs = (diag_tickTime - _tRoute) * 1000;
+        private _tAssign = diag_tickTime;
         [_gData, _pos, _objectiveId] call FLO_fnc_virtualizationAssignGarrisonOrder;
+        private _assignMs = (diag_tickTime - _tAssign) * 1000;
+        private _tTransport = diag_tickTime;
         [_groupId, _gData, _pos, "GARRISON"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
+        private _transportMs = (diag_tickTime - _tTransport) * 1000;
+        private _orderMs = (diag_tickTime - _orderStart) * 1000;
+        [_self, "GARRISON", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {
             private _assignmentCache = _self get "_objectiveAssignmentCache";

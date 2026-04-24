@@ -57,6 +57,7 @@ class FLO {
 
         class gtnAllocateAttackTrackPools {};
         class gtnBuildObjectiveDemandSignature {};
+        class gtnBuildFriendlyObjectiveOwnershipSignature {};
         class gtnBuildObjectiveAssignmentCache {};
         class gtnAdjustEngagementTargetAssignment {};
         class gtnApplyGroupEngagement {};
@@ -77,6 +78,7 @@ class FLO {
         class gtnGroupIsStrategicallyAssignable {};
         class gtnGetEngagementTargetAssignmentCap {};
         class gtnIsEngagementRouteActive {};
+        class gtnLogStrategicOrderPerf {};
         class gtnPickObjectiveGarrisonPosition {};
         class gtnRestoreStrategicGroupRoute {};
         class gtnSelectGroupEngagementTarget {};
