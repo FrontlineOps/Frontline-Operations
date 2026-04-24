@@ -141,7 +141,7 @@ if (count _existingWpMarkers != count _waypoints) then {
 {
     _x params [["_wpPos", [0,0,0]], ["_wpType", "MOVE"]];
     
-    if ((_wpPos select 0) > 100 || (_wpPos select 1) > 100) then {
+    if ([_wpPos] call FLO_fnc_validateGroupPosition) then {
         private _wpMarkerName = format["vdbg_wp_%1_%2", _groupId, _forEachIndex];
         
         if (_forEachIndex >= count _existingWpMarkers) then {

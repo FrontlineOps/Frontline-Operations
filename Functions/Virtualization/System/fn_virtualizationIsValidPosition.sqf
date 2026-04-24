@@ -4,6 +4,4 @@
 
 params ["_pos"];
 
-(_pos isEqualType []) &&
-{count _pos >= 2} &&
-{((_pos select 0) > 100) || {(_pos select 1) > 100}}
+[_pos] call FLO_fnc_validateGroupPosition

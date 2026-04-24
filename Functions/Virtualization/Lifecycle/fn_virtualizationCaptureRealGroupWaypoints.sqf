@@ -13,7 +13,7 @@ if (count _realWaypoints > 0 && {_currentWpIndex < count _realWaypoints}) then {
         private _wp = _realWaypoints select _i;
         private _wpPos = waypointPosition _wp;
 
-        if (_wpPos isEqualType [] && {count _wpPos >= 2} && {(_wpPos select 0) > 100 || (_wpPos select 1) > 100}) then {
+        if ([_wpPos] call FLO_fnc_validateGroupPosition) then {
             _savedWaypoints pushBack [
                 _wpPos,
                 waypointType _wp,
