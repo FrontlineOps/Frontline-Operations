@@ -25,7 +25,7 @@ if (_requestedObjectiveId == "") then {
     _requestedObjectiveId = _deliveryObjectiveId;
 };
 
-if !(_spawnPos isEqualType [] && {count _spawnPos >= 2} && {((_spawnPos select 0) > 100) || {(_spawnPos select 1) > 100}}) exitWith {
+if !([_spawnPos] call FLO_fnc_validateGroupPosition) exitWith {
     ["LOGISTICS", 1, format ["Invalid spawn position %1 for %2 reinforcement", _spawnPos, _groupType]] call FLO_fnc_log;
     ""
 };
@@ -40,7 +40,7 @@ if (_deliveryObjectiveId != "") then {
     _targetPos = _objData get "position";
 };
 
-if !(_targetPos isEqualType [] && {count _targetPos >= 2} && {((_targetPos select 0) > 100) || {(_targetPos select 1) > 100}}) exitWith {
+if !([_targetPos] call FLO_fnc_validateGroupPosition) exitWith {
     ["LOGISTICS", 1, format ["Invalid target position %1 for %2 reinforcement to %3", _targetPos, _groupType, _deliveryObjectiveId]] call FLO_fnc_log;
     ""
 };

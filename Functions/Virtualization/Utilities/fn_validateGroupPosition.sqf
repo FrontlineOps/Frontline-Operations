@@ -54,8 +54,9 @@ if (count _position < 2) exitWith {
 // Check not near origin (indicates failed position lookup)
 private _x = _position select 0;
 private _y = _position select 1;
+private _originThreshold = 100;
 
-if (_x < 100 && _y < 100) exitWith {
+if ((_x * _x) + (_y * _y) < (_originThreshold * _originThreshold)) exitWith {
     if (_logErrors) then {
         ["VIRTUALIZATION", 1, format["Invalid position (near origin) - %1: %2", _context, _position]] call FLO_fnc_log;
     };
