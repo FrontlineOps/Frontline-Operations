@@ -245,6 +245,15 @@ On a fresh start, the commander setup flow publishes:
 - player start position
 - starting territory ratio
 
+### Default GTN Order Budgets
+
+The commander authors strategic order caps against the `10s` tempo baseline, then scales them upward with the tempo curve:
+
+- shared strategic order budget: `6` at `10s`, `14` at `14s`, `24` at `20s`, `32` at `28s`
+- ATTACK cap: `3` at `10s`, `7` at `14s`, `12` at `20s`, `16` at `28s`
+- DEFEND cap: `3` at `10s`, `7` at `14s`, `12` at `20s`, `16` at `28s`
+- GARRISON cap: `2` at `10s`, `5` at `14s`, `8` at `20s`, `11` at `28s`
+
 ## Repository Layout
 
 | Path | Purpose |

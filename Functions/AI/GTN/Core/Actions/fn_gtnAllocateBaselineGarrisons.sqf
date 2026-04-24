@@ -24,11 +24,18 @@ private _metrics = createHashMapFromArray [
     ["openedObjectives", 0],
     ["reinforcedObjectives", 0],
     ["reserveBandBuilds", 0],
-    ["assignmentPasses", 0]
+    ["assignmentPasses", 0],
+    ["releaseMs", 0],
+    ["candidateBuildMs", 0],
+    ["reserveBandMs", 0],
+    ["selectionMs", 0],
+    ["orderMs", 0],
+    ["totalMs", 0]
 ];
 
 if (isNil "_cmdr") exitWith { _metrics };
 
+private _tTotal = diag_tickTime;
 private _ws = _cmdr get "_worldState";
 private _objectives = _ws call ["_getObjectives", []];
 if ((count _objectives) == 0) exitWith { _metrics };
@@ -110,6 +117,7 @@ private _releaseIds = [];
 } forEach (keys _garrisonGroupsByObjective);
 
 if ((count _releaseIds) > 0) then {
+    private _tRelease = diag_tickTime;
     {
         private _gData = _groups get _x;
         if (isNil "_gData") then { continue };
@@ -118,6 +126,7 @@ if ((count _releaseIds) > 0) then {
 
     _cmdr call ["_releaseGroups", [_releaseIds, ""]];
     _metrics set ["releasedGroups", count _releaseIds];
+    _metrics set ["releaseMs", (diag_tickTime - _tRelease) * 1000];
 };
 
 if (_assignmentLimit <= 0 || {!(_cmdr call ["_hasStrategicOrderBudget", []])}) exitWith { _metrics };
@@ -136,6 +145,7 @@ private _available = [];
 _metrics set ["eligibleGroups", count _available];
 if ((count _available) == 0) exitWith { _metrics };
 
+private _tCandidateBuild = diag_tickTime;
 private _candidateObjectives = [];
 {
     private _objectiveId = _x;
@@ -187,6 +197,7 @@ private _candidateObjectives = [];
         ["deficit", _deficit]
     ]);
 } forEach _objectives;
+_metrics set ["candidateBuildMs", (diag_tickTime - _tCandidateBuild) * 1000];
 
 _metrics set ["candidateObjectives", count _candidateObjectives];
 if ((count _candidateObjectives) == 0) exitWith { _metrics };
@@ -230,12 +241,15 @@ while {_continueAllocation && {(count _available) > 0}} do {
         private _reserveBands = if ("reserveBands" in _x) then {
             _x get "reserveBands"
         } else {
+            private _tReserve = diag_tickTime;
             private _bands = [_cmdr, [_objectiveId], _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
+            _metrics set ["reserveBandMs", (_metrics get "reserveBandMs") + ((diag_tickTime - _tReserve) * 1000)];
             _x set ["reserveBands", _bands];
             _metrics set ["reserveBandBuilds", (_metrics get "reserveBandBuilds") + 1];
             _bands
         };
 
+        private _tSelection = diag_tickTime;
         private _bestGroupId = "";
         private _bestIndex = -1;
         private _bestBand = 10;
@@ -256,6 +270,7 @@ while {_continueAllocation && {(count _available) > 0}} do {
                 _bestDist = _distToObjective;
             };
         };
+        _metrics set ["selectionMs", (_metrics get "selectionMs") + ((diag_tickTime - _tSelection) * 1000)];
 
         if (_bestGroupId == "") then { continue };
 
@@ -266,7 +281,11 @@ while {_continueAllocation && {(count _available) > 0}} do {
         };
         private _garrisonPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
 
-        if (_cmdr call ["_orderGroupGarrison", [_bestGroupId, _garrisonPos, _objectiveId, true]]) then {
+        private _tOrder = diag_tickTime;
+        private _ordered = _cmdr call ["_orderGroupGarrison", [_bestGroupId, _garrisonPos, _objectiveId, true]];
+        _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
+
+        if (_ordered) then {
             _available deleteAt _bestIndex;
             _x set ["deficit", _deficit - 1];
             _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
@@ -298,6 +317,7 @@ while {_continueAllocation && {(count _available) > 0}} do {
         _continueAllocation = false;
     };
 };
+_metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 ["GTN", 3, format [
     "Baseline garrison allocation: released=%1 assigned=%2 opened=%3 reinforced=%4 candidates=%5 eligible=%6 reserveBands=%7 passes=%8",
@@ -310,5 +330,26 @@ while {_continueAllocation && {(count _available) > 0}} do {
     _metrics get "reserveBandBuilds",
     _metrics get "assignmentPasses"
 ]] call FLO_fnc_log;
+
+if ((_metrics get "totalMs") >= 20) then {
+    diag_log format [
+        "[FLO][PERF] GTN garrison allocation %1 released=%2 assigned=%3 opened=%4 reinforced=%5 candidates=%6 eligible=%7 reserveBands=%8 passes=%9 release=%10 build=%11 reserve=%12 select=%13 order=%14 total=%15",
+        _cmdr get "_sideKey",
+        _metrics get "releasedGroups",
+        _metrics get "assignedGroups",
+        _metrics get "openedObjectives",
+        _metrics get "reinforcedObjectives",
+        _metrics get "candidateObjectives",
+        _metrics get "eligibleGroups",
+        _metrics get "reserveBandBuilds",
+        _metrics get "assignmentPasses",
+        _metrics get "releaseMs",
+        _metrics get "candidateBuildMs",
+        _metrics get "reserveBandMs",
+        _metrics get "selectionMs",
+        _metrics get "orderMs",
+        _metrics get "totalMs"
+    ];
+};
 
 _metrics
