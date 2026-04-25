@@ -36,6 +36,7 @@ switch (_dirtyReason) do {
         _commander set ["_attackSourceObjectivesCache", createHashMap];
         _commander set ["_attackFrontlineObjectives", createHashMap];
         _commander set ["_attackPressureProfiles", createHashMap];
+        _commander set ["_minefieldDirty", true];
         _commander set ["_lastGarrisonSignature", ""];
         _commander set ["_lastFriendlyObjectiveOwnershipSignature", ""];
         _commander set ["_lastGarrisonRunAt", -1];

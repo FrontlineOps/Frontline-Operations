@@ -533,6 +533,17 @@ if (!isNil "FLO_fnc_gtnResourceManager") then {
 };
 
 // ============================================
+// GTN Minefield System
+// ============================================
+diag_log "[FLO_INIT_P5] Initializing GTN minefield system...";
+if (!isNil "FLO_fnc_gtnMinefieldSystemInit") then {
+    [] call FLO_fnc_gtnMinefieldSystemInit;
+    diag_log "[FLO_INIT_P5] GTN minefield system initialized";
+} else {
+    diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_gtnMinefieldSystemInit not found";
+};
+
+// ============================================
 // GTN Virtual Combat Resolver
 // ============================================
 diag_log "[FLO_INIT_P5] Starting GTN virtual combat resolver...";

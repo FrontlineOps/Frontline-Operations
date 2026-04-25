@@ -61,6 +61,7 @@ private _sideResourceClass = [
         ["offensiveops", [4.0, 500, 0.15]],
         ["air_support", [2.0, 250, 0.12]],
         ["artillery", [3.0, 150, 0.07]],
+        ["fortification", [1.0, 25, 0.03]],
         ["transport", [0.5, 15, 0.02]]
     ]],
 

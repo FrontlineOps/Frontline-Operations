@@ -279,6 +279,8 @@ class FLO {
         class syncObjectiveRuntimeState {};
     };
 
+    #include "Functions\AI\GTN\Minefields\CfgFunctions.hpp"
+
     #include "Functions\Logistics\CfgFunctions.hpp"
 
     class Arsenal {

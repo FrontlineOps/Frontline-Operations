@@ -113,10 +113,12 @@ try {
     private _markerHash = createHashMap;
     private _exclude = createHashMapFromArray [["b_unknown", true], ["Empty", true], ["mil_dot", true], ["hd_start", true]];
     private _combatMarkerPrefix = "FLO_GTN_COMBAT_";
+    private _minefieldMarkerPrefix = "FLO_MINEFIELD_";
     private _markers = allMapMarkers select {
         !(_exclude getOrDefault [markerType _x, false])
         && {markerAlpha _x > 0.01}
         && {_x find _combatMarkerPrefix != 0}
+        && {_x find _minefieldMarkerPrefix != 0}
     };
     {
         _markerHash set [_x, createHashMapFromArray [
@@ -241,6 +243,31 @@ try {
     _data set ["crates", _crateHash];
     ["SAVE", 3, format ["Crates: %1", count _crateHash]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Crates failed: %1", _exception]] call FLO_fnc_log; };
+
+// ============================================================================
+// SAVE: COMMANDER MINEFIELDS
+// ============================================================================
+
+try {
+    private _minefieldArray = [];
+
+    if (!isNil "FLO_Minefields" && {FLO_Minefields isEqualType createHashMap}) then {
+        {
+            private _serialized = [_y] call FLO_fnc_minefieldSerializeField;
+            if ((count (keys _serialized)) > 0) then {
+                _minefieldArray pushBack _serialized;
+            };
+        } forEach FLO_Minefields;
+    };
+
+    _data set ["minefields", _minefieldArray];
+
+    if (!isNil "FLO_MinefieldObjectiveCooldowns" && {FLO_MinefieldObjectiveCooldowns isEqualType createHashMap}) then {
+        _data set ["minefieldObjectiveCooldowns", FLO_MinefieldObjectiveCooldowns];
+    };
+
+    ["SAVE", 3, format ["Commander minefields: %1", count _minefieldArray]] call FLO_fnc_log;
+} catch { ["SAVE", 1, format ["Commander minefields failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // SAVE: STRUCTURES (FOBs, OPs)

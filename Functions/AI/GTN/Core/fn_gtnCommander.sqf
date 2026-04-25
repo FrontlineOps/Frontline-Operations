@@ -158,6 +158,8 @@ private _gtnCommander = createHashMapObject [[
     ["_lastCommanderIntelPublishedAt", -1],
     ["_lastGarrisonRunAt", -1],
     ["_lastGarrisonSignature", ""],
+    ["_minefieldDirty", true],
+    ["_lastMinefieldRunAt", -1],
     ["_lastEngagementSweepAt", -1],
     ["_lastEngagementPictureBuiltAt", -1],
     ["_lastEngagementActiveCount", 0],
@@ -171,6 +173,9 @@ private _gtnCommander = createHashMapObject [[
         ["intelPublishMinInterval", 30], // Commander COP publishing is player-facing and does not need a full refresh every cycle
         ["intelPublishForceRefreshInterval", 180], // Re-send unchanged commander COP state periodically so late-joining clients catch up
         ["garrisonRefreshMinSeconds", 30], // Baseline garrison floor only needs a strategic refresh cadence unless objective demand changed
+        ["minefieldRefreshMinSeconds", 90], // Frontline obstacle fields are strategic shaping work and should not rebuild every commander cycle
+        ["minefieldMaxFields", 4], // Limit tracked defensive fields per side so the commander shapes the front instead of blanketing the map
+        ["minefieldPlacementsPerCycle", 2], // Limit how many new fields one commander can lay on a single strategic update
         ["engagementFullSweepMinSeconds", 20], // Fresh opportunistic target acquisition runs slower than engagement maintenance
         ["attackCoverageMultiplier", _attackCoverage], // Scales per-objective attack caps without multiplying ATK tracks
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
@@ -290,6 +295,7 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAS", 0],
             ["playerSupport", 0],
             ["defenseLeases", 0],
+            ["minefields", 0],
             ["staticAA", 0]
         ]],
         ["lastMetrics", createHashMap]
@@ -353,6 +359,7 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAS", 0],
             ["playerSupport", 0],
             ["defenseLeases", 0],
+            ["minefields", 0],
             ["staticAA", 0]
         ];
         private _cycleStart = diag_tickTime;
@@ -475,6 +482,11 @@ private _gtnCommander = createHashMapObject [[
         };
         _phaseMs set ["garrisons", (diag_tickTime - _tPhase) * 1000];
 
+        // Let the commander shape owned frontline objectives with defensive minefields.
+        _tPhase = diag_tickTime;
+        private _minefieldMetrics = _self call ["_manageFrontlineMinefields", []];
+        _phaseMs set ["minefields", (diag_tickTime - _tPhase) * 1000];
+
         // Allocate groups to tracks (refreshes each cycle)
         _tPhase = diag_tickTime;
         private _allocationMetrics = _self call ["_allocateGroupsToTracks", []];
@@ -577,6 +589,7 @@ private _gtnCommander = createHashMapObject [[
             ["frontlineCAS", _frontlineCASMetrics],
             ["playerSupport", _playerSupportMetrics],
             ["defenseLeases", _leaseMetrics],
+            ["minefields", _minefieldMetrics],
             ["staticAA", _staticAAMetrics],
             ["strategicOrderBudget", _self call ["_getStrategicOrderBudgetMetrics", []]]
         ];
@@ -591,7 +604,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 allocate=%14 phases=%15 execute=%16 engage=%17 cap=%18 cas=%19 playerSupport=%20 defense=%21 staticAA=%22",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 minefields=%14 allocate=%15 phases=%16 execute=%17 engage=%18 cap=%19 cas=%20 playerSupport=%21 defense=%22 staticAA=%23",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -605,6 +618,7 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "intelPublish",
                 _phaseMs get "attackAssignments",
                 _phaseMs get "garrisons",
+                _phaseMs get "minefields",
                 _phaseMs get "allocateTracks",
                 _phaseMs get "trackPhases",
                 _phaseMs get "executeTracks",
@@ -1278,6 +1292,10 @@ private _gtnCommander = createHashMapObject [[
     ["_allocateFrontlineDefense", {
         params [["_track", nil]];
         [_self, _track] call FLO_fnc_gtnAllocateFrontlineDefense
+    }],
+
+    ["_manageFrontlineMinefields", {
+        [_self] call FLO_fnc_gtnManageFrontlineMinefields
     }],
 
     ["_manageCompletedAttackAssignments", {

@@ -4,17 +4,10 @@
  *
  * Description:
  * Final client-side initialization after faction setup is complete.
- * Handles minefield initialization, intel item processing, and player activation.
+ * Handles intel item processing and player activation.
  *
  * This script runs on each client after all other initialization is complete.
  */
-
-// ============================================================================
-// MINEFIELD INITIALIZATION
-// ============================================================================
-
-["INIT_TRIGGERS", 3, "Initializing minefields..."] call FLO_fnc_log;
-[] execVM "Scripts\Objectives\Minefield_B.sqf";
 
 // ============================================================================
 // INTEL ITEM PROCESSING

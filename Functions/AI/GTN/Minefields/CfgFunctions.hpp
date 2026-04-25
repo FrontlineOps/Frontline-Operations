@@ -1,0 +1,35 @@
+class GTNMinefields {
+    file = "Functions\AI\GTN\Minefields";
+
+    class minefieldBuildJobCreate {};
+    class minefieldBuildJobStep {};
+    class minefieldBuildQueueRun {};
+    class minefieldCancelObjectiveBuild {};
+    class minefieldCommitBuiltField {};
+    class minefieldFinalizeBuildJob {};
+    class minefieldBuildObjectiveCandidateSeed {};
+    class minefieldBuildObjectiveAreaCache {};
+    class minefieldBuildCoverPacketAnchors {};
+    class minefieldBuildObjectiveOverlapIndex {};
+    class minefieldBuildObjectivePackets {};
+    class minefieldBuildPacketMineSpecsStep {};
+    class minefieldBuildPacketSlotPlan {};
+    class minefieldBuildPacketMineSpecs {};
+    class minefieldCanPlaceWithSpacing {};
+    class gtnManageFrontlineMinefields {};
+    class gtnMinefieldSystemInit {};
+    class minefieldCalculateFieldGeometry {};
+    class minefieldCleanupDestroyedMines {};
+    class minefieldDeleteField {};
+    class minefieldDeleteObjectiveFields {};
+    class minefieldGetBlockingObjectiveId {};
+    class minefieldIsPositionInsideObjectiveArea {};
+    class minefieldQueueObjectiveBuild {};
+    class minefieldResolveResourceBudget {};
+    class minefieldResolveFrontlineAnchorJobStep {};
+    class minefieldResolveLayoutMinePos {};
+    class minefieldRegisterSpacingPos {};
+    class minefieldRestoreSavedFields {};
+    class minefieldSerializeField {};
+    class minefieldValidateSlotCandidate {};
+};
