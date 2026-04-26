@@ -133,7 +133,7 @@ while {!_pendingResolve && {_anglesResolved < _angleBatchCount}} do {
         _resolveState set ["pendingSampleCount", 0];
         _anglesResolved = _anglesResolved + 1;
     };
-}
+};
 
 _resolveState set ["nextIndex", _nextIndex];
 private _metrics = _job get "metrics";
