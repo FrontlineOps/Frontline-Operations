@@ -22,6 +22,12 @@ private _runtimeState = createHashMap;
 
     _runtimeState set [_objectiveId, createHashMapFromArray [
         ["captureProgress", _objective get "captureProgress"],
+        ["captureState", _objective get "captureState"],
+        ["captureSide", _objective get "captureSide"],
+        ["captureSecureProgress", _objective get "captureSecureProgress"],
+        ["captureSecureStartedAt", _objective get "captureSecureStartedAt"],
+        ["captureStatusChangedAt", _objective get "captureStatusChangedAt"],
+        ["captureIntegratedAtDateNum", _objective get "captureIntegratedAtDateNum"],
         ["bluforCount", _objective get "bluforCount"],
         ["opforCount", _objective get "opforCount"],
         ["contested", _objective get "contested"],

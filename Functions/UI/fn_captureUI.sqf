@@ -88,7 +88,15 @@ switch (toLower _operation) do {
 
     // Update the capture bar (sends data to HTML)
     case "update": {
-        _args params [["_ratio", 0.5], ["_bluforCount", 0], ["_opforCount", 0]];
+        _args params [
+            ["_ratio", 0.5],
+            ["_bluforCount", 0],
+            ["_opforCount", 0],
+            ["_owner", "EAST"],
+            ["_captureState", "held"],
+            ["_secureProgress", 0],
+            ["_captureProgress", 0]
+        ];
 
         private _display = uiNamespace getVariable ["FLO_CaptureUI_Display", displayNull];
         if (isNull _display) exitWith { _result = false };
@@ -96,7 +104,16 @@ switch (toLower _operation) do {
         private _ctrl = _display displayCtrl 1101;
         if (isNull _ctrl) exitWith { _result = false };
 
-        _ctrl ctrlWebBrowserAction ["ExecJS", format ["updateCaptureUI(%1, %2, %3)", _ratio, _bluforCount, _opforCount]];
+        _ctrl ctrlWebBrowserAction ["ExecJS", format [
+            "updateCaptureUI(%1, %2, %3, '%4', '%5', %6, %7)",
+            _ratio,
+            _bluforCount,
+            _opforCount,
+            _owner,
+            _captureState,
+            _secureProgress,
+            _captureProgress
+        ]];
         _result = true;
     };
 };

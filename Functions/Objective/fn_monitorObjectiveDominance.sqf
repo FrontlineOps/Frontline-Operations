@@ -26,6 +26,7 @@ waitUntil { !isNil "FLO_Objectives" };
 
 // Get config values
 private _captureTime = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
+private _captureSecureTime = ["get", "captureSecureTime"] call FLO_fnc_objectiveConfig;
 
 // 0.5s is reasonable for capture logic; clients poll faster for UI
 private _updateInterval = 0.5;
@@ -37,6 +38,7 @@ FLO_PlayerObjectiveStates = createHashMap;
 private _objectiveLastUpdateTimes = createHashMap;
 private _lastRuntimeSyncAt = diag_tickTime - _runtimeSyncInterval;
 private _dirtyRuntimeObjectiveIds = createHashMap;
+private _forceRuntimeSync = false;
 
 // Initialize inactive update index
 private _inactiveMonitorIndex = 0;
@@ -44,6 +46,7 @@ private _objKeys = keys FLO_Objectives;
 
 while {true} do {
     private _currentTime = diag_tickTime;
+    private _currentDateNum = dateToNumber date;
 
     if (isNil "FLO_Objectives") then {
         waitUntil { !isNil "FLO_Objectives" };
@@ -157,6 +160,13 @@ while {true} do {
 
         if (isNil {_objRecord get "owner"}) then { _objRecord set ["owner", east]; };
         if (isNil {_objRecord get "captureProgress"}) then { _objRecord set ["captureProgress", 0]; };
+        if (isNil {_objRecord get "captureState"}) then { _objRecord set ["captureState", "held"]; };
+        if (isNil {_objRecord get "captureSide"}) then { _objRecord set ["captureSide", sideUnknown]; };
+        if (isNil {_objRecord get "captureSecureStartedAt"}) then { _objRecord set ["captureSecureStartedAt", -1]; };
+        if (isNil {_objRecord get "captureSecureProgress"}) then { _objRecord set ["captureSecureProgress", 0]; };
+        if (isNil {_objRecord get "captureSecureTime"}) then { _objRecord set ["captureSecureTime", _captureSecureTime]; };
+        if (isNil {_objRecord get "captureStatusChangedAt"}) then { _objRecord set ["captureStatusChangedAt", _currentTime]; };
+        if (isNil {_objRecord get "captureIntegratedAtDateNum"}) then { _objRecord set ["captureIntegratedAtDateNum", -1]; };
         if (isNil {_objRecord get "bluforCount"}) then { _objRecord set ["bluforCount", 0]; };
         if (isNil {_objRecord get "opforCount"}) then { _objRecord set ["opforCount", 0]; };
         if (isNil {_objRecord get "contested"}) then { _objRecord set ["contested", false]; };
@@ -166,7 +176,9 @@ while {true} do {
         private _radius = _objRecord get "radius";
         private _owner = _objRecord get "owner";
         private _previousProgress = _objRecord get "captureProgress";
-        private _progress = _previousProgress;
+        private _previousState = _objRecord get "captureState";
+        private _previousCaptureSide = _objRecord get "captureSide";
+        private _previousSecureProgress = _objRecord get "captureSecureProgress";
         private _previousBluforCount = _objRecord get "bluforCount";
         private _previousOpforCount = _objRecord get "opforCount";
         private _previousContested = _objRecord get "contested";
@@ -216,51 +228,38 @@ while {true} do {
         private _virtualCounts = _virtualObjectiveCounts get _id;
         _bluforCount = _bluforCount + (_virtualCounts select 0);
         _opforCount = _opforCount + (_virtualCounts select 1);
-        
-        // Calculate progress (Dynamic Rate based on force difference)
-        // More units = Faster capture
-        private _diff = abs (_bluforCount - _opforCount);
-        private _dynamicRate = 1.0 + (_diff * 0.5); // Base 1.0 + 0.5 per unit advantage
-        if (_dynamicRate > 5.0) then { _dynamicRate = 5.0 }; // Cap at 5x speed
-        
+
         // Minimum unit requirement to complete capture
         private _minUnitsToCapture = if (_id in _liveObjectives) then { 1 } else { 3 };
-        
-        if (_bluforCount > _opforCount && {_bluforCount >= _minUnitsToCapture}) then {
-            _progress = (_progress + (_objectiveDeltaTime * _dynamicRate)) min _captureTime;
-        } else {
-            if (_opforCount > _bluforCount && {_opforCount >= _minUnitsToCapture}) then {
-                _progress = (_progress - (_objectiveDeltaTime * _dynamicRate)) max (-_captureTime);
-            } else {
-                // Decay (slower than capture)
-                if (_progress > 0) then { _progress = (_progress - (_objectiveDeltaTime * 0.5)) max 0 };
-                if (_progress < 0) then { _progress = (_progress + (_objectiveDeltaTime * 0.5)) min 0 };
-            };
-        };
-        
-        // Checks
-        private _activeSide = FLO_ActivePlayerSide;
 
-        if (_progress >= _captureTime && {_owner != west}) then {
-            [_id, west] call FLO_fnc_flipObjective;
-            _progress = 0;
-            if (_activeSide isEqualTo west) then {
+        private _captureResult = [
+            _id,
+            _objRecord,
+            _bluforCount,
+            _opforCount,
+            _objectiveDeltaTime,
+            _currentTime,
+            _captureTime,
+            _captureSecureTime,
+            _minUnitsToCapture,
+            _currentDateNum
+        ] call FLO_fnc_updateObjectiveCaptureState;
+
+        private _activeSide = FLO_ActivePlayerSide;
+        private _requestedOwner = _captureResult get "requestedOwner";
+
+        if !(_requestedOwner isEqualTo sideUnknown) then {
+            [_id, _requestedOwner] call FLO_fnc_flipObjective;
+
+            _objRecord = FLO_Objectives get _id;
+
+            if (_activeSide isEqualTo _requestedOwner) then {
                 [0.20, "increase"] call FLO_fnc_adjustAggression;
             } else {
                 [-0.10, "decrease"] call FLO_fnc_adjustAggression;
             };
-        } else {
-            if (_progress <= -_captureTime && {_owner != east} && {_opforCount >= _minUnitsToCapture}) then {
-                [_id, east] call FLO_fnc_flipObjective;
-                _progress = 0;
-                if (_activeSide isEqualTo east) then {
-                    [0.20, "increase"] call FLO_fnc_adjustAggression;
-                } else {
-                    [-0.10, "decrease"] call FLO_fnc_adjustAggression;
-                };
-            };
         };
-        
+
         // Store
         _owner = _objRecord get "owner";
         private _contested = (_bluforCount > 0) && { _opforCount > 0 };
@@ -274,21 +273,27 @@ while {true} do {
             }
         };
 
-        _objRecord set ["captureProgress", _progress];
         _objRecord set ["bluforCount", _bluforCount];
         _objRecord set ["opforCount", _opforCount];
         _objRecord set ["contested", _contested];
         _objRecord set ["underAttack", _underAttack];
         _objRecord set ["captureTime", _captureTime]; // Ensure fresh config
+        _objRecord set ["captureSecureTime", _captureSecureTime];
 
         if (
-            (abs (_previousProgress - _progress)) > 0.01
+            (abs (_previousProgress - (_objRecord get "captureProgress"))) > 0.01
+            || {_previousState != (_objRecord get "captureState")}
+            || {!(_previousCaptureSide isEqualTo (_objRecord get "captureSide"))}
+            || {(abs (_previousSecureProgress - (_objRecord get "captureSecureProgress"))) > 0.01}
             || {_previousBluforCount != _bluforCount}
             || {_previousOpforCount != _opforCount}
             || {_previousContested != _contested}
             || {_previousUnderAttack != _underAttack}
         ) then {
             _dirtyRuntimeObjectiveIds set [_id, true];
+            if (_previousState != (_objRecord get "captureState")) then {
+                _forceRuntimeSync = true;
+            };
         };
     };
 
@@ -296,13 +301,19 @@ while {true} do {
     { [_x, _currentTime] call _fnc_updateObjective; } forEach _objectivesToUpdate;
 
     // === LIGHTWEIGHT CLIENT RUNTIME SYNC ===
-    if ((count (keys _dirtyRuntimeObjectiveIds)) > 0 && {(_currentTime - _lastRuntimeSyncAt) >= _runtimeSyncInterval}) then {
+    if ((count (keys _dirtyRuntimeObjectiveIds)) > 0 && {_forceRuntimeSync || {(_currentTime - _lastRuntimeSyncAt) >= _runtimeSyncInterval}}) then {
         {
             private _objectiveId = _x;
             private _objective = FLO_Objectives get _objectiveId;
 
             FLO_ObjectiveRuntimeState set [_objectiveId, createHashMapFromArray [
                 ["captureProgress", _objective get "captureProgress"],
+                ["captureState", _objective get "captureState"],
+                ["captureSide", _objective get "captureSide"],
+                ["captureSecureProgress", _objective get "captureSecureProgress"],
+                ["captureSecureStartedAt", _objective get "captureSecureStartedAt"],
+                ["captureStatusChangedAt", _objective get "captureStatusChangedAt"],
+                ["captureIntegratedAtDateNum", _objective get "captureIntegratedAtDateNum"],
                 ["bluforCount", _objective get "bluforCount"],
                 ["opforCount", _objective get "opforCount"],
                 ["contested", _objective get "contested"],
@@ -315,6 +326,7 @@ while {true} do {
         ["objectiveRuntimeSyncs", 1] call FLO_fnc_netDebugRecord;
         ["objectiveRuntimeObjectives", count (keys _dirtyRuntimeObjectiveIds)] call FLO_fnc_netDebugRecord;
         _dirtyRuntimeObjectiveIds = createHashMap;
+        _forceRuntimeSync = false;
     };
 
     // UI Event Logic (Optimized to only check Active Objectives close to players)
@@ -370,8 +382,19 @@ while {true} do {
                 private _enemyCount = if (_playerSide isEqualTo east) then { _bluforCount } else { _opforCount };
                 private _totalCount = _friendlyCount + _enemyCount;
                 private _ratio = if (_totalCount > 0) then { _friendlyCount / _totalCount } else { 0.5 };
+                private _captureState = _currentObjData get "captureState";
+                private _secureProgress = _currentObjData get "captureSecureProgress";
+                private _captureProgress = _currentObjData get "captureProgress";
                 
-                ["FLO_CaptureUI_Update", [_ratio, _friendlyCount, _enemyCount, str _owner], owner _player] call CBA_fnc_ownerEvent;
+                ["FLO_CaptureUI_Update", [
+                    _ratio,
+                    _friendlyCount,
+                    _enemyCount,
+                    str _owner,
+                    _captureState,
+                    _secureProgress,
+                    _captureProgress
+                ], owner _player] call CBA_fnc_ownerEvent;
             };
         };
     } forEach _allPlayers;

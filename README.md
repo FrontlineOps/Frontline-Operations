@@ -23,6 +23,9 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 
 - Objectives are linked into a real frontline and rear area network.
 - Towns, villages, military sites, and clusters change ownership over time.
+- Objective capture now moves through explicit states: held, contested, clearing, securing, integrating, and integrated.
+- Ownership only flips after attackers finish normal capture progress and hold the sector through a securing timer.
+- The capture UI reads the server-owned objective state directly, so players can see whether they are clearing resistance, securing the area, or watching a newly captured sector integrate.
 - Frontline pressure, contested sectors, and reinforcement needs update during the session.
 - Newly captured sectors do not immediately become perfect launchpads. Capture growth is delayed, repeated breakthroughs fatigue the attacking commander, and overextended lanes stage more slowly.
 

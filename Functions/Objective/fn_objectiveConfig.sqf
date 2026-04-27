@@ -53,7 +53,9 @@ if (isNil "FLO_ObjectiveConfig") then {
         ["linkDistance", 5000],  // Base radius for adjacency before sparse-map continuity links bridge disconnected components
         
         // Capture/dominance settings
-        ["captureTime", 20],      // Seconds to capture
+        ["captureTime", 20],      // Seconds to push capture progress to the secure phase
+        ["captureSecureTime", 90], // Seconds attackers must hold after progress completes
+        ["captureIntegrationDelaySeconds", 300], // UI-only consolidation window after ownership flips
         
         // Marker settings
         ["markerAlpha", 0.3],
@@ -65,9 +67,6 @@ if (isNil "FLO_ObjectiveConfig") then {
             ["default", "ColorBlack"]
         ]],
 
-        // Capture settings
-        ["captureTime", 20],      // Seconds needed to capture
-        
         // Location type mappings
         ["locationTypes", [
             ["NameCityCapital", "civilian", "capital"],

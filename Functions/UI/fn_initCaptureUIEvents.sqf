@@ -9,7 +9,7 @@
  * CBA Events:
  *   FLO_CaptureUI_Show  - [objectiveName, objectiveId] - Shows the UI
  *   FLO_CaptureUI_Hide  - [] - Hides the UI
- *   FLO_CaptureUI_Update - [ratio, bluforCount, opforCount] - Updates the bar
+ *   FLO_CaptureUI_Update - [ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress] - Updates the bar
  *
  * Arguments: None
  *
@@ -123,7 +123,15 @@ FLO_CaptureUI_CurrentObj = "";
 // Called by server with current capture status
 // ============================================================================
 ["FLO_CaptureUI_Update", {
-    params [["_ratio", 0.5], ["_bluforCount", 0], ["_opforCount", 0], ["_owner", "EAST"]];
+    params [
+        ["_ratio", 0.5],
+        ["_bluforCount", 0],
+        ["_opforCount", 0],
+        ["_owner", "EAST"],
+        ["_captureState", "held"],
+        ["_secureProgress", 0],
+        ["_captureProgress", 0]
+    ];
 
     if (!FLO_CaptureUI_DisplayOpen) exitWith {};
 
@@ -134,7 +142,16 @@ FLO_CaptureUI_CurrentObj = "";
             if (!FLO_CaptureUI_HTMLReady) then {
                 FLO_CaptureUI_HTMLReady = true;
             };
-            _ctrl ctrlWebBrowserAction ["ExecJS", format ["updateCaptureUI(%1, %2, %3, '%4')", _ratio, _bluforCount, _opforCount, _owner]];
+            _ctrl ctrlWebBrowserAction ["ExecJS", format [
+                "updateCaptureUI(%1, %2, %3, '%4', '%5', %6, %7)",
+                _ratio,
+                _bluforCount,
+                _opforCount,
+                _owner,
+                _captureState,
+                _secureProgress,
+                _captureProgress
+            ]];
         };
     };
 }] call CBA_fnc_addEventHandler;

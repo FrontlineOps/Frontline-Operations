@@ -36,14 +36,37 @@ class CaptureUI {
         }
     }
 
-    update(ratio, bluforCount, opforCount, owner) {
+    update(ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress) {
         this.targetRatio = Math.max(0, Math.min(1, ratio));
-        
-        // Update status text based on situation
-        const total = bluforCount + opforCount;
         
         // Default owner to EAST if not provided (safety)
         const currentOwner = owner || "EAST";
+        const state = captureState || "held";
+
+        if (state === 'securing') {
+            const pct = Math.max(0, Math.min(100, Math.round((secureProgress || 0) * 100)));
+            this.setStatus(`SECURING ${pct}%`, 'securing');
+            this.updateGlow();
+            return;
+        }
+
+        if (state === 'clearing') {
+            this.setStatus('CLEARING', 'capturing');
+            this.updateGlow();
+            return;
+        }
+
+        if (state === 'contested') {
+            this.setStatus('CONTESTED', 'contested');
+            this.updateGlow();
+            return;
+        }
+
+        if (state === 'integrating') {
+            this.setStatus('INTEGRATING', currentOwner === "WEST" ? 'captured-blue' : 'captured-red');
+            this.updateGlow();
+            return;
+        }
         
         if (currentOwner === "WEST") {
             // WE OWN IT
@@ -131,8 +154,8 @@ function hideCaptureUI() {
     if (captureUI) captureUI.hide();
 }
 
-function updateCaptureUI(ratio, bluforCount, opforCount, owner) {
-    if (captureUI) captureUI.update(ratio, bluforCount, opforCount, owner);
+function updateCaptureUI(ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress) {
+    if (captureUI) captureUI.update(ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress);
 }
 
 // Auto-initialize

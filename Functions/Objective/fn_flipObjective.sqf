@@ -39,6 +39,16 @@ _obj set ["capturedAtDateNum", _captureDateNum];
 _obj set ["capturedFrom", _previousOwner];
 _obj set ["captureGrowthEligibleAtDateNum", -1];
 _obj set ["captureGrowthPending", false];
+_obj set ["captureProgress", 0];
+_obj set ["captureState", "integrating"];
+_obj set ["captureSide", sideUnknown];
+_obj set ["captureSecureStartedAt", -1];
+_obj set ["captureSecureProgress", 0];
+_obj set ["captureStatusChangedAt", diag_tickTime];
+_obj set [
+    "captureIntegratedAtDateNum",
+    _captureDateNum + ((["get", "captureIntegrationDelaySeconds"] call FLO_fnc_objectiveConfig) / 86400)
+];
 FLO_Objectives set [_objectiveId, _obj];
 
 if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {

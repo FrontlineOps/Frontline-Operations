@@ -123,6 +123,12 @@ body {
     animation: pulse 1s ease-in-out infinite;
 }
 
+.status-text.securing {
+    color: #ffd54f;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 213, 79, 0.5);
+}
+
 .status-text.losing {
     color: #ef5350;
     animation: pulse 0.5s ease-in-out infinite;

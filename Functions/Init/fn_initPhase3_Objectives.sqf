@@ -23,6 +23,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         FLO_Objectives = _savedData get "objectives";
 
         private _captureTimeCfg = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
+        private _captureSecureTimeCfg = ["get", "captureSecureTime"] call FLO_fnc_objectiveConfig;
         {
             private _objId = _x;
             private _objData = FLO_Objectives get _objId;
@@ -38,6 +39,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
             if (isNil {_objData get "bluforCount"}) then { _objData set ["bluforCount", 0]; };
             if (isNil {_objData get "opforCount"}) then { _objData set ["opforCount", 0]; };
             if (isNil {_objData get "captureTime"}) then { _objData set ["captureTime", _captureTimeCfg]; };
+            if (isNil {_objData get "captureState"}) then { _objData set ["captureState", "held"]; };
+            if (isNil {_objData get "captureSide"}) then { _objData set ["captureSide", sideUnknown]; };
+            if (isNil {_objData get "captureSecureStartedAt"}) then { _objData set ["captureSecureStartedAt", -1]; };
+            if (isNil {_objData get "captureSecureProgress"}) then { _objData set ["captureSecureProgress", 0]; };
+            if (isNil {_objData get "captureSecureTime"}) then { _objData set ["captureSecureTime", _captureSecureTimeCfg]; };
+            if (isNil {_objData get "captureStatusChangedAt"}) then { _objData set ["captureStatusChangedAt", -1]; };
+            if (isNil {_objData get "captureIntegratedAtDateNum"}) then { _objData set ["captureIntegratedAtDateNum", -1]; };
             FLO_Objectives set [_objId, _objData];
         } forEach (keys FLO_Objectives);
 

@@ -277,6 +277,7 @@ class FLO {
         class createObjectiveMarker   {};
         class refreshRespawnMarkersByTerritory {};
         class syncObjectiveRuntimeState {};
+        class updateObjectiveCaptureState {};
     };
 
     #include "Functions\AI\GTN\Minefields\CfgFunctions.hpp"
