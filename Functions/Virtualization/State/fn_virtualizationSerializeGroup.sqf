@@ -69,6 +69,8 @@ createHashMapFromArray [
     ["transportInsertMode", _groupData get "transportInsertMode"],
     ["transportInsertPos", _groupData get "transportInsertPos"],
     ["transportLandCommandIssued", _groupData get "transportLandCommandIssued"],
+    ["transportUnloadCommandIssued", _groupData get "transportUnloadCommandIssued"],
+    ["transportUnloadIssuedAt", _groupData get "transportUnloadIssuedAt"],
     ["postDismountWaypoint", _groupData get "postDismountWaypoint"],
     ["mountedIn", _groupData get "mountedIn"],
     ["organicPackageRole", _groupData get "organicPackageRole"],

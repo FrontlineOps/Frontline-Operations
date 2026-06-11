@@ -156,6 +156,34 @@ if !(_transportLandCommandIssued isEqualType true) then {
 };
 _groupData set ["transportLandCommandIssued", _transportLandCommandIssued];
 
+private _transportUnloadCommandIssued = false;
+if ("transportUnloadCommandIssued" in _savedData) then {
+    _transportUnloadCommandIssued = _savedData get "transportUnloadCommandIssued";
+};
+if !(_transportUnloadCommandIssued isEqualType true) then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportUnloadCommandIssued type for %1: %2",
+        _groupData get "groupType",
+        typeName _transportUnloadCommandIssued
+    ]] call FLO_fnc_log;
+    _transportUnloadCommandIssued = false;
+};
+_groupData set ["transportUnloadCommandIssued", _transportUnloadCommandIssued];
+
+private _transportUnloadIssuedAt = -1;
+if ("transportUnloadIssuedAt" in _savedData) then {
+    _transportUnloadIssuedAt = _savedData get "transportUnloadIssuedAt";
+};
+if !(_transportUnloadIssuedAt isEqualType 0) then {
+    ["VIRTUALIZATION", 1, format [
+        "Invalid saved transportUnloadIssuedAt type for %1: %2",
+        _groupData get "groupType",
+        typeName _transportUnloadIssuedAt
+    ]] call FLO_fnc_log;
+    _transportUnloadIssuedAt = -1;
+};
+_groupData set ["transportUnloadIssuedAt", _transportUnloadIssuedAt];
+
 private _postDismountWaypoint = [];
 if ("postDismountWaypoint" in _savedData) then {
     _postDismountWaypoint = _savedData get "postDismountWaypoint";

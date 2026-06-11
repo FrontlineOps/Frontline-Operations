@@ -23,9 +23,26 @@ private _job = _jobs get _jobId;
 private _objectiveId = _job get "objectiveId";
 private _objective = FLO_Objectives get _objectiveId;
 private _objectiveIndex = _state get "objectiveIndex";
+private _activePlayerSide = FLO_ActivePlayerSide;
+private _playerProximityMeters = (FLO_virtualGroups get "_activationDistance") + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters");
 
 if ((_objective get "owner") != (_job get "side")) exitWith {
     [_jobId, "STALE_OWNER"] call FLO_fnc_minefieldFinalizeBuildJob;
+    "done"
+};
+
+if !(_activePlayerSide in [east, west]) exitWith {
+    [_jobId, "PLAYER_SIDE_NOT_LOCKED"] call FLO_fnc_minefieldFinalizeBuildJob;
+    "done"
+};
+
+if ((_job get "side") isEqualTo _activePlayerSide) exitWith {
+    [_jobId, "PLAYER_FRIENDLY_OBJECTIVE"] call FLO_fnc_minefieldFinalizeBuildJob;
+    "done"
+};
+
+if !([_objectiveId, _activePlayerSide, _playerProximityMeters] call FLO_fnc_minefieldObjectiveHasNearbyPlayer) exitWith {
+    [_jobId, "NO_NEARBY_PLAYER"] call FLO_fnc_minefieldFinalizeBuildJob;
     "done"
 };
 

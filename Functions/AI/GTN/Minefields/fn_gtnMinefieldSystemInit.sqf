@@ -39,6 +39,7 @@ FLO_MinefieldConfig = createHashMapFromArray [
     ["markerAlpha", 0.35],
     ["minSpacing", 12],
     ["objectiveEdgeBuffer", 12],
+    ["playerProximityActivationBufferMeters", 500],
     ["resourceCostPerMine", 1],
     ["resourceSpendType", "fortification"],
     ["rowSpacingMax", 28],

@@ -23,6 +23,7 @@ class GTNMinefields {
     class minefieldDeleteField {};
     class minefieldDeleteObjectiveFields {};
     class minefieldGetBlockingObjectiveId {};
+    class minefieldObjectiveHasNearbyPlayer {};
     class minefieldIsPositionInsideObjectiveArea {};
     class minefieldQueueObjectiveBuild {};
     class minefieldResolveResourceBudget {};

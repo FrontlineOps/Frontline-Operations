@@ -2103,7 +2103,7 @@ private _gtnCommander = createHashMapObject [[
         params ["_groupId", "_pos", ["_mode", "AWARE"]];
 
         private _groups = FLO_virtualGroups get "_groups";
-        private _gData = _groups getOrDefault [_groupId, nil];
+        private _gData = _groups get _groupId;
         if (isNil "_gData") exitWith {
             ["GTN", 2, format["Cannot order move - group %1 not found", _groupId]] call FLO_fnc_log;
             false
@@ -2131,9 +2131,7 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 30]
         ];
 
-        [_groupId, _waypoints, false, true, "GTN_MOVE"] call FLO_fnc_updateVirtualGroupWaypoints;
-        [_gData, _pos, _mode] call FLO_fnc_virtualizationAssignMoveOrder;
-        [_groupId, _gData, _pos, "MOVE"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
+        [_groupId, _gData, "MOVE", _waypoints, _pos, "GTN_MOVE", "", _mode] call FLO_fnc_virtualizationCommitCommanderOrder;
 
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
@@ -2147,7 +2145,7 @@ private _gtnCommander = createHashMapObject [[
         params ["_groupId", "_pos", ["_objectiveId", ""], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
-        private _gData = _groups getOrDefault [_groupId, nil];
+        private _gData = _groups get _groupId;
         if (isNil "_gData") exitWith {
             ["GTN", 2, format["Cannot order attack - group %1 not found", _groupId]] call FLO_fnc_log;
             false
@@ -2223,17 +2221,8 @@ private _gtnCommander = createHashMapObject [[
             [_attackPos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 50]
         ];
 
-        private _orderStart = diag_tickTime;
-        private _tRoute = diag_tickTime;
-        [_groupId, _waypoints, false, true, "GTN_ATTACK"] call FLO_fnc_updateVirtualGroupWaypoints;
-        private _routeMs = (diag_tickTime - _tRoute) * 1000;
-        private _tAssign = diag_tickTime;
-        [_gData, _attackPos, _objectiveId] call FLO_fnc_virtualizationAssignAttackOrder;
-        private _assignMs = (diag_tickTime - _tAssign) * 1000;
-        private _tTransport = diag_tickTime;
-        [_groupId, _gData, _attackPos, "ATTACK"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
-        private _transportMs = (diag_tickTime - _tTransport) * 1000;
-        private _orderMs = (diag_tickTime - _orderStart) * 1000;
+        private _commitResult = [_groupId, _gData, "ATTACK", _waypoints, _attackPos, "GTN_ATTACK", _objectiveId] call FLO_fnc_virtualizationCommitCommanderOrder;
+        _commitResult params ["_commitSuccess", "_routeMs", "_assignMs", "_transportMs", "_orderMs"];
         [_self, "ATTACK", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {
@@ -2259,7 +2248,7 @@ private _gtnCommander = createHashMapObject [[
         params ["_groupId", "_pos", ["_objectiveId", ""], ["_skipSaturationCheck", false, [true]], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
-        private _gData = _groups getOrDefault [_groupId, nil];
+        private _gData = _groups get _groupId;
         if (isNil "_gData") exitWith {
             ["GTN", 2, format["Cannot order defend - group %1 not found", _groupId]] call FLO_fnc_log;
             false
@@ -2332,18 +2321,9 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "GUARD", "AWARE", "FULL", _formation, "YELLOW", 60]
         ];
 
-        private _orderStart = diag_tickTime;
-        private _tRoute = diag_tickTime;
-        [_groupId, _waypoints, false, true, "GTN_DEFEND"] call FLO_fnc_updateVirtualGroupWaypoints;
-        private _routeMs = (diag_tickTime - _tRoute) * 1000;
         private _leaseSeconds = (_self get "_config") get "defenseLeaseSeconds";
-        private _tAssign = diag_tickTime;
-        [_gData, _pos, _objectiveId, diag_tickTime, diag_tickTime + _leaseSeconds] call FLO_fnc_virtualizationAssignDefendOrder;
-        private _assignMs = (diag_tickTime - _tAssign) * 1000;
-        private _tTransport = diag_tickTime;
-        [_groupId, _gData, _pos, "DEFEND"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
-        private _transportMs = (diag_tickTime - _tTransport) * 1000;
-        private _orderMs = (diag_tickTime - _orderStart) * 1000;
+        private _commitResult = [_groupId, _gData, "DEFEND", _waypoints, _pos, "GTN_DEFEND", _objectiveId, "", diag_tickTime, diag_tickTime + _leaseSeconds] call FLO_fnc_virtualizationCommitCommanderOrder;
+        _commitResult params ["_commitSuccess", "_routeMs", "_assignMs", "_transportMs", "_orderMs"];
         [_self, "DEFEND", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {
@@ -2379,7 +2359,7 @@ private _gtnCommander = createHashMapObject [[
         params ["_groupId", "_pos", ["_objectiveId", ""], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = FLO_virtualGroups get "_groups";
-        private _gData = _groups getOrDefault [_groupId, nil];
+        private _gData = _groups get _groupId;
         if (isNil "_gData") exitWith {
             ["GTN", 2, format["Cannot order garrison - group %1 not found", _groupId]] call FLO_fnc_log;
             false
@@ -2433,17 +2413,8 @@ private _gtnCommander = createHashMapObject [[
             [_pos, "GUARD", "SAFE", "LIMITED", _formation, "GREEN", 50]
         ];
 
-        private _orderStart = diag_tickTime;
-        private _tRoute = diag_tickTime;
-        [_groupId, _waypoints, false, true, "GTN_GARRISON"] call FLO_fnc_updateVirtualGroupWaypoints;
-        private _routeMs = (diag_tickTime - _tRoute) * 1000;
-        private _tAssign = diag_tickTime;
-        [_gData, _pos, _objectiveId] call FLO_fnc_virtualizationAssignGarrisonOrder;
-        private _assignMs = (diag_tickTime - _tAssign) * 1000;
-        private _tTransport = diag_tickTime;
-        [_groupId, _gData, _pos, "GARRISON"] call FLO_fnc_transportMaybeRequestReassignmentPickup;
-        private _transportMs = (diag_tickTime - _tTransport) * 1000;
-        private _orderMs = (diag_tickTime - _orderStart) * 1000;
+        private _commitResult = [_groupId, _gData, "GARRISON", _waypoints, _pos, "GTN_GARRISON", _objectiveId] call FLO_fnc_virtualizationCommitCommanderOrder;
+        _commitResult params ["_commitSuccess", "_routeMs", "_assignMs", "_transportMs", "_orderMs"];
         [_self, "GARRISON", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {

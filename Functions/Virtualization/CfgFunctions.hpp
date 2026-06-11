@@ -148,14 +148,15 @@ class VirtualizationTransport {
     class transportGetTrackedGroup {};
     class transportHasKnownEnemyNearby {};
     class transportBuildMissionPlan {};
+    class transportCommitMissionPlan {};
     class transportClearInsertState {};
     class transportResetActiveCarrierMotion {};
     class transportCarrierBlocksDeactivation {};
     class transportPool         {};
     class transportPoolClaim    {};
     class transportFindRequestCandidates {};
-    class transportPoolFind     {};
-    class transportPoolFindExisting {};
+    class transportSelectRequestCarrier {};
+    class transportReconcilePoolState {};
     class transportPoolRelease  {};
     class transportReturnCarrierToReserve {};
     class transportAttach       {};
@@ -208,6 +209,7 @@ class VirtualizationState {
     class virtualizationSetAssetComposition {};
     class virtualizationClearCommanderOrder {};
     class virtualizationSetCommanderOrder {};
+    class virtualizationCommitCommanderOrder {};
     class virtualizationAssignMoveOrder {};
     class virtualizationAssignAttackOrder {};
     class virtualizationAssignDefendOrder {};

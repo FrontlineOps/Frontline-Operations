@@ -75,6 +75,16 @@ private _tCycle = diag_tickTime;
 
 private _ownSide = _cmdr get "_ownSide";
 private _sideKey = _cmdr get "_sideKey";
+private _activePlayerSide = FLO_ActivePlayerSide;
+private _playerProximityMeters = (FLO_virtualGroups get "_activationDistance") + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters");
+private _activePlayerPositions = [];
+if (_activePlayerSide in [east, west]) then {
+    {
+        if (alive _x && {(side group _x) isEqualTo _activePlayerSide}) then {
+            _activePlayerPositions pushBack (getPosATL _x);
+        };
+    } forEach allPlayers;
+};
 private _maxFields = _config get "minefieldMaxFields";
 private _placementsPerCycle = _config get "minefieldPlacementsPerCycle";
 private _nowDateNum = dateToNumber date;
@@ -148,19 +158,23 @@ private _candidateObjectiveIds = [];
     } forEach (_cmdr call ["_getFriendlyAttackSourceObjectives", [_x]]);
 } forEach _frontlineEnemyObjectives;
 
-{
-    private _objectiveId = _x;
-    if (_objectiveId in FLO_MinefieldObjectiveIndex) then { continue };
-    if (_objectiveId in (FLO_MinefieldBuild get "objectiveIndex")) then { continue };
+if (_ownSide isNotEqualTo _activePlayerSide && {_activePlayerSide in [east, west]} && {(count _activePlayerPositions) > 0}) then {
+    {
+        private _objectiveId = _x;
+        if (_objectiveId in FLO_MinefieldObjectiveIndex) then { continue };
+        if (_objectiveId in (FLO_MinefieldBuild get "objectiveIndex")) then { continue };
 
-    private _cooldownUntil = FLO_MinefieldObjectiveCooldowns getOrDefault [_objectiveId, -1];
-    if (_cooldownUntil > _nowDateNum) then { continue };
+        private _cooldownUntil = FLO_MinefieldObjectiveCooldowns getOrDefault [_objectiveId, -1];
+        if (_cooldownUntil > _nowDateNum) then { continue };
 
-    private _seed = [_objectiveId, _ownSide, _cmdr] call FLO_fnc_minefieldBuildObjectiveCandidateSeed;
-    if ((count (keys _seed)) == 0) then { continue };
+        if !([_objectiveId, _activePlayerSide, _playerProximityMeters, _activePlayerPositions] call FLO_fnc_minefieldObjectiveHasNearbyPlayer) then { continue };
 
-    _candidates pushBack _seed;
-} forEach _candidateObjectiveIds;
+        private _seed = [_objectiveId, _ownSide, _cmdr] call FLO_fnc_minefieldBuildObjectiveCandidateSeed;
+        if ((count (keys _seed)) == 0) then { continue };
+
+        _candidates pushBack _seed;
+    } forEach _candidateObjectiveIds;
+};
 _metrics set ["candidateBuildMs", (diag_tickTime - _tPhase) * 1000];
 
 _metrics set ["candidateObjectives", count _candidates];

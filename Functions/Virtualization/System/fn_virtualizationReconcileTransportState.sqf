@@ -168,6 +168,8 @@ private _repairCount = 0;
     };
 } forEach _groups;
 
+_repairCount = _repairCount + ([_groups] call FLO_fnc_transportReconcilePoolState);
+
 if (_repairCount > 0) then {
     [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
     ["VIRTUALIZATION", 2, format [
