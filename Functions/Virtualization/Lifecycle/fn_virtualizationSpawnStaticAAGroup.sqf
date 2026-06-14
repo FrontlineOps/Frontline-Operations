@@ -16,7 +16,9 @@ private _radarPool = (_pools get "radar") select {
 [_unitPool, "units", _sideKey, "static_aa"] call FLO_fnc_virtualizationRequirePoolEntries;
 [_staticAAPool, "staticAA", _sideKey, "static_aa"] call FLO_fnc_virtualizationRequirePoolEntries;
 
-private _realGroup = createGroup [_side, true];
+private _realGroup = [_side, _groupId, "static_aa"] call FLO_fnc_virtualizationCreateRealGroup;
+if (isNull _realGroup) exitWith { grpNull };
+
 private _safePos = [_groupId, _position, 20, 100, 15, 0.1, 150, "Static AA"] call FLO_fnc_virtualizationResolveGroundSpawnPos;
 
 if (count _radarPool > 0) then {
@@ -28,7 +30,11 @@ if (count _radarPool > 0) then {
     _radar setVehicleReportRemoteTargets true;
     _radar setVehicleRadar 1;
     private _operator = _realGroup createUnit [_crewType, _radarPos, [], 0, "NONE"];
-    _operator moveInAny _radar;
+    if (isNull _operator) then {
+        deleteVehicle _radar;
+    } else {
+        _operator moveInAny _radar;
+    };
 };
 
 for "_i" from 1 to _unitCount do {
@@ -42,7 +48,16 @@ for "_i" from 1 to _unitCount do {
     _launcher setVehicleReceiveRemoteTargets true;
     private _crewType = [_samType, _unitPool, _sideKey, "static_aa"] call FLO_fnc_virtualizationResolveCrewType;
     private _gunner = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
-    _gunner moveInGunner _launcher;
+    if (isNull _gunner) then {
+        deleteVehicle _launcher;
+    } else {
+        _gunner moveInGunner _launcher;
+    };
+};
+
+if ((count units _realGroup) == 0) exitWith {
+    deleteGroup _realGroup;
+    grpNull
 };
 
 _groupData set ["noWaypoints", true];

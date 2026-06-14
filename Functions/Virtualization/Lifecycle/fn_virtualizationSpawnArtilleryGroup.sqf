@@ -11,7 +11,8 @@ private _artilleryPool = _pools get "groundArtillery";
 [_unitPool, "units", _sideKey, "artillery"] call FLO_fnc_virtualizationRequirePoolEntries;
 [_artilleryPool, "groundArtillery", _sideKey, "artillery"] call FLO_fnc_virtualizationRequirePoolEntries;
 
-private _realGroup = createGroup [_side, true];
+private _realGroup = [_side, _groupId, "artillery"] call FLO_fnc_virtualizationCreateRealGroup;
+if (isNull _realGroup) exitWith { grpNull };
 
 for "_i" from 1 to _unitCount do {
     private _artilleryType = selectRandom _artilleryPool;
@@ -19,6 +20,11 @@ for "_i" from 1 to _unitCount do {
     private _spawnPos = [_groupId, _position, _minDist, 150, 12, 0.15, 200, "Artillery"] call FLO_fnc_virtualizationResolveGroundSpawnPos;
     private _crewType = [_artilleryType, _unitPool, _sideKey, "artillery"] call FLO_fnc_virtualizationResolveCrewType;
     [_realGroup, _artilleryType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
+};
+
+if ((count units _realGroup) == 0) exitWith {
+    deleteGroup _realGroup;
+    grpNull
 };
 
 _realGroup

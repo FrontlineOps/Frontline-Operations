@@ -19,7 +19,8 @@ if (_composition isEqualTo []) then {
     [_groupData, _composition] call FLO_fnc_virtualizationSetAssetComposition;
 };
 
-private _realGroup = createGroup [_side, true];
+private _realGroup = [_side, _groupId, _groupType] call FLO_fnc_virtualizationCreateRealGroup;
+if (isNull _realGroup) exitWith { grpNull };
 
 {
     private _vehicleType = _x;
@@ -38,5 +39,10 @@ private _realGroup = createGroup [_side, true];
     private _crewType = [_vehicleType, _unitPool, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
     [_realGroup, _vehicleType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
 } forEach _composition;
+
+if ((count units _realGroup) == 0) exitWith {
+    deleteGroup _realGroup;
+    grpNull
+};
 
 _realGroup

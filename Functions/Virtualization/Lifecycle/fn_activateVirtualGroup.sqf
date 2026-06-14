@@ -75,9 +75,22 @@ if (isNull _realGroup) exitWith {
 // This handles cases where mission makers use BLUFOR classnames as OPFOR enemies
 // The units' classname side doesn't matter - their group side determines allegiance
 // ========================================================================
+private _sideCorrectionFailed = false;
 if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civilian}) then {
-    _realGroup = [_realGroup, _side] call FLO_fnc_setSide;
+    private _sideCorrectedGroup = [_realGroup, _side] call FLO_fnc_setSide;
+    if (isNull _sideCorrectedGroup) then {
+        ["VIRTUALIZATION", 1, format [
+            "Failed to apply side correction for %1 (%2) - cleaning up spawned assets",
+            _groupId,
+            _groupType
+        ]] call FLO_fnc_log;
+        [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+        _sideCorrectionFailed = true;
+    } else {
+        _realGroup = _sideCorrectedGroup;
+    };
 };
+if (_sideCorrectionFailed) exitWith { false };
 if (isNull _realGroup) exitWith {
     ["VIRTUALIZATION", 1, format [
         "Failed to apply side correction for %1 (%2)",

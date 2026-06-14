@@ -77,6 +77,7 @@ private _groupData = createHashMapFromArray [
     ["activationDeferred", false],
     ["activationDeferredAt", -1],
     ["activationDeferredPos", []],
+    ["activationRetryAt", -1],
     ["engagementActive", false],
     ["engagementTargetGroupId", ""],
     ["engagementTargetPos", []],

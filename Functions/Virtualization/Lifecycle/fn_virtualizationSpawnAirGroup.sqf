@@ -2,7 +2,7 @@
  * Function: FLO_fnc_virtualizationSpawnAirGroup
  */
 
-params ["_position", "_side", "_unitCount", "_groupType", "_pools", "_groupData"];
+params ["_groupId", "_position", "_side", "_unitCount", "_groupType", "_pools", "_groupData"];
 
 private _sideKey = _pools get "sideKey";
 private _unitPool = _pools get "units";
@@ -24,7 +24,9 @@ private _airPool = switch (_groupType) do {
     };
 };
 
-private _realGroup = createGroup [_side, true];
+private _realGroup = [_side, _groupId, _groupType] call FLO_fnc_virtualizationCreateRealGroup;
+if (isNull _realGroup) exitWith { grpNull };
+
 private _spawnParkedHelicopters = _groupType == "helicopter"
     && { count (_groupData get "waypoints") == 0 }
     && { (_groupData get "missionLock") == "" }
@@ -44,6 +46,11 @@ for "_i" from 1 to _unitCount do {
     };
     private _crewType = [_aircraftType, _unitPool, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
     [_realGroup, _aircraftType, _spawnPos, _crewType, !_spawnParked] call FLO_fnc_virtualizationCreateCrewedVehicle;
+};
+
+if ((count units _realGroup) == 0) exitWith {
+    deleteGroup _realGroup;
+    grpNull
 };
 
 _realGroup

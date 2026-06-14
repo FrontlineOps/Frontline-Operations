@@ -29,6 +29,14 @@ private _spawnPools = [_side] call FLO_fnc_virtualizationGetSpawnPools;
 private _poolUnits = _spawnPools get "units";
 private _sideKey = _spawnPools get "sideKey";
 
+if (isNull _realGroup) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "Refusing saved activation of %1 because target group is null",
+        _unitType
+    ]] call FLO_fnc_log;
+    objNull
+};
+
 // Determine if this is a vehicle or infantry based on config
 private _isVehicle = getNumber (configFile >> "CfgVehicles" >> _unitType >> "isVehicle") == 1
     && !(_unitType isKindOf "Man")

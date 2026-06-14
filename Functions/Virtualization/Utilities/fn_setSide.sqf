@@ -33,6 +33,27 @@ if (_side isEqualType 0) then {
 
 // Get the old group before we move units (for virtualization lookup)
 private _oldGroup = grpNull;
+private _inputGroup = grpNull;
+
+switch (true) do {
+    case (_units isEqualType objNull): {
+        if (!isNull _units) then { _inputGroup = group _units; };
+    };
+    case (_units isEqualType []): {
+        if (count _units > 0) then { _inputGroup = group (_units select 0); };
+    };
+    case (_units isEqualType grpNull): {
+        _inputGroup = _units;
+    };
+};
+
+if (
+    isNull _targetGroup
+    && {!isNull _inputGroup}
+    && {(side _inputGroup) isEqualTo _side}
+) exitWith {
+    _inputGroup
+};
 
 // Determine target group - use provided or create new
 private _newGroup = if (_targetGroup isEqualType grpNull && {!isNull _targetGroup}) then {
@@ -43,6 +64,14 @@ private _newGroup = if (_targetGroup isEqualType grpNull && {!isNull _targetGrou
     } else {
         createGroup [_side, true]
     };
+};
+
+if (isNull _newGroup) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "setSide failed: engine refused createGroup for side %1",
+        _side
+    ]] call FLO_fnc_log;
+    grpNull
 };
 
 // Move units based on input type

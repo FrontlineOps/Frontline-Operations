@@ -8,6 +8,7 @@ private _isActive = _groupData get "isActive";
 private _activationDeferred = _groupData get "activationDeferred";
 private _activationUnitCap = FLO_virtualGroups get "_activationUnitCap";
 private _activationResumeCap = FLO_virtualGroups get "_activationResumeCap";
+private _activationRetryCooldown = FLO_virtualGroups get "_activationRetryCooldown";
 private _activeUnitCount = FLO_VirtUpdate get "activeUnitCount";
 private _engagementActive = _groupData get "engagementActive";
 
@@ -19,6 +20,14 @@ if (_activationDeferred && {_nearestDist > (_activationDist + 10)}) then {
 };
 
 if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWith {
+    private _activationRetryAt = _groupData get "activationRetryAt";
+    if (_activationRetryAt > diag_tickTime) exitWith {
+        _virtStats set ["activationBlocksTotal", (_virtStats get "activationBlocksTotal") + 1];
+        _virtStats set ["activationBlocksThisBatch", (_virtStats get "activationBlocksThisBatch") + 1];
+        _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
+        true
+    };
+
     private _bypassBudget = _inCombat || {_engagementActive} || {_missionLock != ""} || {_replacementState != ""};
     private _activationLoad = [_groupData, true] call FLO_fnc_virtualizationGetGroupUnitLoad;
     private _projectedUnitCount = _activeUnitCount + _activationLoad;
@@ -47,11 +56,13 @@ if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWit
             _groupData set ["activationDeferred", false];
             _groupData set ["activationDeferredAt", -1];
             _groupData set ["activationDeferredPos", []];
+            _groupData set ["activationRetryAt", -1];
             _virtStats set ["activationsTotal", (_virtStats get "activationsTotal") + 1];
             _virtStats set ["activationsThisBatch", (_virtStats get "activationsThisBatch") + 1];
             _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
             _virtStats set ["deferredGroupsLast", ((_virtStats get "deferredGroupsLast") - (if (_activationDeferred) then { 1 } else { 0 })) max 0];
         } else {
+            _groupData set ["activationRetryAt", diag_tickTime + _activationRetryCooldown];
             _virtStats set ["activationBlocksTotal", (_virtStats get "activationBlocksTotal") + 1];
             _virtStats set ["activationBlocksThisBatch", (_virtStats get "activationBlocksThisBatch") + 1];
             _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];

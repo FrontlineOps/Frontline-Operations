@@ -2,7 +2,7 @@
  * Function: FLO_fnc_virtualizationSpawnInfantryGroup
  */
 
-params ["_position", "_side", "_groupCfg", "_unitCount", "_unitPool", "_sideKey"];
+params ["_groupId", "_position", "_side", "_groupCfg", "_unitCount", "_unitPool", "_sideKey"];
 
 private _realGroup = grpNull;
 
@@ -18,13 +18,20 @@ if (isNull _realGroup || {count units _realGroup == 0}) then {
     if (!isNull _realGroup) then {
         deleteGroup _realGroup;
     };
-    _realGroup = createGroup [_side, true];
+    _realGroup = [_side, _groupId, "infantry"] call FLO_fnc_virtualizationCreateRealGroup;
+    if (isNull _realGroup) exitWith { grpNull };
+
     private _spawnCount = if (_unitCount > 0) then { _unitCount } else { 6 };
     for "_i" from 1 to _spawnCount do {
         private _unitType = selectRandom _unitPool;
         private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
         _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
     };
+};
+
+if (!isNull _realGroup && {(count units _realGroup) == 0}) then {
+    deleteGroup _realGroup;
+    _realGroup = grpNull;
 };
 
 _realGroup

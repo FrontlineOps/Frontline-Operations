@@ -10,6 +10,14 @@ params [
     ["_fly", false, [true]]
 ];
 
+if (isNull _realGroup) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "Refusing to spawn crewed vehicle %1 because target group is null",
+        _vehicleType
+    ]] call FLO_fnc_log;
+    objNull
+};
+
 private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, if (_fly) then { "FLY" } else { "NONE" }];
 
 if (!_fly) then {
@@ -21,6 +29,15 @@ if (!_fly) then {
 
 private _crewSpawnPos = if (_fly) then { [0,0,0] } else { _spawnPos };
 private _driver = _realGroup createUnit [_crewType, _crewSpawnPos, [], 0, "NONE"];
+if (isNull _driver) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "Failed to create driver %1 for vehicle %2 - deleting empty vehicle",
+        _crewType,
+        _vehicleType
+    ]] call FLO_fnc_log;
+    deleteVehicle _vehicle;
+    objNull
+};
 _driver moveInDriver _vehicle;
 
 {

@@ -31,6 +31,15 @@ private _poolUnits = _pools get "units";
     if (isNil "_attachedData") then { continue };
 
     private _infGroup = createGroup [_attachedData get "side", true];
+    if (isNull _infGroup) then {
+        ["VIRTUALIZATION", 1, format [
+            "Transport %1 could not activate attached group %2 because createGroup failed",
+            _groupId,
+            _attachedId
+        ]] call FLO_fnc_log;
+        continue;
+    };
+
     private _infComp = _attachedData get "comp";
     private _infUnitCount = _attachedData get "unitCount";
     if (_infUnitCount <= 0 && {_infComp isEqualTo []}) then {
