@@ -29,7 +29,7 @@ class FLO_CaptureUI {
             y = "safeZoneY";
             w = "safeZoneW";
             h = "safeZoneH";
-            url = "UI\CaptureUI\_site\index.html";
+            url = "\z\flo\addons\main\UI\CaptureUI\_site\index.html";
         };
     };
 };

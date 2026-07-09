@@ -14,7 +14,7 @@ if (_entryKind isEqualTo "base") exitWith {
         ["deploymentFundEligible", false],
         ["priceValue", _price],
         ["price", format ["%1", _price]],
-        ["image", "Screens\FOBA\b_hq.paa"]
+        ["image", "\z\flo\addons\main\Screens\FOBA\b_hq.paa"]
     ]
 };
 

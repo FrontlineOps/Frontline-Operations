@@ -1,11 +1,11 @@
 class GTNCombat {
-    file = "Functions\AI\GTN\Combat";
+    file = "\z\flo\addons\main\Functions\AI\GTN\Combat";
 
     class gtnVirtualCombatResolver {};
 };
 
 class GTNCombatResolver {
-    file = "Functions\AI\GTN\Combat\Resolver";
+    file = "\z\flo\addons\main\Functions\AI\GTN\Combat\Resolver";
 
     class gtnCombatApplyAttrition {};
     class gtnCombatAveragePosition {};

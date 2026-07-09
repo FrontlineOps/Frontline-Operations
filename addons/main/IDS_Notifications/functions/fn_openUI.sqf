@@ -24,7 +24,7 @@ _ctrl ctrlAddEventHandler [_event, {
     [_control, _isConfirmDialog, _message] call IDS_Notifications_fnc_handleUIEvents;
 }];
 
-// _ctrl ctrlWebBrowserAction ["LoadFile", "IDS_Notifications\ui\_site\index.html"];
+// _ctrl ctrlWebBrowserAction ["LoadFile", "\z\flo\addons\main\IDS_Notifications\ui\_site\index.html"];
 // _ctrl ctrlWebBrowserAction ["OpenDevConsole"];
 
 true;

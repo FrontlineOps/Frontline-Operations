@@ -31,6 +31,6 @@ private _control = _display displayCtrl FLO_BaseDeployBrowserIdc;
 uiNamespace setVariable ["FLO_DeployControl", _control];
 
 [_control] call FLO_fnc_baseDeployAddWebEventHandler;
-[_control, ["LoadFile", "UI\Deploy\index.html"]] call FLO_fnc_baseDeployWebAction;
+[_control, ["LoadFile", "\z\flo\addons\main\UI\Deploy\index.html"]] call FLO_fnc_baseDeployWebAction;
 
 true

@@ -24,6 +24,6 @@ private _control = _display displayCtrl FLO_StoreBrowserIdc;
 uiNamespace setVariable ["FLO_StoreControl", _control];
 
 [_control] call FLO_fnc_storeAddWebEventHandler;
-[_control, ["LoadFile", "UI\Store\index.html"]] call FLO_fnc_storeWebAction;
+[_control, ["LoadFile", "\z\flo\addons\main\UI\Store\index.html"]] call FLO_fnc_storeWebAction;
 
 true

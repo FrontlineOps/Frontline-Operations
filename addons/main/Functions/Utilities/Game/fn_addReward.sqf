@@ -20,12 +20,4 @@ if (!isServer) exitWith {}; // Only execute on server
 // Check parameters
 params [["_RWRD", 0, [0]]];
 
-private _Money = FLO_MoneyHandle get "value";
-
-// Calculate new money value
-private _NewMoney = _Money + _RWRD;
-FLO_MoneyHandle set ["value", _NewMoney];
-[_NewMoney] call FLO_fnc_publishMoneyState;
-
-// Return new balance
-_NewMoney
+[_RWRD] call FLO_fnc_addMoney

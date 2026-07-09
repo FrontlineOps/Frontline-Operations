@@ -1,12 +1,12 @@
 class PathfindingCore {
-    file = "Functions\Pathfinding\Core";
+    file = "\z\flo\addons\main\Functions\Pathfinding\Core";
 
     class initPFState { preInit = 1; };
     class initPFScheduler { preInit = 1; };
 };
 
 class PathfindingRouting {
-    file = "Functions\Pathfinding\Routing";
+    file = "\z\flo\addons\main\Functions\Pathfinding\Routing";
 
     class buildWaterAwarePath {};
     class findWaterDetour {};
@@ -15,7 +15,7 @@ class PathfindingRouting {
 };
 
 class PathfindingDebug {
-    file = "Functions\Pathfinding\Debug";
+    file = "\z\flo\addons\main\Functions\Pathfinding\Debug";
 
     class pfProbe {};
     class pathfindingProbe {};

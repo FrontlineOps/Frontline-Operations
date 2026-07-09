@@ -130,7 +130,7 @@ private _fnc_addActions = {
         ],
         // Store Action
         [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE",
+            "<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE",
             { params ["_target"]; [_target] call FLO_fnc_storeOpenDialog; }, nil, 99999, true, true, "", "_this distance _target < 40"
         ]
     ];
@@ -167,11 +167,11 @@ private _fnc_addContainerActions = {
 
     // Commander-only actions for the container/board
     private _containerActions = [
-        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, nil, 4, true, true, "", _commanderCondition],
-        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, nil, 4, true, true, "", _commanderCondition],
-        ["<img size=2 color='#FFE496' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, nil, 6, true, true, "", _commanderCondition],
-        ["<img size=2 color='#59ff58' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "Scripts\BRIBE.sqf"; }, nil, 3, true, true, "", _commanderCondition],
-        ["<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE", { params ["_target"]; [_target] call FLO_fnc_storeOpenDialog; }, nil, 99999, true, true, "", "_this distance _target < 40"]
+        ["<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Skip_Time", { createDialog 'C_LOCK'; }, nil, 4, true, true, "", _commanderCondition],
+        ["<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>Change_Weather", { { execVM "\z\flo\addons\main\Scripts\Init\init_Weather.sqf"; } remoteExec ["call", 2]; }, nil, 4, true, true, "", _commanderCondition],
+        ["<img size=2 color='#FFE496' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#FFE496'>SAVE Mission Progress", { [] remoteExec ["FLO_fnc_MissionSave", 2]; }, nil, 6, true, true, "", _commanderCondition],
+        ["<img size=2 color='#59ff58' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#59ff58'>Bribe_Militia_(200)", { execVM "\z\flo\addons\main\Scripts\BRIBE.sqf"; }, nil, 3, true, true, "", _commanderCondition],
+        ["<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE", { params ["_target"]; [_target] call FLO_fnc_storeOpenDialog; }, nil, 99999, true, true, "", "_this distance _target < 40"]
     ];
 
     try {

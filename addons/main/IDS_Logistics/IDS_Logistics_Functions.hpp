@@ -1,7 +1,7 @@
 class IDS_Logistics {
     tag = "IDS_Logistics";
     class Functions {
-        file = "IDS_Logistics\functions";
+        file = "\z\flo\addons\main\IDS_Logistics\functions";
 
         class cameraHint {};
         class getEntityConfig {};
@@ -17,7 +17,7 @@ class IDS_Logistics {
     };
 
     class Server {
-        file = "IDS_Logistics\functions\server";
+        file = "\z\flo\addons\main\IDS_Logistics\functions\server";
 
         class finalizeEntity {};
         class loadEntities {};
@@ -27,7 +27,7 @@ class IDS_Logistics {
     };
 
     class UI {
-        file = "IDS_Logistics\functions\ui";
+        file = "\z\flo\addons\main\IDS_Logistics\functions\ui";
 
         class handlePreview {};
         class openBuildMenu {};

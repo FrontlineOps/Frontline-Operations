@@ -1,5 +1,5 @@
 class GTNMinefields {
-    file = "Functions\AI\GTN\Minefields";
+    file = "\z\flo\addons\main\Functions\AI\GTN\Minefields";
 
     class minefieldBuildJobCreate {};
     class minefieldBuildJobStep {};

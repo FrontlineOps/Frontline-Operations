@@ -114,7 +114,7 @@ switch (toUpper _mode) do {
         private _vehicle = _vehicles select 0;
         if !(_vehicle getVariable ["FLO_DetaineeUnloadActionAdded", false]) then {
             [_vehicle, "DETAINEE_UNLOAD", [[
-                "<img size=2 color='#7CC2FF' image='Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Unload Detainees",
+                "<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\holdAction_secure_ca.paa'/><t font='PuristaBold' color='#7CC2FF'>Unload Detainees",
                 {
                     params ["_target", "_caller"];
                     ["UNLOAD_ALL", [_target, _caller]] remoteExecCall ["FLO_fnc_civilianDetaineeCommand", 2, false];

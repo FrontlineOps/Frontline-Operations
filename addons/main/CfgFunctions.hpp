@@ -1,6 +1,6 @@
 class FLO {
     class Functions {
-        file = "Functions";
+        file = "\z\flo\addons\main\Functions";
 
         class MissionSave       {};
         class MissionStartup    {};
@@ -11,7 +11,7 @@ class FLO {
 
     // === INITIALIZATION PHASE SYSTEM ===
     class Init {
-        file = "Functions\Init";
+        file = "\z\flo\addons\main\Functions\Init";
 
         class applyMissionConfigLocally {};
         class detectSavedGame       {};
@@ -28,7 +28,7 @@ class FLO {
 
     // === GTN (Goal Task Network) SYSTEM ===
     class GTNCore {
-        file = "Functions\AI\GTN\Core";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Core";
 
         class gtnSideContext        {};
         class gtnWorldState         {};
@@ -41,7 +41,7 @@ class FLO {
     };
 
     class GTNCoreActions {
-        file = "Functions\AI\GTN\Core\Actions";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Core\Actions";
 
         class gtnAllocateBaselineGarrisons {};
         class gtnAllocateFrontlineAttacks {};
@@ -53,7 +53,7 @@ class FLO {
     };
 
     class GTNCoreLogic {
-        file = "Functions\AI\GTN\Core\Logic";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Core\Logic";
 
         class gtnAllocateAttackTrackPools {};
         class gtnBuildObjectiveDemandSignature {};
@@ -86,7 +86,7 @@ class FLO {
     };
 
     class GTNIntel {
-        file = "Functions\AI\GTN\Intel";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Intel";
 
         class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
@@ -105,7 +105,7 @@ class FLO {
     };
 
     class GTNAlerts {
-        file = "Functions\AI\GTN\Alerts";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Alerts";
 
         class gtnCanSideObserveArea {};
         class gtnCanSideDetectAirThreat {};
@@ -121,7 +121,7 @@ class FLO {
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
 
     class GTNTasks {
-        file = "Functions\AI\GTN\Tasks";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Tasks";
 
         class gtnPlayerTaskBridge {};
         class gtnTaskScoreObjectiveForPlayers {};
@@ -129,7 +129,7 @@ class FLO {
     };
 
     class GTNPlayerSupport {
-        file = "Functions\AI\GTN\PlayerSupport";
+        file = "\z\flo\addons\main\Functions\AI\GTN\PlayerSupport";
 
         class gtnBuildSupportCooldownKey {};
         class gtnOpenPlayerSupportRequestMap {};
@@ -143,20 +143,20 @@ class FLO {
     };
 
     class GTNResourceManager {
-        file = "Functions\AI\GTN\ResourceManager";
+        file = "\z\flo\addons\main\Functions\AI\GTN\ResourceManager";
 
         class gtnResourceManager    {};
         class gtnConfig             {};
     };
 
     class GTNDebug {
-        file = "Functions\AI\GTN\Debug";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Debug";
 
         class gtnCommanderVisualDebug {};
     };
 
     class GTNAssets {
-        file = "Functions\AI\GTN\Assets";
+        file = "\z\flo\addons\main\Functions\AI\GTN\Assets";
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
@@ -183,7 +183,7 @@ class FLO {
     
     // === CIVILIAN SYSTEM ===
     class CivilianCore {
-        file = "Functions\Civilian\Core";
+        file = "\z\flo\addons\main\Functions\Civilian\Core";
 
         class civilianManager {};
         class civilianConfig {};
@@ -204,14 +204,14 @@ class FLO {
     };
 
     class CivilianSpawning {
-        file = "Functions\Civilian\Spawning";
+        file = "\z\flo\addons\main\Functions\Civilian\Spawning";
 
         class spawnCivilians {};
         class activateCivilian {};
     };
 
     class CivilianBehavior {
-        file = "Functions\Civilian\Behavior";
+        file = "\z\flo\addons\main\Functions\Civilian\Behavior";
 
         class civilianActions {};
         class civilianConfigureActionsLocal {};
@@ -225,7 +225,7 @@ class FLO {
     };
 
     class CivilianMissions {
-        file = "Functions\Civilian\Missions";
+        file = "\z\flo\addons\main\Functions\Civilian\Missions";
 
         class civilianBuildMissionOffer {};
         class civilianMissionResolveAction {};
@@ -234,7 +234,7 @@ class FLO {
     };
 
     class CivilianMissionTemplates {
-        file = "Functions\Civilian\Missions\Templates";
+        file = "\z\flo\addons\main\Functions\Civilian\Missions\Templates";
 
         class civMission1 {};
         class civMission2 {};
@@ -243,7 +243,7 @@ class FLO {
     };
 
     class AITasks {
-        file = "Functions\AI\Tasks";
+        file = "\z\flo\addons\main\Functions\AI\Tasks";
 
         class taskPatrol {};
     };
@@ -251,7 +251,7 @@ class FLO {
     #include "Functions\Virtualization\CfgFunctions.hpp"
 
     class Objective {
-        file = "Functions\Objective";
+        file = "\z\flo\addons\main\Functions\Objective";
 
         class objectiveConfig           {};
         class buildObjectiveLinks       {};
@@ -265,7 +265,7 @@ class FLO {
     };
 
     class ObjectiveUtilities {
-        file = "Functions\Objective\Utilities";
+        file = "\z\flo\addons\main\Functions\Objective\Utilities";
 
         class buildObjectiveRuntimeState {};
         class getRandomObjectivePos   {};
@@ -286,15 +286,16 @@ class FLO {
     #include "Functions\Logistics\CfgFunctions.hpp"
 
     class MoneyState {
-        file = "Functions\Money";
+        file = "\z\flo\addons\main\Functions\Money";
 
+        class addMoney                  {};
         class initMoneyStateEvents      {};
         class publishMoneyState         {};
         class syncMoneyState            {};
     };
 
     class Store {
-        file = "Functions\Store";
+        file = "\z\flo\addons\main\Functions\Store";
 
         class storeAddInventoryItem {};
         class storeAddWebEventHandler {};
@@ -339,7 +340,7 @@ class FLO {
     };
 
     class Base {
-        file = "Functions\Base";
+        file = "\z\flo\addons\main\Functions\Base";
 
         class baseDeployAddWebEventHandler {};
         class baseDeployBuildSnapshot {};
@@ -355,7 +356,7 @@ class FLO {
     };
 
     class Factions {
-        file = "Functions\Factions";
+        file = "\z\flo\addons\main\Functions\Factions";
 
         class factionApplyAutoEnemyGlobals {};
         class factionApplyAutoFriendlyGlobals {};
@@ -377,7 +378,7 @@ class FLO {
     };
 
     class UtilitiesDebug {
-        file = "Functions\Utilities\Debug";
+        file = "\z\flo\addons\main\Functions\Utilities\Debug";
         class log                       {};
         class netDebugDump             {};
         class netDebugRecord           {};
@@ -385,13 +386,13 @@ class FLO {
     };
 
     class UtilitiesSystem {
-        file = "Functions\Utilities\System";
+        file = "\z\flo\addons\main\Functions\Utilities\System";
         class createUUID                {};
         class heartbeat                 {};
     };
 
     class UtilitiesUI {
-        file = "Functions\Utilities\UI";
+        file = "\z\flo\addons\main\Functions\Utilities\UI";
         class showDynamicText           {};
         class sendRewardNotification    {};
         class sendNotification          {};
@@ -399,23 +400,24 @@ class FLO {
     };
 
     class UtilitiesGame {
-        file = "Functions\Utilities\Game";
+        file = "\z\flo\addons\main\Functions\Utilities\Game";
         class addReward                 {};
         class getRandomMagazine         {};
         class addIntelServer            {};
+        class militaryIntel             {};
         class adjustAggression          {};
         class adjustReputation          {};
         class configureObjectActionsLocal {};
     };
 
     class UtilitiesVehicle {
-        file = "Functions\Utilities\Vehicle";
+        file = "\z\flo\addons\main\Functions\Utilities\Vehicle";
         class placeVehicleWithCrew      {};
         class vehicleConfigureRequestedVehicle {};
     };
 
     class UtilitiesAftermath {
-        file = "Functions\Utilities\Aftermath";
+        file = "\z\flo\addons\main\Functions\Utilities\Aftermath";
         class aftermathCleanupManager   {};
         class aftermathCleanupRun       {};
         class aftermathIsPositionInHotObjective {};
@@ -431,14 +433,14 @@ class FLO {
     };
 
     class Misc {
-        file = "Functions\Misc";
+        file = "\z\flo\addons\main\Functions\Misc";
 
         class ragequitBlocker     {};
         class disableSystemChat   {};
     };
 
     class UI {
-        file = "Functions\UI";
+        file = "\z\flo\addons\main\Functions\UI";
         class safeConfirm             {};
         class shouldOpenFactionDialog {};
         class factionDialogOnLoad     {};

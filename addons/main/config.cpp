@@ -11,7 +11,7 @@ class CfgPatches {
     };
 };
 
-#include "Scripts\defines.hpp"
+#include "UI\addon_defines.hpp"
 #include "IDS_Logistics\CfgLogistics.hpp"
 #include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
 
@@ -54,6 +54,7 @@ class CfgRemoteExec {
         class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
         class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };
         class FLO_fnc_syncMoneyState { allowedTargets = 1; jip = 0; };
+        class FLO_fnc_addMoney { allowedTargets = 2; jip = 0; };
         class FLO_fnc_syncObjectiveRuntimeState { allowedTargets = 1; jip = 0; };
         class FLO_fnc_storeApplyKit { allowedTargets = 1; jip = 0; };
         class FLO_fnc_storeReceiveResponse { allowedTargets = 1; jip = 0; };

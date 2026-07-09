@@ -143,6 +143,7 @@ Current setup options include:
 - objective size threshold
 - virtualization distance
 - virtualization unit cap
+- starting money, defaulting to `5000`
 - starting territory ratio from `10/90` up to `90/10`
 
 On an explicitly loaded save, the saved configuration is restored and the setup dialog is skipped.
@@ -158,8 +159,8 @@ FLO can run in singleplayer, hosted multiplayer, or on a dedicated server, but i
 
 ## Quick Start
 
-1. Put the mission source in your Arma 3 profile `missions` folder, or pack it as a PBO for a server.
-2. Launch it in multiplayer preview, hosted MP, or on a dedicated server.
+1. Build the addon with HEMTT, or launch the HEMTT test mission from `missions/FLO_Test.Altis`.
+2. Load the generated `@FLO` addon with CBA.
 3. On a fresh start, log in as admin or host the session and complete the mission setup flow.
 4. Open the Deployment Panel with `Ctrl+Shift+D` to place FOB/COP infrastructure.
 5. Use the Store action at bases for gear, vehicles, and recruitable AI.
@@ -167,7 +168,7 @@ FLO can run in singleplayer, hosted multiplayer, or on a dedicated server, but i
 
 ## HEMTT Workflow
 
-The mod scaffold lives under [`addons/main`](addons/main), with HEMTT configuration in [`.hemtt/project.toml`](.hemtt/project.toml).
+The authoritative source lives under [`addons/main`](addons/main), with HEMTT configuration in [`.hemtt/project.toml`](.hemtt/project.toml). The old loose mission root has been removed; do not add new runtime systems outside the addon tree unless they are part of a dedicated test mission under [`missions`](missions).
 
 Common local commands:
 
@@ -189,7 +190,7 @@ Common local commands:
 
 ## Initialization Pipeline
 
-All authoritative startup work runs on the server through [`Functions/Init/fn_initPhaseManager.sqf`](Functions/Init/fn_initPhaseManager.sqf).
+All authoritative startup work runs on the server through [`addons/main/Functions/Init/fn_initPhaseManager.sqf`](addons/main/Functions/Init/fn_initPhaseManager.sqf).
 
 | Phase | Name | Purpose |
 |------|------|---------|
@@ -206,10 +207,10 @@ Clients wait for `FLO_MissionReady` and then finalize local UI, map intel, and p
 
 The main customization entry points are:
 
-- [`CUSTOM_PLAYER_FACTION.sqf`](CUSTOM_PLAYER_FACTION.sqf)
-- [`CUSTOM_ENEMY_FACTION.sqf`](CUSTOM_ENEMY_FACTION.sqf)
-- [`CUSTOM_CIVILIAN_FACTION.sqf`](CUSTOM_CIVILIAN_FACTION.sqf)
-- [`Scripts/factions/README.md`](Scripts/factions/README.md) for built-in preset dependencies and required mods
+- [`addons/main/CUSTOM_PLAYER_FACTION.sqf`](addons/main/CUSTOM_PLAYER_FACTION.sqf)
+- [`addons/main/CUSTOM_ENEMY_FACTION.sqf`](addons/main/CUSTOM_ENEMY_FACTION.sqf)
+- [`addons/main/CUSTOM_CIVILIAN_FACTION.sqf`](addons/main/CUSTOM_CIVILIAN_FACTION.sqf)
+- [`addons/main/Scripts/factions/README.md`](addons/main/Scripts/factions/README.md) for built-in preset dependencies and required mods
 
 Phase 2 builds `FLO_FactionCatalog` from those files, and that catalog feeds:
 
@@ -279,6 +280,14 @@ On a fresh start, the commander setup flow publishes:
 - player start position
 - starting territory ratio
 
+### Admin Money Command
+
+Run this from the admin debug console after mission setup to add money through the server-authoritative money state:
+
+```sqf
+[5000] remoteExecCall ["FLO_fnc_addMoney", 2];
+```
+
 ### Default GTN Order Budgets
 
 The commander authors strategic order caps against the `10s` tempo baseline, then scales them upward with the tempo curve:
@@ -292,18 +301,19 @@ The commander authors strategic order caps against the `10s` tempo baseline, the
 
 | Path | Purpose |
 |------|---------|
-| [`addons/main`](addons/main) | HEMTT addon mirror of the mission systems |
+| [`addons/main`](addons/main) | Source of truth for packaged FLO addon systems |
 | [`.hemtt/project.toml`](.hemtt/project.toml) | HEMTT project, launch, and build configuration |
-| [`Functions/Init`](Functions/Init) | Server phase manager and client finalization |
-| [`Functions/AI/GTN`](Functions/AI/GTN) | Commanders, world state, combat, support, alerts, and player support |
-| [`Functions/Store`](Functions/Store) | Store catalog, checkout, gear, vehicle, and recruitable AI handling |
-| [`Functions/Base`](Functions/Base) | FOB/COP Deployment Panel setup and server placement requests |
-| [`Functions/Factions`](Functions/Factions) | Runtime auto-generated faction compatibility and catalog builders |
-| [`Functions/Virtualization`](Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
-| [`Functions/Logistics`](Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
-| [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, and markers |
-| [`UI/Store`](UI/Store) | Browser UI for the Store |
-| [`UI/Deploy`](UI/Deploy) | Browser UI for FOB/COP deployment |
+| [`addons/main/Functions/Init`](addons/main/Functions/Init) | Server phase manager and client finalization |
+| [`addons/main/Functions/AI/GTN`](addons/main/Functions/AI/GTN) | Commanders, world state, combat, support, alerts, and player support |
+| [`addons/main/Functions/Store`](addons/main/Functions/Store) | Store catalog, checkout, gear, vehicle, and recruitable AI handling |
+| [`addons/main/Functions/Base`](addons/main/Functions/Base) | FOB/COP Deployment Panel setup and server placement requests |
+| [`addons/main/Functions/Factions`](addons/main/Functions/Factions) | Runtime auto-generated faction compatibility and catalog builders |
+| [`addons/main/Functions/Virtualization`](addons/main/Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
+| [`addons/main/Functions/Logistics`](addons/main/Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
+| [`addons/main/Functions/Objective`](addons/main/Functions/Objective) | Objective indexing, ownership, graph links, and markers |
+| [`addons/main/UI/Store`](addons/main/UI/Store) | Browser UI for the Store |
+| [`addons/main/UI/Deploy`](addons/main/UI/Deploy) | Browser UI for FOB/COP deployment |
+| [`missions/FLO_Test.Altis`](missions/FLO_Test.Altis) | Minimal HEMTT launch/test mission shell |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | GitHub commit message rules and contribution expectations |
 
 ## License

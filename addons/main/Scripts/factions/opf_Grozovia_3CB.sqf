@@ -1,6 +1,6 @@
 // Where are Classnames ? Right click on any Unit or Vehicle in the Editor and Select find in CFG viewer, Last Name in the [path] tab is the Classname,
 
-// CUSTOM_ENEMY_FACTION.sqf
+// \z\flo\addons\main\CUSTOM_ENEMY_FACTION.sqf
 // Defines the OPFOR faction units and equipment for the mission
 // Used for both physical and virtual spawning through the virtualization system
 

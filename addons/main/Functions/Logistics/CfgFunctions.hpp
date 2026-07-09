@@ -1,5 +1,5 @@
 class Logistics {
-    file = "Functions\Logistics";
+    file = "\z\flo\addons\main\Functions\Logistics";
 
     class sideResources {};
     class logisticsNetwork {};
@@ -7,7 +7,7 @@ class Logistics {
 };
 
 class LogisticsSideResources {
-    file = "Functions\Logistics\SideResources";
+    file = "\z\flo\addons\main\Functions\Logistics\SideResources";
 
     class sideResourcesAddResources {};
     class sideResourcesCalculateCost {};
@@ -23,7 +23,7 @@ class LogisticsSideResources {
 };
 
 class LogisticsNetwork {
-    file = "Functions\Logistics\Network";
+    file = "\z\flo\addons\main\Functions\Logistics\Network";
 
     class logisticsNetworkApplyObjectiveCaptureGrowth {};
     class logisticsNetworkBuildTargetPicture {};

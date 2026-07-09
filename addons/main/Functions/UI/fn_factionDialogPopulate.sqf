@@ -203,9 +203,9 @@ private _garrisonOptions = [
 // ============================================================================
 
 private _resourcesCombo = _display displayCtrl 1959;
-private _resourceOptions = ["50", "250", "500", "1000"];
+private _resourceOptions = ["1000", "2500", "5000", "10000"];
 
-[_resourcesCombo, _resourceOptions, 1] call _fnc_addItems;
+[_resourcesCombo, _resourceOptions, 2] call _fnc_addItems;
 
 // ============================================================================
 // CIVILIAN STANDING (IDC 1960)

@@ -1,5 +1,5 @@
 class VirtualizationSystem {
-    file = "Functions\Virtualization\System";
+    file = "\z\flo\addons\main\Functions\Virtualization\System";
 
     class initVirtualization          {};
     class virtualizationCreateEventHandlerState {};
@@ -27,7 +27,7 @@ class VirtualizationSystem {
 };
 
 class VirtualizationSeeding {
-    file = "Functions\Virtualization\Seeding";
+    file = "\z\flo\addons\main\Functions\Virtualization\Seeding";
 
     class buildObjectiveTemplateSpawnPlan {};
     class initializeObjectiveGroups {};
@@ -37,7 +37,7 @@ class VirtualizationSeeding {
 };
 
 class VirtualizationRegistry {
-    file = "Functions\Virtualization\Registry";
+    file = "\z\flo\addons\main\Functions\Virtualization\Registry";
 
     class createVirtualGroup              {};
     class virtualizationGenerateGroupId   {};
@@ -58,7 +58,7 @@ class VirtualizationRegistry {
 };
 
 class VirtualizationIndex {
-    file = "Functions\Virtualization\Index";
+    file = "\z\flo\addons\main\Functions\Virtualization\Index";
 
     class virtualizationCreateSpatialState      {};
     class virtualizationSpatialIndex             {};
@@ -76,7 +76,7 @@ class VirtualizationIndex {
 };
 
 class VirtualizationLifecycle {
-    file = "Functions\Virtualization\Lifecycle";
+    file = "\z\flo\addons\main\Functions\Virtualization\Lifecycle";
 
     class activateVirtualGroup             {};
     class virtualizationTryActivateGroup   {};
@@ -116,7 +116,7 @@ class VirtualizationLifecycle {
 };
 
 class VirtualizationRouting {
-    file = "Functions\Virtualization\Routing";
+    file = "\z\flo\addons\main\Functions\Virtualization\Routing";
 
     class virtualizationApplyDirectWaypointUpdate {};
     class updateVirtualGroupWaypoints      {};
@@ -133,7 +133,7 @@ class VirtualizationRouting {
 };
 
 class VirtualizationTransport {
-    file = "Functions\Virtualization\Transport";
+    file = "\z\flo\addons\main\Functions\Virtualization\Transport";
 
     class transportConfig       {};
     class transportResolveReserveObjective {};
@@ -179,7 +179,7 @@ class VirtualizationTransport {
 };
 
 class VirtualizationCore {
-    file = "Functions\Virtualization\Core";
+    file = "\z\flo\addons\main\Functions\Virtualization\Core";
 
     class virtualizationAdvanceDefaultWaypoint {};
     class virtualizationAdvanceLoiterWaypoint {};
@@ -196,7 +196,7 @@ class VirtualizationCore {
 };
 
 class VirtualizationLogic {
-    file = "Functions\Virtualization\Logic";
+    file = "\z\flo\addons\main\Functions\Virtualization\Logic";
 
     class virtualizationCanAutoPatrol  {};
     class virtualizationBuildPatrolPlan {};
@@ -204,7 +204,7 @@ class VirtualizationLogic {
 };
 
 class VirtualizationState {
-    file = "Functions\Virtualization\State";
+    file = "\z\flo\addons\main\Functions\Virtualization\State";
 
     class virtualizationGetEffectiveState {};
     class virtualizationSetAssetComposition {};
@@ -262,7 +262,7 @@ class VirtualizationState {
 };
 
 class VirtualizationDebug {
-    file = "Functions\Virtualization\Debug";
+    file = "\z\flo\addons\main\Functions\Virtualization\Debug";
 
     class virtualizationCreateDebugState   {};
     class virtualizationDebugManager      {};
@@ -274,7 +274,7 @@ class VirtualizationDebug {
 };
 
 class VirtualizationUtilities {
-    file = "Functions\Virtualization\Utilities";
+    file = "\z\flo\addons\main\Functions\Virtualization\Utilities";
 
     class filterNonCivGroups      {};
     class getGroupTypeCount       {};

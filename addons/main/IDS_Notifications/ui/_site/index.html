@@ -13,9 +13,9 @@
     <script>
         Promise.all([
             // Load CSS file
-            A3API.RequestFile("IDS_Notifications\\ui\\_site\\styles.css"),
+            A3API.RequestFile("\\z\\flo\\addons\\main\\IDS_Notifications\\ui\\_site\\styles.css"),
             // Load JavaScript file (now using Redux-like pattern)
-            A3API.RequestFile("IDS_Notifications\\ui\\_site\\script.js")
+            A3API.RequestFile("\\z\\flo\\addons\\main\\IDS_Notifications\\ui\\_site\\script.js")
         ]).then(([css, js]) => {
             // Apply CSS
             const style = document.createElement('style');

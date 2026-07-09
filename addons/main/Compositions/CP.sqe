@@ -274,7 +274,7 @@ class items
 				flags=4;
 				class Attributes
 				{
-					init="call{this addAction [""<t color='#86FF33'>H.A.L.O Jump 30k</t>"",""Scripts\HALO.sqf""];" \n "this addAction [""<t color='#FF0000'>Fast Travel to Another FOB 30k</t>"",{execVM ""Scripts\FOBFT.sqf"";}];" \n "this addAction [""<t color='#FFE496'>Save and Exit</t>"",""call FLO_fnc_MissionSave""];" \n "}";
+					init="call{this addAction [""<t color='#FFE496'>Save and Exit</t>"",""call FLO_fnc_MissionSave""];" \n "}";
 					disableSimulation=1;
 				};
 				id=101523;
@@ -493,7 +493,7 @@ class items
 				flags=4;
 				class Attributes
 				{
-					init="call{this setObjectTextureGlobal [2, ""#(argb,512,512,1)r2t(SATELLITE_V,1)""];" \n "this setObjectTextureGlobal [1, ""#(argb,512,512,1)r2t(SATELLITE_N,1)""];" \n "this setObjectTextureGlobal [3, ""#(argb,512,512,1)r2t(SATELLITE_T,1)""];" \n "" \n "" \n "this addAction [""<t color='#FF0000'>Show Satellite Feed</t>"",""Scripts\SATF.sqf""];" \n "this addAction [""<t color='#FF0000'>Move Satellite</t>"",""Scripts\SATM.sqf""];" \n "this addAction [""<t color='#FF0000'>Zoom +3</t>"",{SAT1 attachTo [TSAT, [0, 0, 100] ];}];" \n "this addAction [""<t color='#FF0000'>Zoom +2</t>"",{SAT1 attachTo [TSAT, [0, 0, 200] ];}];" \n "this addAction [""<t color='#FF0000'>Zoom +1</t>"",{SAT1 attachTo [TSAT, [0, 0, 300] ];}];" \n "this addAction [""<t color='#FF0000'>Zoom +0</t>"",{SAT1 attachTo [TSAT, [0, 0, 550] ];}];" \n "}";
+					init="call{this setObjectTextureGlobal [2, ""#(argb,512,512,1)r2t(SATELLITE_V,1)""];" \n "this setObjectTextureGlobal [1, ""#(argb,512,512,1)r2t(SATELLITE_N,1)""];" \n "this setObjectTextureGlobal [3, ""#(argb,512,512,1)r2t(SATELLITE_T,1)""];" \n "}";
 					disableSimulation=1;
 				};
 				id=101512;

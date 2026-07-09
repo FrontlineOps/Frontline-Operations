@@ -77,14 +77,14 @@ if (([_bluHandle] call _fnc_handleSource) in _autoSources) then {
     _loadedOk = [_bluHandle, "friendly"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _bluPath = switch (_bluFaction) do {
-        case "NATO _ Desert": { "Scripts\factions\blu_NATODesert.sqf" };
-        case "AAF _ Woodland": { "Scripts\factions\blu_AAF.sqf" };
-        case "ADF _ Re-Cut": { "Scripts\factions\blu_ADF_RC.sqf" };
-        case "BWMod _ RHSUSAF": { "Scripts\factions\blu_BW_RHS.sqf" };
-        case "UAF _ CUP-UAFVP": { "Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
-        case "USMC _ Current Issue": { "Scripts\factions\blu_USMC_CI.sqf" };
-        case "USMC _ CUP-EF": { "Scripts\factions\blu_USMC_CUP_EF.sqf" };
-        default { "CUSTOM_PLAYER_FACTION.sqf" };
+        case "NATO _ Desert": { "\z\flo\addons\main\Scripts\factions\blu_NATODesert.sqf" };
+        case "AAF _ Woodland": { "\z\flo\addons\main\Scripts\factions\blu_AAF.sqf" };
+        case "ADF _ Re-Cut": { "\z\flo\addons\main\Scripts\factions\blu_ADF_RC.sqf" };
+        case "BWMod _ RHSUSAF": { "\z\flo\addons\main\Scripts\factions\blu_BW_RHS.sqf" };
+        case "UAF _ CUP-UAFVP": { "\z\flo\addons\main\Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
+        case "USMC _ Current Issue": { "\z\flo\addons\main\Scripts\factions\blu_USMC_CI.sqf" };
+        case "USMC _ CUP-EF": { "\z\flo\addons\main\Scripts\factions\blu_USMC_CUP_EF.sqf" };
+        default { "\z\flo\addons\main\CUSTOM_PLAYER_FACTION.sqf" };
     };
     _loadedOk = [_bluFaction, _bluPath] call _fnc_loadFaction;
 };
@@ -102,11 +102,11 @@ if (([_opfHandle] call _fnc_handleSource) in _autoSources) then {
     _loadedOk = [_opfHandle, "enemy"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _opfPath = switch (_opfFaction) do {
-        case "CSAT _ Desert": { "Scripts\factions\opf_CSATDesert.sqf" };
-        case "Grozovia _ 3CB": { "Scripts\factions\opf_Grozovia_3CB.sqf" };
-        case "IAF _ CUP-EF": { "Scripts\factions\opf_IAF_CUP_EF.sqf" };
-        case "Russian AF _ CUP": { "Scripts\factions\opf_RU_CUP.sqf" };
-        default { "CUSTOM_ENEMY_FACTION.sqf" };
+        case "CSAT _ Desert": { "\z\flo\addons\main\Scripts\factions\opf_CSATDesert.sqf" };
+        case "Grozovia _ 3CB": { "\z\flo\addons\main\Scripts\factions\opf_Grozovia_3CB.sqf" };
+        case "IAF _ CUP-EF": { "\z\flo\addons\main\Scripts\factions\opf_IAF_CUP_EF.sqf" };
+        case "Russian AF _ CUP": { "\z\flo\addons\main\Scripts\factions\opf_RU_CUP.sqf" };
+        default { "\z\flo\addons\main\CUSTOM_ENEMY_FACTION.sqf" };
     };
     _loadedOk = [_opfFaction, _opfPath] call _fnc_loadFaction;
 };
@@ -124,8 +124,8 @@ if (([_civHandle] call _fnc_handleSource) in _autoSources) then {
     _loadedOk = [_civHandle, "civilian"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _civPath = switch (_civFaction) do {
-        case "Greek Civilians": { "Scripts\factions\civ_Greek.sqf" };
-        default { "CUSTOM_CIVILIAN_FACTION.sqf" };
+        case "Greek Civilians": { "\z\flo\addons\main\Scripts\factions\civ_Greek.sqf" };
+        default { "\z\flo\addons\main\CUSTOM_CIVILIAN_FACTION.sqf" };
     };
     _loadedOk = [_civFaction, _civPath] call _fnc_loadFaction;
 };

@@ -15,7 +15,7 @@ class RscNotifications {
             y = "safeZoneY";
             w = "safeZoneW";
             h = "safeZoneH";
-            url = "IDS_Notifications\ui\_site\index.html";
+            url = "\z\flo\addons\main\IDS_Notifications\ui\_site\index.html";
         };
     };
 };

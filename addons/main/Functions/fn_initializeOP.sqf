@@ -126,7 +126,7 @@ private _fnc_addActions = {
         ],
         // Store Action
         [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE",
+            "<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE",
             { params ["_target"]; [_target] call FLO_fnc_storeOpenDialog; }, nil, 99999, true, true, "", "_this distance _target < 40"
         ]
     ];
@@ -164,7 +164,7 @@ private _fnc_addContainerActions = {
     private _containerActions = [
         // Store on container as well
         [
-            "<img size=2 color='#7CC2FF' image='Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE",
+            "<img size=2 color='#7CC2FF' image='\z\flo\addons\main\Screens\FOBA\b_hq.paa'/><t font='PuristaBold' color='#7CC2FF'>STORE",
             { params ["_target"]; [_target] call FLO_fnc_storeOpenDialog; }, nil, 99999, true, true, "", "_this distance _target < 40"
         ],
         // Build Mode

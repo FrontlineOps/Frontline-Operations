@@ -6,8 +6,8 @@
     <title>FLO Capture UI</title>
     <script>
         Promise.all([
-            A3API.RequestFile("UI\\CaptureUI\\_site\\styles.css"),
-            A3API.RequestFile("UI\\CaptureUI\\_site\\script.js")
+            A3API.RequestFile("\\z\\flo\\addons\\main\\UI\\CaptureUI\\_site\\styles.css"),
+            A3API.RequestFile("\\z\\flo\\addons\\main\\UI\\CaptureUI\\_site\\script.js")
         ]).then(([css, js]) => {
             const style = document.createElement('style');
             style.textContent = css;
