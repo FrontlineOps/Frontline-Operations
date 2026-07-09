@@ -55,7 +55,7 @@ private _enemyCount = 0;
 private _underAttack = false;
 private _contested = false;
 
-if (_objectiveState isNotEqualTo []) then {
+if ((count _objectiveState) > 0) then {
     _friendlyCount = _objectiveState get "friendlyCount";
     _enemyCount = _objectiveState get "enemyCount";
     _underAttack = _objectiveState get "underAttack";
@@ -110,7 +110,7 @@ private _supportBonus = if (_supportingPlayerCount > 0) then {
 private _frontlineBonus = 0;
 private _frontlineEnemy = false;
 
-if (_objectiveState isNotEqualTo [] && {!isNil {_objectiveState get "frontlineEnemy"}}) then {
+if ((count _objectiveState) > 0 && {!isNil {_objectiveState get "frontlineEnemy"}}) then {
     _frontlineEnemy = _objectiveState get "frontlineEnemy";
 };
 

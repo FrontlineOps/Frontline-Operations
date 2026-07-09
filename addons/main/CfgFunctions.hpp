@@ -14,6 +14,7 @@ class FLO {
         file = "\z\flo\addons\main\Functions\Init";
 
         class applyMissionConfigLocally {};
+        class registerSettings      {};
         class detectSavedGame       {};
         class initFactionSplitMixedInfantryPool {};
         class initMissionConfigEvents {};
@@ -24,6 +25,7 @@ class FLO {
         class initPhase4_Virtualization {};
         class initPhase5_MissionSystems {};
         class initClientFinalize    {};
+        class addonPostInit         {postInit = 1;};
     };
 
     // === GTN (Goal Task Network) SYSTEM ===
@@ -443,6 +445,7 @@ class FLO {
         file = "\z\flo\addons\main\Functions\UI";
         class safeConfirm             {};
         class shouldOpenFactionDialog {};
+        class openFactionDialog       {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
         class factionDialogCreateObjectiveGroupControls {};

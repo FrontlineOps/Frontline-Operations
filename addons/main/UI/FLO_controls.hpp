@@ -7,7 +7,7 @@
  * theming across all mission dialogs. Use these instead of raw base classes.
  *
  * Dependencies:
- * Must be included AFTER UI/defines.hpp
+ * Must be included AFTER UI/addon_defines.hpp declares vanilla base controls.
  */
 
 // ============================================================================

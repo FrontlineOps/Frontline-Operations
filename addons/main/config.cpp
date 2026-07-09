@@ -4,10 +4,18 @@ class CfgPatches {
         author = "Frontline Operations Group";
         requiredVersion = 2.18;
         requiredAddons[] = {
-            "cba_main"
+            "cba_main",
+            "cba_xeh",
+            "cba_settings"
         };
         units[] = {};
         weapons[] = {};
+    };
+};
+
+class Extended_PreInit_EventHandlers {
+    class flo_main {
+        init = "call compile preprocessFileLineNumbers '\z\flo\addons\main\XEH_preInit.sqf'";
     };
 };
 

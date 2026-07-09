@@ -122,6 +122,7 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - The campaign is built for multiplayer, hosted MP, dedicated servers, and long-running sessions.
 - Fresh setup still requires an admin-controlled launch flow.
 - A saved campaign only continues when the server/admin explicitly launches in the saved-progress mode; valid saves are not auto-loaded just because they exist.
+- After the fresh setup start position is chosen, the setup client stays on a black deployment screen until initialization completes, then receives one forced respawn at the local campaign respawn marker to clear the editor placeholder state.
 - Store and Deployment Panel systems are now the expected player logistics surfaces.
 - Support, logistics, and AI pressure continue to matter even when players move away from one area.
 
@@ -161,7 +162,7 @@ FLO can run in singleplayer, hosted multiplayer, or on a dedicated server, but i
 
 1. Build the addon with HEMTT, or launch the HEMTT test mission from `missions/FLO_Test.Altis`.
 2. Load the generated `@FLO` addon with CBA.
-3. On a fresh start, log in as admin or host the session and complete the mission setup flow.
+3. On a fresh start, log in as admin or host the session and complete the FLO setup dialog opened by the addon bootstrap.
 4. Open the Deployment Panel with `Ctrl+Shift+D` to place FOB/COP infrastructure.
 5. Use the Store action at bases for gear, vehicles, and recruitable AI.
 6. On a loaded save, explicitly launch saved progress and let the mission restore the campaign state.
@@ -184,13 +185,15 @@ Common local commands:
 | Topic | Behavior |
 |------|----------|
 | Player logistics | Store UI and Deployment Panel |
-| Fresh start | Resets campaign state and opens mission setup |
+| Fresh start | Opens FLO setup for a logged-in admin or hosted server |
 | Loaded save | Restores saved campaign state only when explicitly launched as saved progress |
 | Campaign authority | Server-owned startup and persistent systems |
 
 ## Initialization Pipeline
 
-All authoritative startup work runs on the server through [`addons/main/Functions/Init/fn_initPhaseManager.sqf`](addons/main/Functions/Init/fn_initPhaseManager.sqf).
+The addon postInit bootstrap in [`addons/main/Functions/Init/fn_addonPostInit.sqf`](addons/main/Functions/Init/fn_addonPostInit.sqf) replaces the old loose `initServer.sqf` and `initPlayerLocal.sqf` mission scripts. It initializes the server namespace, starts the heartbeat, launches the Phase Manager, and opens the setup dialog on an eligible admin client.
+
+All authoritative startup work then runs on the server through [`addons/main/Functions/Init/fn_initPhaseManager.sqf`](addons/main/Functions/Init/fn_initPhaseManager.sqf).
 
 | Phase | Name | Purpose |
 |------|------|---------|
@@ -247,7 +250,7 @@ Group counts, objective caps, and transport reserve counts are configured throug
 
 Changing centralized objective templates or faction vehicle pools does not automatically reseed an old save with newly-added groups. Loaded saves restore saved virtual groups first. If you add new template group types after a save already exists, you usually need either:
 
-- a mission reset with the `FreshStart` lobby parameter, or
+- a campaign reset through the admin/setup flow, or
 - a targeted backfill call such as:
 
 ```sqf
@@ -256,15 +259,13 @@ Changing centralized objective templates or faction vehicle pools does not autom
 
 ## Runtime Configuration
 
-### Lobby Parameters
+### Mission Options
 
-| Parameter | Meaning |
-|-----------|---------|
-| `AutoSaveSwitch` | Enables or disables mission auto-save |
-| `AutoSaveInterval` | Auto-save cadence |
-| `FreshStart` | Load saved progress or reset mission progress |
-| `RagequitBlocker` | Prevents abort while unconscious |
-| `DisableSystemChat` | Hides system chat |
+FLO no longer relies on mission lobby parameters after the addon conversion. Campaign setup lives in the FLO setup dialog, and campaign launch behavior is controlled by the server-side CBA setting `FLO > Campaign > Campaign launch mode`.
+
+| CBA Setting | Values |
+|-------------|--------|
+| Campaign launch mode | `Fresh setup`, `Continue saved progress`, `Reset saved progress` |
 
 ### Commander Campaign Config
 

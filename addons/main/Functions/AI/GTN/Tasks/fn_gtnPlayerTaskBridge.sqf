@@ -419,11 +419,16 @@ private _fnc_countAliveTargets = {
                 } forEach (_objData get "linkedObjectives");
             };
 
-            private _objectiveState = createHashMap;
+            private _objectiveState = createHashMapFromArray [
+                ["friendlyCount", _friendlyCount],
+                ["enemyCount", _enemyCount],
+                ["underAttack", _objData get "underAttack"],
+                ["contested", _objData get "contested"],
+                ["frontlineEnemy", _frontlineEnemy]
+            ];
             if (!isNil "_worldObjectives" && {_objId in _worldObjectives}) then {
-                _objectiveState = _worldObjectives get _objId;
-            };
-            if (_objectiveState isNotEqualTo []) then {
+                private _worldObjectiveState = _worldObjectives get _objId;
+                _objectiveState = _worldObjectiveState;
                 _objectiveState set ["frontlineEnemy", _frontlineEnemy];
             };
 

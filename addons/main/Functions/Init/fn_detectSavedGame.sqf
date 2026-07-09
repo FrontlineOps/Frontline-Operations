@@ -2,7 +2,8 @@
  * Function: FLO_fnc_detectSavedGame
  * Author: Frontline Operations Development Group
  * Description:
- *   Detects if a saved game exists and extracts mission configuration.
+ *   Detects if the admin explicitly requested saved progress, validates the
+ *   save, and extracts mission configuration.
  *   Called BEFORE Phase 1 to determine if we should skip faction dialog.
  *
  * Arguments: None
@@ -20,15 +21,18 @@ if (!isServer) exitWith { [false, nil] };
 
 ["SAVE_DETECT", 3, "Checking for saved game data..."] call FLO_fnc_log;
 
-// Check FreshStart parameter first
-private _freshStart = "FreshStart" call BIS_fnc_getParamValue;
-if (_freshStart isEqualTo 1) exitWith {
-    ["SAVE_DETECT", 3, "Fresh start requested via mission parameter - ignoring saves"] call FLO_fnc_log;
-    
-    // Clear any existing save data
+private _launchMode = missionNamespace getVariable ["FLO_CampaignLaunchMode", 0];
+
+if (_launchMode isEqualTo 2) exitWith {
+    ["SAVE_DETECT", 3, "Reset saved progress requested through CBA campaign launch mode"] call FLO_fnc_log;
     missionProfileNamespace setVariable ["FLO_MissionData", nil];
     saveMissionProfileNamespace;
-    
+
+    [false, nil]
+};
+
+if (_launchMode != 1) exitWith {
+    ["SAVE_DETECT", 3, "Fresh setup selected through CBA campaign launch mode - saved progress will not auto-load"] call FLO_fnc_log;
     [false, nil]
 };
 

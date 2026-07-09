@@ -1,16 +1,11 @@
 /*
  * FLO addon-safe UI definitions.
  *
- * Mission-level UI/defines.hpp keeps legacy Rsc* compatibility classes for
- * description.ext. Addon config must not redefine those vanilla classes because
- * doing so overwrites global game UI controls.
+ * Addon config must not redefine vanilla Rsc* classes because doing so
+ * overwrites global game UI controls.
  */
 
-#include "..\include\a3\3den\ui\macros.inc"
-#include "..\include\a3\ui_f\hpp\definecommongrids.inc"
-#include "..\include\a3\ui_f\hpp\definedikcodes.inc"
-#include "..\include\a3\3den\ui\resincl.inc"
-
+#include "addon_macros.hpp"
 #include "constants.hpp"
 
 class IGUIBack;

@@ -208,7 +208,7 @@ private _fnc_createTriggers = {
         _civTrigger setTriggerTimeout [3, 3, 3, true];
         _civTrigger setTriggerActivation ["NONE", "PRESENT", true];
         _civTrigger setTriggerStatements [
-            "{(alive _x) && (side _x isEqualTo civilian)} (thisTrigger nearEntities [['Man'], 5]) isNotEqualTo []",
+            "((thisTrigger nearEntities [['Man'], 5]) select {(alive _x) && {side _x isEqualTo civilian}}) isNotEqualTo []",
             "
             private _civilian = (nearestObjects [thisTrigger, ['Man'], 7] select {(alive _x) && ((side _x) isEqualTo civilian)}) param [0, objNull];
 

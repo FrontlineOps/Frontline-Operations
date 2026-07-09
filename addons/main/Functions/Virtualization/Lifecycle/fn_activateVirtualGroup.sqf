@@ -37,7 +37,11 @@ private _unitCount = _groupData get "unitCount";
 private _allWaypoints = _groupData get "waypoints";
 private _currentWpIdx = _groupData get "currentWaypointIndex";
 private _realGroup = grpNull;
-private _spawnPools = [_side] call FLO_fnc_virtualizationGetSpawnPools;
+private _isCivilianGroup = _groupType in ["civilian", "civ_pedestrian", "civ_building", "civilianVehicle", "civ_car"];
+private _spawnPools = createHashMap;
+if (!_isCivilianGroup) then {
+    _spawnPools = [_side] call FLO_fnc_virtualizationGetSpawnPools;
+};
 
 if (_unitCount <= 0) exitWith {
     ["VIRTUALIZATION", 1, format [

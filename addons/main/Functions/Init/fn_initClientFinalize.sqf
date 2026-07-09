@@ -160,8 +160,37 @@ if (!isNil "FLO_MissionConfig") then {
 // Set MarLOCC for backwards compatibility
 MarLOCC = 1;
 
-// Notify player
-private _msg = "<t size='1.2' color='#00ff00'>Mission Initialized</t><br/><t size='0.9'>All systems ready</t>";
-[_msg, 0, 0.3, 3, 0] spawn BIS_fnc_dynamicText;
+private _respawnRequired = missionNamespace getVariable ["FLO_InitRespawnRequired", false];
+private _respawnDone = missionNamespace getVariable ["FLO_InitRespawnDone", false];
+if (_respawnRequired && {!_respawnDone}) then {
+    missionNamespace setVariable ["FLO_InitRespawnDone", true, false];
+    [_respawnMarkerName] spawn {
+        params ["_markerName"];
+
+        titleText ["Deploying...", "BLACK FADED", 0.1, true, true];
+        waitUntil {
+            sleep 0.1;
+            !isNull player && {player == player} && {_markerName in allMapMarkers}
+        };
+
+        diag_log "[FLO_INIT_CLIENT] Forcing one-time init respawn";
+        forceRespawn player;
+
+        waitUntil {
+            sleep 0.1;
+            !isNull player && {player == player} && {alive player}
+        };
+
+        uiSleep 0.5;
+        titleText ["", "BLACK IN", 2, true, true];
+        private _msg = "<t size='1.2' color='#00ff00'>Mission Initialized</t><br/><t size='0.9'>All systems ready</t>";
+        [_msg, 0, 0.3, 3, 0] spawn BIS_fnc_dynamicText;
+        hintSilent "";
+    };
+} else {
+    titleText ["", "BLACK IN", 2, true, true];
+    private _msg = "<t size='1.2' color='#00ff00'>Mission Initialized</t><br/><t size='0.9'>All systems ready</t>";
+    [_msg, 0, 0.3, 3, 0] spawn BIS_fnc_dynamicText;
+};
 
 diag_log "[FLO_INIT_CLIENT] Client finalization complete";

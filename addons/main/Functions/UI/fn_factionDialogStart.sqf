@@ -409,8 +409,8 @@ _display closeDisplay 1;
 	// Legacy compatibility value (not consumed by current systems)
 	private _enemyPresence = 2;
 
-	// Fade to black and prompt for starting location
-	titleText ["", "BLACK IN", 7, true, true];
+	// Prompt for starting location with the map visible.
+	titleText ["", "BLACK IN", 1, true, true];
 
 	FLO_StartingLocationComplete = 0;
 	publicVariable "FLO_StartingLocationComplete";
@@ -434,8 +434,9 @@ _display closeDisplay 1;
 
 		// Store the selected position
 		missionNamespace setVariable ["FLO_StartPosition", _pos, true];
+        missionNamespace setVariable ["FLO_InitRespawnRequired", true, false];
 
-		titleText ["", "BLACK IN", 999, true, true];
+		titleText ["Initializing Frontline Operations...", "BLACK FADED", 0.1, true, true];
 	}];
 
 	waitUntil {FLO_StartingLocationComplete == 1};
@@ -521,17 +522,18 @@ _display closeDisplay 1;
 		// Create local respawn marker
 		private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
 		private _respawnKey = ["west", "east"] select (_activeSide isEqualTo east);
-		private _respawnMarker = createMarkerLocal [format ["respawn_%1", _respawnKey], _startPos];
-		_respawnMarker setMarkerTypeLocal "hd_start";
-		_respawnMarker setMarkerTextLocal "Respawn";
+        private _respawnMarkerName = format ["respawn_%1", _respawnKey];
+        if !(_respawnMarkerName in allMapMarkers) then {
+            private _respawnMarker = createMarkerLocal [_respawnMarkerName, _startPos];
+            _respawnMarker setMarkerTypeLocal "hd_start";
+            _respawnMarker setMarkerTextLocal "Respawn";
+        };
 
 		// Set MarLOCC for backwards compatibility
 		MarLOCC = 1;
 
-		// Final notification
-		titleText ["", "BLACK IN", 3, true, true];
-		private _msg = "<t size='1.2' color='#00ff00'>Mission Ready</t><br/><t size='0.9'>Open Deployment Panel to place the first FOB</t>";
-		[_msg, 0, 0.3, 4, 0] spawn BIS_fnc_dynamicText;
+		titleText ["Deploying...", "BLACK FADED", 0.1, true, true];
+		hintSilent "Mission ready. Deploying...";
 
 	} else {
 		private _errorMsg = if (!isNil "FLO_InitError") then { FLO_InitError } else { "Unknown error" };

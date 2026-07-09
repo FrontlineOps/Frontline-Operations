@@ -8,7 +8,7 @@
  * readable as the setup surface grows.
  *
  * Dependencies:
- * Requires UI/defines.hpp to be included before this file.
+ * Requires UI/addon_defines.hpp to be included before this file.
  */
 
 // ============================================================================

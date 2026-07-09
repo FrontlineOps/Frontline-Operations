@@ -23,11 +23,14 @@ if (
     && {!isNil "FLO_Logistics_Networks"}
     && {FLO_Logistics_Networks isEqualType createHashMap}
 ) then {
-    private _sideContext = [(_groupData get "side")] call FLO_fnc_gtnSideContext;
-    private _sideKey = _sideContext get "sideKey";
-    if (_sideKey in FLO_Logistics_Networks) then {
-        private _net = FLO_Logistics_Networks get _sideKey;
-        [_net, _deliveryObjectiveId] call FLO_fnc_logisticsNetworkRecordDelivery;
+    private _side = _groupData get "side";
+    if (_side in [east, west]) then {
+        private _sideContext = [_side] call FLO_fnc_gtnSideContext;
+        private _sideKey = _sideContext get "sideKey";
+        if (_sideKey in FLO_Logistics_Networks) then {
+            private _net = FLO_Logistics_Networks get _sideKey;
+            [_net, _deliveryObjectiveId] call FLO_fnc_logisticsNetworkRecordDelivery;
+        };
     };
 };
 

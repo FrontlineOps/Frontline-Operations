@@ -208,7 +208,7 @@ _perf set ["frontlinePressureTargetCount", _frontlinePressureTargetCount];
 _perf set ["advanceTargetCount", count _advanceTargets];
 _perf set ["targetCount", (count _maneuverTargets) + (count _rearTargets)];
 
-if ((count _maneuverTargets) + _rearTargets isEqualTo []) then {
+if (_maneuverTargets isEqualTo [] && {_rearTargets isEqualTo []}) then {
     ["LOGISTICS", 3, "No pressure, supply-advance, or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
 };
 

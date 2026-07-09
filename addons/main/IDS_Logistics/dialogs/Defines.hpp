@@ -4,8 +4,8 @@
  *
  * Description:
  * This file is intentionally empty. All required base classes
- * are now inherited from UI/defines.hpp and Scripts/defines.hpp
- * which are included in description.ext before this file.
+ * are now inherited from UI/addon_defines.hpp, which is included in addon
+ * config.cpp before this file.
  *
  * Available base classes:
  * - RscText, RscButton, RscListBox, RscEdit, RscFrame, RscStructuredText

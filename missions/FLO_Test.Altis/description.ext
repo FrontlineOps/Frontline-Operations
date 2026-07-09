@@ -3,6 +3,14 @@ onLoadName = "Frontline Operations";
 onLoadMission = "FLO HEMTT test shell";
 overviewText = "Frontline Operations addon test shell.";
 
+class Header {
+    gameType = "CTI";
+    minPlayer = 1;
+    maxPlayer = 64;
+    minPlayers = 1;
+    maxPlayers = 64;
+};
+
 disabledAI = 1;
 enableDebugConsole = 1;
 
