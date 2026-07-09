@@ -333,22 +333,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         private _mainWeapons = getArray (_cfg >> "weapons");
         _weapons append _mainWeapons;
 
-        // Recursively get turret weapons
-        private _fnc_getTurretWeapons = {
-            params ["_turretCfg"];
-            private _turretWeapons = getArray (_turretCfg >> "weapons");
-            _weapons append _turretWeapons;
-
-            // Check sub-turrets
-            private _subTurrets = configProperties [_turretCfg >> "Turrets", "isClass _x"];
-            {
-                [_x] call _fnc_getTurretWeapons;
-            } forEach _subTurrets;
-        };
-
         private _turrets = configProperties [_cfg >> "Turrets", "isClass _x"];
         {
-            [_x] call _fnc_getTurretWeapons;
+            _weapons append ([_x] call FLO_fnc_gtnCollectTurretWeapons);
         } forEach _turrets;
 
         // Remove empty and horn entries

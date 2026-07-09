@@ -18,7 +18,7 @@ params [["_objectiveId", ""]];
 
 if (_objectiveId == "" || isNil "FLO_Objectives") exitWith { nil };
 
-private _data = FLO_Objectives getOrDefault [_objectiveId, nil];
+private _data = FLO_Objectives get _objectiveId;
 
 if (isNil "_data") exitWith { nil };
 

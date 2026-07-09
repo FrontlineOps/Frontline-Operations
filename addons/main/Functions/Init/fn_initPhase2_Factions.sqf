@@ -42,38 +42,13 @@ if (isNil "FLO_FriendlyHandle" || isNil "FLO_EnemyHandle" || isNil "FLO_Civilian
 F_Init = false;
 publicVariable "F_Init";
 
-// Helper to safely load faction file
-private _fnc_loadFaction = {
-    params ["_factionName", "_filePath"];
-    
-    if (!fileExists _filePath) exitWith {
-        diag_log format ["[FLO_INIT_P2] WARNING: Faction file not found: %1", _filePath];
-        false
-    };
-    
-    try {
-        diag_log format ["[FLO_INIT_P2] Loading: %1", _filePath];
-        call compileScript [_filePath];
-        true
-    } catch {
-        diag_log format ["[FLO_INIT_P2] ERROR loading %1: %2", _filePath, _exception];
-        false
-    };
-};
-
-private _fnc_handleSource = {
-    params ["_handle"];
-    if ("source" in _handle) exitWith { _handle get "source" };
-    "preset"
-};
-
 private _loadedOk = true;
 private _autoSources = ["auto", "auto_multi"];
 
 // Load friendly faction
 private _bluHandle = FLO_FriendlyHandle;
 private _bluFaction = _bluHandle get "name";
-if (([_bluHandle] call _fnc_handleSource) in _autoSources) then {
+if (([_bluHandle] call FLO_fnc_factionHandleSource) in _autoSources) then {
     _loadedOk = [_bluHandle, "friendly"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _bluPath = switch (_bluFaction) do {
@@ -86,7 +61,7 @@ if (([_bluHandle] call _fnc_handleSource) in _autoSources) then {
         case "USMC _ CUP-EF": { "\z\flo\addons\main\Scripts\factions\blu_USMC_CUP_EF.sqf" };
         default { "\z\flo\addons\main\CUSTOM_PLAYER_FACTION.sqf" };
     };
-    _loadedOk = [_bluFaction, _bluPath] call _fnc_loadFaction;
+    _loadedOk = [_bluFaction, _bluPath] call FLO_fnc_initLoadFactionFile;
 };
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Friendly faction loading failed: %1", _bluFaction];
@@ -98,7 +73,7 @@ if (!_loadedOk) exitWith {
 // Load enemy faction
 private _opfHandle = FLO_EnemyHandle;
 private _opfFaction = _opfHandle get "name";
-if (([_opfHandle] call _fnc_handleSource) in _autoSources) then {
+if (([_opfHandle] call FLO_fnc_factionHandleSource) in _autoSources) then {
     _loadedOk = [_opfHandle, "enemy"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _opfPath = switch (_opfFaction) do {
@@ -108,7 +83,7 @@ if (([_opfHandle] call _fnc_handleSource) in _autoSources) then {
         case "Russian AF _ CUP": { "\z\flo\addons\main\Scripts\factions\opf_RU_CUP.sqf" };
         default { "\z\flo\addons\main\CUSTOM_ENEMY_FACTION.sqf" };
     };
-    _loadedOk = [_opfFaction, _opfPath] call _fnc_loadFaction;
+    _loadedOk = [_opfFaction, _opfPath] call FLO_fnc_initLoadFactionFile;
 };
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Enemy faction loading failed: %1", _opfFaction];
@@ -120,14 +95,14 @@ if (!_loadedOk) exitWith {
 // Load civilian faction
 private _civHandle = FLO_CivilianHandle;
 private _civFaction = _civHandle get "name";
-if (([_civHandle] call _fnc_handleSource) in _autoSources) then {
+if (([_civHandle] call FLO_fnc_factionHandleSource) in _autoSources) then {
     _loadedOk = [_civHandle, "civilian"] call FLO_fnc_factionApplyAutoGlobals;
 } else {
     private _civPath = switch (_civFaction) do {
         case "Greek Civilians": { "\z\flo\addons\main\Scripts\factions\civ_Greek.sqf" };
         default { "\z\flo\addons\main\CUSTOM_CIVILIAN_FACTION.sqf" };
     };
-    _loadedOk = [_civFaction, _civPath] call _fnc_loadFaction;
+    _loadedOk = [_civFaction, _civPath] call FLO_fnc_initLoadFactionFile;
 };
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Civilian faction loading failed: %1", _civFaction];
@@ -224,82 +199,8 @@ if (isNil "FLO_ActivePlayerSide") then {
     publicVariable "FLO_ActivePlayerSide";
 };
 
-private _fnc_extractVehicleClasses = {
-    params [["_list", []]];
-    if (_list isEqualType "") then {
-        _list = [_list];
-    };
-    if (!(_list isEqualType [])) exitWith { [] };
-
-    private _result = [];
-    {
-        if (_x isEqualType []) then {
-            if (_x isNotEqualTo []) then {
-                private _cls = _x select 0;
-                if (_cls isEqualType "") then {
-                    _result pushBackUnique _cls;
-                };
-            };
-        } else {
-            if (_x isEqualType "") then {
-                _result pushBackUnique _x;
-            };
-        };
-    } forEach _list;
-    _result
-};
-
-private _fnc_getVarArray = {
-    params [["_varName", ""]];
-    if (_varName == "") exitWith { [] };
-    if (isNil _varName) exitWith { [] };
-    private _value = missionNamespace getVariable [_varName, []];
-    if (_value isEqualType "") exitWith { [_value] };
-    if (!(_value isEqualType [])) exitWith { [] };
-    _value
-};
-
-private _fnc_buildPoolFromVars = {
-    params [["_varNames", []]];
-    private _merged = [];
-    {
-        _merged append ([_x] call _fnc_getVarArray);
-    } forEach _varNames;
-    [_merged] call _fnc_extractVehicleClasses
-};
-
-private _fnc_collectDirectUnitVars = {
-    params [["_varNames", []]];
-
-    private _units = [];
-    {
-        if (!isNil _x) then {
-            private _u = missionNamespace getVariable [_x, ""];
-            if (_u isEqualType "" && {_u != ""}) then {
-                _units pushBack _u;
-            };
-        };
-    } forEach _varNames;
-
-    _units
-};
-
-private _fnc_buildCompositionDefaults = {
-    params ["_handle", "_sideLabel"];
-
-    private _selection = _handle get "name";
-    private _source = if ("source" in _handle) then { _handle get "source" } else { "preset" };
-    private _data = if (_source isEqualTo "auto") then {
-        format ["auto|%1", _handle get "factionClass"]
-    } else {
-        format ["preset|%1", _selection]
-    };
-
-    [_sideLabel, _selection, _data] call FLO_fnc_factionGetCompositionDefaults
-};
-
-private _eastFactionCompositionDefaults = [_opfHandle, "OPFOR"] call _fnc_buildCompositionDefaults;
-private _westFactionCompositionDefaults = [_bluHandle, "BLUFOR"] call _fnc_buildCompositionDefaults;
+private _eastFactionCompositionDefaults = [_opfHandle, "OPFOR"] call FLO_fnc_factionBuildCompositionDefaultsHandle;
+private _westFactionCompositionDefaults = [_bluHandle, "BLUFOR"] call FLO_fnc_factionBuildCompositionDefaultsHandle;
 
 private _eastFactionCompositionHandle = if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
     FLO_MissionConfig get "eastFactionTuningHandle"
@@ -324,8 +225,8 @@ private _westSpecOpsVars = [
     "F_Diver_TL", "F_Diver_Eod", "F_Diver_Rfl"
 ];
 
-private _westLegacyInfantry = [_westInfantryVars] call _fnc_collectDirectUnitVars;
-private _westLegacySpecOps = [_westSpecOpsVars] call _fnc_collectDirectUnitVars;
+private _westLegacyInfantry = [_westInfantryVars] call FLO_fnc_factionCollectDirectUnitVariables;
+private _westLegacySpecOps = [_westSpecOpsVars] call FLO_fnc_factionCollectDirectUnitVariables;
 
 private _eastInfantrySource = if (!isNil "East_Ground_Infantry") then {
     East_Ground_Infantry
@@ -364,102 +265,102 @@ _westInfantryPools params ["_westInfantryGroups", "_westInfantryUnits"];
 private _westSpecOpsPools = [_westSpecOpsSource] call FLO_fnc_initFactionSplitMixedInfantryPool;
 _westSpecOpsPools params ["_westSpecOpsGroups", "_westSpecOpsUnits"];
 
-private _eastGroundMotorized = [(if (!isNil "East_Ground_Motorized") then { East_Ground_Motorized } else { if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { [] } })] call _fnc_extractVehicleClasses;
-private _eastGroundMechanized = [(if (!isNil "East_Ground_Mechanized") then { East_Ground_Mechanized } else { if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] } })] call _fnc_extractVehicleClasses;
-private _eastGroundArmor = [(if (!isNil "East_Ground_Armor") then { East_Ground_Armor } else { if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] } })] call _fnc_extractVehicleClasses;
-private _eastGroundTransport = [(if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { [] })] call _fnc_extractVehicleClasses;
-private _eastGroundArtillery = [(if (!isNil "East_Ground_Artillery") then { East_Ground_Artillery } else { [] })] call _fnc_extractVehicleClasses;
-private _eastAirHeli = [(if (!isNil "East_Air_Heli") then { East_Air_Heli } else { [] })] call _fnc_extractVehicleClasses;
-private _eastAirJet = [(if (!isNil "East_Air_Jet") then { East_Air_Jet } else { [] })] call _fnc_extractVehicleClasses;
-private _eastAirTransport = [(if (!isNil "East_Air_Transport") then { East_Air_Transport } else { [] })] call _fnc_extractVehicleClasses;
-private _eastAirDrone = [(if (!isNil "East_Air_Drone") then { East_Air_Drone } else { [] })] call _fnc_extractVehicleClasses;
-private _eastGroundDrone = [(if (!isNil "East_Ground_Drone") then { East_Ground_Drone } else { [] })] call _fnc_extractVehicleClasses;
-private _eastMobileAA = [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } else { [] })] call _fnc_extractVehicleClasses;
-private _eastStaticAA = [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call _fnc_extractVehicleClasses;
-private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call _fnc_extractVehicleClasses;
-private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call _fnc_extractVehicleClasses;
+private _eastGroundMotorized = [(if (!isNil "East_Ground_Motorized") then { East_Ground_Motorized } else { if (!isNil "East_Ground_Vehicles_Light") then { East_Ground_Vehicles_Light } else { [] } })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastGroundMechanized = [(if (!isNil "East_Ground_Mechanized") then { East_Ground_Mechanized } else { if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] } })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastGroundArmor = [(if (!isNil "East_Ground_Armor") then { East_Ground_Armor } else { if (!isNil "East_Ground_Vehicles_Heavy") then { East_Ground_Vehicles_Heavy } else { [] } })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastGroundTransport = [(if (!isNil "East_Ground_Transport") then { East_Ground_Transport } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastGroundArtillery = [(if (!isNil "East_Ground_Artillery") then { East_Ground_Artillery } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastAirHeli = [(if (!isNil "East_Air_Heli") then { East_Air_Heli } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastAirJet = [(if (!isNil "East_Air_Jet") then { East_Air_Jet } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastAirTransport = [(if (!isNil "East_Air_Transport") then { East_Air_Transport } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastAirDrone = [(if (!isNil "East_Air_Drone") then { East_Air_Drone } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastGroundDrone = [(if (!isNil "East_Ground_Drone") then { East_Ground_Drone } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastMobileAA = [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastStaticAA = [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
 
 private _westGroundMotorized = if (!isNil "West_Ground_Motorized") then {
-    [West_Ground_Motorized] call _fnc_extractVehicleClasses
+    [West_Ground_Motorized] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Car_List", "F_MRAP_List"]] call _fnc_buildPoolFromVars
+    [["F_Car_List", "F_MRAP_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westGroundMechanized = if (!isNil "West_Ground_Mechanized") then {
-    [West_Ground_Mechanized] call _fnc_extractVehicleClasses
+    [West_Ground_Mechanized] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_APC_List"]] call _fnc_buildPoolFromVars
+    [["F_APC_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westGroundArmor = if (!isNil "West_Ground_Armor") then {
-    [West_Ground_Armor] call _fnc_extractVehicleClasses
+    [West_Ground_Armor] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Tank_List"]] call _fnc_buildPoolFromVars
+    [["F_Tank_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westGroundTransport = if (!isNil "West_Ground_Transport") then {
-    [West_Ground_Transport] call _fnc_extractVehicleClasses
+    [West_Ground_Transport] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Truck_List"]] call _fnc_buildPoolFromVars
+    [["F_Truck_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westGroundArtillery = if (!isNil "West_Ground_Artillery") then {
-    [West_Ground_Artillery] call _fnc_extractVehicleClasses
+    [West_Ground_Artillery] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Artillery_List"]] call _fnc_buildPoolFromVars
+    [["F_Artillery_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westAirHeli = if (!isNil "West_Air_Heli") then {
-    [West_Air_Heli] call _fnc_extractVehicleClasses
+    [West_Air_Heli] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    private _legacy = [["F_Heli_Gunship_List"]] call _fnc_buildPoolFromVars;
+    private _legacy = [["F_Heli_Gunship_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
     if (_legacy isEqualTo []) then {
-        _legacy = [["F_Heli_List"]] call _fnc_buildPoolFromVars;
+        _legacy = [["F_Heli_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
     };
     _legacy
 };
 private _westAirJet = if (!isNil "West_Air_Jet") then {
-    [West_Air_Jet] call _fnc_extractVehicleClasses
+    [West_Air_Jet] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Plane_List"]] call _fnc_buildPoolFromVars
+    [["F_Plane_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westAirTransport = if (!isNil "West_Air_Transport") then {
-    [West_Air_Transport] call _fnc_extractVehicleClasses
+    [West_Air_Transport] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Heli_List", "F_Heli_Respawn_List"]] call _fnc_buildPoolFromVars
+    [["F_Heli_List", "F_Heli_Respawn_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westAirDrone = if (!isNil "West_Air_Drone") then {
-    [West_Air_Drone] call _fnc_extractVehicleClasses
+    [West_Air_Drone] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_UAV_List"]] call _fnc_buildPoolFromVars
+    [["F_UAV_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westGroundDrone = if (!isNil "West_Ground_Drone") then {
-    [West_Ground_Drone] call _fnc_extractVehicleClasses
+    [West_Ground_Drone] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_UGV_List"]] call _fnc_buildPoolFromVars
+    [["F_UGV_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westMobileAA = if (!isNil "West_Mobile_AA") then {
-    [West_Mobile_AA] call _fnc_extractVehicleClasses
+    [West_Mobile_AA] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_APC_List", "F_Tank_List"]] call _fnc_buildPoolFromVars
+    [["F_APC_List", "F_Tank_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westStaticAA = if (!isNil "West_Static_AA") then {
-    [West_Static_AA] call _fnc_extractVehicleClasses
+    [West_Static_AA] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_SAM_List"]] call _fnc_buildPoolFromVars
+    [["F_SAM_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
 private _westRadar = if (!isNil "West_Radar") then {
-    [West_Radar] call _fnc_extractVehicleClasses
+    [West_Radar] call FLO_fnc_factionExtractVehicleClasses
 } else {
     if (!isNil "FLO_FactionRadar" && {FLO_FactionRadar isEqualType ""}) then { [FLO_FactionRadar] } else { [] }
 };
 private _westBoat = if (!isNil "West_Boat") then {
-    [West_Boat] call _fnc_extractVehicleClasses
+    [West_Boat] call FLO_fnc_factionExtractVehicleClasses
 } else {
-    [["F_Boat_List"]] call _fnc_buildPoolFromVars
+    [["F_Boat_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables
 };
-private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call _fnc_buildPoolFromVars;
-private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call _fnc_buildPoolFromVars;
-private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call _fnc_buildPoolFromVars;
-private _westContainers = [["F_Container_List"]] call _fnc_buildPoolFromVars;
+private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
+private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
+private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
+private _westContainers = [["F_Container_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
 
 private _eastOfficerUnits = if (!isNil "East_FireObserver") then {
-    ["East_FireObserver"] call _fnc_getVarArray
+    ["East_FireObserver"] call FLO_fnc_factionGetVariableArray
 } else {
     if (_eastInfantryUnits isNotEqualTo []) then { [_eastInfantryUnits select 0] } else { [] }
 };

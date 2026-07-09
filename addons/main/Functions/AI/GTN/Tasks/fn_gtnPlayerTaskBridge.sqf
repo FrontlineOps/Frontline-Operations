@@ -30,202 +30,21 @@ if (isNil "FLO_GTN_PlayerTasks") then {
     FLO_GTN_PlayerTasks = createHashMap;
 };
 
-private _fnc_sideKey = {
-    params ["_side"];
-    if (_side isEqualTo east) exitWith { "EAST" };
-    if (_side isEqualTo west) exitWith { "WEST" };
-    ""
-};
-
-private _fnc_enemySide = {
-    params ["_side"];
-    if (_side isEqualTo east) exitWith { west };
-    if (_side isEqualTo west) exitWith { east };
-    sideUnknown
-};
-
-private _fnc_normalizeSide = {
-    params ["_value"];
-    if (_value isEqualType "") then {
-        private _k = toUpper _value;
-        if (_k isEqualTo "WEST") exitWith { west };
-        if (_k isEqualTo "EAST") exitWith { east };
-    };
-    _value
-};
-
-private _fnc_taskTypeFromKind = {
-    params ["_kind"];
-    switch (_kind) do {
-        case "capture": { "Attack" };
-        case "defend": { "Defend" };
-        case "destroy": { "Destroy" };
-        default { "Attack" };
-    }
-};
-
-private _fnc_taskTitle = {
-    params ["_kind", "_objId", "_objData", ["_meta", createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]]]];
-    private _name = _objData get "name";
-    private _targetLabel = _meta get "targetLabel";
-    private _targetCount = _meta get "targetCount";
-    switch (_kind) do {
-        case "capture": { format ["Capture %1", _name] };
-        case "defend": { format ["Defend %1", _name] };
-        case "destroy": {
-            if (_targetLabel != "") then {
-                if (_targetCount > 0) then {
-                    format ["Destroy %1 enemy %2 at %3", _targetCount, _targetLabel, _name]
-                } else {
-                    format ["Destroy enemy %1 at %2", _targetLabel, _name]
-                }
-            } else {
-                format ["Destroy enemy assets at %1", _name]
-            }
-        };
-        default { format ["Operate at %1", _name] };
-    }
-};
-
-private _fnc_taskDesc = {
-    params ["_kind", "_objId", "_objData", ["_meta", createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]]]];
-    private _name = _objData get "name";
-    private _targetLabel = _meta get "targetLabel";
-    private _targetCount = _meta get "targetCount";
-    switch (_kind) do {
-        case "capture": { format ["Commander objective: capture %1 and hold the area.", _name] };
-        case "defend": { format ["Commander objective: defend %1 against enemy pressure.", _name] };
-        case "destroy": {
-            if (_targetLabel != "") then {
-                if (_targetCount > 0) then {
-                    format ["Commander intel reports %1 enemy %2 near %3. Destroy marked targets.", _targetCount, _targetLabel, _name]
-                } else {
-                    format ["Commander intel reports enemy %1 near %2. Destroy that target.", _targetLabel, _name]
-                }
-            } else {
-                format ["Commander objective: destroy hostile assets around %1.", _name]
-            }
-        };
-        default { format ["Commander objective: operate near %1.", _name] };
-    }
-};
-
-private _fnc_deleteTaskIfPresent = {
-    params ["_taskId"];
-    if (_taskId isEqualTo "") exitWith {};
-    [_taskId] call BIS_fnc_deleteTask;
-};
-
-private _fnc_taskMissing = {
-    params ["_taskId"];
-    if (_taskId isEqualTo "") exitWith { true };
-    !([_taskId] call BIS_fnc_taskExists)
-};
-
-private _fnc_clearPrimaryTaskState = {
-    params ["_state"];
-    _state set ["primaryTaskId", ""];
-    _state set ["primaryRef", ""];
-    _state set ["primaryKind", ""];
-    _state set ["primaryObjId", ""];
-    _state set ["primaryScore", 0];
-    _state set ["primaryAssignedAt", -1];
-    _state set ["primaryCalmStartedAt", -1];
-};
-
-private _fnc_clearSecondaryTaskState = {
-    params ["_state"];
-    _state set ["secondaryTaskId", ""];
-    _state set ["secondaryRef", ""];
-    _state set ["secondaryKind", ""];
-    _state set ["secondaryObjId", ""];
-    _state set ["secondaryTargets", []];
-    _state set ["secondaryScore", 0];
-    _state set ["secondaryAssignedAt", -1];
-};
-
-private _fnc_restoreLegacyRefState = {
-    params ["_state", "_kindKey", "_objKey", "_refKey"];
-    if ((_state get _kindKey) isEqualTo "" && {(_state get _refKey) != ""}) then {
-        private _ref = _state get _refKey;
-        private _sep = _ref find "_";
-        if (_sep > 0) then {
-            _state set [_kindKey, _ref select [0, _sep]];
-            _state set [_objKey, _ref select [_sep + 1, (count _ref) - _sep - 1]];
-        };
-    };
-};
-
-private _fnc_publishTask = {
-    params ["_ownerSide", "_slotPrefix", "_kind", "_objId", "_objData", ["_meta", createHashMapFromArray [["targetLabel", ""], ["targetCount", 0]]]];
-
-    private _taskId = format ["FLO_GTN_%1_%2_%3", _slotPrefix, _kind, _objId];
-    private _title = [_kind, _objId, _objData, _meta] call _fnc_taskTitle;
-    private _desc = [_kind, _objId, _objData, _meta] call _fnc_taskDesc;
-    private _taskType = [_kind] call _fnc_taskTypeFromKind;
-    private _pos = _meta getOrDefault ["taskPos", _objData get "position"];
-
-    [
-        _ownerSide,
-        _taskId,
-        [_desc, _title, ""],
-        _pos,
-        "ASSIGNED",
-        0,
-        true,
-        _taskType,
-        false
-    ] call BIS_fnc_taskCreate;
-
-    _taskId
-};
-
-private _fnc_markTaskSucceeded = {
-    params ["_taskId", ["_cleanupDelay", 45]];
-    if (_taskId isEqualTo "") exitWith {};
-    [_taskId, "SUCCEEDED", true] call BIS_fnc_taskSetState;
-    [_taskId, _cleanupDelay] spawn {
-        params ["_tid", "_delay"];
-        sleep _delay;
-        [_tid] call BIS_fnc_deleteTask;
-    };
-};
-
-private _fnc_countAliveTargets = {
-    params ["_targets", "_enemySide"];
-    {
-        if (isNull _x || {!alive _x}) then { false } else {
-            private _tSide = side _x;
-            if (isPlayer _x) then {
-                _tSide = side group _x;
-            };
-            _tSide isEqualTo _enemySide
-        }
-    } count _targets
-};
-
-[ _interval, _primaryMinHoldSeconds, _secondaryMinHoldSeconds, _primaryReplaceScoreDelta, _secondaryReplaceScoreDelta, _defendQuietHoldSeconds, _fnc_sideKey, _fnc_enemySide, _fnc_normalizeSide, _fnc_taskTypeFromKind, _fnc_taskTitle, _fnc_taskDesc, _fnc_deleteTaskIfPresent, _fnc_taskMissing, _fnc_clearPrimaryTaskState, _fnc_clearSecondaryTaskState, _fnc_restoreLegacyRefState, _fnc_publishTask, _fnc_markTaskSucceeded, _fnc_countAliveTargets ] spawn {
+[
+    _interval,
+    _primaryMinHoldSeconds,
+    _secondaryMinHoldSeconds,
+    _primaryReplaceScoreDelta,
+    _secondaryReplaceScoreDelta,
+    _defendQuietHoldSeconds
+] spawn {
     params [
         "_interval",
         "_primaryMinHoldSeconds",
         "_secondaryMinHoldSeconds",
         "_primaryReplaceScoreDelta",
         "_secondaryReplaceScoreDelta",
-        "_defendQuietHoldSeconds",
-        "_fnc_sideKey",
-        "_fnc_enemySide",
-        "_fnc_normalizeSide",
-        "_fnc_taskTypeFromKind",
-        "_fnc_taskTitle",
-        "_fnc_taskDesc",
-        "_fnc_deleteTaskIfPresent",
-        "_fnc_taskMissing",
-        "_fnc_clearPrimaryTaskState",
-        "_fnc_clearSecondaryTaskState",
-        "_fnc_restoreLegacyRefState",
-        "_fnc_publishTask",
-        "_fnc_markTaskSucceeded",
-        "_fnc_countAliveTargets"
+        "_defendQuietHoldSeconds"
     ];
 
     while {FLO_GTN_PlayerTaskBridgeRunning} do {
@@ -234,14 +53,14 @@ private _fnc_countAliveTargets = {
             continue;
         };
 
-        private _activeSide = [FLO_ActivePlayerSide] call _fnc_normalizeSide;
+        private _activeSide = [FLO_ActivePlayerSide] call FLO_fnc_gtnTaskNormalizeSide;
         if !(_activeSide in [east, west]) then {
             sleep _interval;
             continue;
         };
 
-        private _enemySide = [_activeSide] call _fnc_enemySide;
-        private _stateKey = [_activeSide] call _fnc_sideKey;
+        private _enemySide = [_activeSide] call FLO_fnc_gtnTaskEnemySide;
+        private _stateKey = [_activeSide] call FLO_fnc_gtnTaskSideKey;
         private _playerPositions = [];
         {
             if (!alive _x) then { continue };
@@ -302,8 +121,8 @@ private _fnc_countAliveTargets = {
         private _cycleNow = diag_tickTime;
 
         // Recover slot kind/objective from legacy refs so completion works on pre-existing tasks.
-        [_state, "primaryKind", "primaryObjId", "primaryRef"] call _fnc_restoreLegacyRefState;
-        [_state, "secondaryKind", "secondaryObjId", "secondaryRef"] call _fnc_restoreLegacyRefState;
+        [_state, "primaryKind", "primaryObjId", "primaryRef"] call FLO_fnc_gtnRestoreLegacyTaskRefState;
+        [_state, "secondaryKind", "secondaryObjId", "secondaryRef"] call FLO_fnc_gtnRestoreLegacyTaskRefState;
         if ((_state get "secondaryKind") isEqualTo "destroy" && {(_state get "secondaryTaskId") != ""} && {(_state get "secondaryTargets") isEqualTo []}) then {
             private _legacyObjId = _state get "secondaryObjId";
             if (_legacyObjId isNotEqualTo "") then {
@@ -329,7 +148,7 @@ private _fnc_countAliveTargets = {
             private _objData = FLO_Objectives get _activePrimaryObj;
             if (!isNil "_objData") then {
                 private _owner = _objData get "owner";
-                _owner = [_owner] call _fnc_normalizeSide;
+                _owner = [_owner] call FLO_fnc_gtnTaskNormalizeSide;
                 private _enemyCount = if (_activeSide isEqualTo west) then {
                     _objData get "opforCount"
                 } else {
@@ -359,8 +178,8 @@ private _fnc_countAliveTargets = {
                 };
 
                 if (_primaryComplete) then {
-                    [_activePrimaryId] call _fnc_markTaskSucceeded;
-                    [_state] call _fnc_clearPrimaryTaskState;
+                    [_activePrimaryId] call FLO_fnc_gtnMarkTaskSucceeded;
+                    [_state] call FLO_fnc_gtnClearPrimaryTaskState;
                 };
             };
         };
@@ -371,10 +190,10 @@ private _fnc_countAliveTargets = {
         if (_activeSecondaryId != "" && {_activeSecondaryKind isEqualTo "destroy"} && {("" isNotEqualTo _activeSecondaryObj)}) then {
             private _targets = _state get "secondaryTargets";
             if (_targets isNotEqualTo []) then {
-                private _targetsRemaining = [_targets, _enemySide] call _fnc_countAliveTargets;
+                private _targetsRemaining = [_targets, _enemySide] call FLO_fnc_gtnCountAliveTaskTargets;
                 if (_targetsRemaining <= 0) then {
-                    [_activeSecondaryId] call _fnc_markTaskSucceeded;
-                    [_state] call _fnc_clearSecondaryTaskState;
+                    [_activeSecondaryId] call FLO_fnc_gtnMarkTaskSucceeded;
+                    [_state] call FLO_fnc_gtnClearSecondaryTaskState;
                 };
             };
         };
@@ -394,7 +213,7 @@ private _fnc_countAliveTargets = {
             if (_changed) then { FLO_Objectives set [_objId, _objData]; };
 
             private _owner = _objData get "owner";
-            _owner = [_owner] call _fnc_normalizeSide;
+            _owner = [_owner] call FLO_fnc_gtnTaskNormalizeSide;
             private _priority = _objData get "priority";
             private _enemyCount = if (_activeSide isEqualTo west) then {
                 _objData get "opforCount"
@@ -412,7 +231,7 @@ private _fnc_countAliveTargets = {
                     private _linkedObjective = FLO_Objectives get _x;
                     if (isNil "_linkedObjective") then { continue };
                     private _linkedOwner = _linkedObjective get "owner";
-                    _linkedOwner = [_linkedOwner] call _fnc_normalizeSide;
+                    _linkedOwner = [_linkedOwner] call FLO_fnc_gtnTaskNormalizeSide;
                     if (_linkedOwner isEqualTo _activeSide) exitWith {
                         _frontlineEnemy = true;
                     };
@@ -595,13 +414,13 @@ private _fnc_countAliveTargets = {
 
         // Update primary task slot.
         private _oldPrimaryId = _state get "primaryTaskId";
-        private _primaryNeedsPublish = ((_state get "primaryRef") != _newPrimaryRef) || {[_oldPrimaryId] call _fnc_taskMissing};
+        private _primaryNeedsPublish = ((_state get "primaryRef") != _newPrimaryRef) || {[_oldPrimaryId] call FLO_fnc_gtnTaskMissing};
         if (_primaryNeedsPublish) then {
-            [_oldPrimaryId] call _fnc_deleteTaskIfPresent;
-            [_state] call _fnc_clearPrimaryTaskState;
+            [_oldPrimaryId] call FLO_fnc_gtnDeleteTaskIfPresent;
+            [_state] call FLO_fnc_gtnClearPrimaryTaskState;
 
             if (_newPrimaryRef != "" && {!isNil "_newPrimaryData"}) then {
-                private _newPrimaryId = [_activeSide, "PRIMARY", _newPrimaryKind, _newPrimaryObjId, _newPrimaryData] call _fnc_publishTask;
+                private _newPrimaryId = [_activeSide, "PRIMARY", _newPrimaryKind, _newPrimaryObjId, _newPrimaryData] call FLO_fnc_gtnPublishPlayerTask;
                 _state set ["primaryTaskId", _newPrimaryId];
                 _state set ["primaryRef", _newPrimaryRef];
                 _state set ["primaryKind", _newPrimaryKind];
@@ -619,16 +438,16 @@ private _fnc_countAliveTargets = {
 
         // Update secondary task slot.
         private _oldSecondaryId = _state get "secondaryTaskId";
-        private _secondaryNeedsPublish = ((_state get "secondaryRef") != _newSecondaryRef) || {[_oldSecondaryId] call _fnc_taskMissing};
+        private _secondaryNeedsPublish = ((_state get "secondaryRef") != _newSecondaryRef) || {[_oldSecondaryId] call FLO_fnc_gtnTaskMissing};
         if (_secondaryNeedsPublish) then {
-            [_oldSecondaryId] call _fnc_deleteTaskIfPresent;
-            [_state] call _fnc_clearSecondaryTaskState;
+            [_oldSecondaryId] call FLO_fnc_gtnDeleteTaskIfPresent;
+            [_state] call FLO_fnc_gtnClearSecondaryTaskState;
 
             if (_newSecondaryRef != "" && {!isNil "_newSecondaryData"}) then {
                 private _markedTargets = _newSecondaryTargets;
 
                 if ((_newSecondaryKind != "destroy") || {_markedTargets isNotEqualTo []}) then {
-                    private _newSecondaryId = [_activeSide, "SECONDARY", _newSecondaryKind, _newSecondaryObjId, _newSecondaryData, _newSecondaryMeta] call _fnc_publishTask;
+                    private _newSecondaryId = [_activeSide, "SECONDARY", _newSecondaryKind, _newSecondaryObjId, _newSecondaryData, _newSecondaryMeta] call FLO_fnc_gtnPublishPlayerTask;
                     _state set ["secondaryTaskId", _newSecondaryId];
                     _state set ["secondaryRef", _newSecondaryRef];
                     _state set ["secondaryKind", _newSecondaryKind];

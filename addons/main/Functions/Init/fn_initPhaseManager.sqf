@@ -74,42 +74,6 @@ if (_hasSave) then {
 
 sleep 0.5;
 
-// Helper function to run a phase with error handling
-private _fnc_runPhase = {
-    params ["_phaseNum", "_phaseName", "_phaseFunc"];
-    
-    FLO_InitPhase = _phaseNum;
-    publicVariable "FLO_InitPhase";
-    
-    diag_log format ["[FLO_INIT] === PHASE %1: %2 ===", _phaseNum, _phaseName];
-    
-    private _startTime = diag_tickTime;
-    private _success = false;
-    
-    try {
-        _success = [] call _phaseFunc;
-    } catch {
-        FLO_InitError = format ["Phase %1 (%2) exception: %3", _phaseNum, _phaseName, _exception];
-        diag_log format ["[FLO_INIT] ERROR: %1", FLO_InitError];
-        publicVariable "FLO_InitError";
-        _success = false;
-    };
-    
-    private _duration = diag_tickTime - _startTime;
-    
-    if (_success) then {
-        diag_log format ["[FLO_INIT] Phase %1 completed in %2 seconds", _phaseNum, _duration toFixed 2];
-    } else {
-        if (FLO_InitError isEqualTo "") then {
-            FLO_InitError = format ["Phase %1 (%2) returned false", _phaseNum, _phaseName];
-            publicVariable "FLO_InitError";
-        };
-        diag_log format ["[FLO_INIT] Phase %1 FAILED after %2 seconds: %3", _phaseNum, _duration toFixed 2, FLO_InitError];
-    };
-    
-    _success
-};
-
 // Phase definitions
 private _phases = [
     [1, "Mission Config", FLO_fnc_initPhase1_MissionConfig],
@@ -125,7 +89,7 @@ private _allSuccess = true;
     _x params ["_num", "_name", "_func"];
     
     if (_allSuccess) then {
-        _allSuccess = [_num, _name, _func] call _fnc_runPhase;
+        _allSuccess = [_num, _name, _func] call FLO_fnc_initRunPhase;
         
         if (!_allSuccess) then {
             diag_log format ["[FLO_INIT] Initialization stopped at phase %1", _num];

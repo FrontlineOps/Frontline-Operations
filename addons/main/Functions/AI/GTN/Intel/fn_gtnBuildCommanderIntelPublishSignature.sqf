@@ -24,34 +24,10 @@ params [
     ["_supportMarkers", [], [[]]]
 ];
 
-private _fnc_normalizeValue = {
-    params ["_value"];
-
-    if (_value isEqualType 0) exitWith {
-        str (round (_value * 10) / 10)
-    };
-
-    if (_value isEqualType []) exitWith {
-        "[" + ((_value apply { [_x] call _fnc_normalizeValue }) joinString ",") + "]"
-    };
-
-    str _value
-};
-
-private _fnc_serializeRecords = {
-    params ["_records"];
-
-    private _serialized = _records apply {
-        (_x apply { [_x] call _fnc_normalizeValue }) joinString "|"
-    };
-    _serialized sort true;
-    _serialized joinString ";"
-};
-
 [
     _sideKey,
-    [_enemyGroupMarkers] call _fnc_serializeRecords,
-    [_enemyConcentrationMarkers] call _fnc_serializeRecords,
-    [_friendlyGroupMarkers] call _fnc_serializeRecords,
-    [_supportMarkers] call _fnc_serializeRecords
+    [_enemyGroupMarkers] call FLO_fnc_gtnSerializeIntelSignatureRecords,
+    [_enemyConcentrationMarkers] call FLO_fnc_gtnSerializeIntelSignatureRecords,
+    [_friendlyGroupMarkers] call FLO_fnc_gtnSerializeIntelSignatureRecords,
+    [_supportMarkers] call FLO_fnc_gtnSerializeIntelSignatureRecords
 ] joinString "||"

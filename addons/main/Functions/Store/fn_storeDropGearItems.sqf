@@ -11,24 +11,17 @@ private _items = createHashMap;
 private _backpacks = createHashMap;
 private _dropCount = 0;
 
-private _fnc_addCount = {
-    params ["_bucket", "_className"];
-
-    _bucket set [_className, (_bucket getOrDefault [_className, 0]) + 1];
-    _dropCount = _dropCount + 1;
-};
-
 {
     if ((typeName _x) isNotEqualTo "STRING") then { continue };
     if (_x isEqualTo "") then { continue };
 
     if (isClass (configFile >> "CfgVehicles" >> _x) && {(getNumber (configFile >> "CfgVehicles" >> _x >> "isBackpack")) isEqualTo 1}) then {
-        [_backpacks, _x] call _fnc_addCount;
+        _dropCount = [_backpacks, _x, _dropCount] call FLO_fnc_storeDropGearAddCount;
         continue;
     };
 
     if (isClass (configFile >> "CfgMagazines" >> _x)) then {
-        [_magazines, _x] call _fnc_addCount;
+        _dropCount = [_magazines, _x, _dropCount] call FLO_fnc_storeDropGearAddCount;
         continue;
     };
 
@@ -37,16 +30,16 @@ private _fnc_addCount = {
         private _group = _itemType param [0, ""];
 
         if (_group isEqualTo "Weapon") then {
-            [_weapons, _x] call _fnc_addCount;
+            _dropCount = [_weapons, _x, _dropCount] call FLO_fnc_storeDropGearAddCount;
         } else {
-            [_items, _x] call _fnc_addCount;
+            _dropCount = [_items, _x, _dropCount] call FLO_fnc_storeDropGearAddCount;
         };
 
         continue;
     };
 
     if (isClass (configFile >> "CfgGlasses" >> _x)) then {
-        [_items, _x] call _fnc_addCount;
+        _dropCount = [_items, _x, _dropCount] call FLO_fnc_storeDropGearAddCount;
     };
 } forEach _classNames;
 

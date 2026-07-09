@@ -57,36 +57,6 @@ private _grid = createHashMap;
 
 diag_log format ["[DBSCAN] Built spatial grid with %1 cells", count _grid];
 
-// Function to get neighbors within epsilon using spatial grid
-private _fnc_getNeighbors = {
-    params ["_pointIdx"];
-    private _pos = _positions select _pointIdx;
-    private _neighbors = [];
-    
-    private _gx = floor ((_pos select 0) / _gridSize);
-    private _gy = floor ((_pos select 1) / _gridSize);
-    
-    // Check 3x3 grid cells around point
-    for "_dx" from -1 to 1 do {
-        for "_dy" from -1 to 1 do {
-            private _cell = format ["%1_%2", _gx + _dx, _gy + _dy];
-            private _cellData = _grid getOrDefault [_cell, []];
-            
-            {
-                private _otherIdx = _x;
-                if (_otherIdx != _pointIdx) then {
-                    private _otherPos = _positions select _otherIdx;
-                    if (_pos distance2D _otherPos <= _epsilon) then {
-                        _neighbors pushBack _otherIdx;
-                    };
-                };
-            } forEach _cellData;
-        };
-    };
-    
-    _neighbors
-};
-
 // DBSCAN algorithm with progress logging
 private _clusterId = 0;
 private _clusters = [];
@@ -104,7 +74,7 @@ for "_i" from 0 to (_count - 1) do {
     
     _visited set [_i, true];
     
-    private _neighbors = [_i] call _fnc_getNeighbors;
+    private _neighbors = [_i, _positions, _grid, _gridSize, _epsilon] call FLO_fnc_dbscanGetNeighbors;
     
     if (count _neighbors < _minPoints) then {
         _labels set [_i, -1]; // Mark as noise
@@ -126,7 +96,7 @@ for "_i" from 0 to (_count - 1) do {
         
         if (!(_visited getOrDefault [_q, false])) then {
             _visited set [_q, true];
-            private _qNeighbors = [_q] call _fnc_getNeighbors;
+            private _qNeighbors = [_q, _positions, _grid, _gridSize, _epsilon] call FLO_fnc_dbscanGetNeighbors;
             
             if (count _qNeighbors >= _minPoints) then {
                 // Add new neighbors to seed set (O(1) lookup)

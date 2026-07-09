@@ -27,36 +27,6 @@ _data set ["saveTimestamp", systemTimeUTC];
 _data set ["time", date];
 
 // ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-private _fnc_getCompressedDamage = {
-    params ["_vehicle"];
-    private _result = [];
-    private _allDamage = getAllHitPointsDamage _vehicle;
-    if (count _allDamage >= 3) then {
-        private _names = _allDamage # 0;
-        private _values = _allDamage # 2;
-        { if ((_values # _forEachIndex) > 0.01) then { _result pushBack [_x, _values # _forEachIndex]; }; } forEach _names;
-    };
-    _result
-};
-
-private _fnc_getAllCargo = {
-    params ["_container"];
-    private _items = [];
-    (getWeaponCargo _container) params [["_wC", []], ["_wN", []]];
-    { _items pushBack [_x, _wN # _forEachIndex, "weapon"]; } forEach _wC;
-    (getMagazineCargo _container) params [["_mC", []], ["_mN", []]];
-    { _items pushBack [_x, _mN # _forEachIndex, "magazine"]; } forEach _mC;
-    (getItemCargo _container) params [["_iC", []], ["_iN", []]];
-    { _items pushBack [_x, _iN # _forEachIndex, "item"]; } forEach _iC;
-    (getBackpackCargo _container) params [["_bC", []], ["_bN", []]];
-    { _items pushBack [_x, _bN # _forEachIndex, "backpack"]; } forEach _bC;
-    _items select { (_x # 1) > 0 }
-};
-
-// ============================================================================
 // PRE-SAVE CLEANUP
 // ============================================================================
 
@@ -151,7 +121,7 @@ try {
                     private _hadAICrew = ({ alive _x && {!isPlayer _x} } count (crew _veh)) > 0;
                     _vehHash set [_id, createHashMapFromArray [
                         ["type", typeOf _veh], ["posATL", getPosATL _veh], ["fuel", fuel _veh],
-                        ["damage", damage _veh], ["damagedHitpoints", [_veh] call _fnc_getCompressedDamage],
+                        ["damage", damage _veh], ["damagedHitpoints", [_veh] call FLO_fnc_saveGetCompressedDamage],
                         ["vectorDirAndUp", [vectorDir _veh, vectorUp _veh]], ["locked", locked _veh], ["engineOn", isEngineOn _veh],
                         ["hadAICrew", _hadAICrew],
                         ["storeVehicle", _veh getVariable ["FLO_StoreVehicle", false]],
@@ -232,7 +202,7 @@ try {
     {
         private _id = [] call FLO_fnc_createUUID;
         _x setVariable ["FLO_SaveID", _id, true];
-        private _items = [_x] call _fnc_getAllCargo;
+        private _items = [_x] call FLO_fnc_saveGetAllCargo;
         _x setVariable ["FLO_crate_items", _items, true];
         _crateHash set [_id, createHashMapFromArray [
             ["type", typeOf _x], ["posASL", getPosASL _x],
@@ -424,8 +394,8 @@ try {
     if (!isNil "FLO_Objectives") then { _data set ["objectives", FLO_Objectives]; };
     if (!isNil "FLO_GTN_ResourceManager") then {
         private _allCommanders = FLO_GTN_ResourceManager call ["_getAllCommanders", []];
-        private _eastEnabled = !isNil {_allCommanders getOrDefault ["EAST", nil]};
-        private _westEnabled = !isNil {_allCommanders getOrDefault ["WEST", nil]};
+        private _eastEnabled = "EAST" in _allCommanders;
+        private _westEnabled = "WEST" in _allCommanders;
         private _aiCommanders = createHashMapFromArray [
             ["EAST", createHashMapFromArray [["gtnEnabled", _eastEnabled]]],
             ["WEST", createHashMapFromArray [["gtnEnabled", _westEnabled]]]

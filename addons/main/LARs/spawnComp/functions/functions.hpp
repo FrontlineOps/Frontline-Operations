@@ -7,8 +7,10 @@ class LARs_spawnComp {
 		class customAttributes{};
 		class deferLinks{};
 		class getCfgValue{};
+		class getContainerInventoryDetails{};
 		class getCompPosition{};
 		class getUnitInventory{};
+		class getWeaponInventoryDetails{};
 		class setPositionAndRotation{};
 		class sortCfgItems{};
 		class spawnComp{};

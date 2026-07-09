@@ -13,6 +13,7 @@
 if (!isServer) exitWith { false };
 
 diag_log "[FLO_INIT_P3] Initializing objectives...";
+private _phaseT0 = diag_tickTime;
 
 // Check if loading from saved game
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
@@ -20,6 +21,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
     // Check if objectives exist in save
     if ("objectives" in _savedData) then {
+        private _restoreT0 = diag_tickTime;
         FLO_Objectives = _savedData get "objectives";
 
         private _captureTimeCfg = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
@@ -50,10 +52,19 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         } forEach (keys FLO_Objectives);
 
         publicVariable "FLO_Objectives";
+        private _runtimeT0 = diag_tickTime;
         FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
         [] call FLO_fnc_publishObjectiveRuntimeState;
+        private _runtimeMs = (diag_tickTime - _runtimeT0) * 1000;
+        private _restoreMs = (_runtimeT0 - _restoreT0) * 1000;
 
         diag_log format ["[FLO_INIT_P3] Restored %1 objectives from save", count FLO_Objectives];
+        diag_log format [
+            "[FLO][PERF] Phase3 save restore objectives=%1 restore=%2 ms runtime=%3 ms",
+            count FLO_Objectives,
+            _restoreMs,
+            _runtimeMs
+        ];
     };
 };
 
@@ -63,7 +74,16 @@ if (!isNil "FLO_Objectives" && {FLO_Objectives isNotEqualTo []}) exitWith {
 
     // Build/rebuild objective graph
     diag_log "[FLO_INIT_P3] Rebuilding objective graph for saved game...";
+    private _graphT0 = diag_tickTime;
     [false] call FLO_fnc_buildObjectiveGraph;
+    private _graphMs = (diag_tickTime - _graphT0) * 1000;
+    private _totalMs = (diag_tickTime - _phaseT0) * 1000;
+    diag_log format [
+        "[FLO][PERF] Phase3 saved objectives=%1 graph=%2 ms total=%3 ms",
+        count FLO_Objectives,
+        _graphMs,
+        _totalMs
+    ];
 
     // Start systems
     [] spawn FLO_fnc_startObjectiveGraph;
@@ -80,7 +100,9 @@ FLO_ObjectiveRuntimeState = createHashMap;
 
 // Use objective indexer
 diag_log "[FLO_INIT_P3] Calling FLO_fnc_objectiveIndexer...";
+private _indexT0 = diag_tickTime;
 [] call FLO_fnc_objectiveIndexer;
+private _indexMs = (diag_tickTime - _indexT0) * 1000;
 
 // Verify objectives were indexed
 if (isNil "FLO_Objectives") exitWith {
@@ -104,16 +126,22 @@ if ((keys FLO_Objectives) isEqualTo []) exitWith {
     false
 };
 diag_log format ["[FLO_INIT_P3] Objective indexer created %1 objectives", count keys FLO_Objectives];
+private _runtimeT0 = diag_tickTime;
 FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
 [] call FLO_fnc_publishObjectiveRuntimeState;
+private _runtimeMs = (diag_tickTime - _runtimeT0) * 1000;
 
 // Seed initial EAST/WEST ownership for new runs.
 diag_log "[FLO_INIT_P3] Seeding initial objective ownership...";
+private _seedT0 = diag_tickTime;
 [FLO_MissionConfig get "startPosition", FLO_StartingTerritoryWestRatio] call FLO_fnc_seedObjectiveOwnership;
+private _seedMs = (diag_tickTime - _seedT0) * 1000;
 
 // Build objective graph
 diag_log "[FLO_INIT_P3] Building objective graph...";
+private _graphT0 = diag_tickTime;
 [] call FLO_fnc_buildObjectiveGraph;
+private _graphMs = (diag_tickTime - _graphT0) * 1000;
 
 // Start objective graph
 diag_log "[FLO_INIT_P3] Starting objective graph...";
@@ -124,5 +152,14 @@ diag_log "[FLO_INIT_P3] Starting objective dominance monitoring...";
 [] spawn FLO_fnc_monitorObjectiveDominance;
 
 diag_log format ["[FLO_INIT_P3] Objectives phase complete: %1 objectives", count keys FLO_Objectives];
+diag_log format [
+    "[FLO][PERF] Phase3 fresh objectives=%1 index=%2 ms runtime=%3 ms seed=%4 ms graph=%5 ms total=%6 ms",
+    count keys FLO_Objectives,
+    _indexMs,
+    _runtimeMs,
+    _seedMs,
+    _graphMs,
+    (diag_tickTime - _phaseT0) * 1000
+];
 
 true

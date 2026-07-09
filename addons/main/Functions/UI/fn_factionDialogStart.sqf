@@ -52,106 +52,36 @@ if (isNull _display) exitWith {
 private _startBtn = _display displayCtrl 1600;
 _startBtn ctrlEnable false;
 
-// Helper function to get combo selection
-private _fnc_getSelection = {
-	params ["_idc"];
-	private _ctrl = _display displayCtrl _idc;
-    private _idx = lbCurSel _ctrl;
-    if (_idx < 0) exitWith { ["", ""] };
-	[_ctrl lbText _idx, _ctrl lbData _idx]
-};
-
-private _fnc_getSelections = {
-    params ["_idc"];
-    private _ctrl = _display displayCtrl _idc;
-    private _indexes = if ((ctrlType _ctrl) == 5) then {
-        lbSelection _ctrl
-    } else {
-        []
-    };
-
-    if (_indexes isEqualTo [] && {lbCurSel _ctrl >= 0}) then {
-        _indexes = [lbCurSel _ctrl];
-    };
-
-    _indexes apply { [_ctrl lbText _x, _ctrl lbData _x] }
-};
-
-private _fnc_joinSelectionNames = {
-    params ["_selections"];
-    (_selections apply { _x select 0 }) joinString " + "
-};
-
-private _fnc_validateFactionSelections = {
-    params ["_label", "_selections"];
-
-    private _errors = [];
-    if (_selections isEqualTo []) exitWith {
-        [format ["%1 faction must be selected", _label]]
-    };
-
-    private _presetSelections = _selections select { ((_x select 1) find "auto|") isNotEqualTo 0 };
-    if (count _selections > 1 && {_presetSelections isNotEqualTo []}) then {
-        _errors pushBack format ["%1 presets cannot be combined with other factions", _label];
-    };
-
-    private _autoClasses = [];
-    {
-        private _data = _x select 1;
-        if ((_data find "auto|") == 0) then {
-            _autoClasses pushBack (_data select [5]);
-        };
-    } forEach _selections;
-
-    if (count _autoClasses > 1) then {
-        private _autoSides = [];
-        {
-            private _cfg = configFile >> "CfgFactionClasses" >> _x;
-            if !(isClass _cfg) then {
-                _cfg = missionConfigFile >> "CfgFactionClasses" >> _x;
-            };
-            private _side = getNumber (_cfg >> "side");
-            _autoSides pushBackUnique _side;
-        } forEach _autoClasses;
-
-        if (count _autoSides > 1) then {
-            _errors pushBack format ["%1 merged auto factions must come from the same config side", _label];
-        };
-    };
-
-    _errors
-};
-
 // Get all selections using numeric IDCs
-private _playerFactionSelections = [1955] call _fnc_getSelections;
-private _enemyFactionSelections = [1956] call _fnc_getSelections;
-private _civilianFactionSelections = [1957] call _fnc_getSelections;
-private _playerFaction = [_playerFactionSelections] call _fnc_joinSelectionNames;
-private _enemyFaction = [_enemyFactionSelections] call _fnc_joinSelectionNames;
-private _civilianFaction = [_civilianFactionSelections] call _fnc_joinSelectionNames;
-private _westAttackCoverage = ([1958] call _fnc_getSelection) select 0;
-private _resources = ([1959] call _fnc_getSelection) select 0;
-private _reputation = ([1960] call _fnc_getSelection) select 0;
-private _westDifficulty = ([1961] call _fnc_getSelection) select 0;
-private _westDefenseCoverage = ([1962] call _fnc_getSelection) select 0;
-private _westTempo = ([1963] call _fnc_getSelection) select 0;
-private _objectiveSize = ([1964] call _fnc_getSelection) select 0;
-private _virtualizationDistance = ([1965] call _fnc_getSelection) select 0;
-private _westForceGrowth = ([1966] call _fnc_getSelection) select 0;
-private _westGarrison = ([1967] call _fnc_getSelection) select 0;
-private _virtualizationUnitCap = ([1968] call _fnc_getSelection) select 0;
-private _territoryRatio = ([1969] call _fnc_getSelection) select 0;
-private _eastAttackCoverage = ([1970] call _fnc_getSelection) select 0;
-private _eastDefenseCoverage = ([1971] call _fnc_getSelection) select 0;
-private _eastDifficulty = ([1972] call _fnc_getSelection) select 0;
-private _eastTempo = ([1973] call _fnc_getSelection) select 0;
-private _eastForceGrowth = ([1974] call _fnc_getSelection) select 0;
-private _eastGarrison = ([1975] call _fnc_getSelection) select 0;
+private _playerFactionSelections = [_display, 1955] call FLO_fnc_factionDialogGetSelections;
+private _enemyFactionSelections = [_display, 1956] call FLO_fnc_factionDialogGetSelections;
+private _civilianFactionSelections = [_display, 1957] call FLO_fnc_factionDialogGetSelections;
+private _playerFaction = [_playerFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
+private _enemyFaction = [_enemyFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
+private _civilianFaction = [_civilianFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
+private _westAttackCoverage = ([_display, 1958] call FLO_fnc_factionDialogGetSelection) select 0;
+private _resources = ([_display, 1959] call FLO_fnc_factionDialogGetSelection) select 0;
+private _reputation = ([_display, 1960] call FLO_fnc_factionDialogGetSelection) select 0;
+private _westDifficulty = ([_display, 1961] call FLO_fnc_factionDialogGetSelection) select 0;
+private _westDefenseCoverage = ([_display, 1962] call FLO_fnc_factionDialogGetSelection) select 0;
+private _westTempo = ([_display, 1963] call FLO_fnc_factionDialogGetSelection) select 0;
+private _objectiveSize = ([_display, 1964] call FLO_fnc_factionDialogGetSelection) select 0;
+private _virtualizationDistance = ([_display, 1965] call FLO_fnc_factionDialogGetSelection) select 0;
+private _westForceGrowth = ([_display, 1966] call FLO_fnc_factionDialogGetSelection) select 0;
+private _westGarrison = ([_display, 1967] call FLO_fnc_factionDialogGetSelection) select 0;
+private _virtualizationUnitCap = ([_display, 1968] call FLO_fnc_factionDialogGetSelection) select 0;
+private _territoryRatio = ([_display, 1969] call FLO_fnc_factionDialogGetSelection) select 0;
+private _eastAttackCoverage = ([_display, 1970] call FLO_fnc_factionDialogGetSelection) select 0;
+private _eastDefenseCoverage = ([_display, 1971] call FLO_fnc_factionDialogGetSelection) select 0;
+private _eastDifficulty = ([_display, 1972] call FLO_fnc_factionDialogGetSelection) select 0;
+private _eastTempo = ([_display, 1973] call FLO_fnc_factionDialogGetSelection) select 0;
+private _eastForceGrowth = ([_display, 1974] call FLO_fnc_factionDialogGetSelection) select 0;
+private _eastGarrison = ([_display, 1975] call FLO_fnc_factionDialogGetSelection) select 0;
 
 private _selectionErrors =
-    (["Player", _playerFactionSelections] call _fnc_validateFactionSelections) +
-    (["Enemy", _enemyFactionSelections] call _fnc_validateFactionSelections) +
-    (["Civilian", _civilianFactionSelections] call _fnc_validateFactionSelections);
+    (["Player", _playerFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
+    (["Enemy", _enemyFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
+    (["Civilian", _civilianFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections);
 
 if (_selectionErrors isNotEqualTo []) exitWith {
     ["UI", 2, format ["Faction dialog validation failed: %1", _selectionErrors]] call FLO_fnc_log;
@@ -268,83 +198,6 @@ _display closeDisplay 1;
         "_eastFactionTuningHandle"
     ];
 
-    private _fnc_buildFactionHandle = {
-        params ["_selections"];
-
-        private _selection = (_selections apply { _x select 0 }) joinString " + ";
-        private _data = (_selections select 0) select 1;
-
-        private _handle = createHashMapFromArray [
-            ["name", _selection],
-            ["source", "preset"]
-        ];
-
-        if (count _selections > 1) then {
-            private _factionClasses = _selections apply { (_x select 1) select [5] };
-            _handle set ["source", "auto_multi"];
-            _handle set ["factionClass", _factionClasses select 0];
-            _handle set ["factionClasses", _factionClasses];
-        } else {
-            if ((_data find "auto|") == 0) then {
-                _handle set ["source", "auto"];
-                _handle set ["factionClass", _data select [5]];
-            };
-        };
-
-        _handle
-    };
-
-    private _fnc_buildScalarHandle = {
-        params ["_selection", "_map"];
-        createHashMapFromArray [
-            ["value", _map get _selection],
-            ["name", _selection]
-        ]
-    };
-
-    private _fnc_buildGarrisonHandle = {
-        params ["_selection"];
-
-        switch (_selection) do {
-            case "Light _ 1 Rear / 2 Front": {
-                createHashMapFromArray [
-                    ["name", _selection],
-                    ["rearBaseGroups", 1],
-                    ["frontlineBaseGroups", 2],
-                    ["priorityBonusGroups", 0],
-                    ["hotBonusGroups", 1]
-                ]
-            };
-            case "Standard _ 1 Rear / 3 Front": {
-                createHashMapFromArray [
-                    ["name", _selection],
-                    ["rearBaseGroups", 1],
-                    ["frontlineBaseGroups", 3],
-                    ["priorityBonusGroups", 0],
-                    ["hotBonusGroups", 1]
-                ]
-            };
-            case "Heavy _ 2 Rear / 3 Front": {
-                createHashMapFromArray [
-                    ["name", _selection],
-                    ["rearBaseGroups", 2],
-                    ["frontlineBaseGroups", 3],
-                    ["priorityBonusGroups", 0],
-                    ["hotBonusGroups", 1]
-                ]
-            };
-            case "Fortified _ 2 Rear / 4 Front": {
-                createHashMapFromArray [
-                    ["name", _selection],
-                    ["rearBaseGroups", 2],
-                    ["frontlineBaseGroups", 4],
-                    ["priorityBonusGroups", 0],
-                    ["hotBonusGroups", 2]
-                ]
-            };
-        };
-    };
-
 	// Set mission start time for grace period tracking
 	missionNamespace setVariable ["FLO_missionStartTime", diag_tickTime, true];
 
@@ -388,18 +241,18 @@ _display closeDisplay 1;
         ["High _ 3 Groups Per Capture", 3]
     ];
 
-    private _westDifficultyHandle = [_westDifficulty, _difficultyMap] call _fnc_buildScalarHandle;
-    private _eastDifficultyHandle = [_eastDifficulty, _difficultyMap] call _fnc_buildScalarHandle;
-    private _westAttackCoverageHandle = [_westAttackCoverage, _coverageMap] call _fnc_buildScalarHandle;
-    private _eastAttackCoverageHandle = [_eastAttackCoverage, _coverageMap] call _fnc_buildScalarHandle;
-    private _westDefenseCoverageHandle = [_westDefenseCoverage, _coverageMap] call _fnc_buildScalarHandle;
-    private _eastDefenseCoverageHandle = [_eastDefenseCoverage, _coverageMap] call _fnc_buildScalarHandle;
-    private _westTempoHandle = [_westTempo, _tempoMap] call _fnc_buildScalarHandle;
-    private _eastTempoHandle = [_eastTempo, _tempoMap] call _fnc_buildScalarHandle;
-    private _westForceGrowthHandle = [_westForceGrowth, _forceGrowthMap] call _fnc_buildScalarHandle;
-    private _eastForceGrowthHandle = [_eastForceGrowth, _forceGrowthMap] call _fnc_buildScalarHandle;
-    private _westGarrisonHandle = [_westGarrison] call _fnc_buildGarrisonHandle;
-    private _eastGarrisonHandle = [_eastGarrison] call _fnc_buildGarrisonHandle;
+    private _westDifficultyHandle = [_westDifficulty, _difficultyMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _eastDifficultyHandle = [_eastDifficulty, _difficultyMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _westAttackCoverageHandle = [_westAttackCoverage, _coverageMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _eastAttackCoverageHandle = [_eastAttackCoverage, _coverageMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _westDefenseCoverageHandle = [_westDefenseCoverage, _coverageMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _eastDefenseCoverageHandle = [_eastDefenseCoverage, _coverageMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _westTempoHandle = [_westTempo, _tempoMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _eastTempoHandle = [_eastTempo, _tempoMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _westForceGrowthHandle = [_westForceGrowth, _forceGrowthMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _eastForceGrowthHandle = [_eastForceGrowth, _forceGrowthMap] call FLO_fnc_factionDialogBuildScalarHandle;
+    private _westGarrisonHandle = [_westGarrison] call FLO_fnc_factionDialogBuildGarrisonHandle;
+    private _eastGarrisonHandle = [_eastGarrison] call FLO_fnc_factionDialogBuildGarrisonHandle;
 
 	private _objectiveSizeThreshold = _objectiveSize;
 	private _virtualizationDistanceValue = parseNumber _virtualizationDistance;
@@ -452,9 +305,9 @@ _display closeDisplay 1;
 	// ============================================================================
 
 	FLO_MissionConfig = createHashMapFromArray [
-		["friendlyHandle", [_playerFactionSelections] call _fnc_buildFactionHandle],
-		["enemyHandle", [_enemyFactionSelections] call _fnc_buildFactionHandle],
-		["civilianHandle", [_civilianFactionSelections] call _fnc_buildFactionHandle],
+		["friendlyHandle", [_playerFactionSelections] call FLO_fnc_factionDialogBuildFactionHandle],
+		["enemyHandle", [_enemyFactionSelections] call FLO_fnc_factionDialogBuildFactionHandle],
+		["civilianHandle", [_civilianFactionSelections] call FLO_fnc_factionDialogBuildFactionHandle],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["westDifficultyHandle", _westDifficultyHandle],
 		["eastDifficultyHandle", _eastDifficultyHandle],

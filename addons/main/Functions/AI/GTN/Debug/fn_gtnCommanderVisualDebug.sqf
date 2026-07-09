@@ -24,41 +24,8 @@ FLO_GTN_CommanderDebugRunning = true;
 if (isNil "FLO_GTN_CommanderDebugEnabled") then { FLO_GTN_CommanderDebugEnabled = true; };
 if (isNil "FLO_GTN_CommanderDebugMarkers") then { FLO_GTN_CommanderDebugMarkers = createHashMap; };
 
-private _fnc_sideColor = {
-    params ["_side"];
-    if (_side isEqualTo east) exitWith { "ColorEAST" };
-    if (_side isEqualTo west) exitWith { "ColorWEST" };
-    "ColorWhite"
-};
-
-private _fnc_sideLabel = {
-    params ["_side"];
-    if (_side isEqualTo east) exitWith { "EAST" };
-    if (_side isEqualTo west) exitWith { "WEST" };
-    "UNKNOWN"
-};
-
-private _fnc_upsertMarker = {
-    params ["_id", "_pos", "_type", "_color", "_text", ["_size", [0.6, 0.6]], ["_alpha", 1]];
-    createMarker [_id, _pos];
-    _id setMarkerPosLocal _pos;
-    _id setMarkerShapeLocal "ICON";
-    _id setMarkerTypeLocal _type;
-    _id setMarkerColorLocal _color;
-    _id setMarkerSizeLocal _size;
-    _id setMarkerTextLocal _text;
-    _id setMarkerAlpha _alpha;
-};
-
-private _fnc_clearAll = {
-    {
-        deleteMarker _x;
-    } forEach (keys FLO_GTN_CommanderDebugMarkers);
-    FLO_GTN_CommanderDebugMarkers = createHashMap;
-};
-
-[_interval, _fnc_sideColor, _fnc_sideLabel, _fnc_upsertMarker, _fnc_clearAll] spawn {
-    params ["_interval", "_fnc_sideColor", "_fnc_sideLabel", "_fnc_upsertMarker", "_fnc_clearAll"];
+[_interval] spawn {
+    params ["_interval"];
 
     waitUntil {
         sleep 1;
@@ -67,7 +34,7 @@ private _fnc_clearAll = {
 
     while {FLO_GTN_CommanderDebugRunning} do {
         if (!FLO_GTN_CommanderDebugEnabled) then {
-            [] call _fnc_clearAll;
+            [] call FLO_fnc_gtnCommanderDebugClearAll;
             sleep _interval;
             continue;
         };
@@ -88,9 +55,9 @@ private _fnc_clearAll = {
 
             private _ownSide = _cmd get "_ownSide";
             private _enemySide = _cmd get "_enemySide";
-            private _ownColor = [_ownSide] call _fnc_sideColor;
-            private _enemyColor = [_enemySide] call _fnc_sideColor;
-            private _enemyLabel = [_enemySide] call _fnc_sideLabel;
+            private _ownColor = [_ownSide] call FLO_fnc_gtnCommanderDebugSideColor;
+            private _enemyColor = [_enemySide] call FLO_fnc_gtnCommanderDebugSideColor;
+            private _enemyLabel = [_enemySide] call FLO_fnc_gtnCommanderDebugSideLabel;
 
             private _worldState = _cmd get "_worldState";
             private _forces = _worldState call ["_getForces", []];
@@ -140,7 +107,7 @@ private _fnc_clearAll = {
                 count (keys _strictFrontlineEnemyObjectives),
                 round (_situation get "momentum")
             ];
-            [_summaryId, _anchorPos, "mil_flag", _ownColor, _summaryText, [0.95, 0.95], 1] call _fnc_upsertMarker;
+            [_summaryId, _anchorPos, "mil_flag", _ownColor, _summaryText, [0.95, 0.95], 1] call FLO_fnc_gtnCommanderDebugUpsertMarker;
 
             {
                 private _track = _x;
@@ -169,7 +136,7 @@ private _fnc_clearAll = {
                     _taskId,
                     count (_track get "groupPool")
                 ];
-                [_trackMarkerId, _trackPos, "mil_dot", _ownColor, _trackText, [0.65, 0.65], 0.95] call _fnc_upsertMarker;
+                [_trackMarkerId, _trackPos, "mil_dot", _ownColor, _trackText, [0.65, 0.65], 0.95] call FLO_fnc_gtnCommanderDebugUpsertMarker;
             } forEach _tracks;
 
             private _enemyObjectiveRows = [];
@@ -200,7 +167,7 @@ private _fnc_clearAll = {
                     if (_ownerKey isEqualTo "EAST") then { _owner = east; };
                     if (_ownerKey isEqualTo "WEST") then { _owner = west; };
                 };
-                private _ownerLabel = [_owner] call _fnc_sideLabel;
+                private _ownerLabel = [_owner] call FLO_fnc_gtnCommanderDebugSideLabel;
                 private _wrongOwner = (_owner isNotEqualTo _enemySide);
                 private _objType = [["mil_objective", "mil_warning"] select (_obj get "contested"), "mil_unknown"] select (_wrongOwner);
                 private _objColor = [_enemyColor, "ColorOrange"] select (_wrongOwner);
@@ -216,7 +183,7 @@ private _fnc_clearAll = {
                     if (_wrongOwner) then { format [" ! expected %1", _enemyLabel] } else { "" }
                 ];
 
-                [_objMarkerId, _objPos, _objType, _objColor, _objText, [0.7, 0.7], 0.85] call _fnc_upsertMarker;
+                [_objMarkerId, _objPos, _objType, _objColor, _objText, [0.7, 0.7], 0.85] call FLO_fnc_gtnCommanderDebugUpsertMarker;
             };
 
             // Reinforcement debug: pressure points, in-flight groups, and inbound targets.
@@ -257,7 +224,7 @@ private _fnc_clearAll = {
                     _enemyPressure,
                     _priority
                 ];
-                [_reinfPointMarkerId, _objPos, "mil_marker", _ownColor, _reinfPointText, [0.65, 0.65], 0.75] call _fnc_upsertMarker;
+                [_reinfPointMarkerId, _objPos, "mil_marker", _ownColor, _reinfPointText, [0.65, 0.65], 0.75] call FLO_fnc_gtnCommanderDebugUpsertMarker;
             };
 
             if (!isNil "_logNetwork") then {
@@ -266,7 +233,7 @@ private _fnc_clearAll = {
                     private _lastTargetPos = (FLO_Objectives get _lastReinfTarget) get "position";
                     private _lastMarkerId = format ["FLO_GTN_DBG_%1_REINF_LAST", _cmdSideKey];
                     _activeIds pushBack _lastMarkerId;
-                    [_lastMarkerId, _lastTargetPos, "mil_objective", _ownColor, format ["%1 LOGI LAST %2", _cmdSideKey, _lastReinfTarget], [0.8, 0.8], 0.9] call _fnc_upsertMarker;
+                    [_lastMarkerId, _lastTargetPos, "mil_objective", _ownColor, format ["%1 LOGI LAST %2", _cmdSideKey, _lastReinfTarget], [0.8, 0.8], 0.9] call FLO_fnc_gtnCommanderDebugUpsertMarker;
                 };
             };
 
@@ -300,7 +267,7 @@ private _fnc_clearAll = {
                     _groupType,
                     [_targetObjective, "free"] select (_targetObjective == "")
                 ];
-                [_reinfGroupMarkerId, _groupPos, ["mil_arrow", "mil_warning"] select (_isAAMoving), _ownColor, _reinfGroupText, [0.55, 0.55], 0.95] call _fnc_upsertMarker;
+                [_reinfGroupMarkerId, _groupPos, ["mil_arrow", "mil_warning"] select (_isAAMoving), _ownColor, _reinfGroupText, [0.55, 0.55], 0.95] call FLO_fnc_gtnCommanderDebugUpsertMarker;
 
                 if (_targetObjective != "" && {_targetObjective in FLO_Objectives}) then {
                     _reinforcingObjectiveCounts set [_targetObjective, (_reinforcingObjectiveCounts getOrDefault [_targetObjective, 0]) + 1];
@@ -310,7 +277,7 @@ private _fnc_clearAll = {
                         if (count _targetPos >= 2) then {
                             private _aaTargetMarkerId = format ["FLO_GTN_DBG_%1_REINF_AA_TGT_%2", _cmdSideKey, _groupId];
                             _activeIds pushBack _aaTargetMarkerId;
-                            [_aaTargetMarkerId, _targetPos, "mil_dot", _ownColor, format ["%1 AA DEPLOY", _cmdSideKey], [0.5, 0.5], 0.8] call _fnc_upsertMarker;
+                            [_aaTargetMarkerId, _targetPos, "mil_dot", _ownColor, format ["%1 AA DEPLOY", _cmdSideKey], [0.5, 0.5], 0.8] call FLO_fnc_gtnCommanderDebugUpsertMarker;
                         };
                     };
                 };
@@ -322,7 +289,7 @@ private _fnc_clearAll = {
                 private _objPos = (FLO_Objectives get _objId) get "position";
                 private _reinfTargetMarkerId = format ["FLO_GTN_DBG_%1_REINF_TGT_%2", _cmdSideKey, _objId];
                 _activeIds pushBack _reinfTargetMarkerId;
-                [_reinfTargetMarkerId, _objPos, "mil_dot", _ownColor, format ["%1 REINF INBOUND %2 x%3", _cmdSideKey, _objId, _count], [0.6, 0.6], 0.8] call _fnc_upsertMarker;
+                [_reinfTargetMarkerId, _objPos, "mil_dot", _ownColor, format ["%1 REINF INBOUND %2 x%3", _cmdSideKey, _objId, _count], [0.6, 0.6], 0.8] call FLO_fnc_gtnCommanderDebugUpsertMarker;
             } forEach (keys _reinforcingObjectiveCounts);
 
             private _taskedSet = createHashMap;
@@ -356,7 +323,7 @@ private _fnc_clearAll = {
                     _groupState,
                     _groupUnits,
                     _groupType
-                ], [0.45, 0.45], 0.55] call _fnc_upsertMarker;
+                ], [0.45, 0.45], 0.55] call FLO_fnc_gtnCommanderDebugUpsertMarker;
             } forEach (keys _allGroups);
 
             {
@@ -390,7 +357,7 @@ private _fnc_clearAll = {
                     _groupUnits,
                     _groupType
                 ];
-                [_groupMarkerId, _groupPos, _groupMarkerType, _ownColor, _groupText, [0.5, 0.5], 0.9] call _fnc_upsertMarker;
+                [_groupMarkerId, _groupPos, _groupMarkerType, _ownColor, _groupText, [0.5, 0.5], 0.9] call FLO_fnc_gtnCommanderDebugUpsertMarker;
             } forEach _taskedGroups;
         } forEach (keys _commandersBySide);
 
@@ -408,7 +375,7 @@ private _fnc_clearAll = {
         sleep _interval;
     };
 
-    [] call _fnc_clearAll;
+    [] call FLO_fnc_gtnCommanderDebugClearAll;
 };
 
 ["GTN_DEBUG", 2, format ["Commander visual debug started (%1s interval)", _interval]] call FLO_fnc_log;

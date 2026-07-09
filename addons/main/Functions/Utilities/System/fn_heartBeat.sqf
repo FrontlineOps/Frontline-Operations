@@ -66,64 +66,11 @@ publicVariable "FLO_Server_RestartTick";
 publicVariable "FLO_Server_StartTick";
 
 // ============================================================================
-// NOTIFICATION FUNCTION
-// ============================================================================
-
-private _fnc_notify = {
-    params ["_minutesLeft"];
-
-    // Determine urgency level and color
-    private _urgency = switch (true) do {
-        case (_minutesLeft <= 2):  { 3 };  // CRITICAL
-        case (_minutesLeft <= 5):  { 2 };  // HIGH
-        case (_minutesLeft <= 15): { 1 };  // MEDIUM
-        default                    { 0 };  // LOW
-    };
-
-    private _color = switch (_urgency) do {
-        case 3: { "#FF0000" };  // Red - critical
-        case 2: { "#FF6600" };  // Orange - high
-        case 1: { "#FFFF00" };  // Yellow - medium
-        default { "#FFFFFF" };  // White - low
-    };
-
-    // Format message
-    private _timeStr = [format ["%1 minute%2", _minutesLeft, ["", "s"] select (_minutesLeft != 1)], format ["%1 hour%2", floor(_minutesLeft / 60), ["", "s"] select (_minutesLeft >= 120)]] select (_minutesLeft >= 60);
-
-    private _message = format ["SERVER RESTART in %1", _timeStr];
-
-    // Add urgency suffix
-    if (_minutesLeft <= 5) then {
-        _message = _message + " - Save your progress!";
-    } else {
-        if (_minutesLeft <= 15) then {
-            _message = _message + " - Finish current objectives";
-        };
-    };
-
-    // Size and duration scale with urgency
-    private _size = 1.0 + (_urgency * 0.15);
-    private _duration = 5 + (_urgency * 2);
-
-    // Send to all players
-    private _formattedText = format ["<t size='%1' color='%2'>%3</t>", _size, _color, _message];
-    ["dynamicTextBroadcasts", 1] call FLO_fnc_netDebugRecord;
-    [_formattedText, _duration] remoteExec ["FLO_fnc_showDynamicText", 0];
-
-    // Play warning sound for urgent notifications
-    if (_urgency >= 2) then {
-        "FD_CP_Not_Clear_F" remoteExec ["playSound", 0];
-    };
-
-    diag_log format ["[FLO_HEARTBEAT] Notification sent: %1 minutes remaining", _minutesLeft];
-};
-
-// ============================================================================
 // MAIN LOOP
 // ============================================================================
 
-[_restartTick, _notificationThresholds, _checkFrequencyNormal, _checkFrequencyUrgent, _fnc_notify] spawn {
-    params ["_restartTick", "_thresholds", "_freqNormal", "_freqUrgent", "_fnc_notify"];
+[_restartTick, _notificationThresholds, _checkFrequencyNormal, _checkFrequencyUrgent] spawn {
+    params ["_restartTick", "_thresholds", "_freqNormal", "_freqUrgent"];
 
     // Track which thresholds we've already notified for
     private _notifiedThresholds = createHashMap;
@@ -149,7 +96,7 @@ private _fnc_notify = {
             // If we're at or below this threshold and haven't notified
             if (_minutesLeft <= _threshold && {!(_notifiedThresholds getOrDefault [_threshold, false])}) then {
                 // Send notification
-                [_threshold] call _fnc_notify;
+                [_threshold] call FLO_fnc_heartbeatNotifyRestart;
 
                 // Mark as notified
                 _notifiedThresholds set [_threshold, true];

@@ -18,6 +18,7 @@ params [["_side", east]];
 if !(_side in [east, west]) exitWith { false };
 if (isNil "FLO_Objectives") exitWith { false };
 
+private _seedT0 = diag_tickTime;
 private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
 private _sideKey = _sideCtx get "sideKey";
 private _spawnPlan = [_side] call FLO_fnc_buildObjectiveTemplateSpawnPlan;
@@ -26,6 +27,10 @@ private _spawnPlan = [_side] call FLO_fnc_buildObjectiveTemplateSpawnPlan;
 
 private _allCreatedGroups = [];
 private _plannedObjectives = keys _spawnPlan;
+private _plannedTemplateCount = 0;
+private _plannedGroupCount = 0;
+private _staticAAForcedCount = 0;
+private _staticAAFailedCount = 0;
 
 // Process each indexed objective
 {
@@ -36,9 +41,11 @@ private _plannedObjectives = keys _spawnPlan;
 
     private _groupsToCreate = _spawnPlan get _objId;
     private _objectiveGroups = [];
+    _plannedTemplateCount = _plannedTemplateCount + count _groupsToCreate;
 
     {
         _x params ["_groupType", "_count"];
+        _plannedGroupCount = _plannedGroupCount + _count;
         private _createdGroups = [_objId, _groupType, _count, _side] call FLO_fnc_distributeVirtualGroups;
         _objectiveGroups append _createdGroups;
     } forEach _groupsToCreate;
@@ -54,8 +61,10 @@ private _plannedObjectives = keys _spawnPlan;
         if ((_groupData get "groupType") == "static_aa") then {
             _groupData set ["alwaysActive", true];
             if ([_groupId, _groupData] call FLO_fnc_virtualizationForceActivateGroup) then {
+                _staticAAForcedCount = _staticAAForcedCount + 1;
                 ["VIRTUALIZATION", 3, format["Static AA %1 activated immediately (always-on)", _groupId]] call FLO_fnc_log;
             } else {
+                _staticAAFailedCount = _staticAAFailedCount + 1;
                 ["VIRTUALIZATION", 2, format["Static AA %1 failed forced always-on activation during seeding", _groupId]] call FLO_fnc_log;
             };
         };
@@ -72,5 +81,16 @@ if (isNil "FLO_CiviliansInitialized" || {!FLO_CiviliansInitialized}) then {
 };
 
 ["VIRTUALIZATION", 3, format["Finished initializing %1 objective groups - %2 groups created", _sideKey, count _allCreatedGroups]] call FLO_fnc_log;
+diag_log format [
+    "[FLO][PERF] Objective group seeding side=%1 objectives=%2 templates=%3 plannedGroups=%4 created=%5 staticAAForced=%6 staticAAFailed=%7 total=%8 ms",
+    _sideKey,
+    count _plannedObjectives,
+    _plannedTemplateCount,
+    _plannedGroupCount,
+    count _allCreatedGroups,
+    _staticAAForcedCount,
+    _staticAAFailedCount,
+    (diag_tickTime - _seedT0) * 1000
+];
 
 true

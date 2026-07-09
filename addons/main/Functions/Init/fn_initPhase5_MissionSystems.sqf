@@ -70,14 +70,8 @@ if (isNil "FLO_ActivePlayerSide") then {
     };
 };
 
-private _fnc_sideResourcesUninitialized = {
-    if (isNil "FLO_SideResources") exitWith { true };
-    if (!(FLO_SideResources isEqualType createHashMap)) exitWith { true };
-    (keys FLO_SideResources) isEqualTo []
-};
-
 // Initialize side resources early so restored/started systems can consume them.
-if ((call _fnc_sideResourcesUninitialized) && {!isNil "FLO_fnc_sideResources"}) then {
+if (([] call FLO_fnc_initSideResourcesUninitialized) && {!isNil "FLO_fnc_sideResources"}) then {
     [] call FLO_fnc_sideResources;
 };
 
@@ -247,46 +241,14 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         };
     };
 
-    private _fnc_extractVehicleClasses = {
-        params [["_list", []]];
-        private _result = [];
-        {
-            if (_x isEqualType []) then {
-                if (_x isNotEqualTo []) then {
-                    private _cls = _x select 0;
-                    if (_cls isEqualType "" && {_cls != ""}) then {
-                        _result pushBackUnique _cls;
-                    };
-                };
-            } else {
-                if (_x isEqualType "" && {_x != ""}) then {
-                    _result pushBackUnique _x;
-                };
-            };
-        } forEach _list;
-        _result
-    };
-
     private _trackedCrewTypes = createHashMap;
     private _samList = missionNamespace getVariable ["F_SAM_List", []];
     {
         _trackedCrewTypes set [_x, true];
-    } forEach ([_samList] call _fnc_extractVehicleClasses);
+    } forEach ([_samList] call FLO_fnc_factionExtractVehicleClasses);
 
     if (!isNil "FLO_FactionRadar" && {FLO_FactionRadar isEqualType ""} && {FLO_FactionRadar != ""}) then {
         _trackedCrewTypes set [FLO_FactionRadar, true];
-    };
-
-    private _fnc_restoreTrackedCrew = {
-        params ["_entity", "_type", "_attr", "_trackedCrewTypes"];
-        if !(_type in _trackedCrewTypes) exitWith {};
-
-        private _restoreCrew = if ("hadAICrew" in _attr) then { _attr get "hadAICrew" } else { true };
-        if (!_restoreCrew) exitWith {};
-
-        if (getText (configFile >> "CfgVehicles" >> _type >> "crew") != "") then {
-            createVehicleCrew _entity;
-        };
     };
 
     // Restore vehicles
@@ -332,7 +294,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         { _x params ["_hp", "_dmg"]; _veh setHitPointDamage [_hp, _dmg]; } forEach _damagedHitpoints;
 
                         if (_attr getOrDefault ["engineOn", false]) then { _veh engineOn true; };
-                        [_veh, _type, _attr, _trackedCrewTypes] call _fnc_restoreTrackedCrew;
+                        [_veh, _type, _attr, _trackedCrewTypes] call FLO_fnc_initRestoreTrackedCrew;
 
                         _loadedVehicles = _loadedVehicles + 1;
                     };
@@ -364,7 +326,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         _obj setDamage (_attr getOrDefault ["damage", 0]);
                         _obj setVariable ["IDS_Logistics_isPlacedEntity", _attr getOrDefault ["isPlacedEntity", false], true];
                         _obj setVariable ["FLO_SaveID", _objId, true];
-                        [_obj, _type, _attr, _trackedCrewTypes] call _fnc_restoreTrackedCrew;
+                        [_obj, _type, _attr, _trackedCrewTypes] call FLO_fnc_initRestoreTrackedCrew;
 
                         _loadedObjects = _loadedObjects + 1;
                     };
@@ -488,7 +450,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 // ============================================
 diag_log "[FLO_INIT_P5] Starting side resource system...";
 if (!isNil "FLO_fnc_sideResources") then {
-    if (call _fnc_sideResourcesUninitialized) then {
+    if ([] call FLO_fnc_initSideResourcesUninitialized) then {
         [] call FLO_fnc_sideResources;
     };
     diag_log "[FLO_INIT_P5] Side resources started";

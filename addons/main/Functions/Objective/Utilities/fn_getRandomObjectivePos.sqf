@@ -33,7 +33,7 @@ private _objData = if (_objective isEqualType "") then {
 if (isNil "_objData") exitWith { [0,0,0] };
 
 private _pos = _objData get "position";
-private _radius = _objData getOrDefault ["radius", 50];
+private _radius = _objData get "radius";
 
 // Generate random position within radius
 private _dir = random 360;

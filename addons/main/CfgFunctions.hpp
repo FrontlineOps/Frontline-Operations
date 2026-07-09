@@ -9,6 +9,13 @@ class FLO {
         class initializeOP      {};
     };
 
+    class Save {
+        file = "\z\flo\addons\main\Functions\Save";
+
+        class saveGetAllCargo {};
+        class saveGetCompressedDamage {};
+    };
+
     // === INITIALIZATION PHASE SYSTEM ===
     class Init {
         file = "\z\flo\addons\main\Functions\Init";
@@ -17,6 +24,7 @@ class FLO {
         class registerSettings      {};
         class detectSavedGame       {};
         class initFactionSplitMixedInfantryPool {};
+        class initLoadFactionFile   {};
         class initMissionConfigEvents {};
         class initPhaseManager      {};
         class initPhase1_MissionConfig {};
@@ -24,6 +32,10 @@ class FLO {
         class initPhase3_Objectives {};
         class initPhase4_Virtualization {};
         class initPhase5_MissionSystems {};
+        class initRestoreTrackedCrew {};
+        class initRunPhase {};
+        class initSideResourcesUninitialized {};
+        class initStartRadarDataLink {};
         class initClientFinalize    {};
         class addonPostInit         {postInit = 1;};
     };
@@ -39,6 +51,7 @@ class FLO {
         class gtnExecutor           {};
         class gtnMonitor            {};
         class gtnCommander          {};
+        class gtnCollectTurretWeapons {};
         class gtnCapabilityAnalyzer {};
     };
 
@@ -96,6 +109,7 @@ class FLO {
         class gtnBuildFriendlyCommanderGroupMarkers {};
         class gtnBuildFriendlySupplyNodeMarkers {};
         class gtnBuildFriendlySupportMarkers {};
+        class gtnNormalizeIntelSignatureValue {};
         class gtnCommanderSupplyMarkersToggle {};
         class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
@@ -103,6 +117,7 @@ class FLO {
         class gtnPublishCommanderIntel {};
         class gtnRefreshCommanderSupplyToggleAction {};
         class gtnRevealIntelPickup {};
+        class gtnSerializeIntelSignatureRecords {};
         class gtnSyncCommanderIntelMarkers {};
     };
 
@@ -125,9 +140,23 @@ class FLO {
     class GTNTasks {
         file = "\z\flo\addons\main\Functions\AI\GTN\Tasks";
 
+        class gtnClearPrimaryTaskState {};
+        class gtnClearSecondaryTaskState {};
+        class gtnCountAliveTaskTargets {};
+        class gtnDeleteTaskIfPresent {};
         class gtnPlayerTaskBridge {};
+        class gtnPlayerTaskDescription {};
+        class gtnPlayerTaskTitle {};
+        class gtnPublishPlayerTask {};
+        class gtnMarkTaskSucceeded {};
+        class gtnRestoreLegacyTaskRefState {};
+        class gtnTaskEnemySide {};
+        class gtnTaskMissing {};
+        class gtnTaskNormalizeSide {};
         class gtnTaskScoreObjectiveForPlayers {};
         class gtnTaskCollectDestroyTargets {};
+        class gtnTaskSideKey {};
+        class gtnTaskTypeFromKind {};
     };
 
     class GTNPlayerSupport {
@@ -154,6 +183,10 @@ class FLO {
     class GTNDebug {
         file = "\z\flo\addons\main\Functions\AI\GTN\Debug";
 
+        class gtnCommanderDebugClearAll {};
+        class gtnCommanderDebugSideColor {};
+        class gtnCommanderDebugSideLabel {};
+        class gtnCommanderDebugUpsertMarker {};
         class gtnCommanderVisualDebug {};
     };
 
@@ -259,11 +292,13 @@ class FLO {
         class buildObjectiveLinks       {};
         class objectiveIndexer          {};
         class dbscanCluster             {};
+        class dbscanGetNeighbors        {};
         class buildObjectiveGraph       {};
         class flipObjective             {};
         class seedObjectiveOwnership    {};
         class monitorObjectiveDominance {};
         class startObjectiveGraph       {};
+        class updateObjectiveDominance  {};
     };
 
     class ObjectiveUtilities {
@@ -276,6 +311,8 @@ class FLO {
         class getObjectiveNearPlayer  {};
         class getObjectivePosition    {};
         class isPositionInObjective   {};
+        class objectiveNormalizeOwner {};
+        class objectiveOwnerAtPosition {};
         class createObjectiveMarker   {};
         class publishObjectiveRuntimeState {};
         class refreshRespawnMarkersByTerritory {};
@@ -318,6 +355,7 @@ class FLO {
         class storeClearCargo {};
         class storeDeployBase {};
         class storeDropGearItems {};
+        class storeDropGearAddCount {};
         class storeHandleUiEvent {};
         class storeIsItemBackedMagazine {};
         class storeIsMineMagazine {};
@@ -344,6 +382,10 @@ class FLO {
     class Base {
         file = "\z\flo\addons\main\Functions\Base";
 
+        class baseConfigureContainerActions {};
+        class baseConfigureMainActions {};
+        class baseCreateMarker {};
+        class baseCreateTriggers {};
         class baseDeployAddWebEventHandler {};
         class baseDeployBuildSnapshot {};
         class baseDeployHandleUiEvent {};
@@ -368,11 +410,26 @@ class FLO {
         class factionBuildMergedAutoCivilianCatalog {};
         class factionBuildMergedAutoMilitaryCatalog {};
         class factionBuildAutoMilitaryCatalog {};
+        class factionBuildObjectiveGroupFieldSpecs {};
+        class factionBuildTuningFieldSpecsFromIdcs {};
+        class factionBuildVehiclePoolFromVariables {};
         class factionClassifyVehicle {};
+        class factionCollectDirectUnitVariables {};
+        class factionCompactNumericText {};
+        class factionCompositionDefaultCaps {};
+        class factionCompositionDefaultCounts {};
+        class factionCompositionDefaultObjectiveGroups {};
+        class factionCreateCompositionDefaultHandle {};
+        class factionExtractVehicleClasses {};
         class factionGetGroupConfigs {};
         class factionGetCompositionDefaults {};
         class factionGetObjectiveGroupFieldSpecs {};
         class factionGetTuningFieldSpecs {};
+        class factionGetVariableArray {};
+        class factionBuildCompositionDefaultsHandle {};
+        class factionHandleSource {};
+        class factionIsUnsignedInt {};
+        class factionMergePairs {};
         class factionApplyTuningOverrides {};
         class factionBuildTuningHandle {};
         class factionPickUnitByRole {};
@@ -391,6 +448,9 @@ class FLO {
         file = "\z\flo\addons\main\Functions\Utilities\System";
         class createUUID                {};
         class heartbeat                 {};
+        class heartbeatNotifyRestart    {};
+        class padHex                    {};
+        class toHex                     {};
     };
 
     class UtilitiesUI {
@@ -448,12 +508,25 @@ class FLO {
         class openFactionDialog       {};
         class factionDialogOnLoad     {};
         class factionDialogOnUnload   {};
+        class factionDialogAddFactionItems {};
+        class factionDialogAddItems {};
+        class factionDialogBuildFactionHandle {};
+        class factionDialogBuildGarrisonHandle {};
+        class factionDialogBuildScalarHandle {};
+        class factionDialogCreateObjectiveEdit {};
         class factionDialogCreateObjectiveGroupControls {};
+        class factionDialogCreateObjectiveLabel {};
+        class factionDialogCreateObjectiveSideControls {};
         class factionDialogFillCompositionDefaults {};
+        class factionDialogGetSelection {};
+        class factionDialogGetSelections {};
+        class factionDialogJoinSelectionNames {};
         class factionDialogNormalizeMultiSelection {};
         class factionDialogPopulate   {};
+        class factionDialogSelectDefault {};
         class factionDialogShowCompositionTab {};
         class factionDialogStart      {};
+        class factionDialogValidateFactionSelections {};
         class captureUI               {};
         class initCaptureUIEvents     {};
     };

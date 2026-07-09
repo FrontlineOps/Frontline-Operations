@@ -28,27 +28,16 @@ private _counts = [];
 private _objectiveGroupOrder = [];
 private _objectiveGroupRows = createHashMap;
 
-private _fnc_compact = {
-    params ["_value"];
-    toString ((toArray _value) select {!(_x in [9, 10, 13, 32])})
-};
-
-private _fnc_isUnsignedInt = {
-    params ["_value"];
-    if (_value == "") exitWith { false };
-    ((toArray _value) findIf {_x < 48 || {_x > 57}}) < 0
-};
-
 {
     _x params ["_idc", "_category", "_key"];
 
     private _ctrl = _display displayCtrl _idc;
-    private _text = [ctrlText _ctrl] call _fnc_compact;
+    private _text = [ctrlText _ctrl] call FLO_fnc_factionCompactNumericText;
 
     if (_text == "") then {
         _errors pushBack format ["%1: %2 must be set", _sideLabel, _key];
     } else {
-        if !([_text] call _fnc_isUnsignedInt) then {
+        if !([_text] call FLO_fnc_factionIsUnsignedInt) then {
             _errors pushBack format ["%1: %2 must be a non-negative whole number", _sideLabel, _key];
         } else {
             private _value = parseNumber _text;

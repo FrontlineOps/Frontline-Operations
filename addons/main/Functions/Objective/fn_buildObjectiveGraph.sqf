@@ -50,7 +50,7 @@ private _ids = keys FLO_Objectives;
         private _sorted = [_id, _other];
         _sorted sort true;
         private _key = format ["%1_%2", _sorted select 0, _sorted select 1];
-        if (!isNil {FLO_ObjectiveLinks getOrDefault [_key, nil]}) then { continue; };
+        if (_key in FLO_ObjectiveLinks) then { continue; };
 
         private _otherData = FLO_Objectives get _other;
         if (isNil "_otherData") then { continue; };

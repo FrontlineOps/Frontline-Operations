@@ -44,8 +44,8 @@ private _isLocal = _options getOrDefault ["local", false];
 
 // Get objective properties
 private _pos = _objData get "position";
-private _radius = _objData getOrDefault ["radius", 50];
-private _owner = _objData getOrDefault ["owner", east];
+private _radius = _objData get "radius";
+private _owner = _objData get "owner";
 
 // Get config values
 private _configAlpha = ["get", "markerAlpha"] call FLO_fnc_objectiveConfig;

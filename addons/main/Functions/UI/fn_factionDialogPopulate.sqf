@@ -50,40 +50,6 @@ private _autoFactionIndex = [] call FLO_fnc_factionBuildAutoIndex;
 private _autoMilitaryFactions = _autoFactionIndex get "military";
 private _autoCivilianFactions = _autoFactionIndex get "civilian";
 
-private _fnc_selectDefault = {
-    params ["_ctrl", "_defaultIndex"];
-
-    _ctrl lbSetCurSel _defaultIndex;
-    if ((ctrlType _ctrl) == 5) then {
-        _ctrl lbSetSelected [_defaultIndex, true];
-    };
-};
-
-// Helper function to add text-only items to a combo box
-private _fnc_addItems = {
-	params ["_ctrl", "_items", "_defaultIndex"];
-	{
-		_ctrl lbAdd _x;
-	} forEach _items;
-	[_ctrl, _defaultIndex] call _fnc_selectDefault;
-};
-
-private _fnc_addFactionItems = {
-    params ["_ctrl", "_presets", "_autoEntries", "_defaultIndex"];
-
-    {
-        private _idx = _ctrl lbAdd _x;
-        _ctrl lbSetData [_idx, format ["preset|%1", _x]];
-    } forEach _presets;
-
-    {
-        private _idx = _ctrl lbAdd (_x get "label");
-        _ctrl lbSetData [_idx, format ["auto|%1", _x get "class"]];
-    } forEach _autoEntries;
-
-    [_ctrl, _defaultIndex] call _fnc_selectDefault;
-};
-
 // ============================================================================
 // PLAYER FACTION (IDC 1955)
 // ============================================================================
@@ -100,7 +66,7 @@ private _playerFactions = [
 	"USMC _ CUP-EF"
 ];
 
-[_playerCombo, _playerFactions, _autoMilitaryFactions, 1] call _fnc_addFactionItems;
+[_playerCombo, _playerFactions, _autoMilitaryFactions, 1] call FLO_fnc_factionDialogAddFactionItems;
 
 // ============================================================================
 // ENEMY FACTION (IDC 1956)
@@ -115,7 +81,7 @@ private _enemyFactions = [
 	"Russian AF _ CUP"
 ];
 
-[_enemyCombo, _enemyFactions, _autoMilitaryFactions, 1] call _fnc_addFactionItems;
+[_enemyCombo, _enemyFactions, _autoMilitaryFactions, 1] call FLO_fnc_factionDialogAddFactionItems;
 
 // ============================================================================
 // CIVILIAN FACTION (IDC 1957)
@@ -127,7 +93,7 @@ private _civilianFactions = [
 	"Greek Civilians"
 ];
 
-[_civilianCombo, _civilianFactions, _autoCivilianFactions, 1] call _fnc_addFactionItems;
+[_civilianCombo, _civilianFactions, _autoCivilianFactions, 1] call FLO_fnc_factionDialogAddFactionItems;
 
 // ============================================================================
 // AI COMMANDER POSTURE OPTIONS
@@ -175,27 +141,27 @@ private _garrisonOptions = [
 ];
 
 {
-    [_display displayCtrl _x, _attackCoverageOptions, 1] call _fnc_addItems;
+    [_display displayCtrl _x, _attackCoverageOptions, 1] call FLO_fnc_factionDialogAddItems;
 } forEach [1958, 1970];
 
 {
-    [_display displayCtrl _x, _defenseOpsOptions, 1] call _fnc_addItems;
+    [_display displayCtrl _x, _defenseOpsOptions, 1] call FLO_fnc_factionDialogAddItems;
 } forEach [1962, 1971];
 
 {
-    [_display displayCtrl _x, _difficultyOptions, 1] call _fnc_addItems;
+    [_display displayCtrl _x, _difficultyOptions, 1] call FLO_fnc_factionDialogAddItems;
 } forEach [1961, 1972];
 
 {
-    [_display displayCtrl _x, _tempoOptions, 2] call _fnc_addItems;
+    [_display displayCtrl _x, _tempoOptions, 2] call FLO_fnc_factionDialogAddItems;
 } forEach [1963, 1973];
 
 {
-    [_display displayCtrl _x, _forceGrowthOptions, 2] call _fnc_addItems;
+    [_display displayCtrl _x, _forceGrowthOptions, 2] call FLO_fnc_factionDialogAddItems;
 } forEach [1966, 1974];
 
 {
-    [_display displayCtrl _x, _garrisonOptions, 1] call _fnc_addItems;
+    [_display displayCtrl _x, _garrisonOptions, 1] call FLO_fnc_factionDialogAddItems;
 } forEach [1967, 1975];
 
 // ============================================================================
@@ -205,7 +171,7 @@ private _garrisonOptions = [
 private _resourcesCombo = _display displayCtrl 1959;
 private _resourceOptions = ["1000", "2500", "5000", "10000"];
 
-[_resourcesCombo, _resourceOptions, 2] call _fnc_addItems;
+[_resourcesCombo, _resourceOptions, 2] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // CIVILIAN STANDING (IDC 1960)
@@ -218,7 +184,7 @@ private _reputationOptions = [
 	"Friendly _ Civilians Support Players"
 ];
 
-[_reputationCombo, _reputationOptions, 1] call _fnc_addItems;
+[_reputationCombo, _reputationOptions, 1] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // OBJECTIVE SIZE THRESHOLD (IDC 1964)
@@ -227,7 +193,7 @@ private _reputationOptions = [
 private _objectiveSizeCombo = _display displayCtrl 1964;
 private _objectiveSizeOptions = ["Small", "Medium", "Large", "Huge"];
 
-[_objectiveSizeCombo, _objectiveSizeOptions, 1] call _fnc_addItems;
+[_objectiveSizeCombo, _objectiveSizeOptions, 1] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // VIRTUALIZATION DISTANCE (IDC 1965)
@@ -236,7 +202,7 @@ private _objectiveSizeOptions = ["Small", "Medium", "Large", "Huge"];
 private _virtualizationDistanceCombo = _display displayCtrl 1965;
 private _virtualizationDistanceOptions = ["1000", "1500", "2000", "2500", "3000"];
 
-[_virtualizationDistanceCombo, _virtualizationDistanceOptions, 2] call _fnc_addItems;
+[_virtualizationDistanceCombo, _virtualizationDistanceOptions, 2] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // ACTIVE AI CAP (IDC 1968)
@@ -245,7 +211,7 @@ private _virtualizationDistanceOptions = ["1000", "1500", "2000", "2500", "3000"
 private _virtualizationUnitCapCombo = _display displayCtrl 1968;
 private _virtualizationUnitCapOptions = ["100", "150", "200", "250", "300", "350", "400"];
 
-[_virtualizationUnitCapCombo, _virtualizationUnitCapOptions, 2] call _fnc_addItems;
+[_virtualizationUnitCapCombo, _virtualizationUnitCapOptions, 2] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // STARTING TERRITORY RATIO (IDC 1969)
@@ -264,7 +230,7 @@ private _territoryRatioOptions = [
     "90% BLUFOR / 10% OPFOR"
 ];
 
-[_territoryRatioCombo, _territoryRatioOptions, 4] call _fnc_addItems;
+[_territoryRatioCombo, _territoryRatioOptions, 4] call FLO_fnc_factionDialogAddItems;
 
 _playerCombo ctrlAddEventHandler ["LBSelChanged", {
     params ["_ctrl", "_selectedIndex"];
