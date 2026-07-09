@@ -854,7 +854,6 @@ class Mission
 					{
 						skill=1;
 						rank="MAJOR";
-						name="TheCommander";
 						description="Company Commander@Sabre 6";
 						isPlayer=1;
 						isPlayable=1;

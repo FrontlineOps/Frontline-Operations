@@ -1,6 +1,6 @@
 /**
  * Function: FLO_fnc_notification
- * 
+ *
  * Description:
  * Displays a notification to all players and plays a success sound.
  * Used for reward announcements after completing objectives.
@@ -23,4 +23,4 @@ params [
 ];
 
 // Display notification to all players
-[["STR_FLO_REWARD_SECURED", _objectiveStr, _reward], "success", true] call FLO_fnc_sendNotification; 
+[["STR_FLO_REWARD_SECURED", _objectiveStr, _reward], "success", true] call FLO_fnc_sendNotification;

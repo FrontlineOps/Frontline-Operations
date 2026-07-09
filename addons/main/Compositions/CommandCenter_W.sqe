@@ -1,0 +1,142 @@
+version=54;
+center[]={23775,3.1900001,17962.688};
+class items
+{
+	items=1;
+	class Item0
+	{
+		dataType="Layer";
+		name="CommandCenter_W";
+		class Entities
+		{
+			items=1;
+			class Item0
+			{
+				dataType="Layer";
+				name="CommandCenter_W";
+				class Entities
+				{
+					items=1;
+					class Item0
+					{
+						dataType="Layer";
+						name="CommandCenter_2";
+						class Entities
+						{
+							items=1;
+							class Item0
+							{
+								dataType="Layer";
+								name="CommandCenter_3";
+								class Entities
+								{
+									items=1;
+									class Item0
+									{
+										dataType="Layer";
+										name="CommandCenter_4";
+										class Entities
+										{
+											items=2;
+											class Item0
+											{
+												dataType="Object";
+												class PositionInfo
+												{
+													position[]={0.71875,3.8754001,-1.5292969};
+												};
+												side="Empty";
+												flags=4;
+												class Attributes
+												{
+												};
+												id=121440;
+												type="Land_Cargo_HQ_V1_F";
+												class CustomAttributes
+												{
+													class Attribute0
+													{
+														property="allowDamage";
+														expression="_this allowdamage _value;";
+														class Value
+														{
+															class data
+															{
+																singleType="BOOL";
+																value=0;
+															};
+														};
+													};
+													nAttributes=1;
+												};
+											};
+											class Item1
+											{
+												dataType="Object";
+												class PositionInfo
+												{
+													position[]={-0.71875,1.645165,1.53125};
+													angles[]={-0,3.1621702,0};
+												};
+												side="Empty";
+												flags=4;
+												class Attributes
+												{
+													init="call{this setObjectTextureGlobal [0, ""#(argb,512,512,1)r2t(SATELLITE_V,1)""];" \n "}";
+													disableSimulation=1;
+												};
+												id=121441;
+												type="Land_TripodScreen_01_large_F";
+												atlOffset=0.00032687187;
+												class CustomAttributes
+												{
+													class Attribute0
+													{
+														property="ObjectTextureCustom0";
+														expression="_this setObjectTextureGlobal [0,_value]";
+														class Value
+														{
+															class data
+															{
+																singleType="STRING";
+																value="";
+															};
+														};
+													};
+													class Attribute1
+													{
+														property="allowDamage";
+														expression="_this allowdamage _value;";
+														class Value
+														{
+															class data
+															{
+																singleType="BOOL";
+																value=0;
+															};
+														};
+													};
+													nAttributes=2;
+												};
+											};
+										};
+										id=121439;
+										atlOffset=0.30100012;
+									};
+								};
+								id=121438;
+								atlOffset=0.30100012;
+							};
+						};
+						id=121437;
+						atlOffset=0.30100012;
+					};
+				};
+				id=121436;
+				atlOffset=0.30100012;
+			};
+		};
+		id=121448;
+		atlOffset=0.45133662;
+	};
+};

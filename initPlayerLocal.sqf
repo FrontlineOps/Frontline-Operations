@@ -121,29 +121,6 @@ private _isSavedGame = call _fnc_waitForSaveDetection;
 // ============================================================================
 
 if (!_isSavedGame && !StartingLocationDone) then {
-    // Commander validation
-    private _fnc_validateCommander = {
-        if (isNil "TheCommander") then {
-            private _message = "Commander must be assigned to a player at fresh start.\nHave someone return to Lobby and pick Commander.";
-            titleText [_message, "BLACK IN", 9999];
-
-            // Wait for commander assignment with periodic updates
-            private _startTime = time;
-            waitUntil {
-                sleep 1;
-                if (time - _startTime > 30) then {
-                    _startTime = time;
-                    ["INIT_CLIENT", 2, "Still waiting for commander assignment..."] call FLO_fnc_log;
-                };
-                !isNil "TheCommander"
-            };
-
-            ["INIT_CLIENT", 3, format ["Commander assigned: %1", name TheCommander]] call FLO_fnc_log;
-        };
-    };
-
-    call _fnc_validateCommander;
-
     // Check if this is a loaded save - if so, skip the faction dialog
     // Wait briefly for server to set FLO_IsLoadedSave
     private _saveCheckStart = diag_tickTime;
@@ -155,19 +132,49 @@ if (!_isSavedGame && !StartingLocationDone) then {
         ["INIT_CLIENT", 3, "Loading from saved game - skipping faction selection dialog"] call FLO_fnc_log;
         StartingLocationDone = true;
     } else {
-        private _shouldOpenFactionDialog = [] call FLO_fnc_shouldOpenFactionDialog;
-        if (!_shouldOpenFactionDialog) then {
+        private _configReady = !isNil "FLO_MissionConfig"
+            && {FLO_MissionConfig isEqualType createHashMap}
+            && {(keys FLO_MissionConfig) isNotEqualTo []};
+        private _initClosed = !isNil "FLO_InitPhase" && {FLO_InitPhase > 1};
+        private _missionReady = !isNil "FLO_MissionReady" && {FLO_MissionReady};
+        private _setupStillPending = !_configReady && {!_initClosed && {!_missionReady}};
+
+        if (!_setupStillPending) then {
             ["INIT_CLIENT", 3, "Mission setup already in progress or complete - skipping faction selection dialog"] call FLO_fnc_log;
             StartingLocationDone = true;
         };
 
-        // Launch faction selection for commander (fresh start only)
-        if (_shouldOpenFactionDialog) then {
-            if (_player isEqualTo TheCommander) then {
-                ["INIT_CLIENT", 3, "Launching faction selection dialog for commander"] call FLO_fnc_log;
-                execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
-            } else {
-                ["INIT_CLIENT", 3, format ["Player %1 waiting for commander faction selection", name _player]] call FLO_fnc_log;
+        // Launch faction selection for a logged-in admin or hosted server (fresh start only)
+        if (_setupStillPending && {[] call FLO_fnc_shouldOpenFactionDialog}) then {
+            ["INIT_CLIENT", 3, "Launching faction selection dialog for setup admin"] call FLO_fnc_log;
+            execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+        } else {
+            if (_setupStillPending) then {
+                [] spawn {
+                    private _noticeLogged = false;
+
+                    while {
+                        private _configReady = !isNil "FLO_MissionConfig"
+                            && {FLO_MissionConfig isEqualType createHashMap}
+                            && {(keys FLO_MissionConfig) isNotEqualTo []};
+                        private _initClosed = !isNil "FLO_InitPhase" && {FLO_InitPhase > 1};
+                        private _missionReady = !isNil "FLO_MissionReady" && {FLO_MissionReady};
+
+                        !_configReady && {!_initClosed && {!_missionReady}}
+                    } do {
+                        if ([] call FLO_fnc_shouldOpenFactionDialog) exitWith {
+                            ["INIT_CLIENT", 3, "Launching faction selection dialog after admin login"] call FLO_fnc_log;
+                            execVM "Scripts\MissionSetupMenu\Dialog_Faction.sqf";
+                        };
+
+                        if (!_noticeLogged) then {
+                            ["INIT_CLIENT", 3, "Fresh setup is waiting for a logged-in admin or hosted server"] call FLO_fnc_log;
+                            _noticeLogged = true;
+                        };
+
+                        sleep 2;
+                    };
+                };
             };
         };
     };
@@ -312,7 +319,6 @@ if (!_phaseSuccess) then {
 // Initialize client features based on mission parameters
 private _fnc_initClientFeatures = {
     private _features = [
-        ["RestrictedArsenal", "FLO_fnc_restrictedArsenal", "Restricted Arsenal"],
         ["RagequitBlocker", "FLO_fnc_ragequitBlocker", "Ragequit Blocker"],
         ["DisableSystemChat", "FLO_fnc_disableSystemChat", "System Chat Disabler"]
     ];

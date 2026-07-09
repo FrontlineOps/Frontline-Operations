@@ -1,0 +1,14 @@
+author = "Frontline Operations Group";
+onLoadName = "Frontline Operations";
+onLoadMission = "FLO HEMTT test shell";
+overviewText = "Frontline Operations addon test shell.";
+
+disabledAI = 1;
+enableDebugConsole = 1;
+
+respawn = 3;
+respawnButton = 1;
+respawnOnStart = 0;
+respawnDelay = 7;
+respawnDialog = 0;
+respawnTemplates[] = {"MenuPosition"};

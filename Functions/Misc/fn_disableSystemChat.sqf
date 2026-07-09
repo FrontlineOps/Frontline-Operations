@@ -35,7 +35,7 @@ showChat false;
             };
             false
         }];
-        
+
         // Also monitor game messages display
         [
             {!isNull findDisplay 24},
@@ -45,9 +45,9 @@ showChat false;
                 }];
             }
         ] call CBA_fnc_waitUntilAndExecute;
-        
+
         ["MISC", 3, "Chat disable systems initialized"] call FLO_fnc_log;
     }
 ] call CBA_fnc_waitUntilAndExecute;
 
-["MISC", 3, "System chat disabled"] call FLO_fnc_log; 
+["MISC", 3, "System chat disabled"] call FLO_fnc_log;

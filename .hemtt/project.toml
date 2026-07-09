@@ -1,0 +1,20 @@
+name = "FLO"
+prefix = "flo"
+mainprefix = "z"
+
+[version]
+major = 0
+minor = 1
+patch = 0
+git_hash = 0
+
+[hemtt.launch.default]
+workshop = [
+    "450814997",
+]
+mission = "missions/FLO_Test.Altis"
+parameters = [
+    "-skipIntro",
+    "-noSplash",
+    "-showScriptErrors",
+]

@@ -24,28 +24,28 @@ if (!hasInterface) exitWith {};
     // Add event handler for Escape key
     (findDisplay 46) displayAddEventHandler ["KeyDown", {
         params ["", "_key"];
-        
+
         // Only process Escape key presses
         if (_key in actionKeys "ingamePause") then {
             // Set button state based on player status
             private _allowControls = alive player && !(player getVariable ["ACE_isUnconscious", false]);
-            
+
             // Wait for and modify the escape menu
             [{!isNull findDisplay 49}, {
                 // Disable/Enable both buttons
                 {
                     ((findDisplay 49) displayCtrl _x) ctrlEnable (_this select 0);
                 } forEach [104, 1010]; // 104 = Abort, 1010 = Respawn
-                
+
                 // Show message if blocked
                 if !(_this select 0) then {
                     hint "Mission controls are disabled while you are dead or unconscious.\nYou must be alive and conscious to abort or respawn.";
                 };
             }, [_allowControls]] call CBA_fnc_waitUntilAndExecute;
         };
-        
+
         false
     }];
-    
+
     ["MISC", 3, "Rage quit blocker initialized"] call FLO_fnc_log;
-}, []] call CBA_fnc_waitUntilAndExecute; 
+}, []] call CBA_fnc_waitUntilAndExecute;

@@ -1,0 +1,80 @@
+version=54;
+center[]={1192.0765,5,2312.6501};
+class items
+{
+	items=1;
+	class Item0
+	{
+		dataType="Layer";
+		name="Watchpost_7";
+		class Entities
+		{
+			items=1;
+			class Item0
+			{
+				dataType="Layer";
+				name="Watchpost_13";
+				class Entities
+				{
+					items=1;
+					class Item0
+					{
+						dataType="Layer";
+						name="Watchpost_1";
+						class Entities
+						{
+							items=2;
+							class Item0
+							{
+								dataType="Layer";
+								name="Watchpost_2";
+								class Entities
+								{
+									items=1;
+									class Item0
+									{
+										dataType="Object";
+										class PositionInfo
+										{
+											position[]={-0.29125977,3.4214077,-0.71020508};
+										};
+										side="Empty";
+										flags=5;
+										class Attributes
+										{
+											name="T";
+										};
+										id=2;
+										type="Land_GuardTower_02_F";
+									};
+								};
+								id=1;
+							};
+							class Item1
+							{
+								dataType="Object";
+								class PositionInfo
+								{
+									position[]={0.29125977,0.18788433,0.71020508};
+								};
+								side="Empty";
+								flags=4;
+								class Attributes
+								{
+								};
+								id=5;
+								type="Land_Camping_Light_F";
+							};
+						};
+						id=0;
+						atlOffset=0.034605026;
+					};
+				};
+				id=181;
+				atlOffset=-2.4826975;
+			};
+		};
+		id=213;
+		atlOffset=-2.4826975;
+	};
+};

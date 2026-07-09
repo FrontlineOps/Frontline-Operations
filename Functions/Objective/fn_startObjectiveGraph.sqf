@@ -16,4 +16,4 @@ params [ ["_debug", false, [true]] ];
 
 if (!isServer) exitWith {};
 
-[_debug] spawn FLO_fnc_buildObjectiveGraph; 
+[_debug] spawn FLO_fnc_buildObjectiveGraph;

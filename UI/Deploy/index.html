@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLO Deployment</title>
+    <style>
+        html {
+            color-scheme: dark;
+            background: rgba(3, 8, 14, 0.78);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            color: #F2F7FA;
+            font-family: "Bahnschrift", "DIN Condensed", "Arial Narrow", Arial, sans-serif;
+            font-size: 18px;
+            letter-spacing: 0;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(37, 215, 255, 0.13), rgba(37, 215, 255, 0) 24%),
+                radial-gradient(circle at 84% 14%, rgba(36, 124, 255, 0.16), rgba(36, 124, 255, 0) 28%),
+                linear-gradient(135deg, rgba(3, 8, 14, 0.78), rgba(3, 8, 14, 0.94));
+        }
+
+        body::before {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            content: "";
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 64px 64px, 64px 64px;
+            opacity: 0.16;
+        }
+
+        body::after {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            content: "";
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 42%),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, 0.38));
+        }
+
+        button {
+            font: inherit;
+            letter-spacing: 0;
+            cursor: pointer;
+            color: #F2F7FA;
+            border: 0;
+            background: transparent;
+        }
+
+        button:disabled {
+            cursor: default;
+            color: #66788A;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        .shell {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-rows: 94px minmax(0, 1fr) 86px;
+            gap: 14px;
+            width: 100vw;
+            height: 100vh;
+            padding: 20px 24px;
+        }
+
+        .topbar,
+        .footer {
+            display: grid;
+            align-items: center;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 18px;
+            padding: 0 22px;
+            background: rgba(12, 22, 32, 0.72);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+            clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        .brand {
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+            min-width: 0;
+        }
+
+        .eyebrow {
+            color: #25D7FF;
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 42px;
+            font-weight: 900;
+            line-height: 1;
+            text-transform: uppercase;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-strip {
+            display: grid;
+            grid-auto-flow: column;
+            gap: 10px;
+        }
+
+        .chip {
+            min-width: 116px;
+            padding: 10px 13px;
+            background: rgba(4, 10, 16, 0.62);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.12);
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+        }
+
+        .chip-label {
+            color: #66788A;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .chip-value {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 20px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chip-value.good {
+            color: #A7FF5A;
+        }
+
+        .chip-value.warn {
+            color: #FFB84A;
+        }
+
+        .content {
+            display: grid;
+            min-height: 0;
+            grid-template-columns: 260px minmax(0, 1fr) 340px;
+            gap: 16px;
+        }
+
+        .panel {
+            min-height: 0;
+            padding: 18px;
+            background: rgba(12, 22, 32, 0.72);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+            clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        .rail {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .rail-title {
+            color: #25D7FF;
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .rail-list {
+            display: grid;
+            align-content: start;
+            gap: 10px;
+        }
+
+        .nav-item {
+            display: grid;
+            grid-template-columns: 4px minmax(0, 1fr);
+            gap: 12px;
+            min-height: 58px;
+            padding: 12px;
+            background: rgba(20, 34, 48, 0.72);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background: rgba(24, 58, 82, 0.92);
+            box-shadow: 0 0 28px rgba(37, 215, 255, 0.14), inset 0 0 0 1px rgba(37, 215, 255, 0.42);
+        }
+
+        .nav-bar {
+            background: #25D7FF;
+            box-shadow: 0 0 16px rgba(37, 215, 255, 0.5);
+        }
+
+        .nav-kicker {
+            color: #A7B7C8;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .nav-label {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 20px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .deploy-grid {
+            display: grid;
+            min-height: 0;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .section-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .section-head h2 {
+            color: #F2F7FA;
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .section-head p {
+            margin-top: 8px;
+            color: #A7B7C8;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            min-height: 0;
+        }
+
+        .deploy-card {
+            display: grid;
+            grid-template-rows: 170px auto minmax(0, 1fr) auto;
+            gap: 16px;
+            min-height: 0;
+            padding: 18px;
+            background:
+                linear-gradient(135deg, rgba(20, 34, 48, 0.88), rgba(8, 15, 22, 0.9)),
+                rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.14), 0 18px 50px rgba(0, 0, 0, 0.24);
+            clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        .deploy-card.good {
+            box-shadow: inset 0 0 0 1px rgba(167, 255, 90, 0.22), 0 18px 50px rgba(0, 0, 0, 0.24);
+        }
+
+        .card-visual {
+            position: relative;
+            display: grid;
+            place-items: center;
+            min-height: 0;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                rgba(2, 8, 14, 0.68);
+            background-size: 34px 34px;
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+        }
+
+        .base-shape {
+            position: relative;
+            width: 138px;
+            height: 84px;
+            transform: skewX(-10deg);
+            background:
+                linear-gradient(135deg, rgba(37, 215, 255, 0.25), rgba(36, 124, 255, 0.06)),
+                rgba(24, 58, 82, 0.42);
+            box-shadow: 0 0 32px rgba(37, 215, 255, 0.18), inset 0 0 0 2px rgba(37, 215, 255, 0.36);
+        }
+
+        .base-shape::before,
+        .base-shape::after {
+            position: absolute;
+            content: "";
+            background: rgba(167, 255, 90, 0.68);
+            box-shadow: 0 0 18px rgba(167, 255, 90, 0.28);
+        }
+
+        .base-shape::before {
+            left: 18px;
+            top: 18px;
+            width: 38px;
+            height: 48px;
+        }
+
+        .base-shape::after {
+            right: 18px;
+            top: 28px;
+            width: 54px;
+            height: 24px;
+        }
+
+        .base-shape.cop {
+            width: 112px;
+            height: 72px;
+            background:
+                linear-gradient(135deg, rgba(255, 184, 74, 0.22), rgba(36, 124, 255, 0.05)),
+                rgba(24, 58, 82, 0.42);
+            box-shadow: 0 0 32px rgba(255, 184, 74, 0.12), inset 0 0 0 2px rgba(255, 184, 74, 0.32);
+        }
+
+        .card-head {
+            display: grid;
+            gap: 8px;
+        }
+
+        .card-title-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .card-title {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1;
+            text-transform: uppercase;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .price {
+            color: #FFB84A;
+            font-size: 24px;
+            font-weight: 900;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 5px 9px;
+            color: #A7B7C8;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            background: rgba(4, 10, 16, 0.62);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.16);
+        }
+
+        .tag.good {
+            color: #A7FF5A;
+        }
+
+        .tag.warn {
+            color: #FFB84A;
+        }
+
+        .card-body {
+            color: #A7B7C8;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        .specs {
+            display: grid;
+            gap: 8px;
+            align-content: end;
+        }
+
+        .spec {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            padding: 9px 10px;
+            background: rgba(4, 10, 16, 0.45);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.08);
+        }
+
+        .spec-name {
+            color: #66788A;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .spec-value {
+            color: #F2F7FA;
+            font-size: 16px;
+            font-weight: 900;
+            text-align: right;
+        }
+
+        .deploy-btn,
+        .action-btn {
+            min-height: 50px;
+            padding: 0 20px;
+            color: #F2F7FA;
+            font-size: 17px;
+            font-weight: 900;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, rgba(37, 215, 255, 0.24), rgba(36, 124, 255, 0.44));
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.24), 0 0 24px rgba(37, 215, 255, 0.14);
+            clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+            transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+        }
+
+        .deploy-btn:hover,
+        .action-btn:hover {
+            background: linear-gradient(135deg, rgba(37, 215, 255, 0.36), rgba(36, 124, 255, 0.58));
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.38), 0 0 30px rgba(37, 215, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .deploy-btn:disabled,
+        .action-btn:disabled {
+            color: #66788A;
+            background: rgba(20, 34, 48, 0.5);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.08);
+            transform: none;
+        }
+
+        .action-btn.secondary {
+            background: rgba(20, 34, 48, 0.82);
+        }
+
+        .action-btn.danger {
+            background: rgba(255, 77, 94, 0.24);
+            box-shadow: inset 0 0 0 1px rgba(255, 77, 94, 0.28);
+        }
+
+        .summary {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            gap: 16px;
+        }
+
+        .summary-title {
+            color: #25D7FF;
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .status-grid {
+            display: grid;
+            align-content: start;
+            gap: 10px;
+        }
+
+        .ticket-panel {
+            display: grid;
+            gap: 10px;
+        }
+
+        .ticket-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .ticket-pack {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            min-height: 54px;
+            padding: 10px 12px;
+            background: rgba(20, 34, 48, 0.72);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.1);
+        }
+
+        .ticket-pack:hover {
+            background: rgba(24, 58, 82, 0.92);
+            box-shadow: 0 0 24px rgba(37, 215, 255, 0.12), inset 0 0 0 1px rgba(37, 215, 255, 0.34);
+            transform: translateY(-1px);
+        }
+
+        .ticket-pack:disabled {
+            background: rgba(20, 34, 48, 0.5);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.08);
+            transform: none;
+        }
+
+        .ticket-name {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 16px;
+            font-weight: 900;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ticket-cost {
+            color: #FFB84A;
+            font-size: 17px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .status-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            min-height: 48px;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(20, 34, 48, 0.72);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.1);
+        }
+
+        .status-name {
+            color: #A7B7C8;
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .status-value {
+            overflow: hidden;
+            max-width: 170px;
+            color: #F2F7FA;
+            font-size: 18px;
+            font-weight: 900;
+            text-align: right;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-value.good {
+            color: #A7FF5A;
+        }
+
+        .status-value.warn {
+            color: #FFB84A;
+        }
+
+        .status-value.bad {
+            color: #FF4D5E;
+        }
+
+        .toast {
+            position: relative;
+            min-height: 74px;
+            padding: 14px;
+            overflow: hidden;
+            color: #A7B7C8;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.25;
+            transform-origin: left center;
+            background: rgba(4, 10, 16, 0.62);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+        }
+
+        .toast.good {
+            color: #A7FF5A;
+            box-shadow: inset 0 0 0 1px rgba(167, 255, 90, 0.24);
+        }
+
+        .toast.good::after {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            content: "";
+            background: linear-gradient(90deg, #A7FF5A, rgba(37, 215, 255, 0.72), transparent);
+            animation: toast-countdown 1800ms linear forwards;
+        }
+
+        .toast.bad {
+            color: #FF4D5E;
+            box-shadow: inset 0 0 0 1px rgba(255, 77, 94, 0.28);
+        }
+
+        .toast.dismiss {
+            animation: toast-dismiss 460ms ease forwards;
+        }
+
+        .toast.idle {
+            opacity: 0;
+            background: transparent;
+            box-shadow: inset 0 0 0 1px transparent;
+        }
+
+        @keyframes toast-countdown {
+            from {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+
+            to {
+                transform: scaleX(0);
+                opacity: 0.35;
+            }
+        }
+
+        @keyframes toast-dismiss {
+            from {
+                opacity: 1;
+                transform: translateY(0) scaleX(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(9px) scaleX(0.985);
+                background: transparent;
+                box-shadow: inset 0 0 0 1px transparent;
+            }
+        }
+
+        .footer {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .footer-status {
+            overflow: hidden;
+            color: #A7B7C8;
+            font-size: 17px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <div>
+                    <div class="eyebrow">FLO Deployment</div>
+                    <h1 id="sideTitle">Command Deployment</h1>
+                </div>
+            </div>
+            <div class="status-strip">
+                <div class="chip">
+                    <div class="chip-label">Balance</div>
+                    <div class="chip-value warn" id="balance">$0</div>
+                </div>
+                <div class="chip">
+                    <div class="chip-label">Tickets</div>
+                    <div class="chip-value" id="tickets">0</div>
+                </div>
+                <div class="chip">
+                    <div class="chip-label">Income</div>
+                    <div class="chip-value good" id="income">+0/min</div>
+                </div>
+                <div class="chip">
+                    <div class="chip-label">Grid</div>
+                    <div class="chip-value" id="grid">----</div>
+                </div>
+            </div>
+        </header>
+
+        <section class="content">
+            <aside class="panel rail">
+                <div class="rail-title">Operations</div>
+                <div class="rail-list">
+                    <div class="nav-item active">
+                        <div class="nav-bar"></div>
+                        <div>
+                            <div class="nav-kicker">Authorized</div>
+                            <div class="nav-label" id="authorityNav">Pending</div>
+                        </div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-bar"></div>
+                        <div>
+                            <div class="nav-kicker">Faction</div>
+                            <div class="nav-label" id="factionNav">Pending</div>
+                        </div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-bar"></div>
+                        <div>
+                            <div class="nav-kicker">Keybind</div>
+                            <div class="nav-label" id="keybindNav">Ctrl+Shift+D</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="panel deploy-grid">
+                <div class="section-head">
+                    <div>
+                        <h2>Forward Bases</h2>
+                        <p id="deploySubtitle">Select a deployment package.</p>
+                    </div>
+                </div>
+
+                <div class="cards">
+                    <article class="deploy-card good">
+                        <div class="card-visual">
+                            <div class="base-shape"></div>
+                        </div>
+                        <div class="card-head">
+                            <div class="card-title-row">
+                                <h3 class="card-title">FOB</h3>
+                                <div class="price" id="fobPrice">Starter Free</div>
+                            </div>
+                            <div class="tag-row">
+                                <span class="tag good">Full Base</span>
+                                <span class="tag">Store</span>
+                                <span class="tag">Vehicles</span>
+                            </div>
+                        </div>
+                        <p class="card-body">Primary force projection point with full logistics, Store access, vehicle purchases, and respawn support.</p>
+                        <div class="specs">
+                            <div class="spec">
+                                <div class="spec-name">Build Radius</div>
+                                <div class="spec-value" id="fobRadius">100m</div>
+                            </div>
+                            <div class="spec">
+                                <div class="spec-name">Spacing</div>
+                                <div class="spec-value" id="fobSpacing">500m</div>
+                            </div>
+                            <button class="deploy-btn" id="fobButton" type="button" onclick="FOOFDeploy.deploy('FOB')">Deploy FOB</button>
+                        </div>
+                    </article>
+
+                    <article class="deploy-card">
+                        <div class="card-visual">
+                            <div class="base-shape cop"></div>
+                        </div>
+                        <div class="card-head">
+                            <div class="card-title-row">
+                                <h3 class="card-title">COP</h3>
+                                <div class="price" id="copPrice">$600</div>
+                            </div>
+                            <div class="tag-row">
+                                <span class="tag warn">Forward</span>
+                                <span class="tag">Limited Build</span>
+                                <span class="tag">Respawn</span>
+                            </div>
+                        </div>
+                        <p class="card-body">Cheaper combat outpost for holding the line and extending pressure. Must be in friendly territory or on the frontline.</p>
+                        <div class="specs">
+                            <div class="spec">
+                                <div class="spec-name">Build Radius</div>
+                                <div class="spec-value" id="copRadius">60m</div>
+                            </div>
+                            <div class="spec">
+                                <div class="spec-name">Side Limit</div>
+                                <div class="spec-value" id="copLimit">4</div>
+                            </div>
+                            <button class="deploy-btn" id="copButton" type="button" onclick="FOOFDeploy.deploy('COP')">Deploy COP</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <aside class="panel summary">
+                <div class="summary-title">Status</div>
+                <div class="status-grid">
+                    <div class="status-row">
+                        <div class="status-name">Commander</div>
+                        <div class="status-value" id="commanderStatus">Pending</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-name">Authority</div>
+                        <div class="status-value" id="authorityStatus">Pending</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-name">Terrain</div>
+                        <div class="status-value" id="terrainStatus">Checking</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-name">Cell Income</div>
+                        <div class="status-value good" id="cellIncome">+0</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-name">AO Income</div>
+                        <div class="status-value good" id="objectiveIncome">+0</div>
+                    </div>
+                </div>
+                <div class="ticket-panel">
+                    <div class="summary-title">Reinforcements</div>
+                    <div class="ticket-list" id="ticketPackList"></div>
+                </div>
+                <div class="toast" id="messageBox">Waiting for deployment state.</div>
+            </aside>
+        </section>
+
+        <footer class="footer">
+            <div class="footer-status" id="footerStatus">Deployment requests are validated by the server.</div>
+            <div class="footer-actions">
+                <button class="action-btn secondary" type="button" onclick="FOOFDeploy.refresh()">Refresh</button>
+                <button class="action-btn danger" type="button" onclick="FOOFDeploy.close()">Close</button>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            var state = {};
+            var hasMessage = false;
+            var messageTimer = 0;
+            var defaultFooterStatus = "Deployment requests are validated by the server.";
+
+            function send(event, data) {
+                var payload = JSON.stringify({ event: event, data: data || {} });
+
+                if (typeof A3API !== "undefined" && A3API.SendAlert) {
+                    A3API.SendAlert(payload);
+                }
+            }
+
+            function node(id) {
+                return document.getElementById(id);
+            }
+
+            function text(id, value) {
+                node(id).textContent = value;
+            }
+
+            function money(value) {
+                return "$" + Math.round(Number(value || 0)).toString();
+            }
+
+            function plus(value) {
+                return "+" + Math.round(Number(value || 0)).toString();
+            }
+
+            function setClass(id, className) {
+                node(id).className = className;
+            }
+
+            function message(value, mode) {
+                var box = node("messageBox");
+
+                if (messageTimer) {
+                    window.clearTimeout(messageTimer);
+                    messageTimer = 0;
+                }
+
+                hasMessage = true;
+                box.textContent = value;
+                box.className = "toast" + (mode ? " " + mode : "");
+                text("footerStatus", value);
+
+                if (mode === "good") {
+                    messageTimer = window.setTimeout(function () {
+                        box.className = "toast good dismiss";
+
+                        messageTimer = window.setTimeout(function () {
+                            box.textContent = "";
+                            box.className = "toast idle";
+                            text("footerStatus", defaultFooterStatus);
+                            messageTimer = 0;
+                        }, 470);
+                    }, 1800);
+                }
+            }
+
+            function dismissLoadingMessage() {
+                var box = node("messageBox");
+
+                if (messageTimer) {
+                    window.clearTimeout(messageTimer);
+                    messageTimer = 0;
+                }
+
+                hasMessage = true;
+                box.className = "toast dismiss";
+                text("footerStatus", defaultFooterStatus);
+
+                messageTimer = window.setTimeout(function () {
+                    box.textContent = "";
+                    box.className = "toast idle";
+                    messageTimer = 0;
+                }, 470);
+            }
+
+            function commonBlockedReason(snapshot) {
+                if (!snapshot.alive) {
+                    return "Unavailable while dead.";
+                }
+
+                if (!snapshot.sideKey) {
+                    return "Join BLUFOR or OPFOR.";
+                }
+
+                if (!snapshot.hasAuthority) {
+                    return "Admin, officer, or squad leader authority required.";
+                }
+
+                if (snapshot.onWater) {
+                    return "Deployment requires dry land.";
+                }
+
+                if (snapshot.insideMatchOperationSector) {
+                    return "Cannot deploy inside the active operation sector: " + (snapshot.matchOperationSectorName || "Active Operation") + ".";
+                }
+
+                return "";
+            }
+
+            function applyButtonState(snapshot) {
+                var reason = commonBlockedReason(snapshot);
+                var copReason = reason;
+
+                if (!copReason && Number(snapshot.balance || 0) < Number(snapshot.copCost || 0)) {
+                    copReason = "Not enough faction currency for COP.";
+                }
+
+                node("fobButton").disabled = reason !== "";
+                node("copButton").disabled = copReason !== "";
+
+                if (reason) {
+                    text("deploySubtitle", reason);
+                    return;
+                }
+
+                text("deploySubtitle", "Select a deployment package.");
+            }
+
+            function renderTicketPacks(snapshot) {
+                var list = node("ticketPackList");
+                var packs = snapshot.ticketPacks || [];
+                var canBuy = !!snapshot.playerIsCommander && !!snapshot.sideKey;
+                var i;
+
+                while (list.firstChild) {
+                    list.removeChild(list.firstChild);
+                }
+
+                for (i = 0; i < packs.length; i += 1) {
+                    (function (pack) {
+                        var button = document.createElement("button");
+                        var name = document.createElement("span");
+                        var cost = document.createElement("span");
+                        var affordable = Number(snapshot.balance || 0) >= Number(pack.price || 0);
+
+                        button.type = "button";
+                        button.className = "ticket-pack";
+                        button.disabled = !canBuy || !affordable;
+                        button.onclick = function () {
+                            FOOFDeploy.buyTickets(pack.id);
+                        };
+
+                        name.className = "ticket-name";
+                        name.textContent = pack.name || "Reinforcements";
+                        cost.className = "ticket-cost";
+                        cost.textContent = money(pack.price);
+
+                        button.appendChild(name);
+                        button.appendChild(cost);
+                        list.appendChild(button);
+                    }(packs[i]));
+                }
+            }
+
+            function render(snapshot) {
+                var faction = snapshot.factionName || "Faction Pending";
+                var commander = snapshot.commanderName || "No Commander";
+                var authorityText = snapshot.hasAuthority ? "Granted" : "Denied";
+                var terrainText = snapshot.onWater ? "Water" : "Dry Land";
+
+                text("sideTitle", snapshot.sideName + " Deployment");
+                text("balance", money(snapshot.balance));
+                text("tickets", Math.round(Number(snapshot.tickets || 0)).toString());
+                text("income", plus(snapshot.income) + "/min");
+                text("grid", snapshot.grid || "----");
+                text("authorityNav", authorityText);
+                text("factionNav", faction);
+                text("keybindNav", snapshot.keybind || "Ctrl+Shift+D");
+                text("commanderStatus", commander);
+                text("authorityStatus", authorityText);
+                text("terrainStatus", terrainText);
+                text("cellIncome", plus(snapshot.cellIncome));
+                text("objectiveIncome", plus(snapshot.objectiveIncome));
+                text("fobPrice", money(snapshot.fobCost));
+                text("copPrice", money(snapshot.copCost));
+                text("fobRadius", Math.round(Number(snapshot.fobRadius || 0)).toString() + "m");
+                text("fobSpacing", Math.round(Number(snapshot.fobMinDistance || 0)).toString() + "m");
+                text("copRadius", Math.round(Number(snapshot.copRadius || 0)).toString() + "m");
+                text("copLimit", Math.round(Number(snapshot.copMaxPerSide || 0)).toString());
+
+                setClass("authorityStatus", "status-value " + (snapshot.hasAuthority ? "good" : "warn"));
+                setClass("terrainStatus", "status-value " + (snapshot.onWater ? "bad" : "good"));
+
+                applyButtonState(snapshot);
+                renderTicketPacks(snapshot);
+            }
+
+            window.FOOFDeploy = {
+                applySnapshot: function (snapshot) {
+                    state = snapshot || {};
+                    render(state);
+
+                    if (!hasMessage) {
+                        dismissLoadingMessage();
+                    }
+                },
+                receiveResult: function (result) {
+                    message(result.message || "Deployment result received.", result.success ? "good" : "bad");
+                },
+                deploy: function (type) {
+                    var reason = commonBlockedReason(state);
+
+                    if (reason) {
+                        message(reason, "bad");
+                        return;
+                    }
+
+                    if (type === "COP" && Number(state.balance || 0) < Number(state.copCost || 0)) {
+                        message("Not enough faction currency for COP.", "bad");
+                        return;
+                    }
+
+                    if (type === "COP") {
+                        send("deploy::requestCOP", {});
+                        message("COP deployment request sent.", "");
+                        return;
+                    }
+
+                    send("deploy::requestFOB", {});
+                    message("FOB deployment request sent.", "");
+                },
+                buyTickets: function (packId) {
+                    if (!state.sideKey) {
+                        message("Join BLUFOR or OPFOR.", "bad");
+                        return;
+                    }
+
+                    if (!state.playerIsCommander) {
+                        message("Only the elected commander can buy reinforcement tickets.", "bad");
+                        return;
+                    }
+
+                    send("deploy::buyTickets", { packId: packId });
+                    message("Reinforcement purchase request sent.", "");
+                },
+                refresh: function () {
+                    send("deploy::refresh", {});
+                    message("Refreshing deployment state.", "");
+                },
+                close: function () {
+                    send("deploy::close", {});
+                }
+            };
+
+            window.addEventListener("load", function () {
+                send("deploy::ready", {});
+            });
+        }());
+    </script>
+</body>
+</html>

@@ -2,3 +2,7 @@ mission.sqm
 .vscode
 AGENTS.md
 docs
+.tools/
+.hemttout/
+.hemttprivatekey
+.biprivatekey

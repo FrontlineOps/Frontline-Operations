@@ -26,7 +26,7 @@ wreckManagerMode = 0; // FLO owns wreck cleanup.
 #include "IDS_Logistics\dialogs\BuildMenuDialog.hpp"
 class CfgFunctions {
 	#include "CfgFunctions.hpp"
-	#include "LARs\spawnComp\functions\functions.cpp"
+	#include "LARs\spawnComp\functions\functions.hpp"
 	#include "IDS_Logistics\IDS_Logistics_Functions.hpp"
 	#include "IDS_Notifications\IDS_Notifications_Functions.hpp"
 };
@@ -61,12 +61,23 @@ class CfgRemoteExec
 		class FLO_fnc_gtnSyncAlertBatch { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
 		class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };
+		class FLO_fnc_syncMoneyState { allowedTargets = 1; jip = 0; };
+		class FLO_fnc_syncObjectiveRuntimeState { allowedTargets = 1; jip = 0; };
+		class FLO_fnc_storeApplyKit { allowedTargets = 1; jip = 0; };
+		class FLO_fnc_storeReceiveResponse { allowedTargets = 1; jip = 0; };
+		class FLO_fnc_storeRecruitAI { allowedTargets = 1; jip = 0; };
+		class FLO_fnc_storeRequestHydrate { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_storeRequestCategory { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_storeRequestCheckout { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_baseDeployRequest { allowedTargets = 2; jip = 0; };
+		class FLO_fnc_baseDeployReceiveResult { allowedTargets = 1; jip = 0; };
 	};	
 };
 
 #include "compositions\compositions.hpp"
 #include "Scripts\MissionSetupMenu\Dialog_Faction.hpp"
-#include "Scripts\RequestMenu\Dialog_Request.hpp"
+#include "UI\Store\StoreDialog.hpp"
+#include "UI\Deploy\DeployDialog.hpp"
 
 class Params
 {
@@ -95,15 +106,6 @@ class Params
 		texts[] = { "Load Mission Progress", "Reset Mission Progress"};		
 		values[] = { 0, 1 };
 		default = 0;
-		isGlobal = 1;
-	};	
-
-	class RestrictedArsenal
-	{
-		title = "Restricted Arsenal";
-		texts[] = { "Enable", "Disable"};		
-		values[] = { 0, 1 };
-		default = 1;
 		isGlobal = 1;
 	};	
 

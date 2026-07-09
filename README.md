@@ -1,6 +1,6 @@
 # FLO: Frontline Operations
 
-FLO is a persistent Arma 3 frontline campaign mission built around dynamic objectives, AI command, virtualization, logistics, civilians, and long-running saves. It is designed for long sessions where one human-controlled side fights a campaign while the rest of the theater keeps moving in the background.
+FLO is a persistent Arma 3 frontline campaign mission built around dynamic objectives, AI command, virtualization, logistics, civilians, player logistics, and long-running saves. This branch is also structured as a HEMTT-built addon-backed project so the mission systems can move out of one loose mission folder over time.
 
 ## What FLO Does
 
@@ -9,6 +9,8 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - Uses AI commanders for `EAST` and `WEST` to manage attacks, defense, support, and reserves.
 - Virtualizes most of the battlefield so large campaigns can keep running without simulating every unit live all the time.
 - Uses logistics and supply networks so destroyed forces are replaced through actual resources and supply chains instead of free respawns.
+- Replaces the legacy request-menu and Arsenal supply flow with a browser-based Store.
+- Provides a dedicated FOB/COP Deployment Panel so forward bases can be placed from UI instead of by moving physical containers.
 - Supports custom friendly, enemy, and civilian factions through mission-root faction files.
 
 ## Main Features
@@ -100,17 +102,32 @@ FLO is a persistent Arma 3 frontline campaign mission built around dynamic objec
 - Friendly supply nodes and HQ markers can be shown on the map.
 - Players can locally toggle supply-node visibility so the map does not have to stay cluttered.
 
+### Store and Recruitable AI
+
+- The Store UI is available from FOB/COP actions and uses the runtime faction catalog.
+- Players can buy gear, vehicles, and recruitable AI from the same supply surface.
+- Vehicle purchases use the existing vehicle configuration pipeline and Store-specific vehicle handling.
+- The old request-menu scripts and dialog are removed.
+- The old Arsenal initialization path is removed; base supply is expected to flow through Store systems.
+
+### FOB/COP Deployment Panel
+
+- FOB and COP placement uses a dedicated browser UI instead of slingloading or unpacking physical containers.
+- The Deployment Panel has a CBA keybind: `Ctrl+Shift+D`.
+- Deployment is server-authoritative and validates player side, authority, placement distance, terrain, and cost before creating the base.
+- Fresh bases initialize through the existing FOB/COP initialization functions after placement.
+
 ## What Players Can Expect
 
-- One side is the active human faction for the session.
-- The first connected `EAST` or `WEST` player locks the active player side.
-- Players on the opposite military side are moved to spectator.
-- The campaign is built for multiplayer, hosted MP, dedicated servers, and long-running co-op sessions.
+- The campaign is built for multiplayer, hosted MP, dedicated servers, and long-running sessions.
+- Fresh setup still requires an admin-controlled launch flow.
+- A saved campaign only continues when the server/admin explicitly launches in the saved-progress mode; valid saves are not auto-loaded just because they exist.
+- Store and Deployment Panel systems are now the expected player logistics surfaces.
 - Support, logistics, and AI pressure continue to matter even when players move away from one area.
 
 ## Mission Setup
 
-On a fresh start, the commander configures the campaign through the mission setup flow.
+On a fresh start, an admin configures the campaign through the mission setup flow.
 
 Current setup options include:
 
@@ -128,32 +145,46 @@ Current setup options include:
 - virtualization unit cap
 - starting territory ratio from `10/90` up to `90/10`
 
-On a loaded save, the saved configuration is restored automatically and the setup dialog is skipped.
+On an explicitly loaded save, the saved configuration is restored and the setup dialog is skipped.
 
 ## Requirements
 
 - Arma 3
 - CBA
 - any faction-specific mods required by the faction files you select
+- HEMTT for addon builds and validation
 
 FLO can run in singleplayer, hosted multiplayer, or on a dedicated server, but it is primarily built around multiplayer campaign sessions.
 
 ## Quick Start
 
 1. Put the mission source in your Arma 3 profile `missions` folder, or pack it as a PBO for a server.
-2. Open the mission in Eden Editor if you want to inspect or customize it.
-3. Launch it in multiplayer preview, hosted MP, or on a dedicated server.
-4. On a fresh start, complete the mission setup flow as the commander.
-5. On a loaded save, let the mission restore the campaign state and continue from there.
+2. Launch it in multiplayer preview, hosted MP, or on a dedicated server.
+3. On a fresh start, log in as admin or host the session and complete the mission setup flow.
+4. Open the Deployment Panel with `Ctrl+Shift+D` to place FOB/COP infrastructure.
+5. Use the Store action at bases for gear, vehicles, and recruitable AI.
+6. On a loaded save, explicitly launch saved progress and let the mission restore the campaign state.
+
+## HEMTT Workflow
+
+The mod scaffold lives under [`addons/main`](addons/main), with HEMTT configuration in [`.hemtt/project.toml`](.hemtt/project.toml).
+
+Common local commands:
+
+```powershell
+.\.tools\hemtt\hemtt.exe check
+.\.tools\hemtt\hemtt.exe build
+```
+
+`hemtt check` must be clean before changes are considered ready. Do not suppress HEMTT diagnostics; fix the source issue or remove stale content.
 
 ## Session Model
 
 | Topic | Behavior |
 |------|----------|
-| Active human side | One military side per session |
-| Opposing military side | Spectator-only for human players |
+| Player logistics | Store UI and Deployment Panel |
 | Fresh start | Resets campaign state and opens mission setup |
-| Loaded save | Restores saved campaign state and skips setup |
+| Loaded save | Restores saved campaign state only when explicitly launched as saved progress |
 | Campaign authority | Server-owned startup and persistent systems |
 
 ## Initialization Pipeline
@@ -231,7 +262,6 @@ Changing centralized objective templates or faction vehicle pools does not autom
 | `AutoSaveSwitch` | Enables or disables mission auto-save |
 | `AutoSaveInterval` | Auto-save cadence |
 | `FreshStart` | Load saved progress or reset mission progress |
-| `RestrictedArsenal` | Enables the restricted arsenal flow |
 | `RagequitBlocker` | Prevents abort while unconscious |
 | `DisableSystemChat` | Hides system chat |
 
@@ -262,12 +292,18 @@ The commander authors strategic order caps against the `10s` tempo baseline, the
 
 | Path | Purpose |
 |------|---------|
+| [`addons/main`](addons/main) | HEMTT addon mirror of the mission systems |
+| [`.hemtt/project.toml`](.hemtt/project.toml) | HEMTT project, launch, and build configuration |
 | [`Functions/Init`](Functions/Init) | Server phase manager and client finalization |
 | [`Functions/AI/GTN`](Functions/AI/GTN) | Commanders, world state, combat, support, alerts, and player support |
+| [`Functions/Store`](Functions/Store) | Store catalog, checkout, gear, vehicle, and recruitable AI handling |
+| [`Functions/Base`](Functions/Base) | FOB/COP Deployment Panel setup and server placement requests |
 | [`Functions/Factions`](Functions/Factions) | Runtime auto-generated faction compatibility and catalog builders |
 | [`Functions/Virtualization`](Functions/Virtualization) | Group registry, activation lifecycle, routing, transport, and seeding |
 | [`Functions/Logistics`](Functions/Logistics) | Resources, supply networks, replacement dispatch, and reserve replenishment |
 | [`Functions/Objective`](Functions/Objective) | Objective indexing, ownership, graph links, and markers |
+| [`UI/Store`](UI/Store) | Browser UI for the Store |
+| [`UI/Deploy`](UI/Deploy) | Browser UI for FOB/COP deployment |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | GitHub commit message rules and contribution expectations |
 
 ## License

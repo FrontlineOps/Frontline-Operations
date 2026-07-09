@@ -2,14 +2,14 @@
     File: fn_getRandomMagazine.sqf
     Author: Frontline Operations Development Group
     Description: Gets a random magazine from a specified unit or vehicle
-    
+
     Parameters:
         _target - Unit or vehicle to get magazines from (Object)
         _includeEmpty - Whether to include empty magazines (Optional, Boolean, Default: false)
-    
+
     Returns:
         Random magazine classname (String), or "" if no magazines are available
-    
+
     Example:
         _randomMag = [player] call FLO_fnc_getRandomMagazine;
         _randomMag = [cursorTarget, true] call FLO_fnc_getRandomMagazine;
@@ -38,7 +38,7 @@ if (_includeEmpty) then {
 };
 
 // Return empty string if no magazines available
-if (count _availableMags == 0) exitWith {
+if (_availableMags isEqualTo []) exitWith {
     diag_log format ["No magazines found on %1", _target];
     ""
 };
@@ -47,4 +47,4 @@ if (count _availableMags == 0) exitWith {
 private _randomMag = selectRandom _availableMags;
 
 // Return the result
-_randomMag 
+_randomMag

@@ -1,0 +1,120 @@
+version=54;
+center[]={23745.523,3.1900001,17968.703};
+class items
+{
+	items=1;
+	class Item0
+	{
+		dataType="Layer";
+		name="CommandCenter";
+		class Entities
+		{
+			items=1;
+			class Item0
+			{
+				dataType="Layer";
+				name="CommandCenter";
+				class Entities
+				{
+					items=1;
+					class Item0
+					{
+						dataType="Layer";
+						name="CommandCenter_1";
+						class Entities
+						{
+							items=2;
+							class Item0
+							{
+								dataType="Object";
+								class PositionInfo
+								{
+									position[]={-0.71875,1.645165,1.5292969};
+									angles[]={-0,3.1621702,0};
+								};
+								side="Empty";
+								flags=4;
+								class Attributes
+								{
+									init="call{this setObjectTextureGlobal [0, ""#(argb,512,512,1)r2t(SATELLITE_V,1)""];" \n "}";
+									disableSimulation=1;
+								};
+								id=121430;
+								type="Land_TripodScreen_01_large_sand_F";
+								atlOffset=0.00032663345;
+								class CustomAttributes
+								{
+									class Attribute0
+									{
+										property="ObjectTextureCustom0";
+										expression="_this setObjectTextureGlobal [0,_value]";
+										class Value
+										{
+											class data
+											{
+												singleType="STRING";
+												value="";
+											};
+										};
+									};
+									class Attribute1
+									{
+										property="allowDamage";
+										expression="_this allowdamage _value;";
+										class Value
+										{
+											class data
+											{
+												singleType="BOOL";
+												value=0;
+											};
+										};
+									};
+									nAttributes=2;
+								};
+							};
+							class Item1
+							{
+								dataType="Object";
+								class PositionInfo
+								{
+									position[]={0.71679688,3.8754001,-1.53125};
+								};
+								side="Empty";
+								flags=5;
+								class Attributes
+								{
+								};
+								id=121434;
+								type="Land_Cargo_HQ_V3_F";
+								class CustomAttributes
+								{
+									class Attribute0
+									{
+										property="allowDamage";
+										expression="_this allowdamage _value;";
+										class Value
+										{
+											class data
+											{
+												singleType="BOOL";
+												value=0;
+											};
+										};
+									};
+									nAttributes=1;
+								};
+							};
+						};
+						id=121429;
+						atlOffset=0.30449986;
+					};
+				};
+				id=121428;
+				atlOffset=0.30449986;
+			};
+		};
+		id=121435;
+		atlOffset=0.30449986;
+	};
+};

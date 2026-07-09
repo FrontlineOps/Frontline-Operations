@@ -22,4 +22,4 @@ deleteVehicle (_this select 1);
 
 sleep 1;
 
-ShowHUD [true, true, true, true, true, true, true, true, true, true];
+showHUD [true, true, true, true, true, true, true, true, true, true];

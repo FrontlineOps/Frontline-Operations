@@ -1,0 +1,27 @@
+params ["_success", "_message"];
+
+if (!hasInterface) exitWith {};
+
+if (isMultiplayer && {remoteExecutedOwner isNotEqualTo 2} && {remoteExecutedOwner isNotEqualTo 0}) exitWith {
+    diag_log format ["[FLO][Base] Rejected deploy result from owner %1", remoteExecutedOwner];
+};
+
+hint _message;
+
+private _control = uiNamespace getVariable ["FLO_DeployControl", controlNull];
+
+if (!isNull _control) then {
+    private _payload = createHashMapFromArray [
+        ["success", _success],
+        ["message", _message]
+    ];
+    private _script = format [
+        "if (window.FOOFDeploy) { window.FOOFDeploy.receiveResult(%1); }",
+        toJSON _payload
+    ];
+
+    [_control, ["ExecJS", _script]] call FLO_fnc_baseDeployWebAction;
+
+    FLO_BaseDeployRenderKey = "";
+    [] call FLO_fnc_baseDeployUpdateDialog;
+};

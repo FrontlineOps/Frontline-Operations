@@ -19,7 +19,7 @@
  *   airDrone         = F_UAV_List
  *   groundDrone      = F_UGV_List
  *   staticAA         = F_SAM_List
- *   radar            = F_RADAR
+ *   radar            = FLO_FactionRadar
  *   boat             = F_Boat_List
  *
  * If you want to change what the commander can spawn, change the source data
@@ -58,14 +58,14 @@ F_Diver_Rfl = "B_diver_F";    // Diver operator
 F_Diver_Eod = "B_diver_exp_F";    // Diver Explosive specialist
 
 // Default base objects and vehicles
-// F_RADAR feeds the commander radar pool.
-F_RADAR = "B_Radar_System_01_F";      // Use "I_E_Radar_System_01_F" for Woodland Camo   // "B_Radar_System_01_F" for Desert Camo
+// FLO_FactionRadar feeds the commander radar pool.
+FLO_FactionRadar = "B_Radar_System_01_F";      // Use "I_E_Radar_System_01_F" for Woodland Camo   // "B_Radar_System_01_F" for Desert Camo
 
-F_HQ_01 = "Land_Cargo_HQ_V3_F";      // Use "Land_Cargo_HQ_V1_F" for Woodland Camo   // "Land_Cargo_HQ_V3_F" for Desert Camo
-F_HQ_C_01 = "Land_TripodScreen_01_large_sand_F";      // Use "Land_TripodScreen_01_large_F" for Woodland Camo   // "Land_TripodScreen_01_large_sand_F" for Desert Camo
+FLO_FactionFobType = "Land_Cargo_HQ_V3_F";      // Use "Land_Cargo_HQ_V1_F" for Woodland Camo   // "Land_Cargo_HQ_V3_F" for Desert Camo
+FLO_FactionFobTerminalType = "Land_TripodScreen_01_large_sand_F";      // Use "Land_TripodScreen_01_large_F" for Woodland Camo   // "Land_TripodScreen_01_large_sand_F" for Desert Camo
 
-F_OP_01 = "Land_Cargo_House_V3_F";      // Use "Land_Cargo_House_V1_F" for Woodland Camo   // "Land_Cargo_House_V3_F" for Desert Camo
-F_OP_C_01 = "Land_TripodScreen_01_dual_v2_sand_F";      // Use "Land_TripodScreen_01_dual_v2_F" for Woodland Camo   // "Land_TripodScreen_01_dual_v2_sand_F" for Desert Camo
+FLO_FactionCopType = "Land_Cargo_House_V3_F";      // Use "Land_Cargo_House_V1_F" for Woodland Camo   // "Land_Cargo_House_V3_F" for Desert Camo
+FLO_FactionCopTerminalType = "Land_TripodScreen_01_dual_v2_sand_F";      // Use "Land_TripodScreen_01_dual_v2_F" for Woodland Camo   // "Land_TripodScreen_01_dual_v2_sand_F" for Desert Camo
 
 // Vehicle lists with custom prices
 // These same lists also feed commander/virtualization pools as described above.
@@ -168,7 +168,6 @@ F_UGV_List = [
 F_Container_List = [
     ["B_Slingload_01_Medevac_F", 35],
     ["B_Slingload_01_Ammo_F", 35],
-    ["B_Slingload_01_Repair_F", 100],
     ["B_Slingload_01_Fuel_F", 35]
 ];
 

@@ -1,0 +1,152 @@
+version=54;
+center[]={6175.2266,5,4713.5};
+class items
+{
+	items=1;
+	class Item0
+	{
+		dataType="Layer";
+		name="Intel_MIS_01";
+		class Entities
+		{
+			items=1;
+			class Item0
+			{
+				dataType="Layer";
+				name="Intel_CS_05";
+				class Entities
+				{
+					items=2;
+					class Item0
+					{
+						dataType="Layer";
+						name="Intel_CS_06";
+						class Entities
+						{
+							items=2;
+							class Item0
+							{
+								dataType="Layer";
+								name="Intel_04";
+								class Entities
+								{
+									items=1;
+									class Item0
+									{
+										dataType="Layer";
+										name="Firing_Post_CSAT_10";
+										class Entities
+										{
+											items=1;
+											class Item0
+											{
+												dataType="Layer";
+												name="Firing_Post_CSAT_11";
+												class Entities
+												{
+													items=1;
+													class Item0
+													{
+														dataType="Layer";
+														name="Firing_Post_CSAT_12";
+														class Entities
+														{
+															items=1;
+															class Item0
+															{
+																dataType="Layer";
+																name="Firing_Post_CSAT_13";
+																class Entities
+																{
+																	items=1;
+																	class Item0
+																	{
+																		dataType="Object";
+																		class PositionInfo
+																		{
+																			position[]={0.34765625,0.44388819,0.020019531};
+																			angles[]={-0,6.2424979,0};
+																		};
+																		side="Empty";
+																		flags=4;
+																		class Attributes
+																		{
+																			name="TI_13";
+																			disableSimulation=1;
+																		};
+																		id=63;
+																		type="Land_PortableDesk_01_sand_F";
+																		class CustomAttributes
+																		{
+																			class Attribute0
+																			{
+																				property="allowDamage";
+																				expression="_this allowdamage _value;";
+																				class Value
+																				{
+																					class data
+																					{
+																						singleType="BOOL";
+																						value=0;
+																					};
+																				};
+																			};
+																			nAttributes=1;
+																		};
+																	};
+																};
+																id=62;
+															};
+														};
+														id=61;
+													};
+												};
+												id=60;
+											};
+										};
+										id=59;
+									};
+								};
+								id=58;
+							};
+							class Item1
+							{
+								dataType="Object";
+								class PositionInfo
+								{
+									position[]={-0.47607422,0.93355656,-0.056640625};
+									angles[]={0,5.5715318,0};
+								};
+								side="Empty";
+								class Attributes
+								{
+								};
+								id=64;
+								type="Land_PortableLongRangeRadio_F";
+								atlOffset=0.031117439;
+							};
+						};
+						id=57;
+						atlOffset=0.45902634;
+					};
+					class Item1
+					{
+						dataType="Object";
+						class PositionInfo
+						{
+							position[]={0.12939453,0.97538185,0.037109375};
+						};
+						side="Empty";
+						id=65;
+						type="Land_File2_F";
+						atlOffset=0.071827888;
+					};
+				};
+				id=56;
+				atlOffset=0.71351337;
+			};
+		};
+		id=66;
+		atlOffset=0.71351337;
+	};
+};

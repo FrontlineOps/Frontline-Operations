@@ -20,5 +20,5 @@ FLO_ReputationHandle set ["value", _newScore];
 publicVariable "FLO_ReputationHandle";
 
 // Notification
-private _msg = if (_type isEqualTo "increase") then {"STR_FLO_REP_INC"} else {"STR_FLO_REP_DEC"};
-[_msg, "success"] call FLO_fnc_sendNotification; 
+private _msg = ["STR_FLO_REP_DEC", "STR_FLO_REP_INC"] select (_type isEqualTo "increase");
+[_msg, "success"] call FLO_fnc_sendNotification;

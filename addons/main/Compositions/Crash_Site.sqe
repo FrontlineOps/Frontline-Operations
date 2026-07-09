@@ -1,0 +1,76 @@
+version=54;
+center[]={14514.304,17.889999,16058.291};
+class items
+{
+	items=1;
+	class Item0
+	{
+		dataType="Layer";
+		name="Crash_Site";
+		class Entities
+		{
+			items=2;
+			class Item0
+			{
+				dataType="Logic";
+				class PositionInfo
+				{
+					position[]={-0.25292969,0,-0.16894531};
+				};
+				id=124499;
+				type="ModulePersistentSmokePillar_F";
+				class CustomAttributes
+				{
+					class Attribute0
+					{
+						property="ModulePersistentSmokePillar_F_Type";
+						expression="_this setVariable ['Type',_value,true];";
+						class Value
+						{
+							class data
+							{
+								singleType="SCALAR";
+								value=4;
+							};
+						};
+					};
+					nAttributes=1;
+				};
+			};
+			class Item1
+			{
+				dataType="Object";
+				class PositionInfo
+				{
+					position[]={0.25292969,0.11867332,0.16992188};
+				};
+				side="Empty";
+				flags=4;
+				class Attributes
+				{
+					disableSimulation=1;
+				};
+				id=124500;
+				type="Land_Camping_Light_F";
+				class CustomAttributes
+				{
+					class Attribute0
+					{
+						property="allowDamage";
+						expression="_this allowdamage _value;";
+						class Value
+						{
+							class data
+							{
+								singleType="BOOL";
+								value=0;
+							};
+						};
+					};
+					nAttributes=1;
+				};
+			};
+		};
+		id=124501;
+	};
+};
