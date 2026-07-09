@@ -2,8 +2,7 @@
  * Function: FLO_fnc_initPhase2_Factions
  * Author: Frontline Operations Development Group
  * Description:
- *   Phase 2: Load faction scripts on the server.
- *   This runs init_groups.sqf logic directly on the server.
+ *   Phase 2: Load custom or auto-discovered faction data on the server.
  *
  * Arguments: None
  * Returns: Boolean - True if factions loaded successfully
@@ -11,7 +10,7 @@
 
 if (!isServer) exitWith { false };
 
-diag_log "[FLO_INIT_P2] Loading faction scripts...";
+diag_log "[FLO_INIT_P2] Loading faction definitions...";
 
 // Check if already loaded (saved game)
 private _hasSavedFactionState = !isNil "F_Init" && {F_Init}
@@ -43,26 +42,11 @@ F_Init = false;
 publicVariable "F_Init";
 
 private _loadedOk = true;
-private _autoSources = ["auto", "auto_multi"];
 
 // Load friendly faction
 private _bluHandle = FLO_FriendlyHandle;
 private _bluFaction = _bluHandle get "name";
-if (([_bluHandle] call FLO_fnc_factionHandleSource) in _autoSources) then {
-    _loadedOk = [_bluHandle, "friendly"] call FLO_fnc_factionApplyAutoGlobals;
-} else {
-    private _bluPath = switch (_bluFaction) do {
-        case "NATO _ Desert": { "\z\flo\addons\main\Scripts\factions\blu_NATODesert.sqf" };
-        case "AAF _ Woodland": { "\z\flo\addons\main\Scripts\factions\blu_AAF.sqf" };
-        case "ADF _ Re-Cut": { "\z\flo\addons\main\Scripts\factions\blu_ADF_RC.sqf" };
-        case "BWMod _ RHSUSAF": { "\z\flo\addons\main\Scripts\factions\blu_BW_RHS.sqf" };
-        case "UAF _ CUP-UAFVP": { "\z\flo\addons\main\Scripts\factions\blu_UAF_CUP_UAFVP.sqf" };
-        case "USMC _ Current Issue": { "\z\flo\addons\main\Scripts\factions\blu_USMC_CI.sqf" };
-        case "USMC _ CUP-EF": { "\z\flo\addons\main\Scripts\factions\blu_USMC_CUP_EF.sqf" };
-        default { "\z\flo\addons\main\CUSTOM_PLAYER_FACTION.sqf" };
-    };
-    _loadedOk = [_bluFaction, _bluPath] call FLO_fnc_initLoadFactionFile;
-};
+_loadedOk = [_bluHandle, "friendly"] call FLO_fnc_initLoadFactionSelection;
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Friendly faction loading failed: %1", _bluFaction];
     publicVariable "FLO_InitError";
@@ -73,18 +57,7 @@ if (!_loadedOk) exitWith {
 // Load enemy faction
 private _opfHandle = FLO_EnemyHandle;
 private _opfFaction = _opfHandle get "name";
-if (([_opfHandle] call FLO_fnc_factionHandleSource) in _autoSources) then {
-    _loadedOk = [_opfHandle, "enemy"] call FLO_fnc_factionApplyAutoGlobals;
-} else {
-    private _opfPath = switch (_opfFaction) do {
-        case "CSAT _ Desert": { "\z\flo\addons\main\Scripts\factions\opf_CSATDesert.sqf" };
-        case "Grozovia _ 3CB": { "\z\flo\addons\main\Scripts\factions\opf_Grozovia_3CB.sqf" };
-        case "IAF _ CUP-EF": { "\z\flo\addons\main\Scripts\factions\opf_IAF_CUP_EF.sqf" };
-        case "Russian AF _ CUP": { "\z\flo\addons\main\Scripts\factions\opf_RU_CUP.sqf" };
-        default { "\z\flo\addons\main\CUSTOM_ENEMY_FACTION.sqf" };
-    };
-    _loadedOk = [_opfFaction, _opfPath] call FLO_fnc_initLoadFactionFile;
-};
+_loadedOk = [_opfHandle, "enemy"] call FLO_fnc_initLoadFactionSelection;
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Enemy faction loading failed: %1", _opfFaction];
     publicVariable "FLO_InitError";
@@ -95,28 +68,12 @@ if (!_loadedOk) exitWith {
 // Load civilian faction
 private _civHandle = FLO_CivilianHandle;
 private _civFaction = _civHandle get "name";
-if (([_civHandle] call FLO_fnc_factionHandleSource) in _autoSources) then {
-    _loadedOk = [_civHandle, "civilian"] call FLO_fnc_factionApplyAutoGlobals;
-} else {
-    private _civPath = switch (_civFaction) do {
-        case "Greek Civilians": { "\z\flo\addons\main\Scripts\factions\civ_Greek.sqf" };
-        default { "\z\flo\addons\main\CUSTOM_CIVILIAN_FACTION.sqf" };
-    };
-    _loadedOk = [_civFaction, _civPath] call FLO_fnc_initLoadFactionFile;
-};
+_loadedOk = [_civHandle, "civilian"] call FLO_fnc_initLoadFactionSelection;
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Civilian faction loading failed: %1", _civFaction];
     publicVariable "FLO_InitError";
     diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
     false
-};
-
-// Default civilian vehicles if not set by faction
-if (isNil "CivVehArray") then {
-    CivVehArray = [
-        "C_Truck_02_covered_F", "C_Truck_02_transport_F", "C_Van_02_vehicle_F",
-        "C_Hatchback_01_F", "C_Offroad_01_F", "C_SUV_01_F"
-    ];
 };
 
 // Verify critical arrays exist
@@ -154,7 +111,7 @@ private _playerFactionVars = [
 // Player faction building types
 private _buildingVars = ["FLO_FactionFobType", "FLO_FactionFobTerminalType", "FLO_FactionCopType", "FLO_FactionCopTerminalType", "FLO_FactionRadar"];
 
-// Request menu vehicle/equipment lists
+// Store vehicle and equipment lists
 private _requestMenuVars = [
     "F_Bike_List", "F_Car_List", "F_MRAP_List", "F_Truck_List",
     "F_Truck_Construction_List", "F_Truck_Ammo_List", "F_Truck_Respawn_List",

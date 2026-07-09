@@ -110,7 +110,7 @@ if (_officer != "") then {
     _officers pushBack _officer;
 };
 
-private _compositionDefaults = ["BLUFOR", "AUTO_STANDARD", "preset|AUTO_STANDARD"] call FLO_fnc_factionGetCompositionDefaults;
+private _compositionDefaults = ["BLUFOR", "AUTO_STANDARD"] call FLO_fnc_factionGetCompositionDefaults;
 
 createHashMapFromArray [
     ["source", "auto"],

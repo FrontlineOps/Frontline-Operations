@@ -7,8 +7,6 @@
  * Arguments:
  *   0: Side label <STRING> - "BLUFOR" or "OPFOR"
  *   1: Faction selection label <STRING>
- *   2: Faction selection data <STRING>
- *
  * Return Value:
  *   HASHMAP with transportReserveGroundCount, transportReserveAirCount,
  *   objectiveGroups, objectiveGroupTypeCaps, and groupCounts.
@@ -16,8 +14,7 @@
 
 params [
     ["_sideLabel", "", [""]],
-    ["_selection", "", [""]],
-    ["_data", "", [""]]
+    ["_selection", "", [""]]
 ];
 
 private _objectiveGroups = [] call FLO_fnc_factionCompositionDefaultObjectiveGroups;
@@ -25,11 +22,7 @@ private _objectiveGroups = [] call FLO_fnc_factionCompositionDefaultObjectiveGro
 switch (toUpper _sideLabel) do {
     case "BLUFOR": {
         private _maneuverCount = 1;
-        private _caps = if (_selection isEqualTo "AAF _ Woodland") then {
-            [false, 3, 20] call FLO_fnc_factionCompositionDefaultCaps
-        } else {
-            [true, 3, 20] call FLO_fnc_factionCompositionDefaultCaps
-        };
+        private _caps = [true, 3, 20] call FLO_fnc_factionCompositionDefaultCaps;
 
         [20, 10, _objectiveGroups, _caps, [_maneuverCount, 3, 10] call FLO_fnc_factionCompositionDefaultCounts] call FLO_fnc_factionCreateCompositionDefaultHandle
     };

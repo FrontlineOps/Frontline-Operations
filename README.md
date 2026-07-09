@@ -21,13 +21,13 @@ Runtime:
 
 - Arma 3 version `2.18` or newer.
 - [CBA_A3](https://steamcommunity.com/sharedfiles/filedetails/?id=450814997).
-- Any mods required by the selected faction presets.
+- Any mods required by the selected custom or auto-discovered factions.
 
 Development:
 
 - The bundled HEMTT executable at `.tools/hemtt/hemtt.exe`, or a compatible HEMTT installation.
 
-Faction-specific dependencies are listed in [the faction preset guide](addons/main/Scripts/factions/README.md).
+Custom faction fields and runtime requirements are documented in [the faction data reference](addons/main/Factions/README.md).
 
 ## Build and Test
 
@@ -79,13 +79,13 @@ The amount is added to the server-authoritative balance and synchronized to clie
 
 ## Factions
 
-Curated or custom factions define the unit, vehicle, air, support, and Store pools used throughout the campaign. The primary customization files are:
+Custom definitions provide the fallback unit, vehicle, air, support, and Store pools used throughout the campaign. The editable files are:
 
-- [`CUSTOM_PLAYER_FACTION.sqf`](addons/main/CUSTOM_PLAYER_FACTION.sqf)
-- [`CUSTOM_ENEMY_FACTION.sqf`](addons/main/CUSTOM_ENEMY_FACTION.sqf)
-- [`CUSTOM_CIVILIAN_FACTION.sqf`](addons/main/CUSTOM_CIVILIAN_FACTION.sqf)
+- [`blu_custom.sqf`](addons/main/Factions/Custom/blu_custom.sqf)
+- [`opf_custom.sqf`](addons/main/Factions/Custom/opf_custom.sqf)
+- [`civ_custom.sqf`](addons/main/Factions/Custom/civ_custom.sqf)
 
-The setup UI also discovers compatible loaded `CfgFactionClasses` entries. Auto-generated factions are a compatibility path; curated presets remain the place for deliberate class selection, pricing, and balance. Numeric force composition is configured in the setup UI rather than duplicated in faction files.
+The setup UI also discovers compatible loaded `CfgFactionClasses` entries. Bundled curated presets have been removed; use custom definitions for deliberate class selection and pricing, or select auto-discovered factions for loaded-mod compatibility. Numeric force composition is configured in the setup UI rather than duplicated in faction files.
 
 ## Initialization
 
@@ -107,7 +107,7 @@ Clients finalize only after the server marks the mission ready.
 | [`addons/main`](addons/main) | Authoritative addon source and config. |
 | [`addons/main/Functions`](addons/main/Functions) | FLO gameplay and framework systems. |
 | [`addons/main/UI`](addons/main/UI) | Store, deployment, setup, and HUD definitions. |
-| [`addons/main/Scripts/factions`](addons/main/Scripts/factions) | Curated faction presets and dependency guide. |
+| [`addons/main/Factions`](addons/main/Factions) | Custom faction data and schema reference. |
 | [`missions/FLO_Test.Altis`](missions/FLO_Test.Altis) | HEMTT launch and integration-test mission. |
 | [`.hemtt/project.toml`](.hemtt/project.toml) | Build and launch configuration. |
 

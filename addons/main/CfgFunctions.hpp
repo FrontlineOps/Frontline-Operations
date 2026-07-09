@@ -24,7 +24,8 @@ class FLO {
         class registerSettings      {};
         class detectSavedGame       {};
         class initFactionSplitMixedInfantryPool {};
-        class initLoadFactionFile   {};
+        class initLoadFactionDefinition {};
+        class initLoadFactionSelection {};
         class initMissionConfigEvents {};
         class initPhaseManager      {};
         class initPhase1_MissionConfig {};
@@ -221,6 +222,7 @@ class FLO {
         file = "\z\flo\addons\main\Functions\Civilian\Core";
 
         class civilianManager {};
+        class bribeMilitia {};
         class civilianConfig {};
         class civilianResolveObjective {};
         class civilianBuildRoleProfile {};
@@ -421,6 +423,7 @@ class FLO {
         class factionCompositionDefaultObjectiveGroups {};
         class factionCreateCompositionDefaultHandle {};
         class factionExtractVehicleClasses {};
+        class factionGetCustomDefinition {};
         class factionGetGroupConfigs {};
         class factionGetCompositionDefaults {};
         class factionGetObjectiveGroupFieldSpecs {};
@@ -470,6 +473,7 @@ class FLO {
         class adjustAggression          {};
         class adjustReputation          {};
         class configureObjectActionsLocal {};
+        class randomizeWeather          {};
     };
 
     class UtilitiesVehicle {
@@ -504,6 +508,16 @@ class FLO {
     class UI {
         file = "\z\flo\addons\main\Functions\UI";
         class safeConfirm             {};
+    };
+
+    class UICapture {
+        file = "\z\flo\addons\main\Functions\UI\CaptureUI";
+        class captureUI               {};
+        class initCaptureUIEvents     {};
+    };
+
+    class UISetup {
+        file = "\z\flo\addons\main\Functions\UI\Setup";
         class shouldOpenFactionDialog {};
         class openFactionDialog       {};
         class factionDialogOnLoad     {};
@@ -527,8 +541,6 @@ class FLO {
         class factionDialogShowCompositionTab {};
         class factionDialogStart      {};
         class factionDialogValidateFactionSelections {};
-        class captureUI               {};
-        class initCaptureUIEvents     {};
     };
 
     #include "Functions\Pathfinding\CfgFunctions.hpp"
