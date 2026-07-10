@@ -7,6 +7,7 @@ private _categories = [];
 private _firstCategory = "";
 private _treasury = FLO_SideResources get _sideKey;
 private _economy = [_treasury] call FLO_fnc_sideResourcesGetSnapshot;
+private _network = _access get "logisticsNetwork";
 private _node = _access get "logisticsNode";
 
 {
@@ -39,6 +40,8 @@ createHashMapFromArray [
     ["nodeState", _node get "state"],
     ["throughput", round (_node get "throughput")],
     ["throughputMax", _node get "throughputMax"],
+    ["resupplyAmount", _node get "refillAmount"],
+    ["resupplyIntervalSeconds", _network get "NODE_REFILL_INTERVAL"],
     ["categories", _categories],
     ["firstCategory", _firstCategory]
 ]

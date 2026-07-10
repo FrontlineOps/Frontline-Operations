@@ -3,6 +3,10 @@ FLO_BaseDeployBrowserIdc = 9901;
 FLO_BaseDeployBrowserReady = false;
 FLO_BaseDeployRenderKey = "";
 FLO_BaseDeploySequence = 0;
+FLO_BaseFirstFOBClaimedBySide = createHashMapFromArray [
+    ["WEST", false],
+    ["EAST", false]
+];
 
 FLO_BaseFOBDeployCost = 1500;
 FLO_BaseFOBBuildRadius = 100;

@@ -179,11 +179,17 @@ if (_respawnRequired && {!_respawnDone}) then {
         private _msg = "<t size='1.2' color='#00ff00'>Mission Initialized</t><br/><t size='0.9'>All systems ready</t>";
         [_msg, 0, 0.3, 3, 0] spawn BIS_fnc_dynamicText;
         hintSilent "";
+        [{
+            FLO_ClientUiReady = true;
+            diag_log "[FLO_INIT_CLIENT] Client deployment and UI readiness complete";
+        }, [], 2] call CBA_fnc_waitAndExecute;
     };
 } else {
     titleText ["", "BLACK IN", 2, true, true];
     private _msg = "<t size='1.2' color='#00ff00'>Mission Initialized</t><br/><t size='0.9'>All systems ready</t>";
     [_msg, 0, 0.3, 3, 0] spawn BIS_fnc_dynamicText;
+    [{
+        FLO_ClientUiReady = true;
+        diag_log "[FLO_INIT_CLIENT] Client deployment and UI readiness complete";
+    }, [], 2] call CBA_fnc_waitAndExecute;
 };
-
-diag_log "[FLO_INIT_CLIENT] Client finalization complete";

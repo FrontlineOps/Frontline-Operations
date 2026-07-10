@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 21;
+private _saveVersion = 22;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -349,6 +349,15 @@ try {
 } catch { ["SAVE", 1, format ["Structures failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
+// SAVE: BASE DEPLOYMENT STATE
+// ============================================================================
+
+try {
+    _data set ["baseDeploymentState", [] call FLO_fnc_baseDeploySerializeState];
+    ["SAVE", 3, "Base deployment state saved"] call FLO_fnc_log;
+} catch { ["SAVE", 1, format ["Base deployment state failed: %1", _exception]] call FLO_fnc_log; };
+
+// ============================================================================
 // SAVE: SIDE RESOURCES
 // ============================================================================
 
@@ -454,7 +463,19 @@ try {
 // FINALIZATION
 // ============================================================================
 
-private _requiredKeys = ["time", "markers", "vehicles", "objects", "config", "objectives", "virtualGroups", "campaignOperation"];
+private _requiredKeys = [
+    "time",
+    "markers",
+    "vehicles",
+    "objects",
+    "config",
+    "objectives",
+    "virtualGroups",
+    "campaignOperation",
+    "baseDeploymentState",
+    "sideResources",
+    "logisticsNetworkBySide"
+];
 private _isValid = true;
 { if (!(_x in _data)) then { _isValid = false; ["SAVE", 1, format ["Missing key: %1", _x]] call FLO_fnc_log; }; } forEach _requiredKeys;
 

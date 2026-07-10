@@ -88,7 +88,7 @@ for "_i" from 1 to _groundCreateCap do {
     private _reservationId = format ["TRANSPORT:%1:GROUND:%2:%3", _sideKey, round (diag_tickTime * 1000), _i];
     if !(_resources call ["reserve", [_reservationId, _groundCost, "TRANSPORT", "Ground transport reserve", "COMMANDER", _spawnObjectiveId]]) exitWith {};
     if !([_net, _sourceNodeId, _groundCost, "Ground transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
-        _resources call ["releaseReservation", [_reservationId, "Ground reserve source throughput changed"]];
+        _resources call ["releaseReservation", [_reservationId, "Ground reserve source local supplies changed"]];
     };
     private _objectiveReserveCount = if (_spawnObjectiveId in _groundByObjective) then {
         _groundByObjective get _spawnObjectiveId
@@ -128,7 +128,7 @@ for "_i" from 1 to _airCreateCap do {
     private _reservationId = format ["TRANSPORT:%1:AIR:%2:%3", _sideKey, round (diag_tickTime * 1000), _i];
     if !(_resources call ["reserve", [_reservationId, _airCost, "TRANSPORT", "Air transport reserve", "COMMANDER", _spawnObjectiveId]]) exitWith {};
     if !([_net, _sourceNodeId, _airCost, "Air transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
-        _resources call ["releaseReservation", [_reservationId, "Air reserve source throughput changed"]];
+        _resources call ["releaseReservation", [_reservationId, "Air reserve source local supplies changed"]];
     };
     private _objectiveReserveCount = if (_spawnObjectiveId in _airByObjective) then {
         _airByObjective get _spawnObjectiveId

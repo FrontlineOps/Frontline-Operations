@@ -60,5 +60,7 @@ createHashMapFromArray [
     ["nodeType", _node get "type"],
     ["nodeState", _node get "state"],
     ["throughput", round (_node get "throughput")],
-    ["throughputMax", _node get "throughputMax"]
+    ["throughputMax", _node get "throughputMax"],
+    ["resupplyAmount", _node get "refillAmount"],
+    ["resupplyIntervalSeconds", _network get "NODE_REFILL_INTERVAL"]
 ]

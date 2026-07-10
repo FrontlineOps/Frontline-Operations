@@ -1155,7 +1155,7 @@
                     <div class="stat-value amber" id="balance">0</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-label">Node Supply</div>
+                    <div class="stat-label">Local Supplies</div>
                     <div class="stat-value cyan" id="throughput">0 / 0</div>
                 </div>
                 <div class="stat">
@@ -1170,6 +1170,7 @@
                     <div class="side-name" id="sideName">Waiting</div>
                     <div class="stat-label" id="factionName">No faction selected</div>
                     <div class="stat-label" id="nodeStatus">Node unavailable</div>
+                    <div class="stat-label" id="nodeResupply">Resupply unavailable</div>
                 </div>
             </section>
         </header>
@@ -1295,6 +1296,8 @@
                 committed: 0,
                 throughput: 0,
                 throughputMax: 0,
+                resupplyAmount: 0,
+                resupplyIntervalSeconds: 180,
                 nodeType: "",
                 nodeState: "",
                 query: ""
@@ -2007,6 +2010,11 @@
                 text("itemCount", String(cartQuantity()));
                 text("vehicleCount", String(cartVehicleQuantity()));
                 text("nodeStatus", (state.nodeType || "Node") + " / " + (state.nodeState || "Unavailable"));
+                if (state.nodeState === "CONNECTED" || state.nodeState === "STRAINED") {
+                    text("nodeResupply", "Resupply +" + groupDigits(state.resupplyAmount) + " every " + Math.round(state.resupplyIntervalSeconds / 60) + " min");
+                } else {
+                    text("nodeResupply", "Resupply paused while " + String(state.nodeState || "unavailable").toLowerCase());
+                }
             }
 
             function applyResourcePayload(payload) {
@@ -2015,6 +2023,8 @@
                 state.committed = typeof payload.committed === "number" ? payload.committed : state.committed;
                 state.throughput = typeof payload.throughput === "number" ? payload.throughput : state.throughput;
                 state.throughputMax = typeof payload.throughputMax === "number" ? payload.throughputMax : state.throughputMax;
+                state.resupplyAmount = typeof payload.resupplyAmount === "number" ? payload.resupplyAmount : state.resupplyAmount;
+                state.resupplyIntervalSeconds = typeof payload.resupplyIntervalSeconds === "number" ? payload.resupplyIntervalSeconds : state.resupplyIntervalSeconds;
                 state.nodeType = payload.nodeType || state.nodeType;
                 state.nodeState = payload.nodeState || state.nodeState;
             }
@@ -2225,9 +2235,10 @@
                         name.textContent = item.name;
                         body.appendChild(name);
                         meta.className = "item-meta";
+                        var localSupplyCost = "Local supply cost: " + groupDigits(Number(item.throughputCost || 0));
                         meta.textContent = nodeLocked
                             ? (item.lockReason || "Unavailable at this node")
-                            : (item.description || ("Throughput " + groupDigits(Number(item.throughputCost || 0))));
+                            : (item.description ? localSupplyCost + " / " + item.description : localSupplyCost);
                         meta.title = item.description || "";
                         body.appendChild(meta);
 

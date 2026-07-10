@@ -3,12 +3,16 @@ params ["_control", "_isConfirmDialog", "_message"];
 private _eventData = fromJSON _message;
 private _event = _eventData get "event";
 private _data = _eventData get "data";
+private _map = uiNamespace getVariable ["FLO_OperationsMapControl", controlNull];
 
 switch (_event) do {
     case "operations::ready": {
         uiNamespace setVariable ["FLO_OperationsControl", _control];
         FLO_OperationsBrowserReady = true;
         [] call FLO_fnc_operationsRequestSnapshot;
+        if (FLO_OperationsGuideRequested) then {
+            [FLO_fnc_operationsShowGuide, []] call CBA_fnc_execNextFrame;
+        };
     };
     case "operations::refresh": {
         [] call FLO_fnc_operationsRequestSnapshot;
@@ -25,6 +29,14 @@ switch (_event) do {
     case "operations::selectObjective": {
         [_data get "objectiveId", true] call FLO_fnc_operationsSelectObjective;
     };
+    case "operations::guideOpen": {
+        if (!isNull _map) then { _map ctrlShow false; };
+    };
+    case "operations::guideComplete": {
+        profileNamespace setVariable ["FLO_GuideSeenVersion", FLO_OperationsGuideVersion];
+        saveProfileNamespace;
+        if (!isNull _map) then { _map ctrlShow true; };
+    };
     case "operations::close": {
         closeDialog 0;
     };
@@ -33,8 +45,7 @@ switch (_event) do {
     };
 };
 
-private _map = uiNamespace getVariable ["FLO_OperationsMapControl", controlNull];
-if (!isNull _map) then {
+if (!isNull _map && {ctrlShown _map}) then {
     [_map] call FLO_fnc_operationsRestoreMapFocus;
     [FLO_fnc_operationsRestoreMapFocus, [_map]] call CBA_fnc_execNextFrame;
 };

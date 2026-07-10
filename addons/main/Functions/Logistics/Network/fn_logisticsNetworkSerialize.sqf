@@ -1,5 +1,7 @@
 params ["_network"];
 
+[_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
+
 private _serializedNodes = createHashMap;
 {
     private _copy = createHashMapFromArray [

@@ -60,4 +60,5 @@ class LogisticsNetwork {
     class logisticsNetworkSerialize {};
     class logisticsNetworkSetManagedSide {};
     class logisticsNetworkStartMainLoop {};
+    class logisticsNetworkValidateNodeOwnership {};
 };

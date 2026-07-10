@@ -548,6 +548,308 @@
         .legend-dot.intent { background: var(--amber); }
         .legend-dot.player { background: var(--text); }
 
+        .guide-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            padding: 6vh 7vw;
+            background: rgba(3, 8, 14, 0.985);
+        }
+
+        .guide-overlay.visible {
+            display: block;
+        }
+
+        .guide-shell {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            grid-template-rows: 68px minmax(0, 1fr) 64px;
+            border: 1px solid var(--line-strong);
+            background: #07111a;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+        }
+
+        .guide-header,
+        .guide-footer {
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            border-color: var(--line-strong);
+            background: var(--panel-strong);
+        }
+
+        .guide-header {
+            justify-content: space-between;
+            padding: 0 22px;
+            border-bottom: 1px solid var(--line-strong);
+        }
+
+        .guide-heading {
+            min-width: 0;
+        }
+
+        .guide-heading strong {
+            display: block;
+            overflow: hidden;
+            color: var(--text);
+            font-size: 21px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .guide-heading span {
+            display: block;
+            margin-top: 3px;
+            color: var(--cyan);
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .guide-body {
+            display: grid;
+            min-width: 0;
+            min-height: 0;
+            grid-template-columns: 230px minmax(0, 1fr);
+        }
+
+        .guide-nav {
+            min-width: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-right: 1px solid var(--line-strong);
+            background: rgba(12, 22, 32, 0.92);
+        }
+
+        .guide-tab {
+            position: relative;
+            display: grid;
+            width: 100%;
+            min-height: 58px;
+            grid-template-columns: 34px minmax(0, 1fr);
+            align-items: center;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--line);
+            color: var(--muted);
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .guide-tab-index {
+            color: var(--cyan);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .guide-tab-label {
+            overflow-wrap: anywhere;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .guide-tab.active {
+            color: var(--text);
+            background: rgba(24, 58, 82, 0.9);
+            box-shadow: inset 3px 0 0 var(--cyan);
+        }
+
+        .guide-content {
+            min-width: 0;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 30px 38px 36px;
+        }
+
+        .guide-page {
+            display: none;
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        .guide-page.active {
+            display: block;
+        }
+
+        .guide-kicker {
+            color: var(--cyan);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .guide-title {
+            margin-top: 8px;
+            color: var(--text);
+            font-size: 34px;
+            font-weight: 900;
+            line-height: 1.05;
+            text-transform: uppercase;
+        }
+
+        .guide-lede {
+            max-width: 860px;
+            margin-top: 14px;
+            color: var(--secondary);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .guide-phase-grid {
+            display: grid;
+            margin-top: 28px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            border-top: 1px solid var(--line-strong);
+            border-left: 1px solid var(--line-strong);
+        }
+
+        .guide-phase {
+            min-width: 0;
+            min-height: 112px;
+            padding: 16px;
+            border-right: 1px solid var(--line-strong);
+            border-bottom: 1px solid var(--line-strong);
+            background: rgba(20, 34, 48, 0.45);
+        }
+
+        .guide-phase strong,
+        .guide-block h3,
+        .guide-node strong {
+            display: block;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .guide-phase:nth-child(1) strong { color: var(--secondary); }
+        .guide-phase:nth-child(2) strong { color: var(--cyan); }
+        .guide-phase:nth-child(3) strong { color: var(--red); }
+        .guide-phase:nth-child(4) strong { color: var(--amber); }
+        .guide-phase:nth-child(5) strong { color: var(--green); }
+        .guide-phase:nth-child(6) strong { color: var(--secondary); }
+
+        .guide-phase p,
+        .guide-block p,
+        .guide-node p {
+            margin-top: 8px;
+            color: var(--secondary);
+            font-size: 12px;
+            line-height: 1.48;
+        }
+
+        .guide-grid {
+            display: grid;
+            margin-top: 28px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border-top: 1px solid var(--line-strong);
+            border-left: 1px solid var(--line-strong);
+        }
+
+        .guide-block {
+            min-width: 0;
+            min-height: 132px;
+            padding: 20px;
+            border-right: 1px solid var(--line-strong);
+            border-bottom: 1px solid var(--line-strong);
+        }
+
+        .guide-block h3 {
+            color: var(--cyan);
+        }
+
+        .guide-callout {
+            margin-top: 24px;
+            padding: 15px 18px;
+            border-left: 3px solid var(--amber);
+            color: #f1d7a7;
+            background: rgba(255, 184, 74, 0.08);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .guide-node-grid {
+            display: grid;
+            margin-top: 28px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            border-top: 1px solid var(--line-strong);
+            border-left: 1px solid var(--line-strong);
+        }
+
+        .guide-node {
+            min-width: 0;
+            min-height: 168px;
+            padding: 18px;
+            border-right: 1px solid var(--line-strong);
+            border-bottom: 1px solid var(--line-strong);
+        }
+
+        .guide-node strong {
+            color: var(--green);
+        }
+
+        .guide-node-stat {
+            display: block;
+            margin-top: 8px;
+            color: var(--amber);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .guide-footer {
+            justify-content: space-between;
+            gap: 16px;
+            padding: 0 18px;
+            border-top: 1px solid var(--line-strong);
+        }
+
+        .guide-progress {
+            color: var(--muted);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .guide-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-action {
+            min-width: 118px;
+            min-height: 38px;
+            padding: 0 14px;
+            color: var(--secondary);
+            background: rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px var(--line);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .guide-action.primary {
+            color: #061018;
+            background: var(--cyan);
+            box-shadow: none;
+        }
+
+        .guide-action:disabled {
+            color: rgba(102, 120, 138, 0.45);
+            cursor: default;
+        }
+
         @media (min-width: 1800px) {
             body {
                 font-size: 18px;
@@ -714,6 +1016,26 @@
             .intent-target {
                 font-size: 22px;
             }
+
+            .guide-overlay {
+                padding: 3vh 3vw;
+            }
+
+            .guide-body {
+                grid-template-columns: 180px minmax(0, 1fr);
+            }
+
+            .guide-content {
+                padding: 24px;
+            }
+
+            .guide-title {
+                font-size: 28px;
+            }
+
+            .guide-node-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
         @media (max-width: 720px) {
@@ -759,6 +1081,49 @@
                 min-height: 96px;
                 padding: 10px 0;
             }
+
+            .guide-overlay {
+                padding: 0;
+            }
+
+            .guide-shell {
+                height: 100vh;
+                grid-template-rows: 60px minmax(0, 1fr) 64px;
+            }
+
+            .guide-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto minmax(0, 1fr);
+            }
+
+            .guide-nav {
+                display: flex;
+                overflow-x: auto;
+                overflow-y: hidden;
+                border-right: 0;
+                border-bottom: 1px solid var(--line-strong);
+            }
+
+            .guide-tab {
+                width: auto;
+                min-width: 150px;
+                border-right: 1px solid var(--line);
+                border-bottom: 0;
+            }
+
+            .guide-content {
+                padding: 20px;
+            }
+
+            .guide-phase-grid,
+            .guide-grid,
+            .guide-node-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .guide-action {
+                min-width: 94px;
+            }
         }
     </style>
 </head>
@@ -793,6 +1158,7 @@
             </div>
 
             <div class="top-actions">
+                <button class="icon-button" id="guide-button" title="Field guide" aria-label="Open field guide">?</button>
                 <button class="icon-button" id="fit-button" title="Fit theater" aria-label="Fit theater">&#9635;</button>
                 <button class="icon-button" id="player-button" title="Center on player" aria-label="Center on player">&#8853;</button>
                 <button class="icon-button" id="target-button" title="Center on current intent" aria-label="Center on current intent">&#9678;</button>
@@ -889,6 +1255,122 @@
                 <span class="legend-item"><span class="legend-dot player"></span>You</span>
             </span>
         </footer>
+
+        <div class="guide-overlay" id="guide-overlay" aria-hidden="true">
+            <section class="guide-shell" aria-labelledby="guide-title">
+                <header class="guide-header">
+                    <div class="guide-heading">
+                        <strong>Frontline Operations Field Guide</strong>
+                        <span>Campaign doctrine and sustainment</span>
+                    </div>
+                    <button class="icon-button close" id="guide-close-button" title="Close field guide" aria-label="Close field guide">&#10005;</button>
+                </header>
+
+                <div class="guide-body">
+                    <nav class="guide-nav" aria-label="Field guide sections">
+                        <button class="guide-tab active" data-guide-index="0"><span class="guide-tab-index">01</span><span class="guide-tab-label">Campaign Rhythm</span></button>
+                        <button class="guide-tab" data-guide-index="1"><span class="guide-tab-index">02</span><span class="guide-tab-label">Your Role</span></button>
+                        <button class="guide-tab" data-guide-index="2"><span class="guide-tab-index">03</span><span class="guide-tab-label">Shared Treasury</span></button>
+                        <button class="guide-tab" data-guide-index="3"><span class="guide-tab-index">04</span><span class="guide-tab-label">Logistics</span></button>
+                        <button class="guide-tab" data-guide-index="4"><span class="guide-tab-index">05</span><span class="guide-tab-label">Bases and Forces</span></button>
+                        <button class="guide-tab" data-guide-index="5"><span class="guide-tab-index">06</span><span class="guide-tab-label">Command Intelligence</span></button>
+                    </nav>
+
+                    <div class="guide-content" id="guide-content">
+                        <article class="guide-page active" data-guide-page="0">
+                            <p class="guide-kicker">01 / Campaign Rhythm</p>
+                            <h2 class="guide-title" id="guide-title">One campaign, one main effort</h2>
+                            <p class="guide-lede">The theater commander advances through a deliberate cycle instead of sending every force toward every fight. Command Net shows the current phase, target, support posture, and remaining time.</p>
+                            <div class="guide-phase-grid">
+                                <div class="guide-phase"><strong>Lull</strong><p>Reorganize, refill logistics, restore combat power, and select the next reachable objective.</p></div>
+                                <div class="guide-phase"><strong>Prepare</strong><p>Reserve operation funds, stage forces, secure routes, and identify the intended objective or threat sector.</p></div>
+                                <div class="guide-phase"><strong>Assault</strong><p>Commit the main effort and seize the objective while replacements draw from the operation allocation.</p></div>
+                                <div class="guide-phase"><strong>Secure</strong><p>Hold the captured area, defeat remaining resistance, and prevent an immediate reversal.</p></div>
+                                <div class="guide-phase"><strong>Consolidate</strong><p>Integrate the objective and establish forward sustainment when the line has advanced beyond existing support.</p></div>
+                                <div class="guide-phase"><strong>Recovery</strong><p>Release unused funds, rebuild depleted formations, and return the theater to LULL.</p></div>
+                            </div>
+                            <div class="guide-callout">Only one operation is the theater main effort. Fighting elsewhere still matters, but it becomes a reported opportunity instead of instantly redirecting command.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="1">
+                            <p class="guide-kicker">02 / Your Role</p>
+                            <h2 class="guide-title">Choose work that changes the campaign</h2>
+                            <p class="guide-lede">Players are the flexible force that connects command intent to battlefield results. You can reinforce the main effort, protect its support network, or develop a future opportunity.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Main Effort</h3><p>Stage during PREPARE, attack during ASSAULT, and remain through SECURE. Leaving immediately after capture can allow the objective to collapse.</p></div>
+                                <div class="guide-block"><h3>Support Area</h3><p>Protect source objectives, routes, depots, artillery, and transport assets that keep the assault supplied.</p></div>
+                                <div class="guide-block"><h3>Off Operation</h3><p>Sustained activity at another objective creates an opportunity report. Command may select it during a later LULL.</p></div>
+                                <div class="guide-block"><h3>Foothold</h3><p>A capture outside the active operation is not instantly integrated. Hold it and connect logistics so campaign benefits can follow.</p></div>
+                            </div>
+                            <div class="guide-callout">Command Net's position report tells you whether you are in the main effort, a support area, a foothold, or operating independently.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="2">
+                            <p class="guide-kicker">03 / Shared Treasury</p>
+                            <h2 class="guide-title">Every purchase is a theater decision</h2>
+                            <p class="guide-lede">Players and the AI commander spend the same side treasury. Equipment, recruits, vehicles, construction, support, minefields, replacements, and forward depots all compete for available resources.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
+                                <div class="guide-block"><h3>Committed</h3><p>Funds reserved for an active operation. They remain in the balance but cannot be spent by unrelated purchases.</p></div>
+                                <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
+                                <div class="guide-block"><h3>Income</h3><p>Connected, integrated objectives generate resources every three minutes. Contested territory produces less.</p></div>
+                            </div>
+                            <div class="guide-callout">A vehicle bought during PREPARE may reduce what command can use outside its reserved main-effort budget. Check available funds before large purchases.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="3">
+                            <p class="guide-kicker">04 / Logistics</p>
+                            <h2 class="guide-title">Shared funds authorize; local supplies fulfill</h2>
+                            <p class="guide-lede">Local Supplies are the stock currently available at one node. Supply Limit is the most that node can hold. A purchase or replacement needs both shared funds and enough supplies at the fulfilling node.</p>
+                            <div class="guide-node-grid">
+                                <div class="guide-node"><strong>HQ</strong><span class="guide-node-stat">Limit 10,000 / +2,500 every 3 min</span><p>Root of the network. Supports every Store category and commander force package.</p></div>
+                                <div class="guide-node"><strong>Depot</strong><span class="guide-node-stat">Limit 6,000 / +800 every 3 min</span><p>Full forward sustainment and a commander replacement source.</p></div>
+                                <div class="guide-node"><strong>FOB</strong><span class="guide-node-stat">Limit 4,000 / +400 every 3 min</span><p>Gear, recruits, ground vehicles, armor, helicopters, statics, logistics, and commander replacements.</p></div>
+                                <div class="guide-node"><strong>COP</strong><span class="guide-node-stat">Limit 800 / +100 every 3 min</span><p>Light local sustainment for gear, recruits, and cars. It cannot source commander replacements.</p></div>
+                            </div>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Node States</h3><p>CONNECTED works normally. STRAINED is under pressure or at 25% supplies or less. ISOLATED has no valid route. DISABLED has lost its anchor.</p></div>
+                                <div class="guide-block"><h3>Supply Shipment</h3><p>Costs 300 shared funds and 300 local supplies at its origin. Deliver it to a different friendly node to restore up to 1,500 supplies there.</p></div>
+                            </div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="4">
+                            <p class="guide-kicker">05 / Bases and Forces</p>
+                            <h2 class="guide-title">Build the support network you need</h2>
+                            <p class="guide-lede">FOBs and COPs are persistent operational positions, not movable supply containers. Their location and route connection determine what players and command can generate there.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>FOB</h3><p>Each side's first successful FOB deployment is free. Later FOBs cost 1,500 shared funds. FOBs provide Store access, recruitable AI, heavier vehicles, shipments, and commander replacements.</p></div>
+                                <div class="guide-block"><h3>COP</h3><p>A cheaper light position for local gear, recruits, and cars. Use it to hold ground without creating a full replacement hub.</p></div>
+                                <div class="guide-block"><h3>Store</h3><p>The Store replaces the Arsenal and request menu. Catalog availability follows the active base type, shared funds, and local supplies.</p></div>
+                                <div class="guide-block"><h3>Recruitable AI</h3><p>Recruits join the purchasing player's group and consume both shared funds and local supplies.</p></div>
+                            </div>
+                            <div class="guide-callout">A base outside connected integrated territory remains isolated. Capture and integrate the route, or build where the network already reaches.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="5">
+                            <p class="guide-kicker">06 / Command Intelligence</p>
+                            <h2 class="guide-title">Act on what your side actually knows</h2>
+                            <p class="guide-lede">Command Net combines commander intent, objective state, sustainment, player position, opportunities, footholds, and maintained intelligence. It is the primary campaign picture.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Friendly Logistics</h3><p>Your side sees its complete node list, local supplies, supply limits, state, and active routes. Foreign nodes must never appear as friendly.</p></div>
+                                <div class="guide-block"><h3>Enemy Logistics</h3><p>Enemy HQs and supply nodes appear only when recovered intelligence reports them. Reports show captured information and expire.</p></div>
+                                <div class="guide-block"><h3>Defender Warning</h3><p>During enemy PREPARE, defenders may see only a coarse threatened sector until contact, combat, or recovered intelligence reveals the target.</p></div>
+                                <div class="guide-block"><h3>Command Net</h3><p>Open it with the configured Operations Panel CBA keybind. The default binding is Ctrl+Shift+O.</p></div>
+                            </div>
+                            <div class="guide-callout">Start each session by reading commander's intent, checking available funds and local supplies, then choosing the main effort, sustainment, security, or opportunity role.</div>
+                        </article>
+                    </div>
+                </div>
+
+                <footer class="guide-footer">
+                    <span class="guide-progress" id="guide-progress">Section 01 / 06</span>
+                    <div class="guide-actions">
+                        <button class="guide-action" id="guide-prev-button" type="button">&#8592; Previous</button>
+                        <button class="guide-action primary" id="guide-next-button" type="button">Next &#8594;</button>
+                    </div>
+                </footer>
+            </section>
+        </div>
     </div>
 
     <script>
@@ -899,6 +1381,8 @@
             var snapshot = null;
             var selectedId = "";
             var phaseDeadlineMs = 0;
+            var guideIndex = 0;
+            var guidePageCount = 6;
 
             function byId(id) {
                 return document.getElementById(id);
@@ -938,6 +1422,38 @@
 
             function formatResource(value) {
                 return String(Math.round(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function setGuidePage(nextIndex) {
+                guideIndex = Math.max(0, Math.min(guidePageCount - 1, nextIndex));
+                var pages = document.querySelectorAll("[data-guide-page]");
+                var tabs = document.querySelectorAll("[data-guide-index]");
+                var i;
+                for (i = 0; i < pages.length; i += 1) {
+                    pages[i].className = "guide-page" + (i === guideIndex ? " active" : "");
+                }
+                for (i = 0; i < tabs.length; i += 1) {
+                    tabs[i].className = "guide-tab" + (i === guideIndex ? " active" : "");
+                }
+                text("guide-progress", "Section " + String(guideIndex + 1).padStart(2, "0") + " / 06");
+                byId("guide-prev-button").disabled = guideIndex === 0;
+                byId("guide-next-button").textContent = guideIndex === guidePageCount - 1 ? "Enter Theater" : "Next \u2192";
+                byId("guide-content").scrollTop = 0;
+            }
+
+            function openGuide() {
+                var overlay = byId("guide-overlay");
+                overlay.className = "guide-overlay visible";
+                overlay.setAttribute("aria-hidden", "false");
+                setGuidePage(0);
+                send("operations::guideOpen");
+            }
+
+            function completeGuide() {
+                var overlay = byId("guide-overlay");
+                overlay.className = "guide-overlay";
+                overlay.setAttribute("aria-hidden", "true");
+                send("operations::guideComplete");
             }
 
             function renderClock() {
@@ -1088,11 +1604,22 @@
                 var left = document.createElement("span");
                 var right = document.createElement("span");
                 left.textContent = nodeState.objectiveName || ("GRID " + nodeState.grid);
-                right.textContent = formatResource(nodeState.throughput) + " / " + formatResource(nodeState.throughputMax);
+                right.textContent = "SUPPLY " + formatResource(nodeState.throughput) + " / " + formatResource(nodeState.throughputMax);
                 meta.appendChild(left);
                 meta.appendChild(right);
+                var resupplyMeta = document.createElement("div");
+                resupplyMeta.className = "list-row-meta";
+                var resupplyLabel = document.createElement("span");
+                var resupplyValue = document.createElement("span");
+                resupplyLabel.textContent = "RESUPPLY";
+                resupplyValue.textContent = nodeState.state === "CONNECTED" || nodeState.state === "STRAINED"
+                    ? "+" + formatResource(nodeState.resupplyAmount) + " / " + Math.round(nodeState.resupplyIntervalSeconds / 60) + " MIN"
+                    : "PAUSED";
+                resupplyMeta.appendChild(resupplyLabel);
+                resupplyMeta.appendChild(resupplyValue);
                 row.appendChild(title);
                 row.appendChild(meta);
+                row.appendChild(resupplyMeta);
                 return row;
             }
 
@@ -1200,15 +1727,32 @@
             }
 
             byId("fit-button").addEventListener("click", function () { send("operations::mapFit"); });
+            byId("guide-button").addEventListener("click", openGuide);
             byId("player-button").addEventListener("click", function () { send("operations::mapPlayer"); });
             byId("target-button").addEventListener("click", function () { send("operations::mapTarget"); });
             byId("refresh-button").addEventListener("click", function () { send("operations::refresh"); });
             byId("close-button").addEventListener("click", function () { send("operations::close"); });
+            byId("guide-close-button").addEventListener("click", completeGuide);
+            byId("guide-prev-button").addEventListener("click", function () { setGuidePage(guideIndex - 1); });
+            byId("guide-next-button").addEventListener("click", function () {
+                if (guideIndex === guidePageCount - 1) {
+                    completeGuide();
+                } else {
+                    setGuidePage(guideIndex + 1);
+                }
+            });
+            var guideTabs = document.querySelectorAll("[data-guide-index]");
+            for (var guideTabIndex = 0; guideTabIndex < guideTabs.length; guideTabIndex += 1) {
+                guideTabs[guideTabIndex].addEventListener("click", function () {
+                    setGuidePage(Number(this.getAttribute("data-guide-index")));
+                });
+            }
             window.setInterval(renderClock, 250);
 
             window.FLOOperations = {
                 applySnapshot: applySnapshot,
-                selectObjective: function (objectiveId) { selectObjective(objectiveId, false); }
+                selectObjective: function (objectiveId) { selectObjective(objectiveId, false); },
+                openGuide: openGuide
             };
 
             function demoSnapshot(screening) {
@@ -1256,9 +1800,9 @@
                         hqNodeId: "NODE_WEST_HQ",
                         summary: { connected: 2, strained: 1, isolated: 0, establishing: 1, disabled: 0 },
                         nodes: [
-                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, deliveryCount: 0, requiredDeliveries: 0 },
-                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, deliveryCount: 0, requiredDeliveries: 0 },
-                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, deliveryCount: 1, requiredDeliveries: 2 }
+                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, resupplyAmount: 2500, resupplyIntervalSeconds: 180, deliveryCount: 0, requiredDeliveries: 0 },
+                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, resupplyAmount: 800, resupplyIntervalSeconds: 180, deliveryCount: 0, requiredDeliveries: 0 },
+                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, resupplyAmount: 400, resupplyIntervalSeconds: 180, deliveryCount: 1, requiredDeliveries: 2 }
                         ],
                         routes: [
                             { fromNodeId: "NODE_WEST_HQ", toNodeId: "NODE_WEST_DEPOT", from: [3600, 12800, 0], to: [9200, 14400, 0], state: "CONNECTED" },

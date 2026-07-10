@@ -1,5 +1,13 @@
 if (!hasInterface) exitWith {};
 
+["FLO_Base_FirstFOBClaimed", {
+    params ["_claims"];
+    [_claims] call FLO_fnc_baseDeployValidateState;
+    FLO_BaseFirstFOBClaimedBySide = _claims;
+    FLO_BaseDeployRenderKey = "";
+    [] call FLO_fnc_baseDeployUpdateDialog;
+}] call CBA_fnc_addEventHandler;
+
 [
     { !isNull player },
     {

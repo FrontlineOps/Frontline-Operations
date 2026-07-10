@@ -33,7 +33,7 @@ private _threatSector = FLO_OperationsMapThreatSector;
         22,
         22,
         0,
-        format ["%1 %2/%3", _type, _throughput, _throughputMax],
+        format ["%1 / SUPPLY %2/%3", _type, _throughput, _throughputMax],
         2,
         0.031,
         "RobotoCondensedBold",

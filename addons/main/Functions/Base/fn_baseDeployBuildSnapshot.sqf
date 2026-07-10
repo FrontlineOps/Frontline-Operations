@@ -22,12 +22,16 @@ if (_factionName isEqualTo "") then {
 };
 
 private _pos = getPosATL player;
+private _fobCost = FLO_BaseFOBDeployCost;
+private _firstFOBFree = false;
 private _economy = createHashMap;
 private _available = 0;
 private _totalBalance = 0;
 private _committed = 0;
 private _lastIncome = 0;
 if (_sideKey != "") then {
+    _fobCost = [_side, "FOB"] call FLO_fnc_baseDeployGetCost;
+    _firstFOBFree = _fobCost == 0;
     _economy = FLO_SideResourceState get _sideKey;
     _available = _economy get "available";
     _totalBalance = _economy get "balance";
@@ -48,7 +52,8 @@ createHashMapFromArray [
     ["totalBalance", _totalBalance],
     ["committed", _committed],
     ["income", _lastIncome],
-    ["fobCost", FLO_BaseFOBDeployCost],
+    ["fobCost", _fobCost],
+    ["firstFOBFree", _firstFOBFree],
     ["fobRadius", FLO_BaseFOBBuildRadius],
     ["fobMinDistance", FLO_BaseFOBMinDistance],
     ["copCost", FLO_BaseCOPDeployCost],

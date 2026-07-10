@@ -1,6 +1,7 @@
 params ["_network"];
 
 [_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+[_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
 private _nodes = _network get "_nodes";
 private _nodeRows = [];
 private _routes = [];
@@ -29,6 +30,8 @@ private _counts = createHashMapFromArray [
         ["grid", mapGridPosition (_node get "position")],
         ["throughput", round (_node get "throughput")],
         ["throughputMax", _node get "throughputMax"],
+        ["resupplyAmount", _node get "refillAmount"],
+        ["resupplyIntervalSeconds", _network get "NODE_REFILL_INTERVAL"],
         ["deliveryCount", _node get "deliveryCount"],
         ["requiredDeliveries", _node get "requiredDeliveries"]
     ];

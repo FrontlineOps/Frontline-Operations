@@ -65,7 +65,7 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _supportedSaveVersions = [18, 19, 20, 21];
+private _supportedSaveVersions = [18, 19, 20, 21, 22];
 private _saveVersion = _saveData get "saveVersion";
 if !(_saveVersion in _supportedSaveVersions) exitWith {
     [
@@ -77,11 +77,12 @@ if !(_saveVersion in _supportedSaveVersions) exitWith {
 };
 
 private _missingCampaignKeys = [];
-if (_saveVersion in [20, 21]) then {
+if (_saveVersion in [20, 21, 22]) then {
     private _requiredCampaignKeys = ["config", "objectives", "virtualGroups", "campaignOperation"];
-    if (_saveVersion == 21) then {
+    if (_saveVersion >= 21) then {
         _requiredCampaignKeys append ["sideResources", "logisticsNetworkBySide"];
     };
+    if (_saveVersion == 22) then { _requiredCampaignKeys pushBack "baseDeploymentState"; };
     _missingCampaignKeys = _requiredCampaignKeys select { !(_x in _saveData) };
 };
 if (_missingCampaignKeys isNotEqualTo []) exitWith {

@@ -55,6 +55,7 @@ class OperationsUI {
     class operationsRequestSnapshot {};
     class operationsRestoreMapFocus {};
     class operationsSelectObjective {};
+    class operationsShowGuide {};
     class operationsUpdateDialog {};
     class operationsWebAction {};
 };

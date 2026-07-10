@@ -171,11 +171,11 @@ if (!_reserved) exitWith {
 
 private _throughputConsumed = [_network, _nodeId, _throughputDemand, "Player Store checkout"] call FLO_fnc_logisticsNetworkConsumeThroughput;
 if (!_throughputConsumed) exitWith {
-    if (_total > 0) then { _treasury call ["releaseReservation", [_reservationId, "Store throughput changed"]]; };
+    if (_total > 0) then { _treasury call ["releaseReservation", [_reservationId, "Store local supplies changed"]]; };
     private _economy = [_treasury] call FLO_fnc_sideResourcesGetSnapshot;
     createHashMapFromArray [
         ["success", false],
-        ["message", "Node throughput changed before checkout completed."],
+        ["message", "Local supplies changed before checkout completed."],
         ["balance", _economy get "available"],
         ["totalBalance", _economy get "balance"],
         ["committed", _economy get "committed"]
@@ -244,6 +244,8 @@ createHashMapFromArray [
     ["nodeState", _node get "state"],
     ["throughput", round (_node get "throughput")],
     ["throughputMax", _node get "throughputMax"],
+    ["resupplyAmount", _node get "refillAmount"],
+    ["resupplyIntervalSeconds", _network get "NODE_REFILL_INTERVAL"],
     ["spent", _spent],
     ["gearCount", count _gearEntries],
     ["vehicleCount", count _vehicleJobs],

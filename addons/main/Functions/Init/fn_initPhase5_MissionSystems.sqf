@@ -202,6 +202,9 @@ if (!isNil "FLO_fnc_MissionStartup") then {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_MissionStartup not found";
 };
 
+[] call FLO_fnc_baseDeployInitializeState;
+diag_log "[FLO_INIT_P5] Base deployment state initialized";
+
 // ============================================
 // ENTITY RESTORATION FROM SAVE
 // ============================================

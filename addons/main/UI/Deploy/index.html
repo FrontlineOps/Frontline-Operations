@@ -688,7 +688,7 @@
                         <div class="card-head">
                             <div class="card-title-row">
                                 <h3 class="card-title">FOB</h3>
-                                <div class="price" id="fobPrice">Starter Free</div>
+                                <div class="price" id="fobPrice">FIRST FOB FREE</div>
                             </div>
                             <div class="tag-row">
                                 <span class="tag good">Full Base</span>
@@ -696,7 +696,7 @@
                                 <span class="tag">Vehicles</span>
                             </div>
                         </div>
-                        <p class="card-body">Primary force projection point with full logistics, Store access, vehicle purchases, and respawn support.</p>
+                        <p class="card-body">Primary force projection point with full logistics, Store access, vehicle purchases, and respawn support. Each side's first successful FOB deployment is free.</p>
                         <div class="specs">
                             <div class="spec">
                                 <div class="spec-name">Build Radius</div>
@@ -896,6 +896,11 @@
                     return;
                 }
 
+                if (snapshot.firstFOBFree) {
+                    text("deploySubtitle", "Your side's first FOB deployment has no resource cost.");
+                    return;
+                }
+
                 text("deploySubtitle", "Select a deployment package.");
             }
 
@@ -917,12 +922,13 @@
                 text("commanderStatus", authorityRole);
                 text("authorityStatus", authorityText);
                 text("terrainStatus", terrainText);
-                text("fobPrice", money(snapshot.fobCost));
+                text("fobPrice", snapshot.firstFOBFree ? "FIRST FOB FREE" : money(snapshot.fobCost));
                 text("copPrice", money(snapshot.copCost));
                 text("fobRadius", Math.round(Number(snapshot.fobRadius || 0)).toString() + "m");
                 text("fobSpacing", Math.round(Number(snapshot.fobMinDistance || 0)).toString() + "m");
                 text("copRadius", Math.round(Number(snapshot.copRadius || 0)).toString() + "m");
                 text("copLimit", Math.round(Number(snapshot.copMaxPerSide || 0)).toString());
+                text("fobButton", snapshot.firstFOBFree ? "Deploy Free FOB" : "Deploy FOB");
 
                 setClass("authorityStatus", "status-value " + (snapshot.hasAuthority ? "good" : "warn"));
                 setClass("terrainStatus", "status-value " + (snapshot.onWater ? "bad" : "good"));

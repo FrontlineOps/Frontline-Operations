@@ -55,6 +55,7 @@ if (isServer) then {
             ["WEST", createHashMap],
             ["EAST", createHashMap]
         ];
+        FLO_Logistics_Networks = createHashMap;
 
         FLO_GTN_CombatEvents = [];
         FLO_GTN_CombatLastByObjective = createHashMap;
@@ -104,6 +105,7 @@ if (hasInterface) then {
         FLO_GTN_PlayerSupportPendingType = "";
         FLO_GTN_PlayerSupportCancelWatcherRunning = false;
         FLO_ClientFinalizeDone = false;
+        FLO_ClientUiReady = false;
 
         [] call FLO_fnc_initMissionConfigEvents;
         [] spawn {

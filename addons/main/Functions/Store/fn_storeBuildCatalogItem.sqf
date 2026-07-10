@@ -6,7 +6,7 @@ if (_entryKind isEqualTo "supply") exitWith {
         ["name", "Supply Shipment"],
         ["category", _category],
         ["entryKind", _entryKind],
-        ["description", "Deliver to another logistics node for 1,500 throughput."],
+        ["description", "Deliver to another logistics node to restore up to 1,500 local supplies."],
         ["includedAttachments", []],
         ["priceValue", FLO_StoreSupplyShipmentCost],
         ["price", format ["%1", FLO_StoreSupplyShipmentCost]],

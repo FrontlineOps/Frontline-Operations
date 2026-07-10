@@ -18,3 +18,16 @@ FLO_OperationsKeybindInitialized = true;
         diag_log "[FLO][Operations] Ctrl+Shift+O keybind initialized";
     }
 ] call CBA_fnc_waitUntilAndExecute;
+
+[
+    {
+        !isNull player
+        && {missionNamespace getVariable ["FLO_ClientUiReady", false]}
+    },
+    {
+        private _seenVersion = profileNamespace getVariable ["FLO_GuideSeenVersion", 0];
+        if (_seenVersion < FLO_OperationsGuideVersion) then {
+            [true] call FLO_fnc_operationsOpenDialog;
+        };
+    }
+] call CBA_fnc_waitUntilAndExecute;

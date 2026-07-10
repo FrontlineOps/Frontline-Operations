@@ -16,7 +16,7 @@ if !((toLower _capability) in (_node get "capabilities")) exitWith {
     [false, format ["%1 nodes cannot fulfill %2 orders.", _node get "type", toLower _capability]]
 };
 if ((_node get "throughput") < _throughputRequired) exitWith {
-    [false, format ["Node throughput is %1/%2; this order requires %3.", round (_node get "throughput"), _node get "throughputMax", round _throughputRequired]]
+    [false, format ["Local supplies are %1/%2; this order requires %3.", round (_node get "throughput"), _node get "throughputMax", round _throughputRequired]]
 };
 
 [true, ""]

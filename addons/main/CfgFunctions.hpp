@@ -349,14 +349,19 @@ class FLO {
         class baseCreateTriggers {};
         class baseDeployAddWebEventHandler {};
         class baseDeployBuildSnapshot {};
+        class baseDeployClaimFirstFOB {};
+        class baseDeployGetCost {};
         class baseDeployHandleUiEvent {};
         class baseDeployInitClient {};
+        class baseDeployInitializeState {};
         class baseDeployOpenDialog {};
         class baseDeployPostInit { postInit = 1; };
         class baseDeployPreInit { preInit = 1; };
         class baseDeployReceiveResult {};
         class baseDeployRequest {};
+        class baseDeploySerializeState {};
         class baseDeployUpdateDialog {};
+        class baseDeployValidateState {};
         class baseDeployWebAction {};
     };
 

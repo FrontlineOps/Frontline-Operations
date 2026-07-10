@@ -338,7 +338,7 @@ for "_i" from 1 to _batchSize do {
         private _throughputConsumed = [_net, _sourceNodeId, _throughputCost, format ["%1 replacement", _groupType]] call FLO_fnc_logisticsNetworkConsumeThroughput;
         if (!_throughputConsumed) then {
             if (_temporaryReservation) then {
-                _resources call ["releaseReservation", [_reservationId, "Source throughput changed before dispatch"]];
+                _resources call ["releaseReservation", [_reservationId, "Source local supplies changed before dispatch"]];
             };
             _perf set ["failNoSpawnPos", (_perf get "failNoSpawnPos") + 1];
             _queue pushBack _groupType;

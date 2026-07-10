@@ -54,7 +54,7 @@ private _deliveryRadius = _network get "NODE_DELIVERY_RADIUS";
     {
         if ((side group _x) isEqualTo _managedSide) then {
             [
-                format ["Supply delivered to %1. Throughput %2/%3.", _node get "type", round (_node get "throughput"), _node get "throughputMax"],
+                format ["Supply delivered to %1. Local supplies %2/%3.", _node get "type", round (_node get "throughput"), _node get "throughputMax"],
                 "success",
                 false,
                 owner _x

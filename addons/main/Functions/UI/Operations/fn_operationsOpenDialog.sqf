@@ -1,3 +1,5 @@
+params [["_showGuide", false, [false]]];
+
 if (!hasInterface) exitWith { false };
 if (!FLO_MissionReady) exitWith {
     hint "Operations are unavailable while FLO initializes.";
@@ -6,9 +8,12 @@ if (!FLO_MissionReady) exitWith {
 
 private _display = findDisplay FLO_OperationsDialogIdd;
 if (!isNull _display) exitWith {
+    if (_showGuide) then { [] call FLO_fnc_operationsShowGuide; };
     [] call FLO_fnc_operationsRequestSnapshot;
     true
 };
+
+if (_showGuide) then { FLO_OperationsGuideRequested = true; };
 
 createDialog "FLO_OperationsDialog";
 _display = findDisplay FLO_OperationsDialogIdd;

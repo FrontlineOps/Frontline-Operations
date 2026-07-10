@@ -5,6 +5,24 @@ if !(_sideContext in [east, west]) then {
 };
 _network set ["_sideContext", _sideContext];
 [_network, _sideContext] call FLO_fnc_logisticsNetworkSetManagedSide;
+private _managedSideKey = _network get "_managedSideKey";
+
+// HashMapObject class values are shared references unless each instance owns
+// fresh mutable state explicitly.
+_network set ["_reinforcementQueue", []];
+_network set ["_recentReinforcementDispatches", []];
+_network set ["_nodes", createHashMap];
+_network set ["_supplyRouteInfo", createHashMap];
+_network set ["_activeSupplyNodes", createHashMap];
+_network set ["_managedObjectiveIds", []];
+_network set ["_enemyObjectiveIds", []];
+_network set ["_targetPicture", createHashMap];
+_network set ["_spawnRoadCache", createHashMap];
+_network set ["_dispatchRoleCache", createHashMap];
+_network set ["_dispatchBranchCache", createHashMap];
+_network set ["_dispatchEnemyDistanceCache", createHashMap];
+_network set ["_dispatchSourceableCache", createHashMap];
+_network set ["_dispatchDeliveryObjectiveCache", createHashMap];
 
 private _stats = createHashMapFromArray [
     ["totalReplacements", 0],
@@ -29,7 +47,7 @@ if (_savedState isEqualType createHashMap) then {
 
     if ("initialComposition" in _savedState) then { _network set ["_initialComposition", _savedState get "initialComposition"]; };
     if ("lastReinforcementTarget" in _savedState) then { _network set ["_lastReinforcementTarget", _savedState get "lastReinforcementTarget"]; };
-    if ("reinforcementQueue" in _savedState) then { _network set ["_reinforcementQueue", _savedState get "reinforcementQueue"]; };
+    if ("reinforcementQueue" in _savedState) then { _network set ["_reinforcementQueue", +(_savedState get "reinforcementQueue")]; };
     if ("hqObjectiveId" in _savedState) then { _network set ["_hqObjectiveId", _savedState get "hqObjectiveId"]; };
 
     if ("nodes" in _savedState) then {
@@ -39,11 +57,28 @@ if (_savedState isEqualType createHashMap) then {
         };
 
         private _typeConfigMap = _network get "NODE_TYPE_CONFIG";
+        private _restoredNodes = createHashMap;
+        private _foreignNodeIds = [];
         {
-            private _node = _y;
-            if !(_node isEqualType createHashMap) then {
-                throw format ["Invalid saved logistics node %1", _x];
+            private _nodeId = _x;
+            private _savedNode = _y;
+            if !(_savedNode isEqualType createHashMap) then {
+                throw format ["Invalid saved logistics node %1", _nodeId];
             };
+            private _nodeSideKey = _savedNode get "sideKey";
+            if !(_nodeSideKey isEqualType "" && {_nodeSideKey in ["WEST", "EAST"]}) then {
+                throw format ["Invalid saved logistics node side for %1: %2", _nodeId, _nodeSideKey];
+            };
+            if (_nodeSideKey != _managedSideKey) then {
+                _foreignNodeIds pushBack _nodeId;
+                continue;
+            };
+
+            private _node = createHashMap;
+            {
+                _node set [_x, _savedNode get _x];
+            } forEach (keys _savedNode);
+
             private _type = _node get "type";
             private _typeConfig = _typeConfigMap get _type;
             _typeConfig params ["_throughputMax", "_refillAmount", "_commanderSource", "_capabilities"];
@@ -52,10 +87,20 @@ if (_savedState isEqualType createHashMap) then {
             _node set ["refillAmount", _refillAmount];
             _node set ["commanderSource", _commanderSource];
             _node set ["capabilities", +_capabilities];
+            _node set ["position", +(_node get "position")];
             _node set ["baseNetId", ""];
-            _savedNodes set [_x, _node];
+            _restoredNodes set [_nodeId, _node];
         } forEach _savedNodes;
-        _network set ["_nodes", _savedNodes];
+        _network set ["_nodes", _restoredNodes];
+
+        if (_foreignNodeIds isNotEqualTo []) then {
+            ["LOGISTICS", 2, format [
+                "Repaired shared-node save contamination for %1 by removing %2 foreign nodes: %3",
+                _managedSideKey,
+                count _foreignNodeIds,
+                _foreignNodeIds
+            ]] call FLO_fnc_log;
+        };
 
         _network set ["_hqNodeId", _savedState get "hqNodeId"];
         _network set ["_initialInfrastructureSeeded", _savedState get "initialInfrastructureSeeded"];
@@ -72,9 +117,6 @@ if (_savedState isEqualType createHashMap) then {
 };
 
 _network set ["_stats", _stats];
-_network set ["_recentReinforcementDispatches", []];
-_network set ["_supplyRouteInfo", createHashMap];
-_network set ["_activeSupplyNodes", createHashMap];
 _network set ["_lastSupplyNodeSignature", ""];
 _network set ["_supplyChainDirty", true];
 _network set ["_objectiveSideIndexDirty", true];
@@ -94,4 +136,5 @@ if ((_network get "_nextDispatchAt") <= time) then {
 } forEach FLO_CampaignBases;
 
 [_network] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
+[_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
 [_network] call FLO_fnc_logisticsNetworkStartMainLoop;
