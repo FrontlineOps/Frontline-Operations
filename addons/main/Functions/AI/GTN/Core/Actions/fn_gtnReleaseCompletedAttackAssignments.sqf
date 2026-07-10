@@ -3,8 +3,8 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- *   Retains only ATTACK orders owned by the current theater operation while
- *   its attacker is in ASSAULT. Legacy, expired, and mismatched orders are
+ *   Retains only ATTACK orders owned by a registered operation while that
+ *   exact operation is in ASSAULT. Legacy, expired, and mismatched orders are
  *   returned to the commander's available pool.
  *
  * Arguments:
@@ -31,12 +31,7 @@ if (isNil "_director") then {
 };
 
 private _state = _director call ["_getState", []];
-private _operationId = _state get "operationId";
-private _objectiveId = _state get "objectiveId";
-private _commanderOwnsAssault = (_state get "phase") == "ASSAULT"
-    && {(_state get "attackerSideKey") == (_cmdr get "_sideKey")}
-    && {_operationId != ""}
-    && {_objectiveId != ""};
+private _operations = _state get "operations";
 
 private _groups = FLO_virtualGroups get "_groups";
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
@@ -49,11 +44,17 @@ private _releaseIds = [];
     if (isNil "_gData") then { continue };
     if ((_gData get "commanderOrder") != "ATTACK") then { continue };
 
-    private _retain = _commanderOwnsAssault
-        && {(_gData get "campaignOperationId") == _operationId}
-        && {(_gData get "attackObjective") == _objectiveId}
-        && {_objectiveId in _objectives}
-        && {((_objectives get _objectiveId) get "owner") == _enemySide};
+    private _operationId = _gData get "campaignOperationId";
+    private _objectiveId = _gData get "attackObjective";
+    private _retain = false;
+    if (_operationId in _operations) then {
+        private _operation = _operations get _operationId;
+        _retain = (_operation get "phase") == "ASSAULT"
+            && {(_operation get "attackerSideKey") == (_cmdr get "_sideKey")}
+            && {(_operation get "objectiveId") == _objectiveId}
+            && {_objectiveId in _objectives}
+            && {((_objectives get _objectiveId) get "owner") == _enemySide};
+    };
 
     if (!_retain) then {
         _releaseIds pushBack _groupId;

@@ -3,8 +3,7 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- *   Assigns available groups to the theater director's single active assault
- *   objective. No other frontline objective may receive an ATTACK order.
+ *   Assigns a track's available groups to its exact campaign operation.
  *
  * Arguments:
  * 0: GTN Commander <HASHMAP>
@@ -45,16 +44,27 @@ if (isNil "_director") then {
 };
 
 private _state = _director call ["_getState", []];
-private _phase = _state get "phase";
-private _objectiveId = _state get "objectiveId";
-private _operationId = _state get "operationId";
-_metrics set ["phase", toLower _phase];
+private _operations = _state get "operations";
+private _phase = _track get "phase";
+private _objectiveId = _track get "phaseObjectiveId";
+private _operationId = _track get "phaseOperationId";
+_metrics set ["phase", _phase];
 _metrics set ["phaseObjective", _objectiveId];
 
-if (_phase != "ASSAULT") exitWith { _metrics };
-if ((_state get "attackerSideKey") != (_cmdr get "_sideKey")) exitWith { _metrics };
+if (_phase != "assault") exitWith { _metrics };
 if (_objectiveId == "" || {_operationId == ""}) then {
     throw "FLO_fnc_gtnAllocateFrontlineAttacks: ASSAULT has no objective or operation id";
+};
+if !(_operationId in _operations) then {
+    throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: track operation %1 is missing", _operationId];
+};
+private _operation = _operations get _operationId;
+if (
+    (_operation get "phase") != "ASSAULT"
+    || {(_operation get "objectiveId") != _objectiveId}
+    || {(_operation get "attackerSideKey") != (_cmdr get "_sideKey")}
+) then {
+    throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: stale track binding %1/%2", _operationId, _objectiveId];
 };
 if !(_cmdr call ["_hasStrategicOrderBudget", []]) exitWith { _metrics };
 

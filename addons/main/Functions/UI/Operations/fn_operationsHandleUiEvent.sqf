@@ -26,6 +26,26 @@ switch (_event) do {
     case "operations::mapTarget": {
         ["TARGET"] call FLO_fnc_operationsFocusMap;
     };
+    case "operations::mapOperation": {
+        private _operationId = _data get "operationId";
+        private _matched = false;
+        {
+            if ((_x get "id") != _operationId) then { continue };
+            private _targetId = _x get "targetId";
+            if (_targetId != "") then {
+                ["OBJECTIVE", _targetId] call FLO_fnc_operationsFocusMap;
+            } else {
+                private _sector = _x get "threatSector";
+                if (_sector get "visible") then {
+                    ["POSITION", "", _sector get "position"] call FLO_fnc_operationsFocusMap;
+                };
+            };
+            _matched = true;
+        } forEach (FLO_OperationsLastSnapshot get "operations");
+        if (!_matched) then {
+            diag_log format ["[FLO][Operations] Unknown operation focus request: %1", _operationId];
+        };
+    };
     case "operations::selectObjective": {
         [_data get "objectiveId", true] call FLO_fnc_operationsSelectObjective;
     };

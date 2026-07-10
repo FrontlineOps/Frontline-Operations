@@ -51,7 +51,7 @@ private _artilleryManager = call FLO_fnc_gtnArtilleryManager;
 // Defense & Offensive Data
 private _tempoInterval = ([_ownSide, "tempo"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
 private _attackCoverage = ([_ownSide, "attackCoverage"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
-private _attackTrackCount = 1;
+private _attackTrackCount = 3;
 private _defenseCoverage = ([_ownSide, "defenseCoverage"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
 private _defenseTrackCount = 1;
 private _garrisonHandle = [_ownSide, "garrison"] call FLO_fnc_gtnGetSideCommanderHandle;
@@ -60,15 +60,15 @@ private _garrisonFrontlineBaseGroups = _garrisonHandle get "frontlineBaseGroups"
 private _garrisonPriorityBonusGroups = _garrisonHandle get "priorityBonusGroups";
 private _garrisonHotBonusGroups = _garrisonHandle get "hotBonusGroups";
 
-private _trackTotal = _attackTrackCount + _defenseTrackCount;
-private _resourceShare = 1 / _trackTotal;
+private _attackResourceShare = 0.20;
+private _defenseResourceShare = 0.40;
 private _tracks = [];
 
 for "_i" from 1 to _attackTrackCount do {
     _tracks pushBack (createHashMapFromArray [
         ["id", format["ATK_%1", _i]],
         ["goal", "capture_priority_objective"],
-        ["resourceShare", _resourceShare],
+        ["resourceShare", _attackResourceShare],
         ["planner", nil],
         ["status", "IDLE"],
         ["groupPool", []],
@@ -77,7 +77,9 @@ for "_i" from 1 to _attackTrackCount do {
         ["phase", "quiet"],
         ["phaseChangedAt", 0],
         ["phaseUntil", 0],
+        ["phaseOperationId", ""],
         ["phaseObjectiveId", ""],
+        ["phaseRole", ""],
         ["phaseStagingGoal", 0]
     ]);
 };
@@ -86,7 +88,7 @@ for "_i" from 1 to _defenseTrackCount do {
     _tracks pushBack (createHashMapFromArray [
         ["id", format["DEF_%1", _i]],
         ["goal", "protect_critical_assets"],
-        ["resourceShare", _resourceShare],
+        ["resourceShare", _defenseResourceShare],
         ["planner", nil],
         ["status", "IDLE"],
         ["groupPool", []],
@@ -197,7 +199,8 @@ private _gtnCommander = createHashMapObject [[
         ["attackReservationSpreadMeters", 5000], // Distance penalty per reservation to distribute attack tracks
         ["attackCrossSectorPenaltyMeters", 2500], // Tracks prefer objectives linked to their assigned frontline sectors
         ["attackReserveGraphDepth", 4], // Attack reserve pulls follow friendly objective graph rings deep enough to mobilize connected rear sectors
-        ["attackLaneStagingMinGroups", 12], // Tracks wait for a meaningful reserve package before opening an assault
+        ["attackLaneStagingMinGroups", 12], // Main effort waits for a meaningful reserve package
+        ["attackLaneSupportStagingMinGroups", 8], // Supporting efforts use a smaller deliberate package
         ["attackLaneStagingGoalFraction", 0.7], // Tracks stage toward a meaningful share of the current attack deficit, not just a flat minimum
         ["attackLaneCautiousStrengthRatio", 0.75], // Below this theater-wide force ratio, attacks become harder to launch even if one lane has local groups
         ["attackLaneExhaustedStrengthRatio", 0.5], // Below this ratio, the side is too depleted to begin new assaults
@@ -494,15 +497,15 @@ private _gtnCommander = createHashMapObject [[
         private _minefieldMetrics = _self call ["_manageFrontlineMinefields", []];
         _phaseMs set ["minefields", (diag_tickTime - _tPhase) * 1000];
 
-        // Allocate groups to tracks (refreshes each cycle)
-        _tPhase = diag_tickTime;
-        private _allocationMetrics = _self call ["_allocateGroupsToTracks", []];
-        _phaseMs set ["allocateTracks", (diag_tickTime - _tPhase) * 1000];
-
-        // Update attack lane phases so assaults happen in bursts instead of every cycle.
+        // Project campaign operations before allocating groups to their tracks.
         _tPhase = diag_tickTime;
         private _trackPhaseMetrics = [_self] call FLO_fnc_gtnUpdateAttackTrackPhases;
         _phaseMs set ["trackPhases", (diag_tickTime - _tPhase) * 1000];
+
+        // Allocate groups to the freshly bound tracks.
+        _tPhase = diag_tickTime;
+        private _allocationMetrics = _self call ["_allocateGroupsToTracks", []];
+        _phaseMs set ["allocateTracks", (diag_tickTime - _tPhase) * 1000];
         
         // Execute all tracks in parallel
         _tPhase = diag_tickTime;
@@ -847,7 +850,7 @@ private _gtnCommander = createHashMapObject [[
         } forEach _tracks;
     }],
     
-    // Build the shared offensive track's local frontage context from maintained attack reachability.
+    // Build each bound operation track's frontage from maintained campaign sources.
     ["_buildAttackTrackSectors", {
         params [["_attackTracks", []]];
 
@@ -857,36 +860,37 @@ private _gtnCommander = createHashMapObject [[
         } forEach _attackTracks;
 
         if (_attackTracks isEqualTo []) exitWith { createHashMap };
-        private _frontlineEnemyObjectives = _self call ["_getAttackFrontlineEnemyObjectives", []];
         private _sectorMap = createHashMap;
-
-        if ((keys _frontlineEnemyObjectives) isEqualTo []) exitWith { _sectorMap };
-
-        private _sourceObjectives = [];
-        private _sourcePositions = [];
+        private _director = _self get "_campaignDirector";
+        if (isNil "_director") then {
+            throw "GTN attack-track sectors require a campaign director";
+        };
+        private _operations = (_director call ["_getState", []]) get "operations";
 
         {
+            private _track = _x;
+            private _operationId = _track get "phaseOperationId";
+            if (_operationId == "") then { continue };
+            if !(_operationId in _operations) then {
+                throw format ["GTN track %1 references missing operation %2", _track get "id", _operationId];
+            };
+
+            private _sourceObjectives = +((_operations get _operationId) get "sourceObjectiveIds");
+            if (_sourceObjectives isEqualTo []) then {
+                throw format ["GTN operation %1 has no source objectives", _operationId];
+            };
+            private _sumX = 0;
+            private _sumY = 0;
             {
-                if (_x in _sourceObjectives) then { continue };
-                _sourceObjectives pushBack _x;
-                _sourcePositions pushBack ((FLO_Objectives get _x) get "position");
-            } forEach (_self call ["_getFriendlyAttackSourceObjectives", [_x]]);
-        } forEach (keys _frontlineEnemyObjectives);
-
-        if (_sourceObjectives isEqualTo []) exitWith { _sectorMap };
-
-        private _sumX = 0;
-        private _sumY = 0;
-        {
-            _sumX = _sumX + (_x select 0);
-            _sumY = _sumY + (_x select 1);
-        } forEach _sourcePositions;
-        private _anchorPos = [_sumX / (count _sourcePositions), _sumY / (count _sourcePositions), 0];
-
-        private _track = _attackTracks select 0;
-        _track set ["frontSectorObjectives", _sourceObjectives];
-        _track set ["frontSectorAnchorPos", _anchorPos];
-        _sectorMap set [_track get "id", _sourceObjectives];
+                private _sourcePosition = (FLO_Objectives get _x) get "position";
+                _sumX = _sumX + (_sourcePosition select 0);
+                _sumY = _sumY + (_sourcePosition select 1);
+            } forEach _sourceObjectives;
+            private _anchorPos = [_sumX / (count _sourceObjectives), _sumY / (count _sourceObjectives), 0];
+            _track set ["frontSectorObjectives", _sourceObjectives];
+            _track set ["frontSectorAnchorPos", _anchorPos];
+            _sectorMap set [_track get "id", _sourceObjectives];
+        } forEach _attackTracks;
 
         _sectorMap
     }],

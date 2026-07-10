@@ -7,7 +7,7 @@
 
 params ["_snapshot"];
 
-FLO_OperationsMapThreatSector = (_snapshot get "operation") get "threatSector";
+FLO_OperationsMapThreatSectors = _snapshot get "threatSectors";
 private _drawData = [];
 {
     private _owner = _x get "owner";

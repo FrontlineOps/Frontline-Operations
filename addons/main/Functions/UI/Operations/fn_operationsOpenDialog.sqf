@@ -43,7 +43,7 @@ FLO_OperationsMapDrawData = [];
 FLO_OperationsMapNodeDrawData = [];
 FLO_OperationsMapRouteDrawData = [];
 FLO_OperationsMapEnemyLogisticsIntelDrawData = [];
-FLO_OperationsMapThreatSector = createHashMapFromArray [["visible", false]];
+FLO_OperationsMapThreatSectors = [];
 FLO_OperationsMapInitialized = false;
 FLO_OperationsSelectedObjectiveId = "";
 

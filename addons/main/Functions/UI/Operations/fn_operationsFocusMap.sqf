@@ -6,7 +6,8 @@
 
 params [
     ["_mode", "FIT", [""]],
-    ["_objectiveId", "", [""]]
+    ["_objectiveId", "", [""]],
+    ["_positionOverride", [], [[]]]
 ];
 
 private _map = uiNamespace getVariable ["FLO_OperationsMapControl", controlNull];
@@ -47,6 +48,13 @@ switch (toUpper _mode) do {
                 _zoom = (0.035 + (0.35 * ((_threatSector get "longAxis") / worldSize))) min 0.25;
             };
         };
+    };
+    case "POSITION": {
+        if ((count _positionOverride) < 2) then {
+            throw "FLO_fnc_operationsFocusMap: POSITION mode has no position";
+        };
+        _position = +_positionOverride;
+        _zoom = 0.05;
     };
     case "OBJECTIVE": {};
     default {

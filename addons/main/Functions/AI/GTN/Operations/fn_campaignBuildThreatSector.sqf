@@ -1,30 +1,21 @@
-/*
- * Function: FLO_fnc_campaignBuildThreatSector
- * Description:
- *   Builds a coarse defender-facing approach ellipse from the operation's
- *   integrated attack sources without exposing the exact target.
- */
+/* Builds a coarse defender-facing approach ellipse for one operation. */
+params [
+    "_director",
+    ["_operationId", "", [""]]
+];
 
-params ["_director"];
-
-private _state = _director get "_state";
-private _objectiveId = _state get "objectiveId";
-private _sourceObjectiveIds = _state get "sourceObjectiveIds";
-
-if (_objectiveId == "") then {
-    throw "FLO_fnc_campaignBuildThreatSector: active operation has no objective";
-};
-if (_sourceObjectiveIds isEqualTo []) then {
-    throw "FLO_fnc_campaignBuildThreatSector: active operation has no attack sources";
+private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
+private _objectiveId = _operation get "objectiveId";
+private _sourceObjectiveIds = _operation get "sourceObjectiveIds";
+if (_objectiveId == "" || {_sourceObjectiveIds isEqualTo []}) then {
+    throw format ["Operation %1 cannot build a threat sector without target and sources", _operationId];
 };
 
 private _target = FLO_Objectives get _objectiveId;
 private _targetPosition = _target get "position";
 private _sourceCenter = [0, 0, 0];
-
 {
-    private _source = FLO_Objectives get _x;
-    _sourceCenter = _sourceCenter vectorAdd (_source get "position");
+    _sourceCenter = _sourceCenter vectorAdd ((FLO_Objectives get _x) get "position");
 } forEach _sourceObjectiveIds;
 
 _sourceCenter = _sourceCenter vectorMultiply (1 / count _sourceObjectiveIds);
@@ -35,6 +26,7 @@ private _longAxis = ((_approachDistance * 0.42) max 1500) min 3500;
 private _shortAxis = (((_target get "radius") * 2.5) max 900) min 1800;
 
 createHashMapFromArray [
+    ["operationId", _operationId],
     ["visible", true],
     ["position", _sectorPosition],
     ["longAxis", _longAxis],

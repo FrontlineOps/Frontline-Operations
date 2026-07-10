@@ -206,6 +206,25 @@
         .operation-value.amber { color: var(--amber); }
         .operation-value.green { color: var(--green); }
 
+        .operation-select {
+            width: 100%;
+            min-width: 0;
+            margin-top: 3px;
+            padding: 2px 22px 2px 0;
+            border: 0;
+            border-bottom: 1px solid var(--line-strong);
+            outline: 0;
+            background: var(--panel);
+            color: var(--text);
+            font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+            font-size: 15px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .operation-select:focus { border-bottom-color: var(--cyan); }
+        .operation-select option { background: var(--panel); color: var(--text); }
+
         .top-actions {
             justify-content: flex-end;
             gap: 8px;
@@ -1140,8 +1159,10 @@
 
             <div class="operation-strip">
                 <div class="operation-cell">
-                    <span class="badge-label">Operation</span>
-                    <span class="operation-value" id="operation-id">No active operation</span>
+                    <span class="badge-label">Operation <span id="operation-count">0 / 3</span></span>
+                    <select class="operation-select" id="operation-select" aria-label="Select operation">
+                        <option value="">No active operation</option>
+                    </select>
                 </div>
                 <div class="operation-cell">
                     <span class="badge-label">Role</span>
@@ -1186,6 +1207,14 @@
                     <div class="phase-meta">
                         <span>Operation Allocation</span>
                         <strong id="operation-allocation">--</strong>
+                    </div>
+                    <div class="phase-meta">
+                        <span>Theater Width</span>
+                        <strong id="operation-width">--</strong>
+                    </div>
+                    <div class="phase-meta">
+                        <span>Scale Driver</span>
+                        <strong id="operation-scale">--</strong>
                     </div>
                 </section>
 
@@ -1280,16 +1309,16 @@
                         <article class="guide-page active" data-guide-page="0">
                             <p class="guide-kicker">01 / Campaign Rhythm</p>
                             <h2 class="guide-title" id="guide-title">One campaign, one main effort</h2>
-                            <p class="guide-lede">The theater commander advances through a deliberate cycle instead of sending every force toward every fight. Command Net shows the current phase, target, support posture, and remaining time.</p>
+                            <p class="guide-lede">The theater commander advances through a deliberate cycle instead of sending every force toward every fight. A main effort can be joined by up to two supporting operations when the theater can sustain them.</p>
                             <div class="guide-phase-grid">
                                 <div class="guide-phase"><strong>Lull</strong><p>Reorganize, refill logistics, restore combat power, and select the next reachable objective.</p></div>
                                 <div class="guide-phase"><strong>Prepare</strong><p>Reserve operation funds, stage forces, secure routes, and identify the intended objective or threat sector.</p></div>
-                                <div class="guide-phase"><strong>Assault</strong><p>Commit the main effort and seize the objective while replacements draw from the operation allocation.</p></div>
+                                <div class="guide-phase"><strong>Assault</strong><p>Commit each operation on its assigned axis while replacements draw from that operation's allocation.</p></div>
                                 <div class="guide-phase"><strong>Secure</strong><p>Hold the captured area, defeat remaining resistance, and prevent an immediate reversal.</p></div>
                                 <div class="guide-phase"><strong>Consolidate</strong><p>Integrate the objective and establish forward sustainment when the line has advanced beyond existing support.</p></div>
                                 <div class="guide-phase"><strong>Recovery</strong><p>Release unused funds, rebuild depleted formations, and return the theater to LULL.</p></div>
                             </div>
-                            <div class="guide-callout">Only one operation is the theater main effort. Fighting elsewhere still matters, but it becomes a reported opportunity instead of instantly redirecting command.</div>
+                            <div class="guide-callout">Only one operation is the main effort. Force readiness, connected logistics, treasury headroom, distinct axes, and defensive pressure determine whether support efforts open or withdraw. Connected player count is never part of that decision.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="1">
@@ -1298,6 +1327,7 @@
                             <p class="guide-lede">Players are the flexible force that connects command intent to battlefield results. You can reinforce the main effort, protect its support network, or develop a future opportunity.</p>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Main Effort</h3><p>Stage during PREPARE, attack during ASSAULT, and remain through SECURE. Leaving immediately after capture can allow the objective to collapse.</p></div>
+                                <div class="guide-block"><h3>Supporting Effort</h3><p>Attack a separate command-selected axis that widens the offensive without replacing the main effort.</p></div>
                                 <div class="guide-block"><h3>Support Area</h3><p>Protect source objectives, routes, depots, artillery, and transport assets that keep the assault supplied.</p></div>
                                 <div class="guide-block"><h3>Off Operation</h3><p>Sustained activity at another objective creates an opportunity report. Command may select it during a later LULL.</p></div>
                                 <div class="guide-block"><h3>Foothold</h3><p>A capture outside the active operation is not instantly integrated. Hold it and connect logistics so campaign benefits can follow.</p></div>
@@ -1311,11 +1341,11 @@
                             <p class="guide-lede">Players and the AI commander spend the same side treasury. Equipment, recruits, vehicles, construction, support, minefields, replacements, and forward depots all compete for available resources.</p>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
-                                <div class="guide-block"><h3>Committed</h3><p>Funds reserved for an active operation. They remain in the balance but cannot be spent by unrelated purchases.</p></div>
+                                <div class="guide-block"><h3>Committed</h3><p>Funds reserved separately for active operations. They remain in the balance but cannot be spent by unrelated purchases.</p></div>
                                 <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
                                 <div class="guide-block"><h3>Income</h3><p>Connected, integrated objectives generate resources every three minutes. Contested territory produces less.</p></div>
                             </div>
-                            <div class="guide-callout">A vehicle bought during PREPARE may reduce what command can use outside its reserved main-effort budget. Check available funds before large purchases.</div>
+                            <div class="guide-callout">A large purchase can remove the treasury headroom required to open or sustain a supporting offensive. Check available funds before committing the shared treasury.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="3">
@@ -1380,6 +1410,7 @@
             var phaseOrder = ["LULL", "PREPARE", "ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
             var snapshot = null;
             var selectedId = "";
+            var activeOperationId = "";
             var phaseDeadlineMs = 0;
             var guideIndex = 0;
             var guidePageCount = 6;
@@ -1422,6 +1453,50 @@
 
             function formatResource(value) {
                 return String(Math.round(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function activeOperation() {
+                if (snapshot && snapshot.operations) {
+                    for (var i = 0; i < snapshot.operations.length; i += 1) {
+                        if (snapshot.operations[i].id === activeOperationId) { return snapshot.operations[i]; }
+                    }
+                }
+                return snapshot ? snapshot.operation : null;
+            }
+
+            function operationLabel(operation) {
+                var role = operation.isPrimary ? "MAIN" : "SUPPORT";
+                var target = operation.targetVisible
+                    ? operation.targetName
+                    : (operation.threatSector && operation.threatSector.visible ? "SECTOR " + operation.threatSector.grid : "UNDISCLOSED");
+                return role + " / " + target + " / " + readable(operation.phase);
+            }
+
+            function renderOperationSelector() {
+                var select = byId("operation-select");
+                select.innerHTML = "";
+                var operations = snapshot.operations || [];
+                if (operations.length === 0) {
+                    var empty = document.createElement("option");
+                    empty.value = "";
+                    empty.textContent = "Theater Reserve / Lull";
+                    select.appendChild(empty);
+                    select.disabled = true;
+                    activeOperationId = "";
+                } else {
+                    select.disabled = false;
+                    var activeFound = false;
+                    for (var i = 0; i < operations.length; i += 1) {
+                        var option = document.createElement("option");
+                        option.value = operations[i].id;
+                        option.textContent = operationLabel(operations[i]);
+                        select.appendChild(option);
+                        if (operations[i].id === activeOperationId) { activeFound = true; }
+                    }
+                    if (!activeFound) { activeOperationId = operations[0].id; }
+                    select.value = activeOperationId;
+                }
+                text("operation-count", String(operations.length) + " / 3");
             }
 
             function setGuidePage(nextIndex) {
@@ -1483,7 +1558,13 @@
                     if (operation.phase === "CONSOLIDATE") { return "Protect " + operation.targetName + " until supply and command links are established."; }
                     return "Recover combat power after the completed main effort.";
                 }
-                if (operation.role === "DEFEND") {
+                if (operation.role === "SUPPORTING_EFFORT") {
+                    if (operation.phase === "PREPARE") { return "Stage the supporting force and protect its independent logistics axis to " + operation.targetName + "."; }
+                    if (operation.phase === "ASSAULT") { return "Widen the offensive by seizing " + operation.targetName + " without abandoning the main effort."; }
+                    if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is integrated."; }
+                    return "Withdraw and rebuild the supporting force.";
+                }
+                if (operation.role === "DEFEND_MAIN_EFFORT" || operation.role === "DEFEND_SUPPORTING_EFFORT") {
                     return "Deny the enemy capture of " + operation.targetName + " and preserve the defensive line.";
                 }
                 return "Screen exposed approaches and support the theater main effort when ordered.";
@@ -1643,11 +1724,10 @@
             }
 
             function renderSnapshot() {
-                var operation = snapshot.operation;
+                var operation = activeOperation();
                 var player = snapshot.player;
                 var summary = snapshot.summary;
 
-                text("operation-id", operation.id || "No Active Operation");
                 text("operation-role", readable(operation.role));
                 text("phase-badge", readable(operation.phase));
                 renderClock();
@@ -1665,12 +1745,25 @@
                         ? (formatResource(operation.resourceSpent) + " SPENT / " + formatResource(operation.resourceBudget))
                         : "NO ALLOCATION"
                 );
+                if (snapshot.scale.visible) {
+                    text("operation-width", snapshot.scale.currentCount + " ACTIVE / " + snapshot.scale.desiredCount + " ORDERED");
+                    text("operation-scale", readable(snapshot.scale.reason));
+                    byId("operation-scale").title = "FORCE " + snapshot.scale.metrics.forceSlots
+                        + " / LOGISTICS " + snapshot.scale.metrics.logisticsSlots
+                        + " / TREASURY " + snapshot.scale.metrics.treasurySlots
+                        + " / AXES " + snapshot.scale.metrics.axisSlots
+                        + " / PRESSURE CAP " + snapshot.scale.metrics.pressureCap;
+                } else {
+                    text("operation-width", snapshot.scale.registryCount + " DETECTED");
+                    text("operation-scale", "CAPACITY CLASSIFIED");
+                    byId("operation-scale").title = "";
+                }
                 renderPhases(operation.phase);
 
                 var note = byId("player-note");
                 note.className = "status-note";
                 if (player.status === "OFF_OPERATION") {
-                    note.textContent = "You are outside the active operation. Local activity is reported as a future command opportunity.";
+                    note.textContent = "You are outside active operations. Local activity is reported as a future command opportunity.";
                 } else if (player.status === "IN_FOOTHOLD") {
                     note.textContent = "You are holding unsupported territory. Supply access or a local base is required for integration.";
                 } else if (player.status === "OUTSIDE_OBJECTIVE") {
@@ -1718,9 +1811,11 @@
 
             function applySnapshot(nextSnapshot) {
                 snapshot = nextSnapshot;
-                phaseDeadlineMs = Date.now() + (Math.max(0, Number(snapshot.operation.remainingSeconds) || 0) * 1000);
+                renderOperationSelector();
+                var operation = activeOperation();
+                phaseDeadlineMs = Date.now() + (Math.max(0, Number(operation.remainingSeconds) || 0) * 1000);
                 if (!selectedId || !findObjective(selectedId)) {
-                    selectedId = snapshot.operation.targetId || snapshot.player.objectiveId || "";
+                    selectedId = operation.targetId || snapshot.player.objectiveId || "";
                 }
                 renderSnapshot();
                 renderSelected();
@@ -1729,7 +1824,25 @@
             byId("fit-button").addEventListener("click", function () { send("operations::mapFit"); });
             byId("guide-button").addEventListener("click", openGuide);
             byId("player-button").addEventListener("click", function () { send("operations::mapPlayer"); });
-            byId("target-button").addEventListener("click", function () { send("operations::mapTarget"); });
+            byId("target-button").addEventListener("click", function () {
+                var operation = activeOperation();
+                if (operation && operation.id) {
+                    send("operations::mapOperation", { operationId: operation.id });
+                } else {
+                    send("operations::mapTarget");
+                }
+            });
+            byId("operation-select").addEventListener("change", function () {
+                activeOperationId = this.value;
+                var operation = activeOperation();
+                phaseDeadlineMs = Date.now() + (Math.max(0, Number(operation.remainingSeconds) || 0) * 1000);
+                if (operation.targetId) {
+                    selectedId = operation.targetId;
+                    renderSelected();
+                    send("operations::selectObjective", { objectiveId: operation.targetId });
+                }
+                renderSnapshot();
+            });
             byId("refresh-button").addEventListener("click", function () { send("operations::refresh"); });
             byId("close-button").addEventListener("click", function () { send("operations::close"); });
             byId("guide-close-button").addEventListener("click", completeGuide);
@@ -1762,7 +1875,7 @@
                     ["obj_3", "Athira", [14000, 18800, 0], "WEST", "SCREEN"],
                     ["obj_4", "Zaros", [9100, 8700, 0], "WEST", "NONE"],
                     ["obj_5", "Pyrgos", [16800, 12700, 0], "EAST", screening ? "NONE" : "MAIN_EFFORT"],
-                    ["obj_6", "Charkia", [21400, 16800, 0], "EAST", "NONE"],
+                    ["obj_6", "Charkia", [21400, 16800, 0], "EAST", screening ? "NONE" : "SUPPORTING_EFFORT"],
                     ["obj_7", "Sofia Approach", [15100, 6500, 0], "WEST", "FOOTHOLD"],
                     ["obj_8", "Panagia", [20800, 9500, 0], "EAST", "OPPORTUNITY"],
                     ["obj_9", "Sofia", [25500, 13200, 0], "EAST", "NONE"]
@@ -1777,19 +1890,35 @@
                         contested: nodes[i][0] === "obj_5" && !screening, underAttack: nodes[i][0] === "obj_5" && !screening, intent: nodes[i][4]
                     });
                 }
+                var operation = {
+                    id: screening ? "OP_EAST_08" : "OP_WEST_07", isPrimary: true,
+                    role: screening ? "SCREEN" : "MAIN_EFFORT", phase: screening ? "SCREEN" : "ASSAULT", actualPhase: screening ? "PREPARE" : "ASSAULT", targetVisible: !screening,
+                    targetId: screening ? "" : "obj_5", targetName: screening ? "Undisclosed" : "Pyrgos", targetPosition: screening ? [] : [16800, 12700, 0],
+                    intelLevel: screening ? "SECTOR" : "TARGET", intelReason: screening ? "OPERATION_ASSESSMENT" : "COMMANDER_INTENT",
+                    threatSector: screening
+                        ? { operationId: "OP_EAST_08", visible: true, position: [15100, 13900, 0], longAxis: 2100, shortAxis: 1100, direction: 118, grid: "151139", label: "THREATENED APPROACH" }
+                        : { operationId: "OP_WEST_07", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
+                    sourceObjectiveIds: screening ? [] : ["obj_2", "obj_4"], supportObjectiveIds: screening ? [] : ["obj_1", "obj_3"],
+                    supportPosture: screening ? "SCREENING" : "COMMITTED", remainingSeconds: screening ? 426 : 1126, result: "", transitionReason: screening ? "COMMANDER_SELECTION" : "PREPARATION_COMPLETE",
+                    resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0, drawdownPending: false
+                };
+                var supportOperation = {
+                    id: "OP_WEST_08", isPrimary: false, role: "SUPPORTING_EFFORT", phase: "PREPARE", actualPhase: "PREPARE", targetVisible: true,
+                    targetId: "obj_6", targetName: "Charkia", targetPosition: [21400, 16800, 0], intelLevel: "TARGET", intelReason: "COMMANDER_INTENT",
+                    threatSector: { operationId: "OP_WEST_08", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
+                    sourceObjectiveIds: ["obj_3"], supportObjectiveIds: ["obj_1"], supportPosture: "STAGING", remainingSeconds: 435,
+                    result: "", transitionReason: "CAPACITY_SCALE_UP", resourceBudget: 600, resourceSpent: 0, resourceRemaining: 600, resourceReleased: 0, drawdownPending: false
+                };
+                var operations = screening ? [operation] : [operation, supportOperation];
                 return {
                     revision: 27, viewerSide: "WEST", viewerSideName: "BLUFOR", enemySide: "EAST", worldSize: 30720,
-                    operation: {
-                        id: screening ? "OP_EAST_08" : "OP_WEST_07", role: screening ? "SCREEN" : "MAIN_EFFORT", phase: screening ? "SCREEN" : "ASSAULT", targetVisible: !screening,
-                        targetId: screening ? "" : "obj_5", targetName: screening ? "Undisclosed" : "Pyrgos", targetPosition: screening ? [] : [16800, 12700, 0],
-                        intelLevel: screening ? "SECTOR" : "TARGET", intelReason: screening ? "OPERATION_ASSESSMENT" : "COMMANDER_INTENT",
-                        threatSector: screening
-                            ? { visible: true, position: [15100, 13900, 0], longAxis: 2100, shortAxis: 1100, direction: 118, grid: "151139", label: "THREATENED APPROACH" }
-                            : { visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
-                        sourceObjectiveIds: screening ? [] : ["obj_2", "obj_4"], supportObjectiveIds: screening ? [] : ["obj_1", "obj_3"],
-                        supportPosture: screening ? "SCREENING" : "COMMITTED", remainingSeconds: screening ? 426 : 1126, result: "", transitionReason: screening ? "COMMANDER_SELECTION" : "PREPARATION_COMPLETE",
-                        lastCompletedOperationId: "OP_EAST_06", lastCompletedResult: "ATTACKER_FAILED",
-                        resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0
+                    operation: operation,
+                    operations: operations,
+                    threatSectors: operation.threatSector.visible ? [operation.threatSector] : [],
+                    scale: {
+                        visible: !screening, currentCount: operations.length, registryCount: operations.length, desiredCount: screening ? 0 : 2,
+                        reason: screening ? "CLASSIFIED" : "LOGISTICS_LIMIT",
+                        metrics: { availableGroups: 31, activeAttackGroups: 8, offensiveGroups: 26, forceSlots: 2, logisticsSlots: 2, treasurySlots: 3, axisSlots: 2, pressureCap: 3, threatenedObjectives: 0, forceDeficit: 0 }
                     },
                     player: screening
                         ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "OFF_OPERATION" }

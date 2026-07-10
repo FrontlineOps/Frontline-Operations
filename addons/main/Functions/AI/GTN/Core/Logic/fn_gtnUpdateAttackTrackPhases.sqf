@@ -1,18 +1,4 @@
-/*
- * Function: FLO_fnc_gtnUpdateAttackTrackPhases
- * Author: Frontline Operations Development Group
- *
- * Description:
- *   Projects the theater director's active operation onto commander attack
- *   tracks. The director is the only owner of attack phase and target state.
- *
- * Arguments:
- *   0: GTN Commander <HASHMAP>
- *
- * Return Value:
- *   Metrics <HASHMAP>
- */
-
+/* Projects ordered campaign operations onto the commander's attack tracks. */
 params ["_cmdr"];
 
 private _metrics = createHashMapFromArray [
@@ -39,43 +25,43 @@ _metrics set ["trackCount", count _tracks];
 if (_tracks isEqualTo []) exitWith { _metrics };
 
 private _state = _director call ["_getState", []];
-private _campaignPhase = _state get "phase";
-private _operationId = _state get "operationId";
-private _objectiveId = _state get "objectiveId";
-private _isAttacker = (_state get "attackerSideKey") == (_cmdr get "_sideKey");
-private _desiredPhase = "quiet";
-private _desiredObjectiveId = "";
-
-if (_isAttacker && {_operationId != ""} && {_objectiveId != ""}) then {
-    switch (_campaignPhase) do {
-        case "PREPARE": {
-            _desiredPhase = "staging";
-            _desiredObjectiveId = _objectiveId;
-        };
-        case "ASSAULT": {
-            _desiredPhase = "assault";
-            _desiredObjectiveId = _objectiveId;
-        };
-        case "SECURE";
-        case "CONSOLIDATE";
-        case "RECOVERY": {
-            _desiredPhase = "spent";
-            _desiredObjectiveId = _objectiveId;
-        };
-    };
+private _operations = _state get "operations";
+private _sideKey = _cmdr get "_sideKey";
+private _operationIds = (_state get "operationOrder") select {
+    ((_operations get _x) get "attackerSideKey") == _sideKey
 };
 
 {
     private _track = _x;
-    private _oldPhase = _track get "phase";
-    private _oldObjectiveId = _track get "phaseObjectiveId";
+    private _desiredOperationId = "";
+    private _desiredObjectiveId = "";
+    private _desiredRole = "";
+    private _desiredPhase = "quiet";
 
-    if (_oldPhase != _desiredPhase || {_oldObjectiveId != _desiredObjectiveId}) then {
+    if (_forEachIndex < count _operationIds) then {
+        _desiredOperationId = _operationIds select _forEachIndex;
+        private _operation = _operations get _desiredOperationId;
+        _desiredObjectiveId = _operation get "objectiveId";
+        _desiredRole = _operation get "priorityRole";
+        _desiredPhase = switch (_operation get "phase") do {
+            case "PREPARE": { "staging" };
+            case "ASSAULT": { "assault" };
+            default { "spent" };
+        };
+    };
+
+    private _bindingChanged = (_track get "phaseOperationId") != _desiredOperationId
+        || {(_track get "phaseObjectiveId") != _desiredObjectiveId};
+    private _phaseChanged = (_track get "phase") != _desiredPhase;
+    if (_bindingChanged || {_phaseChanged}) then {
         _track set ["phase", _desiredPhase];
         _track set ["phaseChangedAt", diag_tickTime];
         _track set ["phaseUntil", 0];
+        _track set ["phaseOperationId", _desiredOperationId];
         _track set ["phaseObjectiveId", _desiredObjectiveId];
+        _track set ["phaseRole", _desiredRole];
         _track set ["phaseStagingGoal", 0];
+        _track set ["status", "IDLE"];
         _metrics set ["transitionCount", (_metrics get "transitionCount") + 1];
     };
 

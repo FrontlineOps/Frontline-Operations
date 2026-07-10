@@ -1,16 +1,28 @@
-/* Releases the unspent portion of the active operation allocation. */
+/* Releases the unspent allocation owned by one operation. */
 params [
     "_director",
+    ["_operationId", "", [""]],
     ["_reason", "Operation complete", [""]]
 ];
 
-private _state = _director get "_state";
-private _reservationId = _state get "resourceReservationId";
-if (_reservationId == "") exitWith { 0 };
+private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
+private _reservationId = _operation get "resourceReservationId";
+if (_reservationId == "") exitWith {
+    private _expectedRemaining = (_operation get "resourceBudget")
+        - (_operation get "resourceSpent")
+        - (_operation get "resourceReleased");
+    if (_expectedRemaining > 0.001) then {
+        throw format ["Operation %1 lost its reservation with %2 resources remaining", _operationId, _expectedRemaining];
+    };
+    0
+};
 
-private _treasury = FLO_SideResources get (_state get "attackerSideKey");
+private _treasury = FLO_SideResources get (_operation get "attackerSideKey");
 private _released = _treasury call ["releaseReservation", [_reservationId, _reason]];
-if (_released isEqualType false) then { _released = 0; };
-_state set ["resourceReservationId", ""];
-_state set ["resourceReleased", _released];
+if (_released isEqualType false) then {
+    throw format ["Operation %1 treasury reservation %2 is missing during release", _operationId, _reservationId];
+};
+_operation set ["resourceReservationId", ""];
+_operation set ["resourceReleased", _released];
+[(_director get "_state")] call FLO_fnc_campaignSyncPrimaryProjection;
 _released

@@ -29,14 +29,17 @@ switch (_order) do {
         };
 
         private _campaign = _director call ["_getState", []];
-        private _validOperationRoute = (_campaign get "phase") == "ASSAULT"
-            && {(_campaign get "attackerSideKey") == (_gtnCommander get "_sideKey")}
-            && {(_campaign get "operationId") == _campaignOperationId}
-            && {(_campaign get "objectiveId") == _objectiveId}
-            && {_campaignOperationId != ""}
-            && {_objectiveId != ""}
-            && {_objectiveId in FLO_Objectives}
-            && {((FLO_Objectives get _objectiveId) get "owner") == (_gtnCommander get "_enemySide")};
+        private _operations = _campaign get "operations";
+        private _validOperationRoute = false;
+        if (_campaignOperationId in _operations) then {
+            private _operation = _operations get _campaignOperationId;
+            _validOperationRoute = (_operation get "phase") == "ASSAULT"
+                && {(_operation get "attackerSideKey") == (_gtnCommander get "_sideKey")}
+                && {(_operation get "objectiveId") == _objectiveId}
+                && {_objectiveId != ""}
+                && {_objectiveId in FLO_Objectives}
+                && {((FLO_Objectives get _objectiveId) get "owner") == (_gtnCommander get "_enemySide")};
+        };
 
         if (!_validOperationRoute) exitWith {
             [_groupId, [], false, true, "GTN_OPERATION_EXPIRED"] call FLO_fnc_updateVirtualGroupWaypoints;

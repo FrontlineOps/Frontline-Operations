@@ -10,7 +10,6 @@ if (FLO_OperationsMapDrawData isEqualTo []) exitWith {};
 
 private _mapScale = ctrlMapScale _map;
 private _selectedId = FLO_OperationsSelectedObjectiveId;
-private _threatSector = FLO_OperationsMapThreatSector;
 
 {
     _x params ["_from", "_to", "_state"];
@@ -61,7 +60,8 @@ private _threatSector = FLO_OperationsMapThreatSector;
     ];
 } forEach FLO_OperationsMapEnemyLogisticsIntelDrawData;
 
-if (_threatSector get "visible") then {
+{
+    private _threatSector = _x;
     private _sectorPosition = _threatSector get "position";
     _map drawEllipse [
         _sectorPosition,
@@ -92,7 +92,7 @@ if (_threatSector get "visible") then {
         "RobotoCondensedBold",
         "right"
     ];
-};
+} forEach FLO_OperationsMapThreatSectors;
 
 {
     _x params [
@@ -107,11 +107,13 @@ if (_threatSector get "visible") then {
     ];
 
     private _isSelected = _objectiveId == _selectedId;
-    private _isMainEffort = _intent in ["MAIN_EFFORT", "DEFEND"];
+    private _isMainEffort = _intent in ["MAIN_EFFORT", "DEFEND_MAIN"];
     private _isSpecial = _intent != "NONE" || {_integrationState != "INTEGRATED"} || {_contested} || {_underAttack};
     private _intentColor = switch (_intent) do {
         case "MAIN_EFFORT";
-        case "DEFEND": { [1, 0.72, 0.29, 1] };
+        case "DEFEND_MAIN": { [1, 0.72, 0.29, 1] };
+        case "SUPPORTING_EFFORT";
+        case "DEFEND_SUPPORT": { [0.145, 0.843, 1, 1] };
         case "SUPPORT": { [0.65, 1, 0.35, 0.95] };
         case "FOOTHOLD";
         case "OPPORTUNITY": { [1, 0.72, 0.29, 0.95] };

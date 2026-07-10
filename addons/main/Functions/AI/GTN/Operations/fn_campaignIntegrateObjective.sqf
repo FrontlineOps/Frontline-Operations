@@ -5,7 +5,12 @@
  *   the resulting objective state.
  */
 
-params ["_director", "_objectiveId", ["_reason", "", [""]]];
+params [
+    "_director",
+    "_objectiveId",
+    ["_reason", "", [""]],
+    ["_operationId", "", [""]]
+];
 
 private _objective = FLO_Objectives get _objectiveId;
 private _wasIntegrated = (_objective get "campaignIntegrationState") == "INTEGRATED";
@@ -44,10 +49,13 @@ private _manager = _director get "_resourceManager";
 } forEach ["EAST", "WEST"];
 
 if (_reason == "OPERATION_COMPLETE") then {
-    [_director, "Operation consolidation complete"] call FLO_fnc_campaignReleaseOperationBudget;
+    if (_operationId == "") then {
+        throw format ["Operation integration for %1 is missing its operation ID", _objectiveId];
+    };
+    [_director, _operationId, "Operation consolidation complete"] call FLO_fnc_campaignReleaseOperationBudget;
     private _ownerNetwork = FLO_Logistics_Networks get _sideKey;
     [_ownerNetwork, true] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
-    [_ownerNetwork, _objectiveId, (_director get "_state") get "operationId"] call FLO_fnc_logisticsNetworkEstablishForwardDepot;
+    [_ownerNetwork, _objectiveId, _operationId] call FLO_fnc_logisticsNetworkEstablishForwardDepot;
 };
 
 FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
