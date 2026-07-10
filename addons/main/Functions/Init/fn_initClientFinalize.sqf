@@ -106,18 +106,12 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
 diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
 
 [] call FLO_fnc_initObjectiveRuntimeStateEvents;
-[] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
 [] call FLO_fnc_gtnRefreshPlayerSupportActions;
-if (!FLO_GTN_CommanderSupplyRespawnHandlerAdded) then {
+if (!FLO_GTN_PlayerSupportRespawnHandlerAdded) then {
     addMissionEventHandler ["EntityRespawned", {
         params ["_newUnit", "_oldUnit"];
 
         if (_newUnit isEqualTo player) then {
-            if (FLO_GTN_CommanderSupplyToggleActionId >= 0 && {!isNull FLO_GTN_CommanderSupplyToggleActionOwner}) then {
-                FLO_GTN_CommanderSupplyToggleActionOwner removeAction FLO_GTN_CommanderSupplyToggleActionId;
-            };
-            FLO_GTN_CommanderSupplyToggleActionId = -1;
-            FLO_GTN_CommanderSupplyToggleActionOwner = objNull;
             if (!isNull FLO_GTN_PlayerSupportActionOwner) then {
                 {
                     FLO_GTN_PlayerSupportActionOwner removeAction _x;
@@ -134,11 +128,10 @@ if (!FLO_GTN_CommanderSupplyRespawnHandlerAdded) then {
             };
             FLO_GTN_PlayerSupportPendingType = "";
             FLO_GTN_PlayerSupportCancelWatcherRunning = false;
-            [] call FLO_fnc_gtnRefreshCommanderSupplyToggleAction;
             [] call FLO_fnc_gtnRefreshPlayerSupportActions;
         };
     }];
-    FLO_GTN_CommanderSupplyRespawnHandlerAdded = true;
+    FLO_GTN_PlayerSupportRespawnHandlerAdded = true;
 };
 
 diag_log "[FLO_INIT_CLIENT] Base supply is handled by the FLO Store.";

@@ -1,20 +1,16 @@
 params ["_className", "_entryKind", "_category"];
 
-if (_entryKind isEqualTo "base") exitWith {
-    private _isCOP = _className isEqualTo "FLO_BASE_COP";
-    private _name = ["Forward Operating Base", "Combat Outpost"] select _isCOP;
-    private _price = [FLO_StoreFOBDeployCost, FLO_StoreCOPDeployCost] select _isCOP;
-
+if (_entryKind isEqualTo "supply") exitWith {
     createHashMapFromArray [
         ["className", _className],
-        ["name", _name],
+        ["name", "Supply Shipment"],
         ["category", _category],
         ["entryKind", _entryKind],
+        ["description", "Deliver to another logistics node for 1,500 throughput."],
         ["includedAttachments", []],
-        ["deploymentFundEligible", false],
-        ["priceValue", _price],
-        ["price", format ["%1", _price]],
-        ["image", "\z\flo\addons\main\Screens\FOBA\b_hq.paa"]
+        ["priceValue", FLO_StoreSupplyShipmentCost],
+        ["price", format ["%1", FLO_StoreSupplyShipmentCost]],
+        ["image", "\a3\ui_f\data\map\vehicleicons\iconcrate_ca.paa"]
     ]
 };
 
@@ -65,7 +61,6 @@ createHashMapFromArray [
     ["category", _category],
     ["entryKind", _entryKind],
     ["includedAttachments", _includedAttachments],
-    ["deploymentFundEligible", _entryKind isEqualTo "gear"],
     ["priceValue", _price],
     ["price", format ["%1", _price]],
     ["image", _image]

@@ -6,7 +6,7 @@
  *   Handles pricing calculations based on vehicle type, variants, damage, and faction demand.
  */
 
-params ["_vehicle", ["_action", "calc_price"]];
+params ["_vehicle", ["_action", "calc_price"], ["_requester", objNull, [objNull]]];
 
 if (isNil "_vehicle" || isNull _vehicle) exitWith { 0 };
 
@@ -139,26 +139,35 @@ if (_action == "calc_price") exitWith {
 
 // === SELL TRANSACTION ===
 if (_action == "sell") exitWith {
-    private _price = [_vehicle, "calc_price"] call FLO_fnc_vehicleMarket;
-    
-    if (isNil "FLO_MoneyHandle") exitWith { 
-        ["MARKET", 1, "Sell failed: Economy not initialized"] call FLO_fnc_log; 
-        false 
+    if (!isServer) exitWith {
+        [_vehicle, "sell", player] remoteExecCall ["FLO_fnc_vehicleMarket", 2];
+        true
     };
-    
-    // Transaction
-    private _current = FLO_MoneyHandle get "value";
-    FLO_MoneyHandle set ["value", _current + _price];
-    [(_current + _price)] call FLO_fnc_publishMoneyState;
+    if (isNull _requester || {(_requester distance2D _vehicle) > 15}) exitWith { false };
+    if (remoteExecutedOwner > 2 && {owner _requester != remoteExecutedOwner}) exitWith { false };
+
+    private _price = [_vehicle, "calc_price"] call FLO_fnc_vehicleMarket;
+    private _side = side group _requester;
+    private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _treasury = FLO_SideResources get _sideKey;
+    private _newBalance = [
+        _treasury,
+        _price,
+        "SALVAGE",
+        format ["Scrapped %1", typeOf _vehicle],
+        name _requester,
+        netId _vehicle,
+        true
+    ] call FLO_fnc_sideResourcesAddResources;
     
     // Notification
     private _name = getText (configOf _vehicle >> "displayName");
-    [format["<t color='#00FF00' size='1.2'>SOLD</t><br/>%1<br/>Price: $%2", _name, _price], 0, 0.8, 4, 1] spawn BIS_fnc_dynamicText;
+    [format ["Sold %1 for %2 resources.", _name, _price], "success", false, owner _requester] call FLO_fnc_sendNotification;
     
     // Cleanup
     deleteVehicle _vehicle;
     
-    ["MARKET", 3, format["Sold %1 for $%2. New Balance: $%3", _name, _price, _current + _price]] call FLO_fnc_log;
+    ["MARKET", 3, format ["Sold %1 for %2. New side balance: %3", _name, _price, _newBalance]] call FLO_fnc_log;
     true
 };
 
@@ -176,6 +185,6 @@ if (_action == "open_menu") exitWith {
     ] call BIS_fnc_guiMessage;
     
     if (_result) then {
-        [_vehicle, "sell"] call FLO_fnc_vehicleMarket;
+        [_vehicle, "sell", player] call FLO_fnc_vehicleMarket;
     };
 };

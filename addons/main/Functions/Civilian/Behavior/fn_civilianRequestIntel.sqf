@@ -126,15 +126,25 @@ if ((keys _package) isEqualTo []) exitWith {
     false
 };
 
-private _moneyValue = FLO_MoneyHandle get "value";
 private _intelCost = _context get "intelCost";
-if (_moneyValue < _intelCost) exitWith {
+private _sideKey = ([_callerSide] call FLO_fnc_gtnSideContext) get "sideKey";
+private _treasury = FLO_SideResources get _sideKey;
+if !([_treasury, _intelCost] call FLO_fnc_sideResourcesCanAfford) exitWith {
     [["Need %1 resources to compensate the civilian contact.", _intelCost], "warning", false, _callerOwner] call FLO_fnc_sendNotification;
     false
 };
 
-FLO_MoneyHandle set ["value", _moneyValue - _intelCost];
-[(_moneyValue - _intelCost)] call FLO_fnc_publishMoneyState;
+if !([
+    _treasury,
+    _intelCost,
+    "INTELLIGENCE",
+    format ["Civilian intelligence near %1", _objectiveId],
+    name _caller,
+    _objectiveId,
+    true
+] call FLO_fnc_sideResourcesSpendResources) then {
+    throw "Civilian intelligence affordability changed during an unscheduled server transaction";
+};
 
 if ((keys _groupData) isNotEqualTo []) then {
     _groupData set ["civilianLastIntelAt", diag_tickTime];

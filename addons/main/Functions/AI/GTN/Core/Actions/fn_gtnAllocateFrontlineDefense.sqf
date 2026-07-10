@@ -63,6 +63,7 @@ private _candidateObjectives = [];
     private _objectiveId = _x;
     private _objective = _y;
     if ((_objective get "owner") != _ownSide) then { continue };
+    if !([_ownSide, _objectiveId] call FLO_fnc_campaignCanSupportObjective) then { continue };
 
     private _underAttack = _objective get "underAttack";
     private _contested = _objective get "contested";

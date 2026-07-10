@@ -30,6 +30,7 @@ if (isNull _fobBuilding) exitWith {
 
 // Check if FOB was already initialized
 if (_fobBuilding getVariable ["FLO_FOB_Initialized", false]) exitWith {
+    [_fobBuilding] call FLO_fnc_campaignRegisterBase;
     ["FOB", 3, format["FOB at %1 already initialized - skipping", getPos _fobBuilding]] call FLO_fnc_log;
     true
 };
@@ -40,6 +41,7 @@ if (isNil { _fobBuilding getVariable "FLO_BaseSide" }) then {
     _fobBuilding setVariable ["FLO_BaseSide", FLO_ActivePlayerSide, true];
 };
 _fobBuilding setVariable ["FLO_BaseType", "FOB", true];
+[_fobBuilding] call FLO_fnc_campaignRegisterBase;
 
 // ============================================================================
 // CONFIGURATION

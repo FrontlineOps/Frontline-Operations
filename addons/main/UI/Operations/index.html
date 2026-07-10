@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLO Operations</title>
+    <style>
+        :root {
+            --header-height: 8.5vh;
+            --footer-height: 4.5vh;
+            --left-width: 17.5vw;
+            --right-width: 19vw;
+            --bg: #03080e;
+            --panel: rgba(12, 22, 32, 0.92);
+            --panel-strong: rgba(16, 30, 42, 0.96);
+            --panel-soft: rgba(20, 34, 48, 0.72);
+            --line: rgba(103, 232, 255, 0.16);
+            --line-strong: rgba(37, 215, 255, 0.42);
+            --text: #f2f7fa;
+            --secondary: #a7b7c8;
+            --muted: #66788a;
+            --cyan: #25d7ff;
+            --green: #a7ff5a;
+            --amber: #ffb84a;
+            --red: #ff4d5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            letter-spacing: 0;
+        }
+
+        html {
+            color-scheme: dark;
+            background: var(--bg);
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(3, 8, 14, 0.98), rgba(6, 15, 23, 0.96)),
+                var(--bg);
+            font-family: "Bahnschrift", "DIN Condensed", "Arial Narrow", Arial, sans-serif;
+            font-size: 16px;
+        }
+
+        body::before {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            content: "";
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+            background-size: 64px 64px;
+            opacity: 0.2;
+        }
+
+        button {
+            border: 0;
+            color: var(--text);
+            background: transparent;
+            font: inherit;
+            letter-spacing: 0;
+            cursor: pointer;
+        }
+
+        button:focus-visible {
+            outline: 1px solid var(--cyan);
+            outline-offset: 2px;
+        }
+
+        h1,
+        h2,
+        p {
+            margin: 0;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            width: 100vw;
+            height: 100vh;
+            grid-template-rows: var(--header-height) minmax(0, 1fr) var(--footer-height);
+        }
+
+        .topbar {
+            display: grid;
+            min-width: 0;
+            grid-template-columns: var(--left-width) minmax(0, 1fr) var(--right-width);
+            background: var(--panel);
+            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.36);
+        }
+
+        .brand,
+        .operation-strip,
+        .top-actions {
+            position: relative;
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            border-bottom: 1px solid var(--line-strong);
+        }
+
+        .brand {
+            gap: 13px;
+            padding: 0 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            place-items: center;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            background: rgba(37, 215, 255, 0.06);
+            box-shadow: 0 0 22px rgba(37, 215, 255, 0.12);
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        .brand-copy {
+            min-width: 0;
+        }
+
+        .brand-title {
+            overflow: hidden;
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .brand-subtitle,
+        .eyebrow,
+        .metric-label,
+        .phase-step,
+        .footer,
+        .badge-label {
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle {
+            margin-top: 4px;
+            overflow: hidden;
+            color: var(--cyan);
+            font-size: 11px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .operation-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1px;
+            padding: 9px 12px;
+            background:
+                linear-gradient(90deg, rgba(37, 215, 255, 0.07), transparent 48%),
+                var(--panel);
+        }
+
+        .operation-cell {
+            display: flex;
+            min-width: 0;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 15px;
+            border-left: 1px solid var(--line);
+        }
+
+        .operation-cell:first-child {
+            border-left: 0;
+        }
+
+        .badge-label {
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .operation-value {
+            margin-top: 4px;
+            overflow: hidden;
+            color: var(--text);
+            font-size: 17px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .operation-value.cyan { color: var(--cyan); }
+        .operation-value.amber { color: var(--amber); }
+        .operation-value.green { color: var(--green); }
+
+        .top-actions {
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 0 16px;
+            border-left: 1px solid var(--line);
+        }
+
+        .icon-button {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            place-items: center;
+            color: var(--secondary);
+            background: rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px var(--line);
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+            font-size: 18px;
+            font-weight: 900;
+            transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+        }
+
+        .icon-button:hover {
+            color: var(--cyan);
+            background: rgba(24, 58, 82, 0.92);
+            box-shadow: inset 0 0 0 1px var(--line-strong), 0 0 20px rgba(37, 215, 255, 0.1);
+        }
+
+        .icon-button.close:hover {
+            color: var(--text);
+            background: rgba(255, 77, 94, 0.28);
+            box-shadow: inset 0 0 0 1px rgba(255, 77, 94, 0.65);
+        }
+
+        .workspace {
+            display: grid;
+            min-width: 0;
+            min-height: 0;
+            grid-template-columns: var(--left-width) minmax(0, 1fr) var(--right-width);
+        }
+
+        .sidebar {
+            min-width: 0;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background: var(--panel);
+        }
+
+        .sidebar.left { border-right: 1px solid var(--line-strong); }
+        .sidebar.right { border-left: 1px solid var(--line-strong); }
+
+        .section {
+            position: relative;
+            padding: 18px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(135deg, rgba(37, 215, 255, 0.025), transparent 58%);
+        }
+
+        .section::after {
+            position: absolute;
+            right: 18px;
+            bottom: -1px;
+            width: 56px;
+            height: 1px;
+            content: "";
+            background: linear-gradient(90deg, transparent, var(--cyan));
+        }
+
+        .eyebrow {
+            margin-bottom: 10px;
+            color: var(--cyan);
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .intent-role {
+            color: var(--amber);
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .intent-target {
+            margin-top: 6px;
+            overflow-wrap: anywhere;
+            color: var(--text);
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1.06;
+            text-transform: uppercase;
+        }
+
+        .intent-copy {
+            margin-top: 14px;
+            color: var(--secondary);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .phase-list {
+            display: grid;
+            gap: 5px;
+        }
+
+        .phase-step {
+            position: relative;
+            min-height: 34px;
+            padding: 9px 10px 8px 28px;
+            color: var(--muted);
+            background: rgba(20, 34, 48, 0.42);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.06);
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .phase-step::before {
+            position: absolute;
+            top: 12px;
+            left: 11px;
+            width: 8px;
+            height: 8px;
+            content: "";
+            border: 1px solid var(--muted);
+        }
+
+        .phase-step.complete {
+            color: var(--secondary);
+        }
+
+        .phase-step.complete::before {
+            border-color: var(--green);
+            background: var(--green);
+            box-shadow: 0 0 10px rgba(167, 255, 90, 0.28);
+        }
+
+        .phase-step.active {
+            color: var(--text);
+            background: rgba(24, 58, 82, 0.92);
+            box-shadow: inset 3px 0 0 var(--cyan), inset 0 0 0 1px var(--line-strong);
+        }
+
+        .phase-step.active::before {
+            border-color: var(--cyan);
+            background: var(--cyan);
+            box-shadow: 0 0 12px rgba(37, 215, 255, 0.4);
+        }
+
+        .phase-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .phase-meta strong {
+            overflow-wrap: anywhere;
+            color: var(--green);
+            text-align: right;
+        }
+
+        .status-note {
+            padding: 13px 14px;
+            border-left: 3px solid var(--amber);
+            color: #f1d7a7;
+            background: rgba(255, 184, 74, 0.09);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .status-note.nominal {
+            border-left-color: var(--green);
+            color: #d8ffc0;
+            background: rgba(167, 255, 90, 0.07);
+        }
+
+        .map-portal {
+            min-width: 0;
+            min-height: 0;
+            background: #071019;
+            box-shadow: inset 0 0 0 1px rgba(37, 215, 255, 0.2);
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1px;
+            background: var(--line);
+            box-shadow: inset 0 0 0 1px var(--line);
+        }
+
+        .metric {
+            min-width: 0;
+            padding: 12px;
+            background: var(--panel-soft);
+        }
+
+        .metric-value {
+            display: block;
+            overflow: hidden;
+            color: var(--text);
+            font-size: 22px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .metric:nth-child(1) .metric-value { color: var(--cyan); }
+        .metric:nth-child(2) .metric-value { color: var(--red); }
+        .metric:nth-child(3) .metric-value { color: var(--amber); }
+        .metric:nth-child(4) .metric-value { color: var(--green); }
+
+        .metric-label {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 900;
+        }
+
+        .selected-name {
+            margin-bottom: 12px;
+            overflow-wrap: anywhere;
+            color: var(--text);
+            font-size: 21px;
+            font-weight: 900;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .data-list {
+            display: grid;
+            gap: 7px;
+        }
+
+        .data-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+            gap: 12px;
+            padding-bottom: 7px;
+            border-bottom: 1px solid rgba(103, 232, 255, 0.08);
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .data-row strong {
+            overflow-wrap: anywhere;
+            color: var(--secondary);
+            font-weight: 900;
+            text-align: right;
+        }
+
+        .row-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .list-row {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            padding: 11px 12px;
+            color: var(--text);
+            background: rgba(20, 34, 48, 0.58);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.09);
+            clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+            text-align: left;
+        }
+
+        button.list-row:hover {
+            background: rgba(24, 58, 82, 0.82);
+            box-shadow: inset 3px 0 0 var(--cyan), inset 0 0 0 1px var(--line-strong);
+        }
+
+        .list-row-title {
+            overflow: hidden;
+            font-size: 12px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .list-row-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 5px;
+            color: var(--muted);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .empty-state {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.45;
+        }
+
+        .footer {
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid var(--line-strong);
+            color: var(--muted);
+            background: var(--panel-strong);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 9px;
+        }
+
+        .footer-legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .legend-dot {
+            width: 7px;
+            height: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.42);
+        }
+
+        .legend-dot.west { background: var(--cyan); }
+        .legend-dot.east { background: var(--red); }
+        .legend-dot.intent { background: var(--amber); }
+        .legend-dot.player { background: var(--text); }
+
+        @media (min-width: 1800px) {
+            body {
+                font-size: 18px;
+            }
+
+            .brand {
+                gap: 16px;
+                padding: 0 22px;
+            }
+
+            .brand-mark {
+                width: 46px;
+                height: 46px;
+                flex-basis: 46px;
+                font-size: 16px;
+            }
+
+            .brand-title {
+                font-size: 24px;
+            }
+
+            .brand-subtitle,
+            .eyebrow {
+                font-size: 13px;
+            }
+
+            .badge-label {
+                font-size: 12px;
+            }
+
+            .operation-value {
+                font-size: 21px;
+            }
+
+            .icon-button {
+                width: 44px;
+                height: 44px;
+                flex-basis: 44px;
+                font-size: 20px;
+            }
+
+            .section {
+                padding: 22px;
+            }
+
+            .intent-role {
+                font-size: 16px;
+            }
+
+            .intent-target {
+                font-size: 34px;
+            }
+
+            .intent-copy {
+                font-size: 16px;
+            }
+
+            .phase-step {
+                min-height: 42px;
+                padding: 12px 12px 10px 32px;
+                font-size: 13px;
+            }
+
+            .phase-step::before {
+                top: 15px;
+                left: 13px;
+            }
+
+            .phase-meta,
+            .data-row,
+            .empty-state {
+                font-size: 13px;
+            }
+
+            .status-note,
+            .list-row-title {
+                font-size: 14px;
+            }
+
+            .metric-value {
+                font-size: 28px;
+            }
+
+            .metric-label,
+            .list-row-meta,
+            .footer {
+                font-size: 11px;
+            }
+
+            .selected-name {
+                font-size: 26px;
+            }
+        }
+
+        @media (max-width: 2200px) {
+            .brand-mark {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1799px) {
+            .brand-title {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .brand {
+                padding: 0 14px;
+            }
+
+            .brand-title {
+                font-size: 17px;
+            }
+
+            .brand-subtitle {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            body {
+                font-size: 14px;
+            }
+
+            .brand {
+                padding: 0 10px;
+            }
+
+            .brand-title {
+                font-size: 17px;
+            }
+
+            .operation-strip {
+                grid-template-columns: minmax(120px, 1fr) repeat(3, minmax(76px, auto));
+                padding-right: 6px;
+                padding-left: 6px;
+            }
+
+            .operation-cell {
+                padding: 0 8px;
+            }
+
+            .operation-value {
+                font-size: 14px;
+            }
+
+            .top-actions {
+                gap: 5px;
+                padding: 0 8px;
+            }
+
+            .icon-button {
+                width: 32px;
+                height: 32px;
+                flex-basis: 32px;
+                font-size: 15px;
+            }
+
+            .section {
+                padding: 13px;
+            }
+
+            .intent-target {
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow: auto;
+            }
+
+            .app {
+                height: auto;
+                min-height: 100vh;
+                grid-template-rows: auto auto auto;
+            }
+
+            .topbar {
+                grid-template-columns: 1fr;
+            }
+
+            .brand,
+            .operation-strip,
+            .top-actions {
+                min-height: 64px;
+                border-right: 0;
+                border-left: 0;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar.left,
+            .sidebar.right {
+                border: 0;
+            }
+
+            .map-portal {
+                min-height: 54vh;
+                order: -1;
+            }
+
+            .footer {
+                min-height: 96px;
+                padding: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">FLO</div>
+                <div class="brand-copy">
+                    <div class="brand-title">Frontline Operations</div>
+                    <div class="brand-subtitle">Theater Command Net</div>
+                </div>
+            </div>
+
+            <div class="operation-strip">
+                <div class="operation-cell">
+                    <span class="badge-label">Operation</span>
+                    <span class="operation-value" id="operation-id">No active operation</span>
+                </div>
+                <div class="operation-cell">
+                    <span class="badge-label">Role</span>
+                    <span class="operation-value cyan" id="operation-role">Connecting</span>
+                </div>
+                <div class="operation-cell">
+                    <span class="badge-label">Phase</span>
+                    <span class="operation-value amber" id="phase-badge">Connecting</span>
+                </div>
+                <div class="operation-cell">
+                    <span class="badge-label">Time</span>
+                    <span class="operation-value green" id="phase-timer">--:--</span>
+                </div>
+            </div>
+
+            <div class="top-actions">
+                <button class="icon-button" id="fit-button" title="Fit theater" aria-label="Fit theater">&#9635;</button>
+                <button class="icon-button" id="player-button" title="Center on player" aria-label="Center on player">&#8853;</button>
+                <button class="icon-button" id="target-button" title="Center on current intent" aria-label="Center on current intent">&#9678;</button>
+                <button class="icon-button" id="refresh-button" title="Refresh command net" aria-label="Refresh command net">&#8635;</button>
+                <button class="icon-button close" id="close-button" title="Close operations panel" aria-label="Close operations panel">&#10005;</button>
+            </div>
+        </header>
+
+        <main class="workspace">
+            <aside class="sidebar left">
+                <section class="section">
+                    <p class="eyebrow">Commander's Intent</p>
+                    <p class="intent-role" id="intent-role">Awaiting Orders</p>
+                    <h1 class="intent-target" id="intent-target">Command Net Offline</h1>
+                    <p class="intent-copy" id="intent-copy">Waiting for the server's current operational picture.</p>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Campaign Phase</p>
+                    <div class="phase-list" id="phase-list"></div>
+                    <div class="phase-meta">
+                        <span>Support Posture</span>
+                        <strong id="support-posture">--</strong>
+                    </div>
+                    <div class="phase-meta">
+                        <span>Operation Allocation</span>
+                        <strong id="operation-allocation">--</strong>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Your Position</p>
+                    <div class="status-note" id="player-note">Position unavailable.</div>
+                </section>
+            </aside>
+
+            <section class="map-portal" aria-label="Arma theater map"></section>
+
+            <aside class="sidebar right">
+                <section class="section">
+                    <p class="eyebrow">Tactical Status</p>
+                    <div class="metric-grid">
+                        <div class="metric"><span class="metric-value" id="metric-friendly">--</span><span class="metric-label">Friendly Objectives</span></div>
+                        <div class="metric"><span class="metric-value" id="metric-enemy">--</span><span class="metric-label">Enemy Objectives</span></div>
+                        <div class="metric"><span class="metric-value" id="metric-footholds">--</span><span class="metric-label">Footholds</span></div>
+                        <div class="metric"><span class="metric-value" id="metric-opportunities">--</span><span class="metric-label">Opportunities</span></div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Sustainment</p>
+                    <div class="metric-grid">
+                        <div class="metric"><span class="metric-value" id="metric-treasury">--</span><span class="metric-label">Treasury</span></div>
+                        <div class="metric"><span class="metric-value" id="metric-available">--</span><span class="metric-label">Available</span></div>
+                        <div class="metric"><span class="metric-value" id="metric-committed">--</span><span class="metric-label">Committed</span></div>
+                        <div class="metric"><span class="metric-value" id="metric-income">--</span><span class="metric-label">Income / Min</span></div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Friendly Logistics</p>
+                    <div class="row-list" id="logistics-list"><div class="empty-state">No connected nodes.</div></div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Enemy Logistics Intel</p>
+                    <div class="row-list" id="enemy-logistics-intel-list"><div class="empty-state">No current reports.</div></div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Selected Objective</p>
+                    <h2 class="selected-name" id="selected-name">None Selected</h2>
+                    <div class="data-list" id="selected-data"></div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Reported Opportunities</p>
+                    <div class="row-list" id="opportunity-list"><div class="empty-state">No active reports.</div></div>
+                </section>
+
+                <section class="section">
+                    <p class="eyebrow">Unsupported Footholds</p>
+                    <div class="row-list" id="foothold-list"><div class="empty-state">No pending integrations.</div></div>
+                </section>
+            </aside>
+        </main>
+
+        <footer class="footer">
+            <span class="footer-legend">
+                <span class="legend-item"><span class="legend-dot west"></span>Blufor</span>
+                <span class="legend-item"><span class="legend-dot east"></span>Opfor</span>
+                <span class="legend-item"><span class="legend-dot intent"></span>Intent</span>
+                <span class="legend-item"><span class="legend-dot intent"></span>Logistics</span>
+                <span class="legend-item"><span class="legend-dot player"></span>You</span>
+            </span>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            "use strict";
+
+            var phaseOrder = ["LULL", "PREPARE", "ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
+            var snapshot = null;
+            var selectedId = "";
+            var phaseDeadlineMs = 0;
+
+            function byId(id) {
+                return document.getElementById(id);
+            }
+
+            function send(eventName, data) {
+                if (typeof A3API !== "undefined" && typeof A3API.SendAlert === "function") {
+                    A3API.SendAlert(JSON.stringify({ event: eventName, data: data || {} }));
+                }
+            }
+
+            function text(id, value) {
+                byId(id).textContent = String(value);
+            }
+
+            function readable(value) {
+                if (!value) { return "--"; }
+                return String(value).replace(/_/g, " ");
+            }
+
+            function formatTimer(seconds) {
+                var total = Math.max(0, Math.floor(Number(seconds) || 0));
+                var hours = Math.floor(total / 3600);
+                var minutes = Math.floor((total % 3600) / 60);
+                var secs = total % 60;
+                if (hours > 0) {
+                    return hours + ":" + String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+                }
+                return String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+            }
+
+            function formatAge(seconds) {
+                var value = Math.max(0, Math.floor(Number(seconds) || 0));
+                if (value < 60) { return value + "s"; }
+                return Math.floor(value / 60) + "m";
+            }
+
+            function formatResource(value) {
+                return String(Math.round(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function renderClock() {
+                if (!snapshot) {
+                    text("phase-timer", "--:--");
+                    return;
+                }
+                var remainingSeconds = Math.max(0, Math.ceil((phaseDeadlineMs - Date.now()) / 1000));
+                text("phase-timer", formatTimer(remainingSeconds));
+            }
+
+            function intentCopy(operation) {
+                if (operation.phase === "SCREEN") {
+                    if (operation.threatSector && operation.threatSector.visible) {
+                        return "Enemy preparations indicate a likely approach around grid " + operation.threatSector.grid
+                            + ". Screen the sector and report confirmed contacts; the exact objective remains unconfirmed.";
+                    }
+                    return "Maintain local security and report enemy pressure. Enemy main effort is not yet confirmed.";
+                }
+                if (operation.phase === "LULL" || !operation.id) {
+                    return "Reorganize, restore combat power, and protect the current line while theater command selects the next effort.";
+                }
+                if (operation.role === "MAIN_EFFORT") {
+                    if (operation.phase === "PREPARE") { return "Stage combat power and preserve the approach to " + operation.targetName + "."; }
+                    if (operation.phase === "ASSAULT") { return "Seize " + operation.targetName + " and defeat resistance inside the objective."; }
+                    if (operation.phase === "SECURE") { return "Hold " + operation.targetName + " while the captured area is secured."; }
+                    if (operation.phase === "CONSOLIDATE") { return "Protect " + operation.targetName + " until supply and command links are established."; }
+                    return "Recover combat power after the completed main effort.";
+                }
+                if (operation.role === "DEFEND") {
+                    return "Deny the enemy capture of " + operation.targetName + " and preserve the defensive line.";
+                }
+                return "Screen exposed approaches and support the theater main effort when ordered.";
+            }
+
+            function renderPhases(activePhase) {
+                var list = byId("phase-list");
+                list.innerHTML = "";
+                var screening = activePhase === "SCREEN";
+                var displayedPhase = screening ? "PREPARE" : activePhase;
+                var activeIndex = phaseOrder.indexOf(displayedPhase);
+                for (var i = 0; i < phaseOrder.length; i += 1) {
+                    var item = document.createElement("div");
+                    item.className = "phase-step";
+                    if (activeIndex >= 0 && i < activeIndex) { item.className += " complete"; }
+                    if (i === activeIndex) { item.className += " active"; }
+                    item.textContent = screening && phaseOrder[i] === "PREPARE" ? "PREPARE / SCREEN" : phaseOrder[i];
+                    list.appendChild(item);
+                }
+            }
+
+            function findObjective(id) {
+                if (!snapshot || !id) { return null; }
+                for (var i = 0; i < snapshot.objectives.length; i += 1) {
+                    if (snapshot.objectives[i].id === id) { return snapshot.objectives[i]; }
+                }
+                return null;
+            }
+
+            function appendDataRow(container, label, value) {
+                var row = document.createElement("div");
+                row.className = "data-row";
+                var key = document.createElement("span");
+                var val = document.createElement("strong");
+                key.textContent = label;
+                val.textContent = value;
+                row.appendChild(key);
+                row.appendChild(val);
+                container.appendChild(row);
+            }
+
+            function renderSelected() {
+                var objective = findObjective(selectedId);
+                var data = byId("selected-data");
+                data.innerHTML = "";
+                if (!objective) {
+                    text("selected-name", "None Selected");
+                    var empty = document.createElement("div");
+                    empty.className = "empty-state";
+                    empty.textContent = "No objective selected.";
+                    data.appendChild(empty);
+                    return;
+                }
+
+                text("selected-name", objective.name);
+                appendDataRow(data, "Owner", readable(objective.owner));
+                appendDataRow(data, "Intent", readable(objective.intent));
+                appendDataRow(data, "Capture", readable(objective.captureState));
+                appendDataRow(data, "Integration", readable(objective.integrationState));
+                appendDataRow(data, "Friendly / Enemy", objective.friendlyCount + " / " + objective.enemyCount);
+                appendDataRow(data, "Priority", String(objective.priority));
+            }
+
+            function selectObjective(objectiveId, notifyGame) {
+                if (!findObjective(objectiveId)) { return; }
+                selectedId = objectiveId;
+                renderSelected();
+                if (notifyGame) {
+                    send("operations::selectObjective", { objectiveId: objectiveId });
+                }
+            }
+
+            function renderRows(containerId, rows, emptyText, rowBuilder) {
+                var container = byId(containerId);
+                container.innerHTML = "";
+                if (!rows.length) {
+                    var empty = document.createElement("div");
+                    empty.className = "empty-state";
+                    empty.textContent = emptyText;
+                    container.appendChild(empty);
+                    return;
+                }
+                for (var i = 0; i < rows.length; i += 1) {
+                    container.appendChild(rowBuilder(rows[i]));
+                }
+            }
+
+            function objectiveListRow(objectiveId, titleValue, leftValue, rightValue) {
+                var row = document.createElement("button");
+                row.type = "button";
+                row.className = "list-row";
+                row.addEventListener("click", function () { selectObjective(objectiveId, true); });
+
+                var title = document.createElement("div");
+                title.className = "list-row-title";
+                title.textContent = titleValue;
+                var meta = document.createElement("div");
+                meta.className = "list-row-meta";
+                var left = document.createElement("span");
+                var right = document.createElement("span");
+                left.textContent = leftValue;
+                right.textContent = rightValue;
+                meta.appendChild(left);
+                meta.appendChild(right);
+                row.appendChild(title);
+                row.appendChild(meta);
+                return row;
+            }
+
+            function logisticsListRow(nodeState) {
+                var row = document.createElement("div");
+                row.className = "list-row";
+                var title = document.createElement("div");
+                title.className = "list-row-title";
+                title.textContent = nodeState.type + " / " + readable(nodeState.state);
+                var meta = document.createElement("div");
+                meta.className = "list-row-meta";
+                var left = document.createElement("span");
+                var right = document.createElement("span");
+                left.textContent = nodeState.objectiveName || ("GRID " + nodeState.grid);
+                right.textContent = formatResource(nodeState.throughput) + " / " + formatResource(nodeState.throughputMax);
+                meta.appendChild(left);
+                meta.appendChild(right);
+                row.appendChild(title);
+                row.appendChild(meta);
+                return row;
+            }
+
+            function enemyLogisticsIntelListRow(report) {
+                var row = document.createElement("div");
+                row.className = "list-row";
+                var title = document.createElement("div");
+                title.className = "list-row-title";
+                title.textContent = "REPORTED ENY " + report.type;
+                var meta = document.createElement("div");
+                meta.className = "list-row-meta";
+                var left = document.createElement("span");
+                var right = document.createElement("span");
+                left.textContent = report.objectiveName || ("GRID " + report.grid);
+                right.textContent = formatAge(report.ageSeconds) + " AGO / " + Math.max(1, Math.ceil(report.remainingSeconds / 60)) + "M LEFT";
+                meta.appendChild(left);
+                meta.appendChild(right);
+                row.appendChild(title);
+                row.appendChild(meta);
+                return row;
+            }
+
+            function renderSnapshot() {
+                var operation = snapshot.operation;
+                var player = snapshot.player;
+                var summary = snapshot.summary;
+
+                text("operation-id", operation.id || "No Active Operation");
+                text("operation-role", readable(operation.role));
+                text("phase-badge", readable(operation.phase));
+                renderClock();
+                text("intent-role", readable(operation.role));
+                var intentTarget = operation.targetVisible ? operation.targetName : (operation.phase === "LULL" ? "Theater Reserve" : "Intent Undisclosed");
+                if (!operation.targetVisible && operation.intelLevel === "SECTOR" && operation.threatSector.visible) {
+                    intentTarget = operation.threatSector.label;
+                }
+                text("intent-target", intentTarget);
+                text("intent-copy", intentCopy(operation));
+                text("support-posture", readable(operation.supportPosture));
+                text(
+                    "operation-allocation",
+                    operation.resourceBudget > 0
+                        ? (formatResource(operation.resourceSpent) + " SPENT / " + formatResource(operation.resourceBudget))
+                        : "NO ALLOCATION"
+                );
+                renderPhases(operation.phase);
+
+                var note = byId("player-note");
+                note.className = "status-note";
+                if (player.status === "OFF_OPERATION") {
+                    note.textContent = "You are outside the active operation. Local activity is reported as a future command opportunity.";
+                } else if (player.status === "IN_FOOTHOLD") {
+                    note.textContent = "You are holding unsupported territory. Supply access or a local base is required for integration.";
+                } else if (player.status === "OUTSIDE_OBJECTIVE") {
+                    note.textContent = "You are outside a recognized objective at grid " + player.grid + ".";
+                } else {
+                    note.className += " nominal";
+                    note.textContent = readable(player.status) + " / GRID " + player.grid;
+                }
+
+                text("metric-friendly", summary.friendlyObjectives);
+                text("metric-enemy", summary.enemyObjectives);
+                text("metric-footholds", summary.footholds);
+                text("metric-opportunities", summary.opportunities);
+                text("metric-treasury", formatResource(snapshot.economy.balance));
+                text("metric-available", formatResource(snapshot.economy.available));
+                text("metric-committed", formatResource(snapshot.economy.committed));
+                text("metric-income", "+" + formatResource(snapshot.economy.incomePerMinute));
+                renderRows("logistics-list", snapshot.logistics.nodes, "No logistics nodes.", logisticsListRow);
+                renderRows("enemy-logistics-intel-list", snapshot.enemyLogisticsIntel, "No current reports.", enemyLogisticsIntelListRow);
+                renderRows("opportunity-list", snapshot.opportunities, "No active reports.", function (row) {
+                    return objectiveListRow(
+                        row.objectiveId,
+                        row.name,
+                        readable(row.status) + " / " + row.sampleCount + " reports",
+                        formatAge(row.ageSeconds) + " ago"
+                    );
+                });
+
+                var footholds = [];
+                for (var i = 0; i < snapshot.objectives.length; i += 1) {
+                    var objective = snapshot.objectives[i];
+                    if (objective.owner === snapshot.viewerSide && objective.integrationState === "FOOTHOLD") {
+                        footholds.push(objective);
+                    }
+                }
+                renderRows("foothold-list", footholds, "No pending integrations.", function (row) {
+                    return objectiveListRow(
+                        row.id,
+                        row.name,
+                        readable(row.integrationState),
+                        row.friendlyCount + "F / " + row.enemyCount + "E"
+                    );
+                });
+            }
+
+            function applySnapshot(nextSnapshot) {
+                snapshot = nextSnapshot;
+                phaseDeadlineMs = Date.now() + (Math.max(0, Number(snapshot.operation.remainingSeconds) || 0) * 1000);
+                if (!selectedId || !findObjective(selectedId)) {
+                    selectedId = snapshot.operation.targetId || snapshot.player.objectiveId || "";
+                }
+                renderSnapshot();
+                renderSelected();
+            }
+
+            byId("fit-button").addEventListener("click", function () { send("operations::mapFit"); });
+            byId("player-button").addEventListener("click", function () { send("operations::mapPlayer"); });
+            byId("target-button").addEventListener("click", function () { send("operations::mapTarget"); });
+            byId("refresh-button").addEventListener("click", function () { send("operations::refresh"); });
+            byId("close-button").addEventListener("click", function () { send("operations::close"); });
+            window.setInterval(renderClock, 250);
+
+            window.FLOOperations = {
+                applySnapshot: applySnapshot,
+                selectObjective: function (objectiveId) { selectObjective(objectiveId, false); }
+            };
+
+            function demoSnapshot(screening) {
+                var nodes = [
+                    ["obj_1", "Kavala", [3600, 12800, 0], "WEST", "SUPPORT"],
+                    ["obj_2", "Agios Dionysios", [9200, 14400, 0], "WEST", "SUPPORT"],
+                    ["obj_3", "Athira", [14000, 18800, 0], "WEST", "SCREEN"],
+                    ["obj_4", "Zaros", [9100, 8700, 0], "WEST", "NONE"],
+                    ["obj_5", "Pyrgos", [16800, 12700, 0], "EAST", screening ? "NONE" : "MAIN_EFFORT"],
+                    ["obj_6", "Charkia", [21400, 16800, 0], "EAST", "NONE"],
+                    ["obj_7", "Sofia Approach", [15100, 6500, 0], "WEST", "FOOTHOLD"],
+                    ["obj_8", "Panagia", [20800, 9500, 0], "EAST", "OPPORTUNITY"],
+                    ["obj_9", "Sofia", [25500, 13200, 0], "EAST", "NONE"]
+                ];
+                var objectives = [];
+                for (var i = 0; i < nodes.length; i += 1) {
+                    objectives.push({
+                        id: nodes[i][0], name: nodes[i][1], position: nodes[i][2], radius: 350, priority: 40 + i * 5,
+                        owner: nodes[i][3], captureState: nodes[i][0] === "obj_5" && !screening ? "contested" : "secure",
+                        integrationState: nodes[i][0] === "obj_7" ? "FOOTHOLD" : "INTEGRATED",
+                        friendlyCount: nodes[i][3] === "WEST" ? 8 : 2, enemyCount: nodes[i][3] === "EAST" ? 9 : 1,
+                        contested: nodes[i][0] === "obj_5" && !screening, underAttack: nodes[i][0] === "obj_5" && !screening, intent: nodes[i][4]
+                    });
+                }
+                return {
+                    revision: 27, viewerSide: "WEST", viewerSideName: "BLUFOR", enemySide: "EAST", worldSize: 30720,
+                    operation: {
+                        id: screening ? "OP_EAST_08" : "OP_WEST_07", role: screening ? "SCREEN" : "MAIN_EFFORT", phase: screening ? "SCREEN" : "ASSAULT", targetVisible: !screening,
+                        targetId: screening ? "" : "obj_5", targetName: screening ? "Undisclosed" : "Pyrgos", targetPosition: screening ? [] : [16800, 12700, 0],
+                        intelLevel: screening ? "SECTOR" : "TARGET", intelReason: screening ? "OPERATION_ASSESSMENT" : "COMMANDER_INTENT",
+                        threatSector: screening
+                            ? { visible: true, position: [15100, 13900, 0], longAxis: 2100, shortAxis: 1100, direction: 118, grid: "151139", label: "THREATENED APPROACH" }
+                            : { visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
+                        sourceObjectiveIds: screening ? [] : ["obj_2", "obj_4"], supportObjectiveIds: screening ? [] : ["obj_1", "obj_3"],
+                        supportPosture: screening ? "SCREENING" : "COMMITTED", remainingSeconds: screening ? 426 : 1126, result: "", transitionReason: screening ? "COMMANDER_SELECTION" : "PREPARATION_COMPLETE",
+                        lastCompletedOperationId: "OP_EAST_06", lastCompletedResult: "ATTACKER_FAILED",
+                        resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0
+                    },
+                    player: screening
+                        ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "OFF_OPERATION" }
+                        : { grid: "168127", position: [15700, 12100, 0], objectiveId: "obj_5", status: "IN_MAIN_EFFORT" },
+                    summary: { friendlyObjectives: 5, enemyObjectives: 4, footholds: 1, opportunities: 1 },
+                    economy: { balance: 7420, available: 5320, committed: 2100, lastIncome: 148, incomePerMinute: 49, ledger: [] },
+                    logistics: {
+                        hqNodeId: "NODE_WEST_HQ",
+                        summary: { connected: 2, strained: 1, isolated: 0, establishing: 1, disabled: 0 },
+                        nodes: [
+                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, deliveryCount: 0, requiredDeliveries: 0 },
+                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, deliveryCount: 0, requiredDeliveries: 0 },
+                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, deliveryCount: 1, requiredDeliveries: 2 }
+                        ],
+                        routes: [
+                            { fromNodeId: "NODE_WEST_HQ", toNodeId: "NODE_WEST_DEPOT", from: [3600, 12800, 0], to: [9200, 14400, 0], state: "CONNECTED" },
+                            { fromNodeId: "NODE_WEST_DEPOT", toNodeId: "NODE_WEST_FOB", from: [9200, 14400, 0], to: [14000, 18800, 0], state: "ESTABLISHING" }
+                        ]
+                    },
+                    enemyLogisticsIntel: [
+                        { type: "DEPOT", position: [20800, 9500, 0], objectiveName: "Panagia", grid: "208095", radius: 300, ageSeconds: 42, remainingSeconds: 258 }
+                    ],
+                    opportunities: [{ objectiveId: "obj_8", name: "Panagia", status: "ASSAULT", sampleCount: 6, ageSeconds: 82 }],
+                    objectives: objectives
+                };
+            }
+
+            if (window.location.search.indexOf("demo=1") >= 0 || window.location.search.indexOf("demo=screen") >= 0) {
+                applySnapshot(demoSnapshot(window.location.search.indexOf("demo=screen") >= 0));
+            } else {
+                send("operations::ready");
+                window.setInterval(function () { send("operations::refresh"); }, 5000);
+            }
+        }());
+    </script>
+</body>
+</html>

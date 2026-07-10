@@ -17,6 +17,8 @@ params [["_cmdr", nil]];
 
 private _cache = createHashMapFromArray [
     ["attackCounts", createHashMap],
+    ["attackGroupIds", []],
+    ["orderedGroupIds", []],
     ["garrisonCounts", createHashMap],
     ["defenderCounts", createHashMap],
     ["garrisonGroupsByObjective", createHashMap],
@@ -29,6 +31,8 @@ if (isNil "_cmdr") exitWith { _cache };
 private _groups = FLO_virtualGroups get "_groups";
 private _ownSide = _cmdr get "_ownSide";
 private _attackCounts = _cache get "attackCounts";
+private _attackGroupIds = _cache get "attackGroupIds";
+private _orderedGroupIds = _cache get "orderedGroupIds";
 private _garrisonCounts = _cache get "garrisonCounts";
 private _defenderCounts = _cache get "defenderCounts";
 private _garrisonGroupsByObjective = _cache get "garrisonGroupsByObjective";
@@ -40,7 +44,12 @@ private _claimedPositionsByObjective = _cache get "claimedPositionsByObjective";
     if ((_gData get "side") != _ownSide) then { continue };
 
     private _order = _gData get "commanderOrder";
+    if (_order in ["ATTACK", "DEFEND", "GARRISON", "MOVE"]) then {
+        _orderedGroupIds pushBack _x;
+    };
+
     if (_order == "ATTACK") then {
+        _attackGroupIds pushBack _x;
         private _objectiveId = _gData get "attackObjective";
         if (_objectiveId != "") then {
             private _count = if (_objectiveId in _attackCounts) then {

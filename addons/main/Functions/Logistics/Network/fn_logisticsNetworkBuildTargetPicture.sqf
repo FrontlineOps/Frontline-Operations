@@ -25,7 +25,6 @@ private _players = allPlayers;
 private _hasPlayers = _players isNotEqualTo [];
 
 private _pressureTargets = [];
-private _advanceTargets = [];
 private _rearTargets = [];
 private _maneuverTargets = [];
 private _collapseTargetCount = 0;
@@ -65,7 +64,6 @@ private _frontlinePressureTargetCount = 0;
         private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
         if (
             (_role get "isActiveNode")
-            || {_role get "isAdvanceCandidate"}
             || {(_role get "activeLinkedObjectives") isNotEqualTo []}
         ) then {
             _frontlinePressureTargetCount = _frontlinePressureTargetCount + 1;
@@ -74,16 +72,10 @@ private _frontlinePressureTargetCount = 0;
         continue;
     };
 
-    private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
-    if (_role get "isAdvanceCandidate") then {
-        _advanceTargets pushBack _objectiveId;
-        _maneuverTargets pushBack _objectiveId;
-    };
 } forEach _managedObjectiveIds;
 
 private _targetPicture = createHashMapFromArray [
     ["pressureTargets", _pressureTargets],
-    ["advanceTargets", _advanceTargets],
     ["rearTargets", _rearTargets],
     ["maneuverTargets", _maneuverTargets],
     ["collapseTargetCount", _collapseTargetCount],

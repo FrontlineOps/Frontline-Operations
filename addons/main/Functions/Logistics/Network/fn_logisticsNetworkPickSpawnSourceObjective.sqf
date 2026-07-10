@@ -14,8 +14,8 @@
  *   STRING - Selected source objective ID or empty string
  */
 
-params ["_net", "_targetObjId", ["_blockedObjectives", []]];
+params ["_net", "_targetObjId", ["_blockedObjectives", []], ["_requiredThroughput", 0, [0]]];
 
 if (_targetObjId == "") exitWith { "" };
 
-[_net, _targetObjId, _blockedObjectives] call FLO_fnc_logisticsNetworkFindSupplySourceObjective
+[_net, _targetObjId, _blockedObjectives, _requiredThroughput] call FLO_fnc_logisticsNetworkFindSupplySourceObjective

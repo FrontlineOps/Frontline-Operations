@@ -48,6 +48,10 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
             if (isNil {_objData get "captureSecureTime"}) then { _objData set ["captureSecureTime", _captureSecureTimeCfg]; };
             if (isNil {_objData get "captureStatusChangedAt"}) then { _objData set ["captureStatusChangedAt", -1]; };
             if (isNil {_objData get "captureIntegratedAtDateNum"}) then { _objData set ["captureIntegratedAtDateNum", -1]; };
+            if (isNil {_objData get "campaignIntegrationState"}) then { _objData set ["campaignIntegrationState", "INTEGRATED"]; };
+            if (isNil {_objData get "campaignOperationId"}) then { _objData set ["campaignOperationId", ""]; };
+            if (isNil {_objData get "campaignCapturedBySideKey"}) then { _objData set ["campaignCapturedBySideKey", ""]; };
+            if (isNil {_objData get "campaignBenefitsPending"}) then { _objData set ["campaignBenefitsPending", false]; };
             FLO_Objectives set [_objId, _objData];
         } forEach (keys FLO_Objectives);
 

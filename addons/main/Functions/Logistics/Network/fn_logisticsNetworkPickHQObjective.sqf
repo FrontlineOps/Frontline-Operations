@@ -1,41 +1,23 @@
-/*
- * Function: FLO_fnc_logisticsNetworkPickHQObjective
- * Author: Frontline Operations Development Group
- * Description:
- *   Elects the logistics HQ objective for the managed side. Capitals outrank
- *   cities, then villages, then any remaining owned objective by priority.
- *
- * Arguments:
- *   0: Logistics network object <HASHMAP>
- *
- * Return Value:
- *   STRING - HQ objective ID or empty string
- */
+params ["_network"];
 
-params ["_net"];
+private _managedObjectiveIds = _network get "_managedObjectiveIds";
+if (_managedObjectiveIds isEqualTo []) exitWith { "" };
 
-private _friendlyObjectiveIds = _net get "_managedObjectiveIds";
+private _persistedObjectiveId = _network get "_hqObjectiveId";
+if (_persistedObjectiveId != "" && {_persistedObjectiveId in _managedObjectiveIds}) exitWith { _persistedObjectiveId };
 
-if (_friendlyObjectiveIds isEqualTo []) exitWith { "" };
-
+private _startPosition = FLO_MissionConfig get "startPosition";
+private _managedSide = _network get "_managedSide";
 private _bestObjectiveId = "";
-private _bestScore = -1e12;
+private _bestDistance = [1e12, -1] select (_managedSide isEqualTo east);
 
 {
-    private _objectiveId = _x;
-    private _objective = FLO_Objectives get _objectiveId;
-    private _score = switch (_objective get "subtype") do {
-        case "capital": { 3000 };
-        case "city": { 2000 };
-        case "village": { 1000 };
-        default { 0 };
+    private _distance = _startPosition distance2D ((FLO_Objectives get _x) get "position");
+    private _isBetter = [_distance < _bestDistance, _distance > _bestDistance] select (_managedSide isEqualTo east);
+    if (_isBetter) then {
+        _bestDistance = _distance;
+        _bestObjectiveId = _x;
     };
-    _score = _score + (_objective get "priority");
-
-    if (_score > _bestScore) then {
-        _bestScore = _score;
-        _bestObjectiveId = _objectiveId;
-    };
-} forEach _friendlyObjectiveIds;
+} forEach _managedObjectiveIds;
 
 _bestObjectiveId

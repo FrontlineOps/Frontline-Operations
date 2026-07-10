@@ -1170,41 +1170,22 @@ class FLO_FactionSelectDialog
 			h = FLO_Q(FACTION_LABEL_H);
 		};
 
-		class LabelStartingResources: FLO_RscText_Label
-		{
-			idc = FLO_IDC_NONE;
-			text = "Starting Resources";
-			x = FLO_Q(FACTION_HALF_FIELD_X1(FACTION_FULL_X));
-			y = FLO_Q(FACTION_CARD_MISC_Y + (1.7 * GUI_GRID_H));
-			w = FLO_Q(FACTION_HALF_FIELD_W);
-			h = FLO_Q(FACTION_LABEL_H);
-		};
-
-		class ComboStartingResources: FLO_FactionCombo
-		{
-			idc = FLO_IDC_FACTION_COMBO_RESOURCES;
-			x = FLO_Q(FACTION_HALF_FIELD_X1(FACTION_FULL_X));
-			y = FLO_Q(FACTION_CARD_MISC_Y + (2.4 * GUI_GRID_H));
-			w = FLO_Q(FACTION_HALF_FIELD_W);
-			tooltip = "Select starting resource level";
-		};
-
 		class LabelReputation: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
 			text = "Civilian Standing";
-			x = FLO_Q(FACTION_HALF_FIELD_X2(FACTION_FULL_X));
+			x = FLO_Q(FACTION_FULL_X);
 			y = FLO_Q(FACTION_CARD_MISC_Y + (1.7 * GUI_GRID_H));
-			w = FLO_Q(FACTION_HALF_FIELD_W);
+			w = FLO_Q(FACTION_HALF_W);
 			h = FLO_Q(FACTION_LABEL_H);
 		};
 
 		class ComboReputation: FLO_FactionCombo
 		{
 			idc = FLO_IDC_FACTION_COMBO_REPUTATION;
-			x = FLO_Q(FACTION_HALF_FIELD_X2(FACTION_FULL_X));
+			x = FLO_Q(FACTION_FULL_X);
 			y = FLO_Q(FACTION_CARD_MISC_Y + (2.4 * GUI_GRID_H));
-			w = FLO_Q(FACTION_HALF_FIELD_W);
+			w = FLO_Q(FACTION_HALF_W);
 			tooltip = "Set how friendly civilians are to players at mission start";
 		};
 

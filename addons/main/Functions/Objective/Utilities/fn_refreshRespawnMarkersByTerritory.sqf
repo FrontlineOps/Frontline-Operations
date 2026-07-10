@@ -51,8 +51,11 @@ if (!isNil "FLO_FactionCopType") then {
         _building setVariable [_markerVar, _markerName, true];
     };
 
-    private _owner = [getPosATL _building] call FLO_fnc_objectiveOwnerAtPosition;
-    if (_owner isEqualTo _enemySide) then {
+    private _buildingPos = getPosATL _building;
+    private _objectiveId = [_buildingPos] call FLO_fnc_campaignFindObjectiveAtPosition;
+    private _owner = [_buildingPos] call FLO_fnc_objectiveOwnerAtPosition;
+    private _strategicallyAvailable = _objectiveId == "" || {[_objectiveId] call FLO_fnc_campaignIsObjectiveIntegrated};
+    if (_owner isEqualTo _enemySide || {!_strategicallyAvailable}) then {
         if (_markerName in allMapMarkers) then {
             deleteMarker _markerName;
         };

@@ -28,7 +28,6 @@ private _managedSide = _net get "_managedSide";
 private _enemySide = _net get "_enemySide";
 private _friendlyCountKey = ["bluforCount", "opforCount"] select (_managedSide isEqualTo east);
 private _enemyCountKey = ["opforCount", "bluforCount"] select (_managedSide isEqualTo east);
-private _requestedRole = [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
 private _sourceableCache = _net get "_dispatchSourceableCache";
 private _requestedCanSource = if (_requestedObjectiveId in _sourceableCache) then {
     _sourceableCache get _requestedObjectiveId
@@ -36,15 +35,6 @@ private _requestedCanSource = if (_requestedObjectiveId in _sourceableCache) the
     private _canSource = ([_net, _requestedObjectiveId, []] call FLO_fnc_logisticsNetworkFindSupplySourceObjective) != "";
     _sourceableCache set [_requestedObjectiveId, _canSource];
     _canSource
-};
-
-if (
-    (_requestedRole get "isAdvanceCandidate")
-    && {!(_requestedObjective get "contested")}
-    && {(_requestedObjective get _enemyCountKey) <= 0}
-) exitWith {
-    _deliveryCache set [_requestedObjectiveId, _requestedObjectiveId];
-    _requestedObjectiveId
 };
 
 private _candidateIds = [];

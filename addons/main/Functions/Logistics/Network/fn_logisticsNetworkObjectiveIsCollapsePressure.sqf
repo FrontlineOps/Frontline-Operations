@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Returns true when an owned pressured objective is deteriorating badly
- *   enough to override normal supply-chain advance doctrine.
+ *   enough to override normal reinforcement priorities.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>

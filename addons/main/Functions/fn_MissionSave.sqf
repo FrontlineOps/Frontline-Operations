@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 19;
+private _saveVersion = 21;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -46,7 +46,7 @@ try {
     _cfg set ["friendlyHandle", FLO_FriendlyHandle];
     _cfg set ["enemyHandle", FLO_EnemyHandle];
     _cfg set ["civilianHandle", FLO_CivilianHandle];
-    _cfg set ["moneyHandle", FLO_MoneyHandle];
+    _cfg set ["startingResources", FLO_MissionConfig get "startingResources"];
     _cfg set ["reputationHandle", FLO_ReputationHandle];
     _cfg set ["westDifficultyHandle", FLO_WestDifficultyHandle];
     _cfg set ["eastDifficultyHandle", FLO_EastDifficultyHandle];
@@ -66,6 +66,7 @@ try {
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
     _cfg set ["virtualizationUnitCap", FLO_VirtualizationUnitCap];
     _cfg set ["startingTerritoryWestRatio", FLO_StartingTerritoryWestRatio];
+    _cfg set ["startPosition", FLO_MissionConfig get "startPosition"];
     _cfg set ["enemyPrec", EnemyPrec];
     if (!isNil "FLO_FactionFobType") then { _cfg set ["fobType", FLO_FactionFobType]; };
     if (!isNil "FLO_FactionFobTerminalType") then { _cfg set ["fobContainerType", FLO_FactionFobTerminalType]; };
@@ -204,11 +205,23 @@ try {
         _x setVariable ["FLO_SaveID", _id, true];
         private _items = [_x] call FLO_fnc_saveGetAllCargo;
         _x setVariable ["FLO_crate_items", _items, true];
-        _crateHash set [_id, createHashMapFromArray [
+        private _crateData = createHashMapFromArray [
             ["type", typeOf _x], ["posASL", getPosASL _x],
             ["vectorDirAndUp", [vectorDir _x, vectorUp _x]],
             ["items", _items], ["damage", damage _x], ["locked", locked _x]
-        ]];
+        ];
+        if (_x getVariable ["FLO_LogisticsShipment", false]) then {
+            private _shipmentSide = _x getVariable ["FLO_LogisticsSide", sideUnknown];
+            if !(_shipmentSide in [west, east]) then {
+                throw format ["Logistics shipment %1 has invalid side %2", _id, _shipmentSide];
+            };
+            _crateData set ["logisticsShipment", true];
+            _crateData set ["logisticsDelivered", _x getVariable ["FLO_LogisticsDelivered", false]];
+            _crateData set ["logisticsSideKey", ([_shipmentSide] call FLO_fnc_gtnSideContext) get "sideKey"];
+            _crateData set ["logisticsOriginNodeId", _x getVariable ["FLO_LogisticsOriginNodeId", ""]];
+            _crateData set ["logisticsThroughput", _x getVariable ["FLO_LogisticsThroughput", -1]];
+        };
+        _crateHash set [_id, _crateData];
     } forEach _saveCrates;
     _data set ["crates", _crateHash];
     ["SAVE", 3, format ["Crates: %1", count _crateHash]] call FLO_fnc_log;
@@ -271,7 +284,10 @@ try {
                     ["buildingPosASL", getPosASL _building],
                     ["buildingDir", getDir _building],
                     ["buildingVectorUp", vectorUp _building],
-                    ["markerName", _marker]
+                    ["markerName", _marker],
+                    ["baseSideKey", ([_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_gtnSideContext) get "sideKey"],
+                    ["baseSaveId", _building getVariable ["FLO_BaseSaveId", ""]],
+                    ["logisticsNodeId", _building getVariable ["FLO_LogisticsNodeId", ""]]
                 ];
 
                 // Add container data if found
@@ -307,7 +323,10 @@ try {
                     ["buildingPosASL", getPosASL _building],
                     ["buildingDir", getDir _building],
                     ["buildingVectorUp", vectorUp _building],
-                    ["markerName", _marker]
+                    ["markerName", _marker],
+                    ["baseSideKey", ([_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_gtnSideContext) get "sideKey"],
+                    ["baseSaveId", _building getVariable ["FLO_BaseSaveId", ""]],
+                    ["logisticsNodeId", _building getVariable ["FLO_LogisticsNodeId", ""]]
                 ];
 
                 // Add container data if found
@@ -401,6 +420,9 @@ try {
             ["WEST", createHashMapFromArray [["gtnEnabled", _westEnabled]]]
         ];
         _data set ["aiCommanders", _aiCommanders];
+
+        private _campaignDirector = FLO_GTN_ResourceManager call ["_getCampaignDirector", []];
+        _data set ["campaignOperation", _campaignDirector call ["_serialize", []]];
     };
     ["SAVE", 3, "Objectives and dual GTN state saved"] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
@@ -432,7 +454,7 @@ try {
 // FINALIZATION
 // ============================================================================
 
-private _requiredKeys = ["time", "markers", "vehicles", "objects"];
+private _requiredKeys = ["time", "markers", "vehicles", "objects", "config", "objectives", "virtualGroups", "campaignOperation"];
 private _isValid = true;
 { if (!(_x in _data)) then { _isValid = false; ["SAVE", 1, format ["Missing key: %1", _x]] call FLO_fnc_log; }; } forEach _requiredKeys;
 

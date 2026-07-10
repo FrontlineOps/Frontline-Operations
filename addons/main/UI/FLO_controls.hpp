@@ -260,7 +260,7 @@ class FLO_RscPictureKeepAspect: RscPictureKeepAspect
 // FLO MAP
 // ============================================================================
 
-class FLO_RscMap: RscMap
+class FLO_RscMap: RscMapControl
 {
 	// Standard map control with default settings
 };

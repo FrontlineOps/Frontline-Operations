@@ -94,6 +94,7 @@ private _groupData = createHashMapFromArray [
     ["orderTargetPos", []],
     ["orderMode", ""],
     ["attackObjective", ""],
+    ["campaignOperationId", ""],
     ["defendObjective", ""],
     ["defendLeaseIssuedAt", -1],
     ["defendLeaseUntil", -1],

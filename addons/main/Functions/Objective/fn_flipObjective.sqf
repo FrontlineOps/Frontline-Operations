@@ -45,44 +45,8 @@ _obj set ["captureSide", sideUnknown];
 _obj set ["captureSecureStartedAt", -1];
 _obj set ["captureSecureProgress", 0];
 _obj set ["captureStatusChangedAt", diag_tickTime];
-_obj set [
-    "captureIntegratedAtDateNum",
-    _captureDateNum + ((["get", "captureIntegrationDelaySeconds"] call FLO_fnc_objectiveConfig) / 86400)
-];
+_obj = [_objectiveId, _obj, _newOwner] call FLO_fnc_campaignClassifyCapture;
 FLO_Objectives set [_objectiveId, _obj];
-
-if (!isNil "FLO_SideResources" && {_newOwner in [east, west]}) then {
-    private _sideKey = ([_newOwner] call FLO_fnc_gtnSideContext) get "sideKey";
-    private _resourceObj = FLO_SideResources get _sideKey;
-    private _captureReward = _resourceObj get "OBJECTIVE_CAPTURE_REWARD";
-    [_resourceObj, _captureReward, true] call FLO_fnc_sideResourcesAddResources;
-
-    ["SIDE_RES", 3, format [
-        "Objective capture reward: %1 gained %2 resources for %3",
-        _sideKey,
-        _captureReward,
-        _objectiveId
-    ]] call FLO_fnc_log;
-
-    if (!isNil "FLO_Logistics_Networks" && {_sideKey in FLO_Logistics_Networks}) then {
-        private _net = FLO_Logistics_Networks get _sideKey;
-        if ((_net get "OBJECTIVE_CAPTURE_FORCE_GROWTH") > 0) then {
-            _obj set [
-                "captureGrowthEligibleAtDateNum",
-                _captureDateNum + ((_net get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS") / 86400)
-            ];
-            _obj set ["captureGrowthPending", true];
-            FLO_Objectives set [_objectiveId, _obj];
-
-            ["LOGISTICS", 3, format [
-                "Queued delayed capture growth: %1 held by %2 until %3",
-                _objectiveId,
-                _sideKey,
-                _obj get "captureGrowthEligibleAtDateNum"
-            ]] call FLO_fnc_log;
-        };
-    };
-};
 
 if (!isNil "FLO_Logistics_Networks") then {
     {

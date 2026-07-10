@@ -51,6 +51,7 @@ createHashMapFromArray [
     ["orderTargetPos", _groupData get "orderTargetPos"],
     ["orderMode", _groupData get "orderMode"],
     ["attackObjective", _groupData get "attackObjective"],
+    ["campaignOperationId", _groupData get "campaignOperationId"],
     ["defendObjective", _groupData get "defendObjective"],
     ["defendLeaseIssuedAt", _groupData get "defendLeaseIssuedAt"],
     ["defendLeaseUntil", _groupData get "defendLeaseUntil"],

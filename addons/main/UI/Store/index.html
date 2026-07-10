@@ -156,7 +156,7 @@
 
         .status-strip {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 1px;
             padding: 10px;
             background:
@@ -462,6 +462,10 @@
             box-shadow: inset 0 0 0 1px rgba(37, 215, 255, 0.78), 0 24px 42px rgba(0, 0, 0, 0.4), 0 0 34px rgba(37, 215, 255, 0.2);
         }
 
+        .armory-card.locked {
+            opacity: 0.58;
+        }
+
         .card-media {
             position: relative;
             margin: 10px 10px 0;
@@ -517,6 +521,17 @@
             font-size: 21px;
             font-weight: 900;
             line-height: 1.12;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .item-meta {
+            margin-top: 8px;
+            overflow: hidden;
+            color: #A7B7C8;
+            font-size: 12px;
+            font-weight: 800;
             text-overflow: ellipsis;
             text-transform: uppercase;
             white-space: nowrap;
@@ -1128,20 +1143,20 @@
 
             <section class="status-strip" id="statusStrip">
                 <div class="stat">
-                    <div class="stat-label">Faction</div>
-                    <div class="stat-value" id="factionName">No faction selected</div>
-                </div>
-                <div class="stat hidden" id="deploymentFundStat">
-                    <div class="stat-label">Deployment Fund</div>
-                    <div class="stat-value cyan" id="deploymentFund">0</div>
+                    <div class="stat-label">Treasury</div>
+                    <div class="stat-value cyan" id="totalBalance">0</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-label">Personal</div>
-                    <div class="stat-value cyan" id="personalBalance">0</div>
+                    <div class="stat-label">Committed</div>
+                    <div class="stat-value" id="committed">0</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-label">Faction</div>
+                    <div class="stat-label">Available</div>
                     <div class="stat-value amber" id="balance">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Node Supply</div>
+                    <div class="stat-value cyan" id="throughput">0 / 0</div>
                 </div>
                 <div class="stat">
                     <div class="stat-label">Cart</div>
@@ -1153,7 +1168,8 @@
                 <div>
                     <div class="stat-label">Operator Side</div>
                     <div class="side-name" id="sideName">Waiting</div>
-                    <div class="stat-label" id="ticketCount">Tickets 0</div>
+                    <div class="stat-label" id="factionName">No faction selected</div>
+                    <div class="stat-label" id="nodeStatus">Node unavailable</div>
                 </div>
             </section>
         </header>
@@ -1237,7 +1253,6 @@
             <div class="message" id="message">Loading catalog.</div>
             <div class="bottom-actions">
                 <button class="action-btn secondary" type="button" onclick="FOOFStore.back()">Back</button>
-                <button class="action-btn secondary hidden" id="placeVehicleButton" type="button" onclick="FOOFStore.placeVehicle()">Place Vehicle</button>
                 <button class="action-btn secondary" type="button" onclick="FOOFStore.clearCart()">Clear</button>
                 <button class="action-btn secondary" type="button" onclick="FOOFStore.saveKit()">Save Kit</button>
                 <button class="action-btn good" type="button" onclick="FOOFStore.checkout()">Checkout</button>
@@ -1272,17 +1287,16 @@
                 items: [],
                 cart: [],
                 savedKits: [],
-                pendingVehicles: [],
                 pendingAttachmentAdd: null,
                 selectedItem: null,
                 activeContainer: "auto",
                 balance: 0,
-                personalBalance: 0,
-                deploymentFund: 0,
-                deploymentFundAmount: 0,
-                tickets: 0,
-                vehicleStoreEnabled: false,
-                canUseFactionFunds: false,
+                totalBalance: 0,
+                committed: 0,
+                throughput: 0,
+                throughputMax: 0,
+                nodeType: "",
+                nodeState: "",
                 query: ""
             };
 
@@ -1924,27 +1938,10 @@
                 }
 
                 if (isVehicle(item)) {
-                    return "Placement";
+                    return "Base Spawn";
                 }
 
                 return "Equip";
-            }
-
-            function updatePlaceVehicleButton() {
-                var button = node("placeVehicleButton");
-
-                if (!button) {
-                    return;
-                }
-
-                if (state.pendingVehicles.length === 0) {
-                    button.className = "action-btn secondary hidden";
-                    button.textContent = "Place Vehicle";
-                    return;
-                }
-
-                button.className = "action-btn secondary";
-                button.textContent = "Place Vehicle";
             }
 
             function copyCartLine(line) {
@@ -2001,27 +1998,25 @@
 
             function updateSummary() {
                 var total = cartTotal();
-                var fundStat = node("deploymentFundStat");
-                var statusStrip = node("statusStrip");
-
-                if (fundStat && statusStrip) {
-                    if (state.deploymentFund > 0) {
-                        fundStat.className = "stat";
-                        statusStrip.className = "status-strip has-deployment";
-                        text("deploymentFund", formatMoney(state.deploymentFund));
-                    } else {
-                        fundStat.className = "stat hidden";
-                        statusStrip.className = "status-strip";
-                    }
-                }
-
-                text("personalBalance", formatMoney(state.personalBalance));
+                text("totalBalance", formatMoney(state.totalBalance));
+                text("committed", formatMoney(state.committed));
                 text("balance", formatMoney(state.balance));
+                text("throughput", groupDigits(state.throughput) + " / " + groupDigits(state.throughputMax));
                 text("cartSummary", String(cartQuantity()) + " / " + formatMoney(total));
                 text("activeTarget", containerLabels[state.activeContainer]);
                 text("itemCount", String(cartQuantity()));
-                text("vehicleCount", String(cartVehicleQuantity() + state.pendingVehicles.length));
-                text("ticketCount", "Tickets " + groupDigits(state.tickets));
+                text("vehicleCount", String(cartVehicleQuantity()));
+                text("nodeStatus", (state.nodeType || "Node") + " / " + (state.nodeState || "Unavailable"));
+            }
+
+            function applyResourcePayload(payload) {
+                state.balance = typeof payload.balance === "number" ? payload.balance : state.balance;
+                state.totalBalance = typeof payload.totalBalance === "number" ? payload.totalBalance : state.totalBalance;
+                state.committed = typeof payload.committed === "number" ? payload.committed : state.committed;
+                state.throughput = typeof payload.throughput === "number" ? payload.throughput : state.throughput;
+                state.throughputMax = typeof payload.throughputMax === "number" ? payload.throughputMax : state.throughputMax;
+                state.nodeType = payload.nodeType || state.nodeType;
+                state.nodeState = payload.nodeState || state.nodeState;
             }
 
             function updateCategorySubtitle(count) {
@@ -2214,10 +2209,12 @@
                         var name = document.createElement("div");
                         var actions = document.createElement("div");
                         var price = document.createElement("div");
+                        var meta = document.createElement("div");
                         var add = document.createElement("button");
-                        var vehicleLocked = isVehicle(item) && !state.vehicleStoreEnabled;
+                        var nodeLocked = !!item.locked;
+                        var locked = nodeLocked;
 
-                        card.className = "armory-card" + (sameItem(item, state.selectedItem) ? " selected" : "");
+                        card.className = "armory-card" + (sameItem(item, state.selectedItem) ? " selected" : "") + (locked ? " locked" : "");
                         card.onclick = function () {
                             state.selectedItem = item;
                             renderItems(true);
@@ -2227,6 +2224,12 @@
                         name.className = "item-name";
                         name.textContent = item.name;
                         body.appendChild(name);
+                        meta.className = "item-meta";
+                        meta.textContent = nodeLocked
+                            ? (item.lockReason || "Unavailable at this node")
+                            : (item.description || ("Throughput " + groupDigits(Number(item.throughputCost || 0))));
+                        meta.title = item.description || "";
+                        body.appendChild(meta);
 
                         actions.className = "card-actions";
                         price.className = "card-price";
@@ -2234,11 +2237,12 @@
 
                         add.className = "action-btn";
                         add.type = "button";
-                        add.textContent = vehicleLocked ? "Locked" : (isVehicle(item) ? "Queue" : "Add");
-                        add.disabled = vehicleLocked;
+                        add.textContent = locked ? "Locked" : (isVehicle(item) ? "Queue" : "Add");
+                        add.disabled = locked;
+                        add.title = nodeLocked ? (item.lockReason || "Unavailable at this node") : "";
                         add.onclick = function (event) {
                             event.stopPropagation();
-                            if (vehicleLocked) {
+                            if (locked) {
                                 return;
                             }
                             state.selectedItem = item;
@@ -2253,7 +2257,7 @@
                         actions.appendChild(price);
                         actions.appendChild(add);
 
-                        if (canPack(item)) {
+                        if (canPack(item) && !nodeLocked) {
                             var pack = document.createElement("button");
                             pack.className = "action-btn secondary";
                             pack.type = "button";
@@ -2470,21 +2474,13 @@
                         }
 
                         state.categories = payload.categories || [];
-                        state.pendingVehicles = payload.pendingVehicles || state.pendingVehicles;
-                        state.balance = typeof payload.balance === "number" ? payload.balance : 0;
-                        state.personalBalance = typeof payload.personalBalance === "number" ? payload.personalBalance : 0;
-                        state.deploymentFund = typeof payload.deploymentFund === "number" ? payload.deploymentFund : 0;
-                        state.deploymentFundAmount = typeof payload.deploymentFundAmount === "number" ? payload.deploymentFundAmount : state.deploymentFundAmount;
-                        state.tickets = typeof payload.tickets === "number" ? payload.tickets : state.tickets;
-                        state.vehicleStoreEnabled = typeof payload.vehicleStoreEnabled === "boolean" ? payload.vehicleStoreEnabled : false;
-                        state.canUseFactionFunds = typeof payload.canUseFactionFunds === "boolean" ? payload.canUseFactionFunds : false;
+                        applyResourcePayload(payload);
                         state.currentCategory = hydrateCategory(payload);
                         text("sideName", payload.sideName || "");
                         text("factionName", payload.factionName || "");
                         updateSummary();
                         renderCategories(pendingServerScrollRestore);
                         renderCart(pendingServerScrollRestore);
-                        updatePlaceVehicleButton();
                         message("Catalog loaded.", "good");
 
                         if (state.currentCategory) {
@@ -2501,13 +2497,7 @@
                         state.currentCategory = payload.category;
                         state.items = payload.items || [];
                         state.selectedItem = state.items.length > 0 ? state.items[0] : null;
-                        state.balance = typeof payload.balance === "number" ? payload.balance : state.balance;
-                        state.personalBalance = typeof payload.personalBalance === "number" ? payload.personalBalance : state.personalBalance;
-                        state.deploymentFund = typeof payload.deploymentFund === "number" ? payload.deploymentFund : state.deploymentFund;
-                        state.deploymentFundAmount = typeof payload.deploymentFundAmount === "number" ? payload.deploymentFundAmount : state.deploymentFundAmount;
-                        state.tickets = typeof payload.tickets === "number" ? payload.tickets : state.tickets;
-                        state.vehicleStoreEnabled = typeof payload.vehicleStoreEnabled === "boolean" ? payload.vehicleStoreEnabled : state.vehicleStoreEnabled;
-                        state.canUseFactionFunds = typeof payload.canUseFactionFunds === "boolean" ? payload.canUseFactionFunds : state.canUseFactionFunds;
+                        applyResourcePayload(payload);
                         text("categoryTitle", payload.label || "Items");
                         updateSummary();
                         var scrollSnapshot = null;
@@ -2524,30 +2514,15 @@
                     if (event === "store::checkout") {
                         if (payload.success) {
                             state.cart = [];
-                            state.pendingVehicles = payload.pendingVehicles || state.pendingVehicles;
-                            state.balance = typeof payload.balance === "number" ? payload.balance : state.balance;
-                            state.personalBalance = typeof payload.personalBalance === "number" ? payload.personalBalance : state.personalBalance;
-                            state.deploymentFund = typeof payload.deploymentFund === "number" ? payload.deploymentFund : state.deploymentFund;
-                            state.deploymentFundAmount = typeof payload.deploymentFundAmount === "number" ? payload.deploymentFundAmount : state.deploymentFundAmount;
-                            state.tickets = typeof payload.tickets === "number" ? payload.tickets : state.tickets;
-                            state.canUseFactionFunds = typeof payload.canUseFactionFunds === "boolean" ? payload.canUseFactionFunds : state.canUseFactionFunds;
+                            applyResourcePayload(payload);
                             renderCart(true);
-                            updatePlaceVehicleButton();
                             message(payload.message || "Checkout complete.", "good");
                         } else {
                             pendingServerScrollRestore = null;
-                            state.balance = typeof payload.balance === "number" ? payload.balance : state.balance;
-                            state.personalBalance = typeof payload.personalBalance === "number" ? payload.personalBalance : state.personalBalance;
-                            state.deploymentFund = typeof payload.deploymentFund === "number" ? payload.deploymentFund : state.deploymentFund;
+                            applyResourcePayload(payload);
                             updateSummary();
                             message(payload.message || "Checkout failed.", "error");
                         }
-                    }
-
-                    if (event === "store::pendingVehicles") {
-                        state.pendingVehicles = payload.pendingVehicles || [];
-                        updateSummary();
-                        updatePlaceVehicleButton();
                     }
 
                     if (event === "store::savedKits") {
@@ -2715,14 +2690,6 @@
 
                     send("store::refresh", {});
                     message("Refreshing store state.", "");
-                },
-                placeVehicle: function () {
-                    if (state.pendingVehicles.length === 0) {
-                        message("No pending vehicles.", "error");
-                        return;
-                    }
-
-                    send("store::vehiclePlace", { id: state.pendingVehicles[0].id });
                 },
                 close: function () {
                     send("store::close", {});

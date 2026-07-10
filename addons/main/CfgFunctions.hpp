@@ -107,16 +107,14 @@ class FLO {
         class gtnApproximateCommanderMarkerPosition {};
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildCommanderIntelPublishSignature {};
+        class gtnBuildEnemyLogisticsIntelSnapshot {};
         class gtnBuildFriendlyCommanderGroupMarkers {};
-        class gtnBuildFriendlySupplyNodeMarkers {};
         class gtnBuildFriendlySupportMarkers {};
         class gtnNormalizeIntelSignatureValue {};
-        class gtnCommanderSupplyMarkersToggle {};
         class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
         class gtnPublishCommanderIntel {};
-        class gtnRefreshCommanderSupplyToggleAction {};
         class gtnRevealIntelPickup {};
         class gtnSerializeIntelSignatureRecords {};
         class gtnSyncCommanderIntelMarkers {};
@@ -137,25 +135,23 @@ class FLO {
     };
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
+    #include "Functions\AI\GTN\Operations\CfgFunctions.hpp"
+    #include "Functions\UI\CfgFunctions.hpp"
 
     class GTNTasks {
         file = "\z\flo\addons\main\Functions\AI\GTN\Tasks";
 
         class gtnClearPrimaryTaskState {};
-        class gtnClearSecondaryTaskState {};
-        class gtnCountAliveTaskTargets {};
         class gtnDeleteTaskIfPresent {};
         class gtnPlayerTaskBridge {};
         class gtnPlayerTaskDescription {};
         class gtnPlayerTaskTitle {};
         class gtnPublishPlayerTask {};
+        class gtnMarkTaskFailed {};
         class gtnMarkTaskSucceeded {};
-        class gtnRestoreLegacyTaskRefState {};
         class gtnTaskEnemySide {};
         class gtnTaskMissing {};
         class gtnTaskNormalizeSide {};
-        class gtnTaskScoreObjectiveForPlayers {};
-        class gtnTaskCollectDestroyTargets {};
         class gtnTaskSideKey {};
         class gtnTaskTypeFromKind {};
     };
@@ -287,53 +283,13 @@ class FLO {
 
     #include "Functions\Virtualization\CfgFunctions.hpp"
 
-    class Objective {
-        file = "\z\flo\addons\main\Functions\Objective";
-
-        class objectiveConfig           {};
-        class buildObjectiveLinks       {};
-        class objectiveIndexer          {};
-        class dbscanCluster             {};
-        class dbscanGetNeighbors        {};
-        class buildObjectiveGraph       {};
-        class flipObjective             {};
-        class seedObjectiveOwnership    {};
-        class monitorObjectiveDominance {};
-        class startObjectiveGraph       {};
-        class updateObjectiveDominance  {};
-    };
-
-    class ObjectiveUtilities {
-        file = "\z\flo\addons\main\Functions\Objective\Utilities";
-
-        class buildObjectiveRuntimeState {};
-        class getRandomObjectivePos   {};
-        class getNearestObjective     {};
-        class initObjectiveRuntimeStateEvents {};
-        class getObjectiveNearPlayer  {};
-        class getObjectivePosition    {};
-        class isPositionInObjective   {};
-        class objectiveNormalizeOwner {};
-        class objectiveOwnerAtPosition {};
-        class createObjectiveMarker   {};
-        class publishObjectiveRuntimeState {};
-        class refreshRespawnMarkersByTerritory {};
-        class syncObjectiveRuntimeState {};
-        class updateObjectiveCaptureState {};
-    };
+    #include "Functions\Objective\CfgFunctions.hpp"
 
     #include "Functions\AI\GTN\Minefields\CfgFunctions.hpp"
 
+    #include "Functions\Economy\CfgFunctions.hpp"
+
     #include "Functions\Logistics\CfgFunctions.hpp"
-
-    class MoneyState {
-        file = "\z\flo\addons\main\Functions\Money";
-
-        class addMoney                  {};
-        class initMoneyStateEvents      {};
-        class publishMoneyState         {};
-        class syncMoneyState            {};
-    };
 
     class Store {
         file = "\z\flo\addons\main\Functions\Store";
@@ -353,6 +309,7 @@ class FLO {
         class storeBuildHydratePayload {};
         class storeCategoryForVehicle {};
         class storeCategoryForWeapon {};
+        class storeCapabilityForCategory {};
         class storeCheckout {};
         class storeClearCargo {};
         class storeDeployBase {};
@@ -375,6 +332,8 @@ class FLO {
         class storeSavedKitsSave {};
         class storeSendResponse {};
         class storeSpawnVehicle {};
+        class storeSpawnSupplyShipment {};
+        class storeThroughputCost {};
         class storeUpdateDialog {};
         class storeValidateAccess {};
         class storeWeaponAttachments {};
@@ -439,108 +398,13 @@ class FLO {
         class factionSanitizeCompositionForCatalog {};
     };
 
-    class UtilitiesDebug {
-        file = "\z\flo\addons\main\Functions\Utilities\Debug";
-        class log                       {};
-        class netDebugDump             {};
-        class netDebugRecord           {};
-        class netDebugSnapshot         {};
-    };
-
-    class UtilitiesSystem {
-        file = "\z\flo\addons\main\Functions\Utilities\System";
-        class createUUID                {};
-        class heartbeat                 {};
-        class heartbeatNotifyRestart    {};
-        class padHex                    {};
-        class toHex                     {};
-    };
-
-    class UtilitiesUI {
-        file = "\z\flo\addons\main\Functions\Utilities\UI";
-        class showDynamicText           {};
-        class sendRewardNotification    {};
-        class sendNotification          {};
-        class displayNotification       {};
-    };
-
-    class UtilitiesGame {
-        file = "\z\flo\addons\main\Functions\Utilities\Game";
-        class addReward                 {};
-        class getRandomMagazine         {};
-        class addIntelServer            {};
-        class militaryIntel             {};
-        class adjustAggression          {};
-        class adjustReputation          {};
-        class configureObjectActionsLocal {};
-        class randomizeWeather          {};
-    };
-
-    class UtilitiesVehicle {
-        file = "\z\flo\addons\main\Functions\Utilities\Vehicle";
-        class placeVehicleWithCrew      {};
-        class vehicleConfigureRequestedVehicle {};
-    };
-
-    class UtilitiesAftermath {
-        file = "\z\flo\addons\main\Functions\Utilities\Aftermath";
-        class aftermathCleanupManager   {};
-        class aftermathCleanupRun       {};
-        class aftermathIsPositionInHotObjective {};
-        class aftermathRegisterEntity   {};
-        class aftermathShouldCleanupEntity {};
-        class aftermathShouldPreserveEvidence {};
-        class vehicleCleanupBuildContext {};
-        class vehicleCleanupDiscoverCandidates {};
-        class vehicleCleanupManager     {};
-        class vehicleCleanupProcessCandidates {};
-        class vehicleCleanupRun         {};
-        class vehicleShouldCleanup      {};
-    };
+    #include "Functions\Utilities\CfgFunctions.hpp"
 
     class Misc {
         file = "\z\flo\addons\main\Functions\Misc";
 
         class ragequitBlocker     {};
         class disableSystemChat   {};
-    };
-
-    class UI {
-        file = "\z\flo\addons\main\Functions\UI";
-        class safeConfirm             {};
-    };
-
-    class UICapture {
-        file = "\z\flo\addons\main\Functions\UI\CaptureUI";
-        class captureUI               {};
-        class initCaptureUIEvents     {};
-    };
-
-    class UISetup {
-        file = "\z\flo\addons\main\Functions\UI\Setup";
-        class shouldOpenFactionDialog {};
-        class openFactionDialog       {};
-        class factionDialogOnLoad     {};
-        class factionDialogOnUnload   {};
-        class factionDialogAddFactionItems {};
-        class factionDialogAddItems {};
-        class factionDialogBuildFactionHandle {};
-        class factionDialogBuildGarrisonHandle {};
-        class factionDialogBuildScalarHandle {};
-        class factionDialogCreateObjectiveEdit {};
-        class factionDialogCreateObjectiveGroupControls {};
-        class factionDialogCreateObjectiveLabel {};
-        class factionDialogCreateObjectiveSideControls {};
-        class factionDialogFillCompositionDefaults {};
-        class factionDialogGetSelection {};
-        class factionDialogGetSelections {};
-        class factionDialogJoinSelectionNames {};
-        class factionDialogNormalizeMultiSelection {};
-        class factionDialogPopulate   {};
-        class factionDialogSelectDefault {};
-        class factionDialogShowCompositionTab {};
-        class factionDialogStart      {};
-        class factionDialogValidateFactionSelections {};
     };
 
     #include "Functions\Pathfinding\CfgFunctions.hpp"

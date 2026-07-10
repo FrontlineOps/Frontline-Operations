@@ -72,10 +72,6 @@ if (isNil "FLO_EastGTN_GarrisonHandle") then {
     FLO_EastGTN_GarrisonHandle = _config get "eastGTNGarrisonHandle";
 };
 
-if (isNil "FLO_MoneyHandle") then {
-    FLO_MoneyHandle = _config get "moneyHandle";
-};
-
 FLO_DifficultyHandle = FLO_EastDifficultyHandle;
 FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
 FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
@@ -88,9 +84,5 @@ FLO_ObjectiveSizeThreshold = _config get "objectiveSizeThreshold";
 FLO_VirtualizationDistance = _config get "virtualizationDistance";
 FLO_VirtualizationUnitCap = _config get "virtualizationUnitCap";
 FLO_StartingTerritoryWestRatio = _config get "startingTerritoryWestRatio";
-
-if (!isNil "FLO_MoneyState") then {
-    FLO_MoneyHandle set ["value", FLO_MoneyState];
-};
 
 true

@@ -58,6 +58,8 @@ _net set ["_loopStarted", true];
 
                     if (_net get "_enabled") then {
                         private _t0 = diag_tickTime;
+                        [_net] call FLO_fnc_logisticsNetworkRefillNodes;
+                        [_net] call FLO_fnc_logisticsNetworkProcessDeliveries;
                         [_net] call FLO_fnc_logisticsNetworkCheckAndReplace;
                         private _dt = diag_tickTime - _t0;
 
@@ -67,44 +69,25 @@ _net set ["_loopStarted", true];
                                 _perf = createHashMap;
                             };
                             diag_log format [
-                                "[FLO][PERF] Logistics network %1 processed queue=%2 in %3 ms | refresh=%4 compose=%5 reserve=%6 reconcile=%7 targets=%8 dispatch=%9 | dispatchDetail=tgt=%10 delivery=%11 spawn=%12 spend=%13 create=%14 book=%15 | createDetail=group=%16 transit=%17 organic=%18 wp=%19 | reserveNeedG=%20 reserveNeedA=%21 reserveCreateG=%22 reserveCreateA=%23 | collapse=%24 advance=%25 needed=%26 batch=%27 attempted=%28 created=%29 status=%30 | failPool=%31 failFunds=%32 failTarget=%33 failSat=%34 failDelivery=%35 failSpawn=%36 failSpend=%37 failCreate=%38 | res=%39->%40",
+                                "[FLO][PERF] Logistics %1 total=%2ms queue=%3 needed=%4 targets=%5 attempted=%6 created=%7 status=%8 | phases refresh=%9 compose=%10 reserve=%11 target=%12 dispatch=%13 | failures pool=%14 funds=%15 target=%16 delivery=%17 spawn=%18 create=%19 | resources=%20->%21",
                                 _net get "_managedSideKey",
-                                count (_net get "_reinforcementQueue"),
                                 _dt * 1000,
-                                _perf getOrDefault ["refreshMs", 0],
-                                _perf getOrDefault ["compositionMs", 0],
-                                _perf getOrDefault ["reserveMs", 0],
-                                _perf getOrDefault ["reconcileMs", 0],
-                                _perf getOrDefault ["targetMs", 0],
-                                _perf getOrDefault ["dispatchMs", 0],
-                                _perf getOrDefault ["dispatchTargetPickMs", 0],
-                                _perf getOrDefault ["dispatchDeliveryPickMs", 0],
-                                _perf getOrDefault ["dispatchSpawnMs", 0],
-                                _perf getOrDefault ["dispatchSpendMs", 0],
-                                _perf getOrDefault ["dispatchCreateMs", 0],
-                                _perf getOrDefault ["dispatchBookkeepingMs", 0],
-                                _perf getOrDefault ["dispatchCreateGroupMs", 0],
-                                _perf getOrDefault ["dispatchCreateTransitMs", 0],
-                                _perf getOrDefault ["dispatchCreateOrganicMs", 0],
-                                _perf getOrDefault ["dispatchCreateWaypointMs", 0],
-                                _perf getOrDefault ["reserveGroundMissing", 0],
-                                _perf getOrDefault ["reserveAirMissing", 0],
-                                _perf getOrDefault ["reserveGroundCreated", 0],
-                                _perf getOrDefault ["reserveAirCreated", 0],
-                                _perf getOrDefault ["collapseTargetCount", 0],
-                                _perf getOrDefault ["advanceTargetCount", 0],
+                                count (_net get "_reinforcementQueue"),
                                 _perf getOrDefault ["neededCount", 0],
-                                _perf getOrDefault ["batchSize", 0],
+                                _perf getOrDefault ["targetCount", 0],
                                 _perf getOrDefault ["attempted", 0],
                                 _perf getOrDefault ["created", 0],
                                 _perf getOrDefault ["status", "UNKNOWN"],
+                                _perf getOrDefault ["refreshMs", 0],
+                                _perf getOrDefault ["compositionMs", 0],
+                                _perf getOrDefault ["reserveMs", 0],
+                                _perf getOrDefault ["targetMs", 0],
+                                _perf getOrDefault ["dispatchMs", 0],
                                 _perf getOrDefault ["failNoTargetPool", 0],
-                                _perf getOrDefault ["failCantAfford", 0],
-                                _perf getOrDefault ["failNoTargetObj", 0],
-                                _perf getOrDefault ["failSaturatedTarget", 0],
+                                _perf getOrDefault ["failSpendResources", 0],
+                                (_perf getOrDefault ["failNoTargetObj", 0]) + (_perf getOrDefault ["failSaturatedTarget", 0]),
                                 _perf getOrDefault ["failNoDeliveryObjective", 0],
                                 _perf getOrDefault ["failNoSpawnPos", 0],
-                                _perf getOrDefault ["failSpendResources", 0],
                                 _perf getOrDefault ["failCreateReplacement", 0],
                                 _perf getOrDefault ["resourcesBefore", 0],
                                 _perf getOrDefault ["resourcesAfter", 0]

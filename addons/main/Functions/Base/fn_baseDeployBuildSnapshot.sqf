@@ -12,12 +12,28 @@ if (_side in [west, east]) then {
 private _isAdmin = (serverCommandAvailable "#kick") && {serverCommandAvailable "#debug"};
 private _isOfficer = (typeOf player == F_Officer) || {typeOf player == "B_G_officer_F"};
 private _hasAuthority = _isAdmin || {_isOfficer || {leader group player isEqualTo player}};
+private _authorityRole = "None";
+if (leader group player isEqualTo player) then { _authorityRole = "Squad Leader"; };
+if (_isOfficer) then { _authorityRole = "Officer"; };
+if (_isAdmin) then { _authorityRole = "Server Admin"; };
 private _factionName = if (_sideKey isEqualTo "EAST") then { "OPFOR" } else { markerText "Friendly_Handle" };
 if (_factionName isEqualTo "") then {
     _factionName = _sideName;
 };
 
 private _pos = getPosATL player;
+private _economy = createHashMap;
+private _available = 0;
+private _totalBalance = 0;
+private _committed = 0;
+private _lastIncome = 0;
+if (_sideKey != "") then {
+    _economy = FLO_SideResourceState get _sideKey;
+    _available = _economy get "available";
+    _totalBalance = _economy get "balance";
+    _committed = _economy get "committed";
+    _lastIncome = _economy get "incomePerMinute";
+};
 
 createHashMapFromArray [
     ["sideKey", _sideKey],
@@ -25,19 +41,13 @@ createHashMapFromArray [
     ["grid", mapGridPosition player],
     ["alive", alive player],
     ["onWater", surfaceIsWater _pos],
-    ["insideMatchOperationSector", false],
-    ["matchOperationSectorName", ""],
-    ["matchOperationSectorRadius", 0],
     ["hasAuthority", _hasAuthority],
-    ["playerIsCommander", _hasAuthority],
     ["factionName", _factionName],
-    ["commanderName", "Field Authority"],
-    ["balance", FLO_MoneyHandle get "value"],
-    ["tickets", 0],
-    ["ticketPacks", []],
-    ["income", 0],
-    ["cellIncome", 0],
-    ["objectiveIncome", 0],
+    ["authorityRole", _authorityRole],
+    ["balance", _available],
+    ["totalBalance", _totalBalance],
+    ["committed", _committed],
+    ["income", _lastIncome],
     ["fobCost", FLO_BaseFOBDeployCost],
     ["fobRadius", FLO_BaseFOBBuildRadius],
     ["fobMinDistance", FLO_BaseFOBMinDistance],

@@ -62,6 +62,8 @@ private _vehiclePoolKeys = [
     };
 } forEach _vehiclePoolKeys;
 
+[_itemsByCategory, _seen, FLO_StoreSupplyShipmentClass, "supply", "logistics"] call FLO_fnc_storeAppendCatalogItem;
+
 {
     private _category = _x select 0;
     private _items = _itemsByCategory get _category;

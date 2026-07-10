@@ -5,8 +5,8 @@
  *   Selects the best reinforcement target from a candidate objective set.
  *   Static AA uses priority scoring; maneuver reinforcements first pass hard
  *   saturation gates, then choose by doctrine:
- *   collapse relief first, then frontline pressure, then supply-chain
- *   advance, then background pressure, then rear fallback.
+ *   collapse relief first, then frontline pressure, background pressure,
+ *   then rear fallback.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
@@ -94,7 +94,6 @@ private _branchBatchCounts = [_net, _batchDispatchCounts] call FLO_fnc_logistics
 private _collapseCandidates = [];
 private _frontlinePressureCandidates = [];
 private _pressureCandidates = [];
-private _advanceCandidates = [];
 private _rearCandidates = [];
 
 {
@@ -114,12 +113,7 @@ private _rearCandidates = [];
         continue;
     };
 
-    private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;
-    if (_role get "isAdvanceCandidate") then {
-        _advanceCandidates pushBack _objectiveId;
-    } else {
-        _rearCandidates pushBack _objectiveId;
-    };
+    _rearCandidates pushBack _objectiveId;
 } forEach _available;
 
 if (_collapseCandidates isNotEqualTo []) exitWith {
@@ -128,10 +122,6 @@ if (_collapseCandidates isNotEqualTo []) exitWith {
 
 if (_frontlinePressureCandidates isNotEqualTo []) exitWith {
     [_net, _frontlinePressureCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts, _branchInboundCounts, _branchRecentCounts, _branchBatchCounts] call FLO_fnc_logisticsNetworkPickPressureTarget
-};
-
-if (_advanceCandidates isNotEqualTo []) exitWith {
-    [_net, _advanceCandidates, _inboundCounts, _recentDispatchCounts, _batchDispatchCounts, _branchInboundCounts, _branchRecentCounts, _branchBatchCounts] call FLO_fnc_logisticsNetworkPickAdvanceTarget
 };
 
 if (_pressureCandidates isNotEqualTo []) exitWith {

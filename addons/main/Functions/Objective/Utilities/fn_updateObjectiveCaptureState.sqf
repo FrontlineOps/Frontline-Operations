@@ -36,6 +36,7 @@ params [
 ];
 
 private _owner = _objective get "owner";
+private _campaignIntegrationState = _objective get "campaignIntegrationState";
 
 if (isNil {_objective get "captureState"}) then { _objective set ["captureState", "held"]; };
 if (isNil {_objective get "captureSide"}) then { _objective set ["captureSide", sideUnknown]; };
@@ -85,11 +86,16 @@ if (_attacker isEqualTo sideUnknown) then {
     if (_bluforCount > 0 && {_opforCount > 0}) then {
         _state = "contested";
     } else {
-        private _integratedAt = _objective get "captureIntegratedAtDateNum";
-        if (_integratedAt > 0) then {
-            _state = ["integrated", "integrating"] select (_nowDateNum < _integratedAt);
+        if (_campaignIntegrationState in ["FOOTHOLD", "CONSOLIDATING"]) then {
+            _state = "integrating";
         } else {
-            _state = ["held", "integrated"] select ((_objective get "capturedAtDateNum") >= 0);
+            private _integratedAt = _objective get "captureIntegratedAtDateNum";
+            if (_integratedAt > 0) then {
+                private _integrationRemaining = [_nowDateNum, _integratedAt] call FLO_fnc_dateNumberDeltaSeconds;
+                _state = ["integrated", "integrating"] select (_integrationRemaining > 0);
+            } else {
+                _state = ["held", "integrated"] select ((_objective get "capturedAtDateNum") >= 0);
+            };
         };
     };
 } else {

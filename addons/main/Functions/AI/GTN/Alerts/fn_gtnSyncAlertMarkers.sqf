@@ -124,13 +124,14 @@ switch (toUpper _alertType) do {
     };
     case "INTEL_SUPPLY_NODE": {
         private _objectiveName = if ((count _payload) >= 1) then { _payload select 0 } else { "" };
+        private _nodeType = if ((count _payload) >= 2) then { _payload select 1 } else { "SUPPLY" };
         _markerText = if (_objectiveName != "") then {
-            format ["ENY SUPPLY %1", _objectiveName]
+            format ["ENY %1 %2", _nodeType, _objectiveName]
         } else {
-            "ENY SUPPLY"
+            format ["ENY %1", _nodeType]
         };
         _markerColor = if ((count _payload) >= 3) then { _payload select 2 } else { _markerColor };
-        _iconMarkerType = "o_maint";
+        _iconMarkerType = ["o_maint", "b_maint"] select (_markerColor == "ColorBLUFOR");
         _areaBrush = "Border";
         _areaAlpha = 0.12;
     };
@@ -141,7 +142,7 @@ switch (toUpper _alertType) do {
         } else {
             "ENY HQ"
         };
-        _markerColor = if ((count _payload) >= 2) then { _payload select 1 } else { _markerColor };
+        _markerColor = if ((count _payload) >= 3) then { _payload select 2 } else { _markerColor };
         _iconMarkerType = "n_support";
         _areaBrush = "DiagGrid";
         _areaAlpha = 0.16;

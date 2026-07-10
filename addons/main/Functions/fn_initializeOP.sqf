@@ -30,6 +30,7 @@ if (isNull _opBuilding) exitWith {
 
 // Check if OP was already initialized
 if (_opBuilding getVariable ["FLO_OP_Initialized", false]) exitWith {
+    [_opBuilding] call FLO_fnc_campaignRegisterBase;
     ["OP", 3, format["OP at %1 already initialized - skipping", getPos _opBuilding]] call FLO_fnc_log;
     true
 };
@@ -40,6 +41,7 @@ if (isNil { _opBuilding getVariable "FLO_BaseSide" }) then {
     _opBuilding setVariable ["FLO_BaseSide", FLO_ActivePlayerSide, true];
 };
 _opBuilding setVariable ["FLO_BaseType", "COP", true];
+[_opBuilding] call FLO_fnc_campaignRegisterBase;
 
 // ============================================================================
 // CONFIGURATION

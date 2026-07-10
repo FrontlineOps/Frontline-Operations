@@ -25,15 +25,25 @@ if (!_isAdmin && {!_isOfficer}) exitWith {
 };
 
 private _cost = 200;
-private _money = FLO_MoneyHandle get "value";
-if (_money < _cost) exitWith {
+private _side = side group _requester;
+private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _treasury = FLO_SideResources get _sideKey;
+if !([_treasury, _cost] call FLO_fnc_sideResourcesCanAfford) exitWith {
     ["Not enough resources to bribe the militia.", "warning", false, _owner] call FLO_fnc_sendNotification;
     false
 };
 
-private _newMoney = _money - _cost;
-FLO_MoneyHandle set ["value", _newMoney];
-[_newMoney] call FLO_fnc_publishMoneyState;
+if !([
+    _treasury,
+    _cost,
+    "CIVIL_AFFAIRS",
+    "Militia bribe",
+    name _requester,
+    "MILITIA_BRIBE",
+    true
+] call FLO_fnc_sideResourcesSpendResources) then {
+    throw "Militia bribe affordability changed during an unscheduled server transaction";
+};
 
 FLO_ReputationHandle set ["value", 15];
 publicVariable "FLO_ReputationHandle";

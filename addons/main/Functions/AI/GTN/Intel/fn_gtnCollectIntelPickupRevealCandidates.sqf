@@ -66,54 +66,62 @@ private _seenTargetObjectives = createHashMap;
 } forEach _tracks;
 
 private _enemyNetwork = FLO_Logistics_Networks get _enemySideKey;
-private _activeNodes = _enemyNetwork call ["_refreshSupplyChain", []];
-private _hqObjectiveId = _enemyNetwork get "_hqObjectiveId";
-
-if (_hqObjectiveId != "" && {_hqObjectiveId in FLO_Objectives}) then {
-    private _hqObjective = FLO_Objectives get _hqObjectiveId;
-    _candidates pushBack (createHashMapFromArray [
-        ["category", "hq"],
-        ["revealKey", format ["HQ|%1", _hqObjectiveId]],
-        ["alertType", "INTEL_HQ"],
-        ["objectiveId", _hqObjectiveId],
-        ["objectiveName", _hqObjective get "name"],
-        ["position", _hqObjective get "position"],
-        ["radius", ((_hqObjective get "radius") max 180) min 500],
-        ["duration", 420],
-        ["priority", 2200 + (_hqObjective get "priority")],
-        ["message", format ["Recovered enemy command data: HQ identified at %1.", _hqObjective get "name"]],
-        ["payload", [
-            _hqObjective get "name",
-            _enemyColor
-        ]]
-    ]);
-};
+[_enemyNetwork] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+private _enemyNodes = _enemyNetwork get "_nodes";
 
 {
-    private _objectiveId = _x;
-    if (_objectiveId == _hqObjectiveId) then { continue };
-    if !(_objectiveId in FLO_Objectives) then { continue };
+    private _nodeId = _x;
+    private _node = _y;
+    private _nodeState = _node get "state";
+    if (_nodeState == "DISABLED") then { continue };
 
-    private _nodeInfo = _activeNodes get _objectiveId;
-    private _objective = FLO_Objectives get _objectiveId;
+    private _nodeType = _node get "type";
+    private _position = +(_node get "position");
+    private _objectiveId = _node get "objectiveId";
+    private _objectiveName = format ["GRID %1", mapGridPosition _position];
+    private _objectivePriority = 0;
+    private _radius = 220;
+    if (_objectiveId != "" && {_objectiveId in FLO_Objectives}) then {
+        private _objective = FLO_Objectives get _objectiveId;
+        _objectiveName = _objective get "name";
+        _objectivePriority = _objective get "priority";
+        _radius = ((_objective get "radius") max 140) min 500;
+    };
+
+    private _isHQ = _nodeType == "HQ";
+    private _category = ["supply_node", "hq"] select _isHQ;
+    private _alertType = ["INTEL_SUPPLY_NODE", "INTEL_HQ"] select _isHQ;
+    private _duration = [300, 420] select _isHQ;
+    private _priority = switch (_nodeType) do {
+        case "HQ": { 2400 };
+        case "DEPOT": { 2100 };
+        case "FOB": { 1800 };
+        default { 1500 };
+    };
+    private _message = if (_isHQ) then {
+        format ["Recovered enemy command data: HQ identified near %1.", _objectiveName]
+    } else {
+        format ["Recovered logistics traffic: enemy %1 identified near %2.", toLower _nodeType, _objectiveName]
+    };
 
     _candidates pushBack (createHashMapFromArray [
-        ["category", "supply_node"],
-        ["revealKey", format ["SUPPLY_NODE|%1", _objectiveId]],
-        ["alertType", "INTEL_SUPPLY_NODE"],
+        ["category", _category],
+        ["revealKey", format [["SUPPLY_NODE|%1", "HQ|%1"] select _isHQ, _nodeId]],
+        ["alertType", _alertType],
+        ["nodeType", _nodeType],
         ["objectiveId", _objectiveId],
-        ["objectiveName", _objective get "name"],
-        ["position", _objective get "position"],
-        ["radius", ((_objective get "radius") max 140) min 400],
-        ["duration", 300],
-        ["priority", 1800 + ((_nodeInfo get "depth") * 100) + ((_nodeInfo get "deliveryCount") * 10) + (_objective get "priority")],
-        ["message", format ["Recovered logistics traffic: enemy supply node identified at %1.", _objective get "name"]],
+        ["objectiveName", _objectiveName],
+        ["position", _position],
+        ["radius", _radius],
+        ["duration", _duration],
+        ["priority", _priority + _objectivePriority],
+        ["message", _message],
         ["payload", [
-            _objective get "name",
-            _nodeInfo get "depth",
+            _objectiveName,
+            _nodeType,
             _enemyColor
         ]]
     ]);
-} forEach (keys _activeNodes);
+} forEach _enemyNodes;
 
 _candidates

@@ -100,6 +100,15 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                 _building setPosASL _buildingPos;
                 _building setDir (_fobData getOrDefault ["buildingDir", 0]);
                 _building setVectorUp (_fobData getOrDefault ["buildingVectorUp", [0,0,1]]);
+                private _baseSideKey = _fobData getOrDefault ["baseSideKey", "WEST"];
+                private _baseSaveId = _fobData getOrDefault [
+                    "baseSaveId",
+                    format ["BASE_%1_FOB_%2_%3", _baseSideKey, round (_buildingPos select 0), round (_buildingPos select 1)]
+                ];
+                _building setVariable ["FLO_BaseSide", [_baseSideKey] call FLO_fnc_campaignSideFromKey, true];
+                _building setVariable ["FLO_BaseType", "FOB", true];
+                _building setVariable ["FLO_BaseSaveId", _baseSaveId, true];
+                _building setVariable ["FLO_LogisticsNodeId", _fobData getOrDefault ["logisticsNodeId", format ["NODE_%1", _baseSaveId]], true];
 
                 // Store marker name for later initialization
                 private _markerName = _fobData getOrDefault ["markerName", ""];
@@ -144,6 +153,15 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                 _building setPosASL _buildingPos;
                 _building setDir (_opData getOrDefault ["buildingDir", 0]);
                 _building setVectorUp (_opData getOrDefault ["buildingVectorUp", [0,0,1]]);
+                private _baseSideKey = _opData getOrDefault ["baseSideKey", "WEST"];
+                private _baseSaveId = _opData getOrDefault [
+                    "baseSaveId",
+                    format ["BASE_%1_COP_%2_%3", _baseSideKey, round (_buildingPos select 0), round (_buildingPos select 1)]
+                ];
+                _building setVariable ["FLO_BaseSide", [_baseSideKey] call FLO_fnc_campaignSideFromKey, true];
+                _building setVariable ["FLO_BaseType", "COP", true];
+                _building setVariable ["FLO_BaseSaveId", _baseSaveId, true];
+                _building setVariable ["FLO_LogisticsNodeId", _opData getOrDefault ["logisticsNodeId", format ["NODE_%1", _baseSaveId]], true];
 
                 // Store marker name for later initialization
                 private _markerName = _opData getOrDefault ["markerName", ""];
@@ -360,6 +378,19 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                         _crate setDamage (_attr getOrDefault ["damage", 0]);
                         _crate setVariable ["FLO_save_crate", true, true];
                         _crate setVariable ["FLO_SaveID", _crateId, true];
+                        if (_attr getOrDefault ["logisticsShipment", false]) then {
+                            private _shipmentSideKey = _attr get "logisticsSideKey";
+                            private _shipmentOriginNodeId = _attr get "logisticsOriginNodeId";
+                            private _shipmentThroughput = _attr get "logisticsThroughput";
+                            if (_shipmentOriginNodeId == "" || {!(_shipmentThroughput isEqualType 0 && {_shipmentThroughput > 0})}) then {
+                                throw format ["Saved logistics shipment %1 is malformed", _crateId];
+                            };
+                            _crate setVariable ["FLO_LogisticsShipment", true, true];
+                            _crate setVariable ["FLO_LogisticsDelivered", _attr get "logisticsDelivered", true];
+                            _crate setVariable ["FLO_LogisticsSide", [_shipmentSideKey] call FLO_fnc_campaignSideFromKey, true];
+                            _crate setVariable ["FLO_LogisticsOriginNodeId", _shipmentOriginNodeId, true];
+                            _crate setVariable ["FLO_LogisticsThroughput", _shipmentThroughput, true];
+                        };
 
                         // Load items
                         private _items = _attr getOrDefault ["items", []];
@@ -468,6 +499,8 @@ if (!isNil "FLO_fnc_logisticsNetwork") then {
 } else {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_logisticsNetwork not found";
 };
+
+[] call FLO_fnc_sideResourcesStartMainLoop;
 
 if (!FLO_IsLoadedSave) then {
     private _missionSides = missionNamespace getVariable ["FLO_MissionSides", [east, west]];

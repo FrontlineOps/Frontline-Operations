@@ -65,14 +65,27 @@ if (!_hasRequired) exitWith {
     [false, nil]
 };
 
-private _expectedSaveVersion = 18;
+private _supportedSaveVersions = [18, 19, 20, 21];
 private _saveVersion = _saveData get "saveVersion";
-if (_saveVersion != _expectedSaveVersion) exitWith {
+if !(_saveVersion in _supportedSaveVersions) exitWith {
     [
         "SAVE_DETECT",
         2,
-        format ["Save version %1 does not match mission schema %2 - treating as fresh start", _saveVersion, _expectedSaveVersion]
+        format ["Save version %1 is not supported by mission schemas %2 - treating as fresh start", _saveVersion, _supportedSaveVersions]
     ] call FLO_fnc_log;
+    [false, nil]
+};
+
+private _missingCampaignKeys = [];
+if (_saveVersion in [20, 21]) then {
+    private _requiredCampaignKeys = ["config", "objectives", "virtualGroups", "campaignOperation"];
+    if (_saveVersion == 21) then {
+        _requiredCampaignKeys append ["sideResources", "logisticsNetworkBySide"];
+    };
+    _missingCampaignKeys = _requiredCampaignKeys select { !(_x in _saveData) };
+};
+if (_missingCampaignKeys isNotEqualTo []) exitWith {
+    ["SAVE_DETECT", 2, format ["Version %1 save missing campaign keys: %2", _saveVersion, _missingCampaignKeys]] call FLO_fnc_log;
     [false, nil]
 };
 
@@ -99,7 +112,6 @@ private _handleKeys = [
     ["eastGTNForceGrowthHandle", "FLO_EastGTN_ForceGrowthHandle"],
     ["westGTNGarrisonHandle", "FLO_WestGTN_GarrisonHandle"],
     ["eastGTNGarrisonHandle", "FLO_EastGTN_GarrisonHandle"],
-    ["moneyHandle", "FLO_MoneyHandle"],
     ["reputationHandle", "FLO_ReputationHandle"]
 ];
 
@@ -119,7 +131,6 @@ private _requiredConfigKeys = [
     "eastGTNForceGrowthHandle",
     "westGTNGarrisonHandle",
     "eastGTNGarrisonHandle",
-    "moneyHandle",
     "reputationHandle",
     "objectiveSizeThreshold",
     "virtualizationDistance",
@@ -127,6 +138,67 @@ private _requiredConfigKeys = [
     "startingTerritoryWestRatio",
     "enemyPrec"
 ];
+
+private _migrationError = "";
+if (_saveVersion < 21) then {
+    if !("moneyHandle" in _configData) then {
+        _migrationError = "Legacy save config is missing moneyHandle";
+    } else {
+        private _legacyMoney = _configData get "moneyHandle";
+        if !(_legacyMoney isEqualType createHashMap && {"value" in _legacyMoney}) then {
+            _migrationError = "Legacy save moneyHandle is malformed";
+        } else {
+            private _legacyMoneyValue = _legacyMoney get "value";
+            if !(_legacyMoneyValue isEqualType 0 && {_legacyMoneyValue >= 0}) then {
+                _migrationError = format ["Legacy save money value is invalid: %1", _legacyMoneyValue];
+            };
+        };
+    };
+
+    _configData set ["startingResources", 5000];
+
+    if !("startPosition" in _configData) then {
+        private _migratedStartPosition = [];
+        if (
+            "logisticsNetworkBySide" in _saveData
+            && {"objectives" in _saveData}
+        ) then {
+            private _legacyNetworks = _saveData get "logisticsNetworkBySide";
+            private _legacyObjectives = _saveData get "objectives";
+            if (_legacyNetworks isEqualType createHashMap && {"WEST" in _legacyNetworks}) then {
+                private _legacyWestNetwork = _legacyNetworks get "WEST";
+                if (_legacyWestNetwork isEqualType createHashMap && {"hqObjectiveId" in _legacyWestNetwork}) then {
+                    private _legacyHqObjectiveId = _legacyWestNetwork get "hqObjectiveId";
+                    if (_legacyHqObjectiveId in _legacyObjectives) then {
+                        _migratedStartPosition = +((_legacyObjectives get _legacyHqObjectiveId) get "position");
+                    };
+                };
+            };
+        };
+
+        if (_migratedStartPosition isEqualTo []) then {
+            private _savedMarkers = _saveData get "markers";
+            {
+                if ((toLower _x) find "respawn_west" == 0) exitWith {
+                    _migratedStartPosition = +((_savedMarkers get _x) get "pos");
+                };
+            } forEach (keys _savedMarkers);
+        };
+
+        if (_migratedStartPosition isEqualTo []) then {
+            _migrationError = "Legacy save has no recoverable WEST start position";
+        } else {
+            _configData set ["startPosition", _migratedStartPosition];
+        };
+    };
+} else {
+    _requiredConfigKeys append ["startingResources", "startPosition"];
+};
+
+if (_migrationError != "") exitWith {
+    ["SAVE_DETECT", 2, _migrationError] call FLO_fnc_log;
+    [false, nil]
+};
 
 private _missingConfigKeys = _requiredConfigKeys select { !(_x in _configData) };
 if (_missingConfigKeys isNotEqualTo []) exitWith {

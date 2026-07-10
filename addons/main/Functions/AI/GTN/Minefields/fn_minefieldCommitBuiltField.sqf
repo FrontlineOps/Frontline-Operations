@@ -22,12 +22,18 @@ private _fieldId = _job get "fieldId";
 private _objectiveId = _job get "objectiveId";
 private _mineObjects = _job get "mineObjects";
 private _selectedMinePositions = _job get "selectedMinePositions";
-private _resourceObj = FLO_SideResources get (_job get "sideKey");
-private _spendType = FLO_MinefieldConfig get "resourceSpendType";
-private _spentBaseAmount = (count _mineObjects) * (FLO_MinefieldConfig get "resourceCostPerMine");
-private _spentResources = ([_resourceObj, _spentBaseAmount, _spendType] call FLO_fnc_sideResourcesCalculateCost) select 0;
+private _treasury = FLO_SideResources get (_job get "sideKey");
+private _spentResources = (count _mineObjects) * (FLO_MinefieldConfig get "resourceCostPerMine");
 
-if !([_resourceObj, _spentBaseAmount, _spendType] call FLO_fnc_sideResourcesSpendResources) exitWith {
+if !([
+    _treasury,
+    _spentResources,
+    "FORTIFICATION",
+    format ["Minefield at %1", _objectiveId],
+    "COMMANDER",
+    _fieldId,
+    true
+] call FLO_fnc_sideResourcesSpendResources) exitWith {
     _metrics set ["reason", "RESOURCE_SPEND_FAILED"];
     "RESOURCE_SPEND_FAILED"
 };
@@ -87,7 +93,7 @@ _metrics set ["reason", "PLACED"];
     _metrics get "packetCount",
     _metrics get "layerCount",
     _metrics get "spentResources",
-    _resourceObj get "_resources"
+    _treasury get "_balance"
 ]] call FLO_fnc_log;
 
 "PLACED"

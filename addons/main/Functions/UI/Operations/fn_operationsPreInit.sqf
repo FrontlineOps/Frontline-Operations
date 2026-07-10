@@ -1,0 +1,17 @@
+FLO_OperationsDialogIdd = 9950;
+FLO_OperationsBrowserIdc = 9951;
+FLO_OperationsMapIdc = 9952;
+FLO_OperationsBrowserReady = false;
+FLO_OperationsKeybindInitialized = false;
+FLO_OperationsLastSnapshot = createHashMap;
+FLO_OperationsMapDrawData = [];
+FLO_OperationsMapNodeDrawData = [];
+FLO_OperationsMapRouteDrawData = [];
+FLO_OperationsMapEnemyLogisticsIntelDrawData = [];
+FLO_OperationsMapThreatSector = createHashMapFromArray [["visible", false]];
+FLO_OperationsMapInitialized = false;
+FLO_OperationsSelectedObjectiveId = "";
+FLO_OperationsMapDotIcon = getText (configFile >> "CfgMarkers" >> "mil_dot" >> "icon");
+FLO_OperationsMapFocusIcon = getText (configFile >> "CfgMarkers" >> "mil_objective" >> "icon");
+FLO_OperationsMapIntelIcon = getText (configFile >> "CfgMarkers" >> "mil_unknown" >> "icon");
+FLO_OperationsMapLogisticsIcon = getText (configFile >> "CfgMarkers" >> "mil_box" >> "icon");

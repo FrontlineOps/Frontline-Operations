@@ -4,7 +4,7 @@ if (_className isEqualTo "") exitWith {};
 if (_category isEqualTo "") exitWith {};
 
 private _validClass = switch (_entryKind) do {
-    case "base": { _className in ["FLO_BASE_FOB", "FLO_BASE_COP"] };
+    case "supply": { _className isEqualTo FLO_StoreSupplyShipmentClass };
     case "recruit": { isClass (configFile >> "CfgVehicles" >> _className) && {_className isKindOf "CAManBase"} };
     case "vehicle": { isClass (configFile >> "CfgVehicles" >> _className) };
     default {

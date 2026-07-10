@@ -1,0 +1,33 @@
+class GTNOperations {
+    file = "\z\flo\addons\main\Functions\AI\GTN\Operations";
+
+    class campaignApplyCaptureBenefits {};
+    class campaignBuildSnapshot {};
+    class campaignBuildThreatSector {};
+    class campaignCanSupportObjective {};
+    class campaignClassifyCapture {};
+    class campaignClearObjectiveOpportunities {};
+    class campaignCollectOpportunities {};
+    class campaignCreateState {};
+    class campaignDirector {};
+    class campaignFindObjectiveAtPosition {};
+    class campaignGetPhaseDuration {};
+    class campaignGetOperationReservation {};
+    class campaignGetReachableAttackSources {};
+    class campaignIntegrateObjective {};
+    class campaignIsObjectiveIntegrated {};
+    class campaignObjectiveName {};
+    class campaignProcessIntegrations {};
+    class campaignPrioritizeReinforcementTargets {};
+    class campaignRegisterBase {};
+    class campaignRecordOperationSpend {};
+    class campaignReleaseOperationBudget {};
+    class campaignReserveOperationBudget {};
+    class campaignRevealTarget {};
+    class campaignRequestSnapshot {};
+    class campaignSelectTarget {};
+    class campaignSideFromKey {};
+    class campaignTransition {};
+    class campaignUpdateDefenderIntel {};
+    class campaignValidateOperationBudget {};
+};

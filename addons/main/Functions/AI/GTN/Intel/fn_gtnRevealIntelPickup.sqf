@@ -31,19 +31,8 @@ if (_candidates isEqualTo []) exitWith {
     _result
 };
 
-if (isNil "FLO_GTN_IntelPickupRevealState") then {
-    FLO_GTN_IntelPickupRevealState = createHashMap;
-};
-
 private _revealState = FLO_GTN_IntelPickupRevealState;
-private _sideState = if (_sideKey in _revealState) then {
-    _revealState get _sideKey
-} else {
-    private _newState = createHashMap;
-    _revealState set [_sideKey, _newState];
-    FLO_GTN_IntelPickupRevealState = _revealState;
-    _newState
-};
+private _sideState = _revealState get _sideKey;
 
 private _now = diag_tickTime;
 {
@@ -84,7 +73,7 @@ private _selectedPool = [_selectionPool, [], {
     [
         _preferredIndex,
         -(_x get "priority"),
-        _x get "objectiveId"
+        _x get "revealKey"
     ]
 }, "ASCEND"] call BIS_fnc_sortBy;
 
@@ -108,13 +97,33 @@ private _cooldown = (_selected get "duration") max 180;
 _sideState set [(_selected get "revealKey"), _now + _cooldown];
 FLO_GTN_IntelPickupRevealState = _revealState;
 
+private _category = _selected get "category";
+if (_category in ["hq", "supply_node"]) then {
+    private _intelBySide = FLO_GTN_StrategicIntelBySide;
+    private _strategicRecords = _intelBySide get _sideKey;
+    private _duration = _selected get "duration";
+    private _position = +(_selected get "position");
+    _strategicRecords set [_selected get "revealKey", createHashMapFromArray [
+        ["category", _category],
+        ["nodeType", _selected get "nodeType"],
+        ["position", _position],
+        ["objectiveName", _selected get "objectiveName"],
+        ["grid", mapGridPosition _position],
+        ["radius", _selected get "radius"],
+        ["reportedAt", _now],
+        ["expiresAt", _now + _duration]
+    ]];
+    _intelBySide set [_sideKey, _strategicRecords];
+    FLO_GTN_StrategicIntelBySide = _intelBySide;
+};
+
 ["INTEL", 2, format [
     "Intel pickup %1 at %2 for %3 revealed %4 %5",
     _itemClass,
     _gridPos,
     _sideKey,
-    _selected get "category",
-    _selected get "objectiveId"
+    _category,
+    _selected get "revealKey"
 ]] call FLO_fnc_log;
 
 _selected

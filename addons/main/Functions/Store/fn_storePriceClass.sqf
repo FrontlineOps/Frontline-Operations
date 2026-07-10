@@ -1,8 +1,6 @@
 params ["_className", "_category", "_entryKind"];
 
-if (_entryKind isEqualTo "base") exitWith {
-    [FLO_StoreFOBDeployCost, FLO_StoreCOPDeployCost] select (_className isEqualTo "FLO_BASE_COP")
-};
+if (_entryKind isEqualTo "supply") exitWith { FLO_StoreSupplyShipmentCost };
 
 if (_entryKind isEqualTo "recruit") exitWith {
     private _text = toLower format [

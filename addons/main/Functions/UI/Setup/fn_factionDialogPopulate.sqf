@@ -19,7 +19,6 @@
  * FLO_IDC_FACTION_COMBO_ENEMY      = 1956
  * FLO_IDC_FACTION_COMBO_CIVILIAN   = 1957
  * FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE = 1958
- * FLO_IDC_FACTION_COMBO_RESOURCES  = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
  * FLO_IDC_FACTION_COMBO_WEST_AGGRESSION = 1961
  * FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE = 1962
@@ -151,15 +150,6 @@ private _garrisonOptions = [
 {
     [_display displayCtrl _x, _garrisonOptions, 1] call FLO_fnc_factionDialogAddItems;
 } forEach [1967, 1975];
-
-// ============================================================================
-// STARTING RESOURCES (IDC 1959)
-// ============================================================================
-
-private _resourcesCombo = _display displayCtrl 1959;
-private _resourceOptions = ["1000", "2500", "5000", "10000"];
-
-[_resourcesCombo, _resourceOptions, 2] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // CIVILIAN STANDING (IDC 1960)

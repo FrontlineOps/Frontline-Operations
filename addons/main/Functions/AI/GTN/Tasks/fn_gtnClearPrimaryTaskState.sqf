@@ -14,9 +14,6 @@
 params ["_state"];
 
 _state set ["primaryTaskId", ""];
-_state set ["primaryRef", ""];
-_state set ["primaryKind", ""];
-_state set ["primaryObjId", ""];
-_state set ["primaryScore", 0];
-_state set ["primaryAssignedAt", -1];
-_state set ["primaryCalmStartedAt", -1];
+_state set ["operationId", ""];
+_state set ["objectiveId", ""];
+_state set ["role", ""];

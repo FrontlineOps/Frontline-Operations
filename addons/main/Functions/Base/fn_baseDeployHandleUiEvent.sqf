@@ -20,9 +20,6 @@ switch (_event) do {
     case "deploy::requestCOP": {
         [player, "COP"] remoteExecCall ["FLO_fnc_baseDeployRequest", 2];
     };
-    case "deploy::buyTickets": {
-        hint "Reinforcement tickets are not used by FLO deployment.";
-    };
     case "deploy::close": {
         closeDialog 0;
     };

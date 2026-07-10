@@ -58,7 +58,6 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         FLO_GTN_TempoHandle = FLO_EastGTN_TempoHandle;
         FLO_GTN_ForceGrowthHandle = FLO_EastGTN_ForceGrowthHandle;
         FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
-        FLO_MoneyHandle = _configData get "moneyHandle";
         EnemyPrec = _configData get "enemyPrec";
         FLO_ObjectiveSizeThreshold = _configData get "objectiveSizeThreshold";
         FLO_VirtualizationDistance = _configData get "virtualizationDistance";
@@ -71,7 +70,6 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave}) exitWith {
         _missionConfig set ["enemyPresence", _configData get "enemyPrec"];
         FLO_MissionConfig = _missionConfig;
         publicVariable "FLO_MissionConfig";
-        [] call FLO_fnc_publishMoneyState;
 
         diag_log format ["[FLO_INIT_P1] Restored handles from save: Friendly=%1, Enemy=%2",
             FLO_FriendlyHandle get "name",
@@ -143,7 +141,7 @@ private _requiredFields = [
     "eastGTNForceGrowthHandle",
     "westGTNGarrisonHandle",
     "eastGTNGarrisonHandle",
-    "moneyHandle",
+    "startingResources",
     "enemyPresence",
     "objectiveSizeThreshold",
     "virtualizationDistance",
@@ -193,7 +191,6 @@ FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
 FLO_GTN_TempoHandle = FLO_EastGTN_TempoHandle;
 FLO_GTN_ForceGrowthHandle = FLO_EastGTN_ForceGrowthHandle;
 FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
-FLO_MoneyHandle = FLO_MissionConfig get "moneyHandle";
 EnemyPrec = FLO_MissionConfig get "enemyPresence";
 
 private _objectiveSizeThreshold = FLO_MissionConfig get "objectiveSizeThreshold";
@@ -205,7 +202,6 @@ private _virtualizationUnitCap = FLO_MissionConfig get "virtualizationUnitCap";
 FLO_VirtualizationUnitCap = _virtualizationUnitCap;
 private _startingTerritoryWestRatio = FLO_MissionConfig get "startingTerritoryWestRatio";
 FLO_StartingTerritoryWestRatio = _startingTerritoryWestRatio;
-[] call FLO_fnc_publishMoneyState;
 diag_log format [
     "[FLO_INIT_P1] World settings: objectiveSizeThreshold=%1 virtualizationDistance=%2m virtualizationUnitCap=%3 territoryRatio=%4",
     FLO_ObjectiveSizeThreshold,

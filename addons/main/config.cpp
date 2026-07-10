@@ -39,6 +39,7 @@ class RscTitles {
 #include "UI\Setup\SetupDialog.hpp"
 #include "UI\Store\StoreDialog.hpp"
 #include "UI\Deploy\DeployDialog.hpp"
+#include "UI\Operations\OperationsDialog.hpp"
 
 class CfgRemoteExec {
     class Functions {
@@ -60,8 +61,8 @@ class CfgRemoteExec {
         class FLO_fnc_gtnSyncAlertBatch { allowedTargets = 0; jip = 0; };
         class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
         class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };
-        class FLO_fnc_syncMoneyState { allowedTargets = 1; jip = 0; };
         class FLO_fnc_addMoney { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_vehicleMarket { allowedTargets = 2; jip = 0; };
         class FLO_fnc_bribeMilitia { allowedTargets = 2; jip = 0; };
         class FLO_fnc_syncObjectiveRuntimeState { allowedTargets = 1; jip = 0; };
         class FLO_fnc_storeApplyKit { allowedTargets = 1; jip = 0; };
@@ -72,6 +73,8 @@ class CfgRemoteExec {
         class FLO_fnc_storeRequestCheckout { allowedTargets = 2; jip = 0; };
         class FLO_fnc_baseDeployRequest { allowedTargets = 2; jip = 0; };
         class FLO_fnc_baseDeployReceiveResult { allowedTargets = 1; jip = 0; };
+        class FLO_fnc_campaignRequestSnapshot { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_operationsReceiveSnapshot { allowedTargets = 1; jip = 0; };
         class FLO_fnc_randomizeWeather { allowedTargets = 2; jip = 0; };
     };
 };

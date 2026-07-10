@@ -18,6 +18,7 @@
  *   7: Order mode <STRING> - MOVE only
  *   8: Defend lease issued at <NUMBER>
  *   9: Defend lease until <NUMBER>
+ *   10: Campaign operation ID <STRING> - ATTACK only
  *
  * Return Value:
  *   ARRAY - [success, routeMs, assignMs, transportMs, orderMs]
@@ -33,7 +34,8 @@ params [
     ["_objectiveId", "", [""]],
     ["_orderMode", "", [""]],
     ["_leaseIssuedAt", -1, [0]],
-    ["_leaseUntil", -1, [0]]
+    ["_leaseUntil", -1, [0]],
+    ["_campaignOperationId", "", [""]]
 ];
 
 if (_groupId == "") then {
@@ -49,6 +51,13 @@ if (!(_targetPos isEqualType []) || {count _targetPos < 2}) then {
 };
 
 private _order = toUpper _orderType;
+if (_order == "ATTACK" && {_objectiveId == "" || {_campaignOperationId == ""}}) then {
+    throw format [
+        "FLO_fnc_virtualizationCommitCommanderOrder: ATTACK requires objective and campaign operation (%1, %2)",
+        _objectiveId,
+        _campaignOperationId
+    ];
+};
 private _orderStart = diag_tickTime;
 
 private _tRoute = diag_tickTime;
@@ -61,7 +70,7 @@ switch (_order) do {
         [_groupData, _targetPos, _orderMode] call FLO_fnc_virtualizationAssignMoveOrder;
     };
     case "ATTACK": {
-        [_groupData, _targetPos, _objectiveId] call FLO_fnc_virtualizationAssignAttackOrder;
+        [_groupData, _targetPos, _objectiveId, _campaignOperationId] call FLO_fnc_virtualizationAssignAttackOrder;
     };
     case "DEFEND": {
         [_groupData, _targetPos, _objectiveId, _leaseIssuedAt, _leaseUntil] call FLO_fnc_virtualizationAssignDefendOrder;

@@ -4,9 +4,10 @@ FLO_StoreActiveBaseNetId = "";
 FLO_StoreCatalogCache = createHashMap;
 FLO_StorePlaceableMagazineCache = createHashMap;
 FLO_StorePlaceableMagazineCacheReady = false;
+FLO_StoreCheckoutSequence = 0;
 
-FLO_StoreFOBDeployCost = 1500;
-FLO_StoreCOPDeployCost = 600;
+FLO_StoreSupplyShipmentClass = "FLO_SUPPLY_SHIPMENT";
+FLO_StoreSupplyShipmentCost = 300;
 
 FLO_StoreCategories = [
     ["primary", "Primary"],
@@ -27,7 +28,8 @@ FLO_StoreCategories = [
     ["naval", "Naval"],
     ["static", "Statics"],
     ["other", "Other"],
-    ["recruits", "Recruit AI"]
+    ["recruits", "Recruit AI"],
+    ["logistics", "Logistics"]
 ];
 
 FLO_StoreCatalogCategories = FLO_StoreCategories + [

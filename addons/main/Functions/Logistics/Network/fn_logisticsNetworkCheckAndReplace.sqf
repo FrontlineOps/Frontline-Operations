@@ -21,14 +21,12 @@ private _perf = createHashMapFromArray [
     ["collapseTargetCount", 0],
     ["frontlinePressureTargetCount", 0],
     ["targetCount", 0],
-    ["advanceTargetCount", 0],
     ["hqObjective", ""],
     ["supplyNodeCount", 0],
     ["batchSize", 0],
     ["attempted", 0],
     ["created", 0],
     ["failNoTargetPool", 0],
-    ["failCantAfford", 0],
     ["failNoTargetObj", 0],
     ["failSaturatedTarget", 0],
     ["failNoDeliveryObjective", 0],
@@ -159,7 +157,6 @@ private _resources = FLO_SideResources get (_net get "_managedSideKey");
 _perf set ["resourcesBefore", _resources call ["getResources", []]];
 private _targetPicture = [_net, 3000] call FLO_fnc_logisticsNetworkBuildTargetPicture;
 private _pressureTargets = _targetPicture get "pressureTargets";
-private _advanceTargets = _targetPicture get "advanceTargets";
 private _rearTargets = _targetPicture get "rearTargets";
 private _maneuverTargets = _targetPicture get "maneuverTargets";
 private _collapseTargetCount = _targetPicture get "collapseTargetCount";
@@ -170,46 +167,35 @@ private _sourceBlockedObjectives = _pressureTargets select {
 
 if (_collapseTargetCount > 0) then {
     ["LOGISTICS", 3, format [
-        "Queue dispatch: collapse pressure overriding supply advance (%1 collapse, %2 advance, %3 pending)",
+        "Queue dispatch: collapse pressure first (%1 collapse, %2 total pressure, %3 pending)",
         _collapseTargetCount,
-        count _advanceTargets,
+        count _pressureTargets,
         count _queue
     ]] call FLO_fnc_log;
 } else {
     if (_frontlinePressureTargetCount > 0) then {
         ["LOGISTICS", 3, format [
-            "Queue dispatch: frontline pressure overriding supply advance (%1 frontline, %2 advance, %3 background pressure, %4 pending)",
+            "Queue dispatch: frontline pressure first (%1 frontline, %2 background pressure, %3 pending)",
             _frontlinePressureTargetCount,
-            count _advanceTargets,
-            (count _pressureTargets) - _collapseTargetCount - _frontlinePressureTargetCount,
-            count _queue
-        ]] call FLO_fnc_log;
-    } else {
-        if (_advanceTargets isNotEqualTo []) then {
-        ["LOGISTICS", 3, format [
-            "Queue dispatch: prioritizing supply-chain advance (%1 advance, %2 non-critical pressure, %3 pending)",
-            count _advanceTargets,
             (count _pressureTargets) - _collapseTargetCount - _frontlinePressureTargetCount,
             count _queue
         ]] call FLO_fnc_log;
     } else {
         if (_pressureTargets isEqualTo []) then {
             ["LOGISTICS", 3, format [
-                "Queue dispatch: no pressure or advance objectives - checking rear objectives (%1 pending)",
+                "Queue dispatch: no pressured objectives - checking rear objectives (%1 pending)",
                 count _queue
             ]] call FLO_fnc_log;
-        };
         };
     };
 };
 _perf set ["targetMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["collapseTargetCount", _collapseTargetCount];
 _perf set ["frontlinePressureTargetCount", _frontlinePressureTargetCount];
-_perf set ["advanceTargetCount", count _advanceTargets];
 _perf set ["targetCount", (count _maneuverTargets) + (count _rearTargets)];
 
 if (_maneuverTargets isEqualTo [] && {_rearTargets isEqualTo []}) then {
-    ["LOGISTICS", 3, "No pressure, supply-advance, or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
+    ["LOGISTICS", 3, "No pressure or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
 };
 
 private _batchMin = _net get "DISPATCH_BATCH_MIN";
@@ -251,14 +237,23 @@ for "_i" from 1 to _batchSize do {
         };
     };
 
-    if (_targetPool isEqualTo []) then {
-        _perf set ["failNoTargetPool", (_perf get "failNoTargetPool") + 1];
-        _queue pushBack _groupType;
-        continue;
+    _targetPool = [
+        _net get "_managedSide",
+        _targetPool,
+        _cost,
+        _resources
+    ] call FLO_fnc_campaignPrioritizeReinforcementTargets;
+    if (_targetPool isEqualTo [] && {_groupType isNotEqualTo "static_aa"} && {_rearTargets isNotEqualTo []}) then {
+        _targetPool = [
+            _net get "_managedSide",
+            _rearTargets,
+            _cost,
+            _resources
+        ] call FLO_fnc_campaignPrioritizeReinforcementTargets;
     };
 
-    if !(_resources call ["canAfford", [_cost, "reinforcement"]]) then {
-        _perf set ["failCantAfford", (_perf get "failCantAfford") + 1];
+    if (_targetPool isEqualTo []) then {
+        _perf set ["failNoTargetPool", (_perf get "failNoTargetPool") + 1];
         _queue pushBack _groupType;
         continue;
     };
@@ -292,25 +287,74 @@ for "_i" from 1 to _batchSize do {
     };
 
     private _spawnFindT0 = diag_tickTime;
-    private _spawnData = [_net, _deliveryObjectiveId, _sourceBlockedObjectives] call FLO_fnc_logisticsNetworkFindSpawnPosition;
+    private _throughputCost = (_net get "GROUP_THROUGHPUT_COSTS") get _groupType;
+    private _spawnData = [
+        _net,
+        _deliveryObjectiveId,
+        _sourceBlockedObjectives,
+        _throughputCost
+    ] call FLO_fnc_logisticsNetworkFindSpawnPosition;
     _perf set ["dispatchSpawnMs", (_perf get "dispatchSpawnMs") + ((diag_tickTime - _spawnFindT0) * 1000)];
     private _spawnPos = _spawnData select 0;
     private _sourceObjId = _spawnData select 1;
+    private _sourceNodeId = _spawnData select 2;
     if (_spawnPos isEqualTo [0, 0, 0]) then {
         _perf set ["failNoSpawnPos", (_perf get "failNoSpawnPos") + 1];
         _queue pushBack _groupType;
         continue;
     };
 
+    private _operationReservation = [
+        _net get "_managedSide",
+        _requestedObjectiveId
+    ] call FLO_fnc_campaignGetOperationReservation;
+    _operationReservation params ["_operationReservationId", "_operationScoped"];
+    private _temporaryReservation = !_operationScoped;
+    private _reservationId = _operationReservationId;
+    if (_temporaryReservation) then {
+        _reservationId = format [
+            "LOGISTICS:%1:%2:%3",
+            _net get "_managedSideKey",
+            round (diag_tickTime * 1000),
+            _i
+        ];
+    };
     private _spendT0 = diag_tickTime;
-    private _spent = _resources call ["spendResources", [_cost, "reinforcement"]];
+    private _reserved = if (_operationScoped) then {
+        _reservationId != "" && {(_resources call ["getReservationRemaining", [_reservationId]]) >= _cost}
+    } else {
+        _resources call ["reserve", [
+            _reservationId,
+            _cost,
+            "REINFORCEMENT",
+            format ["%1 replacement", _groupType],
+            "COMMANDER",
+            _requestedObjectiveId
+        ]]
+    };
     _perf set ["dispatchSpendMs", (_perf get "dispatchSpendMs") + ((diag_tickTime - _spendT0) * 1000)];
 
-    if (_spent) then {
+    if (_reserved) then {
+        private _throughputConsumed = [_net, _sourceNodeId, _throughputCost, format ["%1 replacement", _groupType]] call FLO_fnc_logisticsNetworkConsumeThroughput;
+        if (!_throughputConsumed) then {
+            if (_temporaryReservation) then {
+                _resources call ["releaseReservation", [_reservationId, "Source throughput changed before dispatch"]];
+            };
+            _perf set ["failNoSpawnPos", (_perf get "failNoSpawnPos") + 1];
+            _queue pushBack _groupType;
+            continue;
+        };
+
         private _createT0 = diag_tickTime;
         private _newId = [_net, _groupType, _spawnPos, _deliveryObjectiveId, _sourceObjId, _requestedObjectiveId, _perf] call FLO_fnc_logisticsNetworkCreateReplacement;
         _perf set ["dispatchCreateMs", (_perf get "dispatchCreateMs") + ((diag_tickTime - _createT0) * 1000)];
         if (_newId != "") then {
+            if !(_resources call ["commitReservation", [_reservationId, _cost, format ["Dispatched %1 replacement", _groupType]]]) then {
+                throw format ["Failed to commit guaranteed logistics reservation %1", _reservationId];
+            };
+            if (_operationScoped) then {
+                [_reservationId, _cost] call FLO_fnc_campaignRecordOperationSpend;
+            };
             private _bookkeepingT0 = diag_tickTime;
             [_net, _groupType, _cost] call FLO_fnc_logisticsNetworkRecordReplacement;
             [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkRecordTargetDispatch;
@@ -329,7 +373,12 @@ for "_i" from 1 to _batchSize do {
                 _cost
             ]] call FLO_fnc_log;
         } else {
+            [_net, _sourceNodeId, _throughputCost, "Replacement creation refund"] call FLO_fnc_logisticsNetworkRestoreThroughput;
+            if (_temporaryReservation) then {
+                _resources call ["releaseReservation", [_reservationId, "Replacement creation failed"]];
+            };
             _perf set ["failCreateReplacement", (_perf get "failCreateReplacement") + 1];
+            _queue pushBack _groupType;
         };
     } else {
         _perf set ["failSpendResources", (_perf get "failSpendResources") + 1];

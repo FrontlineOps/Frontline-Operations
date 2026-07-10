@@ -24,7 +24,7 @@ private _enemyObjectiveIds = [];
     private _objective = FLO_Objectives get _x;
     private _owner = _objective get "owner";
 
-    if (_owner isEqualTo _managedSide) then {
+    if (_owner isEqualTo _managedSide && {[_x] call FLO_fnc_campaignIsObjectiveIntegrated}) then {
         _managedObjectiveIds pushBack _x;
         continue;
     };

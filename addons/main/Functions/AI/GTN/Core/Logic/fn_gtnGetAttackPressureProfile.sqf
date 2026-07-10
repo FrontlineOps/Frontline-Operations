@@ -32,7 +32,6 @@ private _profile = createHashMapFromArray [
     ["bestSourceDepth", -1],
     ["bestSourceRouteMeters", 1e12],
     ["bestSourceActiveNode", false],
-    ["bestSourceAdvanceCandidate", false],
     ["bestSourceRecentlyCaptured", false]
 ];
 
@@ -49,7 +48,7 @@ private _nowDateNum = dateToNumber date;
 private _recentCaptureCount = if ("__recentCaptureCount" in _cache) then {
     _cache get "__recentCaptureCount"
 } else {
-    private _captureStreakWindowDays = (_config get "captureStreakWindowSeconds") / 86400;
+    private _captureStreakWindowSeconds = _config get "captureStreakWindowSeconds";
     private _count = 0;
 
     {
@@ -58,7 +57,8 @@ private _recentCaptureCount = if ("__recentCaptureCount" in _cache) then {
 
         private _capturedAtDateNum = _objective get "capturedAtDateNum";
         if (_capturedAtDateNum < 0) then { continue };
-        if ((_nowDateNum - _capturedAtDateNum) > _captureStreakWindowDays) then { continue };
+        private _captureAgeSeconds = [_capturedAtDateNum, _nowDateNum] call FLO_fnc_dateNumberDeltaSeconds;
+        if (_captureAgeSeconds > _captureStreakWindowSeconds) then { continue };
 
         _count = _count + 1;
     } forEach _objectives;
@@ -80,13 +80,12 @@ private _sourceObjectives = _cmdr call ["_getFriendlyAttackSourceObjectives", [_
 if (_sourceObjectives isNotEqualTo []) then {
     private _sideKey = _cmdr get "_sideKey";
     private _net = FLO_Logistics_Networks get _sideKey;
-    private _recentSourceWindowDays = (_config get "attackOverextensionRecentCaptureSeconds") / 86400;
+    private _recentSourceWindowSeconds = _config get "attackOverextensionRecentCaptureSeconds";
     private _bestDepthRank = 1e12;
     private _bestActiveNode = false;
     private _bestRouteMeters = 1e12;
     private _bestSourceObjectiveId = "";
     private _bestSourceDepth = -1;
-    private _bestSourceAdvanceCandidate = false;
     private _bestSourceRecentlyCaptured = false;
 
     {
@@ -96,9 +95,10 @@ if (_sourceObjectives isNotEqualTo []) then {
         private _depth = _role get "depth";
         private _routeMeters = _role get "routeMeters";
         private _activeNode = _role get "isActiveNode";
-        private _advanceCandidate = _role get "isAdvanceCandidate";
         private _capturedAtDateNum = _sourceObjective get "capturedAtDateNum";
-        private _recentlyCaptured = _capturedAtDateNum >= 0 && {(_nowDateNum - _capturedAtDateNum) <= _recentSourceWindowDays};
+        private _recentlyCaptured = _capturedAtDateNum >= 0 && {
+            ([_capturedAtDateNum, _nowDateNum] call FLO_fnc_dateNumberDeltaSeconds) <= _recentSourceWindowSeconds
+        };
         private _depthRank = [1e12, _depth] select (_depth >= 0);
 
         if (
@@ -112,7 +112,6 @@ if (_sourceObjectives isNotEqualTo []) then {
             _bestRouteMeters = _routeMeters;
             _bestSourceObjectiveId = _sourceObjectiveId;
             _bestSourceDepth = _depth;
-            _bestSourceAdvanceCandidate = _advanceCandidate;
             _bestSourceRecentlyCaptured = _recentlyCaptured;
         };
     } forEach _sourceObjectives;
@@ -129,16 +128,11 @@ if (_sourceObjectives isNotEqualTo []) then {
     if (_bestSourceRecentlyCaptured) then {
         _overextensionSteps = _overextensionSteps + 1;
     };
-    if (!_bestActiveNode && {_bestSourceAdvanceCandidate}) then {
-        _overextensionSteps = _overextensionSteps + 1;
-    };
-
     _profile set ["overextensionSteps", _overextensionSteps];
     _profile set ["bestSourceObjectiveId", _bestSourceObjectiveId];
     _profile set ["bestSourceDepth", _bestSourceDepth];
     _profile set ["bestSourceRouteMeters", _bestRouteMeters];
     _profile set ["bestSourceActiveNode", _bestActiveNode];
-    _profile set ["bestSourceAdvanceCandidate", _bestSourceAdvanceCandidate];
     _profile set ["bestSourceRecentlyCaptured", _bestSourceRecentlyCaptured];
 };
 

@@ -29,5 +29,4 @@ private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObject
 if ((_role get "depth") < 0) exitWith { false };
 
 (_role get "isActiveNode")
-|| { _role get "isAdvanceCandidate" }
 || { (_role get "activeLinkedObjectives") isNotEqualTo [] }

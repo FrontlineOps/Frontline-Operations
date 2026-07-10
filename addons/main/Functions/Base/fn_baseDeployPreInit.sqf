@@ -2,6 +2,7 @@ FLO_BaseDeployDialogIdd = 9900;
 FLO_BaseDeployBrowserIdc = 9901;
 FLO_BaseDeployBrowserReady = false;
 FLO_BaseDeployRenderKey = "";
+FLO_BaseDeploySequence = 0;
 
 FLO_BaseFOBDeployCost = 1500;
 FLO_BaseFOBBuildRadius = 100;

@@ -1,42 +1,43 @@
 params ["_player", ["_baseType", "FOB", [""]]];
 
-if (!isServer) exitWith {};
-if (isNull _player) exitWith {};
-
+if (!isServer || {isNull _player}) exitWith {};
 private _owner = owner _player;
-
-if ((remoteExecutedOwner > 2) && {_owner isNotEqualTo remoteExecutedOwner}) exitWith {
-    diag_log format [
-        "[FLO][Base] Rejected deploy request from owner %1 for player owner %2",
-        remoteExecutedOwner,
-        _owner
-    ];
+if (remoteExecutedOwner > 2 && {_owner != remoteExecutedOwner}) exitWith {
+    ["BASE", 1, format ["Rejected deploy request from owner %1 for player owner %2", remoteExecutedOwner, _owner]] call FLO_fnc_log;
 };
 
 private _type = toUpper _baseType;
+if !(_type in ["FOB", "COP"]) exitWith {
+    [false, format ["Unknown base type %1.", _baseType]] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
+};
+
 private _isAdmin = (admin _owner) > 0;
 private _isOfficer = (typeOf _player == F_Officer) || {typeOf _player == "B_G_officer_F"};
 private _hasAuthority = _isAdmin || {_isOfficer || {leader group _player isEqualTo _player}};
-
 if (!_hasAuthority) exitWith {
     [false, "FOB/COP deployment requires admin, officer, or squad leader authority."] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
 };
 
-private _cost = [FLO_BaseFOBDeployCost, FLO_BaseCOPDeployCost] select (_type isEqualTo "COP");
-private _money = FLO_MoneyHandle get "value";
+private _side = side group _player;
+if !(_side in [west, east]) then { throw format ["Base deploy requester has unsupported side %1", _side]; };
+private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _treasury = FLO_SideResources get _sideKey;
+private _cost = [FLO_BaseFOBDeployCost, FLO_BaseCOPDeployCost] select (_type == "COP");
 
-if (_money < _cost) exitWith {
-    [false, format ["Not enough resources. %1 costs %2.", _type, _cost]] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
+FLO_BaseDeploySequence = FLO_BaseDeploySequence + 1;
+private _reservationId = format ["BASE:%1:%2:%3", _sideKey, _owner, FLO_BaseDeploySequence];
+if !(_treasury call ["reserve", [_reservationId, _cost, "CONSTRUCTION", format ["%1 deployment", _type], name _player, mapGridPosition _player]]) exitWith {
+    private _economy = [_treasury] call FLO_fnc_sideResourcesGetSnapshot;
+    [false, format ["Not enough available resources. %1 costs %2; available %3.", _type, _cost, _economy get "available"]] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
 };
 
-private _deploy = [_player, _type] call FLO_fnc_storeDeployBase;
-
-if !(_deploy get "success") exitWith {
-    [false, _deploy get "message"] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
+private _deployment = [_player, _type] call FLO_fnc_storeDeployBase;
+if !(_deployment get "success") exitWith {
+    _treasury call ["releaseReservation", [_reservationId, "Base deployment failed validation"]];
+    [false, _deployment get "message"] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
 };
 
-private _newMoney = _money - _cost;
-FLO_MoneyHandle set ["value", _newMoney];
-[_newMoney] call FLO_fnc_publishMoneyState;
-
-[true, _deploy get "message"] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];
+if !(_treasury call ["commitReservation", [_reservationId, _cost, format ["Deployed %1", _type]]]) then {
+    throw format ["Failed to commit guaranteed base reservation %1", _reservationId];
+};
+[true, _deployment get "message"] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];

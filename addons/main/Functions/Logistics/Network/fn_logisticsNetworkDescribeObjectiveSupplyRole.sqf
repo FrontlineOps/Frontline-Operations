@@ -1,23 +1,11 @@
-/*
- * Function: FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole
- * Author: Frontline Operations Development Group
- * Description:
- *   Describes where an owned objective currently sits in the managed side's
- *   supply chain so target and delivery scoring can stay aligned.
- *
- * Arguments:
- *   0: Logistics network object <HASHMAP>
- *   1: Objective ID <STRING>
- *
- * Return Value:
- *   HASHMAP - Role description
- */
+params ["_network", ["_objectiveId", "", [""]]];
 
-params ["_net", "_objectiveId"];
-
-private _roleCache = _net get "_dispatchRoleCache";
+private _roleCache = _network get "_dispatchRoleCache";
 if (_objectiveId in _roleCache) exitWith { _roleCache get _objectiveId };
 
+[_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+private _routeInfo = _network get "_supplyRouteInfo";
+private _activeSources = _network get "_activeSupplyNodes";
 private _role = createHashMapFromArray [
     ["depth", -1],
     ["routeMeters", 1e12],
@@ -26,45 +14,34 @@ private _role = createHashMapFromArray [
     ["isHQ", false],
     ["isActiveNode", false],
     ["activeLinkedObjectives", []],
-    ["isAdvanceCandidate", false]
+    ["nodeId", ""],
+    ["nodeType", ""],
+    ["nodeState", ""]
 ];
 
-if !(_objectiveId in FLO_Objectives) exitWith {
-    _roleCache set [_objectiveId, _role];
-    _role
+if (_objectiveId in _routeInfo) then {
+    private _route = _routeInfo get _objectiveId;
+    _role set ["depth", _route get "depth"];
+    _role set ["routeMeters", _route get "routeMeters"];
+    _role set ["parentObjective", _route get "parentObjective"];
+    _role set ["isHQ", _route get "isHQ"];
+
+    if (_objectiveId in _activeSources) then {
+        private _source = _activeSources get _objectiveId;
+        _role set ["deliveryCount", _source get "deliveryCount"];
+        _role set ["isActiveNode", true];
+        _role set ["nodeId", _source get "nodeId"];
+        _role set ["nodeType", _source get "nodeType"];
+        _role set ["nodeState", _source get "state"];
+    };
+
+    if (_objectiveId in FLO_Objectives) then {
+        _role set [
+            "activeLinkedObjectives",
+            ((FLO_Objectives get _objectiveId) get "linkedObjectives") select { _x in _activeSources }
+        ];
+    };
 };
-
-private _routeInfo = _net get "_supplyRouteInfo";
-private _activeNodes = _net get "_activeSupplyNodes";
-if (
-    (_net get "_supplyChainDirty")
-    || {_net get "_objectiveSideIndexDirty"}
-    || {(keys _routeInfo) isEqualTo [] && {(keys _activeNodes) isEqualTo []}}
-) then {
-    [_net] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
-    _routeInfo = _net get "_supplyRouteInfo";
-    _activeNodes = _net get "_activeSupplyNodes";
-};
-
-if !(_objectiveId in _routeInfo) exitWith {
-    _roleCache set [_objectiveId, _role];
-    _role
-};
-
-private _nodeInfo = _routeInfo get _objectiveId;
-private _objective = FLO_Objectives get _objectiveId;
-private _isActiveNode = _objectiveId in _activeNodes;
-private _activeLinkedObjectives = (_objective get "linkedObjectives") select { _x in _activeNodes };
-
-_role set ["depth", _nodeInfo get "depth"];
-_role set ["routeMeters", _nodeInfo get "routeMeters"];
-_role set ["parentObjective", _nodeInfo get "parentObjective"];
-_role set ["deliveryCount", _nodeInfo get "deliveryCount"];
-_role set ["isHQ", _nodeInfo get "isHQ"];
-_role set ["isActiveNode", _isActiveNode];
-_role set ["activeLinkedObjectives", _activeLinkedObjectives];
-_role set ["isAdvanceCandidate", !_isActiveNode && {_activeLinkedObjectives isNotEqualTo []}];
 
 _roleCache set [_objectiveId, _role];
-
 _role

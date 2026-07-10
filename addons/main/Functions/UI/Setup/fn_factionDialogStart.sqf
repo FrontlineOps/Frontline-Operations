@@ -20,7 +20,6 @@
  * FLO_IDC_FACTION_COMBO_ENEMY      = 1956
  * FLO_IDC_FACTION_COMBO_CIVILIAN   = 1957
  * FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE = 1958
- * FLO_IDC_FACTION_COMBO_RESOURCES  = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
  * FLO_IDC_FACTION_COMBO_WEST_AGGRESSION = 1961
  * FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE = 1962
@@ -60,7 +59,6 @@ private _playerFaction = [_playerFactionSelections] call FLO_fnc_factionDialogJo
 private _enemyFaction = [_enemyFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
 private _civilianFaction = [_civilianFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
 private _westAttackCoverage = ([_display, 1958] call FLO_fnc_factionDialogGetSelection) select 0;
-private _resources = ([_display, 1959] call FLO_fnc_factionDialogGetSelection) select 0;
 private _reputation = ([_display, 1960] call FLO_fnc_factionDialogGetSelection) select 0;
 private _westDifficulty = ([_display, 1961] call FLO_fnc_factionDialogGetSelection) select 0;
 private _westDefenseCoverage = ([_display, 1962] call FLO_fnc_factionDialogGetSelection) select 0;
@@ -94,7 +92,6 @@ if (_playerFaction isEqualTo "" ||
     _enemyFaction isEqualTo "" ||
     _civilianFaction isEqualTo "" ||
     _westAttackCoverage isEqualTo "" ||
-    _resources isEqualTo "" ||
     _reputation isEqualTo "" ||
     _westDifficulty isEqualTo "" ||
     _westDefenseCoverage isEqualTo "" ||
@@ -146,7 +143,6 @@ _display closeDisplay 1;
     _enemyFaction,
     _civilianFaction,
     _westAttackCoverage,
-    _resources,
     _reputation,
     _westDifficulty,
     _westDefenseCoverage,
@@ -174,7 +170,6 @@ _display closeDisplay 1;
         "_enemyFaction",
         "_civilianFaction",
         "_westAttackCoverage",
-        "_resources",
         "_reputation",
         "_westDifficulty",
         "_westDefenseCoverage",
@@ -210,9 +205,6 @@ _display closeDisplay 1;
 		case "Friendly _ Civilians Support Players": {16};
 		default {9};
 	};
-
-	// Process resources
-	private _resourceValue = parseNumber _resources;
 
     private _difficultyMap = createHashMapFromArray [
         ["LOW _ Cautious Commander", 0.5],
@@ -323,7 +315,7 @@ _display closeDisplay 1;
 		["eastGTNGarrisonHandle", _eastGarrisonHandle],
 		["westFactionTuningHandle", _westFactionTuningHandle],
 		["eastFactionTuningHandle", _eastFactionTuningHandle],
-		["moneyHandle", createHashMapFromArray [["value", _resourceValue], ["name", _resources]]],
+		["startingResources", 5000],
 		["enemyPresence", _enemyPresence],
 		["objectiveSizeThreshold", _objectiveSizeThreshold],
 		["virtualizationDistance", _virtualizationDistanceValue],

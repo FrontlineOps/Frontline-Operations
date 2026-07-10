@@ -1,23 +1,15 @@
-/**
- * Function: FLO_fnc_addReward
- * 
- * Description:
- * Adds specified amount to the player's reward/money counter.
- * The money value is stored in FLO_MoneyHandle.
- *
- * Parameters:
- * _this select 0: NUMBER - The amount to add to the reward counter
- *
- * Returns:
- * NUMBER - The new money value after adding the reward
- *
- * Example:
- * [100] call FLO_fnc_addReward;
- */
+params [
+    ["_amount", 0, [0]],
+    ["_side", west, [west]],
+    ["_reason", "Player field reward", [""]],
+    ["_referenceId", "", [""]]
+];
 
-if (!isServer) exitWith {}; // Only execute on server
+if (!isServer) exitWith { false };
+if !(_side in [west, east]) then { throw format ["Reward has unsupported side %1", _side]; };
+if (_amount <= 0) then { throw format ["Reward amount must be positive, got %1", _amount]; };
 
-// Check parameters
-params [["_RWRD", 0, [0]]];
-
-[_RWRD] call FLO_fnc_addMoney
+private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _treasury = FLO_SideResources get _sideKey;
+[_treasury, _amount, "FIELD_REWARD", _reason, "PLAYER", _referenceId, true] call FLO_fnc_sideResourcesAddResources;
+true

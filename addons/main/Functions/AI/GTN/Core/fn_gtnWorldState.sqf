@@ -380,6 +380,14 @@ private _worldState = createHashMapObject [[
             } forEach _groups;
         };
 
+        // Human group knowledge feeds the same maintained contact picture as AI observers.
+        {
+            if (!alive _x || {(side group _x) != _ownSide}) then { continue };
+            private _leader = leader group _x;
+            if (isNull _leader || {!alive _leader}) then { continue };
+            _scanLeaders pushBackUnique _leader;
+        } forEach allPlayers;
+
         if (_scanLeaders isEqualTo []) then {
             {
                 if (side _x != _ownSide) then { continue };

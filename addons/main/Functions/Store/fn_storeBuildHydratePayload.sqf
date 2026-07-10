@@ -5,6 +5,9 @@ private _catalog = [_sideKey] call FLO_fnc_storeBuildCatalog;
 private _itemsByCategory = _catalog get "itemsByCategory";
 private _categories = [];
 private _firstCategory = "";
+private _treasury = FLO_SideResources get _sideKey;
+private _economy = [_treasury] call FLO_fnc_sideResourcesGetSnapshot;
+private _node = _access get "logisticsNode";
 
 {
     private _category = _x select 0;
@@ -27,18 +30,15 @@ createHashMapFromArray [
     ["message", ""],
     ["sideKey", _sideKey],
     ["sideName", _access get "sideName"],
-    ["factionClass", _sideKey],
     ["factionName", _access get "sideName"],
-    ["baseType", _access get "baseType"],
-    ["vehicleStoreEnabled", true],
-    ["balance", FLO_MoneyHandle get "value"],
-    ["personalBalance", 0],
-    ["canUseFactionFunds", true],
-    ["deploymentFund", 0],
-    ["deploymentFundAmount", 0],
-    ["tickets", 0],
+    ["balance", _economy get "available"],
+    ["totalBalance", _economy get "balance"],
+    ["committed", _economy get "committed"],
+    ["nodeId", _node get "id"],
+    ["nodeType", _node get "type"],
+    ["nodeState", _node get "state"],
+    ["throughput", round (_node get "throughput")],
+    ["throughputMax", _node get "throughputMax"],
     ["categories", _categories],
-    ["firstCategory", _firstCategory],
-    ["fobNetId", _access get "baseNetId"],
-    ["pendingVehicles", []]
+    ["firstCategory", _firstCategory]
 ]

@@ -29,9 +29,9 @@ try {
         if (!isNull _civilian) then {
             if (_civilian getUnitTrait 'engineer') then {
                 [50, ""INSURGENT""] call FLO_fnc_sendRewardNotification;
-                [50] call FLO_fnc_addReward;
                 private _reportSide = missionNamespace getVariable ['FLO_ActivePlayerSide', west];
                 if !(_reportSide in [east, west]) then { _reportSide = west; };
+                [50, _reportSide, 'Insurgent turned in at a campaign base', netId _civilian] call FLO_fnc_addReward;
                 [_civilian, _reportSide] call FLO_fnc_gtnAlertCivilianReport;
                 deleteVehicle _civilian;
                 [0.35, 'increase'] call FLO_fnc_adjustReputation;
@@ -45,28 +45,6 @@ try {
     ];
     _civTrigger attachTo [_building, [0, 0, 0]];
     _triggers pushBack _civTrigger;
-
-    private _resourceArea = _config get "resourceTriggerArea";
-    private _searchRadius = _config get "resourceSearchRadius";
-    private _searchRadiusLarge = _config get "resourceSearchRadiusLarge";
-
-    private _resTrigger = createTrigger ["EmptyDetector", getPos _building];
-    _resTrigger setTriggerArea _resourceArea;
-    _resTrigger setTriggerTimeout [3, 3, 3, true];
-    _resTrigger setTriggerActivation ["NONE", "PRESENT", true];
-    _resTrigger setTriggerStatements [
-        format["(nearestObjects [thisTrigger, ['CargoNet_01_box_F'], %1]) isNotEqualTo []", _searchRadius],
-        format["
-            private _resource = (nearestObjects [thisTrigger, ['CargoNet_01_box_F'], %1]) param [0, objNull];
-            if (!isNull _resource) then {
-                deleteVehicle _resource;
-                [100, ""RESOURCE""] call FLO_fnc_sendRewardNotification;
-                [100] call FLO_fnc_addReward;
-            };
-        ", _searchRadiusLarge], ""
-    ];
-    _resTrigger attachTo [_building, [0, 0, 0]];
-    _triggers pushBack _resTrigger;
 
     [_type, 3, format["Created %1 triggers", count _triggers]] call FLO_fnc_log;
 } catch {

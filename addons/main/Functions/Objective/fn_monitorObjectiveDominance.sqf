@@ -179,19 +179,10 @@ while {true} do {
             private _objectiveId = _x;
             private _objective = FLO_Objectives get _objectiveId;
 
-            FLO_ObjectiveRuntimeState set [_objectiveId, createHashMapFromArray [
-                ["captureProgress", _objective get "captureProgress"],
-                ["captureState", _objective get "captureState"],
-                ["captureSide", _objective get "captureSide"],
-                ["captureSecureProgress", _objective get "captureSecureProgress"],
-                ["captureSecureStartedAt", _objective get "captureSecureStartedAt"],
-                ["captureStatusChangedAt", _objective get "captureStatusChangedAt"],
-                ["captureIntegratedAtDateNum", _objective get "captureIntegratedAtDateNum"],
-                ["bluforCount", _objective get "bluforCount"],
-                ["opforCount", _objective get "opforCount"],
-                ["contested", _objective get "contested"],
-                ["underAttack", _objective get "underAttack"]
-            ]];
+            FLO_ObjectiveRuntimeState set [
+                _objectiveId,
+                [_objective] call FLO_fnc_buildObjectiveRuntimeRecord
+            ];
         } forEach (keys _dirtyRuntimeObjectiveIds);
 
         [] call FLO_fnc_publishObjectiveRuntimeState;

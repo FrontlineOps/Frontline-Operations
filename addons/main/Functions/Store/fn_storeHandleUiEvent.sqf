@@ -38,9 +38,6 @@ switch (_event) do {
     case "store::kitDelete": {
         ["store::savedKits", [_data get "id"] call FLO_fnc_storeSavedKitsDelete] call FLO_fnc_storeUpdateDialog;
     };
-    case "store::vehiclePlace": {
-        hint "Purchased vehicles spawn at the active base in FLO.";
-    };
     case "store::close": {
         closeDialog 0;
     };

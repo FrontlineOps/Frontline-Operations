@@ -16,7 +16,7 @@ class RscControlsGroup;
 class RscEdit;
 class RscFrame;
 class RscListBox;
-class RscMap;
+class RscMapControl;
 class RscPicture;
 class RscPictureKeepAspect;
 class RscProgress;

@@ -36,7 +36,11 @@ private _managedObjectiveIds = _net get "_managedObjectiveIds";
     _metrics set ["pendingObjectives", (_metrics get "pendingObjectives") + 1];
 
     if ((_objective get "owner") != _managedSide) then { continue };
-    if (_nowDateNum < (_objective get "captureGrowthEligibleAtDateNum")) then { continue };
+    private _growthRemaining = [
+        _nowDateNum,
+        _objective get "captureGrowthEligibleAtDateNum"
+    ] call FLO_fnc_dateNumberDeltaSeconds;
+    if (_growthRemaining > 0) then { continue };
     if ((_objective get "contested") || (_objective get "underAttack")) then { continue };
 
     private _role = [_net, _objectiveId] call FLO_fnc_logisticsNetworkDescribeObjectiveSupplyRole;

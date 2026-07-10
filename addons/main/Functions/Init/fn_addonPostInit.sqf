@@ -31,6 +31,8 @@ if (isServer) then {
             ["FLO_FactionCatalog", createHashMap],
             ["FLO_GTN_CommandersBySide", createHashMap],
             ["FLO_GTN_CommandersBySideState", createHashMap],
+            ["FLO_CampaignBases", []],
+            ["FLO_CampaignSnapshotRequestAt", createHashMap],
             ["FLO_GTN_EnablePlayerTaskBridge", true],
             ["FLO_GTN_CommanderDebugEnabled", false],
             ["FLO_GTN_CommanderDebugRunning", false],
@@ -44,6 +46,15 @@ if (isServer) then {
         {
             missionNamespace setVariable [_x, _y, true];
         } forEach _globalVars;
+
+        FLO_GTN_IntelPickupRevealState = createHashMapFromArray [
+            ["WEST", createHashMap],
+            ["EAST", createHashMap]
+        ];
+        FLO_GTN_StrategicIntelBySide = createHashMapFromArray [
+            ["WEST", createHashMap],
+            ["EAST", createHashMap]
+        ];
 
         FLO_GTN_CombatEvents = [];
         FLO_GTN_CombatLastByObjective = createHashMap;
@@ -86,11 +97,7 @@ if (hasInterface) then {
         titleText ["Frontline Operations Group Presents...", "PLAIN", 3];
 
         StartingLocationDone = false;
-        FLO_GTN_ShowSupplyMarkers = true;
-        FLO_GTN_CommanderSupplyToggleActionId = -1;
-        FLO_GTN_CommanderSupplyToggleActionOwner = objNull;
-        FLO_GTN_LastCommanderIntelSyncArgs = [];
-        FLO_GTN_CommanderSupplyRespawnHandlerAdded = false;
+        FLO_GTN_PlayerSupportRespawnHandlerAdded = false;
         FLO_GTN_PlayerSupportActionIds = [];
         FLO_GTN_PlayerSupportActionOwner = objNull;
         FLO_GTN_PlayerSupportMapClickEhId = -1;
@@ -99,8 +106,6 @@ if (hasInterface) then {
         FLO_ClientFinalizeDone = false;
 
         [] call FLO_fnc_initMissionConfigEvents;
-        [] call FLO_fnc_initMoneyStateEvents;
-
         [] spawn {
             waitUntil {
                 sleep 1;

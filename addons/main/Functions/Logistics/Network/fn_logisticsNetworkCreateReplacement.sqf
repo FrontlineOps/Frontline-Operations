@@ -37,6 +37,10 @@ if (_deliveryObjectiveId != "") then {
         ["LOGISTICS", 2, format ["Delivery objective %1 no longer owned by managed side", _deliveryObjectiveId]] call FLO_fnc_log;
         ""
     };
+    if !([_deliveryObjectiveId] call FLO_fnc_campaignIsObjectiveIntegrated) exitWith {
+        ["LOGISTICS", 2, format ["Delivery objective %1 is not integrated territory", _deliveryObjectiveId]] call FLO_fnc_log;
+        ""
+    };
     _targetPos = _objData get "position";
 };
 
