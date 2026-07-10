@@ -93,8 +93,8 @@ switch (true) do {
 };
 
 // Update virtualization tracking if the old group was being tracked
-if (!isNull _oldGroup && {!isNil "FLO_virtualGroups"}) then {
-    private _groups = FLO_virtualGroups get "_groups";
+if (!isNull _oldGroup && {!isNil "FLO_VirtualForceRegistry"}) then {
+    private _groups = call FLO_fnc_virtualizationGetGroupMap;
     
     if (!isNil "_groups") then {
         {

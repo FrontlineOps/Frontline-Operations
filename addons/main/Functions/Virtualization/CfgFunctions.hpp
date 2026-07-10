@@ -2,10 +2,8 @@ class VirtualizationSystem {
     file = "\z\flo\addons\main\Functions\Virtualization\System";
 
     class initVirtualization          {};
-    class virtualizationCreateEventHandlerState {};
     class virtualizationCreateUpdateState {};
     class virtualizationUpdatePFH     {};
-    class virtualizationEvents        {};
     class virtualizationEnsureUpdateState {};
     class virtualizationGetUpdateStatsDefaults {};
     class virtualizationGetUpdatePerfDefaults {};
@@ -16,8 +14,6 @@ class VirtualizationSystem {
     class virtualizationGetNearestCachedPlayerDistance {};
     class virtualizationIsPositionWithinActivationRange {};
     class virtualizationIsValidPosition {};
-    class virtualizationRegisterEventHandlers {};
-    class virtualizationRemoveEventHandlers {};
     class virtualizationResetBatchStats {};
     class virtualizationResetUpdateStats {};
     class virtualizationProcessGroupBatch {};
@@ -26,19 +22,26 @@ class VirtualizationSystem {
     class virtualizationValidateUpdateState {};
 };
 
-class VirtualizationSeeding {
-    file = "\z\flo\addons\main\Functions\Virtualization\Seeding";
-
-    class buildObjectiveTemplateSpawnPlan {};
-    class initializeObjectiveGroups {};
-    class initializeTransportReserveGroups {};
-    class backfillObjectiveTemplateGroups {};
-    class distributeVirtualGroups   {};
-};
-
 class VirtualizationRegistry {
     file = "\z\flo\addons\main\Functions\Virtualization\Registry";
 
+    class virtualizationCreateRegistry          {};
+    class virtualizationCreateArchetype         {};
+    class virtualizationCreateArchetypeCatalog  {};
+    class virtualizationGetArchetype            {};
+    class virtualizationRequireRegistry         {};
+    class virtualizationGetGroupMap             {};
+    class virtualizationGetConfigValue          {};
+    class virtualizationSetConfigValue          {};
+    class virtualizationGetSpatialState         {};
+    class virtualizationCreateGroupRecordDefaults {};
+    class virtualizationRequireGroup            {};
+    class virtualizationFindGroup               {};
+    class virtualizationFindGroupSnapshot       {};
+    class virtualizationCloneValue              {};
+    class virtualizationSnapshotGroup           {};
+    class virtualizationPatchGroup              {};
+    class virtualizationTouchRegistry           {};
     class createVirtualGroup              {};
     class virtualizationGenerateGroupId   {};
     class virtualizationBuildGroupData    {};
@@ -49,12 +52,10 @@ class VirtualizationRegistry {
     class virtualizationRollbackOrganicPackageCreation {};
     class virtualizationSetEnabled       {};
     class virtualizationGetGroup         {};
+    class virtualizationQueryGroupIds    {};
     class virtualizationAddGroup         {};
     class virtualizationRemoveGroup      {};
     class virtualizationUpdateGroupPosition {};
-    class virtualizationReserveGroup     {};
-    class virtualizationReleaseGroup     {};
-    class virtualizationGetGroupsBy      {};
 };
 
 class VirtualizationIndex {
@@ -86,6 +87,7 @@ class VirtualizationLifecycle {
     class virtualizationConvertAssetCrewToInfantryRemnant {};
     class virtualizationDeactivateMountedPassengerGroup {};
     class virtualizationDeactivateMountedPassengers {};
+    class virtualizationResolveTransportPassengerCasualty {};
     class virtualizationCaptureRealGroupPosition {};
     class virtualizationCaptureRealGroupRuntimeState {};
     class virtualizationCaptureRealGroupWaypoints {};
@@ -97,6 +99,7 @@ class VirtualizationLifecycle {
     class virtualizationGetGroundCombatVehiclePool {};
     class virtualizationResolveCrewType    {};
     class virtualizationResolveGroundSpawnPos {};
+    class virtualizationIsGroundSpawnPositionSafe {};
     class virtualizationSyncRealGroupOutcome {};
     class virtualizationAssignIntelItem {};
     class virtualizationCreateCrewedVehicle {};
@@ -132,63 +135,16 @@ class VirtualizationRouting {
     class virtualizationHandlePathResolved {};
 };
 
-class VirtualizationTransport {
-    file = "\z\flo\addons\main\Functions\Virtualization\Transport";
-
-    class transportConfig       {};
-    class transportResolveReserveObjective {};
-    class transportResolveReserveSpawnContext {};
-    class transportPickReserveSpawnObjective {};
-    class transportResolveReserveSpawnPosition {};
-    class transportCreateReserveCarrier {};
-    class transportGetCapacity  {};
-    class transportGetGroupCapacity {};
-    class transportGetPickupCapacity {};
-    class transportGetPassengerLoad {};
-    class transportCountMountedActivePassengers {};
-    class transportGetTrackedGroup {};
-    class transportHasKnownEnemyNearby {};
-    class transportBuildMissionPlan {};
-    class transportCommitMissionPlan {};
-    class transportClearInsertState {};
-    class transportResetActiveCarrierMotion {};
-    class transportCarrierBlocksDeactivation {};
-    class transportPool         {};
-    class transportPoolClaim    {};
-    class transportFindRequestCandidates {};
-    class transportSelectRequestCarrier {};
-    class transportReconcilePoolState {};
-    class transportPoolRelease  {};
-    class transportReturnCarrierToReserve {};
-    class transportAttach       {};
-    class transportApplyPostDismountWaypoint {};
-    class transportDetach       {};
-    class transportDetachAll    {};
-    class transportIssueActiveDismount {};
-    class transportParadropActivePassengerGroup {};
-    class transportProcessActiveCarrier {};
-    class transportProcessVirtualCarrier {};
-    class transportLogMountFailureContext {};
-    class transportMountActivePassengerGroup {};
-    class transportPrepareCarrierForPickup {};
-    class transportMaybeRequestReassignmentPickup {};
-    class transportRequest      {};
-    class transportDismount     {};
-    class transportShouldThreatDismount {};
-    class transportSyncActivePassengerGroup {};
-};
-
 class VirtualizationCore {
     file = "\z\flo\addons\main\Functions\Virtualization\Core";
 
+    class virtualizationScheduleNextProcess {};
     class virtualizationAdvanceDefaultWaypoint {};
     class virtualizationAdvanceLoiterWaypoint {};
     class virtualizationAdvanceTerminalWaypoint {};
-    class virtualizationApplyTieredUpdateWindow {};
     class virtualizationRepairOrphanedActiveGroup {};
     class virtualizationProcessAttachedGroup {};
     class virtualizationProcessInactiveMovement {};
-    class virtualizationComputeDeferredActivationPos {};
     class virtualizationProcessActivationState {};
     class virtualizationProcessActiveState {};
     class virtualizationProcessGroup    {};
@@ -206,8 +162,17 @@ class VirtualizationLogic {
 class VirtualizationState {
     file = "\z\flo\addons\main\Functions\Virtualization\State";
 
+    class virtualizationGetPersistentFields {};
+    class virtualizationValidateGroup {};
+    class virtualizationValidateSavedGroup {};
+    class virtualizationValidateRegistry {};
+    class virtualizationMigrateSavedGroup {};
+    class virtualizationSerializeRegistry {};
+    class virtualizationRestoreRegistry {};
+    class virtualizationRebuildDerivedState {};
     class virtualizationGetEffectiveState {};
     class virtualizationSetAssetComposition {};
+    class virtualizationSetAssetCompositionById {};
     class virtualizationClearCommanderOrder {};
     class virtualizationSetCommanderOrder {};
     class virtualizationCommitCommanderOrder {};
@@ -245,6 +210,11 @@ class VirtualizationState {
     class virtualizationSetMountedIn {};
     class virtualizationClearMountedIn {};
     class virtualizationGetMountedTransport {};
+    class virtualizationTransportChainContains {};
+    class virtualizationLinkTransportGroups {};
+    class virtualizationUnlinkTransportGroups {};
+    class virtualizationPruneTransportPassenger {};
+    class virtualizationSetMountedTransportById {};
     class virtualizationFinalizeReinforcement {};
     class virtualizationResumeSavedRoutes {};
     class virtualizationMarkReinforcementTransit {};

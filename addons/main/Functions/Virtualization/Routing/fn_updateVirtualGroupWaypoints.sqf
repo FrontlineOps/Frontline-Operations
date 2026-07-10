@@ -30,8 +30,7 @@ params [
     ["_requestSource", "", [""]]
 ];
 
-// Get the group data
-private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 // Get the current position of the group
 private _currentPos = _groupData get "position";
 
@@ -47,6 +46,13 @@ if (_sanitizedWaypoints isEqualTo [] || !_effectiveUsePathfinding) then {
 } else {
     [_groupId, _groupData, _currentPos, _sanitizedWaypoints, _allowTrails, _sourceTag, _isNavalGroup, _groupType] call FLO_fnc_virtualizationRequestPathRouteUpdate;
 };
+
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
+[
+    "FLO_Virtualization_GroupPatched",
+    [_groupId, ["waypoints", "state", "pathToken"]]
+] call CBA_fnc_localEvent;
 
 // Log the update
 ["VIRTUALIZATION", 3, format["Updated waypoints for virtual group %1", _groupId]] call FLO_fnc_log;

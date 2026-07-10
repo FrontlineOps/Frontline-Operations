@@ -58,7 +58,6 @@ switch (_wpType) do {
 
     // SENTRY - hold position (never completes)
     case "SENTRY": {
-        _groupData set ["lastSentryTime", diag_tickTime];
         [_groupData, "holding"] call FLO_fnc_virtualizationSetRuntimeState;
     };
 

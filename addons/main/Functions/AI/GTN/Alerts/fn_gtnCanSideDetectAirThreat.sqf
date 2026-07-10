@@ -28,7 +28,7 @@ private _airPos = getPosATL _aircraft;
 
 if ([_airPos, 3000, _detectingSide] call FLO_fnc_gtnCanSideObserveArea) exitWith { true };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _radarGroupIds = ["queryRadius", [_airPos, 50000, _detectingSide, true]] call FLO_fnc_virtualizationSpatialIndex;
 
 private _canDetect = false;

@@ -28,6 +28,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
     FLO_GTNArtilleryManager = createHashMapObject [[
         ["missions", createHashMap],
         ["objectiveCooldowns", createHashMap],
+        ["sideCooldowns", createHashMap],
+        ["batteryCooldowns", createHashMap],
         ["artilleryGroupsBySide", createHashMapFromArray [
             ["ALL", createHashMap],
             ["EAST", createHashMap],
@@ -74,7 +76,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
             params ["_artySide", "_targetPos", "_rounds", "_accuracy"];
 
             private _enemySide = if (_artySide isEqualTo east) then { west } else { east };
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             private _impactRadius = ((_accuracy max 50) * 3) min 700;
             private _candidates = [];
 
@@ -111,11 +113,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
                 private _newCount = _currentCount - _loss;
                 if (_newCount <= 0) then {
-                    _gData set ["unitCount", 0];
-                    [FLO_virtualGroups, _gid] call FLO_fnc_virtualizationRemoveGroup;
+                    [_gid] call FLO_fnc_virtualizationRemoveGroup;
                 } else {
-                    _gData set ["unitCount", _newCount];
-                    _groups set [_gid, _gData];
+                    [
+                        _gid,
+                        createHashMapFromArray [["unitCount", _newCount]]
+                    ] call FLO_fnc_virtualizationPatchGroup;
                 };
 
                 _totalLosses = _totalLosses + _loss;
@@ -131,8 +134,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 params ["_gid", "_duration"];
                 sleep _duration;
 
-                if (!isNil "FLO_virtualGroups") then {
-                    private _groups = FLO_virtualGroups get "_groups";
+                if (!isNil "FLO_VirtualForceRegistry") then {
+                    private _groups = call FLO_fnc_virtualizationGetGroupMap;
                     if (_gid in _groups) then {
                         private _gData = _groups get _gid;
                         [_gData] call FLO_fnc_virtualizationClearMissionLock;
@@ -213,7 +216,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 _dangerRadius = _self get "observedFireDangerCloseRadius";
             };
 
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             private _nearGroupIds = ["queryRadius", [_targetPos, _dangerRadius]] call FLO_fnc_virtualizationSpatialIndex;
             private _safe = true;
 
@@ -242,7 +245,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["_initializeObservedFireSupport", {
             if ((_self get "observedFirePfhId") >= 0) exitWith {};
 
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             {
                 [FLO_GTNArtilleryManager, _x, _y, true] call FLO_fnc_gtnArtillerySyncCachedGroup;
                 [FLO_GTNArtilleryManager, _x, _y] call FLO_fnc_gtnArtillerySyncObservedSpotter;
@@ -271,6 +274,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 [FLO_GTNArtilleryManager, _groupId, nil, false] call FLO_fnc_gtnArtillerySyncCachedGroup;
                 (FLO_GTNArtilleryManager get "observedSpotters") deleteAt _groupId;
                 (FLO_GTNArtilleryManager get "observedFireSpotterCooldowns") deleteAt _groupId;
+                (FLO_GTNArtilleryManager get "batteryCooldowns") deleteAt _groupId;
             }] call CBA_fnc_addEventHandler;
             _self set ["observedFireRemovedEh", _removedHandler];
 
@@ -322,26 +326,13 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             if (_rounds < 0) then { _rounds = _self get "defaultRounds"; };
             if (_accuracy < 0) then { _accuracy = _self get "defaultAccuracy"; };
-
-            if (_objectiveId != "") then {
-                private _sideKey = if (_requestSide in [east, west]) then {
-                    ([_requestSide] call FLO_fnc_gtnSideContext) get "sideKey"
-                } else {
-                    "ANY"
-                };
-                private _cooldownKey = format ["%1:%2", _sideKey, _objectiveId];
-                private _cooldowns = _self get "objectiveCooldowns";
-                private _lockedUntil = _cooldowns getOrDefault [_cooldownKey, 0];
-
-                if (_lockedUntil > diag_tickTime) exitWith {
-                    ["GTN Artillery", 3, format [
-                        "Artillery request skipped for %1 - objective cooldown active (%2s remaining)",
-                        _objectiveId,
-                        round (_lockedUntil - diag_tickTime)
-                    ]] call FLO_fnc_log;
-                    false
-                };
+            if (_rounds <= 0) exitWith {
+                ["GTN Artillery", 1, format ["Rejected %1 artillery request with %2 rounds", _requestKind, _rounds]] call FLO_fnc_log;
+                false
             };
+
+            private _requestStatus = [_self, _requestSide, _objectiveId] call FLO_fnc_gtnArtilleryCanRequestMission;
+            if !(_requestStatus select 0) exitWith { false };
 
             private _missions = _self get "missions";
             private _artGroups = [_self, _requestSide] call FLO_fnc_gtnArtilleryGetAvailableGroups;
@@ -351,8 +342,6 @@ if (isNil "FLO_GTNArtilleryManager") then {
             if (_artGroups isEqualTo []) exitWith { false };
 
             ["GTN Artillery", 3, format["Available (not on mission): %1. Missions map: %2", count _artGroups, _missions]] call FLO_fnc_log;
-
-            if (_artGroups isEqualTo []) exitWith { false };
 
             // Select nearest group to target (single pass)
             private _sel = [];
@@ -369,26 +358,17 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             private _gid = _sel select 0;
             private _gdata = _sel select 1;
+            private _batteryStatus = [_self, _requestSide, _objectiveId, _gid] call FLO_fnc_gtnArtilleryCanRequestMission;
+            if !(_batteryStatus select 0) exitWith { false };
             private _isLiveArea = if (_forceLive) then { true } else { _self call ["_isLiveArea", [_targetPos]] };
-            private _sideKey = if (_requestSide in [east, west]) then {
-                ([_requestSide] call FLO_fnc_gtnSideContext) get "sideKey"
-            } else {
-                "ANY"
-            };
             private _targetSide = if (_requestSide isEqualTo east) then {
                 west
             } else {
                 if (_requestSide isEqualTo west) then { east } else { sideUnknown };
             };
-            private _cooldownKey = if (_objectiveId != "") then {
-                format ["%1:%2", _sideKey, _objectiveId]
-            } else {
-                ""
-            };
-            private _cooldownSeconds = _self get "objectiveCooldownSeconds";
             private _forceLiveActivationFailed = false;
 
-            if (_isLiveArea && {!(_gdata get "isActive")} && {!([_gid, _gdata] call FLO_fnc_virtualizationTryActivateGroup)}) then {
+            if (_isLiveArea && {!(_gdata get "isActive")} && {!([_gid] call FLO_fnc_virtualizationTryActivateGroup)}) then {
                 if (_forceLive) then {
                     _forceLiveActivationFailed = true;
                 } else {
@@ -409,13 +389,12 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
             // Non-live area: keep support entirely virtual.
             if (!_isLiveArea) exitWith {
-                [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
                 private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, createHashMap, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
+                if !([_self, _gid, _gdata, _requestSide, _objectiveId, _missionRecord] call FLO_fnc_gtnArtilleryAuthorizeMission) exitWith { false };
+
+                [_gdata, "ARTILLERY", "VIRTUAL_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
                 (_self get "missions") set [_gid, _missionRecord];
                 ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "STARTED"]] call CBA_fnc_localEvent;
-                if (_cooldownKey != "") then {
-                    (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
-                };
 
                 if (_targetSide in [east, west]) then {
                     [_self, _gid, _gdata, _targetSide, _missionRecord] call FLO_fnc_gtnRecordCounterBatteryExposure;
@@ -454,6 +433,9 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 false
             };
 
+            private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, _firePlan, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
+            if !([_self, _gid, _gdata, _requestSide, _objectiveId, _missionRecord] call FLO_fnc_gtnArtilleryAuthorizeMission) exitWith { false };
+
             if (_targetSide in [east, west]) then {
                 private _alertPayload = [];
                 if ((keys _firePlan) isNotEqualTo []) then {
@@ -470,12 +452,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
             [_gdata, "ARTILLERY", "LIVE_FIRE"] call FLO_fnc_virtualizationSetMissionLock;
 
             // Register mission
-            private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, _firePlan, _requestKind] call FLO_fnc_gtnBuildArtilleryMissionRecord;
             (_self get "missions") set [_gid, _missionRecord];
             ["FLO_GTN_ArtilleryMissionStateChanged", [_missionRecord get "side", _missionRecord get "missionId", "STARTED"]] call CBA_fnc_localEvent;
-            if (_cooldownKey != "") then {
-                (_self get "objectiveCooldowns") set [_cooldownKey, diag_tickTime + _cooldownSeconds];
-            };
             if (_targetSide in [east, west]) then {
                 [_self, _gid, _gdata, _targetSide, _missionRecord] call FLO_fnc_gtnRecordCounterBatteryExposure;
             };
@@ -494,7 +472,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["_cleanupMission", {
             params ["_gid", "_veh"];
 
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             private _gdata = _groups get _gid;
 
             if (isNil "_gdata") exitWith {
@@ -525,7 +503,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 params ["_gid", "_scootTime"];
                 sleep _scootTime;
 
-                private _groups = FLO_virtualGroups get "_groups";
+                private _groups = call FLO_fnc_virtualizationGetGroupMap;
                 private _gdata = _groups get _gid;
                 if (!isNil "_gdata") then {
                     // Clear mission flag
@@ -533,7 +511,10 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
                     // Reset state to idle so virtualization can assign new patrol
                     [_gdata, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
-                    _gdata set ["autoPatrol", false];  // Allow patrol to be reassigned
+                    [
+                        _gid,
+                        createHashMapFromArray [["autoPatrol", false]]
+                    ] call FLO_fnc_virtualizationPatchGroup;
 
                     if ((_gdata get "isActive") && {!isNull (_gdata get "realGroup")}) then {
                         [_gid, _gdata] call FLO_fnc_deactivateVirtualGroup;

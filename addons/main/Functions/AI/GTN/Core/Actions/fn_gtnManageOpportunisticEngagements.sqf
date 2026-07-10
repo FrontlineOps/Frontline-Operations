@@ -42,7 +42,7 @@ private _engagementPicture = _ws call ["_getEnemyEngagementPicture", []];
 private _engagementGroups = _engagementPicture get "groups";
 private _attackCandidateIds = keys _engagementGroups;
 private _config = _gtnCommander get "_config";
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _ownSide = _gtnCommander get "_ownSide";
 private _taskedGroupIds = +(_gtnCommander get "_gtnTaskedGroups");
 private _assignmentState = createHashMap;
@@ -107,7 +107,13 @@ if (!_fullSweep) then {
         if !(isNil "_targetData") then {
             private _evaluation = [_groupData, _targetData, _config, _groupContext] call FLO_fnc_gtnEvaluateGroupEngagementTarget;
             if (_evaluation isNotEqualTo []) then {
-                _groupData set ["engagementExpiresAt", diag_tickTime + (_config get "engagementDurationSeconds")];
+                [
+                    _groupId,
+                    createHashMapFromArray [[
+                        "engagementExpiresAt",
+                        diag_tickTime + (_config get "engagementDurationSeconds")
+                    ]]
+                ] call FLO_fnc_virtualizationPatchGroup;
 
                 private _targetPos = _targetData get "position";
                 private _storedTargetPos = _groupData get "engagementTargetPos";

@@ -4,7 +4,7 @@
 
 params ["_pos", "_radius"];
 
-private _cellSize = FLO_VirtSpatial get "cellSize";
+private _cellSize = (call FLO_fnc_virtualizationGetSpatialState) get "cellSize";
 private _centerX = floor ((_pos select 0) / _cellSize);
 private _centerY = floor ((_pos select 1) / _cellSize);
 private _cellRadius = ceil (_radius / _cellSize);

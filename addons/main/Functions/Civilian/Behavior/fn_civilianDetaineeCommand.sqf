@@ -59,16 +59,18 @@ switch (toUpper _mode) do {
         _records set [netId _unit, _record];
         _unit setVariable ["FLO_CivilianDetained", true, true];
         _unit setVariable ["FLO_CivilianInterrogatedAt", -1, true];
-        if (!isNil "FLO_virtualGroups") then {
+        if (!isNil "FLO_VirtualForceRegistry") then {
             private _groupId = _unit getVariable ["FLO_VirtualGroupId", ""];
-            private _groups = FLO_virtualGroups get "_groups";
-            if (_groupId != "" && {_groupId in _groups}) then {
-                private _groupData = _groups get _groupId;
-                if ((_groupData get "civilianRoutineState") == "protest") then {
-                    _groupData set ["civilianRoutineState", "return"];
-                    _groupData set ["civilianRoutineUntil", diag_tickTime - 1];
+            if (_groupId != "") then {
+                private _groupData = [_groupId] call FLO_fnc_virtualizationFindGroupSnapshot;
+                if !(isNil "_groupData") then {
+                    private _changes = createHashMapFromArray [["alwaysActive", true]];
+                    if ((_groupData get "civilianRoutineState") == "protest") then {
+                        _changes set ["civilianRoutineState", "return"];
+                        _changes set ["civilianRoutineUntil", diag_tickTime - 1];
+                    };
+                    [_groupId, _changes] call FLO_fnc_virtualizationPatchGroup;
                 };
-                (_groups get _groupId) set ["alwaysActive", true];
             };
         };
         [_unit] call FLO_fnc_civilianDetainActions;
@@ -157,9 +159,13 @@ switch (toUpper _mode) do {
             false
         };
 
-        private _groups = FLO_virtualGroups get "_groups";
         private _groupId = _unit getVariable ["FLO_VirtualGroupId", ""];
-        private _groupData = if (_groupId != "" && {_groupId in _groups}) then { _groups get _groupId } else { createHashMap };
+        private _groupData = if (_groupId != "") then {
+            private _snapshot = [_groupId] call FLO_fnc_virtualizationFindGroupSnapshot;
+            if (isNil "_snapshot") then { createHashMap } else { _snapshot }
+        } else {
+            createHashMap
+        };
         private _objectiveId = if ((keys _groupData) isNotEqualTo []) then { _groupData get "civilianObjective" } else { _record get "objectiveId" };
         private _role = if ((keys _groupData) isNotEqualTo []) then { _groupData get "civilianRole" } else { _unit getVariable ["FLO_CivilianRole", "resident"] };
         private _callerSide = side group _caller;
@@ -245,11 +251,16 @@ switch (toUpper _mode) do {
             };
         };
 
-        if (!isNil "FLO_virtualGroups") then {
+        if (!isNil "FLO_VirtualForceRegistry") then {
             private _groupId = _unit getVariable ["FLO_VirtualGroupId", ""];
-            private _groups = FLO_virtualGroups get "_groups";
-            if (_groupId != "" && {_groupId in _groups}) then {
-                (_groups get _groupId) set ["alwaysActive", false];
+            if (_groupId != "") then {
+                private _groupData = [_groupId] call FLO_fnc_virtualizationFindGroupSnapshot;
+                if !(isNil "_groupData") then {
+                [
+                    _groupId,
+                    createHashMapFromArray [["alwaysActive", false]]
+                ] call FLO_fnc_virtualizationPatchGroup;
+                };
             };
         };
 

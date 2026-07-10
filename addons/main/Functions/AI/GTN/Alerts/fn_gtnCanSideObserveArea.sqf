@@ -34,7 +34,7 @@ private _playersNear = {
 } count allPlayers;
 if (_playersNear > 0) exitWith { true };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _nearGroupIds = ["queryRadius", [_position, _radius, _observingSide, true]] call FLO_fnc_virtualizationSpatialIndex;
 
 (_nearGroupIds findIf {

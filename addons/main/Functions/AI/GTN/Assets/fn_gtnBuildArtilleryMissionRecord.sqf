@@ -32,8 +32,10 @@ private _impactPoints = [];
 private _etaMin = -1;
 private _etaMax = -1;
 private _radius = ((_accuracy max 60) * 1.2) min 450;
+private _plannedRounds = ceil _rounds;
 
 if ((keys _firePlan) isNotEqualTo []) then {
+    _plannedRounds = _firePlan get "plannedRounds";
     _impactPoints = _firePlan get "impactPoints";
     _etaMin = _firePlan get "etaMin";
     _etaMax = _firePlan get "etaMax";
@@ -86,6 +88,7 @@ createHashMapFromArray [
     ["side", _groupData get "side"],
     ["targetPos", _targetPos],
     ["rounds", _rounds],
+    ["plannedRounds", _plannedRounds],
     ["accuracy", _accuracy],
     ["requestKind", _requestKind],
     ["radius", _radius],
@@ -94,5 +97,11 @@ createHashMapFromArray [
     ["etaMax", _etaMax],
     ["issuedAt", _issuedAt],
     ["expiresAt", _issuedAt + _etaEnd + 30],
-    ["isLivePlan", (keys _firePlan) isNotEqualTo []]
+    ["isLivePlan", (keys _firePlan) isNotEqualTo []],
+    ["treasuryCost", 0],
+    ["localSupplyCost", 0],
+    ["supplyNodeId", ""],
+    ["supplyObjectiveId", ""],
+    ["sideReadyAt", -1],
+    ["batteryReadyAt", -1]
 ]

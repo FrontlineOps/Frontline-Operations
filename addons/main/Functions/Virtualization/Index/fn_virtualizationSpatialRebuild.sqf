@@ -2,11 +2,12 @@
  * Function: FLO_fnc_virtualizationSpatialRebuild
  */
 
-if (isNil "FLO_virtualGroups") exitWith { false };
+if (isNil "FLO_VirtualForceRegistry") exitWith { false };
 
-[FLO_VirtSpatial get "cellSize"] call FLO_fnc_virtualizationSpatialInit;
+private _cellSize = (call FLO_fnc_virtualizationGetSpatialState) get "cellSize";
+[_cellSize] call FLO_fnc_virtualizationSpatialInit;
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 {
     [_x, _y get "position", _y get "side"] call FLO_fnc_virtualizationSpatialAdd;
 } forEach _groups;

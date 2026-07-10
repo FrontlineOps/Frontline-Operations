@@ -18,7 +18,7 @@ if ((_currentPos select 0) <= 100 && (_currentPos select 1) <= 100) exitWith {
     false
 };
 
-[FLO_virtualGroups, _groupId, _currentPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+[_groupId, _currentPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 ["VIRTUALIZATION", 4, format ["Saved position %1 for group %2", _currentPos, _groupId]] call FLO_fnc_log;
 
 true

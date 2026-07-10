@@ -15,19 +15,28 @@
 
 params ["_manager", ["_requestSide", sideUnknown]];
 
+private _sideStatus = [_manager, _requestSide] call FLO_fnc_gtnArtilleryCanRequestMission;
+if !(_sideStatus select 0) exitWith { [] };
+
 private _cache = _manager get "artilleryGroupsBySide";
 private _cacheKey = "ALL";
 if (_requestSide isEqualTo east) then { _cacheKey = "EAST"; };
 if (_requestSide isEqualTo west) then { _cacheKey = "WEST"; };
 
-private _groupMap = FLO_virtualGroups get "_groups";
+private _groupMap = call FLO_fnc_virtualizationGetGroupMap;
 private _missions = _manager get "missions";
+private _batteryCooldowns = _manager get "batteryCooldowns";
+private _now = diag_tickTime;
 private _available = [];
 
 {
     private _groupId = _x;
 
     if (_groupId in _missions) then { continue };
+    if (_groupId in _batteryCooldowns) then {
+        if ((_batteryCooldowns get _groupId) > _now) then { continue };
+        _batteryCooldowns deleteAt _groupId;
+    };
 
     if !(_groupId in _groupMap) then {
         [_manager, _groupId, nil, false] call FLO_fnc_gtnArtillerySyncCachedGroup;

@@ -8,6 +8,7 @@ params [
 ];
 
 private _groupType = _groupData get "groupType";
+private _archetype = [_groupType] call FLO_fnc_virtualizationGetArchetype;
 private _unitLoad = 0;
 private _hasRealGroup = false;
 
@@ -20,24 +21,20 @@ if (_groupData get "isActive") then {
 };
 
 if (!_hasRealGroup && {_unitLoad <= 0}) then {
-    switch (_groupType) do {
-        case "infantry";
-        case "civilian";
-        case "civ_pedestrian";
-        case "civ_building": {
+    switch (_archetype get "loadMode") do {
+        case "PERSONNEL": {
             _unitLoad = (_groupData get "unitCount") max 1;
         };
 
-        case "civilianVehicle";
-        case "civ_car": {
+        case "CIVILIAN_VEHICLE": {
             _unitLoad = 1;
         };
 
-        case "static_aa": {
+        case "STATIC_AA": {
             _unitLoad = ((_groupData get "unitCount") max 1) + 1;
         };
 
-        default {
+        case "ASSET": {
             private _composition = _groupData get "comp";
 
             if (_composition isNotEqualTo []) then {
@@ -51,25 +48,19 @@ if (!_hasRealGroup && {_unitLoad <= 0}) then {
                 if (_vehicleType != "") then {
                     _unitLoad = ([_vehicleType] call FLO_fnc_virtualizationEstimateVehicleCrewCount) * _assetCount;
                 } else {
-                    _unitLoad = switch (_groupType) do {
-                        case "motorized";
-                        case "mechanized";
-                        case "armor";
-                        case "artillery";
-                        case "mobile_aa": { 3 * _assetCount };
-                        case "helicopter";
-                        case "jet";
-                        case "air": { 2 * _assetCount };
-                        default { _assetCount };
-                    };
+                    _unitLoad = (_archetype get "fallbackCrewPerAsset") * _assetCount;
                 };
             };
+        };
+
+        default {
+            throw format ["Unsupported load mode for virtual-group archetype %1", _groupType];
         };
     };
 };
 
 if (_includeAttached) then {
-    private _groups = FLO_virtualGroups get "_groups";
+    private _groups = call FLO_fnc_virtualizationGetGroupMap;
     {
         _unitLoad = _unitLoad + ([(_groups get _x), false] call FLO_fnc_virtualizationGetGroupUnitLoad);
     } forEach (_groupData get "attachedGroups");

@@ -7,7 +7,10 @@
 
 params [["_mode", "init", [""]], ["_args", [], [[]]]];
 
-if (isNil "FLO_VirtSpatial") then {
+if (isNil "FLO_VirtualForceRegistry") then {
+    throw "Virtualization spatial index used before registry initialization";
+};
+if ((keys ((call FLO_fnc_virtualizationRequireRegistry) get "spatial")) isEqualTo []) then {
     [500] call FLO_fnc_virtualizationSpatialInit;
 };
 

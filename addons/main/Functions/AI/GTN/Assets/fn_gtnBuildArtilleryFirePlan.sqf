@@ -27,37 +27,64 @@ if (isNull _realGroup) exitWith { createHashMap };
 private _vehicles = [_realGroup] call FLO_fnc_gtnCollectArtilleryVehicles;
 if (_vehicles isEqualTo []) exitWith { createHashMap };
 
-private _gunCount = count _vehicles;
-private _roundsPerGun = ceil (_rounds / _gunCount);
-if (_rounds > 0 && {_roundsPerGun < 1}) then {
-    _roundsPerGun = 1;
-};
+private _totalRounds = ceil _rounds;
+if (_totalRounds <= 0) exitWith { createHashMap };
+
+private _usableVehicles = [];
+{
+    private _ammo = (getArtilleryAmmo [_x]) param [0, ""];
+    if (_ammo == "") then { continue };
+    if !(_targetPos inRangeOfArtillery [[_x], _ammo]) then { continue };
+
+    _usableVehicles pushBack [
+        _x,
+        _ammo,
+        _x isKindOf "MLRS" || {getText (configOf _x >> "simulation") == "airplanex"}
+    ];
+} forEach _vehicles;
+
+if (_usableVehicles isEqualTo []) exitWith { createHashMap };
+
+private _gunCount = count _usableVehicles;
+private _baseRoundsPerGun = floor (_totalRounds / _gunCount);
+private _remainderRounds = _totalRounds - (_baseRoundsPerGun * _gunCount);
 
 private _vehiclePlans = [];
 private _impactPoints = [];
 private _etaMin = 1e12;
 private _etaMax = 0;
+private _plannedRounds = 0;
 
 {
-    private _veh = _x;
-    private _ammo = (getArtilleryAmmo [_veh]) param [0, ""];
-    if (_ammo isEqualTo "") then { continue };
+    _x params ["_veh", "_ammo", "_isMLRS"];
+    private _assignedRounds = _baseRoundsPerGun;
+    if (_forEachIndex < _remainderRounds) then {
+        _assignedRounds = _assignedRounds + 1;
+    };
+    if (_assignedRounds <= 0) then { continue };
 
-    private _isMLRS = _veh isKindOf "MLRS" || {getText (configOf _veh >> "simulation") == "airplanex"};
     private _localAccuracy = _accuracy;
     private _salvo = 1;
-    private _shotCount = _roundsPerGun;
+    private _shotCount = _assignedRounds;
 
     if (_isMLRS) then {
         _localAccuracy = _localAccuracy * 1.5;
         private _gunner = gunner _veh;
-        if (!isNull _gunner) then {
-            private _gunnerAmmo = _gunner ammo (currentMuzzle _gunner);
-            if (_gunnerAmmo >= 6) then {
-                _salvo = 3 + floor random 4;
-                _shotCount = ceil (_shotCount / _salvo);
+        private _maxSalvo = _assignedRounds min 3;
+        if (!isNull _gunner && {_maxSalvo > 1}) then {
+            private _availableRounds = _gunner ammo (currentMuzzle _gunner);
+            if (_availableRounds > 0) then {
+                _maxSalvo = _maxSalvo min _availableRounds;
+            };
+
+            for "_candidate" from _maxSalvo to 2 step -1 do {
+                if ((_assignedRounds mod _candidate) == 0) exitWith {
+                    _salvo = _candidate;
+                };
             };
         };
+
+        _shotCount = _assignedRounds / _salvo;
     };
 
     private _direction = _veh getDir _targetPos;
@@ -106,9 +133,11 @@ private _etaMax = 0;
         ["vehicle", _veh],
         ["ammo", _ammo],
         ["salvo", _salvo],
+        ["roundCount", _assignedRounds],
         ["targets", _targets]
     ]);
-} forEach _vehicles;
+    _plannedRounds = _plannedRounds + _assignedRounds;
+} forEach _usableVehicles;
 
 if (_vehiclePlans isEqualTo []) exitWith { createHashMap };
 if (_etaMin isEqualTo 1e12) then {
@@ -117,6 +146,7 @@ if (_etaMin isEqualTo 1e12) then {
 
 createHashMapFromArray [
     ["vehiclePlans", _vehiclePlans],
+    ["plannedRounds", _plannedRounds],
     ["impactPoints", _impactPoints],
     ["etaMin", _etaMin],
     ["etaMax", _etaMax]

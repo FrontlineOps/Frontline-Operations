@@ -814,8 +814,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             _analysis set ["position", getPos (leader _groupOrId)];
         } else {
             // Virtual group - get from virtualization system
-            if (!isNil "FLO_virtualGroups") then {
-                private _groups = FLO_virtualGroups get "_groups";
+            if (!isNil "FLO_VirtualForceRegistry") then {
+                private _groups = call FLO_fnc_virtualizationGetGroupMap;
                 private _gData = _groups get _groupOrId;
                 if (!isNil "_gData") then {
                     _analysis set ["position", _gData get "position"];
@@ -1353,9 +1353,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         params ["_capability", ["_side", east]];
 
         private _result = [];
-        if (isNil "FLO_virtualGroups") exitWith { _result };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { _result };
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         {
             private _gId = _x;
             private _gData = _y;
@@ -1678,8 +1678,8 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
         };
 
         // === SECOND: Also check virtual groups (friendly garrison) ===
-        if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups get "_groups";
+        if (!isNil "FLO_VirtualForceRegistry") then {
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             {
                 private _gId = _x;
                 private _gData = _y;
@@ -1775,12 +1775,12 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             ["powerRequired", _requiredPower]
         ];
 
-        if (isNil "FLO_virtualGroups") exitWith {
+        if (isNil "FLO_VirtualForceRegistry") exitWith {
             _result set ["reason", "No virtualization system"];
             _result
         };
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _isTaskAvailable = {
             params ["_gData"];
             private _order = _gData get "commanderOrder";
@@ -1911,9 +1911,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             ["groupsAvailable", 0]
         ];
 
-        if (isNil "FLO_virtualGroups") exitWith { _summary };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { _summary };
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _allGroupIds = [];
 
         {
@@ -1976,9 +1976,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             ["batteries", []]
         ];
 
-        if (isNil "FLO_virtualGroups") exitWith { _result };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { _result };
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _missions = if (!isNil "FLO_GTNArtilleryManager") then {
             FLO_GTNArtilleryManager get "missions"
         } else {
@@ -2072,9 +2072,9 @@ FLO_GTN_CapabilityAnalyzer = createHashMapObject [[
             ["assets", []]
         ];
 
-        if (isNil "FLO_virtualGroups") exitWith { _result };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { _result };
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
 
         {
             private _gId = _x;

@@ -14,7 +14,7 @@
 params ["_net"];
 
 private _managedSide = _net get "_managedSide";
-private _allGroups = FLO_virtualGroups get "_groups";
+private _allGroups = call FLO_fnc_virtualizationGetGroupMap;
 private _composition = createHashMap;
 
 {

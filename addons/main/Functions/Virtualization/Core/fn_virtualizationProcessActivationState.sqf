@@ -6,16 +6,15 @@ params ["_groupId", "_groupData", "_activationDist", "_nearestDist", "_forceVirt
 
 private _isActive = _groupData get "isActive";
 private _activationDeferred = _groupData get "activationDeferred";
-private _activationUnitCap = FLO_virtualGroups get "_activationUnitCap";
-private _activationResumeCap = FLO_virtualGroups get "_activationResumeCap";
-private _activationRetryCooldown = FLO_virtualGroups get "_activationRetryCooldown";
+private _activationUnitCap = ["activationUnitCap"] call FLO_fnc_virtualizationGetConfigValue;
+private _activationResumeCap = ["activationResumeCap"] call FLO_fnc_virtualizationGetConfigValue;
+private _activationRetryCooldown = ["activationRetryCooldown"] call FLO_fnc_virtualizationGetConfigValue;
 private _activeUnitCount = FLO_VirtUpdate get "activeUnitCount";
 private _engagementActive = _groupData get "engagementActive";
 
 if (_activationDeferred && {_nearestDist > (_activationDist + 10)}) then {
     _groupData set ["activationDeferred", false];
     _groupData set ["activationDeferredAt", -1];
-    _groupData set ["activationDeferredPos", []];
     _activationDeferred = false;
 };
 
@@ -41,21 +40,19 @@ if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWit
     };
 
     if (_blockActivation) then {
-        private _deferredPos = [ _groupData get "position", _activationDist ] call FLO_fnc_virtualizationComputeDeferredActivationPos;
-        [FLO_virtualGroups, _groupId, _deferredPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+        if (!_activationDeferred) then {
+            _groupData set ["activationDeferredAt", diag_tickTime];
+        };
         _groupData set ["activationDeferred", true];
-        _groupData set ["activationDeferredAt", diag_tickTime];
-        _groupData set ["activationDeferredPos", _deferredPos];
         _virtStats set ["activationBlocksTotal", (_virtStats get "activationBlocksTotal") + 1];
         _virtStats set ["activationBlocksThisBatch", (_virtStats get "activationBlocksThisBatch") + 1];
         _virtStats set ["deferredGroupsLast", (_virtStats get "deferredGroupsLast") + ([1, 0] select (_activationDeferred))];
         _virtStats set ["activeUnitsLast", _activeUnitCount];
     } else {
         ["VIRTUALIZATION", 3, format["Activating %1 (dist: %2m)", _groupId, round _nearestDist]] call FLO_fnc_log;
-        if ([_groupId, _groupData] call FLO_fnc_virtualizationTryActivateGroup) then {
+        if ([_groupId, _bypassBudget] call FLO_fnc_virtualizationTryActivateGroup) then {
             _groupData set ["activationDeferred", false];
             _groupData set ["activationDeferredAt", -1];
-            _groupData set ["activationDeferredPos", []];
             _groupData set ["activationRetryAt", -1];
             _virtStats set ["activationsTotal", (_virtStats get "activationsTotal") + 1];
             _virtStats set ["activationsThisBatch", (_virtStats get "activationsThisBatch") + 1];

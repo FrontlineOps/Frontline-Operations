@@ -49,7 +49,6 @@ private _logisticsClass = [
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO", 0.65],
     ["REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_INBOUND_CAP", 1],
     ["REINFORCEMENT_DELIVERY_MIN_ENEMY_DISTANCE", 900],
-    ["SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS", 14000],
     ["SUPPLY_CHAIN_DEPTH_METERS", 1500],
     ["SUPPLY_CHAIN_SOFT_REFRESH_INTERVAL", 60],
     ["NODE_OBJECTIVE_LINK_RADIUS", 3000],
@@ -157,7 +156,7 @@ if (!isNil "FLO_SavedGameData" && {"logisticsNetworkBySide" in FLO_SavedGameData
 FLO_Logistics_Networks = createHashMap;
 {
     private _side = _x;
-    private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _sideKey = [_side] call FLO_fnc_sideKey;
     private _savedPayload = false;
     if (_sideKey in _savedBySide) then { _savedPayload = _savedBySide get _sideKey; };
     private _network = createHashMapObject [_logisticsClass, [_side, _savedPayload]];

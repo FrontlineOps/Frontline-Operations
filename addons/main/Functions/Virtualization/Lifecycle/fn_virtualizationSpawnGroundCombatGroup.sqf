@@ -12,7 +12,7 @@ private _poolData = [_groupType, _pools] call FLO_fnc_virtualizationGetGroundCom
 _poolData params ["_vehiclePool", "_vehiclePoolName"];
 [_vehiclePool, _vehiclePoolName, _sideKey, _groupType] call FLO_fnc_virtualizationRequirePoolEntries;
 
-private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+private _groupData = (call FLO_fnc_virtualizationGetGroupMap) get _groupId;
 private _composition = _groupData get "comp";
 if (_composition isEqualTo []) then {
     _composition = [_groupType, _unitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;
@@ -22,7 +22,9 @@ if (_composition isEqualTo []) then {
 private _realGroup = [_side, _groupId, _groupType] call FLO_fnc_virtualizationCreateRealGroup;
 if (isNull _realGroup) exitWith { grpNull };
 
+private _spawnFailed = false;
 {
+    if (_spawnFailed) then { continue };
     private _vehicleType = _x;
     private _carrierIndex = _forEachIndex + 1;
     private _minDist = 10 + (20 * _carrierIndex);
@@ -34,11 +36,25 @@ if (isNull _realGroup) exitWith { grpNull };
         [10, 8] select (_groupType isEqualTo "mobile_aa"),
         0.2,
         [200, 150] select (_groupType isEqualTo "mobile_aa"),
-        "Vehicle"
+        "Vehicle",
+        _vehicleType,
+        true
     ] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+    if (_spawnPos isEqualTo []) then {
+        _spawnFailed = true;
+        continue
+    };
     private _crewType = [_vehicleType, _unitPool, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
-    [_realGroup, _vehicleType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
+    private _vehicle = [_realGroup, _vehicleType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
+    if (isNull _vehicle) then {
+        _spawnFailed = true;
+    };
 } forEach _composition;
+
+if (_spawnFailed) exitWith {
+    [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+    grpNull
+};
 
 if ((units _realGroup) isEqualTo []) exitWith {
     deleteGroup _realGroup;

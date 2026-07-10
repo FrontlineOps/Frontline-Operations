@@ -67,7 +67,7 @@ private _collapseRounded = (round (_distanceCollapse * 10)) / 10;
     _groupData get "activationDeferred",
     _groupData get "missionLock",
     FLO_VirtUpdate get "activeUnitCount",
-    FLO_virtualGroups get "_activationUnitCap",
+    ["activationUnitCap"] call FLO_fnc_virtualizationGetConfigValue,
     if (isNull _nearestPlayer) then { "<none>" } else { name _nearestPlayer },
     _clearanceMeters
 ] ] call FLO_fnc_log;

@@ -2,6 +2,6 @@
  * Function: FLO_fnc_virtualizationGetGroup
  */
 
-params ["_virt", "_groupId"];
+params ["_groupId"];
 
-(_virt get "_groups") get _groupId
+[_groupId] call FLO_fnc_virtualizationSnapshotGroup

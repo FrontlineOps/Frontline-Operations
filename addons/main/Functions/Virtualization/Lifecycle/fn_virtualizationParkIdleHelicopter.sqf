@@ -91,7 +91,6 @@ if (_clearRoute) then {
     [_groupData] call FLO_fnc_virtualizationClearExecutionState;
     _groupData set ["waypoints", []];
     _groupData set ["currentWaypointIndex", 0];
-    _groupData set ["tempWaypointCount", 0];
     _groupData set ["virtualMoveCarryMeters", 0];
 };
 
@@ -105,7 +104,7 @@ private _needsParking = (_helicopters findIf {
 }) != -1;
 
 [_groupData, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
-[FLO_virtualGroups, _groupId, getPosATL (_helicopters select 0)] call FLO_fnc_virtualizationUpdateGroupPosition;
+[_groupId, getPosATL (_helicopters select 0)] call FLO_fnc_virtualizationUpdateGroupPosition;
 _groupData set ["idleHelicopterParked", true];
 
 if (!_needsParking) exitWith { true };
@@ -167,7 +166,7 @@ private _parkedVehicles = [];
 
 if (_parkedVehicles isNotEqualTo []) then {
     [_groupData, [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles] call FLO_fnc_virtualizationSetRealVehicles;
-    [FLO_virtualGroups, _groupId, getPosATL (_parkedVehicles select 0)] call FLO_fnc_virtualizationUpdateGroupPosition;
+    [_groupId, getPosATL (_parkedVehicles select 0)] call FLO_fnc_virtualizationUpdateGroupPosition;
 };
 
 true

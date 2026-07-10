@@ -12,9 +12,9 @@
  * NUMBER - Count of groups whose routes were reissued
  */
 
-if (isNil "FLO_virtualGroups") exitWith { 0 };
+if (isNil "FLO_VirtualForceRegistry") exitWith { 0 };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _resumed = 0;
 
 {

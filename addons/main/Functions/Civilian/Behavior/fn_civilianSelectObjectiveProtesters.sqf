@@ -22,7 +22,7 @@ params [
 
 if (_objectiveId == "" || {isNull _targetPlayer} || {!alive _targetPlayer}) exitWith { [] };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _targetPos = getPosATL _targetPlayer;
 private _candidates = [];
 

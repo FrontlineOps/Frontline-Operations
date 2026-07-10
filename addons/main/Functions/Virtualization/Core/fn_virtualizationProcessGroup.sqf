@@ -10,8 +10,6 @@
  * 1: Group Data <HASHMAP>
  * 2: Activation Distance <NUMBER>
  * 3: Current Time <NUMBER>
- * 4: Unused legacy argument retained at call sites during refactor <ANY>
- *
  * Return Value:
  * None
  *
@@ -22,6 +20,11 @@
 params ["_groupId", "_groupData", "_activationDist", "_now"];
 
 private _virtStats = FLO_VirtUpdate get "stats";
+
+if (_now < (_groupData get "nextProcessAt")) exitWith {
+    _virtStats set ["scheduledSkipsTotal", (_virtStats get "scheduledSkipsTotal") + 1];
+    _virtStats set ["scheduledSkipsThisBatch", (_virtStats get "scheduledSkipsThisBatch") + 1];
+};
 
 private _isActive = _groupData get "isActive";
 private _groupType = _groupData get "groupType";
@@ -42,7 +45,7 @@ if (!_isActive && {_unitCount <= 0}) exitWith {
         _groupId,
         _groupType
     ]] call FLO_fnc_log;
-    [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+    [_groupId] call FLO_fnc_virtualizationRemoveGroup;
 };
 
 if !([_position] call FLO_fnc_validateGroupPosition) exitWith {
@@ -61,18 +64,17 @@ if !([_position] call FLO_fnc_validateGroupPosition) exitWith {
             _groupType,
             _position
         ]] call FLO_fnc_log;
-        [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+        [_groupId] call FLO_fnc_virtualizationRemoveGroup;
     };
 };
 
-private _tierResult = [_groupData] call FLO_fnc_virtualizationApplyTieredUpdateWindow;
-_tierResult params ["_shouldProcess", "_nearestDist"];
-if (!_shouldProcess) exitWith {};
+private _nearestDist = [_position] call FLO_fnc_virtualizationGetNearestCachedPlayerDistance;
+[_groupData, _nearestDist, _activationDist, _now] call FLO_fnc_virtualizationScheduleNextProcess;
 
 if ([_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup) exitWith {};
 
 if (_isActive && {isNull _realGroup}) exitWith {
-    [_groupId, _groupData] call FLO_fnc_virtualizationRepairOrphanedActiveGroup;
+    [_groupId] call FLO_fnc_virtualizationRepairOrphanedActiveGroup;
 };
 
 if (!_isActive && {!_activationDeferred}) then {

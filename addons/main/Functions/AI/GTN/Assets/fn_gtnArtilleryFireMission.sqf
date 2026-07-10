@@ -49,9 +49,15 @@ if (_vehiclePlans isEqualTo []) exitWith {
 ["GTN Artillery", 3, format["Artillery %1 - found %2 valid guns", _gid, count _vehiclePlans]] call FLO_fnc_log;
 
 // === PHASE 2: Clear patrol and waypoints ===
-// Clear patrol config from groupData
-_gdata set ["patrolConfig", []];
-_gdata set ["autoPatrol", false];
+[
+    _gid,
+    createHashMapFromArray [
+        ["patrolConfig", []],
+        ["autoPatrol", false],
+        ["waypoints", []],
+        ["currentWaypointIndex", 0]
+    ]
+] call FLO_fnc_virtualizationPatchGroup;
 
 // Clear the FLO_patrolConfig variable from real group
 _realGroup setVariable ["FLO_patrolConfig", nil, true];
@@ -59,25 +65,19 @@ _realGroup setVariable ["FLO_patrolConfig", nil, true];
 // Clear existing waypoints
 [_realGroup] call CBA_fnc_clearWaypoints;
 
-// Clear virtual waypoints
-_gdata set ["waypoints", []];
-_gdata set ["currentWaypointIndex", 0];
-
 // Stop movement
 { doStop _x; } forEach units _realGroup;
 
 ["GTN Artillery", 3, format["Artillery %1 - cleared patrol/waypoints", _gid]] call FLO_fnc_log;
 
-// === PHASE 3: Distribute Rounds ===
-private _gunCount = count _vehiclePlans;
-private _roundsPerGun = ceil (_rounds / _gunCount);
-// Safety clamp - always at least 1 round if requested > 0
-if (_rounds > 0 && _roundsPerGun < 1) then { _roundsPerGun = 1 };
+["GTN Artillery", 3, format [
+    "Artillery %1 - executing %2 planned rounds across %3 guns",
+    _gid,
+    _firePlan get "plannedRounds",
+    count _vehiclePlans
+]] call FLO_fnc_log;
 
-["GTN Artillery", 3, format["Artillery %1 - distributing %2 total rounds: %3 rounds per gun (%4 guns)", 
-    _gid, _rounds, _roundsPerGun, _gunCount]] call FLO_fnc_log;
-
-// === PHASE 4: EXECUTE FIRE MISSIONS (PARALLEL) ===
+// === PHASE 3: EXECUTE FIRE MISSIONS (PARALLEL) ===
 private _activeScripts = [];
 
 {
@@ -128,7 +128,7 @@ private _activeScripts = [];
     _activeScripts pushBack _script;
 } forEach _vehiclePlans;
 
-// === PHASE 5: Wait for completion ===
+// === PHASE 4: Wait for completion ===
 waitUntil {
     sleep 1;
     (_activeScripts findIf { !scriptDone _x }) isEqualTo -1
@@ -136,6 +136,6 @@ waitUntil {
 
 ["GTN Artillery", 3, format["Artillery %1 fire mission complete (all units)", _gid]] call FLO_fnc_log;
 
-// === PHASE 6: Cleanup ===
+// === PHASE 5: Cleanup ===
 // Pass objNull as vehicle since we handled multiple. Cleanup will use leader for scoot origin.
 _mgr call ["_cleanupMission", [_gid, objNull]];

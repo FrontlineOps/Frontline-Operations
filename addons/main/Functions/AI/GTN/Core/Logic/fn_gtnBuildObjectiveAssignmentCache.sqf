@@ -28,7 +28,7 @@ private _cache = createHashMapFromArray [
 
 if (isNil "_cmdr") exitWith { _cache };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _ownSide = _cmdr get "_ownSide";
 private _attackCounts = _cache get "attackCounts";
 private _attackGroupIds = _cache get "attackGroupIds";

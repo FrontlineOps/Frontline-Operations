@@ -13,7 +13,7 @@
  */
 
 private _trackedVehicleKeys = createHashMap;
-if (!isNil "FLO_virtualGroups" && { FLO_virtualGroups isEqualType createHashMap }) then {
+if (!isNil "FLO_VirtualForceRegistry" && {FLO_VirtualForceRegistry isEqualType createHashMap}) then {
     {
         private _groupData = _y;
         {
@@ -35,12 +35,12 @@ if (!isNil "FLO_virtualGroups" && { FLO_virtualGroups isEqualType createHashMap 
                 };
             } forEach units _realGroup;
         };
-    } forEach (FLO_virtualGroups get "_groups");
+    } forEach (call FLO_fnc_virtualizationGetGroupMap);
 };
 
 createHashMapFromArray [
     ["trackedVehicleKeys", _trackedVehicleKeys],
-    ["playerPositions", (allPlayers select { alive _x }) apply { getPosATL _x }],
+    ["playerPositions", call FLO_fnc_aftermathGetPlayerPositions],
     ["installationPositions", (allMapMarkers select { markerType _x == "b_installation" }) apply { getMarkerPos _x }],
     ["playerSafeRadius", FLO_AftermathCleanup get "playerEvidenceRadius"],
     ["installationSafeRadius", FLO_VehicleCleanup get "installationSafeRadius"]

@@ -29,7 +29,7 @@ if (!(_groupData isEqualType createHashMap)) exitWith {
 
 private _realGroup = _groupData get "realGroup";
 if (isNull _realGroup) exitWith {
-    [_groupId, _groupData] call FLO_fnc_virtualizationRepairOrphanedActiveGroup
+    [_groupId] call FLO_fnc_virtualizationRepairOrphanedActiveGroup
 };
 
 private _realUnitCount = count units _realGroup;
@@ -58,12 +58,12 @@ private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualiza
 _syncResult params ["_tracksAssets", "_syncedCount"];
 
 [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
-[_groupData, _realGroup, _syncedCount <= 0] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+[_groupData, _realGroup, true] call FLO_fnc_virtualizationDeleteRealGroupAssets;
 private _groupType = _groupData get "groupType";
 
 if (_syncedCount <= 0) exitWith {
     ["VIRTUALIZATION", 3, format["Deactivated group %1 lost all remaining %2 strength - removing", _groupId, _groupType]] call FLO_fnc_log;
-    [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+    [_groupId] call FLO_fnc_virtualizationRemoveGroup;
     true
 };
 
@@ -72,8 +72,15 @@ if (_syncedCount <= 0) exitWith {
 [_groupData] call FLO_fnc_virtualizationClearRealVehicles;
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
+_groupData set ["nextProcessAt", 0];
 
-["FLO_Virtualization_GroupDeactivated", [_groupId, _groupData]] call CBA_fnc_localEvent;
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
+
+[
+    "FLO_Virtualization_GroupDeactivated",
+    [_groupId, [_groupId] call FLO_fnc_virtualizationSnapshotGroup]
+] call CBA_fnc_localEvent;
 ["VIRTUALIZATION", 3, format["Deactivated virtual group: %1", _groupId]] call FLO_fnc_log;
 
 true

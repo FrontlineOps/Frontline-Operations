@@ -49,7 +49,7 @@ switch (toLower _mode) do {
         };
 
         private _pfhId = [{
-            if !(FLO_virtualGroups get "_enabled") exitWith {};
+            if !(["enabled"] call FLO_fnc_virtualizationGetConfigValue) exitWith {};
             call FLO_fnc_virtualizationRunUpdateCycle;
         }, 0, []] call CBA_fnc_addPerFrameHandler;
 

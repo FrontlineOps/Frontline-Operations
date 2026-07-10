@@ -23,10 +23,4 @@ if (_spawnPosition isEqualTo [0, 0, 0]) then {
     _spawnPosition = (FLO_Objectives get _sourceObjectiveId) get "position";
 };
 
-private _targetPosition = (FLO_Objectives get _targetObjectiveId) get "position";
-private _sourcePosition = (FLO_Objectives get _sourceObjectiveId) get "position";
-if ((_sourcePosition distance2D _targetPosition) > (_network get "SUPPLY_CHAIN_MAX_HOP_ROUTE_METERS")) exitWith {
-    [[0, 0, 0], "", ""]
-};
-
 [_spawnPosition, _sourceObjectiveId, _sourceNodeId]

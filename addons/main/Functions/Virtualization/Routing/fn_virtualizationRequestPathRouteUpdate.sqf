@@ -31,7 +31,7 @@ private _wpFormation = _firstWaypoint select 4;
 private _wpMode = _firstWaypoint select 5;
 private _wpCompletionRadius = _firstWaypoint select 6;
 
-[_groupData, [[], [_firstWaypoint]] select (_directBootstrapAllowed), _sourceTag, ["planning", "moving"] select (_directBootstrapAllowed), [0, 1] select (_directBootstrapAllowed)] call FLO_fnc_virtualizationSetRouteState;
+[_groupData, [[], [_firstWaypoint]] select (_directBootstrapAllowed), _sourceTag, ["planning", "moving"] select (_directBootstrapAllowed)] call FLO_fnc_virtualizationSetRouteState;
 _groupData set ["pathWaypointSettings", _firstWaypoint];
 
 if (_groupData get "isActive") then {

@@ -31,9 +31,13 @@ if !(_callerSide in [east, west]) then {
 };
 if !(_callerSide in [east, west]) exitWith { false };
 
-private _groups = FLO_virtualGroups get "_groups";
 private _groupId = _civilian getVariable ["FLO_VirtualGroupId", ""];
-private _groupData = if (_groupId != "" && {_groupId in _groups}) then { _groups get _groupId } else { createHashMap };
+private _groupData = if (_groupId != "") then {
+    private _snapshot = [_groupId] call FLO_fnc_virtualizationFindGroupSnapshot;
+    if (isNil "_snapshot") then { createHashMap } else { _snapshot }
+} else {
+    createHashMap
+};
 
 private _objectiveId = if ((keys _groupData) isNotEqualTo []) then {
     _groupData get "civilianObjective"
@@ -73,10 +77,7 @@ if (_lastIntelAt >= 0 && {(diag_tickTime - _lastIntelAt) < _intelCooldown}) exit
 private _hostileRoll = random 1;
 private _hostileChance = ((_context get "hostileReportChance") * (2 - _trustBias)) min 0.95;
 if (_hostileRoll < _hostileChance) exitWith {
-    if ((keys _groupData) isNotEqualTo []) then {
-        _groupData set ["civilianLastIntelAt", diag_tickTime];
-    };
-    _civilian setVariable ["FLO_CivilianLastIntelAt", diag_tickTime, true];
+    [_civilian, _groupId] call FLO_fnc_civilianRecordIntelInteraction;
 
     private _enemySide = if (_callerSide isEqualTo west) then { east } else { west };
     private _package = createHashMapFromArray [
@@ -98,10 +99,7 @@ if (_hostileRoll < _hostileChance) exitWith {
 
 private _intelChance = (((_context get "intelChance") * _knowledgeBias) * _trustBias) min 0.95;
 if ((random 1) > _intelChance) exitWith {
-    if ((keys _groupData) isNotEqualTo []) then {
-        _groupData set ["civilianLastIntelAt", diag_tickTime];
-    };
-    _civilian setVariable ["FLO_CivilianLastIntelAt", diag_tickTime, true];
+    [_civilian, _groupId] call FLO_fnc_civilianRecordIntelInteraction;
 
     ["Civilian", selectRandom [
         "I have not seen anything useful.",
@@ -113,10 +111,7 @@ if ((random 1) > _intelChance) exitWith {
 
 private _package = [getPosATL _civilian, _objectiveId, _callerSide, _civilianRole, _knowledgeBias] call FLO_fnc_civilianBuildIntelPackage;
 if ((keys _package) isEqualTo []) exitWith {
-    if ((keys _groupData) isNotEqualTo []) then {
-        _groupData set ["civilianLastIntelAt", diag_tickTime];
-    };
-    _civilian setVariable ["FLO_CivilianLastIntelAt", diag_tickTime, true];
+    [_civilian, _groupId] call FLO_fnc_civilianRecordIntelInteraction;
 
     ["Civilian", selectRandom [
         "Nothing worth telling you right now.",
@@ -127,7 +122,7 @@ if ((keys _package) isEqualTo []) exitWith {
 };
 
 private _intelCost = _context get "intelCost";
-private _sideKey = ([_callerSide] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_callerSide] call FLO_fnc_sideKey;
 private _treasury = FLO_SideResources get _sideKey;
 if !([_treasury, _intelCost] call FLO_fnc_sideResourcesCanAfford) exitWith {
     [["Need %1 resources to compensate the civilian contact.", _intelCost], "warning", false, _callerOwner] call FLO_fnc_sendNotification;
@@ -146,10 +141,7 @@ if !([
     throw "Civilian intelligence affordability changed during an unscheduled server transaction";
 };
 
-if ((keys _groupData) isNotEqualTo []) then {
-    _groupData set ["civilianLastIntelAt", diag_tickTime];
-};
-_civilian setVariable ["FLO_CivilianLastIntelAt", diag_tickTime, true];
+[_civilian, _groupId] call FLO_fnc_civilianRecordIntelInteraction;
 
 [_package] call FLO_fnc_gtnAlertCivilianReport;
 ["Civilian", [_package] call FLO_fnc_civilianBuildIntelSubtitle] remoteExec ["BIS_fnc_showSubtitle", _callerOwner, false];

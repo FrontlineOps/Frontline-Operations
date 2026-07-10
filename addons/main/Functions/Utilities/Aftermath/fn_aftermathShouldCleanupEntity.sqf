@@ -51,5 +51,7 @@ if ((_now - _firstSeen) < _graceTime) exitWith { false };
 
 private _entityPos = getPosATL _entity;
 if ((_playerPositions findIf { _entityPos distance2D _x <= _playerEvidenceRadius }) > -1) exitWith { false };
+if ([_entityPos] call FLO_fnc_aftermathIsPositionInHotObjective) exitWith { false };
+if (_kind == "wreck" && {!([_entity] call FLO_fnc_aftermathIsWreckSettled)}) exitWith { false };
 
 true

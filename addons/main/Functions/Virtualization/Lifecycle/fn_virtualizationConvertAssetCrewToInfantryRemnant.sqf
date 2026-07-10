@@ -63,7 +63,12 @@ if (_oldGroupType in ["helicopter", "jet", "air", "artillery", "static_aa", "mob
     [_groupData] call FLO_fnc_virtualizationClearExecutionState;
 };
 
-[true] call FLO_fnc_gtnCombatMarkClassificationDirty;
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
+[
+    "FLO_Virtualization_GroupPatched",
+    [_groupId, ["groupType", "unitCount", "comp", "missionLock"]]
+] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 2, format [
     "Converted destroyed %1 group %2 into infantry remnant with %3 surviving crew",

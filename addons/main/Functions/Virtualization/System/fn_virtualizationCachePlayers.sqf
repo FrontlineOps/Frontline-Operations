@@ -3,8 +3,13 @@
  */
 
 private _cached = [];
+private _headlessClients = entities "HeadlessClient_F";
 {
-    if (alive _x && {side _x == west}) then {
+    if (
+        alive _x
+        && {!(_x in _headlessClients)}
+        && {(side group _x) in [east, west, independent]}
+    ) then {
         private _veh = vehicle _x;
         private _inAir = (_veh != _x) && {_veh isKindOf "Air"};
         _cached pushBack [getPosATL _x, _inAir];

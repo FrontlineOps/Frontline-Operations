@@ -54,6 +54,11 @@ switch (true) do {
         _createdUnit = [_realGroup, _unitType, _spawnPos, _crewType, !_spawnParked] call FLO_fnc_virtualizationCreateCrewedVehicle;
     };
 
+    case (_unitType isKindOf "Ship"): {
+        private _crewType = [_unitType, _poolUnits, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
+        _createdUnit = [_realGroup, _unitType, _position, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
+    };
+
     case (_isVehicle): {
         private _spawnPos = [
             format ["saved_%1", _groupType],
@@ -63,8 +68,11 @@ switch (true) do {
             10,
             0.2,
             200,
-            "saved composition vehicle"
+            "saved composition vehicle",
+            _unitType,
+            !(_unitType isKindOf "StaticWeapon")
         ] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+        if (_spawnPos isEqualTo []) exitWith {};
         private _crewType = [_unitType, _poolUnits, _sideKey, _groupType] call FLO_fnc_virtualizationResolveCrewType;
         _createdUnit = [_realGroup, _unitType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
     };

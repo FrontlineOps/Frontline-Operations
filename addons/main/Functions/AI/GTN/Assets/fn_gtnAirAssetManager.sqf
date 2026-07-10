@@ -167,7 +167,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             private _t0 = diag_tickTime;
             if (_radius < 0) then {
-                _radius = FLO_virtualGroups get "_activationDistance";
+                _radius = ["activationDistance"] call FLO_fnc_virtualizationGetConfigValue;
             };
             if ((FLO_VirtUpdate get "lastPlayerCacheTime") <= 0) then {
                 call FLO_fnc_virtualizationCachePlayers;
@@ -217,7 +217,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             params ["_airSide", "_targetPos", "_missionType"];
 
             private _enemySide = if (_airSide isEqualTo east) then { west } else { east };
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             private _radius = switch (toUpper _missionType) do {
                 case "CAP": { 1800 };
                 default { 800 };
@@ -264,11 +264,12 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
                 private _newCount = _currentCount - _loss;
                 if (_newCount <= 0) then {
-                    _gData set ["unitCount", 0];
-                    [FLO_virtualGroups, _gid] call FLO_fnc_virtualizationRemoveGroup;
+                    [_gid] call FLO_fnc_virtualizationRemoveGroup;
                 } else {
-                    _gData set ["unitCount", _newCount];
-                    _groups set [_gid, _gData];
+                    [
+                        _gid,
+                        createHashMapFromArray [["unitCount", _newCount]]
+                    ] call FLO_fnc_virtualizationPatchGroup;
                 };
 
                 _totalLosses = _totalLosses + _loss;
@@ -284,8 +285,8 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 params ["_gid", "_duration"];
                 sleep _duration;
 
-                if (!isNil "FLO_virtualGroups") then {
-                    private _groups = FLO_virtualGroups get "_groups";
+                if (!isNil "FLO_VirtualForceRegistry") then {
+                    private _groups = call FLO_fnc_virtualizationGetGroupMap;
                     if (_gid in _groups) then {
                         private _gData = _groups get _gid;
                         [_gData] call FLO_fnc_virtualizationClearMissionLock;
@@ -314,24 +315,24 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     sleep 10;
 
                     if (isNil "FLO_GTNAirAssetManager") exitWith { true };
-                    if (isNil "FLO_virtualGroups") exitWith { true };
+                    if (isNil "FLO_VirtualForceRegistry") exitWith { true };
 
                     private _missions = FLO_GTNAirAssetManager get "missions";
                     if !(_gid in _missions) exitWith { true };
 
-                    private _groups = FLO_virtualGroups get "_groups";
+                    private _groups = call FLO_fnc_virtualizationGetGroupMap;
                     if !(_gid in _groups) exitWith { true };
 
                     private _gData = _groups get _gid;
                     ((_gData get "position") distance2D _rtbPos <= _arrivalRadius) || {diag_tickTime >= _deadline}
                 };
 
-                if (isNil "FLO_GTNAirAssetManager" || {isNil "FLO_virtualGroups"}) exitWith {};
+                if (isNil "FLO_GTNAirAssetManager" || {isNil "FLO_VirtualForceRegistry"}) exitWith {};
 
                 private _missions = FLO_GTNAirAssetManager get "missions";
                 if !(_gid in _missions) exitWith {};
 
-                private _groups = FLO_virtualGroups get "_groups";
+                private _groups = call FLO_fnc_virtualizationGetGroupMap;
                 if (_gid in _groups) then {
                     private _gData = _groups get _gid;
                     [_gData] call FLO_fnc_virtualizationClearExecutionState;
@@ -359,7 +360,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _phaseActivateMs = 0;
             private _phaseVirtualMs = 0;
 
-            if (isNil "FLO_virtualGroups") exitWith {
+            if (isNil "FLO_VirtualForceRegistry") exitWith {
                 _self call ["_recordRequestPerf", [
                     (diag_tickTime - _tRequest) * 1000,
                     _missionType,
@@ -376,7 +377,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 ]];
                 []
             };
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             private _airGroups = [];
             {
                 private _gData = _y;
@@ -480,7 +481,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             if (_isLiveArea && {!(_gdata get "isActive")}) then {
                 private _tActivate = diag_tickTime;
-                _activated = [_gid, _gdata] call FLO_fnc_virtualizationTryActivateGroup;
+                _activated = [_gid] call FLO_fnc_virtualizationTryActivateGroup;
                 _phaseActivateMs = (diag_tickTime - _tActivate) * 1000;
                 if (!_activated) then {
                     if (_forceLive) then {
@@ -643,7 +644,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
             if (_gid in _missions) then {
                 _missionState = _missions get _gid;
-                private _groups = FLO_virtualGroups get "_groups";
+                private _groups = call FLO_fnc_virtualizationGetGroupMap;
                 if (_gid in _groups) then {
                     private _data = _groups get _gid;
                     [_data] call FLO_fnc_virtualizationClearMissionLock;
@@ -677,7 +678,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
         // Get RTB position for an aircraft (returns original spawn position)
         ["_getRTBPosition", {
             params ["_groupId"];
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             if !(_groupId in _groups) exitWith {
                 ["GTN Air Asset Manager", 2, format["_getRTBPosition: Group %1 not in virtualGroups", _groupId]] call FLO_fnc_log;
                 [0,0,0]
@@ -690,7 +691,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
         ["_sendToRTB", {
             params ["_groupId"];
 
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             if !(_groupId in _groups) exitWith {
                 ["GTN Air Asset Manager", 2, format["_sendToRTB: Group %1 not in virtualGroups", _groupId]] call FLO_fnc_log;
             };
@@ -737,8 +738,8 @@ if (isNil "FLO_GTNAirAssetManager") then {
 
         // Get available aircraft for missions
         ["_getAvailableAircraft", {
-            if (isNil "FLO_virtualGroups") exitWith { [] };
-            private _groups = FLO_virtualGroups get "_groups";
+            if (isNil "FLO_VirtualForceRegistry") exitWith { [] };
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             private _missions = _self get "missions";
             private _available = [];
 

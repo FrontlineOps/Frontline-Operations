@@ -8,7 +8,7 @@ params ["_groupData", "_savedData"];
 switch (_savedData get "replacementState") do {
     case "REINFORCE": {
         [
-            _groupData,
+            _groupData get "id",
             _savedData get "reinforcementTargetPos",
             _savedData get "reinforcementRequestedObjective",
             _savedData get "reinforcementDeliveryObjective"
@@ -16,7 +16,7 @@ switch (_savedData get "replacementState") do {
     };
     case "AA_DEPLOY": {
         [
-            _groupData,
+            _groupData get "id",
             _savedData get "reinforcementTargetPos",
             _savedData get "reinforcementRequestedObjective",
             _savedData get "reinforcementDeliveryObjective"

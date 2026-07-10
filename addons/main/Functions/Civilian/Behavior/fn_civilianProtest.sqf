@@ -23,22 +23,25 @@ params [
 ];
 
 if (!isServer || {isNull _targetPlayer} || {!alive _targetPlayer} || {_objectiveId == ""}) exitWith { [] };
-if (_groupIds isEqualTo [] || {isNil "FLO_virtualGroups"}) exitWith { [] };
+if (_groupIds isEqualTo [] || {isNil "FLO_VirtualForceRegistry"}) exitWith { [] };
 
-private _groups = FLO_virtualGroups get "_groups";
 private _protesters = [];
 
 {
-    if !(_x in _groups) then { continue };
-
-    private _groupData = _groups get _x;
+    private _groupData = [_x] call FLO_fnc_virtualizationFindGroupSnapshot;
+    if (isNil "_groupData") then { continue };
     private _realGroup = _groupData get "realGroup";
     if (isNull _realGroup) then { continue };
 
-    _groupData set ["protestRestoreAlwaysActive", _groupData get "alwaysActive"];
-    _groupData set ["alwaysActive", true];
-    _groupData set ["civilianRoutineState", "protest"];
-    _groupData set ["civilianRoutineUntil", _expiresAt];
+    [
+        _x,
+        createHashMapFromArray [
+            ["protestRestoreAlwaysActive", _groupData get "alwaysActive"],
+            ["alwaysActive", true],
+            ["civilianRoutineState", "protest"],
+            ["civilianRoutineUntil", _expiresAt]
+        ]
+    ] call FLO_fnc_virtualizationPatchGroup;
 
     {
         if (!alive _x || {captive _x} || {!isNull objectParent _x}) then { continue };

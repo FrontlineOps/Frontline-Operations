@@ -4,7 +4,7 @@
  *
  * Description:
  *   Builds a shared offensive pressure profile for one frontline objective so
- *   attack caps, staging, cooldowns, and objective selection all react to the
+ *   attack caps, cooldowns, and objective selection all react to the
  *   same capture streak and overextension state.
  *
  * Arguments:
@@ -25,7 +25,6 @@ private _profile = createHashMapFromArray [
     ["captureStreakSteps", 0],
     ["overextensionSteps", 0],
     ["capMultiplier", 1],
-    ["stagingGoalMultiplier", 1],
     ["spentSecondsBonus", 0],
     ["selectionPenaltyMeters", 0],
     ["bestSourceObjectiveId", ""],
@@ -139,15 +138,11 @@ if (_sourceObjectives isNotEqualTo []) then {
 private _capPenalty = (_captureStreakSteps * (_config get "captureStreakCapPenaltyPerStep"))
     + ((_profile get "overextensionSteps") * (_config get "attackOverextensionCapPenaltyPerStep"));
 private _capMultiplier = (1 - _capPenalty) max (_config get "attackPressureMinimumCapMultiplier");
-private _stagingGoalMultiplier = 1
-    + (_captureStreakSteps * (_config get "captureStreakStagingMultiplierPerStep"))
-    + ((_profile get "overextensionSteps") * (_config get "attackOverextensionStagingMultiplierPerStep"));
 private _spentSecondsBonus = (_captureStreakSteps * (_config get "captureStreakSpentSecondsPerStep"))
     + ((_profile get "overextensionSteps") * (_config get "attackOverextensionSpentSecondsPerStep"));
 private _selectionPenaltyMeters = (_profile get "overextensionSteps") * (_config get "attackOverextensionSelectionPenaltyMetersPerStep");
 
 _profile set ["capMultiplier", _capMultiplier];
-_profile set ["stagingGoalMultiplier", _stagingGoalMultiplier];
 _profile set ["spentSecondsBonus", _spentSecondsBonus];
 _profile set ["selectionPenaltyMeters", _selectionPenaltyMeters];
 

@@ -1,7 +1,6 @@
 params ["_treasury", ["_side", east], ["_savedPayload", objNull]];
 
-private _sideContext = [_side] call FLO_fnc_gtnSideContext;
-private _sideKey = _sideContext get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 private _balance = [_treasury] call FLO_fnc_sideResourcesCalculateStartingResources;
 private _reservations = createHashMap;
 private _ledger = [];
@@ -46,7 +45,7 @@ if (!isNil "FLO_SavedGameData" && {(FLO_SavedGameData get "saveVersion") < 21} &
 
 _treasury set ["_side", _side];
 _treasury set ["_sideKey", _sideKey];
-_treasury set ["_enemySide", _sideContext get "enemySide"];
+_treasury set ["_enemySide", [_side] call FLO_fnc_opposingSide];
 _treasury set ["_balance", _balance];
 _treasury set ["_reservations", _reservations];
 _treasury set ["_ledger", _ledger];

@@ -33,7 +33,7 @@ params [
 
 private _resolvedGroups = createHashMap;
 private _objectiveGroups = createHashMap;
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _cutoffTime = diag_tickTime - _freshSeconds;
 private _reportResolutionRadius = 220;
 private _freshContactCount = 0;

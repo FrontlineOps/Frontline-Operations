@@ -6,6 +6,8 @@ createHashMapFromArray [
     ["cyclesRun", 0],
     ["groupsProcessedTotal", 0],
     ["groupsProcessedThisBatch", 0],
+    ["scheduledSkipsTotal", 0],
+    ["scheduledSkipsThisBatch", 0],
     ["totalGroupsLast", 0],
     ["activeGroupsLast", 0],
     ["inactiveGroupsLast", 0],

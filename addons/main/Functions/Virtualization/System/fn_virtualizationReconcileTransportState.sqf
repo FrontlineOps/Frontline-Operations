@@ -5,16 +5,11 @@
  *   Rebuilds canonical transport linkage after restore or initial seeding so
  *   the update loop never sees half-constructed passenger/carrier state.
  *
- * Arguments:
- *   0: Virtualization registry <HASHMAP> - Optional, defaults to FLO_virtualGroups
- *
  * Return Value:
  *   BOOL - True when reconciliation completed
  */
 
-params [["_virt", FLO_virtualGroups, [createHashMap]]];
-
-private _groups = _virt get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _passengersByCarrier = createHashMap;
 private _repairCount = 0;
 
@@ -134,7 +129,7 @@ private _repairCount = 0;
         _repairCount = _repairCount + 1;
     };
 
-    [_virt, _groupId, _carrierPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+    [_groupId, _carrierPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
     private _passengerIds = _passengersByCarrier get _attachedTo;
     if (isNil "_passengerIds") then {
@@ -163,7 +158,7 @@ private _repairCount = 0;
             "Clearing stale transport insert state on carrier %1 with no passengers",
             _carrierId
         ]] call FLO_fnc_log;
-        [_carrierData] call FLO_fnc_transportClearInsertState;
+        [_carrierId] call FLO_fnc_transportClearInsertState;
         _repairCount = _repairCount + 1;
     };
 } forEach _groups;
@@ -171,7 +166,7 @@ private _repairCount = 0;
 _repairCount = _repairCount + ([_groups] call FLO_fnc_transportReconcilePoolState);
 
 if (_repairCount > 0) then {
-    [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
+    ["FLO_Virtualization_TransportRelationshipChanged", ["", "", "RECONCILE"]] call CBA_fnc_localEvent;
     ["VIRTUALIZATION", 2, format [
         "Reconciled transport state: %1 repairs",
         _repairCount

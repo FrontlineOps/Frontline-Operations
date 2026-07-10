@@ -20,7 +20,7 @@ if (!_hasAuthority) exitWith {
 
 private _side = side group _player;
 if !(_side in [west, east]) then { throw format ["Base deploy requester has unsupported side %1", _side]; };
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 private _treasury = FLO_SideResources get _sideKey;
 private _cost = [_side, _type] call FLO_fnc_baseDeployGetCost;
 private _firstFOBFree = _type == "FOB" && {_cost == 0};

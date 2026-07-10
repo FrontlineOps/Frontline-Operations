@@ -16,7 +16,7 @@
 params ["_net", "_objectiveId"];
 
 private _managedSide = _net get "_managedSide";
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 
 (values _groups findIf {
     private _gData = _x;

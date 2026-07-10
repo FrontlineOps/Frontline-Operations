@@ -14,9 +14,9 @@
 
 params [["_worldState", nil]];
 
-if (isNil "_worldState" || {isNil "FLO_virtualGroups"}) exitWith { [] };
+if (isNil "_worldState" || {isNil "FLO_VirtualForceRegistry"}) exitWith { [] };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _ownSide = _worldState get "_ownSide";
 private _sideKey = _worldState get "_sideKey";
 private _friendlyColor = ["ColorBLUFOR", "ColorOPFOR"] select (_ownSide isEqualTo east);

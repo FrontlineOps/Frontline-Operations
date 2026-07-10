@@ -15,7 +15,8 @@ if (_sanitizedWaypoints isNotEqualTo []) then {
     _groupData set ["patrolConfig", []];
     _groupData set ["autoPatrol", false];
     _groupData set ["currentWaypointIndex", 0];
-    _groupData set ["tempWaypointCount", 0];
+    _groupData set ["nextProcessAt", 0];
+    [_groupData, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
 };
 
 if (_groupData get "isActive") then {

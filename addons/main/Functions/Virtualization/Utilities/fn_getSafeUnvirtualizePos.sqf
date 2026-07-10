@@ -21,26 +21,25 @@ params [["_position", [0,0,0], [[]]]];
 // Validate position - return nil if invalid to signal caller
 if ((_position select 0) < 100 && (_position select 1) < 100) exitWith {_position};
 
-private _eligiblePlayers = allPlayers select {
-    alive _x && {
-        private _veh = vehicle _x;
-        _veh == _x || {!(_veh isKindOf "Air")}
-    }
+if ((FLO_VirtUpdate get "lastPlayerCacheTime") <= 0) then {
+    call FLO_fnc_virtualizationCachePlayers;
 };
-if (_eligiblePlayers isEqualTo []) exitWith { _position };
+private _groundPlayerPositions = ((FLO_VirtUpdate get "cachedPlayerPositions") select { !(_x select 1) }) apply { _x select 0 };
+if (_groundPlayerPositions isEqualTo []) exitWith { _position };
 
 private _clearanceMeters = 150;
-private _nearestPlayer = objNull;
+private _nearestPlayerPosition = [];
 private _nearestDist = 999999;
 {
+    private _playerPosition = _x;
     private _dist = _position distance2D _x;
     if (_dist < _nearestDist) then {
         _nearestDist = _dist;
-        _nearestPlayer = _x;
+        _nearestPlayerPosition = _playerPosition;
     };
-} forEach _eligiblePlayers;
+} forEach _groundPlayerPositions;
 
-if (!isNull _nearestPlayer && {_nearestDist < _clearanceMeters}) then {
+if (_nearestPlayerPosition isNotEqualTo [] && {_nearestDist < _clearanceMeters}) then {
     private _candidate = [];
     {
         private _radius = _x;
@@ -52,7 +51,7 @@ if (!isNull _nearestPlayer && {_nearestDist < _clearanceMeters}) then {
                     if ((_probe distance2D _x) < _clearanceMeters) exitWith {
                         _clear = false;
                     };
-                } forEach _eligiblePlayers;
+                } forEach _groundPlayerPositions;
 
                 if (_clear) exitWith {
                     _candidate = _probe;
@@ -63,12 +62,11 @@ if (!isNull _nearestPlayer && {_nearestDist < _clearanceMeters}) then {
     } forEach [40, 80, 120, 160, 220, 300];
 
     if (count _candidate < 2) then {
-        private _dir = _nearestPlayer getDir _position;
-        _candidate = _nearestPlayer getPos [_clearanceMeters, _dir];
+        private _dir = _nearestPlayerPosition getDir _position;
+        _candidate = _nearestPlayerPosition getPos [_clearanceMeters, _dir];
     };
 
-    private _terrainHeight = getTerrainHeightASL _candidate;
-    _position = [_candidate select 0, _candidate select 1, _terrainHeight max 0];
+    _position = [_candidate select 0, _candidate select 1, 0];
 };
 
 _position

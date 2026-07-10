@@ -81,7 +81,7 @@ if (FLO_IsLoadedSave) then {
         if !(_side in [west, east]) then {
             throw format ["Existing FOB at %1 has unsupported side %2", getPosATL _x, _side];
         };
-        private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+        private _sideKey = [_side] call FLO_fnc_sideKey;
         if (_loadedCurrentSchema && {!(_claims get _sideKey)}) then {
             throw format ["Save schema 22 has a living %1 FOB but an unclaimed first FOB entitlement", _sideKey];
         };

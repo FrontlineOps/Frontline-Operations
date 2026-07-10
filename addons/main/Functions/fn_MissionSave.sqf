@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 22;
+private _saveVersion = 23;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -217,7 +217,7 @@ try {
             };
             _crateData set ["logisticsShipment", true];
             _crateData set ["logisticsDelivered", _x getVariable ["FLO_LogisticsDelivered", false]];
-            _crateData set ["logisticsSideKey", ([_shipmentSide] call FLO_fnc_gtnSideContext) get "sideKey"];
+            _crateData set ["logisticsSideKey", [_shipmentSide] call FLO_fnc_sideKey];
             _crateData set ["logisticsOriginNodeId", _x getVariable ["FLO_LogisticsOriginNodeId", ""]];
             _crateData set ["logisticsThroughput", _x getVariable ["FLO_LogisticsThroughput", -1]];
         };
@@ -285,7 +285,7 @@ try {
                     ["buildingDir", getDir _building],
                     ["buildingVectorUp", vectorUp _building],
                     ["markerName", _marker],
-                    ["baseSideKey", ([_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_gtnSideContext) get "sideKey"],
+                    ["baseSideKey", [_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_sideKey],
                     ["baseSaveId", _building getVariable ["FLO_BaseSaveId", ""]],
                     ["logisticsNodeId", _building getVariable ["FLO_LogisticsNodeId", ""]]
                 ];
@@ -324,7 +324,7 @@ try {
                     ["buildingDir", getDir _building],
                     ["buildingVectorUp", vectorUp _building],
                     ["markerName", _marker],
-                    ["baseSideKey", ([_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_gtnSideContext) get "sideKey"],
+                    ["baseSideKey", [_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_sideKey],
                     ["baseSaveId", _building getVariable ["FLO_BaseSaveId", ""]],
                     ["logisticsNodeId", _building getVariable ["FLO_LogisticsNodeId", ""]]
                 ];
@@ -398,21 +398,12 @@ try {
 // ============================================================================
 
 try {
-    private _vgHash = createHashMap;
-    if (!isNil "FLO_virtualGroups") then {
-        private _groups = FLO_virtualGroups get "_groups";
-        if (!isNil "_groups" && { _groups isEqualType createHashMap }) then {
-            {
-                private _gData = _y;
-                if (!isNil "_gData" && { _gData isEqualType createHashMap }) then {
-                    _vgHash set [_x, [_gData] call FLO_fnc_virtualizationSerializeGroup];
-                };
-            } forEach _groups;
-        };
-    };
+    private _vgHash = call FLO_fnc_virtualizationSerializeRegistry;
     _data set ["virtualGroups", _vgHash];
     ["SAVE", 3, format ["Virtual Groups: %1", count _vgHash]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Virtual Groups failed: %1", _exception]] call FLO_fnc_log; _data set ["virtualGroups", createHashMap]; };
+} catch {
+    ["SAVE", 1, format ["Virtual Groups failed; save transaction rejected: %1", _exception]] call FLO_fnc_log;
+};
 
 // ============================================================================
 // SAVE: OBJECTIVES AND AI COMMANDERS

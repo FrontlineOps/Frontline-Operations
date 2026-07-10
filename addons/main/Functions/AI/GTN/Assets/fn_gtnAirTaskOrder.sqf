@@ -117,7 +117,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         _args params ["_gid", "_air", "_pos", "_mission", "_patrolRadius"];
                         
                         // Get group from virtualGroups data
-                        private _groups = FLO_virtualGroups get "_groups";
+                        private _groups = call FLO_fnc_virtualizationGetGroupMap;
                         private _gData = _groups get _gid;
                         if (isNil "_gData") exitWith {
                             ["GTN ATO", 2, format["ATO waypoint setup failed - group %1 not found in virtualGroups", _gid]] call FLO_fnc_log;
@@ -222,7 +222,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         // Refresh intel reveal now that aircraft is on station
                         // Targets may have moved since initial reveal
                         if (!isNil "FLO_GTN_CapabilityAnalyzer" && alive _a) then {
-                            private _gData = (FLO_virtualGroups get "_groups") get _gid;
+                            private _gData = (call FLO_fnc_virtualizationGetGroupMap) get _gid;
                             private _airSide = _gData get "side";
                             private _enemySide = if (_airSide isEqualTo east) then { west } else { east };
                             private _revealed = FLO_GTN_CapabilityAnalyzer call ["_revealIntelToUnits", [_targetPos, 1500, crew _a, _enemySide]];

@@ -43,11 +43,12 @@ private _groupData = [
     _homeObjective,
     _unitCount,
     _side,
-    _spawnClass
+    _spawnClass,
+    _groupId
 ] call FLO_fnc_virtualizationBuildGroupData;
 
 // Add group to virtualization system
-if !([FLO_virtualGroups, _groupId, _groupData] call FLO_fnc_virtualizationAddGroup) exitWith {
+if !([_groupId, _groupData] call FLO_fnc_virtualizationAddGroup) exitWith {
     ""
 };
 

@@ -10,13 +10,13 @@
  *
  * Arguments:
  *   0: Group ID <STRING>
- *   1: Group data <HASHMAP>
- *
  * Return Value:
  *   BOOL - True when the broken state was handled
  */
 
-params ["_groupId", "_groupData"];
+params [["_groupId", "", [""]]];
+
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 if !(_groupData get "isActive") exitWith { false };
 private _realGroup = _groupData get "realGroup";
@@ -61,7 +61,7 @@ if (_recoverableCount <= 0) exitWith {
         _groupId,
         _groupType
     ]] call FLO_fnc_log;
-    [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+    [_groupId] call FLO_fnc_virtualizationRemoveGroup;
     true
 };
 
@@ -77,43 +77,17 @@ _groupData set ["unitCount", _recoverableCount];
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 
-private _activationDistance = FLO_virtualGroups get "_activationDistance";
-private _cachedPlayers = FLO_VirtUpdate get "cachedPlayerPositions";
-private _orphanPos = +(_groupData get "position");
-private _nearestPlayerDist = 1e10;
-{
-    _x params ["_playerPos", "_inAir"];
-    if (!_inAir) then {
-        private _dist = _orphanPos distance2D _playerPos;
-        if (_dist < _nearestPlayerDist) then {
-            _nearestPlayerDist = _dist;
-        };
-    };
-} forEach _cachedPlayers;
+_groupData set ["activationDeferred", false];
+_groupData set ["activationDeferredAt", -1];
+_groupData set ["activationRetryAt", -1];
 
-if (_nearestPlayerDist <= _activationDistance) then {
-    private _deferredPos = [_orphanPos, _activationDistance] call FLO_fnc_virtualizationComputeDeferredActivationPos;
-    [FLO_virtualGroups, _groupId, _deferredPos] call FLO_fnc_virtualizationUpdateGroupPosition;
-    _groupData set ["activationDeferred", true];
-    _groupData set ["activationDeferredAt", diag_tickTime];
-    _groupData set ["activationDeferredPos", _deferredPos];
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
 
-    ["VIRTUALIZATION", 2, format [
-        "Deferred orphan repair reactivation for %1 (%2) originalPos=%3 deferredPos=%4 nearestPlayer=%5m activationDistance=%6m",
-        _groupId,
-        _groupType,
-        _orphanPos,
-        _deferredPos,
-        (round (_nearestPlayerDist * 10)) / 10,
-        _activationDistance
-    ]] call FLO_fnc_log;
-};
-
-if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
-    [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
-};
-
-["FLO_Virtualization_GroupDeactivated", [_groupId, _groupData]] call CBA_fnc_localEvent;
+[
+    "FLO_Virtualization_GroupDeactivated",
+    [_groupId, [_groupId] call FLO_fnc_virtualizationSnapshotGroup]
+] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 2, format [
     "Virtualized orphaned active group %1 (%2) with %3 recoverable live assets",

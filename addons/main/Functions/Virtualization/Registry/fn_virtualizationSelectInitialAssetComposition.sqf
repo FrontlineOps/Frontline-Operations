@@ -8,7 +8,7 @@ params [
     ["_side", east, [east]]
 ];
 
-if !(_groupType in ["motorized", "mechanized", "armor", "mobile_aa"]) exitWith { [] };
+if !(([_groupType] call FLO_fnc_virtualizationGetArchetype) get "initialGroundComposition") exitWith { [] };
 
 private _pools = [_side] call FLO_fnc_virtualizationGetSpawnPools;
 private _sideKey = _pools get "sideKey";

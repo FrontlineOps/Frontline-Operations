@@ -113,8 +113,8 @@ while {true} do {
         _virtualObjectiveCounts set [_x, [0, 0]]; // [westCount, eastCount]
     } forEach _objectivesToUpdate;
 
-    if (_objectivesToUpdate isNotEqualTo [] && {!isNil "FLO_virtualGroups"}) then {
-        private _groups = FLO_virtualGroups get "_groups";
+    if (_objectivesToUpdate isNotEqualTo [] && {!isNil "FLO_VirtualForceRegistry"}) then {
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         {
             private _gData = _x;
             if (_gData get "isActive") then { continue };

@@ -48,7 +48,7 @@ private _assaultObjectives = [];
 
 if (_assaultObjectives isEqualTo []) exitWith { _metrics };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _ownSide = _cmdr get "_ownSide";
 private _activeAttackCounts = createHashMap;
 

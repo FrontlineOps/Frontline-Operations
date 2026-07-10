@@ -203,9 +203,9 @@ private _worldState = createHashMapObject [[
     ["_senseForces", {
         private _forces = _self get "_ownForces";
         
-        if (isNil "FLO_virtualGroups") exitWith { _forces };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { _forces };
         
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _allGroupIds = keys _groups;
 
         // Count by type and status
@@ -301,7 +301,7 @@ private _worldState = createHashMapObject [[
                 _artyStatus get "totalRounds"]] call FLO_fnc_log;
         } else {
             // Fallback if analyzer not initialized
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             {
                 private _gData = _groups get _x;
                 if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
@@ -330,7 +330,7 @@ private _worldState = createHashMapObject [[
                 _casOrdnance]] call FLO_fnc_log;
         } else {
             // Fallback if analyzer not initialized
-            private _groups = FLO_virtualGroups get "_groups";
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             {
                 private _gData = _groups get _x;
                 if ((_gData getOrDefault ["side", sideUnknown]) != _ownSide) then { continue };
@@ -364,8 +364,8 @@ private _worldState = createHashMapObject [[
         private _enemySide = _self get "_enemySide";
         private _scanLeaders = [];
 
-        if (!isNil "FLO_virtualGroups") then {
-            private _groups = FLO_virtualGroups get "_groups";
+        if (!isNil "FLO_VirtualForceRegistry") then {
+            private _groups = call FLO_fnc_virtualizationGetGroupMap;
             {
                 private _gData = _y;
                 if ((_gData get "side") != _ownSide) then { continue };
@@ -738,10 +738,10 @@ private _worldState = createHashMapObject [[
     ["_getNearestFriendlyDistance", {
         params ["_pos"];
 
-        if (isNil "FLO_virtualGroups") exitWith { 10000 };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { 10000 };
         private _ownSide = _self get "_ownSide";
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _minDist = 10000;
 
         {

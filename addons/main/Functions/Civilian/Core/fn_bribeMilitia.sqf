@@ -26,7 +26,7 @@ if (!_isAdmin && {!_isOfficer}) exitWith {
 
 private _cost = 200;
 private _side = side group _requester;
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 private _treasury = FLO_SideResources get _sideKey;
 if !([_treasury, _cost] call FLO_fnc_sideResourcesCanAfford) exitWith {
     ["Not enough resources to bribe the militia.", "warning", false, _owner] call FLO_fnc_sendNotification;

@@ -37,6 +37,8 @@ class UtilitiesUI {
 class UtilitiesGame {
     file = "\z\flo\addons\main\Functions\Utilities\Game";
 
+    class sideKey {};
+    class opposingSide {};
     class addReward {};
     class getRandomMagazine {};
     class addIntelServer {};
@@ -59,10 +61,11 @@ class UtilitiesAftermath {
 
     class aftermathCleanupManager {};
     class aftermathCleanupRun {};
+    class aftermathGetPlayerPositions {};
+    class aftermathIsWreckSettled {};
     class aftermathIsPositionInHotObjective {};
     class aftermathRegisterEntity {};
     class aftermathShouldCleanupEntity {};
-    class aftermathShouldPreserveEvidence {};
     class vehicleCleanupBuildContext {};
     class vehicleCleanupDiscoverCandidates {};
     class vehicleCleanupManager {};

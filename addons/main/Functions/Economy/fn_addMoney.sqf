@@ -24,6 +24,6 @@ if (_amount <= 0) then {
     throw format ["FLO_fnc_addMoney: amount must be positive, got %1", _amount];
 };
 
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 private _treasury = FLO_SideResources get _sideKey;
 [_treasury, _amount, "ADMIN", "Console resource credit", "CONSOLE", "", true] call FLO_fnc_sideResourcesAddResources

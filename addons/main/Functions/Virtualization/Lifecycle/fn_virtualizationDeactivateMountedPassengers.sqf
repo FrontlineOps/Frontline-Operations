@@ -23,7 +23,7 @@ if (_carrierGroupId == "") exitWith { 0 };
 private _attachedIds = [_carrierData] call FLO_fnc_virtualizationGetTransportPassengers;
 if (_attachedIds isEqualTo []) exitWith { 0 };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _deactivatedCount = 0;
 
 {
@@ -36,7 +36,7 @@ private _deactivatedCount = 0;
         continue;
     };
 
-    if ([_attachedId, _attachedData, _carrierGroupId] call FLO_fnc_virtualizationDeactivateMountedPassengerGroup) then {
+    if ([_attachedId, _carrierGroupId] call FLO_fnc_virtualizationDeactivateMountedPassengerGroup) then {
         _deactivatedCount = _deactivatedCount + 1;
     };
 } forEach _attachedIds;

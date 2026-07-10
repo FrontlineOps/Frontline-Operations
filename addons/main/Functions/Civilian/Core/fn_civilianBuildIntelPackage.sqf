@@ -43,7 +43,7 @@ if (!isNil "FLO_CivilianManager") then {
 
 if (isNil "FLO_GTN_CommandersBySide") exitWith { _package };
 
-private _sideKey = ([_reportingSide] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_reportingSide] call FLO_fnc_sideKey;
 private _commander = FLO_GTN_CommandersBySide get _sideKey;
 if (isNil "_commander") exitWith { _package };
 

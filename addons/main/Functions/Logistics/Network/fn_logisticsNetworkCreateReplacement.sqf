@@ -57,19 +57,17 @@ if (_hasPerf) then {
 };
 if (_newGroupId == "") exitWith { "" };
 
-private _groups = FLO_virtualGroups get "_groups";
-private _groupData = _groups get _newGroupId;
 private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
 
 private _transitT0 = diag_tickTime;
-[_groupData, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkReinforcementTransit;
+[_newGroupId, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkReinforcementTransit;
 if (_hasPerf) then {
     _perf set ["dispatchCreateTransitMs", (_perf get "dispatchCreateTransitMs") + ((diag_tickTime - _transitT0) * 1000)];
 };
 
 if (_groupType in ["motorized", "mechanized"]) then {
     private _organicT0 = diag_tickTime;
-    [_newGroupId, _groupData, true, _targetPos] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
+    [_newGroupId, true, _targetPos] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
     if (_hasPerf) then {
         _perf set ["dispatchCreateOrganicMs", (_perf get "dispatchCreateOrganicMs") + ((diag_tickTime - _organicT0) * 1000)];
     };
@@ -77,11 +75,16 @@ if (_groupType in ["motorized", "mechanized"]) then {
 
 if (_groupType isEqualTo "static_aa") then {
     private _staticTransitT0 = diag_tickTime;
-    _groupData set ["forceVirtual", true];
-    _groupData set ["alwaysActive", false];
-    _groupData set ["noWaypoints", false];
-    [_groupData, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkStaticAAReplacementTransit;
-    _groupData set ["homeObjective", _deliveryObjectiveId];
+    [
+        _newGroupId,
+        createHashMapFromArray [
+            ["forceVirtual", true],
+            ["alwaysActive", false],
+            ["noWaypoints", false],
+            ["homeObjective", _deliveryObjectiveId]
+        ]
+    ] call FLO_fnc_virtualizationPatchGroup;
+    [_newGroupId, _targetPos, _requestedObjectiveId, _deliveryObjectiveId] call FLO_fnc_virtualizationMarkStaticAAReplacementTransit;
     _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 80]];
     if (_hasPerf) then {
         _perf set ["dispatchCreateTransitMs", (_perf get "dispatchCreateTransitMs") + ((diag_tickTime - _staticTransitT0) * 1000)];

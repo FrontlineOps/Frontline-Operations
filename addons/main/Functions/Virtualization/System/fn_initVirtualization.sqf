@@ -2,8 +2,7 @@
  * Function: FLO_fnc_initVirtualization
  * Author: Frontline Operations Development Group
  * Description:
- *   Initializes the OPFOR virtualization system.
- *   Creates HashMap for tracking virtualized groups.
+ *   Initializes the server-owned virtual-force registry.
  *   Uses unscheduled CBA PerFrameHandler for reliable updates.
  *
  * Arguments:
@@ -27,18 +26,12 @@ params [
 ["VIRTUALIZATION", 3, format["Initializing Virtualization System (activation: %1m cap: %2)", _activationDistance, _activationUnitCap]] call FLO_fnc_log;
 
 // ============================================================================
-// CREATE MAIN DATA STRUCTURE
+// CREATE AUTHORITATIVE REGISTRY
 // ============================================================================
-FLO_virtualGroups = createHashMapFromArray [
-    ["_groups", createHashMap],
-    ["_activationDistance", _activationDistance],
-    ["_activationUnitCap", _activationUnitCap],
-    ["_activationResumeCap", ((_activationUnitCap - 20) max 0)],
-    ["_activationRetryCooldown", 10],
-    ["_movementDeadbandMeters", 8],
-    ["_enabled", true],
-    ["_debugMode", false]
-];
+FLO_VirtualForceRegistry = [
+    _activationDistance,
+    _activationUnitCap
+] call FLO_fnc_virtualizationCreateRegistry;
 
 // ============================================================================
 // INITIALIZE SUB-SYSTEMS
@@ -49,9 +42,6 @@ FLO_virtualGroups = createHashMapFromArray [
 
 // Rebuild ephemeral update state for each mission init
 [25, 1, true] call FLO_fnc_virtualizationEnsureUpdateState;
-
-// Register CBA event handlers for GTN/AI Commander integration
-["init"] call FLO_fnc_virtualizationEvents;
 
 if (_autoStart) then {
     // Start update loop (Unscheduled PFH)
@@ -74,4 +64,4 @@ publicVariable "FLO_VirtualizationReady";
     ["deferred", "started"] select _autoStart
 ]] call FLO_fnc_log;
 
-FLO_virtualGroups
+FLO_VirtualForceRegistry

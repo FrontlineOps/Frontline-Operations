@@ -22,7 +22,7 @@ if (_transportVehicles isEqualTo []) then {
     } forEach units _realGroup;
 };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _poolUnits = _pools get "units";
 
 {
@@ -48,7 +48,7 @@ private _poolUnits = _pools get "units";
             _groupId,
             _attachedId
         ]] call FLO_fnc_log;
-        [FLO_virtualGroups, _attachedId] call FLO_fnc_virtualizationRemoveGroup;
+        [_attachedId] call FLO_fnc_virtualizationRemoveGroup;
         deleteGroup _infGroup;
         continue;
     };

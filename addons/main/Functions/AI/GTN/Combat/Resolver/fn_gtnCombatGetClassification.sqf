@@ -25,6 +25,7 @@ private _ageExpired = _builtAt < 0 || {(diag_tickTime - _builtAt) >= _minRefresh
 
 if (
     (_state get "classificationDirty")
+    || {_state get "classificationSoftDirty"}
     || {_seedCellSize != (_state get "classificationSeedCellSize")}
     || {_engagementDist != (_state get "classificationEngagementDist")}
     || {_classification isEqualTo []}

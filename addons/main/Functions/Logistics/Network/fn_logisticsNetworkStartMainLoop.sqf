@@ -20,7 +20,7 @@ _net set ["_loopStarted", true];
 [
     {
         params ["_net"];
-        !isNil "FLO_virtualGroups" &&
+        !isNil "FLO_VirtualForceRegistry" &&
         {!isNil "FLO_Objectives"} &&
         {(keys FLO_Objectives) isNotEqualTo []} &&
         {!isNil "InitializationOG"} &&

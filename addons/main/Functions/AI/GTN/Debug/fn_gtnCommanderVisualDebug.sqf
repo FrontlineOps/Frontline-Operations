@@ -29,7 +29,7 @@ if (isNil "FLO_GTN_CommanderDebugMarkers") then { FLO_GTN_CommanderDebugMarkers 
 
     waitUntil {
         sleep 1;
-        !isNil "FLO_GTN_ResourceManager" && {!isNil "FLO_virtualGroups"}
+        !isNil "FLO_GTN_ResourceManager" && {!isNil "FLO_VirtualForceRegistry"}
     };
 
     while {FLO_GTN_CommanderDebugRunning} do {
@@ -46,7 +46,7 @@ if (isNil "FLO_GTN_CommanderDebugMarkers") then { FLO_GTN_CommanderDebugMarkers 
 
         private _activeIds = [];
         private _commandersBySide = FLO_GTN_ResourceManager call ["_getAllCommanders", []];
-        private _allGroups = FLO_virtualGroups get "_groups";
+        private _allGroups = call FLO_fnc_virtualizationGetGroupMap;
 
         {
             private _cmdSideKey = _x;

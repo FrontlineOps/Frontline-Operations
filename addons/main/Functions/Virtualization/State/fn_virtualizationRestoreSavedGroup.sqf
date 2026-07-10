@@ -6,14 +6,17 @@
  *   virtual-group record.
  *
  * Arguments:
- * 0: Live group data <HASHMAP>
+ * 0: Group ID <STRING>
  * 1: Saved group data <HASHMAP>
  *
  * Return Value:
  * BOOL - True when restore completed
  */
 
-params ["_groupData", "_savedData"];
+params ["_groupId", "_savedData"];
+
+[_savedData, _groupId] call FLO_fnc_virtualizationValidateSavedGroup;
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 private _alwaysActive = _savedData get "alwaysActive";
 private _civilianRoutineState = _savedData get "civilianRoutineState";
@@ -26,6 +29,8 @@ if (_civilianRoutineState == "protest") then {
 };
 
 [_groupData, _savedData get "state"] call FLO_fnc_virtualizationSetRuntimeState;
+_groupData set ["spawnPosition", +(_savedData get "spawnPosition")];
+_groupData set ["direction", _savedData get "direction"];
 _groupData set ["spawnClass", _savedData get "spawnClass"];
 [_groupData, _savedData get "comp"] call FLO_fnc_virtualizationSetAssetComposition;
 _groupData set ["waypoints", _savedData get "waypoints"];
@@ -61,6 +66,9 @@ _groupData set ["civilianRoutineUntil", _civilianRoutineUntil];
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreTransportState;
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreReplacementState;
 [_groupData, _savedData] call FLO_fnc_virtualizationRestoreEngagementState;
+
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
 
 true
 

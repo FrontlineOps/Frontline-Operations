@@ -14,7 +14,7 @@ if (_now - _lastUpdate < _interval) exitWith {};
 
 FLO_VirtDebug set ["lastUpdateTime", _now];
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _groupIds = keys _groups;
 private _totalGroups = count _groupIds;
 if (_totalGroups == 0) exitWith {};

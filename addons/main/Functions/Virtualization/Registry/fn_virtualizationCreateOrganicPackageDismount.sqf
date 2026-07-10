@@ -4,11 +4,11 @@
 
 params [
     "_carrierGroupId",
-    "_carrierData",
     ["_attachPassengers", true, [true]],
     ["_dismountTargetPos", [], [[]]]
 ];
 
+private _carrierData = [_carrierGroupId] call FLO_fnc_virtualizationRequireGroup;
 private _groupType = _carrierData get "groupType";
 private _dismountCounts = [_carrierData] call FLO_fnc_virtualizationGetOrganicPackageInfantryCounts;
 if (_dismountCounts isEqualTo []) exitWith { [] };
@@ -19,20 +19,21 @@ private _position = _carrierData get "position";
 private _homeObjective = _carrierData get "homeObjective";
 private _side = _carrierData get "side";
 
-private _groups = FLO_virtualGroups get "_groups";
 private _previousRole = _carrierData get "organicPackageRole";
 private _previousParentGroupId = _carrierData get "organicPackageParentGroupId";
 private _createdGroupIds = [];
 private _totalInfantry = 0;
 
-_carrierData set ["organicPackageRole", "carrier"];
-_carrierData set ["organicPackageParentGroupId", ""];
+[_carrierGroupId, createHashMapFromArray [
+    ["organicPackageRole", "carrier"],
+    ["organicPackageParentGroupId", ""]
+]] call FLO_fnc_virtualizationPatchGroup;
 
 {
     private _dismountCount = _x;
     private _dismountGroupId = [_position, "infantry", nil, _homeObjective, _dismountCount, _side] call FLO_fnc_createVirtualGroup;
     if (_dismountGroupId == "") then {
-        [_carrierData, _createdGroupIds, _previousRole, _previousParentGroupId] call FLO_fnc_virtualizationRollbackOrganicPackageCreation;
+        [_carrierGroupId, _createdGroupIds, _previousRole, _previousParentGroupId] call FLO_fnc_virtualizationRollbackOrganicPackageCreation;
         throw format [
             "FLO_fnc_virtualizationCreateOrganicPackageDismount: failed to create organic dismount package %1 for %2 due to invalid carrier position %3",
             _forEachIndex,
@@ -41,15 +42,23 @@ _carrierData set ["organicPackageParentGroupId", ""];
         ];
     };
 
-    private _dismountData = _groups get _dismountGroupId;
-    _dismountData set ["organicPackageRole", "dismount"];
-    _dismountData set ["organicPackageParentGroupId", _carrierGroupId];
+    private _dismountChanges = createHashMapFromArray [
+        ["organicPackageRole", "dismount"],
+        ["organicPackageParentGroupId", _carrierGroupId]
+    ];
 
     if (_attachPassengers) then {
-        [_dismountData, "ORGANIC_PACKAGE", _groupType] call FLO_fnc_virtualizationSetMissionLock;
+        _dismountChanges set ["missionLock", "ORGANIC_PACKAGE"];
+        _dismountChanges set ["missionType", _groupType];
+        if (count _dismountTargetPos >= 2) then {
+            _dismountChanges set ["postDismountWaypoint", [_dismountTargetPos, "ORGANIC_PACKAGE"]];
+        };
+    };
+    [_dismountGroupId, _dismountChanges] call FLO_fnc_virtualizationPatchGroup;
 
+    if (_attachPassengers) then {
         if !([_dismountGroupId, _carrierGroupId] call FLO_fnc_transportAttach) then {
-            [_carrierData, _createdGroupIds + [_dismountGroupId], _previousRole, _previousParentGroupId] call FLO_fnc_virtualizationRollbackOrganicPackageCreation;
+            [_carrierGroupId, _createdGroupIds + [_dismountGroupId], _previousRole, _previousParentGroupId] call FLO_fnc_virtualizationRollbackOrganicPackageCreation;
             throw format [
                 "FLO_fnc_virtualizationCreateOrganicPackageDismount: failed to attach organic dismount %1 to %2",
                 _dismountGroupId,
@@ -57,9 +66,6 @@ _carrierData set ["organicPackageParentGroupId", ""];
             ];
         };
 
-        if (count _dismountTargetPos >= 2) then {
-            _dismountData set ["postDismountWaypoint", [_dismountTargetPos, "ORGANIC_PACKAGE"]];
-        };
     };
 
     _createdGroupIds pushBack _dismountGroupId;
@@ -67,7 +73,7 @@ _carrierData set ["organicPackageParentGroupId", ""];
 } forEach _dismountCounts;
 
 if (_attachPassengers && {count _dismountTargetPos >= 2}) then {
-    _carrierData set ["dismountAtWaypoint", 0];
+    [_carrierGroupId, createHashMapFromArray [["dismountAtWaypoint", 0]]] call FLO_fnc_virtualizationPatchGroup;
 };
 
 ["VIRTUALIZATION", 3, format [

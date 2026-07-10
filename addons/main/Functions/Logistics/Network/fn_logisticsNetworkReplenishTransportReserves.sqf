@@ -22,15 +22,14 @@ private _stats = createHashMapFromArray [
 ];
 
 private _managedSide = _net get "_managedSide";
-private _sideContext = [_managedSide] call FLO_fnc_gtnSideContext;
-private _sideKey = _sideContext get "sideKey";
+private _sideKey = [_managedSide] call FLO_fnc_sideKey;
 private _catalog = FLO_FactionCatalog get _sideKey;
 
 private _desiredGround = _catalog get "transportReserveGroundCount";
 private _desiredAir = _catalog get "transportReserveAirCount";
 if (_desiredGround <= 0 && {_desiredAir <= 0}) exitWith { _stats };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _currentGround = 0;
 private _currentAir = 0;
 private _groundByObjective = createHashMap;

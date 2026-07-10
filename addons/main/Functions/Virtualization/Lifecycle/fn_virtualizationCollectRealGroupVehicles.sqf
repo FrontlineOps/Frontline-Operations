@@ -16,7 +16,7 @@ params [["_realGroup", grpNull, [grpNull]]];
 
 if (isNull _realGroup) exitWith { [] };
 
-private _vehicles = [];
+private _vehicles = assignedVehicles _realGroup;
 {
     private _veh = vehicle _x;
     if (_veh == _x) then {

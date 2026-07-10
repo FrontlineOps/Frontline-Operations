@@ -14,16 +14,4 @@
 
 params ["_groupType"];
 
-_groupType in [
-    "motorized",
-    "mechanized",
-    "armor",
-    "helicopter",
-    "jet",
-    "air",
-    "artillery",
-    "mobile_aa",
-    "static_aa",
-    "civilianVehicle",
-    "civ_car"
-]
+([_groupType] call FLO_fnc_virtualizationGetArchetype) get "assetStrength"

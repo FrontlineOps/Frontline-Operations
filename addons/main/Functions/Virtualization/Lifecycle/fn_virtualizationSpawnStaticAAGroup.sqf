@@ -19,40 +19,49 @@ private _radarPool = (_pools get "radar") select {
 private _realGroup = [_side, _groupId, "static_aa"] call FLO_fnc_virtualizationCreateRealGroup;
 if (isNull _realGroup) exitWith { grpNull };
 
-private _safePos = [_groupId, _position, 20, 100, 15, 0.1, 150, "Static AA"] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+private _spawnFailed = false;
 
 if (_radarPool isNotEqualTo []) then {
     private _radarType = selectRandom _radarPool;
-    private _radarPos = _safePos getPos [15, random 360];
+    private _radarPos = [_groupId, _position, 20, 140, 15, 0.1, 180, "Static AA radar", _radarType, false] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+    if (_radarPos isEqualTo []) then {
+        _spawnFailed = true;
+    };
     private _crewType = [_radarType, _unitPool, _sideKey, "static_aa"] call FLO_fnc_virtualizationResolveCrewType;
-    private _radar = createVehicle [_radarType, _radarPos, [], 0, "NONE"];
-    _radar setPos [getPos _radar select 0, getPos _radar select 1, 0];
-    _radar setVehicleReportRemoteTargets true;
-    _radar setVehicleRadar 1;
-    private _operator = _realGroup createUnit [_crewType, _radarPos, [], 0, "NONE"];
-    if (isNull _operator) then {
-        deleteVehicle _radar;
-    } else {
-        _operator moveInAny _radar;
+    if (!_spawnFailed) then {
+        private _radar = [_realGroup, _radarType, _radarPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
+        if (isNull _radar) then {
+            _spawnFailed = true;
+        } else {
+            _radar setVehicleReportRemoteTargets true;
+            _radar setVehicleRadar 1;
+        };
     };
 };
 
 for "_i" from 1 to _unitCount do {
+    if (_spawnFailed) then { continue };
     private _samType = selectRandom _staticAAPool;
     private _offset = 25 + (15 * _i);
     private _angle = (360 / _unitCount) * _i;
-    private _spawnPos = _safePos getPos [_offset, _angle];
-    private _launcher = createVehicle [_samType, _spawnPos, [], 0, "NONE"];
-    _launcher setPos [getPos _launcher select 0, getPos _launcher select 1, 0];
-    _launcher setDir (_angle + 180);
-    _launcher setVehicleReceiveRemoteTargets true;
-    private _crewType = [_samType, _unitPool, _sideKey, "static_aa"] call FLO_fnc_virtualizationResolveCrewType;
-    private _gunner = _realGroup createUnit [_crewType, _spawnPos, [], 0, "NONE"];
-    if (isNull _gunner) then {
-        deleteVehicle _launcher;
-    } else {
-        _gunner moveInGunner _launcher;
+    private _spawnPos = [_groupId, _position, _offset, 180, 15, 0.1, 220, "Static AA launcher", _samType, false] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+    if (_spawnPos isEqualTo []) then {
+        _spawnFailed = true;
+        continue
     };
+    private _crewType = [_samType, _unitPool, _sideKey, "static_aa"] call FLO_fnc_virtualizationResolveCrewType;
+    private _launcher = [_realGroup, _samType, _spawnPos, _crewType] call FLO_fnc_virtualizationCreateCrewedVehicle;
+    if (isNull _launcher) then {
+        _spawnFailed = true;
+    } else {
+        _launcher setDir (_angle + 180);
+        _launcher setVehicleReceiveRemoteTargets true;
+    };
+};
+
+if (_spawnFailed) exitWith {
+    [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+    grpNull
 };
 
 if ((units _realGroup) isEqualTo []) exitWith {

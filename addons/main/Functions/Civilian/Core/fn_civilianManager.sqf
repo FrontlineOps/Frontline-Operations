@@ -174,13 +174,13 @@ private _civilianClass = [
         private _plan = [_groupData, _context, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
         if ((keys _plan) isEqualTo []) exitWith { false };
 
-        [_groupId, _groupData, _plan] call FLO_fnc_civilianApplyRoutinePlan
+        [_groupId, _plan] call FLO_fnc_civilianApplyRoutinePlan
     }],
 
     ["updateCivilianRoutines", {
-        if (isNil "FLO_virtualGroups") exitWith { 0 };
+        if (isNil "FLO_VirtualForceRegistry") exitWith { 0 };
 
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _activeCivilianIds = [];
         private _inactiveCivilianIds = [];
 
@@ -229,7 +229,7 @@ private _civilianClass = [
 
     ["updateProtests", {
         private _nowTick = diag_tickTime;
-        private _groups = FLO_virtualGroups get "_groups";
+        private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _activeProtests = _self get "_activeProtests";
         private _cooldowns = _self get "_objectiveProtestCooldowns";
         private _endedObjectives = [];
@@ -264,8 +264,9 @@ private _civilianClass = [
                 {
                     if !(_x in _groups) then { continue };
                     private _groupData = _groups get _x;
+                    private _changes = createHashMapFromArray [["protestRestoreAlwaysActive", false]];
                     if ((_groupData get "civilianRoutineState") == "protest") then {
-                        _groupData set ["civilianRoutineUntil", _nowTick - 1];
+                        _changes set ["civilianRoutineUntil", _nowTick - 1];
                     };
                     private _realGroup = _groupData get "realGroup";
                     private _hasDetainedUnits = false;
@@ -278,10 +279,12 @@ private _civilianClass = [
                         } forEach (units _realGroup);
                     };
                     if (!_hasDetainedUnits) then {
-                        _groupData set ["alwaysActive", _groupData get "protestRestoreAlwaysActive"];
+                        _changes set ["alwaysActive", _groupData get "protestRestoreAlwaysActive"];
+                    };
+                    [_x, _changes] call FLO_fnc_virtualizationPatchGroup;
+                    if (!_hasDetainedUnits) then {
                         _self call ["retaskCivilianGroup", [_x, _groupData]];
                     };
-                    _groupData set ["protestRestoreAlwaysActive", false];
                 } forEach _groupIds;
                 _endedObjectives pushBack _objectiveId;
             };

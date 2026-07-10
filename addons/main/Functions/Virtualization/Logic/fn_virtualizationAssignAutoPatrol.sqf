@@ -7,9 +7,10 @@
 
 params [
     "_groupId",
-    "_groupData",
     ["_centerOverride", [], [[]]]
 ];
+
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 if (!([_groupData] call FLO_fnc_virtualizationCanAutoPatrol)) exitWith { false };
 if ((_groupData get "state") != "idle") exitWith { false };
@@ -23,8 +24,10 @@ if (_patrolPlan isEqualTo []) exitWith { false };
 _patrolPlan params ["_patrolWaypoints", "_patrolConfig"];
 
 [_groupData, _patrolWaypoints, "AUTO_PATROL", "moving"] call FLO_fnc_virtualizationSetRouteState;
-_groupData set ["patrolConfig", _patrolConfig];
-_groupData set ["autoPatrol", true];
+[_groupId, createHashMapFromArray [
+    ["patrolConfig", _patrolConfig],
+    ["autoPatrol", true]
+]] call FLO_fnc_virtualizationPatchGroup;
 
 if (_groupData get "isActive") then {
     [_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;

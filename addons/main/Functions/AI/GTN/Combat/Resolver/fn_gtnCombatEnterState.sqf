@@ -20,4 +20,7 @@ if !(_gData get "inCombat") then {
     _resumeStates set [_groupId, _gData get "state"];
 };
 
-_gData set ["inCombat", true];
+[
+    _groupId,
+    createHashMapFromArray [["inCombat", true]]
+] call FLO_fnc_virtualizationPatchGroup;

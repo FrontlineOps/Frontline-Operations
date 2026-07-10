@@ -24,7 +24,7 @@ private _objectiveId = _job get "objectiveId";
 private _objective = FLO_Objectives get _objectiveId;
 private _objectiveIndex = _state get "objectiveIndex";
 private _activePlayerSide = FLO_ActivePlayerSide;
-private _playerProximityMeters = (FLO_virtualGroups get "_activationDistance") + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters");
+private _playerProximityMeters = (["activationDistance"] call FLO_fnc_virtualizationGetConfigValue) + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters");
 
 if ((_objective get "owner") != (_job get "side")) exitWith {
     [_jobId, "STALE_OWNER"] call FLO_fnc_minefieldFinalizeBuildJob;

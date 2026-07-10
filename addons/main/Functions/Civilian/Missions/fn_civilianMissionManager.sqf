@@ -62,9 +62,13 @@ switch (_modeKey) do {
             ]
         };
 
-        private _groups = FLO_virtualGroups get "_groups";
         private _groupId = _civilian getVariable ["FLO_VirtualGroupId", ""];
-        private _groupData = if (_groupId != "" && {_groupId in _groups}) then { _groups get _groupId } else { createHashMap };
+        private _groupData = if (_groupId != "") then {
+            private _snapshot = [_groupId] call FLO_fnc_virtualizationFindGroupSnapshot;
+            if (isNil "_snapshot") then { createHashMap } else { _snapshot }
+        } else {
+            createHashMap
+        };
 
         private _offer = [_civilian, _caller, _groupData] call FLO_fnc_civilianBuildMissionOffer;
         if ((keys _offer) isEqualTo []) exitWith {

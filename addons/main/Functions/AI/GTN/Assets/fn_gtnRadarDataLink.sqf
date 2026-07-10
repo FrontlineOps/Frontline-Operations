@@ -25,14 +25,14 @@ private _updateInterval = 30; // seconds
 while {FLO_GTN_RadarDataLinkRunning} do {
     sleep _updateInterval;
 
-    if (isNil "FLO_virtualGroups") then { continue };
+    if (isNil "FLO_VirtualForceRegistry") then { continue };
     
     // Build active radar coverage by side.
     private _activeRadarsBySide = createHashMapFromArray [
         ["EAST", []],
         ["WEST", []]
     ];
-    private _groups = FLO_virtualGroups get "_groups";
+    private _groups = call FLO_fnc_virtualizationGetGroupMap;
     {
         private _groupData = _y;
         private _groupType = _groupData get "groupType";

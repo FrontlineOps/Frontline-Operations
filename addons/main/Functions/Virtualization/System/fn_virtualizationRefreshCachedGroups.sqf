@@ -32,7 +32,7 @@ _stats set ["totalGroupsLast", count _groupIds];
 _stats set ["activeGroupsLast", _activeGroups];
 _stats set ["inactiveGroupsLast", (count _groupIds) - _activeGroups];
 _stats set ["activeUnitsLast", _activeUnits];
-_stats set ["activationCapLast", FLO_virtualGroups get "_activationUnitCap"];
+_stats set ["activationCapLast", ["activationUnitCap"] call FLO_fnc_virtualizationGetConfigValue];
 _stats set ["deferredGroupsLast", _deferredGroups];
 
 private _groupCacheMs = (diag_tickTime - _groupCacheStart) * 1000;

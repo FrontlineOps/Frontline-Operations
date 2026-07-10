@@ -33,7 +33,7 @@ if (isNil "_director") then {
 private _state = _director call ["_getState", []];
 private _operations = _state get "operations";
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
 private _enemySide = _cmdr get "_enemySide";
 private _releaseIds = [];

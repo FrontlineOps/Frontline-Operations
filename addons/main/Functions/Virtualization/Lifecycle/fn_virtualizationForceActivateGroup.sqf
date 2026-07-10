@@ -8,13 +8,13 @@
  *
  * Arguments:
  * 0: Group ID <STRING>
- * 1: Group Data <HASHMAP>
- *
  * Return Value:
  * BOOL - True when activation succeeded
  */
 
-params ["_groupId", "_groupData"];
+params [["_groupId", "", [""]]];
+
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 if (_groupData get "isActive") exitWith {
     private _realGroup = _groupData get "realGroup";

@@ -7,7 +7,7 @@ params ["_groupId", "_groupData", "_virtStats"];
 private _attachedTo = [_groupData] call FLO_fnc_virtualizationGetTransportAttachment;
 if (_attachedTo == "") exitWith { false };
 
-private _transportData = (FLO_virtualGroups get "_groups") get _attachedTo;
+private _transportData = (call FLO_fnc_virtualizationGetGroupMap) get _attachedTo;
 if (isNil "_transportData") exitWith {
     ["VIRTUALIZATION", 1, format [
         "Passenger %1 had stale attachment to missing carrier %2 - clearing attachment state",
@@ -15,13 +15,18 @@ if (isNil "_transportData") exitWith {
         _attachedTo
     ]] call FLO_fnc_log;
 
-    [_groupData] call FLO_fnc_virtualizationClearTransportAttachment;
-    [_groupData] call FLO_fnc_virtualizationClearMountedIn;
+    [_groupId] call FLO_fnc_virtualizationUnlinkTransportGroups;
     if ((_groupData get "missionLock") in ["ORGANIC_PACKAGE", "TRANSPORT"]) then {
-        [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+        [_groupId, createHashMapFromArray [
+            ["missionLock", ""],
+            ["missionType", ""]
+        ]] call FLO_fnc_virtualizationPatchGroup;
     };
-    [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
 
+    true
+};
+
+if ([_groupId, _attachedTo] call FLO_fnc_virtualizationResolveTransportPassengerCasualty) exitWith {
     true
 };
 
@@ -35,7 +40,7 @@ if ((_groupData get "isActive") && {_mountedIn == _attachedTo} && {(!_transportI
         _groupId,
         _attachedTo
     ]] call FLO_fnc_log;
-    [_groupId, _groupData, _attachedTo] call FLO_fnc_virtualizationDeactivateMountedPassengerGroup;
+    [_groupId, _attachedTo] call FLO_fnc_virtualizationDeactivateMountedPassengerGroup;
     _virtStats set ["deactivationsTotal", (_virtStats get "deactivationsTotal") + 1];
     _virtStats set ["deactivationsThisBatch", (_virtStats get "deactivationsThisBatch") + 1];
     true
@@ -49,7 +54,7 @@ if !([_transportPos, true, format [
 ]] call FLO_fnc_validateGroupPosition) exitWith {
     true
 };
-[FLO_virtualGroups, _groupId, _transportPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+[_groupId, _transportPos] call FLO_fnc_virtualizationUpdateGroupPosition;
 
 _virtStats set ["attachedSyncsTotal", (_virtStats get "attachedSyncsTotal") + 1];
 _virtStats set ["attachedSyncsThisBatch", (_virtStats get "attachedSyncsThisBatch") + 1];

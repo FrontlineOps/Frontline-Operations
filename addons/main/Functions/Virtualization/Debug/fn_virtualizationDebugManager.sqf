@@ -52,8 +52,8 @@ switch (toLower _mode) do {
         FLO_VirtDebug set ["pfhId", _pfhId];
 
         // Set flag on main virtualization system for compatibility
-        if (!isNil "FLO_virtualGroups") then {
-            FLO_virtualGroups set ["_debugMode", true];
+        if (!isNil "FLO_VirtualForceRegistry") then {
+            ["debugMode", true] call FLO_fnc_virtualizationSetConfigValue;
         };
 
         ["VIRTUALIZATION_DEBUG", 3, "Debug enabled - PFH started"] call FLO_fnc_log;
@@ -91,8 +91,8 @@ switch (toLower _mode) do {
         FLO_VirtDebug set ["wpMarkerNames", createHashMap];
 
         // Update main virtualization system flag
-        if (!isNil "FLO_virtualGroups") then {
-            FLO_virtualGroups set ["_debugMode", false];
+        if (!isNil "FLO_VirtualForceRegistry") then {
+            ["debugMode", false] call FLO_fnc_virtualizationSetConfigValue;
         };
 
         ["VIRTUALIZATION_DEBUG", 3, "Debug disabled - markers cleaned up"] call FLO_fnc_log;

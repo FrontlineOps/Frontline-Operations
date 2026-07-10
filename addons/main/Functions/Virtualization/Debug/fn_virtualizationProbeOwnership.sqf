@@ -14,7 +14,7 @@
 
 if (!isServer) exitWith { createHashMap };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _trackedRealGroups = createHashMap;
 private _trackedVehicles = createHashMap;
 

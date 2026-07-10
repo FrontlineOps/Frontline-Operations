@@ -27,6 +27,7 @@ class GTNCombatResolver {
     class gtnCombatMarkerId {};
     class gtnCombatPrepareRealGroupForCombat {};
     class gtnCombatRecordEvent {};
+    class gtnCombatRegisterVirtualizationEvents {};
     class gtnCombatResolveZoneDescriptor {};
     class gtnCombatSidePower {};
     class gtnCombatSupportBonus {};

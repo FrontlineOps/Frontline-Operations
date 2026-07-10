@@ -2,9 +2,9 @@
  * Function: FLO_fnc_virtualizationRemoveGroup
  */
 
-params ["_virt", "_groupId"];
+params [["_groupId", "", [""]]];
 
-private _groups = _virt get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _groupData = _groups get _groupId;
 if (isNil "_groupData") exitWith { false };
 private _availableTransports = FLO_TransportPool get "available";
@@ -56,7 +56,7 @@ private _detachIndex = 0;
                     _otherId,
                     _groupId
                 ]] call FLO_fnc_log;
-                [_otherData] call FLO_fnc_transportClearInsertState;
+                [_otherId] call FLO_fnc_transportClearInsertState;
             };
 
             if (_otherId in _activeTransports) then {
@@ -67,6 +67,10 @@ private _detachIndex = 0;
 
     if ((_otherData get "organicPackageParentGroupId") == _groupId) then {
         _otherData set ["organicPackageParentGroupId", ""];
+    };
+
+    if ((_otherData get "engagementTargetGroupId") == _groupId) then {
+        _otherData set ["engagementTargetGroupId", ""];
     };
 } forEach _groups;
 
@@ -87,14 +91,12 @@ if (_removedFromTransportPool) then {
 };
 
 [_groupId] call FLO_fnc_virtualizationSpatialRemove;
-
-if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
-    [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
-};
+private _removedSnapshot = [_groupId] call FLO_fnc_virtualizationSnapshotGroup;
 
 ["cleanup", _groupId] call FLO_fnc_virtualizationDebugManager;
 _groups deleteAt _groupId;
-["FLO_Virtualization_GroupRemoved", [_groupId]] call CBA_fnc_localEvent;
+call FLO_fnc_virtualizationTouchRegistry;
+["FLO_Virtualization_GroupRemoved", [_groupId, _removedSnapshot]] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 4, format ["Removed group %1", _groupId]] call FLO_fnc_log;
 

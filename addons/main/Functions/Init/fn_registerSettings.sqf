@@ -35,5 +35,46 @@ private _campaignLaunchMode = [
 
 _campaignLaunchMode call _settingsFn;
 
+private _artillerySideCooldown = [
+    "FLO_ArtillerySideCooldownSeconds",
+    "SLIDER",
+    ["Side fire mission cooldown", "Minimum time between successful artillery missions for the same side, regardless of target or battery."],
+    ["FLO", "Artillery"],
+    [60, 1800, 300, 0],
+    1
+];
+
+private _artilleryBatteryCooldown = [
+    "FLO_ArtilleryBatteryCooldownSeconds",
+    "SLIDER",
+    ["Battery rearm time", "Minimum time before the same artillery battery can start another fire mission."],
+    ["FLO", "Artillery"],
+    [60, 3600, 600, 0],
+    1
+];
+
+private _artilleryTreasuryCost = [
+    "FLO_ArtilleryTreasuryCostPerRound",
+    "SLIDER",
+    ["Treasury cost per round", "Shared side treasury resources committed for each requested artillery round."],
+    ["FLO", "Artillery"],
+    [25, 500, 100, 0],
+    1
+];
+
+private _artilleryLocalSupplyCost = [
+    "FLO_ArtilleryLocalSupplyCostPerRound",
+    "SLIDER",
+    ["Local Supplies per round", "Local Supplies consumed from the connected source sustaining the artillery battery."],
+    ["FLO", "Artillery"],
+    [25, 500, 150, 0],
+    1
+];
+
+_artillerySideCooldown call _settingsFn;
+_artilleryBatteryCooldown call _settingsFn;
+_artilleryTreasuryCost call _settingsFn;
+_artilleryLocalSupplyCost call _settingsFn;
+
 missionNamespace setVariable ["FLO_SettingsRegistered", true];
 diag_log "[FLO_SETTINGS] Registered CBA settings";

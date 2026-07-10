@@ -37,7 +37,7 @@ private _objectivePos = _objective get "position";
 private _nearRadius = if (_radius >= 0) then {
     _radius
 } else {
-    (FLO_virtualGroups get "_activationDistance") + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters")
+    (["activationDistance"] call FLO_fnc_virtualizationGetConfigValue) + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters")
 };
 
 ({_objectivePos distance2D _x <= _nearRadius} count _playerPositions) > 0

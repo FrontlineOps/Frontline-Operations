@@ -22,7 +22,7 @@ params ["_groups", "_groupRefs", "_lossPct"];
     private _count = _gData get "unitCount";
     if (_count <= 0) then {
         FLO_GTN_VirtualCombatResumeStates deleteAt _groupId;
-        [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+        [_groupId] call FLO_fnc_virtualizationRemoveGroup;
         continue;
     };
 
@@ -31,11 +31,12 @@ params ["_groups", "_groupRefs", "_lossPct"];
 
     private _newCount = _count - _loss;
     if (_newCount <= 0) then {
-        _gData set ["unitCount", 0];
         FLO_GTN_VirtualCombatResumeStates deleteAt _groupId;
-        [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+        [_groupId] call FLO_fnc_virtualizationRemoveGroup;
     } else {
-        _gData set ["unitCount", _newCount];
-        _groups set [_groupId, _gData];
+        [
+            _groupId,
+            createHashMapFromArray [["unitCount", _newCount]]
+        ] call FLO_fnc_virtualizationPatchGroup;
     };
 } forEach _groupRefs;

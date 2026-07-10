@@ -4,8 +4,7 @@
 
 params ["_side"];
 
-private _sideCtx = [_side] call FLO_fnc_gtnSideContext;
-private _sideKey = _sideCtx get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 private _catalog = FLO_FactionCatalog get _sideKey;
 
 createHashMapFromArray [

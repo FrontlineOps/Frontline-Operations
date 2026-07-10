@@ -26,7 +26,7 @@ if (_waypoints isNotEqualTo [] && {_currentWpIdx < count _waypoints}) then {
 
         if (_pendingMoveDistance > 0) then {
             private _moveDistance = _pendingMoveDistance min _distToWp;
-            private _deadbandMeters = FLO_virtualGroups get "_movementDeadbandMeters";
+            private _deadbandMeters = ["movementDeadbandMeters"] call FLO_fnc_virtualizationGetConfigValue;
 
             if (_moveDistance < _deadbandMeters && {_moveDistance < _distToWp}) then {
                 _groupData set ["virtualMoveCarryMeters", _pendingMoveDistance];
@@ -36,7 +36,7 @@ if (_waypoints isNotEqualTo [] && {_currentWpIdx < count _waypoints}) then {
                 private _dir = _position getDir _wpPos;
                 private _newPos = _position getPos [_moveDistance, _dir];
 
-                [FLO_virtualGroups, _groupId, _newPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+                [_groupId, _newPos] call FLO_fnc_virtualizationUpdateGroupPosition;
                 _groupData set ["virtualMoveCarryMeters", (_pendingMoveDistance - _moveDistance) max 0];
                 [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
                 _virtStats set ["virtualMovesTotal", (_virtStats get "virtualMovesTotal") + 1];
@@ -53,7 +53,7 @@ if (_waypoints isNotEqualTo [] && {_currentWpIdx < count _waypoints}) then {
         };
     };
 } else {
-    if ([_groupId, _groupData] call FLO_fnc_virtualizationAssignAutoPatrol) then {
+    if ([_groupId] call FLO_fnc_virtualizationAssignAutoPatrol) then {
         _virtStats set ["patrolAssignmentsTotal", (_virtStats get "patrolAssignmentsTotal") + 1];
         _virtStats set ["patrolAssignmentsThisBatch", (_virtStats get "patrolAssignmentsThisBatch") + 1];
     };

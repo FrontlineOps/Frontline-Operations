@@ -25,8 +25,8 @@ if (!isNil "FLO_NetDebugState") then {
 };
 
 private _virtualGroupCount = 0;
-if (!isNil "FLO_virtualGroups") then {
-    private _groups = FLO_virtualGroups get "_groups";
+if (!isNil "FLO_VirtualForceRegistry") then {
+    private _groups = call FLO_fnc_virtualizationGetGroupMap;
     _virtualGroupCount = count (keys _groups);
 };
 

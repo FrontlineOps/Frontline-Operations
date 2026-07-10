@@ -66,7 +66,7 @@ switch (_groupType) do {
         private _vehicle = createVehicle [_vehicleType, _spawnPos, [], 0, "CAN_COLLIDE"];
         _vehicle setPos [_spawnPos select 0, _spawnPos select 1, 0];
         _vehicle setVectorUp [0, 0, 1];
-        _vehicle setDir (_groupData getOrDefault ["direction", random 360]);
+        _vehicle setDir (_groupData get "direction");
         _vehicle lock 0;
         _vehicle setFuel 1;
         _vehicle setDamage 0;
@@ -114,8 +114,6 @@ if (isNull _realGroup) exitWith { grpNull };
 } forEach _spawnedUnits;
 
 _realGroup setVariable ["FLO_VirtualGroupId", _groupId, true];
-_groupData set ["realGroup", _realGroup];
-_groupData set ["isActive", true];
 
 [_spawnedUnits] call FLO_fnc_civilianActions;
 

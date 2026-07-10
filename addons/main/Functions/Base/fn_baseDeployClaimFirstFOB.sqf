@@ -8,7 +8,7 @@ if !(_side in [west, east]) then {
 };
 
 [FLO_BaseFirstFOBClaimedBySide] call FLO_fnc_baseDeployValidateState;
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 if (FLO_BaseFirstFOBClaimedBySide get _sideKey) then {
     throw format ["First FOB entitlement for %1 was already claimed", _sideKey];
 };

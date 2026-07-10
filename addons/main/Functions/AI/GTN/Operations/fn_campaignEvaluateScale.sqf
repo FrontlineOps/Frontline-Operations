@@ -19,7 +19,7 @@ private _activeOperationIds = _order select {
 private _currentCount = count _activeOperationIds;
 private _maximumCount = _config get "operationMaximumCount";
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _availableGroupIds = _commander call ["_getAvailableGroups", [count (keys _groups)]];
 private _activeAttackGroups = 0;
 {

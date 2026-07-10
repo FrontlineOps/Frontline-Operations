@@ -39,52 +39,13 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
         private _initMs = (diag_tickTime - _initT0) * 1000;
 
         private _savedGroups = _savedData get "virtualGroups";
-        private _loadedCount = 0;
-        private _skippedCount = 0;
         private _restoreT0 = diag_tickTime;
-
-        if (!isNil "_savedGroups" && {_savedGroups isEqualType createHashMap}) then {
-            {
-                private _groupId = _x;
-                private _groupData = _savedGroups get _groupId;
-
-                if (!isNil "_groupData") then {
-                    // Position must exist - if missing, save data is corrupt
-                    private _pos = _groupData get "position";
-                    private _homeObjective = _groupData get "homeObjective";
-
-                    // Create the virtual group
-                    private _newId = [
-                        _pos,
-                        _groupData get "groupType",
-                        nil,
-                        _homeObjective,
-                        _groupData get "unitCount",
-                        _groupData get "side"
-                    ] call FLO_fnc_createVirtualGroup;
-
-                    if (_newId != "") then {
-                        // Restore additional state
-                        private _groups = FLO_virtualGroups get "_groups";
-                        private _newData = _groups get _newId;
-
-                        if (!isNil "_newData") then {
-                            [_newData, _groupData] call FLO_fnc_virtualizationRestoreSavedGroup;
-                            _loadedCount = _loadedCount + 1;
-                        };
-                    } else {
-                        _skippedCount = _skippedCount + 1;
-                    };
-                };
-            } forEach (keys _savedGroups);
-
-            diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save (skipped %2 invalid)", _loadedCount, _skippedCount];
-        };
+        private _loadedCount = [
+            _savedGroups,
+            _savedData get "saveVersion"
+        ] call FLO_fnc_virtualizationRestoreRegistry;
         private _restoreMs = (diag_tickTime - _restoreT0) * 1000;
-
-        private _reconcileT0 = diag_tickTime;
-        [] call FLO_fnc_virtualizationReconcileTransportState;
-        private _reconcileMs = (diag_tickTime - _reconcileT0) * 1000;
+        diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save", _loadedCount];
 
         // Mark as initialized; PFH start is deferred to Phase 5 so startup
         // work does not compete with virtualization updates.
@@ -94,12 +55,10 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         diag_log "[FLO_INIT_P4] Virtualization loaded from save - complete";
         diag_log format [
-            "[FLO][PERF] Phase4 saved groups=%1 skipped=%2 init=%3 ms restore=%4 ms reconcile=%5 ms total=%6 ms",
+            "[FLO][PERF] Phase4 saved groups=%1 init=%2 ms restore=%3 ms total=%4 ms",
             _loadedCount,
-            _skippedCount,
             _initMs,
             _restoreMs,
-            _reconcileMs,
             (diag_tickTime - _phaseT0) * 1000
         ];
     };
@@ -142,18 +101,18 @@ private _seedT0 = diag_tickTime;
 private _seedMs = (diag_tickTime - _seedT0) * 1000;
 
 // Verify groups were created
-if (isNil "FLO_virtualGroups") then {
+if (isNil "FLO_VirtualForceRegistry") then {
     diag_log "[FLO_INIT_P4] WARNING: No virtual groups created - map may have no OPFOR spawn points";
 } else {
-    private _groups = FLO_virtualGroups get "_groups";
+    private _groups = call FLO_fnc_virtualizationGetGroupMap;
     if (isNil "_groups" || {(keys _groups) isEqualTo []}) then {
         diag_log "[FLO_INIT_P4] WARNING: Virtual groups HashMap empty - map may have no OPFOR spawn points";
     };
 };
 
 // Log statistics
-private _groupCount = if (!isNil "FLO_virtualGroups") then {
-    count keys (FLO_virtualGroups get "_groups")
+private _groupCount = if (!isNil "FLO_VirtualForceRegistry") then {
+    count keys (call FLO_fnc_virtualizationGetGroupMap)
 } else { 0 };
 diag_log format ["[FLO_INIT_P4] Created %1 virtual groups", _groupCount];
 

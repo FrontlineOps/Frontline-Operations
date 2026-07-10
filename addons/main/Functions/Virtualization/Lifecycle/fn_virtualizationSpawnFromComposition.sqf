@@ -15,14 +15,24 @@ private _spawnParkedHelicopters = _groupType == "helicopter"
 private _realGroup = [_side, _groupId, _groupType] call FLO_fnc_virtualizationCreateRealGroup;
 if (isNull _realGroup) exitWith { grpNull };
 
+private _spawnFailed = false;
 {
+    if (_spawnFailed) then { continue };
     private _spawnPos = if (_spawnParkedHelicopters && { _x isKindOf "Helicopter" }) then {
         [_position, _x, _forEachIndex, 600] call FLO_fnc_virtualizationResolveIdleHelicopterParkPos
     } else {
         _position
     };
-    [_realGroup, _x, _spawnPos, _side, _groupType, _spawnParkedHelicopters] call FLO_fnc_activateSavedVirtualGroup;
+    private _created = [_realGroup, _x, _spawnPos, _side, _groupType, _spawnParkedHelicopters] call FLO_fnc_activateSavedVirtualGroup;
+    if (isNull _created) then {
+        _spawnFailed = true;
+    };
 } forEach _comp;
+
+if (_spawnFailed) exitWith {
+    [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+    grpNull
+};
 
 if ((units _realGroup) isEqualTo []) exitWith {
     deleteGroup _realGroup;

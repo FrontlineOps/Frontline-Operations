@@ -8,6 +8,7 @@ params ["_stats"];
     _stats set [_x, _y];
 } forEach (createHashMapFromArray [
     ["groupsProcessedThisBatch", 0],
+    ["scheduledSkipsThisBatch", 0],
     ["activationsThisBatch", 0],
     ["activationBlocksThisBatch", 0],
     ["deactivationsThisBatch", 0],

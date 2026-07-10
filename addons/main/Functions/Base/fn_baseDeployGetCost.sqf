@@ -16,7 +16,7 @@ if !(_type in ["FOB", "COP"]) then {
 
 if (_type == "COP") exitWith { FLO_BaseCOPDeployCost };
 
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+private _sideKey = [_side] call FLO_fnc_sideKey;
 if !(FLO_BaseFirstFOBClaimedBySide get _sideKey) exitWith { 0 };
 
 FLO_BaseFOBDeployCost

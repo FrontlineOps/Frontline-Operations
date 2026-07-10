@@ -44,7 +44,7 @@ if !(_cmdr call ["_hasStrategicOrderBudget", []]) exitWith { _metrics };
 private _ws = _cmdr get "_worldState";
 private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _objectives = _ws call ["_getObjectives", []];
 private _reserveGraphDepth = ((_cmdr get "_config") get "defenseReserveGraphDepth");

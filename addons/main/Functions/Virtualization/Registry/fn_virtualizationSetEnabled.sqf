@@ -5,9 +5,9 @@
  *   Enables or disables the virtualization system.
  */
 
-params ["_virt", "_enable"];
+params [["_enable", true, [true]]];
 
-_virt set ["_enabled", _enable];
+["enabled", _enable] call FLO_fnc_virtualizationSetConfigValue;
 
 if (_enable) then {
     ["start"] call FLO_fnc_virtualizationUpdatePFH;

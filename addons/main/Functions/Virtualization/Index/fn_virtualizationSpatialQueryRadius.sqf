@@ -6,10 +6,11 @@ params ["_position", "_radius", ["_filterSide", nil], ["_exact", false]];
 
 private _cells = [_position, _radius] call FLO_fnc_virtualizationSpatialGetCellsInRadius;
 private _sideKey = [_filterSide] call FLO_fnc_virtualizationSpatialGetSideKey;
+private _spatial = call FLO_fnc_virtualizationGetSpatialState;
 private _grid = if (_sideKey == "") then {
-    FLO_VirtSpatial get "grid"
+    _spatial get "grid"
 } else {
-    (FLO_VirtSpatial get "gridBySide") get _sideKey
+    (_spatial get "gridBySide") get _sideKey
 };
 private _result = [];
 
@@ -21,7 +22,7 @@ private _result = [];
 _result = _result arrayIntersect _result;
 if !(_exact) exitWith { _result };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 _result select {
     private _gData = _groups get _x;
     (_gData get "position") distance2D _position <= _radius

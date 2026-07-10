@@ -35,7 +35,7 @@ if (_cursor >= _totalSpotters) then {
     _cursor = 0;
 };
 
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _maxPerSide = _manager get "observedFireMaxPerSidePerCycle";
 private _requestsBySide = createHashMapFromArray [
     ["EAST", 0],

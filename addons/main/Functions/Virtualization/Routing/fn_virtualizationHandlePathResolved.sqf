@@ -6,7 +6,7 @@ params ["_resolved", "_posArray", "_args"];
 
 _args params ["_groupId", "_waypointSettings", "_requestToken"];
 
-private _groupData = (FLO_virtualGroups get "_groups") get _groupId;
+private _groupData = (call FLO_fnc_virtualizationGetGroupMap) get _groupId;
 if (isNil "_groupData") exitWith {};
 if ((_groupData get "pathToken") != _requestToken) exitWith {};
 
@@ -28,6 +28,12 @@ private _newWaypoints = [];
 } forEach _resolvedPositions;
 
 [_groupData, _newWaypoints, _groupData get "pathSource", "moving"] call FLO_fnc_virtualizationSetRouteState;
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
+[
+    "FLO_Virtualization_GroupPatched",
+    [_groupId, ["waypoints", "state", "pathToken"]]
+] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 3, format ["Pathfinding resolved for group %1 with %2 waypoints", _groupId, count _newWaypoints]] call FLO_fnc_log;
 

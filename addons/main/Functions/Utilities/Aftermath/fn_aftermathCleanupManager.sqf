@@ -25,6 +25,8 @@ if (isNil "FLO_AftermathCleanup") then {
         ["corpseGraceTime", 900],
         ["wreckGraceTime", 1200],
         ["weaponHolderGraceTime", 900],
+        ["wreckSettleMaxSpeed", 1.5],
+        ["wreckSurfaceClearance", 5],
         ["trackedEntities", createHashMap],
         ["weaponHolderClasses", ["GroundWeaponHolder", "WeaponHolder", "WeaponHolderSimulated"]]
     ];
@@ -76,12 +78,13 @@ switch (toLower _mode) do {
         _state set ["pfhId", _pfhId];
 
         ["AFTERMATH_CLEANUP", 2, format [
-            "Aftermath cleanup started (interval=%1s corpseGrace=%2s wreckGrace=%3s holderGrace=%4s radius=%5m)",
+            "Aftermath cleanup started (interval=%1s corpseGrace=%2s wreckGrace=%3s holderGrace=%4s radius=%5m settleSpeed=%6m/s)",
             _state get "interval",
             _state get "corpseGraceTime",
             _state get "wreckGraceTime",
             _state get "weaponHolderGraceTime",
-            _state get "playerEvidenceRadius"
+            _state get "playerEvidenceRadius",
+            _state get "wreckSettleMaxSpeed"
         ]] call FLO_fnc_log;
         true
     };

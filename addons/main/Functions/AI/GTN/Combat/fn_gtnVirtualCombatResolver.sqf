@@ -22,6 +22,8 @@ if (_interval < 5) then { _interval = 5 };
 
 if (!isNil "FLO_GTN_VirtualCombatRunning" && {FLO_GTN_VirtualCombatRunning}) exitWith { true };
 
+call FLO_fnc_gtnCombatRegisterVirtualizationEvents;
+
 FLO_GTN_VirtualCombatRunning = true;
 if (isNil "FLO_GTN_VirtualCombatPFH") then { FLO_GTN_VirtualCombatPFH = -1; };
 if (isNil "FLO_GTN_VirtualCombatResumeStates") then { FLO_GTN_VirtualCombatResumeStates = createHashMap; };
@@ -55,10 +57,10 @@ private _pfhId = [{
         ["GTN_COMBAT", 3, "Virtual combat resolver stopped"] call FLO_fnc_log;
     };
 
-    if (isNil "FLO_virtualGroups") exitWith {};
+    if (isNil "FLO_VirtualForceRegistry") exitWith {};
 
     private _cycleStart = diag_tickTime;
-    private _groups = FLO_virtualGroups get "_groups";
+    private _groups = call FLO_fnc_virtualizationGetGroupMap;
     private _groupCount = count _groups;
     private _resumeStates = FLO_GTN_VirtualCombatResumeStates;
 
@@ -74,7 +76,7 @@ private _pfhId = [{
     private _supportAvailability = _classification get "supportAvailability";
     private _zones = [_classification] call FLO_fnc_gtnCombatGetZones;
     private _engagedNow = createHashMap;
-    private _liveAreaRadius = FLO_virtualGroups get "_activationDistance";
+    private _liveAreaRadius = ["activationDistance"] call FLO_fnc_virtualizationGetConfigValue;
 
     {
         _x params ["_eastRefs", "_westRefs", "_zonePos", "_contactDist"];
@@ -98,11 +100,11 @@ private _pfhId = [{
                 };
             } forEach (_eastRefs + _westRefs);
 
-            if ((_activationDemand + (FLO_VirtUpdate get "activeUnitCount")) <= (FLO_virtualGroups get "_activationUnitCap")) then {
+            if ((_activationDemand + (FLO_VirtUpdate get "activeUnitCount")) <= (["activationUnitCap"] call FLO_fnc_virtualizationGetConfigValue)) then {
                 {
                     _x params ["_groupId", "_gData"];
                     if !(_gData get "isActive") then {
-                        if !([_groupId, _gData] call FLO_fnc_virtualizationTryActivateGroup) then {
+                        if !([_groupId] call FLO_fnc_virtualizationTryActivateGroup) then {
                             continue;
                         };
                     };
@@ -127,7 +129,7 @@ private _pfhId = [{
                 round _contactDist,
                 _activationDemand,
                 FLO_VirtUpdate get "activeUnitCount",
-                FLO_virtualGroups get "_activationUnitCap",
+                ["activationUnitCap"] call FLO_fnc_virtualizationGetConfigValue,
                 count _activeRefs
             ]] call FLO_fnc_log;
             continue;

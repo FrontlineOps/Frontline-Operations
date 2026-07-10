@@ -2,7 +2,12 @@
  * Function: FLO_fnc_virtualizationTryActivateGroup
  */
 
-params ["_groupId", "_groupData"];
+params [
+    "_groupId",
+    ["_bypassUnitCap", false, [true]]
+];
+
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 if (_groupData get "isActive") exitWith {
     private _realGroup = _groupData get "realGroup";
@@ -20,9 +25,9 @@ if (_groupData get "isActive") exitWith {
 
 private _activeUnitCount = FLO_VirtUpdate get "activeUnitCount";
 private _activationLoad = [_groupData, true] call FLO_fnc_virtualizationGetGroupUnitLoad;
-private _activationUnitCap = FLO_virtualGroups get "_activationUnitCap";
+private _activationUnitCap = ["activationUnitCap"] call FLO_fnc_virtualizationGetConfigValue;
 
-if ((_activeUnitCount + _activationLoad) > _activationUnitCap) exitWith {
+if (!_bypassUnitCap && {(_activeUnitCount + _activationLoad) > _activationUnitCap}) exitWith {
     ["VIRTUALIZATION", 3, format [
         "Activation blocked for %1 (%2): projected %3/%4",
         _groupId,

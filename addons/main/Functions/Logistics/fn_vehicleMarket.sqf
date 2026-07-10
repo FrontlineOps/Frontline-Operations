@@ -148,7 +148,7 @@ if (_action == "sell") exitWith {
 
     private _price = [_vehicle, "calc_price"] call FLO_fnc_vehicleMarket;
     private _side = side group _requester;
-    private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _sideKey = [_side] call FLO_fnc_sideKey;
     private _treasury = FLO_SideResources get _sideKey;
     private _newBalance = [
         _treasury,

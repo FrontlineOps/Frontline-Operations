@@ -26,7 +26,7 @@ if (_assetVehicles isEqualTo [] && {!isNull _realGroup}) then {
 
 if (_groupType isEqualTo "static_aa") then {
     private _side = _groupData get "side";
-    private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _sideKey = [_side] call FLO_fnc_sideKey;
     private _catalog = FLO_FactionCatalog get _sideKey;
     private _radarTypes = _catalog get "radar";
 

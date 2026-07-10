@@ -37,7 +37,8 @@ private _unitCount = _groupData get "unitCount";
 private _allWaypoints = _groupData get "waypoints";
 private _currentWpIdx = _groupData get "currentWaypointIndex";
 private _realGroup = grpNull;
-private _isCivilianGroup = _groupType in ["civilian", "civ_pedestrian", "civ_building", "civilianVehicle", "civ_car"];
+private _spawnKind = ([_groupType] call FLO_fnc_virtualizationGetArchetype) get "spawnKind";
+private _isCivilianGroup = _spawnKind in ["CIVILIAN", "CIVILIAN_VEHICLE"];
 private _spawnPools = createHashMap;
 if (!_isCivilianGroup) then {
     _spawnPools = [_side] call FLO_fnc_virtualizationGetSpawnPools;
@@ -49,7 +50,7 @@ if (_unitCount <= 0) exitWith {
         _groupId,
         _groupType
     ]] call FLO_fnc_log;
-    [FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+    [_groupId] call FLO_fnc_virtualizationRemoveGroup;
     false
 };
 
@@ -60,9 +61,9 @@ private _waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx] call FL
 // Check if this is a transport with attached groups
 private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
 
-// Ensure we don't spawn on top of players.
+// Resolve a safe spawn position without changing authoritative virtual state.
+// The position is committed only after every spawn step succeeds.
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
-[FLO_virtualGroups, _groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition;
 _realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtualizationSpawnRealGroup;
 if (isNull _realGroup) exitWith {
     ["VIRTUALIZATION", 1, format [
@@ -104,6 +105,16 @@ if (isNull _realGroup) exitWith {
     false
 };
 
+if !([_groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition) exitWith {
+    [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+    ["VIRTUALIZATION", 1, format [
+        "Failed to commit activation position for %1 (%2)",
+        _groupId,
+        _groupType
+    ]] call FLO_fnc_log;
+    false
+};
+
 [_groupType, _realGroup] call FLO_fnc_virtualizationDistributeIntelItems;
 
 // Reset currentWaypointIndex only after activation succeeded.
@@ -114,6 +125,7 @@ _groupData set ["currentWaypointIndex", 0];
 [ _groupData, [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles ] call FLO_fnc_virtualizationSetRealVehicles;
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
+_groupData set ["nextProcessAt", 0];
 _realGroup setVariable ["FLO_virtualGroupId", _groupId];
 
 if (_isTransport) then {
@@ -125,8 +137,14 @@ if (_isTransport) then {
 [_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;
 [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationParkIdleHelicopter;
 
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+call FLO_fnc_virtualizationTouchRegistry;
+
 // Fire activation event for GTN/AI Commander integration
-["FLO_Virtualization_GroupActivated", [_groupId, _groupData, _realGroup]] call CBA_fnc_localEvent;
+[
+    "FLO_Virtualization_GroupActivated",
+    [_groupId, [_groupId] call FLO_fnc_virtualizationSnapshotGroup, _realGroup]
+] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 3, format["Activated virtual group: %1 with %2 units", _groupId, count units _realGroup]] call FLO_fnc_log;
 

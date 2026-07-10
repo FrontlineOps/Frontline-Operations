@@ -3,17 +3,19 @@
  */
 
 params [
-    ["_carrierData", createHashMap, [createHashMap]],
+    ["_carrierGroupId", "", [""]],
     ["_createdGroupIds", [], [[]]],
     ["_previousRole", "", [""]],
     ["_previousParentGroupId", "", [""]]
 ];
 
 {
-    [FLO_virtualGroups, _x] call FLO_fnc_virtualizationRemoveGroup;
+    [_x] call FLO_fnc_virtualizationRemoveGroup;
 } forEach _createdGroupIds;
 
-_carrierData set ["organicPackageRole", _previousRole];
-_carrierData set ["organicPackageParentGroupId", _previousParentGroupId];
+[_carrierGroupId, createHashMapFromArray [
+    ["organicPackageRole", _previousRole],
+    ["organicPackageParentGroupId", _previousParentGroupId]
+]] call FLO_fnc_virtualizationPatchGroup;
 
 true

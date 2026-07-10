@@ -71,7 +71,7 @@ if (_objectiveId != "") then {
 
 if !([_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup) exitWith { false };
 
-[FLO_virtualGroups, _groupId] call FLO_fnc_virtualizationRemoveGroup;
+[_groupId] call FLO_fnc_virtualizationRemoveGroup;
 _virtStats set ["stragglerResolvesTotal", (_virtStats get "stragglerResolvesTotal") + 1];
 _virtStats set ["stragglerResolvesThisBatch", (_virtStats get "stragglerResolvesThisBatch") + 1];
 

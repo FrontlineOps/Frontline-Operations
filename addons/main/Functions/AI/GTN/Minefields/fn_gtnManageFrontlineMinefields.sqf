@@ -76,7 +76,7 @@ private _tCycle = diag_tickTime;
 private _ownSide = _cmdr get "_ownSide";
 private _sideKey = _cmdr get "_sideKey";
 private _activePlayerSide = FLO_ActivePlayerSide;
-private _playerProximityMeters = (FLO_virtualGroups get "_activationDistance") + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters");
+private _playerProximityMeters = (["activationDistance"] call FLO_fnc_virtualizationGetConfigValue) + (FLO_MinefieldConfig get "playerProximityActivationBufferMeters");
 private _activePlayerPositions = [];
 if (_activePlayerSide in [east, west]) then {
     {

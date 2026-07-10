@@ -7,13 +7,13 @@
  *
  * Arguments:
  *   0: Group ID <STRING>
- *   1: Group data <HASHMAP>
- *
  * Return Value:
  *   BOOL - True when reinforcement flags were cleared
  */
 
-params ["_groupId", "_groupData"];
+params [["_groupId", "", [""]]];
+
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 if ((_groupData get "replacementState") != "REINFORCE") exitWith { false };
 
@@ -25,8 +25,7 @@ if (
 ) then {
     private _side = _groupData get "side";
     if (_side in [east, west]) then {
-        private _sideContext = [_side] call FLO_fnc_gtnSideContext;
-        private _sideKey = _sideContext get "sideKey";
+        private _sideKey = [_side] call FLO_fnc_sideKey;
         if (_sideKey in FLO_Logistics_Networks) then {
             private _net = FLO_Logistics_Networks get _sideKey;
             [_net, _deliveryObjectiveId] call FLO_fnc_logisticsNetworkRecordDelivery;
@@ -34,7 +33,18 @@ if (
     };
 };
 
-[_groupData, ""] call FLO_fnc_virtualizationClearReplacementTransit;
+private _candidate = [_groupData] call FLO_fnc_virtualizationCloneValue;
+[_candidate, ""] call FLO_fnc_virtualizationClearReplacementTransit;
+_candidate set ["nextProcessAt", 0];
+[_candidate, _groupId] call FLO_fnc_virtualizationValidateGroup;
+{
+    _groupData set [_x, _y];
+} forEach _candidate;
+call FLO_fnc_virtualizationTouchRegistry;
+[
+    "FLO_Virtualization_GroupPatched",
+    [_groupId, ["replacementState", "missionLock"]]
+] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 3, format ["Group %1 reached destination - clearing reinforcement flags", _groupId]] call FLO_fnc_log;
 

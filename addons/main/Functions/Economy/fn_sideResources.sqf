@@ -68,7 +68,7 @@ FLO_SideResources = createHashMap;
 
 {
     private _side = _x;
-    private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _sideKey = [_side] call FLO_fnc_sideKey;
     private _savedPayload = objNull;
     if (_sideKey in _savedResources) then {
         _savedPayload = _savedResources get _sideKey;

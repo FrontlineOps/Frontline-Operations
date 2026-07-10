@@ -14,11 +14,11 @@
 
 params [["_manager", nil]];
 
-if (isNil "_manager" || {isNil "FLO_virtualGroups"}) exitWith { false };
+if (isNil "_manager" || {isNil "FLO_VirtualForceRegistry"}) exitWith { false };
 
 private _reports = _manager get "counterBatteryReports";
 private _cooldowns = _manager get "counterBatteryCooldowns";
-private _groups = FLO_virtualGroups get "_groups";
+private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _windowSeconds = _manager get "counterBatteryWindowSeconds";
 private _threshold = _manager get "counterBatteryExposureThreshold";
 private _minMissions = _manager get "counterBatteryMinMissionCount";

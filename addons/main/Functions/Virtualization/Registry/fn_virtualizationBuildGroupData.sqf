@@ -9,131 +9,44 @@ params [
     ["_homeObjective", "", [""]],
     ["_unitCount", -1, [0]],
     ["_side", east, [east]],
-    ["_spawnClass", "", [""]]
+    ["_spawnClass", "", [""]],
+    ["_groupId", "", [""]]
 ];
 
-if (isNil "_groupCfg") then {
-    _groupCfg = configNull;
-};
-
-if (isNil "_spawnClass") then {
-    _spawnClass = "";
+if (_groupId == "") then {
+    throw "FLO_fnc_virtualizationBuildGroupData: empty group id";
 };
 
 _position = [_position] call FLO_fnc_virtualizationNormalizePosition;
+private _archetype = [_groupType] call FLO_fnc_virtualizationGetArchetype;
 
 private _resolvedUnitCount = _unitCount;
-if (_resolvedUnitCount <= 0) then {
-    if (_groupType in ["civilian", "civ_pedestrian", "civ_building"]) then {
-        _resolvedUnitCount = 1 + floor random 3;
-    } else {
-        if (_groupType in ["civilianVehicle", "civ_car"]) then {
-            _resolvedUnitCount = 1;
-        } else {
-            _resolvedUnitCount = [_groupType, _side] call FLO_fnc_getGroupTypeCount;
+if (_resolvedUnitCount < 0) then {
+    switch (_archetype get "countMode") do {
+        case "RANDOM_CIV": { _resolvedUnitCount = 1 + floor random 3; };
+        case "FIXED_ONE": { _resolvedUnitCount = 1; };
+        case "FACTION": { _resolvedUnitCount = [_groupType, _side] call FLO_fnc_getGroupTypeCount; };
+        default {
+            throw format ["Unsupported count mode for virtual-group archetype %1", _groupType];
         };
     };
 };
 
-private _groupData = createHashMapFromArray [
-    ["position", _position],
-    ["spawnPosition", _position],
-    ["groupType", _groupType],
-    ["groupCfg", _groupCfg],
-    ["spawnClass", _spawnClass],
-    ["homeObjective", _homeObjective],
-    ["unitCount", _resolvedUnitCount],
-    ["side", _side],
-    ["isActive", false],
-    ["alwaysActive", false],
-    ["realGroup", grpNull],
-    ["realVehicles", []],
-    ["state", "idle"],
-    ["lastStateChangeTime", diag_tickTime],
-    ["inCombat", false],
-    ["waypoints", []],
-    ["currentWaypointIndex", 0],
-    ["autoPatrol", false],
-    ["patrolConfig", []],
-    ["noWaypoints", false],
-    ["idleHelicopterParked", false],
-    ["virtualSpeed", 0],
-    ["lastMoveTime", -1],
-    ["virtualMoveCarryMeters", 0],
-    ["lastSentryTime", 0],
-    ["loiterStartTime", 0],
-    ["tempWaypointCount", 0],
-    ["pathToken", -1],
-    ["pathTargetPos", []],
-    ["pathAllowTrails", false],
-    ["pathStartedAt", -1],
-    ["pathSource", ""],
-    ["pathWaypointSettings", []],
-    ["vehicleType", ""],
-    ["comp", []],
-    ["missionLock", ""],
-    ["missionType", ""],
-    ["replacementState", ""],
-    ["activationDeferred", false],
-    ["activationDeferredAt", -1],
-    ["activationDeferredPos", []],
-    ["activationRetryAt", -1],
-    ["engagementActive", false],
-    ["engagementTargetGroupId", ""],
-    ["engagementTargetPos", []],
-    ["engagementTargetObjective", ""],
-    ["engagementReason", ""],
-    ["engagementExpiresAt", -1],
-    ["engagementLeashMeters", 0],
-    ["reinforcementTargetPos", []],
-    ["reinforcementRequestedObjective", ""],
-    ["reinforcementDeliveryObjective", ""],
-    ["forceVirtual", false],
-    ["commanderOrder", ""],
-    ["executionState", ""],
-    ["orderTargetPos", []],
-    ["orderMode", ""],
-    ["attackObjective", ""],
-    ["campaignOperationId", ""],
-    ["defendObjective", ""],
-    ["defendLeaseIssuedAt", -1],
-    ["defendLeaseUntil", -1],
-    ["aaDeployState", ""],
-    ["aaDeployTargetPos", []],
-    ["aaDeployTargetObjective", ""],
-    ["isStrategicAA", false],
-    ["linkedObjectives", []],
-    ["attachedTo", ""],
-    ["attachedGroups", []],
-    ["attachedType", ""],
-    ["transportRole", false],
-    ["isTransport", false],
-    ["dismountAtWaypoint", -1],
-    ["transportInsertMode", ""],
-    ["transportInsertPos", []],
-    ["transportLandCommandIssued", false],
-    ["transportUnloadCommandIssued", false],
-    ["transportUnloadIssuedAt", -1],
-    ["postDismountWaypoint", []],
-    ["mountedIn", ""],
-    ["organicPackageRole", ""],
-    ["organicPackageParentGroupId", ""],
-    ["garrisonPosition", _position],
-    ["garrisonObjective", ""],
-    ["civilianRole", ""],
-    ["civilianObjective", _homeObjective],
-    ["civilianAnchorPos", _position],
-    ["civilianHomeAnchorPos", _position],
-    ["civilianRoutineAnchorPos", _position],
-    ["civilianRouteAnchors", []],
-    ["civilianKnowledgeBias", 1],
-    ["civilianTrustBias", 1],
-    ["civilianLastIntelAt", -1],
-    ["civilianLastMood", ""],
-    ["civilianRoutineState", ""],
-    ["civilianLastRoutineAt", -1],
-    ["civilianRoutineUntil", -1]
-];
+private _groupData = call FLO_fnc_virtualizationCreateGroupRecordDefaults;
+_groupData set ["id", _groupId];
+_groupData set ["position", +_position];
+_groupData set ["spawnPosition", +_position];
+_groupData set ["groupType", _groupType];
+_groupData set ["groupCfg", _groupCfg];
+_groupData set ["spawnClass", _spawnClass];
+_groupData set ["homeObjective", _homeObjective];
+_groupData set ["unitCount", _resolvedUnitCount];
+_groupData set ["side", _side];
+_groupData set ["garrisonPosition", +_position];
+_groupData set ["civilianObjective", _homeObjective];
+_groupData set ["civilianAnchorPos", +_position];
+_groupData set ["civilianHomeAnchorPos", +_position];
+_groupData set ["civilianRoutineAnchorPos", +_position];
 
 private _initialAssetComposition = [_groupType, _resolvedUnitCount, _side] call FLO_fnc_virtualizationSelectInitialAssetComposition;
 if (_initialAssetComposition isNotEqualTo []) then {

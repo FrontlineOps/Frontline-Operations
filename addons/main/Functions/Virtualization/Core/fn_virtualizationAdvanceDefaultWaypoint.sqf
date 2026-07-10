@@ -28,5 +28,5 @@ private _holdAtDestination = _commanderOrder in ["ATTACK", "DEFEND"] || {([_grou
 _groupData set ["currentWaypointIndex", 0];
 
 if (_replacementState == "REINFORCE") then {
-    [_groupId, _groupData] call FLO_fnc_virtualizationFinalizeReinforcement;
+    [_groupId] call FLO_fnc_virtualizationFinalizeReinforcement;
 };

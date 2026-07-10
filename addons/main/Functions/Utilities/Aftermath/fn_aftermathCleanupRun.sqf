@@ -24,7 +24,7 @@ if !(_state get "enabled") exitWith { false };
 } forEach (_state get "weaponHolderClasses");
 
 private _trackedEntities = _state get "trackedEntities";
-private _playerPositions = (allPlayers select { alive _x }) apply { getPosATL _x };
+private _playerPositions = call FLO_fnc_aftermathGetPlayerPositions;
 private _playerEvidenceRadius = _state get "playerEvidenceRadius";
 private _now = diag_tickTime;
 
