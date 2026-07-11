@@ -1,6 +1,6 @@
 class CfgPatches {
     class flo_main {
-        name = "FLO";
+        name = "Frontline Operations - The Mod";
         author = "Frontline Operations Group";
         requiredVersion = 2.18;
         requiredAddons[] = {
