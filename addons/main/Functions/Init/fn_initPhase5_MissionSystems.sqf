@@ -52,7 +52,7 @@ if (isNil "FLO_ActivePlayerSide") then {
                 private _pSide = side group _x;
                 if (_pSide in [east, west] && {_pSide != FLO_ActivePlayerSide}) then {
                     if !(_x getVariable ["FLO_SideLockWarned", false]) then {
-                        ["Mission side is locked to the other faction. You are being moved to spectator."] remoteExec ["hint", owner _x];
+                        ["Mission side is locked to the other faction. You are being moved to spectator.", "warning", false, owner _x] call FLO_fnc_sendNotification;
                         _x setVariable ["FLO_SideLockWarned", true, false];
                     };
 
@@ -393,6 +393,21 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                             _crate setVariable ["FLO_LogisticsSide", [_shipmentSideKey] call FLO_fnc_campaignSideFromKey, true];
                             _crate setVariable ["FLO_LogisticsOriginNodeId", _shipmentOriginNodeId, true];
                             _crate setVariable ["FLO_LogisticsThroughput", _shipmentThroughput, true];
+                            if ("logisticsContributorUID" in _attr) then {
+                                _crate setVariable ["FLO_LogisticsContributorUID", _attr get "logisticsContributorUID", true];
+                            } else {
+                                _crate setVariable ["FLO_LogisticsContributorUID", "", true];
+                            };
+                            if ("logisticsContributorName" in _attr) then {
+                                _crate setVariable ["FLO_LogisticsContributorName", _attr get "logisticsContributorName", true];
+                            } else {
+                                _crate setVariable ["FLO_LogisticsContributorName", "", true];
+                            };
+                            if ("developmentTargetObjectiveId" in _attr) then {
+                                _crate setVariable ["FLO_DevelopmentTargetObjectiveId", _attr get "developmentTargetObjectiveId", true];
+                            } else {
+                                _crate setVariable ["FLO_DevelopmentTargetObjectiveId", "", true];
+                            };
                         };
 
                         // Load items
@@ -504,6 +519,9 @@ if (!isNil "FLO_fnc_logisticsNetwork") then {
 };
 
 [] call FLO_fnc_sideResourcesStartMainLoop;
+
+[] call FLO_fnc_objectiveDevelopmentStart;
+diag_log "[FLO_INIT_P5] Objective development started";
 
 if (!FLO_IsLoadedSave) then {
     private _missionSides = missionNamespace getVariable ["FLO_MissionSides", [east, west]];

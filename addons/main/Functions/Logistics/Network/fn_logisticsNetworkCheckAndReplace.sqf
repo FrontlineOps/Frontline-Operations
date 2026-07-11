@@ -32,6 +32,7 @@ private _perf = createHashMapFromArray [
     ["failNoDeliveryObjective", 0],
     ["failNoSpawnPos", 0],
     ["failSpendResources", 0],
+    ["policyDenied", 0],
     ["failCreateReplacement", 0],
     ["resourcesBefore", 0],
     ["resourcesAfter", 0],
@@ -130,6 +131,13 @@ private _rebuiltQueue = [];
 } forEach (keys _neededCounts);
 
 _queue = _rebuiltQueue;
+private _replacementPriorityOrder = _net get "REPLACEMENT_PRIORITY_ORDER";
+{
+    if !(_x in _replacementPriorityOrder) then {
+        throw format ["Replacement queue contains unprioritized group type %1", _x];
+    };
+} forEach _queue;
+_queue = [_queue, [], { _replacementPriorityOrder find _x }, "ASCEND"] call BIS_fnc_sortBy;
 _net set ["_reinforcementQueue", _queue];
 _perf set ["reconcileMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["queueAfter", count _queue];
@@ -198,13 +206,9 @@ if (_maneuverTargets isEqualTo [] && {_rearTargets isEqualTo []}) then {
     ["LOGISTICS", 3, "No pressure or rear objective targets for maneuver reinforcement dispatch"] call FLO_fnc_log;
 };
 
-private _batchMin = _net get "DISPATCH_BATCH_MIN";
-private _batchMax = _net get "DISPATCH_BATCH_MAX";
 private _dispatchTimeBudgetMs = _net get "DISPATCH_TIME_BUDGET_MS";
-private _batchSize = _batchMin + floor random ((_batchMax - _batchMin) + 1);
-if (_batchSize > count _queue) then {
-    _batchSize = count _queue;
-};
+private _dispatchCaps = _net get "REPLACEMENT_DISPATCH_CAPS";
+private _batchSize = (count _queue) min (_dispatchCaps get "CRITICAL");
 _perf set ["batchSize", _batchSize];
 
 private _replaced = 0;
@@ -237,12 +241,17 @@ for "_i" from 1 to _batchSize do {
         };
     };
 
-    _targetPool = [
-        _net get "_managedSide",
-        _targetPool,
-        _cost,
-        _resources
-    ] call FLO_fnc_campaignPrioritizeReinforcementTargets;
+    private _collapseCandidates = _targetPool arrayIntersect _sourceBlockedObjectives;
+    if (_groupType isNotEqualTo "static_aa" && {_collapseCandidates isNotEqualTo []}) then {
+        _targetPool = _collapseCandidates;
+    } else {
+        _targetPool = [
+            _net get "_managedSide",
+            _targetPool,
+            _cost,
+            _resources
+        ] call FLO_fnc_campaignPrioritizeReinforcementTargets;
+    };
     if (_targetPool isEqualTo [] && {_groupType isNotEqualTo "static_aa"} && {_rearTargets isNotEqualTo []}) then {
         _targetPool = [
             _net get "_managedSide",
@@ -270,6 +279,20 @@ for "_i" from 1 to _batchSize do {
         } else {
             _perf set ["failSaturatedTarget", (_perf get "failSaturatedTarget") + 1];
         };
+        _queue pushBack _groupType;
+        continue;
+    };
+
+    private _urgency = [_net, _requestedObjectiveId] call FLO_fnc_logisticsNetworkGetReplacementUrgency;
+    private _spendingState = [_resources] call FLO_fnc_commanderSpendingGetState;
+    private _recentCounts = _spendingState get "recentCountByCategory";
+    private _recentReplacementCount = 0;
+    {
+        if (_x in _recentCounts) then {
+            _recentReplacementCount = _recentReplacementCount + (_recentCounts get _x);
+        };
+    } forEach ["REINFORCEMENT", "OPERATION"];
+    if (_recentReplacementCount >= (_dispatchCaps get _urgency)) then {
         _queue pushBack _groupType;
         continue;
     };
@@ -319,6 +342,25 @@ for "_i" from 1 to _batchSize do {
             _i
         ];
     };
+    private _spendingContext = createHashMapFromArray [
+        ["strategic", _cost >= 1600],
+        ["commitment", false],
+        ["reserved", _operationScoped],
+        ["referenceId", _requestedObjectiveId]
+    ];
+    private _spendingDecision = [
+        _resources,
+        _cost,
+        "REINFORCEMENT",
+        _urgency,
+        _spendingContext
+    ] call FLO_fnc_commanderSpendingEvaluate;
+    if !(_spendingDecision get "allowed") then {
+        _perf set ["policyDenied", (_perf get "policyDenied") + 1];
+        _queue pushBack _groupType;
+        continue;
+    };
+
     private _spendT0 = diag_tickTime;
     private _reserved = if (_operationScoped) then {
         _reservationId != "" && {(_resources call ["getReservationRemaining", [_reservationId]]) >= _cost}

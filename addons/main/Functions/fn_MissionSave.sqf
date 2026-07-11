@@ -220,6 +220,9 @@ try {
             _crateData set ["logisticsSideKey", [_shipmentSide] call FLO_fnc_sideKey];
             _crateData set ["logisticsOriginNodeId", _x getVariable ["FLO_LogisticsOriginNodeId", ""]];
             _crateData set ["logisticsThroughput", _x getVariable ["FLO_LogisticsThroughput", -1]];
+            _crateData set ["logisticsContributorUID", _x getVariable ["FLO_LogisticsContributorUID", ""]];
+            _crateData set ["logisticsContributorName", _x getVariable ["FLO_LogisticsContributorName", ""]];
+            _crateData set ["developmentTargetObjectiveId", _x getVariable ["FLO_DevelopmentTargetObjectiveId", ""]];
         };
         _crateHash set [_id, _crateData];
     } forEach _saveCrates;

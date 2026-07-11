@@ -52,3 +52,4 @@ _treasury set ["_ledger", _ledger];
 _treasury set ["_transactionSequence", _transactionSequence];
 _treasury set ["_lastIncome", _lastIncome];
 _treasury set ["_lastUpdate", time];
+_treasury set ["_commanderSpendingDenials", createHashMap];

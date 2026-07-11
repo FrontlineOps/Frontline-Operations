@@ -12,6 +12,6 @@ private _node = _nodes get _nodeId;
 private _before = _node get "throughput";
 private _after = (_before + _amount) min (_node get "throughputMax");
 _node set ["throughput", _after];
-[_network, true] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
+[_network, false] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
 ["LOGISTICS", 2, format ["Node %1 restored %2 throughput for %3 (%4 -> %5)", _nodeId, _after - _before, _reason, _before, _after]] call FLO_fnc_log;
 _after - _before

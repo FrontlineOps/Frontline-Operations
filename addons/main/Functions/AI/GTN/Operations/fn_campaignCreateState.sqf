@@ -24,11 +24,11 @@ private _emptyScaleMetrics = createHashMapFromArray [
 
 if ((keys _savedState) isNotEqualTo []) exitWith {
     private _schemaVersion = _savedState get "schemaVersion";
-    if !(_schemaVersion in [1, 2, 3, 4, 5]) then {
+    if !(_schemaVersion in [1, 2, 3, 4, 5, 6]) then {
         throw format ["Unsupported campaign operation schema version: %1", _schemaVersion];
     };
 
-    if (_schemaVersion == 5) exitWith {
+    if (_schemaVersion in [5, 6]) exitWith {
         private _initiativeSideKey = toUpper (_savedState get "initiativeSideKey");
         private _defenderSideKey = toUpper (_savedState get "defenderSideKey");
         {
@@ -80,7 +80,7 @@ if ((keys _savedState) isNotEqualTo []) exitWith {
                 throw format ["Invalid saved operation resource state for %1", _operationId];
             };
 
-            _operations set [_operationId, createHashMapFromArray [
+            private _operation = createHashMapFromArray [
                 ["operationId", _operationId],
                 ["priorityRole", _priorityRole],
                 ["attackerSideKey", _attackerSideKey],
@@ -102,7 +102,38 @@ if ((keys _savedState) isNotEqualTo []) exitWith {
                 ["resourceSpent", _resourceSpent],
                 ["resourceReleased", _resourceReleased],
                 ["drawdownPending", _savedOperation get "drawdownPending"]
-            ]];
+            ];
+
+            private _assaultDefaults = call FLO_fnc_campaignAssaultStateDefaults;
+            {
+                _operation set [_x, _y];
+            } forEach _assaultDefaults;
+            if (_schemaVersion == 6) then {
+                {
+                    _operation set [_x, _savedOperation get _x];
+                } forEach (keys _assaultDefaults);
+            } else {
+                if (_phase == "ASSAULT") then {
+                    private _isMainEffort = _priorityRole == "MAIN_EFFORT";
+                    _operation set ["assaultPackageTarget", [
+                        _config get "supportAssaultPackageMinimum",
+                        _config get "mainAssaultPackageMinimum"
+                    ] select _isMainEffort];
+                    _operation set ["assaultActiveTarget", [
+                        _config get "supportAssaultActiveTarget",
+                        _config get "mainAssaultActiveTarget"
+                    ] select _isMainEffort];
+                    _operation set ["assaultWaveSize", [
+                        _config get "supportAssaultWaveSize",
+                        _config get "mainAssaultWaveSize"
+                    ] select _isMainEffort];
+                    _operation set ["assaultNextWaveAtDateNum", _now];
+                    _operation set ["assaultLastProgressAtDateNum", _now];
+                    _operation set ["assaultStatus", "SAVE_MIGRATION"];
+                };
+            };
+            [_operation] call FLO_fnc_campaignValidateAssaultState;
+            _operations set [_operationId, _operation];
         } forEach _savedOperations;
 
         private _savedOrder = +(_savedState get "operationOrder");
@@ -147,7 +178,7 @@ if ((keys _savedState) isNotEqualTo []) exitWith {
         };
 
         private _state = createHashMapFromArray [
-            ["schemaVersion", 5],
+            ["schemaVersion", 6],
             ["sequence", _savedState get "sequence"],
             ["revision", _savedState get "revision"],
             ["initiativeSideKey", _initiativeSideKey],
@@ -257,7 +288,7 @@ if ((keys _savedState) isNotEqualTo []) exitWith {
     private _operations = createHashMap;
     private _operationOrder = [];
     if (_operationId != "") then {
-        _operations set [_operationId, createHashMapFromArray [
+        private _operation = createHashMapFromArray [
             ["operationId", _operationId],
             ["priorityRole", "MAIN_EFFORT"],
             ["attackerSideKey", _attackerSideKey],
@@ -279,12 +310,25 @@ if ((keys _savedState) isNotEqualTo []) exitWith {
             ["resourceSpent", _resourceSpent],
             ["resourceReleased", _resourceReleased],
             ["drawdownPending", false]
-        ]];
+        ];
+        {
+            _operation set [_x, _y];
+        } forEach (call FLO_fnc_campaignAssaultStateDefaults);
+        if (_phase == "ASSAULT") then {
+            _operation set ["assaultPackageTarget", _config get "mainAssaultPackageMinimum"];
+            _operation set ["assaultActiveTarget", _config get "mainAssaultActiveTarget"];
+            _operation set ["assaultWaveSize", _config get "mainAssaultWaveSize"];
+            _operation set ["assaultNextWaveAtDateNum", _now];
+            _operation set ["assaultLastProgressAtDateNum", _now];
+            _operation set ["assaultStatus", "SAVE_MIGRATION"];
+        };
+        [_operation] call FLO_fnc_campaignValidateAssaultState;
+        _operations set [_operationId, _operation];
         _operationOrder pushBack _operationId;
     };
 
     private _state = createHashMapFromArray [
-        ["schemaVersion", 5],
+        ["schemaVersion", 6],
         ["sequence", _savedState get "sequence"],
         ["revision", _savedState get "revision"],
         ["initiativeSideKey", _initiativeSideKey],
@@ -329,7 +373,7 @@ private _defenderSideKey = ["WEST", "EAST"] select (_initiativeSideKey == "WEST"
 private _lullDuration = (_config get "phaseDurations") get "LULL";
 
 createHashMapFromArray [
-    ["schemaVersion", 5],
+    ["schemaVersion", 6],
     ["sequence", 0],
     ["revision", 1],
     ["initiativeSideKey", _initiativeSideKey],

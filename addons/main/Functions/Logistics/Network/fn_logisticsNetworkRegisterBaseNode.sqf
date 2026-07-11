@@ -42,7 +42,7 @@ if (_nodeId in _nodes) then {
 
 _node set ["baseNetId", netId _base];
 _base setVariable ["FLO_LogisticsNodeId", _nodeId, true];
-[_network, true] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
+[_network, false] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
 
 ["LOGISTICS", 2, format ["Registered %1 node %2 at %3", _type, _nodeId, mapGridPosition _base]] call FLO_fnc_log;
 _nodeId

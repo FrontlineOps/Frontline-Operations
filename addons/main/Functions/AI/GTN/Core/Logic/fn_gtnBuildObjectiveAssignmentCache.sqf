@@ -18,6 +18,8 @@ params [["_cmdr", nil]];
 private _cache = createHashMapFromArray [
     ["attackCounts", createHashMap],
     ["attackGroupIds", []],
+    ["attackCountsByOperation", createHashMap],
+    ["attackGroupsByOperation", createHashMap],
     ["orderedGroupIds", []],
     ["garrisonCounts", createHashMap],
     ["defenderCounts", createHashMap],
@@ -32,6 +34,8 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _ownSide = _cmdr get "_ownSide";
 private _attackCounts = _cache get "attackCounts";
 private _attackGroupIds = _cache get "attackGroupIds";
+private _attackCountsByOperation = _cache get "attackCountsByOperation";
+private _attackGroupsByOperation = _cache get "attackGroupsByOperation";
 private _orderedGroupIds = _cache get "orderedGroupIds";
 private _garrisonCounts = _cache get "garrisonCounts";
 private _defenderCounts = _cache get "defenderCounts";
@@ -50,6 +54,19 @@ private _claimedPositionsByObjective = _cache get "claimedPositionsByObjective";
 
     if (_order == "ATTACK") then {
         _attackGroupIds pushBack _x;
+        private _operationId = _gData get "campaignOperationId";
+        if (_operationId == "") then {
+            throw format ["ATTACK group %1 has no campaign operation", _x];
+        };
+        private _operationGroups = if (_operationId in _attackGroupsByOperation) then {
+            _attackGroupsByOperation get _operationId
+        } else {
+            []
+        };
+        _operationGroups pushBack _x;
+        _attackGroupsByOperation set [_operationId, _operationGroups];
+        _attackCountsByOperation set [_operationId, count _operationGroups];
+
         private _objectiveId = _gData get "attackObjective";
         if (_objectiveId != "") then {
             private _count = if (_objectiveId in _attackCounts) then {

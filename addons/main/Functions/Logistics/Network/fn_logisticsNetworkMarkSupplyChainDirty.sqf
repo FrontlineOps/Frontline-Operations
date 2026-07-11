@@ -2,12 +2,12 @@
  * Function: FLO_fnc_logisticsNetworkMarkSupplyChainDirty
  * Author: Frontline Operations Development Group
  * Description:
- *   Marks cached supply-chain state dirty so the next consumer refreshes the
- *   graph instead of paying for unconditional rebuilds every logistics tick.
+ *   Marks cached node/source state dirty. Objective ownership or integration
+ *   changes additionally invalidate route topology through the side index.
  *
  * Arguments:
  *   0: Logistics network object <HASHMAP>
- *   1: Dirty objective-side index too <BOOL> - Default true
+ *   1: Invalidate objective ownership/integration topology too <BOOL> - Default true
  *
  * Return Value:
  *   BOOL - True when the network was marked dirty

@@ -304,6 +304,9 @@ if (count _uncoveredBuildings >= _clusterMinStructures) then {
 // === PHASE 5: Link objectives ===
 [_allObjectives] call FLO_fnc_buildObjectiveLinks;
 private _keys = keys _allObjectives;
+{
+    _allObjectives set [_x, [_x, _allObjectives get _x] call FLO_fnc_objectiveDevelopmentInitializeObjective];
+} forEach _keys;
 
 // === PHASE 6: Store and create markers ===
 FLO_Objectives = _allObjectives;

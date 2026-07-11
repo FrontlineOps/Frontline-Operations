@@ -16,11 +16,10 @@
 
 params ["_zonePos", "_eastRefs", "_westRefs"];
 
-private _zoneId = format [
-    "zone_%1_%2",
-    (_eastRefs select 0) select 0,
-    (_westRefs select 0) select 0
-];
+private _zoneCellSize = 500;
+private _zoneCellX = floor ((_zonePos select 0) / _zoneCellSize);
+private _zoneCellY = floor ((_zonePos select 1) / _zoneCellSize);
+private _zoneId = format ["zone_%1_%2", _zoneCellX, _zoneCellY];
 private _zoneName = format ["%1 EAST vs %2 WEST", count _eastRefs, count _westRefs];
 private _state = call FLO_fnc_gtnCombatGetState;
 private _cache = _state get "objectiveContextCache";
@@ -50,12 +49,12 @@ if (_objectiveContext isNotEqualTo []) then {
 
 if (_nearestObjectiveId == "") exitWith { [_zoneId, _zoneName] };
 
+private _objectiveData = FLO_Objectives get _nearestObjectiveId;
+if ((_zonePos distance2D (_objectiveData get "position")) > 1000) exitWith {
+    [_zoneId, _zoneName]
+};
+
 [
-    format [
-        "%1_%2_%3",
-        _nearestObjectiveId,
-        (_eastRefs select 0) select 0,
-        (_westRefs select 0) select 0
-    ],
+    format ["objective_%1", _nearestObjectiveId],
     _objectiveName
 ]

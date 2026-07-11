@@ -21,6 +21,10 @@ _operation set ["phaseStartedAtDateNum", _now];
 _operation set ["phaseEndsAtDateNum", [_now, _durationSeconds max 0] call FLO_fnc_dateNumberAddSeconds];
 _operation set ["transitionReason", _reason];
 
+if (_nextPhase == "ASSAULT" && {_previousPhase != "ASSAULT"}) then {
+    [_director, _operationId] call FLO_fnc_campaignInitializeAssaultState;
+};
+
 if (
     _nextPhase in ["ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"]
     && {(_operation get "defenderIntelLevel") != "TARGET"}

@@ -51,4 +51,17 @@ private _maximum = [
 private _budget = round (_available * _fraction);
 _budget = ((_budget max _minimum) min _maximum) min _available min (_capRemaining max 0);
 if (_budget < _minimum) exitWith { 0 };
+private _spendingDecision = [
+    _treasury,
+    _budget,
+    "OPERATION",
+    "OPERATIONAL",
+    createHashMapFromArray [
+        ["strategic", true],
+        ["commitment", true],
+        ["reserved", false],
+        ["referenceId", _priorityRole]
+    ]
+] call FLO_fnc_commanderSpendingEvaluate;
+if !(_spendingDecision get "allowed") exitWith { 0 };
 _budget

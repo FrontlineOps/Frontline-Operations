@@ -31,5 +31,16 @@ if (isNil "FLO_CampaignDirector") then {
     throw "FLO_fnc_campaignRequestSnapshot: campaign director is not initialized";
 };
 
+private _startedAt = diag_tickTime;
 private _snapshot = [FLO_CampaignDirector, _player] call FLO_fnc_campaignBuildSnapshot;
+private _elapsed = diag_tickTime - _startedAt;
+if (_elapsed > 0.01) then {
+    diag_log format [
+        "[FLO][PERF] Command Net snapshot side=%1 time=%2ms objectives=%3 operations=%4",
+        _snapshot get "viewerSide",
+        round (_elapsed * 100000) / 100,
+        count (_snapshot get "objectives"),
+        count (_snapshot get "operations")
+    ];
+};
 [_snapshot] remoteExecCall ["FLO_fnc_operationsReceiveSnapshot", _owner];

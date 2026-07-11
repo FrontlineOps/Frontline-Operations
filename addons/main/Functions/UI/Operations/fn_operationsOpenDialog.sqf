@@ -2,7 +2,7 @@ params [["_showGuide", false, [false]]];
 
 if (!hasInterface) exitWith { false };
 if (!FLO_MissionReady) exitWith {
-    hint "Operations are unavailable while FLO initializes.";
+    ["Operations are unavailable while FLO initializes.", "warning"] call FLO_fnc_displayNotification;
     false
 };
 
@@ -18,21 +18,21 @@ if (_showGuide) then { FLO_OperationsGuideRequested = true; };
 createDialog "FLO_OperationsDialog";
 _display = findDisplay FLO_OperationsDialogIdd;
 if (isNull _display) exitWith {
-    hint "The Operations panel could not be opened.";
+    ["The Operations panel could not be opened.", "error"] call FLO_fnc_displayNotification;
     false
 };
 
 private _control = _display displayCtrl FLO_OperationsBrowserIdc;
 if (isNull _control) exitWith {
     closeDialog 0;
-    hint "The Operations browser control is unavailable.";
+    ["The Operations browser control is unavailable.", "error"] call FLO_fnc_displayNotification;
     false
 };
 
 private _map = _display displayCtrl FLO_OperationsMapIdc;
 if (isNull _map) exitWith {
     closeDialog 0;
-    hint "The Operations map control is unavailable.";
+    ["The Operations map control is unavailable.", "error"] call FLO_fnc_displayNotification;
     false
 };
 
@@ -46,6 +46,11 @@ FLO_OperationsMapEnemyLogisticsIntelDrawData = [];
 FLO_OperationsMapThreatSectors = [];
 FLO_OperationsMapInitialized = false;
 FLO_OperationsSelectedObjectiveId = "";
+FLO_OperationsMapDrawPerfStartedAt = diag_tickTime;
+FLO_OperationsMapDrawPerfCalls = 0;
+FLO_OperationsMapDrawPerfTotal = 0;
+FLO_OperationsMapDrawPerfMax = 0;
+FLO_OperationsMapDrawPerfObjectiveTotal = 0;
 
 _map ctrlAddEventHandler ["Draw", {
     [_this select 0] call FLO_fnc_operationsDrawMap;

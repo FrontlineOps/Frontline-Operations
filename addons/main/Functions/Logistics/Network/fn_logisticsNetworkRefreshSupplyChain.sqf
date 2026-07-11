@@ -1,76 +1,83 @@
 /*
- * Rebuilds route reachability from the persisted HQ and derives commander
- * sources from explicit connected HQ/DEPOT/FOB nodes.
+ * Rebuilds route reachability only when topology is dirty, then refreshes node
+ * state and commander sources from explicit connected HQ/DEPOT/FOB nodes.
  */
 params ["_network"];
 
 private _t0 = diag_tickTime;
 private _managedSide = _network get "_managedSide";
 private _previousSignature = _network get "_lastSupplyNodeSignature";
+private _routeInfo = _network get "_supplyRouteInfo";
+private _topologyDirty = (_network get "_objectiveSideIndexDirty")
+    || {(_network get "_lastSupplyChainRefreshAt") < 0}
+    || {(keys _routeInfo) isEqualTo []};
 
 if (_network get "_objectiveSideIndexDirty") then {
     [_network] call FLO_fnc_logisticsNetworkRefreshObjectiveSideIndex;
     _network set ["_objectiveSideIndexDirty", false];
 };
 
-private _hqObjectiveId = [_network] call FLO_fnc_logisticsNetworkPickHQObjective;
 private _nodes = _network get "_nodes";
 private _hqNodeId = _network get "_hqNodeId";
+private _hqObjectiveId = _network get "_hqObjectiveId";
 
-if (_hqObjectiveId != "" && {_hqNodeId == ""}) then {
-    _hqNodeId = format ["NODE_%1_HQ", _network get "_managedSideKey"];
-    private _hqPosition = (FLO_Objectives get _hqObjectiveId) get "position";
-    if (_managedSide isEqualTo west) then { _hqPosition = +(FLO_MissionConfig get "startPosition"); };
-    [_network, _hqNodeId, "HQ", "POSITION", "", _hqPosition, _hqObjectiveId, false, -1] call FLO_fnc_logisticsNetworkCreateNode;
-    _network set ["_hqNodeId", _hqNodeId];
-};
-_network set ["_hqObjectiveId", _hqObjectiveId];
-
-private _routeInfo = createHashMap;
-if (_hqObjectiveId != "" && {_hqObjectiveId in (_network get "_managedObjectiveIds")}) then {
-    _routeInfo set [_hqObjectiveId, createHashMapFromArray [
-        ["depth", 0],
-        ["routeMeters", 0],
-        ["parentObjective", ""],
-        ["isHQ", true]
-    ]];
-
-    private _frontier = [[_hqObjectiveId, 0]];
-    private _frontierIndex = 0;
-    private _depthMeters = _network get "SUPPLY_CHAIN_DEPTH_METERS";
-
-    while {_frontierIndex < count _frontier} do {
-        private _entry = _frontier select _frontierIndex;
-        _frontierIndex = _frontierIndex + 1;
-        _entry params ["_currentObjectiveId", "_routeMeters"];
-        private _currentObjective = FLO_Objectives get _currentObjectiveId;
-        private _currentPosition = _currentObjective get "position";
-
-        {
-            private _linkedObjectiveId = _x;
-            if !(_linkedObjectiveId in FLO_Objectives) then { continue };
-            private _linkedObjective = FLO_Objectives get _linkedObjectiveId;
-            if ((_linkedObjective get "owner") isNotEqualTo _managedSide) then { continue };
-            if !([_linkedObjectiveId] call FLO_fnc_campaignIsObjectiveIntegrated) then { continue };
-
-            private _newRouteMeters = _routeMeters + (_currentPosition distance2D (_linkedObjective get "position"));
-            private _isBetterRoute = true;
-            if (_linkedObjectiveId in _routeInfo) then {
-                _isBetterRoute = _newRouteMeters < ((_routeInfo get _linkedObjectiveId) get "routeMeters");
-            };
-            if (!_isBetterRoute) then { continue };
-
-            _routeInfo set [_linkedObjectiveId, createHashMapFromArray [
-                ["depth", ceil (_newRouteMeters / _depthMeters)],
-                ["routeMeters", _newRouteMeters],
-                ["parentObjective", _currentObjectiveId],
-                ["isHQ", false]
-            ]];
-            _frontier pushBack [_linkedObjectiveId, _newRouteMeters];
-        } forEach (_currentObjective get "linkedObjectives");
+if (_topologyDirty) then {
+    _hqObjectiveId = [_network] call FLO_fnc_logisticsNetworkPickHQObjective;
+    if (_hqObjectiveId != "" && {_hqNodeId == ""}) then {
+        _hqNodeId = format ["NODE_%1_HQ", _network get "_managedSideKey"];
+        private _hqPosition = (FLO_Objectives get _hqObjectiveId) get "position";
+        if (_managedSide isEqualTo west) then { _hqPosition = +(FLO_MissionConfig get "startPosition"); };
+        [_network, _hqNodeId, "HQ", "POSITION", "", _hqPosition, _hqObjectiveId, false, -1] call FLO_fnc_logisticsNetworkCreateNode;
+        _network set ["_hqNodeId", _hqNodeId];
     };
+    _network set ["_hqObjectiveId", _hqObjectiveId];
+
+    _routeInfo = createHashMap;
+    if (_hqObjectiveId != "" && {_hqObjectiveId in (_network get "_managedObjectiveIds")}) then {
+        _routeInfo set [_hqObjectiveId, createHashMapFromArray [
+            ["depth", 0],
+            ["routeMeters", 0],
+            ["parentObjective", ""],
+            ["isHQ", true]
+        ]];
+
+        private _frontier = [[_hqObjectiveId, 0]];
+        private _frontierIndex = 0;
+        private _depthMeters = _network get "SUPPLY_CHAIN_DEPTH_METERS";
+
+        while {_frontierIndex < count _frontier} do {
+            private _entry = _frontier select _frontierIndex;
+            _frontierIndex = _frontierIndex + 1;
+            _entry params ["_currentObjectiveId", "_routeMeters"];
+            private _currentObjective = FLO_Objectives get _currentObjectiveId;
+            private _currentPosition = _currentObjective get "position";
+
+            {
+                private _linkedObjectiveId = _x;
+                if !(_linkedObjectiveId in FLO_Objectives) then { continue };
+                private _linkedObjective = FLO_Objectives get _linkedObjectiveId;
+                if ((_linkedObjective get "owner") isNotEqualTo _managedSide) then { continue };
+                if !([_linkedObjectiveId] call FLO_fnc_campaignIsObjectiveIntegrated) then { continue };
+
+                private _newRouteMeters = _routeMeters + (_currentPosition distance2D (_linkedObjective get "position"));
+                private _isBetterRoute = true;
+                if (_linkedObjectiveId in _routeInfo) then {
+                    _isBetterRoute = _newRouteMeters < ((_routeInfo get _linkedObjectiveId) get "routeMeters");
+                };
+                if (!_isBetterRoute) then { continue };
+
+                _routeInfo set [_linkedObjectiveId, createHashMapFromArray [
+                    ["depth", ceil (_newRouteMeters / _depthMeters)],
+                    ["routeMeters", _newRouteMeters],
+                    ["parentObjective", _currentObjectiveId],
+                    ["isHQ", false]
+                ]];
+                _frontier pushBack [_linkedObjectiveId, _newRouteMeters];
+            } forEach (_currentObjective get "linkedObjectives");
+        };
+    };
+    _network set ["_supplyRouteInfo", _routeInfo];
 };
-_network set ["_supplyRouteInfo", _routeInfo];
 
 [_network] call FLO_fnc_logisticsNetworkSeedInitialDepot;
 
@@ -200,8 +207,9 @@ if (_signature != _previousSignature) then {
 private _elapsedMs = (diag_tickTime - _t0) * 1000;
 if (_elapsedMs > 10) then {
     diag_log format [
-        "[FLO][PERF] Logistics route refresh %1 processed %2 objectives and %3 nodes in %4 ms",
+        "[FLO][PERF] Logistics route refresh %1 topology=%2 processed %3 objectives and %4 nodes in %5 ms",
         _network get "_managedSideKey",
+        _topologyDirty,
         count (keys _routeInfo),
         count (keys _nodes),
         _elapsedMs

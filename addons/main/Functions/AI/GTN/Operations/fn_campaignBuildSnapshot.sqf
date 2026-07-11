@@ -12,7 +12,7 @@ if !(_viewerSide in [west, east]) then {
 
 private _viewerSideKey = ([_viewerSide] call FLO_fnc_gtnSideContext) get "sideKey";
 private _treasury = FLO_SideResources get _viewerSideKey;
-private _economy = [_treasury] call FLO_fnc_sideResourcesGetSnapshot;
+private _economy = [_treasury] call FLO_fnc_sideResourcesGetUiSnapshot;
 private _logistics = [FLO_Logistics_Networks get _viewerSideKey] call FLO_fnc_logisticsNetworkGetSideSnapshot;
 private _enemyLogisticsIntel = [_viewerSide] call FLO_fnc_gtnBuildEnemyLogisticsIntelSnapshot;
 private _enemySide = [_viewerSide] call FLO_fnc_gtnTaskEnemySide;
@@ -161,7 +161,6 @@ private _footholdCount = 0;
         ["id", _nodeId],
         ["name", [_nodeId] call FLO_fnc_campaignObjectiveName],
         ["position", _objective get "position"],
-        ["radius", _objective get "radius"],
         ["priority", _objective get "priority"],
         ["owner", _ownerKey],
         ["captureState", _objective get "captureState"],
@@ -170,8 +169,7 @@ private _footholdCount = 0;
         ["enemyCount", _enemyLocal],
         ["contested", _objective get "contested"],
         ["underAttack", _objective get "underAttack"],
-        ["intent", _intent],
-        ["links", _objective get "linkedObjectives"]
+        ["intent", _intent]
     ];
 } forEach (keys FLO_Objectives);
 

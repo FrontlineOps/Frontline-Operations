@@ -18,22 +18,11 @@ params [
 ];
 
 private _objectiveGroups = [] call FLO_fnc_factionCompositionDefaultObjectiveGroups;
-
-switch (toUpper _sideLabel) do {
-    case "BLUFOR": {
-        private _maneuverCount = 1;
-        private _caps = [true, 3, 20] call FLO_fnc_factionCompositionDefaultCaps;
-
-        [20, 10, _objectiveGroups, _caps, [_maneuverCount, 3, 10] call FLO_fnc_factionCompositionDefaultCounts] call FLO_fnc_factionCreateCompositionDefaultHandle
-    };
-    case "OPFOR": {
-        private _maneuverCount = [1, 2] select (_selection isEqualTo "CUSTOM_ENEMY_FACTION");
-        private _caps = [true, 3, 20] call FLO_fnc_factionCompositionDefaultCaps;
-
-        [20, 10, _objectiveGroups, _caps, [_maneuverCount, 3, 10] call FLO_fnc_factionCompositionDefaultCounts] call FLO_fnc_factionCreateCompositionDefaultHandle
-    };
-    default {
-        ["FACTIONS", 1, format ["Unknown force composition side '%1' for %2", _sideLabel, _selection]] call FLO_fnc_log;
-        [20, 10, _objectiveGroups, [true, 3, 20] call FLO_fnc_factionCompositionDefaultCaps, [1, 3, 10] call FLO_fnc_factionCompositionDefaultCounts] call FLO_fnc_factionCreateCompositionDefaultHandle
-    };
+private _normalizedSide = toUpper _sideLabel;
+if !(_normalizedSide in ["BLUFOR", "OPFOR"]) then {
+    throw format ["Unknown force composition side '%1' for %2", _sideLabel, _selection];
 };
+
+private _caps = [true, 3, 20] call FLO_fnc_factionCompositionDefaultCaps;
+private _counts = [1, 3, 10] call FLO_fnc_factionCompositionDefaultCounts;
+[20, 10, _objectiveGroups, _caps, _counts] call FLO_fnc_factionCreateCompositionDefaultHandle

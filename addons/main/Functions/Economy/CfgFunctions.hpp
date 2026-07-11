@@ -18,6 +18,7 @@ class EconomySideResources {
     class sideResourcesGetCommitted {};
     class sideResourcesGetReservationRemaining {};
     class sideResourcesGetSnapshot {};
+    class sideResourcesGetUiSnapshot {};
     class sideResourcesPublishState {};
     class sideResourcesRecordTransaction {};
     class sideResourcesReleaseReservation {};
@@ -26,4 +27,36 @@ class EconomySideResources {
     class sideResourcesSpendResources {};
     class sideResourcesStartMainLoop {};
     class sideResourcesTick {};
+};
+
+class EconomyCommanderSpending {
+    file = "\z\flo\addons\main\Functions\Economy\CommanderSpending";
+
+    class commanderSpendingEvaluate {};
+    class commanderSpendingGetState {};
+};
+
+class EconomyObjectiveDevelopment {
+    file = "\z\flo\addons\main\Functions\Economy\ObjectiveDevelopment";
+
+    class objectiveDevelopmentAssignShipment {};
+    class objectiveDevelopmentBuildSnapshot {};
+    class objectiveDevelopmentBuildUiSnapshot {};
+    class objectiveDevelopmentCompleteProject {};
+    class objectiveDevelopmentGetActiveObjectiveIds {};
+    class objectiveDevelopmentGetTier {};
+    class objectiveDevelopmentHandleCapture {};
+    class objectiveDevelopmentIncomeMultiplier {};
+    class objectiveDevelopmentInitializeObjective {};
+    class objectiveDevelopmentNotifySide {};
+    class objectiveDevelopmentPreInit { preInit = 1; };
+    class objectiveDevelopmentProcessDeliveries {};
+    class objectiveDevelopmentProcessObjectiveDeliveries {};
+    class objectiveDevelopmentProcessProject {};
+    class objectiveDevelopmentSelectInvestment {};
+    class objectiveDevelopmentShipmentTargetsActiveProject {};
+    class objectiveDevelopmentStart {};
+    class objectiveDevelopmentStartProject {};
+    class objectiveDevelopmentTick {};
+    class objectiveDevelopmentValidateProject {};
 };

@@ -206,7 +206,7 @@ _opBuilding addEventHandler ["Killed", {
 
                 // Periodic notifications
                 if (time - _lastNotification > _notificationInterval) then {
-                    [format["OP under siege! %1 minutes remaining", ceil(_timeLeft / 60)]] remoteExec ["hint", -2];
+                    [format ["OP under siege! %1 minutes remaining", ceil (_timeLeft / 60)], "warning", false, 0] call FLO_fnc_sendNotification;
                     _lastNotification = time;
                 };
 
@@ -215,7 +215,7 @@ _opBuilding addEventHandler ["Killed", {
                     _statusMarker setMarkerTextLocal "OP LOST!";
                     _statusMarker setMarkerColor "ColorBlack";
 
-                    "OP has fallen to enemy forces!" remoteExec ["hint", -2];
+                    ["OP has fallen to enemy forces!", "error", false, 0] call FLO_fnc_sendNotification;
                     ["OP", 1, "OP lost due to prolonged siege"] call FLO_fnc_log;
 
                     // Execute destruction sequence
@@ -251,7 +251,7 @@ _opBuilding addEventHandler ["Killed", {
                     deleteMarker _statusMarker;
                     _statusMarker = nil;
                     if (_holdoutTime > 0) then {
-                        "OP defense successful! Timer reset." remoteExec ["hint", -2];
+                        ["OP defense successful! Timer reset.", "success", false, 0] call FLO_fnc_sendNotification;
                         ["OP", 3, "OP siege successfully defended"] call FLO_fnc_log;
                     };
                 };

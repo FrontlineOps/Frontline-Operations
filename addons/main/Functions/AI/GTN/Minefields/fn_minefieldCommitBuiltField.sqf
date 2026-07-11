@@ -24,6 +24,24 @@ private _mineObjects = _job get "mineObjects";
 private _selectedMinePositions = _job get "selectedMinePositions";
 private _treasury = FLO_SideResources get (_job get "sideKey");
 private _spentResources = (count _mineObjects) * (FLO_MinefieldConfig get "resourceCostPerMine");
+private _network = FLO_Logistics_Networks get (_job get "sideKey");
+private _urgency = [_network, _objectiveId] call FLO_fnc_logisticsNetworkGetReplacementUrgency;
+private _spendingDecision = [
+    _treasury,
+    _spentResources,
+    "FORTIFICATION",
+    _urgency,
+    createHashMapFromArray [
+        ["strategic", false],
+        ["commitment", false],
+        ["reserved", false],
+        ["referenceId", _fieldId]
+    ]
+] call FLO_fnc_commanderSpendingEvaluate;
+if !(_spendingDecision get "allowed") exitWith {
+    _metrics set ["reason", "SPENDING_POLICY_DENIED"];
+    "SPENDING_POLICY_DENIED"
+};
 
 if !([
     _treasury,

@@ -52,6 +52,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
             if (isNil {_objData get "campaignOperationId"}) then { _objData set ["campaignOperationId", ""]; };
             if (isNil {_objData get "campaignCapturedBySideKey"}) then { _objData set ["campaignCapturedBySideKey", ""]; };
             if (isNil {_objData get "campaignBenefitsPending"}) then { _objData set ["campaignBenefitsPending", false]; };
+            _objData = [_objId, _objData] call FLO_fnc_objectiveDevelopmentInitializeObjective;
             FLO_Objectives set [_objId, _objData];
         } forEach (keys FLO_Objectives);
 

@@ -2,6 +2,7 @@ params ["_access"];
 
 if (!isServer) exitWith { objNull };
 private _base = _access get "base";
+private _player = _access get "player";
 private _network = _access get "logisticsNetwork";
 private _node = _access get "logisticsNode";
 private _origin = getPosATL _base;
@@ -16,6 +17,9 @@ _shipment setVariable ["FLO_LogisticsDelivered", false, true];
 _shipment setVariable ["FLO_LogisticsSide", _access get "side", true];
 _shipment setVariable ["FLO_LogisticsOriginNodeId", _node get "id", true];
 _shipment setVariable ["FLO_LogisticsThroughput", _network get "SHIPMENT_THROUGHPUT", true];
+_shipment setVariable ["FLO_LogisticsContributorUID", getPlayerUID _player, true];
+_shipment setVariable ["FLO_LogisticsContributorName", name _player, true];
+_shipment setVariable ["FLO_DevelopmentTargetObjectiveId", "", true];
 _shipment setVariable ["FLO_save_crate", true, true];
 [_shipment, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, _shipment];
 

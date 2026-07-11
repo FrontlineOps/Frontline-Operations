@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FLO Regional Development</title>
+    <style>
+        :root {
+            --bg: #071018;
+            --panel: #0b1822;
+            --panel-strong: #102330;
+            --line: #1d3b4a;
+            --line-soft: #132a36;
+            --text: #e7eef1;
+            --muted: #7f99a7;
+            --cyan: #25d1f5;
+            --amber: #f4b84a;
+            --green: #91ea58;
+            --red: #ff5468;
+            --white: #ffffff;
+            --font: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+            --mono: "Roboto Mono", Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            letter-spacing: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text);
+            background: var(--bg);
+            font-family: var(--font);
+            font-size: 14px;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: -2px;
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: 72px 46px minmax(0, 1fr) 28px;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--line);
+            background: var(--bg);
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr) auto;
+            align-items: stretch;
+            border-bottom: 1px solid var(--line);
+            background: #09141c;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--amber);
+            color: var(--amber);
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .brand-title {
+            color: var(--white);
+            font-size: 18px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle,
+        .label,
+        .eyebrow {
+            color: var(--cyan);
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            min-width: 0;
+        }
+
+        .status-cell {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            padding: 0 20px;
+            border-right: 1px solid var(--line-soft);
+        }
+
+        .status-value {
+            margin-top: 5px;
+            overflow: hidden;
+            color: var(--white);
+            font-family: var(--mono);
+            font-size: 20px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-value.cyan { color: var(--cyan); }
+        .status-value.green { color: var(--green); }
+        .status-value.amber { color: var(--amber); }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 12px;
+        }
+
+        .icon-button {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid var(--line);
+            border-radius: 2px;
+            color: var(--muted);
+            background: var(--panel);
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .icon-button:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .icon-button.close:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .tabbar {
+            display: flex;
+            align-items: stretch;
+            padding-left: 300px;
+            border-bottom: 1px solid var(--line);
+            background: #08131b;
+        }
+
+        .tab-button {
+            position: relative;
+            min-width: 150px;
+            padding: 0 24px;
+            border: 0;
+            border-right: 1px solid var(--line-soft);
+            color: var(--muted);
+            background: transparent;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .tab-button:hover {
+            color: var(--text);
+            background: var(--panel);
+        }
+
+        .tab-button.active {
+            color: var(--cyan);
+            background: var(--panel);
+        }
+
+        .tab-button.active::after {
+            position: absolute;
+            right: 18px;
+            bottom: 0;
+            left: 18px;
+            height: 2px;
+            content: "";
+            background: var(--cyan);
+        }
+
+        .workspace {
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .view.active {
+            display: grid;
+        }
+
+        .projects-view,
+        .territory-view {
+            grid-template-columns: minmax(420px, 0.62fr) minmax(360px, 0.38fr);
+        }
+
+        .column {
+            min-width: 0;
+            min-height: 0;
+            overflow: auto;
+            scrollbar-color: var(--line) var(--bg);
+        }
+
+        .column + .column {
+            border-left: 1px solid var(--line);
+            background: #08131b;
+        }
+
+        .section-header {
+            position: sticky;
+            z-index: 2;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 62px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--line);
+            background: #0a1720;
+        }
+
+        .section-title {
+            margin: 4px 0 0;
+            color: var(--white);
+            font-size: 18px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .section-count {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 12px;
+        }
+
+        .project-list,
+        .territory-list {
+            display: grid;
+        }
+
+        .project-row,
+        .territory-row {
+            display: grid;
+            width: 100%;
+            min-height: 92px;
+            padding: 15px 20px;
+            border: 0;
+            border-bottom: 1px solid var(--line-soft);
+            color: var(--text);
+            text-align: left;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .project-row:hover,
+        .territory-row:hover {
+            background: var(--panel);
+        }
+
+        .project-row.selected,
+        .territory-row.selected {
+            box-shadow: inset 3px 0 var(--cyan);
+            background: var(--panel-strong);
+        }
+
+        .row-top,
+        .row-meta,
+        .progress-label,
+        .detail-row,
+        .tier-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .row-name {
+            min-width: 0;
+            overflow: hidden;
+            color: var(--white);
+            font-size: 16px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .state {
+            flex: 0 0 auto;
+            color: var(--green);
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .state.warn { color: var(--amber); }
+        .state.danger { color: var(--red); }
+
+        .row-meta,
+        .progress-label {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .progress-label {
+            margin-top: 11px;
+        }
+
+        .progress-track {
+            height: 5px;
+            margin-top: 6px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            background: #050b10;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--cyan);
+        }
+
+        .progress-fill.warn { background: var(--amber); }
+
+        .empty-state {
+            padding: 42px 20px;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .detail {
+            padding: 22px;
+        }
+
+        .detail-title {
+            margin: 5px 0 4px;
+            color: var(--white);
+            font-size: 26px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .detail-subtitle {
+            margin: 0 0 22px;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border-top: 1px solid var(--line);
+            border-left: 1px solid var(--line);
+        }
+
+        .detail-metric {
+            min-height: 76px;
+            padding: 13px;
+            border-right: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .detail-metric strong {
+            display: block;
+            margin-top: 7px;
+            overflow-wrap: anywhere;
+            color: var(--white);
+            font-family: var(--mono);
+            font-size: 16px;
+        }
+
+        .detail-list {
+            margin-top: 18px;
+            border-top: 1px solid var(--line);
+        }
+
+        .detail-row {
+            min-height: 38px;
+            border-bottom: 1px solid var(--line-soft);
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .detail-row strong {
+            max-width: 60%;
+            overflow-wrap: anywhere;
+            color: var(--text);
+            font-family: var(--mono);
+            text-align: right;
+        }
+
+        .action-button {
+            width: 100%;
+            min-height: 42px;
+            margin-top: 18px;
+            border: 1px solid var(--cyan);
+            border-radius: 2px;
+            color: #03131d;
+            background: var(--cyan);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .action-button:hover {
+            border-color: var(--white);
+            background: var(--white);
+        }
+
+        .action-button:disabled {
+            border-color: var(--line);
+            color: var(--muted);
+            background: var(--panel);
+            cursor: default;
+        }
+
+        .filters {
+            display: flex;
+            border: 1px solid var(--line);
+        }
+
+        .filter-button {
+            min-width: 76px;
+            height: 30px;
+            padding: 0 10px;
+            border: 0;
+            border-right: 1px solid var(--line);
+            color: var(--muted);
+            background: transparent;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .filter-button:last-child { border-right: 0; }
+        .filter-button.active { color: var(--bg); background: var(--cyan); }
+
+        .level-meter {
+            display: flex;
+            gap: 3px;
+            margin-top: 10px;
+        }
+
+        .level-segment {
+            width: 34px;
+            height: 4px;
+            background: var(--line);
+        }
+
+        .level-segment.filled { background: var(--green); }
+        .level-segment.project { background: var(--amber); }
+
+        .doctrine-view.active {
+            display: block;
+            overflow: auto;
+        }
+
+        .doctrine-inner {
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .doctrine-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .doctrine-heading h1 {
+            margin: 5px 0 0;
+            color: var(--white);
+            font-size: 26px;
+            text-transform: uppercase;
+        }
+
+        .doctrine-summary {
+            max-width: 520px;
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .doctrine-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+            gap: 30px;
+            margin-top: 26px;
+        }
+
+        .tier-table {
+            border-top: 1px solid var(--line);
+            border-left: 1px solid var(--line);
+        }
+
+        .tier-row {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(4, minmax(90px, 0.8fr));
+            min-height: 60px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .tier-row.header {
+            min-height: 34px;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .tier-cell {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            padding: 10px 12px;
+            border-right: 1px solid var(--line);
+            overflow-wrap: anywhere;
+        }
+
+        .tier-row:not(.header) .tier-cell:not(:first-child) {
+            color: var(--white);
+            font-family: var(--mono);
+        }
+
+        .tier-name {
+            color: var(--cyan);
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .doctrine-facts {
+            border-top: 1px solid var(--line);
+        }
+
+        .doctrine-fact {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .doctrine-fact strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--white);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .doctrine-fact p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            background: #08131b;
+            font-family: var(--mono);
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .footer-status {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--green);
+        }
+
+        @media (max-width: 1050px) {
+            .topbar { grid-template-columns: 240px minmax(0, 1fr) auto; }
+            .brand { padding: 0 12px; }
+            .brand-title { font-size: 15px; }
+            .status-cell { padding: 0 10px; }
+            .status-value { font-size: 16px; }
+            .tabbar { padding-left: 240px; }
+            .tab-button { min-width: 120px; padding: 0 14px; }
+            .projects-view,
+            .territory-view { grid-template-columns: minmax(350px, 0.56fr) minmax(320px, 0.44fr); }
+            .doctrine-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 780px) {
+            .app { grid-template-rows: 64px 42px minmax(0, 1fr) 24px; }
+            .topbar { grid-template-columns: 190px minmax(0, 1fr) auto; }
+            .brand-mark { display: none; }
+            .brand { gap: 0; }
+            .brand-title { font-size: 13px; }
+            .status-strip { grid-template-columns: repeat(2, minmax(92px, 1fr)); }
+            .status-cell:nth-child(3),
+            .status-cell:nth-child(4) { display: none; }
+            .top-actions { gap: 4px; padding: 0 6px; }
+            .icon-button { width: 32px; height: 32px; }
+            .tabbar { padding-left: 0; }
+            .tab-button { flex: 1; min-width: 0; }
+            .projects-view,
+            .territory-view { grid-template-columns: minmax(280px, 0.52fr) minmax(280px, 0.48fr); }
+            .section-header { padding: 10px 12px; }
+            .project-row,
+            .territory-row { padding: 13px 12px; }
+            .detail { padding: 16px; }
+            .detail-title { font-size: 20px; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .filters .filter-button { min-width: 58px; padding: 0 6px; }
+            .doctrine-inner { width: calc(100% - 28px); padding-top: 18px; }
+            .doctrine-heading { align-items: start; flex-direction: column; }
+            .tier-row { grid-template-columns: 1.3fr repeat(4, minmax(68px, 0.8fr)); }
+            .tier-cell { padding: 8px 7px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">FLO</div>
+                <div>
+                    <div class="brand-title">Frontline Operations</div>
+                    <div class="brand-subtitle">Regional Development Net</div>
+                </div>
+            </div>
+
+            <div class="status-strip">
+                <div class="status-cell"><span class="label">Treasury</span><strong class="status-value cyan" id="treasury-balance">--</strong></div>
+                <div class="status-cell"><span class="label">Available</span><strong class="status-value green" id="treasury-available">--</strong></div>
+                <div class="status-cell"><span class="label">Active Projects</span><strong class="status-value amber" id="active-projects">--</strong></div>
+                <div class="status-cell"><span class="label">Income / Min</span><strong class="status-value" id="income-rate">--</strong></div>
+            </div>
+
+            <div class="top-actions">
+                <button class="icon-button" id="operations-button" title="Open Theater Command Net" aria-label="Open Theater Command Net">&#9635;</button>
+                <button class="icon-button" id="refresh-button" title="Refresh development data" aria-label="Refresh development data">&#8635;</button>
+                <button class="icon-button close" id="close-button" title="Close development panel" aria-label="Close development panel">&#10005;</button>
+            </div>
+        </header>
+
+        <nav class="tabbar" aria-label="Development views">
+            <button class="tab-button active" data-tab="projects">Projects</button>
+            <button class="tab-button" data-tab="territory">Territory</button>
+            <button class="tab-button" data-tab="doctrine">Doctrine</button>
+        </nav>
+
+        <main class="workspace">
+            <section class="view projects-view active" data-view="projects">
+                <div class="column">
+                    <header class="section-header">
+                        <div><span class="eyebrow">Command Investment</span><h1 class="section-title">Active Projects</h1></div>
+                        <span class="section-count" id="project-count">0 / 0</span>
+                    </header>
+                    <div class="project-list" id="project-list"></div>
+                </div>
+                <div class="column"><div class="detail" id="project-detail"></div></div>
+            </section>
+
+            <section class="view territory-view" data-view="territory">
+                <div class="column">
+                    <header class="section-header">
+                        <div><span class="eyebrow">Friendly Territory</span><h1 class="section-title">Development Index</h1></div>
+                        <div class="filters" role="group" aria-label="Territory filter">
+                            <button class="filter-button active" data-filter="all">All</button>
+                            <button class="filter-button" data-filter="active">Active</button>
+                            <button class="filter-button" data-filter="risk">At Risk</button>
+                        </div>
+                    </header>
+                    <div class="territory-list" id="territory-list"></div>
+                </div>
+                <div class="column"><div class="detail" id="territory-detail"></div></div>
+            </section>
+
+            <section class="view doctrine-view" data-view="doctrine">
+                <div class="doctrine-inner">
+                    <header class="doctrine-heading">
+                        <div><span class="eyebrow">Development Doctrine</span><h1>Investment and Player Lift</h1></div>
+                        <p class="doctrine-summary">Command invests shared treasury and local supply into secure connected territory. Player shipments shorten construction without changing the completed income benefit.</p>
+                    </header>
+                    <div class="doctrine-grid">
+                        <section>
+                            <span class="eyebrow">Development Tiers</span>
+                            <div class="tier-table" id="tier-table"></div>
+                        </section>
+                        <section>
+                            <span class="eyebrow">Operational Rules</span>
+                            <div class="doctrine-facts" id="doctrine-facts"></div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <span id="side-name">Development net connecting</span>
+            <span class="footer-status"><span class="status-dot"></span><span id="refresh-state">Awaiting theater state</span></span>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            "use strict";
+
+            var snapshot = null;
+            var selectedId = "";
+            var activeTab = "projects";
+            var territoryFilter = "all";
+
+            function byId(id) {
+                return document.getElementById(id);
+            }
+
+            function send(eventName, data) {
+                if (typeof A3API !== "undefined" && typeof A3API.SendAlert === "function") {
+                    A3API.SendAlert(JSON.stringify({ event: eventName, data: data || {} }));
+                }
+            }
+
+            function formatResource(value) {
+                return String(Math.round(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function readable(value) {
+                return String(value || "--").replace(/_/g, " ");
+            }
+
+            function formatDuration(seconds) {
+                var total = Math.max(0, Math.round(Number(seconds) || 0));
+                if (total >= 3600) {
+                    return Math.floor(total / 3600) + "h " + Math.ceil((total % 3600) / 60) + "m";
+                }
+                return Math.ceil(total / 60) + " min";
+            }
+
+            function findObjective(id) {
+                if (!snapshot) { return null; }
+                for (var i = 0; i < snapshot.objectives.length; i += 1) {
+                    if (snapshot.objectives[i].id === id) { return snapshot.objectives[i]; }
+                }
+                return null;
+            }
+
+            function activeObjectives() {
+                if (!snapshot) { return []; }
+                return snapshot.objectives.filter(function (objective) {
+                    return objective.development.project.active;
+                });
+            }
+
+            function stateClass(state) {
+                if (state === "ACTIVE" || state === "INTEGRATED") { return "state"; }
+                if (state === "PAUSED_COMBAT" || state === "BLOCKED_LOGISTICS" || state === "FOOTHOLD") { return "state warn"; }
+                return "state danger";
+            }
+
+            function detailRow(label, value) {
+                var row = document.createElement("div");
+                row.className = "detail-row";
+                var key = document.createElement("span");
+                key.textContent = label;
+                var result = document.createElement("strong");
+                result.textContent = value;
+                row.appendChild(key);
+                row.appendChild(result);
+                return row;
+            }
+
+            function levelMeter(objective) {
+                var meter = document.createElement("div");
+                meter.className = "level-meter";
+                var development = objective.development;
+                var targetLevel = development.project.active ? development.project.targetLevel : -1;
+                for (var level = 1; level <= development.maxLevel; level += 1) {
+                    var segment = document.createElement("span");
+                    segment.className = "level-segment";
+                    if (level <= development.level) { segment.className += " filled"; }
+                    if (level === targetLevel) { segment.className += " project"; }
+                    meter.appendChild(segment);
+                }
+                return meter;
+            }
+
+            function projectRow(objective) {
+                var project = objective.development.project;
+                var row = document.createElement("button");
+                row.type = "button";
+                row.className = "project-row" + (selectedId === objective.id ? " selected" : "");
+                row.addEventListener("click", function () {
+                    selectedId = objective.id;
+                    renderProjects();
+                    renderTerritory();
+                });
+
+                var top = document.createElement("div");
+                top.className = "row-top";
+                var name = document.createElement("span");
+                name.className = "row-name";
+                name.textContent = objective.name;
+                var state = document.createElement("span");
+                state.className = stateClass(project.state);
+                state.textContent = readable(project.state);
+                top.appendChild(name);
+                top.appendChild(state);
+
+                var meta = document.createElement("div");
+                meta.className = "row-meta";
+                meta.innerHTML = "<span>GRID " + objective.grid + "</span><span>" + readable(objective.development.name) + " &gt; " + readable(project.targetName) + "</span>";
+
+                var progressLabel = document.createElement("div");
+                progressLabel.className = "progress-label";
+                progressLabel.innerHTML = "<span>" + formatResource(project.supplyDelivered) + " / " + formatResource(project.supplyRequired) + " SUPPLY</span><strong>" + project.progressPercent + "%</strong>";
+                var track = document.createElement("div");
+                track.className = "progress-track";
+                var fill = document.createElement("div");
+                fill.className = "progress-fill" + (project.state === "ACTIVE" ? "" : " warn");
+                fill.style.width = Math.max(0, Math.min(100, project.progressPercent)) + "%";
+                track.appendChild(fill);
+
+                row.appendChild(top);
+                row.appendChild(meta);
+                row.appendChild(progressLabel);
+                row.appendChild(track);
+                return row;
+            }
+
+            function renderProjectDetail(objective) {
+                var target = byId("project-detail");
+                target.innerHTML = "";
+                if (!objective || !objective.development.project.active) {
+                    target.innerHTML = "<div class=\"empty-state\">Select an active project</div>";
+                    return;
+                }
+
+                var development = objective.development;
+                var project = development.project;
+                var eyebrow = document.createElement("span");
+                eyebrow.className = "eyebrow";
+                eyebrow.textContent = "Project / " + readable(project.state);
+                var title = document.createElement("h2");
+                title.className = "detail-title";
+                title.textContent = objective.name;
+                var subtitle = document.createElement("p");
+                subtitle.className = "detail-subtitle";
+                subtitle.textContent = "GRID " + objective.grid + " / " + readable(development.name) + " TO " + readable(project.targetName);
+
+                var metrics = document.createElement("div");
+                metrics.className = "detail-grid";
+                var metricValues = [
+                    ["Progress", project.progressPercent + "%"],
+                    ["Time Remaining", formatDuration(project.estimatedRemainingSeconds)],
+                    ["Commander Supply", formatResource(project.commanderSupply)],
+                    ["Player Supply", formatResource(project.playerSupply) + " / " + formatResource(project.playerSupplyCap)]
+                ];
+                metricValues.forEach(function (entry) {
+                    var metric = document.createElement("div");
+                    metric.className = "detail-metric";
+                    metric.innerHTML = "<span class=\"label\">" + entry[0] + "</span><strong>" + entry[1] + "</strong>";
+                    metrics.appendChild(metric);
+                });
+
+                var list = document.createElement("div");
+                list.className = "detail-list";
+                list.appendChild(detailRow("Supply Source", project.sourceName || "Awaiting route"));
+                list.appendChild(detailRow("Player Capacity", formatResource(project.playerCapacityRemaining)));
+                list.appendChild(detailRow("Shipment Size", formatResource(project.shipmentAmount)));
+                list.appendChild(detailRow("Income After Completion", Number((snapshot.tiers[project.targetLevel] || {}).incomeMultiplier || 1).toFixed(2) + "X"));
+                if (project.lastContributorName) {
+                    list.appendChild(detailRow("Last Contributor", project.lastContributorName));
+                }
+
+                var action = document.createElement("button");
+                action.type = "button";
+                action.className = "action-button";
+                action.disabled = !project.canContribute;
+                action.textContent = project.canContribute ? "Assign Nearby Supply Shipment" : "Player Contribution Capacity Reached";
+                action.addEventListener("click", function () {
+                    send("development::assignShipment", { objectiveId: objective.id });
+                });
+
+                target.appendChild(eyebrow);
+                target.appendChild(title);
+                target.appendChild(subtitle);
+                target.appendChild(metrics);
+                target.appendChild(list);
+                target.appendChild(action);
+            }
+
+            function renderProjects() {
+                if (!snapshot) { return; }
+                var projects = activeObjectives();
+                var list = byId("project-list");
+                list.innerHTML = "";
+                byId("project-count").textContent = projects.length + " / " + snapshot.maximumConcurrentProjects;
+                if (projects.length === 0) {
+                    list.innerHTML = "<div class=\"empty-state\">No active regional investments</div>";
+                    renderProjectDetail(null);
+                    return;
+                }
+                if (!findObjective(selectedId) || !findObjective(selectedId).development.project.active) {
+                    selectedId = projects[0].id;
+                }
+                projects.forEach(function (objective) { list.appendChild(projectRow(objective)); });
+                renderProjectDetail(findObjective(selectedId));
+            }
+
+            function territoryVisible(objective) {
+                if (territoryFilter === "active") { return objective.development.project.active; }
+                if (territoryFilter === "risk") { return objective.contested || objective.underAttack || objective.integrationState !== "INTEGRATED"; }
+                return true;
+            }
+
+            function territoryRow(objective) {
+                var development = objective.development;
+                var row = document.createElement("button");
+                row.type = "button";
+                row.className = "territory-row" + (selectedId === objective.id ? " selected" : "");
+                row.addEventListener("click", function () {
+                    selectedId = objective.id;
+                    renderTerritory();
+                    renderProjects();
+                });
+
+                var top = document.createElement("div");
+                top.className = "row-top";
+                var name = document.createElement("span");
+                name.className = "row-name";
+                name.textContent = objective.name;
+                var state = document.createElement("span");
+                var displayedState = development.project.active ? development.project.state : objective.integrationState;
+                state.className = stateClass(displayedState);
+                state.textContent = readable(displayedState);
+                top.appendChild(name);
+                top.appendChild(state);
+
+                var meta = document.createElement("div");
+                meta.className = "row-meta";
+                meta.innerHTML = "<span>" + readable(objective.subtype) + " / GRID " + objective.grid + "</span><span>" + formatResource(development.incomePerCycle) + " / CYCLE</span>";
+                row.appendChild(top);
+                row.appendChild(meta);
+                row.appendChild(levelMeter(objective));
+                return row;
+            }
+
+            function renderTerritoryDetail(objective) {
+                var target = byId("territory-detail");
+                target.innerHTML = "";
+                if (!objective) {
+                    target.innerHTML = "<div class=\"empty-state\">Select friendly territory</div>";
+                    return;
+                }
+                var development = objective.development;
+                var eyebrow = document.createElement("span");
+                eyebrow.className = "eyebrow";
+                eyebrow.textContent = readable(objective.subtype) + " / Priority " + objective.priority;
+                var title = document.createElement("h2");
+                title.className = "detail-title";
+                title.textContent = objective.name;
+                var subtitle = document.createElement("p");
+                subtitle.className = "detail-subtitle";
+                subtitle.textContent = "GRID " + objective.grid + " / " + readable(objective.captureState);
+
+                var metrics = document.createElement("div");
+                metrics.className = "detail-grid";
+                var values = [
+                    ["Current Tier", development.level + " / " + development.maxLevel],
+                    ["Development", readable(development.name)],
+                    ["Income / Cycle", formatResource(development.incomePerCycle)],
+                    ["Multiplier", Number(development.incomeMultiplier).toFixed(2) + "X"]
+                ];
+                values.forEach(function (entry) {
+                    var metric = document.createElement("div");
+                    metric.className = "detail-metric";
+                    metric.innerHTML = "<span class=\"label\">" + entry[0] + "</span><strong>" + entry[1] + "</strong>";
+                    metrics.appendChild(metric);
+                });
+
+                var list = document.createElement("div");
+                list.className = "detail-list";
+                list.appendChild(detailRow("Integration", readable(objective.integrationState)));
+                list.appendChild(detailRow("Capture", readable(objective.captureState)));
+                list.appendChild(detailRow("Next Tier", readable(development.nextName)));
+                list.appendChild(detailRow("Current Project", development.project.active ? readable(development.project.targetName) : "None"));
+                list.appendChild(detailRow("Threat", objective.underAttack ? "Under attack" : (objective.contested ? "Contested" : "Secure")));
+
+                target.appendChild(eyebrow);
+                target.appendChild(title);
+                target.appendChild(subtitle);
+                target.appendChild(metrics);
+                target.appendChild(list);
+            }
+
+            function renderTerritory() {
+                if (!snapshot) { return; }
+                var list = byId("territory-list");
+                list.innerHTML = "";
+                var visible = snapshot.objectives.filter(territoryVisible);
+                if (visible.length === 0) {
+                    list.innerHTML = "<div class=\"empty-state\">No territory matches this filter</div>";
+                    renderTerritoryDetail(null);
+                    return;
+                }
+                if (!findObjective(selectedId) || visible.indexOf(findObjective(selectedId)) < 0) {
+                    selectedId = visible[0].id;
+                }
+                visible.forEach(function (objective) { list.appendChild(territoryRow(objective)); });
+                renderTerritoryDetail(findObjective(selectedId));
+            }
+
+            function renderDoctrine() {
+                if (!snapshot) { return; }
+                var table = byId("tier-table");
+                table.innerHTML = "<div class=\"tier-row header\"><span class=\"tier-cell\">Tier</span><span class=\"tier-cell\">Treasury</span><span class=\"tier-cell\">Supply</span><span class=\"tier-cell\">Player Cap</span><span class=\"tier-cell\">Income</span></div>";
+                snapshot.tiers.forEach(function (tier) {
+                    var row = document.createElement("div");
+                    row.className = "tier-row";
+                    row.innerHTML = "<span class=\"tier-cell tier-name\">" + tier.level + " / " + readable(tier.name) + "</span>"
+                        + "<span class=\"tier-cell\">" + formatResource(tier.treasuryCost) + "</span>"
+                        + "<span class=\"tier-cell\">" + formatResource(tier.supplyRequired) + "</span>"
+                        + "<span class=\"tier-cell\">" + formatResource(tier.playerSupplyCap) + "</span>"
+                        + "<span class=\"tier-cell\">" + Number(tier.incomeMultiplier).toFixed(2) + "X</span>";
+                    table.appendChild(row);
+                });
+
+                var facts = byId("doctrine-facts");
+                var factRows = [
+                    ["Concurrent Projects", "Command can sustain " + snapshot.maximumConcurrentProjects + " regional projects at once."],
+                    ["Commander Delivery", formatResource(snapshot.commanderSupplyPerTick) + " local supply is applied every " + formatDuration(snapshot.tickInterval) + " while the route remains viable."],
+                    ["Player Lift", "Physical shipments can cover up to " + snapshot.playerContributionPercent + "% of a project's requirement."],
+                    ["Assignment", "A friendly shipment must be within " + snapshot.assignmentRadius + " meters before it can be assigned."],
+                    ["Combat Pressure", "Contested projects pause until security and logistics conditions recover."],
+                    ["Capture Damage", "A captured developed objective loses one tier instead of transferring its full benefit."]
+                ];
+                facts.innerHTML = "";
+                factRows.forEach(function (entry) {
+                    var fact = document.createElement("div");
+                    fact.className = "doctrine-fact";
+                    fact.innerHTML = "<strong>" + entry[0] + "</strong><p>" + entry[1] + "</p>";
+                    facts.appendChild(fact);
+                });
+            }
+
+            function setTab(tab) {
+                activeTab = tab;
+                var tabs = document.querySelectorAll("[data-tab]");
+                var views = document.querySelectorAll("[data-view]");
+                for (var i = 0; i < tabs.length; i += 1) {
+                    tabs[i].className = "tab-button" + (tabs[i].getAttribute("data-tab") === tab ? " active" : "");
+                }
+                for (var j = 0; j < views.length; j += 1) {
+                    views[j].classList.toggle("active", views[j].getAttribute("data-view") === tab);
+                }
+            }
+
+            function applySnapshot(nextSnapshot) {
+                snapshot = nextSnapshot;
+                var economy = snapshot.economy;
+                byId("treasury-balance").textContent = formatResource(economy.balance);
+                byId("treasury-available").textContent = formatResource(economy.available);
+                byId("active-projects").textContent = snapshot.activeCount + " / " + snapshot.maximumConcurrentProjects;
+                byId("income-rate").textContent = "+" + formatResource(economy.incomePerMinute);
+                byId("side-name").textContent = snapshot.sideName + " regional development";
+                byId("refresh-state").textContent = "Theater state synchronized";
+
+                var projects = activeObjectives();
+                if (!findObjective(selectedId)) {
+                    selectedId = projects.length > 0 ? projects[0].id : (snapshot.objectives[0] ? snapshot.objectives[0].id : "");
+                }
+                renderProjects();
+                renderTerritory();
+                renderDoctrine();
+                setTab(activeTab);
+            }
+
+            var tabButtons = document.querySelectorAll("[data-tab]");
+            for (var tabIndex = 0; tabIndex < tabButtons.length; tabIndex += 1) {
+                tabButtons[tabIndex].addEventListener("click", function () { setTab(this.getAttribute("data-tab")); });
+            }
+
+            var filterButtons = document.querySelectorAll("[data-filter]");
+            for (var filterIndex = 0; filterIndex < filterButtons.length; filterIndex += 1) {
+                filterButtons[filterIndex].addEventListener("click", function () {
+                    territoryFilter = this.getAttribute("data-filter");
+                    for (var i = 0; i < filterButtons.length; i += 1) {
+                        filterButtons[i].className = "filter-button" + (filterButtons[i] === this ? " active" : "");
+                    }
+                    renderTerritory();
+                });
+            }
+
+            byId("operations-button").addEventListener("click", function () { send("development::operationsOpen"); });
+            byId("refresh-button").addEventListener("click", function () {
+                byId("refresh-state").textContent = "Requesting theater state";
+                send("development::refresh");
+            });
+            byId("close-button").addEventListener("click", function () { send("development::close"); });
+
+            window.FLODevelopment = { applySnapshot: applySnapshot };
+
+            function demoSnapshot() {
+                var tierRows = [
+                    { level: 0, name: "INTEGRATED", treasuryCost: 0, supplyRequired: 0, playerSupplyCap: 0, incomeMultiplier: 1 },
+                    { level: 1, name: "STABILIZED", treasuryCost: 400, supplyRequired: 6000, playerSupplyCap: 1500, incomeMultiplier: 2 },
+                    { level: 2, name: "DEVELOPED", treasuryCost: 900, supplyRequired: 12000, playerSupplyCap: 3000, incomeMultiplier: 4 },
+                    { level: 3, name: "REGIONAL_CENTER", treasuryCost: 1800, supplyRequired: 18000, playerSupplyCap: 4500, incomeMultiplier: 8 }
+                ];
+                function objective(id, name, grid, subtype, level, maxLevel, project, state) {
+                    return {
+                        id: id, name: name, grid: grid, position: [0, 0, 0], subtype: subtype, priority: 70,
+                        captureState: state === "PAUSED_COMBAT" ? "contested" : "secure",
+                        integrationState: state === "BLOCKED_LOGISTICS" ? "FOOTHOLD" : "INTEGRATED",
+                        contested: state === "PAUSED_COMBAT", underAttack: state === "PAUSED_COMBAT",
+                        development: {
+                            visible: true, level: level, maxLevel: maxLevel, name: tierRows[level].name,
+                            nextName: level < maxLevel ? tierRows[level + 1].name : "MAXIMUM",
+                            incomeMultiplier: tierRows[level].incomeMultiplier, incomePerCycle: 24 * tierRows[level].incomeMultiplier,
+                            project: project || { active: false }
+                        }
+                    };
+                }
+                function project(state, targetLevel, delivered, required, playerSupply, playerCap) {
+                    return {
+                        active: true, state: state, targetLevel: targetLevel, targetName: tierRows[targetLevel].name,
+                        supplyRequired: required, supplyDelivered: delivered, commanderSupply: delivered - playerSupply,
+                        playerSupply: playerSupply, playerSupplyCap: playerCap, playerCapacityRemaining: playerCap - playerSupply,
+                        progressPercent: Math.round((delivered / required) * 100), estimatedRemainingSeconds: ((required - delivered) / 300) * 60,
+                        playerTimeSavedSeconds: (playerSupply / 300) * 60, sourceObjectiveId: "obj_hq", sourceName: "Kavala",
+                        lastContributorName: playerSupply > 0 ? "Suzuki" : "", canContribute: playerCap - playerSupply >= 1500,
+                        shipmentAmount: 1500
+                    };
+                }
+                return {
+                    generatedAt: 120, sideKey: "WEST", sideName: "BLUFOR", keybind: "Ctrl+Shift+I",
+                    economy: { balance: 12740, committed: 2100, available: 10640, lastIncome: 294, incomePerMinute: 98, ledger: [] },
+                    activeCount: 3, maximumConcurrentProjects: 3, tickInterval: 60, commanderSupplyPerTick: 300,
+                    playerContributionPercent: 25, assignmentRadius: 25, tiers: tierRows,
+                    objectives: [
+                        objective("obj_1", "Athira", "140188", "city", 1, 3, project("ACTIVE", 2, 7200, 12000, 1500, 3000), "ACTIVE"),
+                        objective("obj_2", "Pyrgos", "168127", "capital", 2, 3, project("PAUSED_COMBAT", 3, 6300, 18000, 3000, 4500), "PAUSED_COMBAT"),
+                        objective("obj_3", "Agios Dionysios", "092144", "local", 0, 2, project("BLOCKED_LOGISTICS", 1, 1500, 6000, 1500, 1500), "BLOCKED_LOGISTICS"),
+                        objective("obj_4", "Kavala", "036128", "capital", 3, 3, null, "INTEGRATED"),
+                        objective("obj_5", "Charkia", "214168", "city", 1, 3, null, "INTEGRATED"),
+                        objective("obj_6", "Koroni", "117183", "village", 0, 1, null, "INTEGRATED")
+                    ]
+                };
+            }
+
+            if (window.location.search.indexOf("demo=1") >= 0) {
+                applySnapshot(demoSnapshot());
+            } else {
+                send("development::ready");
+                window.setInterval(function () { send("development::refresh"); }, 10000);
+            }
+        }());
+    </script>
+</body>
+</html>

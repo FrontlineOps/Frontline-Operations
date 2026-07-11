@@ -17,5 +17,6 @@ private _multiplier = (_treasury get "CONTEST_MODIFIERS") get _status;
 private _captureProgress = _objective get "captureProgress";
 private _underPressure = [_captureProgress > 0, _captureProgress < 0] select (_side isEqualTo west);
 if (_underPressure) then { _multiplier = _multiplier * 0.85; };
+_multiplier = _multiplier * ([_objective] call FLO_fnc_objectiveDevelopmentIncomeMultiplier);
 
 [((_treasury get "RESOURCE_VALUES") get (_objective get "subtype")) * _multiplier, _status]

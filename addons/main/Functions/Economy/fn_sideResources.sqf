@@ -6,6 +6,29 @@ if (!isServer) exitWith { createHashMap };
 
 if ((keys FLO_SideResources) isNotEqualTo []) exitWith { FLO_SideResources };
 
+private _commanderSpendingPolicy = createHashMapFromArray [
+    ["windowSeconds", 180],
+    ["reserveMinimum", 1200],
+    ["reserveBalanceFraction", 0.30],
+    ["reserveIncomeCycles", 3],
+    ["emergencyReserve", 300],
+    ["bootstrapWindowBudget", 300],
+    ["balancedRunwayMinimum", 1200],
+    ["denialLogCooldownSeconds", 30],
+    ["urgencyBudgetMultipliers", createHashMapFromArray [
+        ["ROUTINE", 1],
+        ["OPERATIONAL", 2],
+        ["PRESSURED", 3],
+        ["CRITICAL", 6]
+    ]],
+    ["urgencyReserveMultipliers", createHashMapFromArray [
+        ["ROUTINE", 1],
+        ["OPERATIONAL", 0.90],
+        ["PRESSURED", 0.70],
+        ["CRITICAL", 0]
+    ]]
+];
+
 private _savedResources = createHashMap;
 if (!isNil "FLO_SavedGameData" && {"sideResources" in FLO_SavedGameData}) then {
     _savedResources = FLO_SavedGameData get "sideResources";
@@ -35,6 +58,7 @@ private _treasuryClass = [
     ["OBJECTIVE_CAPTURE_REWARD", 200],
     ["LEDGER_LIMIT", 64],
     ["PUBLIC_LEDGER_LIMIT", 12],
+    ["COMMANDER_SPENDING_POLICY", _commanderSpendingPolicy],
 
     ["_side", east],
     ["_sideKey", "EAST"],
@@ -45,6 +69,7 @@ private _treasuryClass = [
     ["_transactionSequence", 0],
     ["_lastIncome", 0],
     ["_lastUpdate", 0],
+    ["_commanderSpendingDenials", createHashMap],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_sideResourcesCreate;

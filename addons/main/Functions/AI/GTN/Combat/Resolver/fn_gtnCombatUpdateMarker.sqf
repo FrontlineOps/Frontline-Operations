@@ -39,6 +39,9 @@ if (_winner isEqualTo west) then {
 };
 
 private _westStatus = ["Losing", "Winning"] select (_winner isEqualTo west);
+if (_event get "decisive") then {
+    _westStatus = format ["%1 / Decisive", _westStatus];
+};
 
 _id setMarkerColorLocal _color;
 _id setMarkerText format ["COMBAT %1", _westStatus];

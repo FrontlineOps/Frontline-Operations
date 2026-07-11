@@ -3,6 +3,7 @@ params ["_network"];
 [_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
 [_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
 private _nodes = _network get "_nodes";
+private _now = dateToNumber date;
 private _nodeRows = [];
 private _routes = [];
 private _counts = createHashMapFromArray [
@@ -20,6 +21,11 @@ private _counts = createHashMapFromArray [
     private _objectiveId = _node get "objectiveId";
     private _objectiveName = "Field Position";
     if (_objectiveId != "") then { _objectiveName = [_objectiveId] call FLO_fnc_campaignObjectiveName; };
+    private _lastPlayerDeliveryAt = _node get "lastPlayerDeliveryAtDateNum";
+    private _lastPlayerDeliveryAge = -1;
+    if (_lastPlayerDeliveryAt >= 0) then {
+        _lastPlayerDeliveryAge = round ([_lastPlayerDeliveryAt, _now] call FLO_fnc_dateNumberDeltaSeconds);
+    };
     _nodeRows pushBack createHashMapFromArray [
         ["id", _x],
         ["type", _node get "type"],
@@ -33,6 +39,9 @@ private _counts = createHashMapFromArray [
         ["resupplyAmount", _node get "refillAmount"],
         ["resupplyIntervalSeconds", _network get "NODE_REFILL_INTERVAL"],
         ["deliveryCount", _node get "deliveryCount"],
+        ["lastPlayerDeliveryAmount", _node get "lastPlayerDeliveryAmount"],
+        ["lastPlayerDeliveryAgeSeconds", _lastPlayerDeliveryAge],
+        ["lastPlayerContributorName", _node get "lastPlayerContributorName"],
         ["requiredDeliveries", _node get "requiredDeliveries"]
     ];
 

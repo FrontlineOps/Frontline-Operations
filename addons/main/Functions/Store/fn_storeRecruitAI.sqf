@@ -42,4 +42,4 @@ private _spawned = 0;
     _spawned = _spawned + 1;
 } forEach _unitClasses;
 
-hint format ["Recruited %1 AI.", _spawned];
+[format ["Recruited %1 AI.", _spawned], "success"] call FLO_fnc_displayNotification;

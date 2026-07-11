@@ -63,6 +63,18 @@ private _reservationId = _operation get "resourceReservationId";
 if (_viewerIsAttacker && {_reservationId != ""}) then {
     _resourceRemaining = _treasury call ["getReservationRemaining", [_reservationId]];
 };
+private _nextWaveRemaining = 0;
+private _pauseRemaining = 0;
+if (_viewerIsAttacker) then {
+    private _nextWaveAt = _operation get "assaultNextWaveAtDateNum";
+    if (_nextWaveAt >= 0) then {
+        _nextWaveRemaining = round (([_now, _nextWaveAt] call FLO_fnc_dateNumberDeltaSeconds) max 0);
+    };
+    private _pauseUntil = _operation get "assaultPauseUntilDateNum";
+    if (_pauseUntil >= 0) then {
+        _pauseRemaining = round (([_now, _pauseUntil] call FLO_fnc_dateNumberDeltaSeconds) max 0);
+    };
+};
 
 createHashMapFromArray [
     ["id", _operationId],
@@ -88,5 +100,14 @@ createHashMapFromArray [
     ["resourceSpent", [0, _operation get "resourceSpent"] select _viewerIsAttacker],
     ["resourceRemaining", _resourceRemaining],
     ["resourceReleased", [0, _operation get "resourceReleased"] select _viewerIsAttacker],
+    ["assaultPackageTarget", [0, _operation get "assaultPackageTarget"] select _viewerIsAttacker],
+    ["assaultActiveTarget", [0, _operation get "assaultActiveTarget"] select _viewerIsAttacker],
+    ["assaultWaveSize", [0, _operation get "assaultWaveSize"] select _viewerIsAttacker],
+    ["assaultCommittedTotal", [0, _operation get "assaultCommittedTotal"] select _viewerIsAttacker],
+    ["assaultLosses", [0, _operation get "assaultLosses"] select _viewerIsAttacker],
+    ["assaultWaveSequence", [0, _operation get "assaultWaveSequence"] select _viewerIsAttacker],
+    ["assaultNextWaveSeconds", _nextWaveRemaining],
+    ["assaultPauseSeconds", _pauseRemaining],
+    ["assaultStatus", ["CLASSIFIED", _operation get "assaultStatus"] select _viewerIsAttacker],
     ["drawdownPending", _operation get "drawdownPending"]
 ]

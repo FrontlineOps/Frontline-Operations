@@ -23,5 +23,5 @@ private _restored = 0;
 } forEach (_network get "_nodes");
 
 _network set ["_lastNodeRefillAtDateNum", [_lastRefill, _cycles * _interval] call FLO_fnc_dateNumberAddSeconds];
-if (_restored > 0) then { [_network, true] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty; };
+if (_restored > 0) then { [_network, false] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty; };
 _restored

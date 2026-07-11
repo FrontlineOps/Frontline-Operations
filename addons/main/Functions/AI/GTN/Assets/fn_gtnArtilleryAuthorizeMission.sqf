@@ -79,13 +79,32 @@ private _missionId = _missionRecord get "missionId";
 private _requestKind = _missionRecord get "requestKind";
 private _reservationId = format ["ARTILLERY:%1:%2", _sideKey, _missionId];
 private _reason = format ["%1 artillery mission (%2 rounds)", _requestKind, _rounds];
+private _spendingActor = ["COMMANDER", "PLAYER"] select (_requestKind == "PLAYER");
+private _spendingAllowed = true;
+if (_requestKind != "PLAYER") then {
+    private _urgency = ["OPERATIONAL", "PRESSURED"] select (_requestKind == "COUNTER_BATTERY");
+    private _spendingDecision = [
+        _treasury,
+        _treasuryCost,
+        "ARTILLERY",
+        _urgency,
+        createHashMapFromArray [
+            ["strategic", true],
+            ["commitment", false],
+            ["reserved", false],
+            ["referenceId", _missionId]
+        ]
+    ] call FLO_fnc_commanderSpendingEvaluate;
+    _spendingAllowed = _spendingDecision get "allowed";
+};
+if (!_spendingAllowed) exitWith { false };
 
 if !(_treasury call ["reserve", [
     _reservationId,
     _treasuryCost,
     "ARTILLERY",
     _reason,
-    "COMMANDER",
+    _spendingActor,
     _missionId
 ]]) exitWith {
     ["GTN Artillery", 3, format [

@@ -14,6 +14,8 @@ class UtilitiesSystem {
     class heartbeat {};
     class heartbeatNotifyRestart {};
     class padHex {};
+    class performanceMonitorPreInit { preInit = 1; };
+    class performanceMonitorStart { postInit = 1; };
     class toHex {};
 };
 

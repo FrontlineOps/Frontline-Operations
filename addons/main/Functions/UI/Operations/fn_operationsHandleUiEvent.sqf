@@ -49,6 +49,10 @@ switch (_event) do {
     case "operations::selectObjective": {
         [_data get "objectiveId", true] call FLO_fnc_operationsSelectObjective;
     };
+    case "operations::developmentOpen": {
+        closeDialog 0;
+        [FLO_fnc_developmentOpenDialog, []] call CBA_fnc_execNextFrame;
+    };
     case "operations::guideOpen": {
         if (!isNull _map) then { _map ctrlShow false; };
     };

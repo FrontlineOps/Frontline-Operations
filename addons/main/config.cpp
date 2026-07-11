@@ -26,11 +26,10 @@ class Extended_PreInit_EventHandlers {
 class CfgFunctions {
     #include "CfgFunctions.hpp"
     #include "IDS_Logistics\IDS_Logistics_Functions.hpp"
-    #include "IDS_Notifications\IDS_Notifications_Functions.hpp"
 };
 
 class RscTitles {
-    #include "IDS_Notifications\ui\RscNotifications.hpp"
+    #include "UI\Notifications\NotificationTitles.hpp"
     #include "UI\CaptureUI\CaptureDialog.hpp"
 
     titles[] = {};
@@ -40,6 +39,7 @@ class RscTitles {
 #include "UI\Store\StoreDialog.hpp"
 #include "UI\Deploy\DeployDialog.hpp"
 #include "UI\Operations\OperationsDialog.hpp"
+#include "UI\Development\DevelopmentDialog.hpp"
 
 class CfgRemoteExec {
     class Functions {
@@ -47,7 +47,8 @@ class CfgRemoteExec {
 
         class BIS_fnc_debugConsoleExec { allowedTargets = 0; jip = 1; };
         class SpawnScript { allowedTargets = 0; jip = 1; };
-        class FLO_fnc_displayNotification { allowedTargets = 0; jip = 0; };
+        class FLO_fnc_displayNotification { allowedTargets = 1; jip = 0; };
+        class FLO_fnc_sendNotification { allowedTargets = 2; jip = 0; };
         class FLO_fnc_showDynamicText { allowedTargets = 0; jip = 0; };
         class FLO_fnc_addIntelServer { allowedTargets = 2; jip = 0; };
         class FLO_fnc_gtnAlertCivilianReport { allowedTargets = 2; jip = 0; };
@@ -74,7 +75,10 @@ class CfgRemoteExec {
         class FLO_fnc_baseDeployRequest { allowedTargets = 2; jip = 0; };
         class FLO_fnc_baseDeployReceiveResult { allowedTargets = 1; jip = 0; };
         class FLO_fnc_campaignRequestSnapshot { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_objectiveDevelopmentAssignShipment { allowedTargets = 2; jip = 0; };
         class FLO_fnc_operationsReceiveSnapshot { allowedTargets = 1; jip = 0; };
+        class FLO_fnc_developmentRequestSnapshotServer { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_developmentReceiveSnapshot { allowedTargets = 1; jip = 0; };
         class FLO_fnc_randomizeWeather { allowedTargets = 2; jip = 0; };
     };
 };

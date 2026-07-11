@@ -150,8 +150,8 @@ private _weaponSlotFilled = createHashMapFromArray [
 } forEach ["uniforms", "vests", "backpacks", "headgear", "facewear", "primary", "handgun", "secondary", "attachments", "misc", "ammo", "mines"];
 
 if (_overflowDrops isEqualTo []) then {
-    hint "Purchased kit applied.";
+    ["Purchased kit applied.", "success"] call FLO_fnc_displayNotification;
 } else {
     private _dropped = [player, _overflowDrops] call FLO_fnc_storeDropGearItems;
-    hint format ["Purchased kit applied. Dropped %1 overflow items at your feet.", _dropped];
+    [format ["Purchased kit applied. Dropped %1 overflow items at your feet.", _dropped], "warning"] call FLO_fnc_displayNotification;
 };

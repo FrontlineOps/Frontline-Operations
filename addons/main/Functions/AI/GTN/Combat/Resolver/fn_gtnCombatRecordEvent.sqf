@@ -9,18 +9,9 @@
  *   0: Zone ID <STRING>
  *   1: Zone name <STRING>
  *   2: Zone position <ARRAY>
- *   3: Winning side <SIDE>
- *   4: Margin <NUMBER>
- *   5: EAST roll <NUMBER>
- *   6: WEST roll <NUMBER>
- *   7: EAST modifier <NUMBER>
- *   8: WEST modifier <NUMBER>
- *   9: EAST count before <NUMBER>
- *   10: EAST count after <NUMBER>
- *   11: WEST count before <NUMBER>
- *   12: WEST count after <NUMBER>
- *   13: EAST group count <NUMBER>
- *   14: WEST group count <NUMBER>
+ *   3: Resolved engagement outcome <HASHMAP>
+ *   4: EAST group count <NUMBER>
+ *   5: WEST group count <NUMBER>
  *
  * Return Value:
  *   Event data <HASHMAP>
@@ -30,16 +21,7 @@ params [
     "_zoneId",
     "_zoneName",
     "_zonePos",
-    "_winner",
-    "_margin",
-    "_rollEast",
-    "_rollWest",
-    "_modEast",
-    "_modWest",
-    "_eastBefore",
-    "_eastAfter",
-    "_westBefore",
-    "_westAfter",
+    "_outcome",
     "_eastGroupCount",
     "_westGroupCount"
 ];
@@ -49,16 +31,23 @@ private _event = createHashMapFromArray [
     ["objectiveId", _zoneId],
     ["objectiveName", _zoneName],
     ["position", _zonePos],
-    ["winner", _winner],
-    ["margin", _margin],
-    ["eastRoll", _rollEast],
-    ["westRoll", _rollWest],
-    ["eastMod", _modEast],
-    ["westMod", _modWest],
-    ["eastBefore", _eastBefore],
-    ["eastAfter", _eastAfter],
-    ["westBefore", _westBefore],
-    ["westAfter", _westAfter],
+    ["winner", _outcome get "winner"],
+    ["decisive", _outcome get "decisive"],
+    ["margin", _outcome get "margin"],
+    ["friction", _outcome get "friction"],
+    ["momentum", _outcome get "momentum"],
+    ["roundCount", _outcome get "roundCount"],
+    ["effectiveRatio", _outcome get "effectiveRatio"],
+    ["eastPower", _outcome get "eastPower"],
+    ["westPower", _outcome get "westPower"],
+    ["eastEffectivePower", _outcome get "eastEffectivePower"],
+    ["westEffectivePower", _outcome get "westEffectivePower"],
+    ["eastSupport", _outcome get "eastSupport"],
+    ["westSupport", _outcome get "westSupport"],
+    ["eastBefore", _outcome get "eastBefore"],
+    ["eastAfter", _outcome get "eastAfter"],
+    ["westBefore", _outcome get "westBefore"],
+    ["westAfter", _outcome get "westAfter"],
     ["eastGroupCount", _eastGroupCount],
     ["westGroupCount", _westGroupCount]
 ];

@@ -12,6 +12,7 @@ class GTNCombatResolver {
     class gtnCombatAffectsClassification {};
     class gtnCombatClassifyGroups {};
     class gtnCombatCleanupMarkers {};
+    class gtnCombatCleanupEngagementStates {};
     class gtnCombatCleanupResumeStates {};
     class gtnCombatCollectEngagementZones {};
     class gtnCombatDerivePostCombatState {};
@@ -29,6 +30,7 @@ class GTNCombatResolver {
     class gtnCombatRecordEvent {};
     class gtnCombatRegisterVirtualizationEvents {};
     class gtnCombatResolveZoneDescriptor {};
+    class gtnCombatResolveRemoteEngagement {};
     class gtnCombatSidePower {};
     class gtnCombatSupportBonus {};
     class gtnCombatTypeWeight {};

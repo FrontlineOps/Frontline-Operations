@@ -72,6 +72,7 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\Core\Logic";
 
         class gtnAllocateAttackTrackPools {};
+        class gtnBuildDefenseObjectiveProfiles {};
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
         class gtnBuildObjectiveAssignmentCache {};
@@ -114,10 +115,15 @@ class FLO {
         class gtnCollectIntelPickupRevealCandidates {};
         class gtnCommanderIntelMarkerType {};
         class gtnInjectCombatEventContacts {};
+        class gtnIntelPreInit { preInit = 1; };
         class gtnPublishCommanderIntel {};
+        class gtnRemoveStaleIntelMarkers {};
         class gtnRevealIntelPickup {};
         class gtnSerializeIntelSignatureRecords {};
+        class gtnSyncIntelConcentrationMarkers {};
         class gtnSyncCommanderIntelMarkers {};
+        class gtnSyncIntelIconMarkers {};
+        class gtnSyncIntelSupportMarkers {};
     };
 
     class GTNAlerts {
@@ -137,6 +143,7 @@ class FLO {
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
     #include "Functions\AI\GTN\Operations\CfgFunctions.hpp"
     #include "Functions\UI\CfgFunctions.hpp"
+    #include "Functions\Notifications\CfgFunctions.hpp"
 
     class GTNTasks {
         file = "\z\flo\addons\main\Functions\AI\GTN\Tasks";

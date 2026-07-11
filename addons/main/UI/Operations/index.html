@@ -449,6 +449,10 @@
             font-weight: 900;
         }
 
+        .sustainment-doctrine {
+            margin-top: 12px;
+        }
+
         .selected-name {
             margin-bottom: 12px;
             overflow-wrap: anywhere;
@@ -522,6 +526,17 @@
             font-family: Consolas, "Courier New", monospace;
             font-size: 9px;
             text-transform: uppercase;
+        }
+
+        .list-row-meta span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .list-row-meta span:last-child {
+            text-align: right;
         }
 
         .empty-state {
@@ -1180,6 +1195,7 @@
 
             <div class="top-actions">
                 <button class="icon-button" id="guide-button" title="Field guide" aria-label="Open field guide">?</button>
+                <button class="icon-button" id="development-button" title="Open Regional Development" aria-label="Open Regional Development">&#9651;</button>
                 <button class="icon-button" id="fit-button" title="Fit theater" aria-label="Fit theater">&#9635;</button>
                 <button class="icon-button" id="player-button" title="Center on player" aria-label="Center on player">&#8853;</button>
                 <button class="icon-button" id="target-button" title="Center on current intent" aria-label="Center on current intent">&#9678;</button>
@@ -1245,6 +1261,7 @@
                         <div class="metric"><span class="metric-value" id="metric-committed">--</span><span class="metric-label">Committed</span></div>
                         <div class="metric"><span class="metric-value" id="metric-income">--</span><span class="metric-label">Income / Min</span></div>
                     </div>
+                    <div class="data-list sustainment-doctrine" id="sustainment-doctrine"></div>
                 </section>
 
                 <section class="section">
@@ -1344,8 +1361,10 @@
                                 <div class="guide-block"><h3>Committed</h3><p>Funds reserved separately for active operations. They remain in the balance but cannot be spent by unrelated purchases.</p></div>
                                 <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
                                 <div class="guide-block"><h3>Income</h3><p>Connected, integrated objectives generate resources every three minutes. Contested territory produces less.</p></div>
+                                <div class="guide-block"><h3>Doctrine</h3><p>Command conserves funds when reserves are low, spends normally while balanced, and can replace expensive assets while surplus remains.</p></div>
+                                <div class="guide-block"><h3>Urgency</h3><p>Routine losses wait behind a protected reserve. Active operations, enemy pressure, and objective collapse progressively unlock larger three-minute budgets.</p></div>
                             </div>
-                            <div class="guide-callout">A large purchase can remove the treasury headroom required to open or sustain a supporting offensive. Check available funds before committing the shared treasury.</div>
+                            <div class="guide-callout">Income and commander spending use the same treasury shown in Command Net. Committed operation funds remain reserved until the operation releases them.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="3">
@@ -1360,7 +1379,7 @@
                             </div>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Node States</h3><p>CONNECTED works normally. STRAINED is under pressure or at 25% supplies or less. ISOLATED has no valid route. DISABLED has lost its anchor.</p></div>
-                                <div class="guide-block"><h3>Supply Shipment</h3><p>Costs 300 shared funds and 300 local supplies at its origin. Deliver it to a different friendly node to restore up to 1,500 supplies there.</p></div>
+                                <div class="guide-block"><h3>Supply Shipment</h3><p>Costs 300 shared funds and 300 local supplies at its origin. Deliver it to a different friendly node for up to 1,500 supplies, or bring it within 25 meters, assign it from a project's selected-objective panel, and deliver it inside that AO.</p></div>
                             </div>
                         </article>
 
@@ -1701,6 +1720,18 @@
                 row.appendChild(title);
                 row.appendChild(meta);
                 row.appendChild(resupplyMeta);
+                if (nodeState.lastPlayerDeliveryAmount > 0) {
+                    var playerMeta = document.createElement("div");
+                    playerMeta.className = "list-row-meta";
+                    var playerLabel = document.createElement("span");
+                    var playerValue = document.createElement("span");
+                    playerLabel.textContent = "PLAYER LIFT";
+                    playerValue.textContent = "+" + formatResource(nodeState.lastPlayerDeliveryAmount) + " / " + nodeState.lastPlayerContributorName;
+                    playerValue.title = formatAge(nodeState.lastPlayerDeliveryAgeSeconds) + " AGO";
+                    playerMeta.appendChild(playerLabel);
+                    playerMeta.appendChild(playerValue);
+                    row.appendChild(playerMeta);
+                }
                 return row;
             }
 
@@ -1781,6 +1812,16 @@
                 text("metric-available", formatResource(snapshot.economy.available));
                 text("metric-committed", formatResource(snapshot.economy.committed));
                 text("metric-income", "+" + formatResource(snapshot.economy.incomePerMinute));
+                var spending = snapshot.economy.commanderSpending;
+                var doctrine = byId("sustainment-doctrine");
+                doctrine.innerHTML = "";
+                appendDataRow(doctrine, "Doctrine", readable(spending.posture));
+                appendDataRow(doctrine, "Protected Reserve", formatResource(spending.reserveFloor));
+                appendDataRow(
+                    doctrine,
+                    "Routine Window",
+                    formatResource(spending.recentCommanderSpend) + " / " + formatResource(spending.baseWindowBudget)
+                );
                 renderRows("logistics-list", snapshot.logistics.nodes, "No logistics nodes.", logisticsListRow);
                 renderRows("enemy-logistics-intel-list", snapshot.enemyLogisticsIntel, "No current reports.", enemyLogisticsIntelListRow);
                 renderRows("opportunity-list", snapshot.opportunities, "No active reports.", function (row) {
@@ -1823,6 +1864,7 @@
 
             byId("fit-button").addEventListener("click", function () { send("operations::mapFit"); });
             byId("guide-button").addEventListener("click", openGuide);
+            byId("development-button").addEventListener("click", function () { send("operations::developmentOpen"); });
             byId("player-button").addEventListener("click", function () { send("operations::mapPlayer"); });
             byId("target-button").addEventListener("click", function () {
                 var operation = activeOperation();
@@ -1924,14 +1966,30 @@
                         ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "OFF_OPERATION" }
                         : { grid: "168127", position: [15700, 12100, 0], objectiveId: "obj_5", status: "IN_MAIN_EFFORT" },
                     summary: { friendlyObjectives: 5, enemyObjectives: 4, footholds: 1, opportunities: 1 },
-                    economy: { balance: 7420, available: 5320, committed: 2100, lastIncome: 148, incomePerMinute: 49, ledger: [] },
+                    economy: {
+                        balance: 7420,
+                        available: 5320,
+                        committed: 2100,
+                        lastIncome: 148,
+                        incomePerMinute: 49,
+                        commanderSpending: {
+                            posture: "SURPLUS",
+                            reserveFloor: 2226,
+                            emergencyReserve: 300,
+                            surplusFloor: 3426,
+                            recentCommanderSpend: 0,
+                            baseWindowBudget: 300,
+                            windowSeconds: 180
+                        },
+                        ledger: []
+                    },
                     logistics: {
                         hqNodeId: "NODE_WEST_HQ",
                         summary: { connected: 2, strained: 1, isolated: 0, establishing: 1, disabled: 0 },
                         nodes: [
-                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, resupplyAmount: 2500, resupplyIntervalSeconds: 180, deliveryCount: 0, requiredDeliveries: 0 },
-                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, resupplyAmount: 800, resupplyIntervalSeconds: 180, deliveryCount: 0, requiredDeliveries: 0 },
-                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, resupplyAmount: 400, resupplyIntervalSeconds: 180, deliveryCount: 1, requiredDeliveries: 2 }
+                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, resupplyAmount: 2500, resupplyIntervalSeconds: 180, deliveryCount: 0, lastPlayerDeliveryAmount: 0, lastPlayerDeliveryAgeSeconds: -1, lastPlayerContributorName: "", requiredDeliveries: 0 },
+                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, resupplyAmount: 800, resupplyIntervalSeconds: 180, deliveryCount: 1, lastPlayerDeliveryAmount: 1500, lastPlayerDeliveryAgeSeconds: 120, lastPlayerContributorName: "Suzuki", requiredDeliveries: 0 },
+                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, resupplyAmount: 400, resupplyIntervalSeconds: 180, deliveryCount: 1, lastPlayerDeliveryAmount: 0, lastPlayerDeliveryAgeSeconds: -1, lastPlayerContributorName: "", requiredDeliveries: 2 }
                         ],
                         routes: [
                             { fromNodeId: "NODE_WEST_HQ", toNodeId: "NODE_WEST_DEPOT", from: [3600, 12800, 0], to: [9200, 14400, 0], state: "CONNECTED" },

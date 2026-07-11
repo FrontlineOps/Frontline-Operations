@@ -206,7 +206,7 @@ _fobBuilding addEventHandler ["Killed", {
 
                 // Periodic notifications
                 if (time - _lastNotification > _notificationInterval) then {
-                    [format["FOB under siege! %1 minutes remaining", ceil(_timeLeft / 60)]] remoteExec ["hint", -2];
+                    [format ["FOB under siege! %1 minutes remaining", ceil (_timeLeft / 60)], "warning", false, 0] call FLO_fnc_sendNotification;
                     _lastNotification = time;
                 };
 
@@ -215,7 +215,7 @@ _fobBuilding addEventHandler ["Killed", {
                     _statusMarker setMarkerTextLocal "FOB LOST!";
                     _statusMarker setMarkerColor "ColorBlack";
 
-                    "FOB has fallen to enemy forces!" remoteExec ["hint", -2];
+                    ["FOB has fallen to enemy forces!", "error", false, 0] call FLO_fnc_sendNotification;
                     ["FOB", 1, "FOB lost due to prolonged siege"] call FLO_fnc_log;
 
                     // Execute destruction sequence
@@ -251,7 +251,7 @@ _fobBuilding addEventHandler ["Killed", {
                     deleteMarker _statusMarker;
                     _statusMarker = nil;
                     if (_holdoutTime > 0) then {
-                        "FOB defense successful! Timer reset." remoteExec ["hint", -2];
+                        ["FOB defense successful! Timer reset.", "success", false, 0] call FLO_fnc_sendNotification;
                         ["FOB", 3, "FOB siege successfully defended"] call FLO_fnc_log;
                     };
                 };

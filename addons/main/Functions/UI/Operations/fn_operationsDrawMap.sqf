@@ -8,8 +8,11 @@ params ["_map"];
 
 if (FLO_OperationsMapDrawData isEqualTo []) exitWith {};
 
+private _drawStartedAt = diag_tickTime;
 private _mapScale = ctrlMapScale _map;
 private _selectedId = FLO_OperationsSelectedObjectiveId;
+private _drawDetailedObjectives = _mapScale <= 0.12;
+private _objectiveDrawCount = 0;
 
 {
     _x params ["_from", "_to", "_state"];
@@ -100,26 +103,15 @@ private _selectedId = FLO_OperationsSelectedObjectiveId;
         "_position",
         "_name",
         "_ownerColor",
-        "_intent",
-        "_integrationState",
-        "_contested",
-        "_underAttack"
+        "_isSpecial",
+        "_isMainEffort",
+        "_intentColor",
+        "_wideVisible"
     ];
 
     private _isSelected = _objectiveId == _selectedId;
-    private _isMainEffort = _intent in ["MAIN_EFFORT", "DEFEND_MAIN"];
-    private _isSpecial = _intent != "NONE" || {_integrationState != "INTEGRATED"} || {_contested} || {_underAttack};
-    private _intentColor = switch (_intent) do {
-        case "MAIN_EFFORT";
-        case "DEFEND_MAIN": { [1, 0.72, 0.29, 1] };
-        case "SUPPORTING_EFFORT";
-        case "DEFEND_SUPPORT": { [0.145, 0.843, 1, 1] };
-        case "SUPPORT": { [0.65, 1, 0.35, 0.95] };
-        case "FOOTHOLD";
-        case "OPPORTUNITY": { [1, 0.72, 0.29, 0.95] };
-        case "SCREEN": { [0.65, 0.72, 0.78, 0.85] };
-        default { [0.65, 0.72, 0.78, 0] };
-    };
+    if (!_drawDetailedObjectives && {!_wideVisible} && {!_isSelected}) then { continue };
+    _objectiveDrawCount = _objectiveDrawCount + 1;
 
     if (_isSpecial) then {
         _map drawIcon [
@@ -169,3 +161,31 @@ _map drawIcon [
     "RobotoCondensedBold",
     "right"
 ];
+
+private _drawElapsed = diag_tickTime - _drawStartedAt;
+FLO_OperationsMapDrawPerfCalls = FLO_OperationsMapDrawPerfCalls + 1;
+FLO_OperationsMapDrawPerfTotal = FLO_OperationsMapDrawPerfTotal + _drawElapsed;
+FLO_OperationsMapDrawPerfMax = FLO_OperationsMapDrawPerfMax max _drawElapsed;
+FLO_OperationsMapDrawPerfObjectiveTotal = FLO_OperationsMapDrawPerfObjectiveTotal + _objectiveDrawCount;
+
+private _drawWindowElapsed = diag_tickTime - FLO_OperationsMapDrawPerfStartedAt;
+if (_drawWindowElapsed >= 10) then {
+    private _average = FLO_OperationsMapDrawPerfTotal / FLO_OperationsMapDrawPerfCalls;
+    if (_average > 0.0015 || {FLO_OperationsMapDrawPerfMax > 0.004}) then {
+        diag_log format [
+            "[FLO][PERF] Operations map draw avg=%1ms max=%2ms calls=%3 objectives=%4/%5 routes=%6 logistics=%7",
+            round (_average * 100000) / 100,
+            round (FLO_OperationsMapDrawPerfMax * 100000) / 100,
+            FLO_OperationsMapDrawPerfCalls,
+            round (FLO_OperationsMapDrawPerfObjectiveTotal / FLO_OperationsMapDrawPerfCalls),
+            count FLO_OperationsMapDrawData,
+            count FLO_OperationsMapRouteDrawData,
+            count FLO_OperationsMapNodeDrawData
+        ];
+    };
+    FLO_OperationsMapDrawPerfStartedAt = diag_tickTime;
+    FLO_OperationsMapDrawPerfCalls = 0;
+    FLO_OperationsMapDrawPerfTotal = 0;
+    FLO_OperationsMapDrawPerfMax = 0;
+    FLO_OperationsMapDrawPerfObjectiveTotal = 0;
+};

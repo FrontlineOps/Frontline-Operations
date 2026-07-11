@@ -93,8 +93,6 @@ if (hasInterface) then {
             !isNull player && {player == player}
         };
 
-        ("NotificationHudLayer" call BIS_fnc_rscLayer) cutRsc ["RscNotifications", "PLAIN"];
-
         titleText ["Frontline Operations Group Presents...", "PLAIN", 3];
 
         StartingLocationDone = false;

@@ -139,6 +139,8 @@ private _gtnCommander = createHashMapObject [[
     ["_objectiveAssignmentCache", createHashMapFromArray [
         ["attackCounts", createHashMap],
         ["attackGroupIds", []],
+        ["attackCountsByOperation", createHashMap],
+        ["attackGroupsByOperation", createHashMap],
         ["orderedGroupIds", []],
         ["garrisonCounts", createHashMap],
         ["defenderCounts", createHashMap],
@@ -189,8 +191,8 @@ private _gtnCommander = createHashMapObject [[
         ["defenseObjectiveContestedBonus", 1], // Contested ownership gets a small cap bump instead of a large dogpile bonus
         ["defenseObjectiveDeficitMultiplier", 0.25], // Local force deficits should raise defense demand gradually, not explosively
         ["defenseObjectiveHardCap", 8], // Hard ceiling for total defenders on one objective
-        ["attackObjectivePackageMinimum", 20], // Every active operation maintains a real offensive package
-        ["attackObjectivePackageMaximum", 30], // Coverage and sensed pressure may widen the package to this ceiling
+        ["attackObjectivePackageMinimum", 20], // Threat-pressure floor used by target selection and CAS demand
+        ["attackObjectivePackageMaximum", 30], // Coverage ceiling for that pressure estimate, not wave commitments
         ["attackObjectiveEnemyMultiplier", 1.0], // Attack scaling should track real enemy presence more conservatively
         ["attackObjectiveUnderAttackBonus", 2], // Ongoing combat justifies more attackers, but not a heavy overcommit
         ["attackObjectiveContestedBonus", 1], // Contested enemy objectives get a slight pressure bump
@@ -427,7 +429,8 @@ private _gtnCommander = createHashMapObject [[
             ["supportMarkerCount", 0]
         ];
         private _intelDirty = _self get "_intelDirty";
-        private _intelOwnerParts = ([_self get "_ownSide"] call FLO_fnc_gtnGetSideClientOwners) apply { str _x };
+        private _intelOwners = [_self get "_ownSide"] call FLO_fnc_gtnGetSideClientOwners;
+        private _intelOwnerParts = _intelOwners apply { str _x };
         _intelOwnerParts sort true;
         private _intelOwnerSignature = _intelOwnerParts joinString ",";
         private _intelPublishDue = (_self get "_lastIntelPublishAt") < 0
@@ -437,8 +440,8 @@ private _gtnCommander = createHashMapObject [[
             || {_intelOwnerSignature != (_self get "_lastCommanderIntelOwnerSignature")}
             || {_now - (_self get "_lastIntelPublishAt") >= (((_self get "_config") get "intelPublishMinInterval") max 1)};
         _tPhase = diag_tickTime;
-        if (_intelPublishDue) then {
-            _intelPublishMetrics = [_self] call FLO_fnc_gtnPublishCommanderIntel;
+        if (_intelPublishDue && {_intelOwners isNotEqualTo []}) then {
+            _intelPublishMetrics = [_self, _intelOwners] call FLO_fnc_gtnPublishCommanderIntel;
             if (_intelPublishMetrics get "published") then {
                 _self set ["_lastIntelPublishAt", _now];
                 _self set ["_intelDirty", false];
@@ -949,6 +952,7 @@ private _gtnCommander = createHashMapObject [[
         private _ownSide = _self get "_ownSide";
         private _enemySide = _self get "_enemySide";
         private _allGroups = call FLO_fnc_virtualizationGetGroupMap;
+        private _defenseObjectiveProfiles = [_allObjectives, _ownSide, _enemySide] call FLO_fnc_gtnBuildDefenseObjectiveProfiles;
         private _defenseShare = 0;
         { _defenseShare = _defenseShare + (_x get "resourceShare"); } forEach _defenseTracks;
 
@@ -970,29 +974,10 @@ private _gtnCommander = createHashMapObject [[
                 _stickyDefenseCount = _stickyDefenseCount + 1;
             };
 
-            if (_homeObjective != "" && {_homeObjective in _allObjectives}) then {
+            if (_homeObjective in _defenseObjectiveProfiles) then {
                 private _homeObj = _allObjectives get _homeObjective;
-                if ((_homeObj get "owner") == _ownSide) then {
-                    _priorityDist = _groupPos distance2D (_homeObj get "position");
-
-                    if ((_homeObj get "underAttack") || (_homeObj get "contested")) then {
-                        _priorityBand = 0 min _priorityBand;
-                    } else {
-                        private _frontlineThreat = (_homeObj get "enemyCount") > 0;
-                        if (!_frontlineThreat) then {
-                            {
-                                private _linkedObjective = _allObjectives get _x;
-                                if ((_linkedObjective get "owner") == _enemySide) exitWith {
-                                    _frontlineThreat = true;
-                                };
-                            } forEach (_homeObj get "linkedObjectives");
-                        };
-
-                        if (_frontlineThreat) then {
-                            _priorityBand = 1 min _priorityBand;
-                        };
-                    };
-                };
+                _priorityDist = _groupPos distance2D (_homeObj get "position");
+                _priorityBand = (_defenseObjectiveProfiles get _homeObjective) min _priorityBand;
             };
 
             _rankedDefenseCandidates pushBack [_priorityBand, _priorityDist, _groupId];
@@ -1656,31 +1641,14 @@ private _gtnCommander = createHashMapObject [[
             _available = _scored apply { [_x select 1, _x select 2] };
         };
 
-        // Take requested count and extract just group IDs
+        // Extract cached IDs without rebuilding per-group debug strings.
         private _result = [];
-        private _resultInfo = [];
-        {
-            if (count _result >= _count) exitWith {};
-            _x params ["_groupId", "_gData"];
-            _result pushBack _groupId;
-
-            // Collect compact info for logging (cap to avoid heavy string work on large pools).
-            if (count _resultInfo < 12) then {
-                private _groupType = _gData get "groupType";
-                private _vehicleType = _gData getOrDefault ["vehicleType", ""];
-                private _unitCount = _gData get "unitCount";
-                private _shortId = _groupId select [7, 6]; // Extract numeric part from "vgroup_123456"
-                private _typeStr = [_groupType, _vehicleType] select (_vehicleType != "");
-                _resultInfo pushBack format["%1[%2](%3)", _shortId, _typeStr, _unitCount];
+        private _takeCount = _count min (count _available);
+        if (_takeCount > 0) then {
+            for "_index" from 0 to (_takeCount - 1) do {
+                _result pushBack ((_available select _index) select 0);
             };
-        } forEach _available;
-
-        private _extraCount = (count _result) - (count _resultInfo);
-        private _preview = _resultInfo joinString ", ";
-        if (_extraCount > 0) then {
-            _preview = format ["%1 ... +%2 more", _preview, _extraCount];
         };
-        ["GTN", 3, format["Found %1 groups (requested %2) near %3: %4", count _result, _count, _targetPos, _preview]] call FLO_fnc_log;
 
         _result
     }],

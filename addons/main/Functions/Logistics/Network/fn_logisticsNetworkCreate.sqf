@@ -89,6 +89,9 @@ if (_savedState isEqualType createHashMap) then {
             _node set ["capabilities", +_capabilities];
             _node set ["position", +(_node get "position")];
             _node set ["baseNetId", ""];
+            if !("lastPlayerDeliveryAmount" in _node) then { _node set ["lastPlayerDeliveryAmount", 0]; };
+            if !("lastPlayerDeliveryAtDateNum" in _node) then { _node set ["lastPlayerDeliveryAtDateNum", -1]; };
+            if !("lastPlayerContributorName" in _node) then { _node set ["lastPlayerContributorName", ""]; };
             _restoredNodes set [_nodeId, _node];
         } forEach _savedNodes;
         _network set ["_nodes", _restoredNodes];

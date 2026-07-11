@@ -2,6 +2,7 @@ class GTNOperations {
     file = "\z\flo\addons\main\Functions\AI\GTN\Operations";
 
     class campaignApplyCaptureBenefits {};
+    class campaignAssaultStateDefaults {};
     class campaignBuildOperationSnapshot {};
     class campaignBuildSnapshot {};
     class campaignBuildThreatSector {};
@@ -11,14 +12,17 @@ class GTNOperations {
     class campaignClearObjectiveOpportunities {};
     class campaignCollectOpportunities {};
     class campaignCreateState {};
+    class campaignCommitAssaultWave {};
     class campaignDirector {};
     class campaignEvaluateScale {};
+    class campaignEvaluateAssaultWave {};
     class campaignFindObjectiveAtPosition {};
     class campaignGetOperation {};
     class campaignGetPhaseDuration {};
     class campaignGetOperationReservation {};
     class campaignGetReachableAttackSources {};
     class campaignIntegrateObjective {};
+    class campaignInitializeAssaultState {};
     class campaignIsObjectiveIntegrated {};
     class campaignObjectiveName {};
     class campaignProcessIntegrations {};
@@ -34,5 +38,6 @@ class GTNOperations {
     class campaignSyncPrimaryProjection {};
     class campaignTransition {};
     class campaignUpdateDefenderIntel {};
+    class campaignValidateAssaultState {};
     class campaignValidateOperationBudget {};
 };

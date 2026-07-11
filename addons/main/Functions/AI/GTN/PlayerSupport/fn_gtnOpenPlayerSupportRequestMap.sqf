@@ -20,12 +20,12 @@ private _type = toUpper _supportType;
 if !(_type in ["ARTY", "CAS", "CAP"]) exitWith { false };
 if (!alive player) exitWith { false };
 if (isNil "FLO_MissionReady" || {!FLO_MissionReady}) exitWith {
-    hint "Commander support is not ready yet.";
+    ["Commander support is not ready yet.", "warning"] call FLO_fnc_displayNotification;
     false
 };
 
 if (FLO_GTN_PlayerSupportMapClickEhId >= 0) exitWith {
-    hint "A commander support request is already waiting for a map click.";
+    ["A commander support request is already waiting for a map click.", "warning"] call FLO_fnc_displayNotification;
     false
 };
 
@@ -61,7 +61,7 @@ if (!FLO_GTN_PlayerSupportCancelWatcherRunning) then {
             removeMissionEventHandler ["MapSingleClick", FLO_GTN_PlayerSupportMapClickEhId];
             FLO_GTN_PlayerSupportMapClickEhId = -1;
             if (FLO_GTN_PlayerSupportPendingType != "") then {
-                hint "Commander support request cancelled.";
+                ["Commander support request cancelled.", "warning"] call FLO_fnc_displayNotification;
             };
             FLO_GTN_PlayerSupportPendingType = "";
         };
@@ -71,6 +71,6 @@ if (!FLO_GTN_PlayerSupportCancelWatcherRunning) then {
 };
 
 openMap true;
-hint format ["Select a target area for commander %1. Close the map to cancel.", _label];
+[format ["Select a target area for commander %1. Close the map to cancel.", _label], "info"] call FLO_fnc_displayNotification;
 
 true

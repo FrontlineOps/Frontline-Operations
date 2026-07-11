@@ -29,6 +29,19 @@ if (_nearestDistance <= (_network get "DEPOT_MIN_SPACING")) exitWith { "" };
 
 private _treasury = FLO_SideResources get (_network get "_managedSideKey");
 private _cost = _network get "DEPOT_COST";
+private _spendingDecision = [
+    _treasury,
+    _cost,
+    "LOGISTICS",
+    "OPERATIONAL",
+    createHashMapFromArray [
+        ["strategic", true],
+        ["commitment", false],
+        ["reserved", false],
+        ["referenceId", _referenceId]
+    ]
+] call FLO_fnc_commanderSpendingEvaluate;
+if !(_spendingDecision get "allowed") exitWith { "" };
 if !([_treasury, _cost, "LOGISTICS", "Forward depot establishment", "COMMANDER", _referenceId, true] call FLO_fnc_sideResourcesSpendResources) exitWith { "" };
 
 private _nodeId = format ["NODE_%1_DEPOT_%2", _network get "_managedSideKey", _objectiveId];

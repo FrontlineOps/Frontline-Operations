@@ -115,9 +115,6 @@
 // IDS_Logistics (9500-9599)
 #define FLO_IDD_BUILD_MENU          9500  // Build menu dialog (existing)
 
-// IDS_Notifications (3000-3999)
-#define FLO_IDD_NOTIFICATIONS       3000
-
 // ============================================================================
 // IDC RANGES (Control IDs within dialogs)
 // ============================================================================

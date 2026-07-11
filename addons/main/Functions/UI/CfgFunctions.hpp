@@ -59,3 +59,17 @@ class OperationsUI {
     class operationsUpdateDialog {};
     class operationsWebAction {};
 };
+
+class DevelopmentUI {
+    file = "\z\flo\addons\main\Functions\UI\Development";
+
+    class developmentAddWebEventHandler {};
+    class developmentHandleUiEvent {};
+    class developmentInitClient { postInit = 1; };
+    class developmentOpenDialog {};
+    class developmentPreInit { preInit = 1; };
+    class developmentReceiveSnapshot {};
+    class developmentRequestSnapshot {};
+    class developmentRequestSnapshotServer {};
+    class developmentUpdateDialog {};
+};

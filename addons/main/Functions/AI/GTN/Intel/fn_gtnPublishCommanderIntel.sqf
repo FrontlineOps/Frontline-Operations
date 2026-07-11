@@ -7,32 +7,36 @@
  *
  * Arguments:
  *   0: GTN commander <HASHMAPOBJECT>
+ *   1: Target client owners for the commander's side <ARRAY>
  *
  * Return Value:
  *   Metrics <HASHMAP>
  */
 
-params [["_gtnCommander", nil]];
+params [
+    ["_gtnCommander", nil],
+    ["_targetOwners", [], [[]]]
+];
 
 private _metrics = createHashMapFromArray [
     ["published", false],
     ["groupCount", 0],
     ["concentrationCount", 0],
     ["friendlyGroupCount", 0],
-    ["supportMarkerCount", 0]
+    ["supportMarkerCount", 0],
+    ["targetCount", count _targetOwners]
 ];
 
 if (!isServer || {isNil "_gtnCommander"}) exitWith { _metrics };
+if (_targetOwners isEqualTo []) exitWith { _metrics };
 
 private _worldState = _gtnCommander get "_worldState";
-private _targetSide = _gtnCommander get "_ownSide";
 private _sideKey = _gtnCommander get "_sideKey";
 private _picture = [_worldState] call FLO_fnc_gtnBuildCommanderIntelPicture;
 private _groupMarkers = _picture get "enemyGroups";
 private _concentrationMarkers = _picture get "enemyConcentrations";
 private _friendlyGroupMarkers = _picture get "friendlyGroups";
 private _supportMarkers = _picture get "supportMarkers";
-private _targetOwners = [_targetSide] call FLO_fnc_gtnGetSideClientOwners;
 private _ownerSignatureParts = _targetOwners apply { str _x };
 _ownerSignatureParts sort true;
 private _ownerSignature = _ownerSignatureParts joinString ",";
@@ -55,9 +59,6 @@ _metrics set ["groupCount", count _groupMarkers];
 _metrics set ["concentrationCount", count _concentrationMarkers];
 _metrics set ["friendlyGroupCount", count _friendlyGroupMarkers];
 _metrics set ["supportMarkerCount", count _supportMarkers];
-_metrics set ["targetCount", count _targetOwners];
-
-if (_targetOwners isEqualTo []) exitWith { _metrics };
 if !(_signatureChanged || {_ownersChanged} || {_refreshDue}) exitWith { _metrics };
 
 _metrics set ["published", true];

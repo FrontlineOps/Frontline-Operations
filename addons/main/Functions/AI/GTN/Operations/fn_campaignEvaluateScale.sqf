@@ -67,6 +67,13 @@ private _operationEnvelope = (_availableResources + _operationCommitted) min (
 private _treasurySlots = floor (_operationEnvelope / (_config get "operationSupportBudgetMinimum"));
 _treasurySlots = _treasurySlots min _maximumCount;
 if (_currentCount > 0) then { _treasurySlots = _treasurySlots max 1; };
+if (_currentCount < _maximumCount) then {
+    private _nextRole = ["SUPPORTING_EFFORT", "MAIN_EFFORT"] select (_currentCount == 0);
+    private _nextBudget = [_director, _sideKey, _nextRole] call FLO_fnc_campaignCalculateOperationBudget;
+    if (_nextBudget <= 0) then {
+        _treasurySlots = _currentCount;
+    };
+};
 
 private _worldObjectives = (_commander get "_worldState") call ["_getObjectives", []];
 private _threatenedObjectives = 0;

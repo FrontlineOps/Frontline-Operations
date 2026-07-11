@@ -76,11 +76,14 @@ private _objective = _objectives get _objectiveId;
 if ((_objective get "owner") != _enemySide) exitWith { _metrics };
 
 private _tCandidateBuild = diag_tickTime;
-private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
-private _activeAttackCounts = (_cmdr get "_objectiveAssignmentCache") get "attackCounts";
-private _attackGroupIds = (_cmdr get "_objectiveAssignmentCache") get "attackGroupIds";
-private _activeAttackers = if (_objectiveId in _activeAttackCounts) then {
-    _activeAttackCounts get _objectiveId
+private _attackCap = _operation get "assaultActiveTarget";
+private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
+private _activeAttackCounts = _assignmentCache get "attackCounts";
+private _attackCountsByOperation = _assignmentCache get "attackCountsByOperation";
+private _attackGroupsByOperation = _assignmentCache get "attackGroupsByOperation";
+private _attackGroupIds = _assignmentCache get "attackGroupIds";
+private _activeAttackers = if (_operationId in _attackCountsByOperation) then {
+    _attackCountsByOperation get _operationId
 } else {
     0
 };
@@ -124,12 +127,21 @@ while {!_stop && {_poolEntries isNotEqualTo []} && {_deficit > 0}} do {
         _deficit = _deficit - 1;
         _activeAttackers = _activeAttackers + 1;
         _activeAttackCounts set [_objectiveId, _activeAttackers];
+        _attackCountsByOperation set [_operationId, _activeAttackers];
+        private _operationGroups = if (_operationId in _attackGroupsByOperation) then {
+            _attackGroupsByOperation get _operationId
+        } else {
+            []
+        };
+        _operationGroups pushBack _groupId;
+        _attackGroupsByOperation set [_operationId, _operationGroups];
         _attackGroupIds pushBackUnique _groupId;
         _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
     };
 };
 
 if ((_metrics get "assignedGroups") > 0) then {
+    [_director, _operationId, _metrics get "assignedGroups"] call FLO_fnc_campaignCommitAssaultWave;
     if (_startingAttackers > 0) then {
         _metrics set ["reinforcedObjectives", 1];
         _metrics set ["replacementOrders", _metrics get "assignedGroups"];

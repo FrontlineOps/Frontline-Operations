@@ -33,6 +33,8 @@ if (_previousOwner isEqualTo _newOwner) exitWith { false };
 
 private _captureDateNum = dateToNumber date;
 
+_obj = [_objectiveId, _obj, _previousOwner, _newOwner] call FLO_fnc_objectiveDevelopmentHandleCapture;
+
 // Update owner
 _obj set ["owner", _newOwner];
 _obj set ["capturedAtDateNum", _captureDateNum];

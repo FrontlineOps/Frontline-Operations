@@ -84,6 +84,20 @@ for "_i" from 1 to _groundCreateCap do {
     private _spawnObjectiveId = [_spawnObjectiveIds, _groundByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
     if !(_spawnObjectiveId in _activeSupplyNodes) exitWith {};
     private _sourceNodeId = (_activeSupplyNodes get _spawnObjectiveId) get "nodeId";
+    private _spendingDecision = [
+        _resources,
+        _groundCost,
+        "TRANSPORT",
+        "ROUTINE",
+        createHashMapFromArray [
+            ["strategic", true],
+            ["commitment", false],
+            ["reserved", false],
+            ["referenceId", _spawnObjectiveId]
+        ]
+    ] call FLO_fnc_commanderSpendingEvaluate;
+    if !(_spendingDecision get "allowed") exitWith {};
+
     private _reservationId = format ["TRANSPORT:%1:GROUND:%2:%3", _sideKey, round (diag_tickTime * 1000), _i];
     if !(_resources call ["reserve", [_reservationId, _groundCost, "TRANSPORT", "Ground transport reserve", "COMMANDER", _spawnObjectiveId]]) exitWith {};
     if !([_net, _sourceNodeId, _groundCost, "Ground transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
@@ -124,6 +138,20 @@ for "_i" from 1 to _airCreateCap do {
     private _spawnObjectiveId = [_spawnObjectiveIds, _airByObjective, _activeSupplyNodes, _reserveObjectiveId] call FLO_fnc_transportPickReserveSpawnObjective;
     if !(_spawnObjectiveId in _activeSupplyNodes) exitWith {};
     private _sourceNodeId = (_activeSupplyNodes get _spawnObjectiveId) get "nodeId";
+    private _spendingDecision = [
+        _resources,
+        _airCost,
+        "TRANSPORT",
+        "ROUTINE",
+        createHashMapFromArray [
+            ["strategic", true],
+            ["commitment", false],
+            ["reserved", false],
+            ["referenceId", _spawnObjectiveId]
+        ]
+    ] call FLO_fnc_commanderSpendingEvaluate;
+    if !(_spendingDecision get "allowed") exitWith {};
+
     private _reservationId = format ["TRANSPORT:%1:AIR:%2:%3", _sideKey, round (diag_tickTime * 1000), _i];
     if !(_resources call ["reserve", [_reservationId, _airCost, "TRANSPORT", "Air transport reserve", "COMMANDER", _spawnObjectiveId]]) exitWith {};
     if !([_net, _sourceNodeId, _airCost, "Air transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {

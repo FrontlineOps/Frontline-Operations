@@ -6,7 +6,7 @@ if (isMultiplayer && {remoteExecutedOwner isNotEqualTo 2} && {remoteExecutedOwne
     diag_log format ["[FLO][Base] Rejected deploy result from owner %1", remoteExecutedOwner];
 };
 
-hint _message;
+[_message, ["warning", "success"] select _success] call FLO_fnc_displayNotification;
 
 private _control = uiNamespace getVariable ["FLO_DeployControl", controlNull];
 

@@ -29,6 +29,19 @@ private _config = createHashMapFromArray [
     ["operationSupportBudgetFraction", 0.125],
     ["operationSupportBudgetMinimum", 600],
     ["operationSupportBudgetMaximum", 1500],
+    ["mainAssaultPackageMinimum", 24],
+    ["mainAssaultPackageMaximum", 30],
+    ["mainAssaultActiveTarget", 10],
+    ["mainAssaultWaveSize", 6],
+    ["supportAssaultPackageMinimum", 20],
+    ["supportAssaultPackageMaximum", 24],
+    ["supportAssaultActiveTarget", 7],
+    ["supportAssaultWaveSize", 4],
+    ["assaultWaveCooldownSeconds", 180],
+    ["assaultLossPauseRatio", 0.35],
+    ["assaultLossCulminationRatio", 0.55],
+    ["assaultNoProgressSeconds", 300],
+    ["assaultReorganizationSeconds", 240],
     ["opportunityExpireSeconds", 900],
     ["opportunityMinimumSamples", 3],
     ["footholdMinimumHoldSeconds", 600],
@@ -86,12 +99,27 @@ private _director = createHashMapObject [[
                 ["resourceBudget", _operation get "resourceBudget"],
                 ["resourceSpent", _operation get "resourceSpent"],
                 ["resourceReleased", _operation get "resourceReleased"],
-                ["drawdownPending", _operation get "drawdownPending"]
+                ["drawdownPending", _operation get "drawdownPending"],
+                ["assaultPackageTarget", _operation get "assaultPackageTarget"],
+                ["assaultActiveTarget", _operation get "assaultActiveTarget"],
+                ["assaultWaveSize", _operation get "assaultWaveSize"],
+                ["assaultCommittedTotal", _operation get "assaultCommittedTotal"],
+                ["assaultLosses", _operation get "assaultLosses"],
+                ["assaultWaveSequence", _operation get "assaultWaveSequence"],
+                ["assaultNextWaveAtDateNum", _operation get "assaultNextWaveAtDateNum"],
+                ["assaultPauseUntilDateNum", _operation get "assaultPauseUntilDateNum"],
+                ["assaultLastProgressAtDateNum", _operation get "assaultLastProgressAtDateNum"],
+                ["assaultBestDistance", _operation get "assaultBestDistance"],
+                ["assaultLastEnemyCount", _operation get "assaultLastEnemyCount"],
+                ["assaultLastArrivedCount", _operation get "assaultLastArrivedCount"],
+                ["assaultPauseCount", _operation get "assaultPauseCount"],
+                ["assaultLastContested", _operation get "assaultLastContested"],
+                ["assaultStatus", _operation get "assaultStatus"]
             ]];
         } forEach (_current get "operations");
 
         createHashMapFromArray [
-            ["schemaVersion", 5],
+            ["schemaVersion", 6],
             ["sequence", _current get "sequence"],
             ["revision", _current get "revision"],
             ["initiativeSideKey", _current get "initiativeSideKey"],
@@ -224,6 +252,9 @@ private _director = createHashMapObject [[
             ["resourceReleased", 0],
             ["drawdownPending", false]
         ];
+        {
+            _operation set [_x, _y];
+        } forEach (call FLO_fnc_campaignAssaultStateDefaults);
 
         _operations set [_operationId, _operation];
         _order pushBack _operationId;

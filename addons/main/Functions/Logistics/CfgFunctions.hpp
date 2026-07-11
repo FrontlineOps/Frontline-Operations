@@ -29,6 +29,7 @@ class LogisticsNetwork {
     class logisticsNetworkFindReinforcementTargets {};
     class logisticsNetworkFindSpawnPosition {};
     class logisticsNetworkGetComposition {};
+    class logisticsNetworkGetReplacementUrgency {};
     class logisticsNetworkGetNodeForBase {};
     class logisticsNetworkGetSideSnapshot {};
     class logisticsNetworkGetObjectiveSupplyBranch {};

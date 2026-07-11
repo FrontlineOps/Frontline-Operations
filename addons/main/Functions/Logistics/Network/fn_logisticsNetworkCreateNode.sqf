@@ -52,6 +52,9 @@ private _node = createHashMapFromArray [
     ["commanderSource", _commanderSource],
     ["capabilities", +_capabilities],
     ["deliveryCount", 0],
+    ["lastPlayerDeliveryAmount", 0],
+    ["lastPlayerDeliveryAtDateNum", -1],
+    ["lastPlayerContributorName", ""],
     ["requiredDeliveries", _requiredDeliveries],
     ["establishAtDateNum", _establishAtDateNum],
     ["baseNetId", ""],
@@ -59,5 +62,5 @@ private _node = createHashMapFromArray [
 ];
 
 _nodes set [_nodeId, _node];
-[_network, true] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
+[_network, false] call FLO_fnc_logisticsNetworkMarkSupplyChainDirty;
 _node

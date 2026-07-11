@@ -1,13 +1,13 @@
 if (!hasInterface) exitWith { false };
 
 if !(missionNamespace getVariable ["FLO_MissionReady", false]) exitWith {
-    hint "Deployment is available after mission setup completes.";
+    ["Deployment is available after mission setup completes.", "warning"] call FLO_fnc_displayNotification;
     false
 };
 
 private _side = side group player;
 if !(_side in [west, east]) exitWith {
-    hint "Deployment is only available to BLUFOR and OPFOR.";
+    ["Deployment is only available to BLUFOR and OPFOR.", "warning"] call FLO_fnc_displayNotification;
     false
 };
 

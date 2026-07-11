@@ -30,7 +30,9 @@ _metrics set ["meaningfulTrackCount", count _activeTracks];
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _remaining = _candidateGroupIds select { _x in _groups };
-private _activeAttackCounts = (_cmdr get "_objectiveAssignmentCache") get "attackCounts";
+private _director = _cmdr get "_campaignDirector";
+private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
+private _attackGroupsByOperation = _assignmentCache get "attackGroupsByOperation";
 private _trackExistingCounts = createHashMap;
 private _trackGoals = createHashMap;
 
@@ -38,19 +40,25 @@ private _trackGoals = createHashMap;
     private _track = _x;
     private _trackId = _track get "id";
     private _objectiveId = _track get "phaseObjectiveId";
-    private _existingCount = if (_objectiveId in _activeAttackCounts) then {
-        _activeAttackCounts get _objectiveId
+    private _operationId = _track get "phaseOperationId";
+    private _activeGroupIds = if (_operationId in _attackGroupsByOperation) then {
+        +(_attackGroupsByOperation get _operationId)
     } else {
-        0
+        []
     };
-    private _goal = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
+    private _decision = [_director, _cmdr, _operationId, _activeGroupIds] call FLO_fnc_campaignEvaluateAssaultWave;
     _track set ["groupPool", []];
+    _track set ["assaultWaveDecision", _decision];
+    private _existingCount = _decision get "activeCount";
+    private _goal = _decision get "activeTarget";
     _trackExistingCounts set [_trackId, _existingCount];
     _trackGoals set [_trackId, _goal];
+    if (_decision get "culminated") then { continue };
+
     _metrics set ["attackGoal", (_metrics get "attackGoal") max _goal];
 
-    private _needed = (_goal - _existingCount) max 0;
-    _metrics set ["deficitCount", (_metrics get "deficitCount") + _needed];
+    private _needed = _decision get "quota";
+    _metrics set ["deficitCount", (_metrics get "deficitCount") + ((_goal - _existingCount) max 0)];
     private _targetPosition = (FLO_Objectives get _objectiveId) get "position";
     private _rankedCandidates = _remaining apply {
         [((_groups get _x) get "position") distance2D _targetPosition, _x]

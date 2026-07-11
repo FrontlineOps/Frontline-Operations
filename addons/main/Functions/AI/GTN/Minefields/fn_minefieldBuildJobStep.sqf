@@ -193,7 +193,7 @@ switch (_job get "stage") do {
     case "budget": {
         private _tBudget = diag_tickTime;
         private _mineSpecs = _job get "layoutMineSpecs";
-        private _budget = [(_job get "sideKey"), count _mineSpecs] call FLO_fnc_minefieldResolveResourceBudget;
+        private _budget = [(_job get "sideKey"), count _mineSpecs, _objectiveId] call FLO_fnc_minefieldResolveResourceBudget;
 
         _metrics set ["budgetMs", (_metrics get "budgetMs") + ((diag_tickTime - _tBudget) * 1000)];
         _metrics set ["affordableMineCount", _budget get "affordableMineCount"];

@@ -27,6 +27,8 @@ if (isNil "FLO_GTN_CombatState") then {
     FLO_GTN_CombatState set ["zonesEngagementDist", -1];
     FLO_GTN_CombatState set ["objectiveContextCache", createHashMap];
     FLO_GTN_CombatState set ["objectiveContextCellSize", 250];
+    FLO_GTN_CombatState set ["engagements", createHashMap];
+    FLO_GTN_CombatState set ["engagementStateTTL", 120];
 };
 
 FLO_GTN_CombatState

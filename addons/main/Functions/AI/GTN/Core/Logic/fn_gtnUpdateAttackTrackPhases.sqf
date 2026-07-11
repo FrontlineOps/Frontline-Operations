@@ -76,7 +76,7 @@ private _config = _cmdr get "_config";
     if (_desiredObjectiveId != "") then {
         _metrics set ["selectedObjectiveCount", (_metrics get "selectedObjectiveCount") + 1];
         if (_desiredPhase == "assault") then {
-            private _goal = _cmdr call ["_getAttackCapForObjective", [_desiredObjectiveId]];
+            private _goal = (_operations get _desiredOperationId) get "assaultActiveTarget";
             _metrics set ["baselineTotalGroups", (_metrics get "baselineTotalGroups") + _goal];
         };
     };
