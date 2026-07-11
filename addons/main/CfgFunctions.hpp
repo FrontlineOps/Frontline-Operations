@@ -37,6 +37,8 @@ class FLO {
         class initRunPhase {};
         class initSideResourcesUninitialized {};
         class initStartRadarDataLink {};
+        class initActivatePlayer    {};
+        class initDeployPlayer      {};
         class initClientFinalize    {};
         class addonPostInit         {postInit = 1;};
     };

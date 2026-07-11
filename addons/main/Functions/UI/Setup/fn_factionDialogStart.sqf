@@ -279,7 +279,6 @@ _display closeDisplay 1;
 
 		// Store the selected position
 		missionNamespace setVariable ["FLO_StartPosition", _pos, true];
-        missionNamespace setVariable ["FLO_InitRespawnRequired", true, false];
 
 		titleText ["Initializing Frontline Operations...", "BLACK FADED", 0.1, true, true];
 	}];
