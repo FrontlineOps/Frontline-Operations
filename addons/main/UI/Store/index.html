@@ -1,0 +1,2732 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store</title>
+    <style>
+        html {
+            color-scheme: dark;
+            background: rgba(3, 8, 14, 0.78);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            color: #F2F7FA;
+            font-family: "Bahnschrift", "DIN Condensed", "Arial Narrow", Arial, sans-serif;
+            font-size: 18px;
+            letter-spacing: 0;
+            background:
+                radial-gradient(circle at 22% 12%, rgba(37, 215, 255, 0.13), rgba(37, 215, 255, 0) 24%),
+                radial-gradient(circle at 82% 18%, rgba(36, 124, 255, 0.18), rgba(36, 124, 255, 0) 30%),
+                linear-gradient(135deg, rgba(3, 8, 14, 0.78), rgba(3, 8, 14, 0.92));
+        }
+
+        body::before {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            content: "";
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 64px 64px, 64px 64px;
+            mix-blend-mode: screen;
+            opacity: 0.18;
+        }
+
+        body::after {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            content: "";
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 42%),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 36%, rgba(0, 0, 0, 0.36));
+            backdrop-filter: blur(5px);
+        }
+
+        button,
+        input {
+            font: inherit;
+            letter-spacing: 0;
+        }
+
+        button {
+            cursor: pointer;
+            color: #F2F7FA;
+            border: 0;
+            background: transparent;
+        }
+
+        button:disabled {
+            cursor: default;
+            color: #66788A;
+        }
+
+        input {
+            width: 100%;
+            color: #F2F7FA;
+            border: 1px solid rgba(103, 232, 255, 0.22);
+            outline: none;
+            background: rgba(4, 10, 16, 0.58);
+            box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.32);
+        }
+
+        input:focus {
+            border-color: rgba(37, 215, 255, 0.76);
+            box-shadow: 0 0 0 1px rgba(37, 215, 255, 0.24), inset 0 0 22px rgba(37, 215, 255, 0.08);
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        .shell {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-rows: 92px minmax(0, 1fr) minmax(72px, auto);
+            gap: 14px;
+            width: 100vw;
+            height: 100vh;
+            padding: 22px 28px 24px;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: minmax(360px, 0.86fr) minmax(520px, 1.2fr) minmax(360px, 0.74fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .brand,
+        .status-strip,
+        .side-status {
+            position: relative;
+            overflow: hidden;
+            background: rgba(12, 22, 32, 0.72);
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+            clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        .brand::after,
+        .status-strip::after,
+        .side-status::after,
+        .panel::after,
+        .actionbar::after {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 1px;
+            content: "";
+            background: linear-gradient(90deg, rgba(37, 215, 255, 0.9), rgba(103, 232, 255, 0.16), transparent);
+        }
+
+        .brand {
+            padding: 16px 22px;
+        }
+
+        .overline {
+            color: #25D7FF;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .brand h1 {
+            margin-top: 4px;
+            color: #F2F7FA;
+            font-size: 42px;
+            line-height: 0.94;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .status-strip {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 1px;
+            padding: 10px;
+            background:
+                linear-gradient(90deg, rgba(37, 215, 255, 0.08), transparent 50%),
+                rgba(12, 22, 32, 0.72);
+        }
+
+        .status-strip.has-deployment {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .stat {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 16px;
+            border-left: 1px solid rgba(103, 232, 255, 0.14);
+        }
+
+        .stat:first-child {
+            border-left: 0;
+        }
+
+        .stat-label {
+            color: #66788A;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            margin-top: 6px;
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 23px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .stat-value.amber {
+            color: #FFB84A;
+            text-shadow: 0 0 16px rgba(255, 184, 74, 0.18);
+        }
+
+        .stat-value.cyan {
+            color: #25D7FF;
+            text-shadow: 0 0 16px rgba(37, 215, 255, 0.2);
+        }
+
+        .side-status {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            align-items: center;
+            padding: 14px 18px;
+        }
+
+        .side-name {
+            overflow: hidden;
+            font-size: 26px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 270px minmax(0, 1fr) 440px;
+            gap: 14px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .panel {
+            position: relative;
+            min-height: 0;
+            overflow: hidden;
+            background:
+                linear-gradient(145deg, rgba(37, 215, 255, 0.055), transparent 42%),
+                rgba(12, 22, 32, 0.72);
+            box-shadow: 0 22px 58px rgba(0, 0, 0, 0.42);
+            clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        .nav-panel,
+        .armory-panel,
+        .operator-panel {
+            display: grid;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .nav-panel {
+            grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .armory-panel {
+            grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .operator-panel {
+            grid-template-rows: auto minmax(0, 1.9fr) minmax(0, 0.85fr);
+            min-height: 0;
+            overflow: hidden auto;
+            overscroll-behavior: contain;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+            clip-path: none;
+            scrollbar-gutter: stable;
+        }
+
+        .operator-section {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            overflow: hidden;
+            padding: 14px;
+            background:
+                linear-gradient(150deg, rgba(103, 232, 255, 0.055), rgba(103, 232, 255, 0) 44%),
+                rgba(12, 22, 32, 0.72);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+            clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+        }
+
+        .operator-section > .panel-head,
+        .operator-section > .summary-grid,
+        .operator-section > .kit-tools {
+            flex: 0 0 auto;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .panel-title {
+            min-width: 0;
+        }
+
+        .panel-title h2 {
+            margin-top: 3px;
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 30px;
+            line-height: 1;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .panel-title p {
+            margin-top: 7px;
+            color: #A7B7C8;
+            font-size: 16px;
+            line-height: 1.25;
+        }
+
+        .category-list {
+            display: flex;
+            min-height: 0;
+            flex-direction: column;
+            gap: 7px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            padding: 2px 10px 14px 0;
+            scrollbar-gutter: stable;
+        }
+
+        .category {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            min-height: 52px;
+            padding: 0 14px 0 18px;
+            color: #A7B7C8;
+            border-left: 3px solid rgba(103, 232, 255, 0.12);
+            background: linear-gradient(90deg, rgba(20, 34, 48, 0.54), rgba(20, 34, 48, 0.2));
+            font-size: 18px;
+            font-weight: 900;
+            text-align: left;
+            text-transform: uppercase;
+            clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+            transition: background 120ms ease, color 120ms ease, border-color 120ms ease, transform 120ms ease;
+        }
+
+        .category:hover {
+            color: #F2F7FA;
+            border-color: rgba(37, 215, 255, 0.72);
+            background: linear-gradient(90deg, rgba(24, 58, 82, 0.72), rgba(20, 34, 48, 0.34));
+            transform: translateX(2px);
+        }
+
+        .category.selected {
+            color: #F2F7FA;
+            border-color: #25D7FF;
+            background:
+                linear-gradient(90deg, rgba(37, 215, 255, 0.22), rgba(24, 58, 82, 0.92)),
+                rgba(24, 58, 82, 0.92);
+            box-shadow: 0 0 24px rgba(37, 215, 255, 0.16);
+        }
+
+        .category span:last-child {
+            color: #25D7FF;
+            font-size: 16px;
+        }
+
+        .armory-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 330px;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .search-wrap {
+            position: relative;
+        }
+
+        .search-wrap input {
+            height: 50px;
+            padding: 0 15px 0 45px;
+            font-size: 17px;
+            font-weight: 800;
+            text-transform: uppercase;
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        .search-wrap::before {
+            position: absolute;
+            top: 16px;
+            left: 17px;
+            width: 12px;
+            height: 12px;
+            content: "";
+            border: 2px solid #25D7FF;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .search-wrap::after {
+            position: absolute;
+            top: 29px;
+            left: 29px;
+            width: 10px;
+            height: 2px;
+            content: "";
+            background: #25D7FF;
+            transform: rotate(45deg);
+            transform-origin: left center;
+            opacity: 0.8;
+        }
+
+        .armory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            grid-auto-rows: 248px;
+            gap: 12px;
+            align-content: start;
+            min-height: 0;
+            overflow: auto;
+            overscroll-behavior: contain;
+            padding: 2px 10px 18px 0;
+            scrollbar-gutter: stable;
+        }
+
+        .armory-card {
+            position: relative;
+            display: grid;
+            grid-template-rows: 104px 86px 58px;
+            height: 248px;
+            min-height: 0;
+            overflow: hidden;
+            color: #F2F7FA;
+            background:
+                linear-gradient(155deg, rgba(103, 232, 255, 0.08), rgba(103, 232, 255, 0) 38%),
+                rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.12), 0 16px 30px rgba(0, 0, 0, 0.26);
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+            transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+        }
+
+        .armory-card:hover {
+            transform: translateY(-2px);
+            box-shadow: inset 0 0 0 1px rgba(37, 215, 255, 0.45), 0 22px 38px rgba(0, 0, 0, 0.34), 0 0 26px rgba(37, 215, 255, 0.11);
+        }
+
+        .armory-card.selected {
+            background:
+                linear-gradient(155deg, rgba(37, 215, 255, 0.22), rgba(36, 124, 255, 0.1) 44%),
+                rgba(24, 58, 82, 0.92);
+            box-shadow: inset 0 0 0 1px rgba(37, 215, 255, 0.78), 0 24px 42px rgba(0, 0, 0, 0.4), 0 0 34px rgba(37, 215, 255, 0.2);
+        }
+
+        .armory-card.locked {
+            opacity: 0.58;
+        }
+
+        .card-media {
+            position: relative;
+            margin: 10px 10px 0;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 50% 45%, rgba(103, 232, 255, 0.12), rgba(103, 232, 255, 0) 54%),
+                linear-gradient(135deg, rgba(4, 10, 16, 0.94), rgba(17, 31, 44, 0.78));
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        .texture-img {
+            position: absolute;
+            inset: 8px;
+            width: calc(100% - 16px);
+            height: calc(100% - 16px);
+            object-fit: contain;
+            filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+        }
+
+        .media-fallback {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(37, 215, 255, 0.76);
+            font-size: 48px;
+            font-weight: 900;
+            text-shadow: 0 0 22px rgba(37, 215, 255, 0.28);
+        }
+
+        .media-status {
+            position: absolute;
+            right: 10px;
+            bottom: 8px;
+            color: #66788A;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .card-body {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            padding: 12px 14px 8px;
+        }
+
+        .item-name {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 21px;
+            font-weight: 900;
+            line-height: 1.12;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .item-meta {
+            margin-top: 8px;
+            overflow: hidden;
+            color: #A7B7C8;
+            font-size: 12px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .card-actions {
+            display: grid;
+            grid-template-columns: minmax(96px, 1fr) auto auto;
+            gap: 8px;
+            align-items: stretch;
+            align-self: end;
+            min-height: 58px;
+            padding: 0 10px 10px;
+        }
+
+        .card-price {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            min-width: 96px;
+            height: 42px;
+            min-height: 42px;
+            padding: 0 13px;
+            color: #FFB84A;
+            background:
+                linear-gradient(90deg, rgba(255, 184, 74, 0.18), rgba(255, 184, 74, 0.035)),
+                rgba(4, 10, 16, 0.42);
+            box-shadow: inset 3px 0 0 rgba(255, 184, 74, 0.95), inset 0 0 0 1px rgba(255, 184, 74, 0.16);
+            font-size: 22px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 184, 74, 0.18);
+            clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+        }
+
+        .price {
+            color: #FFB84A;
+            font-size: 22px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 184, 74, 0.18);
+        }
+
+        .action-btn {
+            height: 42px;
+            min-height: 42px;
+            padding: 0 16px;
+            color: #F2F7FA;
+            background:
+                linear-gradient(135deg, rgba(37, 215, 255, 0.24), rgba(36, 124, 255, 0.16)),
+                rgba(24, 58, 82, 0.92);
+            box-shadow: inset 0 0 0 1px rgba(37, 215, 255, 0.54), 0 0 18px rgba(37, 215, 255, 0.12);
+            font-size: 15px;
+            font-weight: 900;
+            text-transform: uppercase;
+            clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+        }
+
+        .action-btn:hover {
+            background:
+                linear-gradient(135deg, rgba(37, 215, 255, 0.36), rgba(36, 124, 255, 0.28)),
+                rgba(24, 58, 82, 0.98);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.82), 0 0 24px rgba(37, 215, 255, 0.2);
+        }
+
+        .action-btn:disabled,
+        .action-btn:disabled:hover {
+            color: #66788A;
+            background: rgba(20, 34, 48, 0.46);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.08);
+        }
+
+        .action-btn.secondary {
+            color: #A7B7C8;
+            background: rgba(20, 34, 48, 0.78);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.18);
+        }
+
+        .action-btn.secondary:hover {
+            color: #F2F7FA;
+            box-shadow: inset 0 0 0 1px rgba(37, 215, 255, 0.46), 0 0 18px rgba(37, 215, 255, 0.1);
+        }
+
+        .action-btn.danger {
+            color: #FF4D5E;
+            background: rgba(54, 18, 24, 0.76);
+            box-shadow: inset 0 0 0 1px rgba(255, 77, 94, 0.36);
+        }
+
+        .action-btn.good {
+            color: #0B1117;
+            background: linear-gradient(135deg, #A7FF5A, rgba(167, 255, 90, 0.72));
+            box-shadow: 0 0 22px rgba(167, 255, 90, 0.18);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .summary-tile {
+            min-height: 66px;
+            padding: 11px;
+            background: rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.12);
+            clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+        }
+
+        .summary-tile .label {
+            color: #66788A;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .summary-tile .value {
+            margin-top: 6px;
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 20px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .target-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .chip {
+            min-height: 34px;
+            padding: 0 8px;
+            color: #A7B7C8;
+            background: rgba(4, 10, 16, 0.48);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+        }
+
+        .chip.selected {
+            color: #0B1117;
+            background: #A7FF5A;
+            box-shadow: 0 0 18px rgba(167, 255, 90, 0.16);
+        }
+
+        .scroll-list {
+            display: flex;
+            flex: 1 1 auto;
+            min-height: 0;
+            flex-direction: column;
+            gap: 8px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            padding: 2px 10px 24px 0;
+            scroll-padding-bottom: 24px;
+            scrollbar-gutter: stable;
+        }
+
+        .cart-line,
+        .kit-line {
+            position: relative;
+            display: grid;
+            flex: 0 0 auto;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            min-height: 72px;
+            padding: 10px;
+            background: rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.12);
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+        }
+
+        .cart-line.targetable {
+            cursor: pointer;
+        }
+
+        .cart-line.active-target {
+            box-shadow: inset 0 0 0 1px rgba(167, 255, 90, 0.62), 0 0 20px rgba(167, 255, 90, 0.1);
+            background:
+                linear-gradient(90deg, rgba(167, 255, 90, 0.08), rgba(20, 34, 48, 0.82)),
+                rgba(20, 34, 48, 0.82);
+        }
+
+        .line-title {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            align-items: baseline;
+        }
+
+        .name {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 17px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .meta {
+            margin-top: 5px;
+            color: #A7B7C8;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .qty {
+            display: grid;
+            grid-template-columns: 32px 32px 32px;
+            gap: 5px;
+            align-items: center;
+            justify-items: center;
+        }
+
+        .qty button {
+            width: 32px;
+            height: 32px;
+            color: #F2F7FA;
+            background: rgba(4, 10, 16, 0.52);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.2);
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .qty span {
+            color: #F2F7FA;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .container-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .container-row .chip {
+            min-width: 74px;
+        }
+
+        .kit-tools {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .kit-tools input {
+            height: 44px;
+            padding: 0 13px;
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+        }
+
+        .empty,
+        .message {
+            color: #A7B7C8;
+            border: 1px dashed rgba(103, 232, 255, 0.26);
+            background: rgba(4, 10, 16, 0.34);
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .empty {
+            padding: 16px;
+            text-transform: uppercase;
+        }
+
+        .message {
+            display: flex;
+            position: relative;
+            align-items: center;
+            min-width: 0;
+            min-height: 52px;
+            padding: 0 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+            transform-origin: left center;
+        }
+
+        .message.good {
+            color: #A7FF5A;
+            border-color: rgba(167, 255, 90, 0.4);
+            background: rgba(167, 255, 90, 0.06);
+        }
+
+        .message.good::after {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            content: "";
+            background: linear-gradient(90deg, #A7FF5A, rgba(37, 215, 255, 0.72), transparent);
+            animation: message-countdown 1800ms linear forwards;
+        }
+
+        .message.error {
+            color: #FF4D5E;
+            border-color: rgba(255, 77, 94, 0.42);
+            background: rgba(255, 77, 94, 0.07);
+        }
+
+        .message.dismiss {
+            animation: message-dismiss 460ms ease forwards;
+        }
+
+        .message.idle {
+            opacity: 0;
+            border-color: transparent;
+            background: transparent;
+        }
+
+        @keyframes message-countdown {
+            from {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+
+            to {
+                transform: scaleX(0);
+                opacity: 0.35;
+            }
+        }
+
+        @keyframes message-dismiss {
+            from {
+                opacity: 1;
+                transform: translateY(0) scaleX(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(9px) scaleX(0.985);
+                border-color: transparent;
+                background: transparent;
+            }
+        }
+
+        .actionbar {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
+            padding: 14px;
+            background: rgba(12, 22, 32, 0.72);
+            box-shadow: 0 20px 54px rgba(0, 0, 0, 0.42);
+            clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        .bottom-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+            min-width: 0;
+        }
+
+        .bottom-actions .action-btn {
+            flex: 0 0 auto;
+            min-width: 126px;
+            min-height: 52px;
+            font-size: 16px;
+        }
+
+        .bottom-actions .action-btn.good {
+            min-width: 160px;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            z-index: 20;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(37, 215, 255, 0.12), rgba(37, 215, 255, 0) 38%),
+                rgba(3, 8, 14, 0.72);
+            backdrop-filter: blur(8px);
+        }
+
+        .attachment-modal {
+            position: relative;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            width: min(760px, 92vw);
+            max-height: min(720px, 88vh);
+            overflow: hidden;
+            background:
+                linear-gradient(155deg, rgba(37, 215, 255, 0.12), rgba(37, 215, 255, 0) 34%),
+                rgba(12, 22, 32, 0.94);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.34), 0 30px 70px rgba(0, 0, 0, 0.58), 0 0 42px rgba(37, 215, 255, 0.16);
+            clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+        }
+
+        .attachment-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: start;
+            padding: 22px 24px 16px;
+            border-bottom: 1px solid rgba(103, 232, 255, 0.18);
+        }
+
+        .attachment-title {
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 30px;
+            line-height: 1.05;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .attachment-subtitle {
+            margin-top: 8px;
+            color: #A7B7C8;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .attachment-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            min-height: 0;
+            overflow: auto;
+            padding: 16px 24px 20px;
+            scrollbar-gutter: stable;
+        }
+
+        .attachment-row {
+            display: grid;
+            grid-template-columns: 72px minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
+            min-height: 84px;
+            padding: 10px;
+            background:
+                linear-gradient(90deg, rgba(37, 215, 255, 0.08), rgba(20, 34, 48, 0.82)),
+                rgba(20, 34, 48, 0.82);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.14);
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+        }
+
+        .attachment-media {
+            position: relative;
+            width: 72px;
+            height: 54px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 50% 45%, rgba(103, 232, 255, 0.12), rgba(103, 232, 255, 0) 56%),
+                rgba(4, 10, 16, 0.66);
+            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.12);
+        }
+
+        .attachment-media .media-fallback {
+            font-size: 24px;
+        }
+
+        .attachment-media .media-status {
+            display: none;
+        }
+
+        .attachment-slot {
+            color: #25D7FF;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .attachment-name {
+            margin-top: 5px;
+            overflow: hidden;
+            color: #F2F7FA;
+            font-size: 17px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .attachment-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 14px 24px 22px;
+            border-top: 1px solid rgba(103, 232, 255, 0.14);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(4, 10, 16, 0.36);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(37, 215, 255, 0.38);
+        }
+
+        @media (max-width: 1500px) {
+            .layout {
+                grid-template-columns: 238px minmax(0, 1fr) 390px;
+            }
+
+            .armory-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+
+            .panel-title h2 {
+                font-size: 26px;
+            }
+        }
+
+        @media (max-height: 860px) {
+            .shell {
+                grid-template-rows: 78px minmax(0, 1fr) minmax(64px, auto);
+                gap: 10px;
+                padding: 16px 22px 18px;
+            }
+
+            .topbar {
+                gap: 12px;
+            }
+
+            .brand {
+                padding: 12px 18px;
+            }
+
+            .brand h1 {
+                font-size: 34px;
+            }
+
+            .status-strip {
+                padding: 8px;
+            }
+
+            .stat-value {
+                margin-top: 3px;
+                font-size: 20px;
+            }
+
+            .layout,
+            .operator-panel {
+                gap: 10px;
+            }
+
+            .operator-section {
+                gap: 8px;
+                padding: 10px;
+            }
+
+            .panel-title h2 {
+                font-size: 24px;
+            }
+
+            .summary-tile {
+                min-height: 56px;
+                padding: 8px;
+            }
+
+            .summary-tile .value {
+                margin-top: 4px;
+                font-size: 18px;
+            }
+
+            .actionbar {
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .bottom-actions .action-btn {
+                min-height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <section class="brand">
+                <div class="overline">FLO / Tactical Supply</div>
+                <h1>Store</h1>
+            </section>
+
+            <section class="status-strip" id="statusStrip">
+                <div class="stat">
+                    <div class="stat-label">Treasury</div>
+                    <div class="stat-value cyan" id="totalBalance">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Committed</div>
+                    <div class="stat-value" id="committed">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Available</div>
+                    <div class="stat-value amber" id="balance">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Local Supplies</div>
+                    <div class="stat-value cyan" id="throughput">0 / 0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Cart</div>
+                    <div class="stat-value" id="cartSummary">0 / 0</div>
+                </div>
+            </section>
+
+            <section class="side-status">
+                <div>
+                    <div class="stat-label">Operator Side</div>
+                    <div class="side-name" id="sideName">Waiting</div>
+                    <div class="stat-label" id="factionName">No faction selected</div>
+                    <div class="stat-label" id="nodeStatus">Node unavailable</div>
+                    <div class="stat-label" id="nodeResupply">Resupply unavailable</div>
+                </div>
+            </section>
+        </header>
+
+        <div class="layout">
+            <nav class="panel nav-panel">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <div class="overline">Armory Index</div>
+                        <h2>Categories</h2>
+                    </div>
+                </div>
+                <div class="category-list" id="categoryList"></div>
+            </nav>
+
+            <section class="panel armory-panel">
+                <div class="armory-head">
+                    <div class="panel-title">
+                        <div class="overline">Catalog</div>
+                        <h2 id="categoryTitle">Loading</h2>
+                        <p id="categorySubtitle">Faction equipment and vehicles are generated from the selected side.</p>
+                    </div>
+                    <div class="search-wrap">
+                        <input id="itemSearch" type="text" maxlength="48" placeholder="Filter gear" oninput="FOOFStore.filter(this.value)">
+                    </div>
+                </div>
+                <div class="armory-grid" id="itemList"></div>
+            </section>
+
+            <aside class="operator-panel">
+                <section class="operator-section">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <div class="overline">Operator</div>
+                            <h2>Status</h2>
+                        </div>
+                    </div>
+                    <div class="summary-grid">
+                        <div class="summary-tile">
+                            <div class="label">Target</div>
+                            <div class="value" id="activeTarget">Equip</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Items</div>
+                            <div class="value" id="itemCount">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Vehicles</div>
+                            <div class="value" id="vehicleCount">0</div>
+                        </div>
+                    </div>
+                    <div class="target-row" id="targetRow"></div>
+                </section>
+
+                <section class="operator-section">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <div class="overline">Checkout</div>
+                            <h2>Cart</h2>
+                        </div>
+                    </div>
+                    <div class="scroll-list" id="cartList"></div>
+                </section>
+
+                <section class="operator-section">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <div class="overline">Presets</div>
+                            <h2>Kits</h2>
+                        </div>
+                    </div>
+                    <div class="kit-tools">
+                        <input id="kitName" type="text" maxlength="40" placeholder="Kit name">
+                    </div>
+                    <div class="scroll-list" id="kitList"></div>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="actionbar">
+            <div class="message" id="message">Loading catalog.</div>
+            <div class="bottom-actions">
+                <button class="action-btn secondary" type="button" onclick="FOOFStore.back()">Back</button>
+                <button class="action-btn secondary" type="button" onclick="FOOFStore.clearCart()">Clear</button>
+                <button class="action-btn secondary" type="button" onclick="FOOFStore.saveKit()">Save Kit</button>
+                <button class="action-btn good" type="button" onclick="FOOFStore.checkout()">Checkout</button>
+                <button class="action-btn danger" type="button" onclick="FOOFStore.close()">Close</button>
+            </div>
+        </footer>
+
+        <div class="modal-backdrop hidden" id="attachmentModal" onclick="FOOFStore.cancelAttachmentAdd(event)">
+            <section class="attachment-modal" onclick="event.stopPropagation()">
+                <header class="attachment-head">
+                    <div>
+                        <div class="overline">Included Attachments</div>
+                        <div class="attachment-title" id="attachmentWeaponName">Weapon</div>
+                        <div class="attachment-subtitle" id="attachmentWeaponMeta">Mounted equipment on this weapon variant.</div>
+                    </div>
+                    <div class="price" id="attachmentWeaponPrice">$0</div>
+                </header>
+                <div class="attachment-list" id="attachmentList"></div>
+                <footer class="attachment-actions">
+                    <button class="action-btn secondary" type="button" onclick="FOOFStore.cancelAttachmentAdd()">Back</button>
+                    <button class="action-btn good" type="button" onclick="FOOFStore.confirmAttachmentAdd()">Add Weapon</button>
+                </footer>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            var state = {
+                categories: [],
+                currentCategory: "",
+                items: [],
+                cart: [],
+                savedKits: [],
+                pendingAttachmentAdd: null,
+                selectedItem: null,
+                activeContainer: "auto",
+                balance: 0,
+                totalBalance: 0,
+                committed: 0,
+                throughput: 0,
+                throughputMax: 0,
+                resupplyAmount: 0,
+                resupplyIntervalSeconds: 180,
+                nodeType: "",
+                nodeState: "",
+                query: ""
+            };
+
+            var MAX_CONCURRENT_TEXTURES = 6;
+            var textureCache = {};
+            var textureRequests = {};
+            var queuedTexturePaths = [];
+            var queuedTextureLookup = {};
+            var visibleTexturePaths = {};
+            var activeTextureRequests = 0;
+            var textureObserver = null;
+            var textureObserverRoot = null;
+            var textureObservationTimer = 0;
+            var messageTimer = 0;
+            var pendingServerScrollRestore = null;
+            var scrollContainerIds = ["categoryList", "itemList", "cartList", "kitList", "attachmentList"];
+
+            var containerLabels = {
+                auto: "Equip",
+                uniform: "Uniform",
+                vest: "Vest",
+                backpack: "Backpack"
+            };
+
+            var packableCategories = {
+                ammo: true,
+                mines: true,
+                attachments: true,
+                misc: true
+            };
+
+            var vehicleCategories = {
+                cars: true,
+                armor: true,
+                helis: true,
+                planes: true,
+                naval: true,
+                static: true,
+                other: true
+            };
+
+            function send(event, data) {
+                var payload = JSON.stringify({ event: event, data: data || {} });
+
+                if (typeof A3API !== "undefined" && A3API.SendAlert) {
+                    A3API.SendAlert(payload);
+                }
+            }
+
+            function node(id) {
+                return document.getElementById(id);
+            }
+
+            function text(id, value) {
+                var target = node(id);
+                if (target) {
+                    target.textContent = value;
+                }
+            }
+
+            function clear(target) {
+                while (target.firstChild) {
+                    target.removeChild(target.firstChild);
+                }
+            }
+
+            function message(value, kind) {
+                var target = node("message");
+
+                if (messageTimer) {
+                    window.clearTimeout(messageTimer);
+                    messageTimer = 0;
+                }
+
+                target.textContent = value;
+                target.className = "message" + (kind ? " " + kind : "");
+
+                if (kind === "good") {
+                    messageTimer = window.setTimeout(function () {
+                        target.className = "message good dismiss";
+
+                        messageTimer = window.setTimeout(function () {
+                            target.textContent = "";
+                            target.className = "message idle";
+                            messageTimer = 0;
+                        }, 470);
+                    }, 1800);
+                }
+            }
+
+            function groupDigits(value) {
+                return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function formatMoney(value) {
+                var number = Number(value);
+                var raw;
+
+                if (!isNaN(number)) {
+                    return "$" + groupDigits(Math.round(number));
+                }
+
+                raw = String(value || "0").replace(/^\$/, "");
+                return "$" + raw;
+            }
+
+            function itemPrice(item) {
+                if (typeof item.priceValue === "number") {
+                    return item.priceValue;
+                }
+
+                return item.price;
+            }
+
+            function empty(value) {
+                var target = document.createElement("div");
+                target.className = "empty";
+                target.textContent = value;
+                return target;
+            }
+
+            function isBrowserTextureSource(path) {
+                var value = String(path || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+                return value.indexOf("data:image/") === 0 ||
+                    value.indexOf("blob:") === 0 ||
+                    value.indexOf("http://") === 0 ||
+                    value.indexOf("https://") === 0;
+            }
+
+            function normalizeTexturePath(path) {
+                var normalized = String(path || "").replace(/^\s+|\s+$/g, "");
+
+                if (!normalized) {
+                    return "";
+                }
+
+                while (normalized.charAt(0) === "\\" || normalized.charAt(0) === "/") {
+                    normalized = normalized.slice(1);
+                }
+
+                if (!/\.[A-Za-z0-9]+$/.test(normalized)) {
+                    normalized += ".paa";
+                }
+
+                return normalized;
+            }
+
+            function drawTextureNode(target, source) {
+                var symbol = target.getAttribute("data-symbol") || "";
+                clear(target);
+
+                if (source) {
+                    var image = document.createElement("img");
+                    image.className = "texture-img";
+                    image.alt = "";
+                    image.src = source;
+                    target.appendChild(image);
+                    return;
+                }
+
+                var fallback = document.createElement("div");
+                fallback.className = "media-fallback";
+                fallback.textContent = symbol;
+                target.appendChild(fallback);
+
+                var status = document.createElement("div");
+                status.className = "media-status";
+                status.textContent = target.getAttribute("data-texture-path") ? "Loading" : "No Image";
+                target.appendChild(status);
+            }
+
+            function applyTextureToVisibleNodes(path, source) {
+                var targets = document.querySelectorAll("[data-texture-path]");
+                var i;
+
+                for (i = 0; i < targets.length; i += 1) {
+                    if (targets[i].getAttribute("data-texture-path") === path) {
+                        drawTextureNode(targets[i], source);
+                    }
+                }
+            }
+
+            function finishTextureRequest(path, source) {
+                var textureSource = String(source || "").replace(/^\s+|\s+$/g, "");
+
+                if (!isBrowserTextureSource(textureSource)) {
+                    textureSource = "";
+                }
+
+                textureCache[path] = textureSource;
+                applyTextureToVisibleNodes(path, textureSource);
+            }
+
+            function completeTextureRequest(path) {
+                activeTextureRequests = Math.max(0, activeTextureRequests - 1);
+                delete textureRequests[path];
+                pumpTextureQueue();
+            }
+
+            function startTextureRequest(path) {
+                var result;
+
+                activeTextureRequests += 1;
+                textureRequests[path] = true;
+
+                try {
+                    result = A3API.RequestTexture(path, 512);
+                } catch (error) {
+                    finishTextureRequest(path, "");
+                    completeTextureRequest(path);
+                    return;
+                }
+
+                if (result && typeof result.then === "function") {
+                    result.then(function (resolvedPath) {
+                        finishTextureRequest(path, resolvedPath);
+                        completeTextureRequest(path);
+                    }, function () {
+                        finishTextureRequest(path, "");
+                        completeTextureRequest(path);
+                    });
+                } else {
+                    finishTextureRequest(path, result);
+                    completeTextureRequest(path);
+                }
+            }
+
+            function pumpTextureQueue() {
+                if (typeof A3API === "undefined" || typeof A3API.RequestTexture !== "function") {
+                    return;
+                }
+
+                while (activeTextureRequests < MAX_CONCURRENT_TEXTURES && queuedTexturePaths.length > 0) {
+                    var path = queuedTexturePaths.shift();
+
+                    delete queuedTextureLookup[path];
+
+                    if (!path || textureCache[path] !== undefined || textureRequests[path]) {
+                        continue;
+                    }
+
+                    startTextureRequest(path);
+                }
+            }
+
+            function queueTextureRequest(path) {
+                if (!path || queuedTextureLookup[path] || textureRequests[path] || textureCache[path] !== undefined) {
+                    return;
+                }
+
+                queuedTextureLookup[path] = true;
+                queuedTexturePaths.push(path);
+                pumpTextureQueue();
+            }
+
+            function markTextureVisible(path) {
+                var normalized = normalizeTexturePath(path);
+
+                if (!normalized || visibleTexturePaths[normalized]) {
+                    return;
+                }
+
+                visibleTexturePaths[normalized] = true;
+
+                if (textureCache[normalized] === undefined && !textureRequests[normalized]) {
+                    queueTextureRequest(normalized);
+                }
+            }
+
+            function ensureTextureObserver() {
+                var currentRoot = node("itemList");
+
+                if (typeof IntersectionObserver !== "function") {
+                    return null;
+                }
+
+                if (textureObserver && textureObserverRoot === currentRoot) {
+                    return textureObserver;
+                }
+
+                if (textureObserver) {
+                    textureObserver.disconnect();
+                }
+
+                textureObserverRoot = currentRoot;
+                textureObserver = new IntersectionObserver(function (entries) {
+                    var i;
+
+                    for (i = 0; i < entries.length; i += 1) {
+                        if (!entries[i].isIntersecting) {
+                            continue;
+                        }
+
+                        markTextureVisible(entries[i].target.getAttribute("data-raw-texture"));
+                        textureObserver.unobserve(entries[i].target);
+                    }
+                }, {
+                    root: currentRoot,
+                    rootMargin: "260px 0px",
+                    threshold: 0.01
+                });
+
+                return textureObserver;
+            }
+
+            function observeTextureTargets() {
+                var targets = document.querySelectorAll("[data-raw-texture]");
+                var observer = ensureTextureObserver();
+                var i;
+
+                for (i = 0; i < targets.length; i += 1) {
+                    if (targets[i].getAttribute("data-observed") === "1") {
+                        continue;
+                    }
+
+                    targets[i].setAttribute("data-observed", "1");
+
+                    if (!observer) {
+                        markTextureVisible(targets[i].getAttribute("data-raw-texture"));
+                    } else {
+                        observer.observe(targets[i]);
+                    }
+                }
+            }
+
+            function scheduleTextureObservation() {
+                if (textureObservationTimer) {
+                    return;
+                }
+
+                textureObservationTimer = window.setTimeout(function () {
+                    textureObservationTimer = 0;
+                    observeTextureTargets();
+                }, 0);
+            }
+
+            function getTextureSource(path) {
+                var normalized = normalizeTexturePath(path);
+
+                if (!normalized) {
+                    return "";
+                }
+
+                if (isBrowserTextureSource(path)) {
+                    textureCache[normalized] = String(path).replace(/^\s+|\s+$/g, "");
+                    return textureCache[normalized];
+                }
+
+                if (textureCache[normalized] !== undefined) {
+                    return textureCache[normalized];
+                }
+
+                if (visibleTexturePaths[normalized]) {
+                    queueTextureRequest(normalized);
+                }
+
+                return "";
+            }
+
+            function canPack(item) {
+                return item.entryKind === "gear" && !!packableCategories[item.category];
+            }
+
+            function isVehicle(item) {
+                return item.entryKind === "vehicle" || !!vehicleCategories[item.category];
+            }
+
+            function includedAttachments(item) {
+                if (!item || !item.includedAttachments || !item.includedAttachments.length) {
+                    return [];
+                }
+
+                return item.includedAttachments;
+            }
+
+            function hasIncludedAttachments(item) {
+                return item.entryKind === "gear" &&
+                    (item.category === "primary" || item.category === "secondary" || item.category === "handgun") &&
+                    includedAttachments(item).length > 0;
+            }
+
+            function sameItem(left, right) {
+                return !!left && !!right &&
+                    left.entryKind === right.entryKind &&
+                    String(left.className).toLowerCase() === String(right.className).toLowerCase();
+            }
+
+            function itemSymbol(item) {
+                if (!item) {
+                    return "";
+                }
+
+                if (isVehicle(item)) {
+                    return "V";
+                }
+
+                switch (item.category) {
+                    case "primary": return "R";
+                    case "secondary": return "L";
+                    case "handgun": return "P";
+                    case "uniforms": return "U";
+                    case "vests": return "A";
+                    case "backpacks": return "B";
+                    case "headgear": return "H";
+                    case "facewear": return "F";
+                    case "attachments": return "+";
+                    case "ammo": return "M";
+                    case "mines": return "X";
+                    default: return "I";
+                }
+            }
+
+            function scrollSnapshotFor(preserveScroll) {
+                var snapshot = {};
+                var hasSnapshot = false;
+                var i;
+                var target;
+
+                if (preserveScroll && typeof preserveScroll === "object") {
+                    return preserveScroll;
+                }
+
+                if (!preserveScroll) {
+                    return null;
+                }
+
+                for (i = 0; i < scrollContainerIds.length; i += 1) {
+                    target = node(scrollContainerIds[i]);
+
+                    if (target) {
+                        snapshot[scrollContainerIds[i]] = target.scrollTop;
+                        hasSnapshot = true;
+                    }
+                }
+
+                snapshot.category = state.currentCategory;
+                snapshot.query = state.query;
+
+                return hasSnapshot ? snapshot : null;
+            }
+
+            function restoreScrollSnapshot(snapshot, onlyIds) {
+                var i;
+                var target;
+                var id;
+                var ids = onlyIds || scrollContainerIds;
+
+                if (!snapshot) {
+                    return;
+                }
+
+                window.setTimeout(function () {
+                    for (i = 0; i < ids.length; i += 1) {
+                        id = ids[i];
+                        target = node(id);
+
+                        if (target && snapshot[id] !== undefined) {
+                            target.scrollTop = snapshot[id];
+                        }
+                    }
+                }, 0);
+            }
+
+            function wheelDelta(event, target) {
+                var delta = 0;
+
+                if (typeof event.deltaY === "number" && event.deltaY !== 0) {
+                    delta = event.deltaY;
+
+                    if (event.deltaMode === 1) {
+                        delta *= 34;
+                    } else if (event.deltaMode === 2 && target) {
+                        delta *= target.clientHeight;
+                    }
+                } else if (typeof event.wheelDelta === "number" && event.wheelDelta !== 0) {
+                    delta = -event.wheelDelta;
+                } else if (typeof event.detail === "number" && event.detail !== 0) {
+                    delta = event.detail * 34;
+                }
+
+                return delta;
+            }
+
+            function scrollableForWheel(start, delta) {
+                var target = start && start.nodeType === 1 ? start : (start ? start.parentElement : null);
+                var style;
+                var overflowY;
+                var canScroll;
+                var canScrollDirection;
+
+                while (target && target !== document.body && target !== document.documentElement) {
+                    style = window.getComputedStyle ? window.getComputedStyle(target) : target.currentStyle;
+                    overflowY = style ? style.overflowY : "";
+                    canScroll = (overflowY === "auto" || overflowY === "scroll") && target.scrollHeight > target.clientHeight + 1;
+
+                    if (canScroll) {
+                        canScrollDirection = delta > 0 ?
+                            target.scrollTop + target.clientHeight < target.scrollHeight - 1 :
+                            target.scrollTop > 0;
+
+                        if (canScrollDirection) {
+                            return target;
+                        }
+                    }
+
+                    target = target.parentElement;
+                }
+
+                return null;
+            }
+
+            function routeWheelToScrollContainer(event) {
+                var rawTarget = event.target || event.srcElement;
+                var delta = wheelDelta(event, rawTarget);
+                var target;
+
+                if (delta === 0) {
+                    return;
+                }
+
+                target = scrollableForWheel(rawTarget, delta);
+
+                if (!target) {
+                    return;
+                }
+
+                target.scrollTop += delta;
+
+                if (event.preventDefault) {
+                    event.preventDefault();
+                }
+
+                if (event.stopPropagation) {
+                    event.stopPropagation();
+                }
+
+                event.cancelBubble = true;
+                event.returnValue = false;
+            }
+
+            function installWheelScrollRouting() {
+                document.addEventListener("wheel", routeWheelToScrollContainer, true);
+                document.addEventListener("mousewheel", routeWheelToScrollContainer, true);
+                document.addEventListener("DOMMouseScroll", routeWheelToScrollContainer, true);
+            }
+
+            function targetForLine(line) {
+                if (line.category === "uniforms") {
+                    return "uniform";
+                }
+
+                if (line.category === "vests") {
+                    return "vest";
+                }
+
+                if (line.category === "backpacks") {
+                    return "backpack";
+                }
+
+                return "";
+            }
+
+            function normalizeContainer(item, container) {
+                if (!canPack(item)) {
+                    return "auto";
+                }
+
+                if (container === "uniform" || container === "vest" || container === "backpack") {
+                    return container;
+                }
+
+                return "auto";
+            }
+
+            function cartKey(item) {
+                return item.entryKind + ":" + String(item.className).toLowerCase() + ":" + normalizeContainer(item, item.container) + ":" + String(item.slot || "");
+            }
+
+            function categoryLabel(category) {
+                var label = category;
+                var i;
+
+                for (i = 0; i < state.categories.length; i += 1) {
+                    if (state.categories[i].id === category) {
+                        label = state.categories[i].label;
+                    }
+                }
+
+                return label;
+            }
+
+            function hasCategory(category) {
+                var i;
+
+                if (!category) {
+                    return false;
+                }
+
+                for (i = 0; i < state.categories.length; i += 1) {
+                    if (state.categories[i].id === category) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            function hydrateCategory(payload) {
+                var category = state.currentCategory;
+
+                if (pendingServerScrollRestore && hasCategory(pendingServerScrollRestore.category)) {
+                    category = pendingServerScrollRestore.category;
+                }
+
+                if (!hasCategory(category)) {
+                    category = payload.firstCategory || "";
+                }
+
+                if (!hasCategory(category) && state.categories.length > 0) {
+                    category = state.categories[0].id;
+                }
+
+                return category;
+            }
+
+            function lineSubtitle(line) {
+                var parts = [categoryLabel(line.category)];
+
+                if (canPack(line)) {
+                    parts.push(containerLabels[normalizeContainer(line, line.container)]);
+                }
+
+                return parts.join(" / ");
+            }
+
+            function previewTarget(item) {
+                if (canPack(item)) {
+                    return containerLabels[state.activeContainer];
+                }
+
+                if (isVehicle(item)) {
+                    return "Base Spawn";
+                }
+
+                return "Equip";
+            }
+
+            function copyCartLine(line) {
+                var quantity = typeof line.quantity === "number" ? line.quantity : 1;
+                var priceValue = typeof line.priceValue === "number" ? line.priceValue : 0;
+
+                return {
+                    className: line.className,
+                    name: line.name,
+                    entryKind: line.entryKind,
+                    category: line.category,
+                    priceValue: priceValue,
+                    quantity: quantity,
+                    container: normalizeContainer(line, line.container),
+                    slot: typeof line.slot === "string" ? line.slot : "",
+                    source: typeof line.source === "string" ? line.source : ""
+                };
+            }
+
+            function cartTotal() {
+                var total = 0;
+                var i;
+
+                for (i = 0; i < state.cart.length; i += 1) {
+                    total += state.cart[i].priceValue * state.cart[i].quantity;
+                }
+
+                return total;
+            }
+
+            function cartQuantity() {
+                var total = 0;
+                var i;
+
+                for (i = 0; i < state.cart.length; i += 1) {
+                    total += state.cart[i].quantity;
+                }
+
+                return total;
+            }
+
+            function cartVehicleQuantity() {
+                var total = 0;
+                var i;
+
+                for (i = 0; i < state.cart.length; i += 1) {
+                    if (isVehicle(state.cart[i])) {
+                        total += state.cart[i].quantity;
+                    }
+                }
+
+                return total;
+            }
+
+            function updateSummary() {
+                var total = cartTotal();
+                text("totalBalance", formatMoney(state.totalBalance));
+                text("committed", formatMoney(state.committed));
+                text("balance", formatMoney(state.balance));
+                text("throughput", groupDigits(state.throughput) + " / " + groupDigits(state.throughputMax));
+                text("cartSummary", String(cartQuantity()) + " / " + formatMoney(total));
+                text("activeTarget", containerLabels[state.activeContainer]);
+                text("itemCount", String(cartQuantity()));
+                text("vehicleCount", String(cartVehicleQuantity()));
+                text("nodeStatus", (state.nodeType || "Node") + " / " + (state.nodeState || "Unavailable"));
+                if (state.nodeState === "CONNECTED" || state.nodeState === "STRAINED") {
+                    text("nodeResupply", "Resupply +" + groupDigits(state.resupplyAmount) + " every " + Math.round(state.resupplyIntervalSeconds / 60) + " min");
+                } else {
+                    text("nodeResupply", "Resupply paused while " + String(state.nodeState || "unavailable").toLowerCase());
+                }
+            }
+
+            function applyResourcePayload(payload) {
+                state.balance = typeof payload.balance === "number" ? payload.balance : state.balance;
+                state.totalBalance = typeof payload.totalBalance === "number" ? payload.totalBalance : state.totalBalance;
+                state.committed = typeof payload.committed === "number" ? payload.committed : state.committed;
+                state.throughput = typeof payload.throughput === "number" ? payload.throughput : state.throughput;
+                state.throughputMax = typeof payload.throughputMax === "number" ? payload.throughputMax : state.throughputMax;
+                state.resupplyAmount = typeof payload.resupplyAmount === "number" ? payload.resupplyAmount : state.resupplyAmount;
+                state.resupplyIntervalSeconds = typeof payload.resupplyIntervalSeconds === "number" ? payload.resupplyIntervalSeconds : state.resupplyIntervalSeconds;
+                state.nodeType = payload.nodeType || state.nodeType;
+                state.nodeState = payload.nodeState || state.nodeState;
+            }
+
+            function updateCategorySubtitle(count) {
+                var label = categoryLabel(state.currentCategory);
+                var visible = typeof count === "number" ? count : state.items.length;
+                text("categorySubtitle", String(visible) + " assets ready in " + label + ".");
+            }
+
+            function filteredItems() {
+                var query = String(state.query || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+
+                if (!query) {
+                    return state.items.slice(0);
+                }
+
+                return state.items.filter(function (item) {
+                    return String(item.name || "").toLowerCase().indexOf(query) >= 0 ||
+                        categoryLabel(item.category).toLowerCase().indexOf(query) >= 0;
+                });
+            }
+
+            function renderTextureBox(item) {
+                var box = document.createElement("div");
+                var normalized = normalizeTexturePath(item.image || "");
+                var source = getTextureSource(item.image || "");
+
+                box.className = "card-media";
+                box.setAttribute("data-symbol", itemSymbol(item));
+                box.setAttribute("data-raw-texture", item.image || "");
+                box.setAttribute("data-texture-path", normalized);
+                drawTextureNode(box, source);
+
+                return box;
+            }
+
+            function renderAttachmentMedia(attachment) {
+                var box = document.createElement("div");
+                var image = attachment.image || "";
+                var normalized = normalizeTexturePath(image);
+                var source = getTextureSource(image);
+
+                box.className = "attachment-media";
+                box.setAttribute("data-symbol", "+");
+                box.setAttribute("data-raw-texture", image);
+                box.setAttribute("data-texture-path", normalized);
+                drawTextureNode(box, source);
+                markTextureVisible(image);
+
+                return box;
+            }
+
+            function hideAttachmentModal() {
+                var modal = node("attachmentModal");
+
+                state.pendingAttachmentAdd = null;
+
+                if (modal) {
+                    modal.className = "modal-backdrop hidden";
+                }
+            }
+
+            function showAttachmentModal(item, container) {
+                var modal = node("attachmentModal");
+                var list = node("attachmentList");
+                var attachments = includedAttachments(item);
+                var i;
+
+                state.pendingAttachmentAdd = {
+                    item: item,
+                    container: container
+                };
+
+                text("attachmentWeaponName", item.name || "Weapon");
+                text("attachmentWeaponMeta", String(attachments.length) + " mounted attachment" + (attachments.length === 1 ? "" : "s") + " included with this weapon variant.");
+                text("attachmentWeaponPrice", formatMoney(itemPrice(item)));
+                clear(list);
+
+                for (i = 0; i < attachments.length; i += 1) {
+                    (function (attachment) {
+                        var row = document.createElement("div");
+                        var info = document.createElement("div");
+                        var slot = document.createElement("div");
+                        var name = document.createElement("div");
+
+                        row.className = "attachment-row";
+                        slot.className = "attachment-slot";
+                        name.className = "attachment-name";
+                        slot.textContent = attachment.slotName || "Attachment";
+                        name.textContent = attachment.name || "Mounted Item";
+
+                        info.appendChild(slot);
+                        info.appendChild(name);
+                        row.appendChild(renderAttachmentMedia(attachment));
+                        row.appendChild(info);
+                        list.appendChild(row);
+                    }(attachments[i]));
+                }
+
+                modal.className = "modal-backdrop";
+            }
+
+            function renderTargetButtons() {
+                var target = node("targetRow");
+                var containers = ["auto", "uniform", "vest", "backpack"];
+                var i;
+
+                clear(target);
+
+                for (i = 0; i < containers.length; i += 1) {
+                    (function (container) {
+                        var button = document.createElement("button");
+                        button.type = "button";
+                        button.className = "chip" + (container === state.activeContainer ? " selected" : "");
+                        button.textContent = containerLabels[container];
+                        button.onclick = function () {
+                            FOOFStore.selectTarget(container);
+                        };
+                        target.appendChild(button);
+                    }(containers[i]));
+                }
+            }
+
+            function refreshStoreState() {
+                renderTargetButtons();
+                updateSummary();
+            }
+
+            function renderCategories(preserveScroll) {
+                var list = node("categoryList");
+                var scrollSnapshot = scrollSnapshotFor(preserveScroll);
+                var i;
+
+                clear(list);
+
+                if (state.categories.length === 0) {
+                    list.appendChild(empty("No categories."));
+                    restoreScrollSnapshot(scrollSnapshot, ["categoryList"]);
+                    return;
+                }
+
+                for (i = 0; i < state.categories.length; i += 1) {
+                    (function (category) {
+                        var button = document.createElement("button");
+                        var label = document.createElement("span");
+                        var count = document.createElement("span");
+
+                        button.type = "button";
+                        button.className = "category" + (category.id === state.currentCategory ? " selected" : "");
+                        button.onclick = function () {
+                            state.query = "";
+                            node("itemSearch").value = "";
+                            state.currentCategory = category.id;
+                            text("categoryTitle", category.label);
+                            updateCategorySubtitle(category.count);
+                            renderCategories(true);
+                            send("store::category", { category: category.id });
+                        };
+
+                        label.textContent = category.label;
+                        count.textContent = String(category.count);
+
+                        button.appendChild(label);
+                        button.appendChild(count);
+                        list.appendChild(button);
+                    }(state.categories[i]));
+                }
+
+                restoreScrollSnapshot(scrollSnapshot, ["categoryList"]);
+            }
+
+            function renderItems(preserveScroll) {
+                var list = node("itemList");
+                var items = filteredItems();
+                var scrollSnapshot = scrollSnapshotFor(preserveScroll);
+                var i;
+
+                clear(list);
+                updateCategorySubtitle(items.length);
+
+                if (items.length === 0) {
+                    list.appendChild(empty(state.items.length === 0 ? "No assets in this category." : "No matching assets."));
+                    restoreScrollSnapshot(scrollSnapshot);
+                    return;
+                }
+
+                for (i = 0; i < items.length; i += 1) {
+                    (function (item) {
+                        var card = document.createElement("article");
+                        var body = document.createElement("div");
+                        var name = document.createElement("div");
+                        var actions = document.createElement("div");
+                        var price = document.createElement("div");
+                        var meta = document.createElement("div");
+                        var add = document.createElement("button");
+                        var nodeLocked = !!item.locked;
+                        var locked = nodeLocked;
+
+                        card.className = "armory-card" + (sameItem(item, state.selectedItem) ? " selected" : "") + (locked ? " locked" : "");
+                        card.onclick = function () {
+                            state.selectedItem = item;
+                            renderItems(true);
+                        };
+
+                        body.className = "card-body";
+                        name.className = "item-name";
+                        name.textContent = item.name;
+                        body.appendChild(name);
+                        meta.className = "item-meta";
+                        var localSupplyCost = "Local supply cost: " + groupDigits(Number(item.throughputCost || 0));
+                        meta.textContent = nodeLocked
+                            ? (item.lockReason || "Unavailable at this node")
+                            : (item.description ? localSupplyCost + " / " + item.description : localSupplyCost);
+                        meta.title = item.description || "";
+                        body.appendChild(meta);
+
+                        actions.className = "card-actions";
+                        price.className = "card-price";
+                        price.textContent = formatMoney(itemPrice(item));
+
+                        add.className = "action-btn";
+                        add.type = "button";
+                        add.textContent = locked ? "Locked" : (isVehicle(item) ? "Queue" : "Add");
+                        add.disabled = locked;
+                        add.title = nodeLocked ? (item.lockReason || "Unavailable at this node") : "";
+                        add.onclick = function (event) {
+                            event.stopPropagation();
+                            if (locked) {
+                                return;
+                            }
+                            state.selectedItem = item;
+                            if (hasIncludedAttachments(item)) {
+                                showAttachmentModal(item, undefined);
+                            } else {
+                                FOOFStore.add(item);
+                            }
+                            renderItems(true);
+                        };
+
+                        actions.appendChild(price);
+                        actions.appendChild(add);
+
+                        if (canPack(item) && !nodeLocked) {
+                            var pack = document.createElement("button");
+                            pack.className = "action-btn secondary";
+                            pack.type = "button";
+                            pack.textContent = "Pack";
+                            pack.onclick = function (event) {
+                                event.stopPropagation();
+                                state.selectedItem = item;
+                                FOOFStore.add(item, "backpack");
+                                renderItems(true);
+                            };
+                            actions.appendChild(pack);
+                        }
+
+                        card.appendChild(renderTextureBox(item));
+                        card.appendChild(body);
+                        card.appendChild(actions);
+                        list.appendChild(card);
+                    }(items[i]));
+                }
+
+                scheduleTextureObservation();
+                restoreScrollSnapshot(scrollSnapshot);
+            }
+
+            function renderContainerButtons(row, line) {
+                var containers = ["auto", "uniform", "vest", "backpack"];
+                var active;
+                var holder;
+                var i;
+
+                if (!canPack(line)) {
+                    return;
+                }
+
+                active = normalizeContainer(line, line.container);
+                holder = document.createElement("div");
+                holder.className = "container-row";
+
+                for (i = 0; i < containers.length; i += 1) {
+                    (function (container) {
+                        var button = document.createElement("button");
+                        button.type = "button";
+                        button.className = "chip" + (container === active ? " selected" : "");
+                        button.textContent = containerLabels[container];
+                        button.onclick = function (event) {
+                            event.stopPropagation();
+                            FOOFStore.setContainer(line, container);
+                        };
+                        holder.appendChild(button);
+                    }(containers[i]));
+                }
+
+                row.appendChild(holder);
+            }
+
+            function renderCart(preserveScroll) {
+                var list = node("cartList");
+                var scrollSnapshot = scrollSnapshotFor(preserveScroll);
+                var i;
+
+                clear(list);
+
+                if (state.cart.length === 0) {
+                    list.appendChild(empty("Cart is empty."));
+                    refreshStoreState();
+                    restoreScrollSnapshot(scrollSnapshot);
+                    return;
+                }
+
+                for (i = 0; i < state.cart.length; i += 1) {
+                    (function (line) {
+                        var row = document.createElement("div");
+                        var lineTarget = targetForLine(line);
+                        var info = document.createElement("div");
+                        var title = document.createElement("div");
+                        var name = document.createElement("div");
+                        var meta = document.createElement("div");
+                        var qty = document.createElement("div");
+                        var minus = document.createElement("button");
+                        var amount = document.createElement("span");
+                        var plus = document.createElement("button");
+
+                        row.className = "cart-line" +
+                            (lineTarget !== "" ? " targetable" : "") +
+                            (lineTarget !== "" && lineTarget === state.activeContainer ? " active-target" : "");
+
+                        if (lineTarget !== "") {
+                            row.onclick = function () {
+                                FOOFStore.selectTarget(lineTarget);
+                            };
+                        }
+
+                        title.className = "line-title";
+                        name.className = "name";
+                        name.textContent = line.name;
+                        title.appendChild(name);
+
+                        meta.className = "meta";
+                        meta.textContent = lineSubtitle(line);
+
+                        info.appendChild(title);
+                        info.appendChild(meta);
+                        renderContainerButtons(info, line);
+
+                        if (lineTarget !== "") {
+                            var targetRow = document.createElement("div");
+                            var targetButton = document.createElement("button");
+                            targetRow.className = "container-row";
+                            targetButton.type = "button";
+                            targetButton.className = "chip" + (lineTarget === state.activeContainer ? " selected" : "");
+                            targetButton.textContent = "Target";
+                            targetButton.onclick = function (event) {
+                                event.stopPropagation();
+                                FOOFStore.selectTarget(lineTarget);
+                            };
+                            targetRow.appendChild(targetButton);
+                            info.appendChild(targetRow);
+                        }
+
+                        qty.className = "qty";
+                        minus.type = "button";
+                        minus.textContent = "-";
+                        minus.onclick = function (event) {
+                            event.stopPropagation();
+                            FOOFStore.adjust(line, -1);
+                        };
+
+                        amount.textContent = String(line.quantity);
+
+                        plus.type = "button";
+                        plus.textContent = "+";
+                        plus.onclick = function (event) {
+                            event.stopPropagation();
+                            FOOFStore.adjust(line, 1);
+                        };
+
+                        qty.appendChild(minus);
+                        qty.appendChild(amount);
+                        qty.appendChild(plus);
+                        row.appendChild(info);
+                        row.appendChild(qty);
+                        list.appendChild(row);
+                    }(state.cart[i]));
+                }
+
+                refreshStoreState();
+                restoreScrollSnapshot(scrollSnapshot);
+            }
+
+            function renderSavedKits(preserveScroll) {
+                var list = node("kitList");
+                var scrollSnapshot = scrollSnapshotFor(preserveScroll);
+                var i;
+
+                clear(list);
+
+                if (state.savedKits.length === 0) {
+                    list.appendChild(empty("No saved kits."));
+                    restoreScrollSnapshot(scrollSnapshot);
+                    return;
+                }
+
+                for (i = 0; i < state.savedKits.length; i += 1) {
+                    (function (kit) {
+                        var row = document.createElement("div");
+                        var info = document.createElement("div");
+                        var name = document.createElement("div");
+                        var meta = document.createElement("div");
+                        var actions = document.createElement("div");
+                        var load = document.createElement("button");
+                        var del = document.createElement("button");
+
+                        row.className = "kit-line";
+                        name.className = "name";
+                        meta.className = "meta";
+                        name.textContent = kit.name;
+                        meta.textContent = String((kit.items || []).length) + " lines";
+                        info.appendChild(name);
+                        info.appendChild(meta);
+
+                        actions.className = "container-row";
+
+                        load.type = "button";
+                        load.className = "chip selected";
+                        load.textContent = "Load";
+                        load.onclick = function () {
+                            FOOFStore.loadKit(kit);
+                        };
+
+                        del.type = "button";
+                        del.className = "chip";
+                        del.textContent = "Delete";
+                        del.onclick = function () {
+                            send("store::kitDelete", { id: kit.id });
+                        };
+
+                        actions.appendChild(load);
+                        actions.appendChild(del);
+                        row.appendChild(info);
+                        row.appendChild(actions);
+                        list.appendChild(row);
+                    }(state.savedKits[i]));
+                }
+
+                restoreScrollSnapshot(scrollSnapshot);
+            }
+
+            window.FOOFStore = {
+                receive: function (event, payload) {
+                    if (event === "store::hydrate") {
+                        if (!payload.success) {
+                            message(payload.message || "Store unavailable.", "error");
+                            return;
+                        }
+
+                        state.categories = payload.categories || [];
+                        applyResourcePayload(payload);
+                        state.currentCategory = hydrateCategory(payload);
+                        text("sideName", payload.sideName || "");
+                        text("factionName", payload.factionName || "");
+                        updateSummary();
+                        renderCategories(pendingServerScrollRestore);
+                        renderCart(pendingServerScrollRestore);
+                        message("Catalog loaded.", "good");
+
+                        if (state.currentCategory) {
+                            send("store::category", { category: state.currentCategory });
+                        }
+                    }
+
+                    if (event === "store::category") {
+                        if (!payload.success) {
+                            message(payload.message || "Category unavailable.", "error");
+                            return;
+                        }
+
+                        state.currentCategory = payload.category;
+                        state.items = payload.items || [];
+                        state.selectedItem = state.items.length > 0 ? state.items[0] : null;
+                        applyResourcePayload(payload);
+                        text("categoryTitle", payload.label || "Items");
+                        updateSummary();
+                        var scrollSnapshot = null;
+
+                        if (pendingServerScrollRestore && pendingServerScrollRestore.category === payload.category) {
+                            scrollSnapshot = pendingServerScrollRestore;
+                            pendingServerScrollRestore = null;
+                        }
+
+                        renderCategories(scrollSnapshot || true);
+                        renderItems(scrollSnapshot);
+                    }
+
+                    if (event === "store::checkout") {
+                        if (payload.success) {
+                            state.cart = [];
+                            applyResourcePayload(payload);
+                            renderCart(true);
+                            message(payload.message || "Checkout complete.", "good");
+                        } else {
+                            pendingServerScrollRestore = null;
+                            applyResourcePayload(payload);
+                            updateSummary();
+                            message(payload.message || "Checkout failed.", "error");
+                        }
+                    }
+
+                    if (event === "store::savedKits") {
+                        state.savedKits = payload.kits || [];
+                        renderSavedKits(true);
+
+                        if (payload.message) {
+                            message(payload.message, payload.success ? "good" : "error");
+                        }
+                    }
+                },
+                add: function (item, container) {
+                    var target = typeof container === "string" ? container : state.activeContainer;
+                    var line = {
+                        className: item.className,
+                        name: item.name,
+                        entryKind: item.entryKind,
+                        category: item.category,
+                        priceValue: item.priceValue,
+                        quantity: 1,
+                        container: normalizeContainer(item, target)
+                    };
+                    var key = cartKey(line);
+                    var existing = null;
+                    var i;
+
+                    for (i = 0; i < state.cart.length; i += 1) {
+                        if (cartKey(state.cart[i]) === key) {
+                            existing = state.cart[i];
+                        }
+                    }
+
+                    if (existing) {
+                        existing.quantity += 1;
+                    } else {
+                        state.cart.push(line);
+                    }
+
+                    renderCart(true);
+                },
+                confirmAttachmentAdd: function () {
+                    var pending = state.pendingAttachmentAdd;
+                    var item;
+                    var container;
+
+                    if (!pending) {
+                        return;
+                    }
+
+                    item = pending.item;
+                    container = pending.container;
+                    hideAttachmentModal();
+                    FOOFStore.add(item, container);
+                    renderItems(true);
+                },
+                cancelAttachmentAdd: function () {
+                    hideAttachmentModal();
+                },
+                adjust: function (line, delta) {
+                    line.quantity += delta;
+
+                    if (line.quantity <= 0) {
+                        state.cart = state.cart.filter(function (candidate) {
+                            return candidate !== line;
+                        });
+                    }
+
+                    renderCart(true);
+                },
+                setContainer: function (line, container) {
+                    line.container = normalizeContainer(line, container);
+                    renderCart(true);
+                },
+                selectTarget: function (container) {
+                    state.activeContainer = container;
+                    renderCart(true);
+                    message("Target " + containerLabels[container] + ".", "good");
+                },
+                filter: function (value) {
+                    state.query = value || "";
+                    renderItems(false);
+                },
+                saveKit: function () {
+                    var name = node("kitName").value;
+
+                    if (!name || !name.replace(/\s/g, "")) {
+                        message("Name the kit first.", "error");
+                        return;
+                    }
+
+                    send("store::kitSave", {
+                        name: name
+                    });
+                },
+                loadKit: function (kit) {
+                    state.cart = [];
+
+                    (kit.items || []).forEach(function (line) {
+                        var copy = copyCartLine(line);
+                        copy.source = "savedKit";
+                        state.cart.push(copy);
+                    });
+
+                    renderCart(false);
+                    message("Saved kit loaded. Checkout validates current faction availability.", "good");
+                },
+                clearCart: function () {
+                    state.cart = [];
+                    state.activeContainer = "auto";
+                    renderCart(true);
+                    message("Cart cleared.", "");
+                },
+                checkout: function () {
+                    if (state.cart.length === 0) {
+                        message("Cart is empty.", "error");
+                        return;
+                    }
+
+                    pendingServerScrollRestore = scrollSnapshotFor(true);
+
+                    send("store::checkout", {
+                        items: state.cart.map(function (line) {
+                            return {
+                                className: line.className,
+                                name: line.name,
+                                entryKind: line.entryKind,
+                                category: line.category,
+                                quantity: line.quantity,
+                                container: normalizeContainer(line, line.container),
+                                slot: typeof line.slot === "string" ? line.slot : "",
+                                source: typeof line.source === "string" ? line.source : ""
+                            };
+                        })
+                    });
+                },
+                refresh: function () {
+                    send("store::refresh", {});
+                },
+                back: function () {
+                    var first = null;
+                    var i;
+
+                    for (i = 0; i < state.categories.length; i += 1) {
+                        if (state.categories[i].count > 0) {
+                            first = state.categories[i];
+                            break;
+                        }
+                    }
+
+                    if (!first && state.categories.length > 0) {
+                        first = state.categories[0];
+                    }
+
+                    state.query = "";
+                    node("itemSearch").value = "";
+
+                    if (first && first.id !== state.currentCategory) {
+                        state.currentCategory = first.id;
+                        text("categoryTitle", first.label);
+                        updateCategorySubtitle(first.count);
+                        renderCategories(true);
+                        send("store::category", { category: first.id });
+                        return;
+                    }
+
+                    send("store::refresh", {});
+                    message("Refreshing store state.", "");
+                },
+                close: function () {
+                    send("store::close", {});
+                }
+            };
+
+            window.addEventListener("load", function () {
+                installWheelScrollRouting();
+                renderTargetButtons();
+                updateSummary();
+                send("store::ready", {});
+            });
+
+            window.addEventListener("keydown", function (event) {
+                var modal = node("attachmentModal");
+
+                if (!modal || modal.className.indexOf("hidden") >= 0) {
+                    return;
+                }
+
+                if (event.key === "Escape" || event.key === "Esc") {
+                    event.preventDefault();
+                    hideAttachmentModal();
+                }
+            });
+        }());
+    </script>
+</body>
+</html>

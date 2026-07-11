@@ -1,0 +1,10 @@
+name = "Frontline Operations - The Mod";
+author = "Frontline Operations Group";
+description = "Frontline Operations - The Mod";
+tooltip = "Frontline Operations - The Mod";
+tooltipOwned = "Frontline Operations - The Mod";
+overview = "A persistent Arma 3 campaign with autonomous theater command, logistics, development, and combined-arms operations.";
+actionName = "GitHub";
+action = "https://github.com/FrontlineOps/Frontline-Operations";
+hideName = 0;
+hidePicture = 1;

@@ -1,0 +1,65 @@
+class Logistics {
+    file = "\z\flo\addons\main\Functions\Logistics";
+
+    class logisticsNetwork {};
+    class vehicleMarket {};
+};
+
+class LogisticsNetwork {
+    file = "\z\flo\addons\main\Functions\Logistics\Network";
+
+    class logisticsNetworkApplyObjectiveCaptureGrowth {};
+    class logisticsNetworkCanNodeFulfill {};
+    class logisticsNetworkBuildTargetPicture {};
+    class logisticsNetworkBuildInboundObjectiveCounts {};
+    class logisticsNetworkBuildBranchDispatchCounts {};
+    class logisticsNetworkBuildRecentDispatchCounts {};
+    class logisticsNetworkCanDispatchToObjective {};
+    class logisticsNetworkCheckAndReplace {};
+    class logisticsNetworkDescribeObjectiveSupplyRole {};
+    class logisticsNetworkEnsureSupplyChainFresh {};
+    class logisticsNetworkGetCachedSpawnPosition {};
+    class logisticsNetworkFindSupplySourceObjective {};
+    class logisticsNetworkCreate {};
+    class logisticsNetworkCreateNode {};
+    class logisticsNetworkCreateReplacement {};
+    class logisticsNetworkConsumeThroughput {};
+    class logisticsNetworkEstablishForwardDepot {};
+    class logisticsNetworkFindRearObjectives {};
+    class logisticsNetworkFindReinforcementTargets {};
+    class logisticsNetworkFindSpawnPosition {};
+    class logisticsNetworkGetComposition {};
+    class logisticsNetworkGetReplacementUrgency {};
+    class logisticsNetworkGetNodeForBase {};
+    class logisticsNetworkGetSideSnapshot {};
+    class logisticsNetworkGetObjectiveSupplyBranch {};
+    class logisticsNetworkGetRearAATargets {};
+    class logisticsNetworkObjectiveIsCollapsePressure {};
+    class logisticsNetworkObjectiveIsFrontlinePressure {};
+    class logisticsNetworkObjectiveHasStaticAA {};
+    class logisticsNetworkPickBestTarget {};
+    class logisticsNetworkPickHQObjective {};
+    class logisticsNetworkPickDeliveryObjective {};
+    class logisticsNetworkPickPressureTarget {};
+    class logisticsNetworkPickRearTarget {};
+    class logisticsNetworkPickSpawnSourceObjective {};
+    class logisticsNetworkProcessDeliveries {};
+    class logisticsNetworkProcessPendingCaptureGrowth {};
+    class logisticsNetworkRefillNodes {};
+    class logisticsNetworkRegisterBaseNode {};
+    class logisticsNetworkReplenishTransportReserves {};
+    class logisticsNetworkMarkSupplyChainDirty {};
+    class logisticsNetworkRecordDelivery {};
+    class logisticsNetworkRecordReplacement {};
+    class logisticsNetworkRecordTargetDispatch {};
+    class logisticsNetworkRefreshManagedSide {};
+    class logisticsNetworkRefreshObjectiveSideIndex {};
+    class logisticsNetworkRefreshSupplyChain {};
+    class logisticsNetworkResolveNodeObjective {};
+    class logisticsNetworkRestoreThroughput {};
+    class logisticsNetworkSeedInitialDepot {};
+    class logisticsNetworkSerialize {};
+    class logisticsNetworkSetManagedSide {};
+    class logisticsNetworkStartMainLoop {};
+    class logisticsNetworkValidateNodeOwnership {};
+};
