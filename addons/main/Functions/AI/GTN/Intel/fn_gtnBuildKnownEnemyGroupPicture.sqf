@@ -1,12 +1,10 @@
 /*
- * Function: FLO_fnc_gtnBuildEnemyEngagementPicture
+ * Function: FLO_fnc_gtnBuildKnownEnemyGroupPicture
  * Author: Frontline Operations Development Group
  * Description:
- *   Resolves a commander-usable exact enemy-group picture from fresh contact
- *   reports using the maintained virtualization spatial index. When no
- *   virtual enemy group resolves, actually observed player-led enemy groups
- *   are normalized into the same target picture so opportunistic engagement
- *   stays intel-driven instead of silently dropping those contacts.
+ *   Resolves fresh commander contact reports into the maintained hostile-group
+ *   picture used by the common operating picture and transport safety logic.
+ *   This is intelligence only and never owns or changes group orders.
  *
  * Arguments:
  * 0: Contact reports <ARRAY>
@@ -15,13 +13,7 @@
  * 3: Freshness seconds <NUMBER>
  *
  * Return Value:
- * HASHMAP with:
- *   "groups": HASHMAP groupId -> target data
- *   "objectiveGroups": HASHMAP objectiveId -> [groupIds]
- *   "freshContactCount": NUMBER
- *   "groupCount": NUMBER
- *   "objectiveCount": NUMBER
- *   "builtAt": NUMBER
+ * HASHMAP with groups, objectiveGroups, counts, and build time
  */
 
 params [
@@ -58,7 +50,7 @@ private _freshContactCount = 0;
         if (([_groupData] call FLO_fnc_virtualizationGetMountedTransport) != "") then { continue };
         if (([_groupData] call FLO_fnc_virtualizationGetTransportAttachment) != "") then { continue };
 
-        private _entry = if (_groupId in (keys _resolvedGroups)) then {
+        private _entry = if (_groupId in _resolvedGroups) then {
             _resolvedGroups get _groupId
         } else {
             createHashMapFromArray [
@@ -98,7 +90,7 @@ private _freshContactCount = 0;
     if ((keys _realTarget) isEqualTo []) then { continue };
 
     private _realGroupId = _realTarget get "groupId";
-    private _realEntry = if (_realGroupId in (keys _resolvedGroups)) then {
+    private _realEntry = if (_realGroupId in _resolvedGroups) then {
         _resolvedGroups get _realGroupId
     } else {
         _realTarget
@@ -134,7 +126,7 @@ private _freshContactCount = 0;
             _objectiveIds pushBackUnique _objectiveId;
             _entry set ["objectiveIds", _objectiveIds];
         };
-    } forEach (keys _resolvedGroups);
+    } forEach _resolvedGroups;
 
     if (_objectiveGroupIds isNotEqualTo []) then {
         _objectiveGroups set [_objectiveId, _objectiveGroupIds];
@@ -145,7 +137,7 @@ createHashMapFromArray [
     ["groups", _resolvedGroups],
     ["objectiveGroups", _objectiveGroups],
     ["freshContactCount", _freshContactCount],
-    ["groupCount", count (keys _resolvedGroups)],
-    ["objectiveCount", count (keys _objectiveGroups)],
+    ["groupCount", count _resolvedGroups],
+    ["objectiveCount", count _objectiveGroups],
     ["builtAt", diag_tickTime]
 ]

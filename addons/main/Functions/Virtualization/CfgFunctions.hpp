@@ -185,8 +185,6 @@ class VirtualizationState {
     class virtualizationClearMissionLock {};
     class virtualizationSetExecutionState {};
     class virtualizationClearExecutionState {};
-    class virtualizationSetEngagementState {};
-    class virtualizationClearEngagementState {};
     class virtualizationSetRuntimeState {};
     class virtualizationSetRealGroup {};
     class virtualizationClearRealGroup {};
@@ -228,7 +226,6 @@ class VirtualizationState {
     class virtualizationRestoreAAState {};
     class virtualizationRestoreTransportState {};
     class virtualizationRestoreReplacementState {};
-    class virtualizationRestoreEngagementState {};
 };
 
 class VirtualizationDebug {

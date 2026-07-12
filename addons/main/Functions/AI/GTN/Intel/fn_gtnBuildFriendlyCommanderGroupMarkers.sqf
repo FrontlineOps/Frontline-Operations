@@ -36,11 +36,10 @@ private _markers = [];
 
     private _isActive = _groupData get "isActive";
     private _inCombat = _groupData get "inCombat";
-    private _engagementActive = _groupData get "engagementActive";
     private _missionLock = _groupData get "missionLock";
     private _position = _groupData get "position";
     private _markerType = [_groupType, _ownSide] call FLO_fnc_gtnCommanderIntelMarkerType;
-    private _precision = if (_isActive || {_inCombat} || {_engagementActive} || {_missionLock in ["ARTILLERY", "AIR"]}) then {
+    private _precision = if (_isActive || {_inCombat} || {_missionLock in ["ARTILLERY", "AIR"]}) then {
         0
     } else {
         switch (_groupType) do {
@@ -60,14 +59,14 @@ private _markers = [];
     if (_missionLock == "ARTILLERY") then {
         _alpha = 0.78;
     };
-    if (_inCombat || {_engagementActive}) then {
+    if (_inCombat) then {
         _alpha = 0.82;
     };
 
     private _label = switch (true) do {
         case (_groupType == "artillery"): { "ARTY" };
         case (_missionLock == "AIR"): { "AIR" };
-        case (_inCombat || {_engagementActive}): { "ENG" };
+        case (_inCombat): { "ENG" };
         default { "" };
     };
 

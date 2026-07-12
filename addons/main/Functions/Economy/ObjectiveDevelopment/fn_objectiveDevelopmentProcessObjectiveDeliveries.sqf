@@ -18,7 +18,8 @@ if ((keys _project) isEqualTo []) then {
 if ((_project get "sideKey") != _sideKey) then {
     throw format ["Development objective %1 does not belong to logistics network %2", _objectiveId, _sideKey];
 };
-[_objectiveId, _objective] call FLO_fnc_objectiveDevelopmentValidateProject;
+[_objectiveId, _objective, true] call FLO_fnc_objectiveDevelopmentValidateProject;
+if ((_project get "state") == "FUNDING") exitWith { 0 };
 
 private _shipments = nearestObjects [
     _objective get "position",
@@ -55,7 +56,7 @@ private _accepted = 0;
     _project set ["supplyDelivered", (_project get "supplyDelivered") + _amount];
     _project set ["lastContributorName", _contributorName];
     _objective set ["developmentProject", _project];
-    [_objectiveId, _objective] call FLO_fnc_objectiveDevelopmentValidateProject;
+    [_objectiveId, _objective, true] call FLO_fnc_objectiveDevelopmentValidateProject;
     FLO_Objectives set [_objectiveId, _objective];
 
     _x setVariable ["FLO_LogisticsDelivered", true, true];

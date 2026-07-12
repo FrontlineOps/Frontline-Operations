@@ -18,6 +18,8 @@ private _decision = createHashMapFromArray [
     ["arrivedCount", 0],
     ["nearestDistance", -1],
     ["defenderCount", 0],
+    ["openingCommit", false],
+    ["openingTimeoutSeconds", 0],
     ["status", "INACTIVE"],
     ["culminated", false]
 ];
@@ -111,6 +113,10 @@ if (_madeProgress) then {
 private _config = _director get "_config";
 private _noProgressSeconds = [_lastProgressAt, _now] call FLO_fnc_dateNumberDeltaSeconds;
 private _remainingPackage = (_packageTarget - _committed) max 0;
+private _openingCommit = (_operation get "assaultWaveSequence") == 0;
+private _openingTimeoutSeconds = (_config get "assaultOpeningCommitMinimumSeconds") max (
+    (_cmdr get "_updateInterval") * ((_config get "operationMaximumCount") + 1)
+);
 
 _decision set ["activeCount", _activeCount];
 _decision set ["activeTarget", _activeTarget];
@@ -122,10 +128,34 @@ _decision set ["lossRatio", _lossRatio];
 _decision set ["arrivedCount", _arrivedCount];
 _decision set ["nearestDistance", [-1, round _nearestDistance] select (_activeCount > 0)];
 _decision set ["defenderCount", _defenderCount];
+_decision set ["openingCommit", _openingCommit];
+_decision set ["openingTimeoutSeconds", _openingTimeoutSeconds];
 
 if ((_objective get "owner") == (_cmdr get "_ownSide")) exitWith {
     _operation set ["assaultStatus", "OBJECTIVE_SECURED"];
     _decision set ["status", "OBJECTIVE_SECURED"];
+    _decision
+};
+
+private _openingElapsedSeconds = [_operation get "phaseStartedAtDateNum", _now] call FLO_fnc_dateNumberDeltaSeconds;
+if (
+    _openingCommit
+    && {_activeCount < _activeTarget}
+    && {_openingElapsedSeconds >= _openingTimeoutSeconds}
+) exitWith {
+    _operation set ["assaultStatus", "CULMINATED"];
+    _decision set ["status", "CULMINATED"];
+    _decision set ["culminated", true];
+    _director call ["_completeOperation", [_operationId, "ATTACKER_FAILED", "ASSAULT_OPENING_MASS_FAILED"]];
+    ["CAMPAIGN", 2, format [
+        "Operation %1 opening mass failed: active=%2 target=%3 committed=%4 elapsed=%5s limit=%6s",
+        _operationId,
+        _activeCount,
+        _activeTarget,
+        _committed,
+        round _openingElapsedSeconds,
+        round _openingTimeoutSeconds
+    ]] call FLO_fnc_log;
     _decision
 };
 
@@ -209,7 +239,11 @@ if (_remainingPackage <= 0 || {_activeDeficit <= 0} || {_waveCooldownRemaining >
     _decision
 };
 
-private _quota = (_operation get "assaultWaveSize") min _activeDeficit min _remainingPackage;
+private _quota = if (_openingCommit) then {
+    _activeDeficit min _remainingPackage
+} else {
+    (_operation get "assaultWaveSize") min _activeDeficit min _remainingPackage
+};
 _operation set ["assaultStatus", "WAVE_READY"];
 _decision set ["quota", _quota];
 _decision set ["status", "WAVE_READY"];

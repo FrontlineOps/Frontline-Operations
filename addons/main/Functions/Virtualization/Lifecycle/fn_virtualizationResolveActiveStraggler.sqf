@@ -31,7 +31,6 @@ if (_tracksAssets) exitWith { false };
 if (isNull _realGroup) exitWith { false };
 if ((_groupData get "transportRole")) exitWith { false };
 if ((_groupData get "inCombat")) exitWith { false };
-if ((_groupData get "engagementActive")) exitWith { false };
 if ((_groupData get "missionLock") != "") exitWith { false };
 if ((_groupData get "replacementState") != "") exitWith { false };
 if ((_groupData get "attachedTo") != "" || {(_groupData get "mountedIn") != ""}) exitWith { false };

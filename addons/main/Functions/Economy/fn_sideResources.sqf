@@ -15,6 +15,14 @@ private _commanderSpendingPolicy = createHashMapFromArray [
     ["bootstrapWindowBudget", 300],
     ["balancedRunwayMinimum", 1200],
     ["denialLogCooldownSeconds", 30],
+    ["developmentFundingFractions", createHashMapFromArray [
+        ["CONSERVE", 0.25],
+        ["BALANCED", 0.50]
+    ]],
+    ["developmentFundingMinimums", createHashMapFromArray [
+        ["CONSERVE", 25],
+        ["BALANCED", 50]
+    ]],
     ["urgencyBudgetMultipliers", createHashMapFromArray [
         ["ROUTINE", 1],
         ["OPERATIONAL", 2],
@@ -41,12 +49,12 @@ private _treasuryClass = [
     ["#type", "SideTreasury"],
 
     ["RESOURCE_VALUES", createHashMapFromArray [
-        ["capital", 20],
-        ["city", 12],
-        ["marine", 10],
-        ["local", 8],
-        ["village", 4],
-        ["cluster", 1]
+        ["capital", 40],
+        ["city", 24],
+        ["marine", 20],
+        ["local", 16],
+        ["village", 8],
+        ["cluster", 2]
     ]],
     ["CONTEST_MODIFIERS", createHashMapFromArray [
         ["SECURE", 1.0],
@@ -80,6 +88,7 @@ private _treasuryClass = [
     ["getAvailable", { [_self] call FLO_fnc_sideResourcesGetAvailable }],
     ["getReservationRemaining", { ([_self] + _this) call FLO_fnc_sideResourcesGetReservationRemaining }],
     ["getSnapshot", { [_self] call FLO_fnc_sideResourcesGetSnapshot }],
+    ["increaseReservation", { ([_self] + _this) call FLO_fnc_sideResourcesIncreaseReservation }],
     ["addResources", { ([_self] + _this) call FLO_fnc_sideResourcesAddResources }],
     ["canAfford", { ([_self] + _this) call FLO_fnc_sideResourcesCanAfford }],
     ["spendResources", { ([_self] + _this) call FLO_fnc_sideResourcesSpendResources }],

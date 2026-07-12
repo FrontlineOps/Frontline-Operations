@@ -3,6 +3,7 @@ class GTNOperations {
 
     class campaignApplyCaptureBenefits {};
     class campaignAssaultStateDefaults {};
+    class campaignBuildAssaultApproachLanes {};
     class campaignBuildOperationSnapshot {};
     class campaignBuildSnapshot {};
     class campaignBuildThreatSector {};

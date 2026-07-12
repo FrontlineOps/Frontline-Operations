@@ -69,9 +69,6 @@ private _detachIndex = 0;
         _otherData set ["organicPackageParentGroupId", ""];
     };
 
-    if ((_otherData get "engagementTargetGroupId") == _groupId) then {
-        _otherData set ["engagementTargetGroupId", ""];
-    };
 } forEach _groups;
 
 private _removedFromTransportPool = false;

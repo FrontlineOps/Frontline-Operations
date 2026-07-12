@@ -32,7 +32,6 @@ private _realGroup = _groupData get "realGroup";
 private _tracksAssets = [_groupType] call FLO_fnc_virtualizationUsesAssetStrength;
 private _missionLock = _groupData get "missionLock";
 private _inCombat = _groupData get "inCombat";
-private _engagementActive = _groupData get "engagementActive";
 private _forceVirtual = _groupData get "forceVirtual";
 private _replacementState = _groupData get "replacementState";
 private _activationDeferred = _groupData get "activationDeferred";
@@ -78,7 +77,7 @@ if (_isActive && {isNull _realGroup}) exitWith {
 };
 
 if (!_isActive && {!_activationDeferred}) then {
-    if (!_inCombat && {!_engagementActive}) then {
+    if (!_inCombat) then {
         [_groupId, _groupData, _now, _virtStats] call FLO_fnc_virtualizationProcessInactiveMovement;
     } else {
         if ((_groupData get "waypoints") isNotEqualTo []) then {

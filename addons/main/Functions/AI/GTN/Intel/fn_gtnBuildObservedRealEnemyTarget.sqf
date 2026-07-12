@@ -2,10 +2,8 @@
  * Function: FLO_fnc_gtnBuildObservedRealEnemyTarget
  * Author: Frontline Operations Development Group
  * Description:
- *   Normalizes one actually observed real enemy contact into GTN engagement
- *   target data when no virtual enemy group resolves for the report. This is
- *   used for player-led enemy groups so opportunistic engagements stay
- *   intel-driven instead of relying on omniscient scans.
+ *   Normalizes an actually observed player-led enemy contact for the maintained
+ *   hostile-group intelligence picture when no virtual group resolves it.
  *
  * Arguments:
  * 0: Observed source object <OBJECT>
@@ -15,10 +13,7 @@
  * 4: Contact confidence <NUMBER>
  *
  * Return Value:
- * HASHMAP - Empty when invalid, otherwise contains a normalized target entry
- *           with "groupId", "position", "groupType", "unitCount",
- *           "commanderOrder", "lastSeen", "confidence", "contactCount",
- *           "objectiveIds", "isPlayerControlled"
+ * HASHMAP - Empty when invalid, otherwise a normalized hostile-group entry
  */
 
 params [

@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Builds one contextual civilian intel package using maintained GTN enemy
- *   engagement picture and local objective context.
+ *   known hostile-group picture and local objective context.
  *
  * Arguments:
  * 0: Civilian position <ARRAY>
@@ -48,23 +48,23 @@ private _commander = FLO_GTN_CommandersBySide get _sideKey;
 if (isNil "_commander") exitWith { _package };
 
 private _worldState = _commander get "_worldState";
-private _engagementPicture = _worldState call ["_getEnemyEngagementPicture", []];
-private _engagementGroups = _engagementPicture get "groups";
-private _objectiveGroups = _engagementPicture get "objectiveGroups";
+private _knownGroupPicture = _worldState call ["_getKnownEnemyGroupPicture", []];
+private _knownGroups = _knownGroupPicture get "groups";
+private _objectiveGroups = _knownGroupPicture get "objectiveGroups";
 private _candidateIds = +(_objectiveGroups getOrDefault [_objectiveId, []]);
 
 if (_candidateIds isEqualTo []) then {
     {
-        private _target = _engagementGroups get _x;
+        private _target = _knownGroups get _x;
         if ((_target get "position") distance2D _civilianPos > (FLO_CivilianConfig get "MAX_LOCAL_INTEL_RADIUS")) then { continue };
         _candidateIds pushBack _x;
-    } forEach (keys _engagementGroups);
+    } forEach (keys _knownGroups);
 };
 
 private _selectedTarget = createHashMap;
 private _bestDistance = 1e12;
 {
-    private _target = _engagementGroups get _x;
+    private _target = _knownGroups get _x;
     if (isNil "_target") then { continue };
 
     private _distance = _civilianPos distance2D (_target get "position");

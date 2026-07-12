@@ -69,7 +69,7 @@ private _worldState = createHashMapObject [[
         ["lastContactTime", 0],
         ["threatLevel", 0],
         ["concentrations", []],
-        ["engagementPicture", createHashMapFromArray [
+        ["knownGroupPicture", createHashMapFromArray [
             ["groups", createHashMap],
             ["objectiveGroups", createHashMap],
             ["freshContactCount", 0],
@@ -97,7 +97,7 @@ private _worldState = createHashMapObject [[
     ["_enemyIntelSenseInterval", 30],
     ["_enemyIntelScanCursor", 0],
     ["_enemyIntelScanBudget", 24], // Max leaders to scan per intel pass
-    ["_enemyEngagementFreshSeconds", 180],
+    ["_knownEnemyGroupFreshSeconds", 180],
     ["_combatIntelFreshSeconds", 240],
     ["_combatIntelLastProcessedAt", -1],
     ["_lastCombatIntelAdded", 0],
@@ -123,8 +123,8 @@ private _worldState = createHashMapObject [[
             ["contactCount", 0],
             ["combatContactCount", 0],
             ["concentrationCount", 0],
-            ["engagementGroupCount", 0],
-            ["engagementObjectiveCount", 0],
+            ["knownGroupCount", 0],
+            ["knownGroupObjectiveCount", 0],
             ["supportSenseRan", false],
             ["enemyIntelSenseRan", false]
         ]]
@@ -507,13 +507,13 @@ private _worldState = createHashMapObject [[
         private _threatLevel = ((count _contacts) / 5) min 10;
         _intel set ["threatLevel", _threatLevel];
         _intel set [
-            "engagementPicture",
+            "knownGroupPicture",
             [
                 _contacts,
                 _self get "_objectives",
                 _enemySide,
-                _self get "_enemyEngagementFreshSeconds"
-            ] call FLO_fnc_gtnBuildEnemyEngagementPicture
+                _self get "_knownEnemyGroupFreshSeconds"
+            ] call FLO_fnc_gtnBuildKnownEnemyGroupPicture
         ];
 
         _self set ["_enemyIntel", _intel];
@@ -764,8 +764,8 @@ private _worldState = createHashMapObject [[
         _self get "_enemyIntel"
     }],
 
-    ["_getEnemyEngagementPicture", {
-        (_self get "_enemyIntel") get "engagementPicture"
+    ["_getKnownEnemyGroupPicture", {
+        (_self get "_enemyIntel") get "knownGroupPicture"
     }],
 
     ["_getSupportAssets", {
@@ -896,8 +896,8 @@ private _worldState = createHashMapObject [[
             ["contactCount", 0],
             ["combatContactCount", 0],
             ["concentrationCount", 0],
-            ["engagementGroupCount", 0],
-            ["engagementObjectiveCount", 0],
+            ["knownGroupCount", 0],
+            ["knownGroupObjectiveCount", 0],
             ["supportSenseRan", false],
             ["enemyIntelSenseRan", false]
         ];
@@ -936,9 +936,9 @@ private _worldState = createHashMapObject [[
         _meta set ["contactCount", count ((_self get "_enemyIntel") get "contactReports")];
         _meta set ["combatContactCount", _self get "_lastCombatIntelAdded"];
         _meta set ["concentrationCount", count ((_self get "_enemyIntel") get "concentrations")];
-        private _engagementPicture = (_self get "_enemyIntel") get "engagementPicture";
-        _meta set ["engagementGroupCount", _engagementPicture get "groupCount"];
-        _meta set ["engagementObjectiveCount", _engagementPicture get "objectiveCount"];
+        private _knownGroupPicture = (_self get "_enemyIntel") get "knownGroupPicture";
+        _meta set ["knownGroupCount", _knownGroupPicture get "groupCount"];
+        _meta set ["knownGroupObjectiveCount", _knownGroupPicture get "objectiveCount"];
 
         private _dtMs = (diag_tickTime - _cycleStart) * 1000;
         _perf set ["lastUpdateMs", _dtMs];

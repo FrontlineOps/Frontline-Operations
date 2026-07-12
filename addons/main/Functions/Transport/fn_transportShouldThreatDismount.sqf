@@ -20,11 +20,5 @@ params [
 ];
 
 if (_groupData get "inCombat") exitWith { true };
-if (_groupData get "engagementActive") exitWith { true };
-
-private _engagementTargetPos = _groupData get "engagementTargetPos";
-if ((count _engagementTargetPos) >= 2 && {(_engagementTargetPos distance2D _carrierPos) <= FLO_Transport_ThreatDismountRadius}) exitWith {
-    true
-};
 
 [(_groupData get "side"), _carrierPos, FLO_Transport_ThreatDismountRadius] call FLO_fnc_transportHasKnownEnemyNearby

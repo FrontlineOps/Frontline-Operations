@@ -27,7 +27,6 @@ if (_fullSweep) then {
         (_groupData get "activationDeferred")
         || {(_groupData get "missionLock") != ""}
         || {_groupData get "inCombat"}
-        || {_groupData get "engagementActive"}
         || {(_groupData get "replacementState") != ""}
     );
 

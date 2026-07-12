@@ -5,12 +5,13 @@ params [
 
 if !(_objectiveId in FLO_Objectives) then { throw format ["Cannot process missing development objective %1", _objectiveId]; };
 private _objective = FLO_Objectives get _objectiveId;
-[_objectiveId, _objective] call FLO_fnc_objectiveDevelopmentValidateProject;
+[_objectiveId, _objective, true] call FLO_fnc_objectiveDevelopmentValidateProject;
 private _project = _objective get "developmentProject";
 if ((keys _project) isEqualTo []) exitWith { false };
 if ((_objective get "owner") isNotEqualTo _side) then {
     throw format ["Development project %1 owner changed outside the capture handler", _objectiveId];
 };
+if ((_project get "state") == "FUNDING") exitWith { false };
 
 private _enemyCountKey = ["opforCount", "bluforCount"] select (_side isEqualTo east);
 if ((_objective get "contested") || {_objective get "underAttack"} || {(_objective get _enemyCountKey) > 0}) exitWith {
@@ -54,7 +55,7 @@ _project set ["sourceObjectiveId", _sourceObjectiveId];
 _project set ["commanderSupply", (_project get "commanderSupply") + _amount];
 _project set ["supplyDelivered", (_project get "supplyDelivered") + _amount];
 _objective set ["developmentProject", _project];
-[_objectiveId, _objective] call FLO_fnc_objectiveDevelopmentValidateProject;
+[_objectiveId, _objective, true] call FLO_fnc_objectiveDevelopmentValidateProject;
 FLO_Objectives set [_objectiveId, _objective];
 
 if ((_project get "supplyDelivered") >= (_project get "supplyRequired")) then {

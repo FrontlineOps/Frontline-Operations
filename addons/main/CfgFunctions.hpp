@@ -64,7 +64,6 @@ class FLO {
         class gtnAllocateBaselineGarrisons {};
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
-        class gtnManageOpportunisticEngagements {};
         class gtnReleaseCompletedAttackAssignments {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
@@ -78,29 +77,17 @@ class FLO {
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
         class gtnBuildObjectiveAssignmentCache {};
-        class gtnAdjustEngagementTargetAssignment {};
-        class gtnApplyGroupEngagement {};
-        class gtnBuildEnemyEngagementPicture {};
-        class gtnBuildGroupEngagementContext {};
         class gtnGetSideClientOwners {};
         class gtnMarkCommanderStateDirty {};
         class gtnGetCachedReserveBands {};
         class gtnGetSideCommanderHandle {};
         class gtnGetTempoScaledAssignmentLimit {};
-        class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
-        class gtnDistanceToSegment2D {};
-        class gtnEstimateEngagementTargetLoad {};
-        class gtnEvaluateGroupEngagementTarget {};
         class gtnExecuteTrackCycle {};
         class gtnGetAttackPressureProfile {};
         class gtnGroupIsStrategicallyAssignable {};
-        class gtnGetEngagementTargetAssignmentCap {};
-        class gtnIsEngagementRouteActive {};
         class gtnLogStrategicOrderPerf {};
         class gtnPickObjectiveGarrisonPosition {};
-        class gtnRestoreStrategicGroupRoute {};
-        class gtnSelectGroupEngagementTarget {};
         class gtnUpdateAttackTrackPhases {};
     };
 
@@ -108,6 +95,8 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\Intel";
 
         class gtnApproximateCommanderMarkerPosition {};
+        class gtnBuildKnownEnemyGroupPicture {};
+        class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildCommanderIntelPublishSignature {};
         class gtnBuildEnemyLogisticsIntelSnapshot {};
