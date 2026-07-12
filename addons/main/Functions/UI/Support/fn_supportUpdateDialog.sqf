@@ -1,53 +1,30 @@
-if (!hasInterface || {!FLO_SupportBrowserReady}) exitWith { false };
+if (!hasInterface) exitWith { false };
 
 private _control = uiNamespace getVariable ["FLO_SupportControl", controlNull];
 if (isNull _control) exitWith { false };
+if ((keys FLO_SupportLastServerSnapshot) isEqualTo []) exitWith { false };
 
-private _side = side group player;
-private _sideKey = ["WEST", "EAST"] select (_side isEqualTo east);
-private _sideName = ["BLUFOR", "OPFOR"] select (_side isEqualTo east);
-private _economy = FLO_SideResourceState get _sideKey;
 private _hasTarget = FLO_SupportTargetPosition isNotEqualTo [];
-private _targetGrid = ["------", mapGridPosition FLO_SupportTargetPosition] select _hasTarget;
-private _targetPosition = [[], +FLO_SupportTargetPosition] select _hasTarget;
-private _artilleryTreasury = FLO_ArtilleryTreasuryCostPerRound * 6;
-private _artillerySupply = FLO_ArtilleryLocalSupplyCostPerRound * 6;
+private _targetGrid = "------";
+private _targetPosition = [];
+if (_hasTarget) then {
+    _targetGrid = mapGridPosition FLO_SupportTargetPosition;
+    _targetPosition = +FLO_SupportTargetPosition;
+};
+private _serverSnapshot = FLO_SupportLastServerSnapshot;
 
 private _snapshot = createHashMapFromArray [
-    ["sideName", _sideName],
+    ["generatedAt", _serverSnapshot get "generatedAt"],
+    ["sideName", _serverSnapshot get "sideName"],
     ["selectedType", FLO_SupportSelectedType],
     ["hasTarget", _hasTarget],
     ["targetGrid", _targetGrid],
     ["targetPosition", _targetPosition],
-    ["available", _economy get "available"],
-    ["balance", _economy get "balance"],
-    ["committed", _economy get "committed"],
-    ["packages", [
-        createHashMapFromArray [
-            ["type", "ARTY"],
-            ["name", "Field Artillery"],
-            ["asset", "6-round fire mission"],
-            ["treasury", str _artilleryTreasury],
-            ["supply", str _artillerySupply],
-            ["safety", "250 m danger close"]
-        ],
-        createHashMapFromArray [
-            ["type", "CAS"],
-            ["name", "Close Air Support"],
-            ["asset", "Helicopter or jet strike"],
-            ["treasury", "600-1,000"],
-            ["supply", "900-1,500"],
-            ["safety", "175 m danger close"]
-        ],
-        createHashMapFromArray [
-            ["type", "CAP"],
-            ["name", "Combat Air Patrol"],
-            ["asset", "10-minute air patrol"],
-            ["treasury", "800"],
-            ["supply", "1,200"],
-            ["safety", "Area patrol"]
-        ]
-    ]]
+    ["available", _serverSnapshot get "available"],
+    ["balance", _serverSnapshot get "balance"],
+    ["committed", _serverSnapshot get "committed"],
+    ["assets", _serverSnapshot get "assets"],
+    ["packages", _serverSnapshot get "packages"]
 ];
 
 private _script = format [

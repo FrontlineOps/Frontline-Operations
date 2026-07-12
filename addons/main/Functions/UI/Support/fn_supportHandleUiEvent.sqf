@@ -9,6 +9,7 @@ switch (_event) do {
         uiNamespace setVariable ["FLO_SupportControl", _control];
         FLO_SupportBrowserReady = true;
         [] call FLO_fnc_supportUpdateDialog;
+        diag_log "[FLO][Support] Browser ready";
     };
     case "support::select": {
         private _type = toUpper (_data get "type");

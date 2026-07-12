@@ -23,7 +23,7 @@ class FLO_SupportDialog {
             x = "safeZoneX + (safeZoneW * 0.23)";
             y = "safeZoneY + (safeZoneH * 0.085)";
             w = "safeZoneW * 0.56";
-            h = "safeZoneH * 0.86";
+            h = "safeZoneH * 0.915";
             colorBackground[] = {0.035, 0.065, 0.08, 1};
             colorOutside[] = {0.012, 0.025, 0.035, 1};
             colorSea[] = {0.04, 0.13, 0.18, 1};

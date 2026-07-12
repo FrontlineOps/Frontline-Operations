@@ -81,6 +81,8 @@ class CfgRemoteExec {
         class FLO_fnc_operationsReceiveSnapshot { allowedTargets = 1; jip = 0; };
         class FLO_fnc_developmentRequestSnapshotServer { allowedTargets = 2; jip = 0; };
         class FLO_fnc_developmentReceiveSnapshot { allowedTargets = 1; jip = 0; };
+        class FLO_fnc_supportRequestSnapshotServer { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_supportReceiveSnapshot { allowedTargets = 1; jip = 0; };
         class FLO_fnc_randomizeWeather { allowedTargets = 2; jip = 0; };
     };
 };

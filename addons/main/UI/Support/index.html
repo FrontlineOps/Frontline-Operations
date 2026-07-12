@@ -50,7 +50,7 @@
 
         .app {
             display: grid;
-            grid-template-rows: 8.5vh minmax(0, 1fr) 5.5vh;
+            grid-template-rows: 8.5vh minmax(0, 1fr);
             width: 100%;
             height: 100%;
             border: 1px solid var(--line);
@@ -176,6 +176,9 @@
         }
 
         .panel.left {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             border-right: 1px solid var(--line);
         }
 
@@ -190,8 +193,8 @@
         }
 
         .section-head {
-            margin-bottom: 15px;
-            padding-bottom: 12px;
+            margin-bottom: 10px;
+            padding-bottom: 9px;
             border-bottom: 1px solid var(--line);
         }
 
@@ -205,12 +208,13 @@
 
         .package-list {
             display: grid;
-            gap: 9px;
+            flex: 0 0 auto;
+            gap: 6px;
         }
 
         .package {
             width: 100%;
-            padding: 14px;
+            padding: 9px 10px;
             border: 1px solid var(--line);
             border-radius: 3px;
             color: var(--text);
@@ -244,16 +248,27 @@
             font-weight: 900;
         }
 
+        .package-ready {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .package-ready.has-ready {
+            color: var(--green);
+        }
+
         .package-name {
-            margin-top: 5px;
+            margin-top: 3px;
             color: var(--white);
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 900;
             text-transform: uppercase;
         }
 
         .package-asset {
-            margin-top: 3px;
+            margin-top: 2px;
             color: var(--muted);
             font-size: 12px;
         }
@@ -262,8 +277,8 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 7px;
-            margin-top: 12px;
-            padding-top: 10px;
+            margin-top: 7px;
+            padding-top: 6px;
             border-top: 1px solid var(--line-soft);
         }
 
@@ -286,10 +301,106 @@
         }
 
         .safety {
-            margin-top: 10px;
+            margin-top: 6px;
             color: var(--amber);
             font-size: 10px;
             font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .asset-section {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid var(--line);
+        }
+
+        .asset-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 0 0 auto;
+            margin-bottom: 8px;
+        }
+
+        .asset-head strong {
+            color: var(--green);
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+
+        .asset-list {
+            display: grid;
+            align-content: start;
+            gap: 6px;
+            min-height: 0;
+            padding-right: 3px;
+            overflow-y: auto;
+        }
+
+        .asset-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 7px;
+            padding: 9px 10px;
+            border-left: 2px solid var(--line);
+            background: var(--panel);
+        }
+
+        .asset-row.ready { border-left-color: var(--green); }
+        .asset-row.active { border-left-color: var(--amber); }
+        .asset-row.unavailable { border-left-color: var(--red); }
+
+        .asset-name,
+        .asset-status {
+            overflow: hidden;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .asset-name {
+            color: var(--white);
+            font-size: 12px;
+        }
+
+        .asset-status {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 9px;
+            text-align: right;
+        }
+
+        .asset-row.ready .asset-status { color: var(--green); }
+        .asset-row.active .asset-status { color: var(--amber); }
+        .asset-row.unavailable .asset-status { color: var(--red); }
+
+        .asset-meta,
+        .asset-detail {
+            margin-top: 3px;
+            overflow: hidden;
+            color: var(--muted);
+            font-size: 10px;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .asset-detail {
+            max-width: 120px;
+            text-align: right;
+        }
+
+        .empty-state {
+            padding: 16px 10px;
+            border: 1px dashed var(--line);
+            color: var(--muted);
+            font-size: 11px;
+            text-align: center;
             text-transform: uppercase;
         }
 
@@ -299,7 +410,7 @@
         }
 
         .target-state {
-            padding: 16px;
+            padding: 12px;
             border-bottom: 1px solid var(--line);
         }
 
@@ -307,7 +418,7 @@
             display: block;
             margin-top: 5px;
             color: var(--amber);
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
             text-transform: uppercase;
         }
@@ -317,10 +428,10 @@
         }
 
         .target-grid {
-            padding: 16px;
+            padding: 12px;
             color: var(--white);
             font-family: var(--mono);
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 900;
         }
 
@@ -332,7 +443,7 @@
 
         .target-row {
             min-width: 0;
-            padding: 12px;
+            padding: 10px;
             border-right: 1px solid var(--line-soft);
         }
 
@@ -340,34 +451,43 @@
             border-right: 0;
         }
 
-        .economy {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .authorization {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
             margin-top: 14px;
+            padding: 11px 12px;
             border: 1px solid var(--line);
             background: var(--panel);
         }
 
-        .economy-cell {
-            padding: 13px;
-            border-right: 1px solid var(--line-soft);
-        }
-
-        .economy-cell:last-child {
-            border-right: 0;
-        }
-
-        .economy-cell strong {
+        .authorization strong {
             display: block;
-            margin-top: 4px;
+            margin-top: 3px;
             color: var(--green);
             font-family: var(--mono);
-            font-size: 18px;
+            font-size: 17px;
+        }
+
+        .authorization-meta {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 10px;
+            text-align: right;
+            text-transform: uppercase;
+        }
+
+        .authorization-meta strong {
+            display: inline;
+            margin: 0 0 0 5px;
+            color: var(--white);
+            font-size: 11px;
         }
 
         .request-button {
             width: 100%;
-            min-height: 48px;
+            min-height: 43px;
             margin-top: 14px;
             border: 1px solid var(--green);
             border-radius: 3px;
@@ -390,42 +510,13 @@
             cursor: default;
         }
 
-        .footer {
-            display: grid;
-            grid-template-columns: 23% 56% 21%;
-            border-top: 1px solid var(--line);
-            background: #08131b;
-        }
-
-        .footer-cell {
-            display: flex;
-            align-items: center;
-            min-width: 0;
-            padding: 0 18px;
-            color: var(--muted);
-            font-family: var(--mono);
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .footer-cell:nth-child(2) {
-            justify-content: center;
-            border-right: 1px solid var(--line);
-            border-left: 1px solid var(--line);
-            color: var(--cyan);
-        }
-
-        .footer-cell:last-child {
-            justify-content: flex-end;
-        }
-
         @media (max-width: 1200px) {
             html, body { font-size: 12px; }
             .panel { padding: 12px; }
             .brand-title { font-size: 15px; }
             .status-cell { padding: 0 10px; }
-            .target-grid { font-size: 24px; }
+            .target-grid { font-size: 22px; }
+            .asset-row { padding: 7px 8px; }
         }
     </style>
 </head>
@@ -467,6 +558,15 @@
                     <h1 class="section-title">Available Effects</h1>
                 </div>
                 <div class="package-list" id="package-list"></div>
+                <div class="asset-section">
+                    <div class="asset-head">
+                        <span class="eyebrow">Assigned Assets</span>
+                        <strong id="asset-count">0 / 0 READY</strong>
+                    </div>
+                    <div class="asset-list" id="asset-list">
+                        <div class="empty-state">Synchronizing command assets</div>
+                    </div>
+                </div>
             </aside>
 
             <div class="map-space" aria-hidden="true"></div>
@@ -495,14 +595,13 @@
                     </div>
                 </div>
 
-                <div class="economy">
-                    <div class="economy-cell">
+                <div class="authorization">
+                    <div>
                         <span class="label">Available</span>
                         <strong id="available-resources">0</strong>
                     </div>
-                    <div class="economy-cell">
-                        <span class="label">Committed</span>
-                        <strong id="committed-resources">0</strong>
+                    <div class="authorization-meta">
+                        Committed <strong id="committed-resources">0</strong>
                     </div>
                 </div>
 
@@ -510,11 +609,6 @@
             </aside>
         </section>
 
-        <footer class="footer">
-            <div class="footer-cell">Ctrl+Shift+S</div>
-            <div class="footer-cell" id="footer-status">Support net synchronized</div>
-            <div class="footer-cell" id="balance-status">Treasury 0</div>
-        </footer>
     </main>
 
     <script>
@@ -528,7 +622,9 @@
             }
 
             function send(event, data) {
-                window.alert(JSON.stringify({ event: event, data: data || {} }));
+                if (typeof A3API !== "undefined" && typeof A3API.SendAlert === "function") {
+                    A3API.SendAlert(JSON.stringify({ event: event, data: data || {} }));
+                }
             }
 
             function formatNumber(value) {
@@ -549,7 +645,9 @@
                 var button = document.createElement("button");
                 button.className = "package" + (item.type === snapshot.selectedType ? " active" : "");
                 button.setAttribute("data-type", item.type);
-                button.innerHTML = "<div class=\"package-top\"><span class=\"package-code\">" + item.type + "</span></div>"
+                button.innerHTML = "<div class=\"package-top\"><span class=\"package-code\">" + item.type + "</span>"
+                    + "<span class=\"package-ready" + (item.ready > 0 ? " has-ready" : "") + "\">"
+                    + item.ready + " / " + item.total + " READY</span></div>"
                     + "<div class=\"package-name\">" + item.name + "</div>"
                     + "<div class=\"package-asset\">" + item.asset + "</div>"
                     + "<div class=\"package-stats\">"
@@ -567,6 +665,64 @@
                 list.innerHTML = "";
                 for (var i = 0; i < snapshot.packages.length; i += 1) {
                     list.appendChild(packageButton(snapshot.packages[i]));
+                }
+            }
+
+            function assetStatusClass(item) {
+                if (item.available) { return "ready"; }
+                if (item.status === "ON MISSION" || item.status === "AIRBORNE" || item.status === "TASKED") {
+                    return "active";
+                }
+                return "unavailable";
+            }
+
+            function assetRow(item) {
+                var row = document.createElement("div");
+                var identity = document.createElement("div");
+                var state = document.createElement("div");
+                var name = document.createElement("div");
+                var meta = document.createElement("div");
+                var status = document.createElement("div");
+                var detail = document.createElement("div");
+
+                row.className = "asset-row " + assetStatusClass(item);
+                name.className = "asset-name";
+                meta.className = "asset-meta";
+                status.className = "asset-status";
+                detail.className = "asset-detail";
+                name.textContent = item.callSign + " / " + item.displayName;
+                meta.textContent = item.kind + " / " + item.location;
+                status.textContent = item.status;
+                detail.textContent = item.statusDetail;
+                identity.appendChild(name);
+                identity.appendChild(meta);
+                state.appendChild(status);
+                state.appendChild(detail);
+                row.appendChild(identity);
+                row.appendChild(state);
+                return row;
+            }
+
+            function renderAssets() {
+                var list = byId("asset-list");
+                var total = 0;
+                var ready = 0;
+                list.innerHTML = "";
+
+                for (var i = 0; i < snapshot.assets.length; i += 1) {
+                    var item = snapshot.assets[i];
+                    if (item.supports.indexOf(snapshot.selectedType) === -1) { continue; }
+                    total += 1;
+                    if (item.available) { ready += 1; }
+                    list.appendChild(assetRow(item));
+                }
+
+                byId("asset-count").textContent = ready + " / " + total + " READY";
+                if (total === 0) {
+                    var empty = document.createElement("div");
+                    empty.className = "empty-state";
+                    empty.textContent = "No " + snapshot.selectedType + " assets assigned";
+                    list.appendChild(empty);
                 }
             }
 
@@ -588,9 +744,8 @@
                 byId("selected-package").textContent = selected ? selected.type : snapshot.selectedType;
                 byId("available-resources").textContent = formatNumber(snapshot.available);
                 byId("committed-resources").textContent = formatNumber(snapshot.committed);
-                byId("balance-status").textContent = "Treasury " + formatNumber(snapshot.balance);
-                byId("footer-status").textContent = snapshot.hasTarget ? "Target designation ready" : "Awaiting target designation";
                 renderPackages();
+                renderAssets();
                 renderTarget();
             }
 

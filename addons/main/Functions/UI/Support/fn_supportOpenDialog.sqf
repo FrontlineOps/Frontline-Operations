@@ -35,6 +35,7 @@ uiNamespace setVariable ["FLO_SupportMapControl", _map];
 FLO_SupportBrowserReady = false;
 FLO_SupportSelectedType = "ARTY";
 FLO_SupportTargetPosition = [];
+FLO_SupportLastServerSnapshot = createHashMap;
 
 _map ctrlAddEventHandler ["Draw", {
     [_this select 0] call FLO_fnc_supportDrawMap;
@@ -45,6 +46,14 @@ _map ctrlAddEventHandler ["MouseButtonClick", {
 
 [_browser] call FLO_fnc_supportAddWebEventHandler;
 [_browser, ["LoadFile", "\z\flo\addons\main\UI\Support\index.html"]] call FLO_fnc_supportWebAction;
+[] call FLO_fnc_supportRequestSnapshot;
+
+[{
+    if (isNull (findDisplay FLO_SupportDialogIdd)) exitWith {};
+    [] call FLO_fnc_supportUpdateDialog;
+}, [], 1] call CBA_fnc_waitAndExecute;
+
+diag_log "[FLO][Support] Dialog opened and snapshot requested";
 ["PLAYER"] call FLO_fnc_supportFocusMap;
 
 true
