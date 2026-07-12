@@ -25,7 +25,7 @@ private _growthDelaySeconds = _network get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECON
     _treasury,
     _captureReward,
     "CAPTURE",
-    format ["Integrated objective %1", _objectiveId],
+    format ["Secured objective %1", _objectiveId],
     "CAMPAIGN",
     _objectiveId,
     true

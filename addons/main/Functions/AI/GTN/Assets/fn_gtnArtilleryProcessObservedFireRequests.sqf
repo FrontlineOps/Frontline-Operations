@@ -80,7 +80,12 @@ for "_step" from 0 to (_batchSize - 1) do {
 
     _solution params ["_targetPos", "_targetKey", "_rounds", "_accuracy", "_enemyCount", "_vehicleCount", "_armorCount"];
 
-    if (_manager call ["_requestFireMission", [_targetPos, _rounds, _accuracy, _requestSide, "", "OBSERVED"]]) then {
+    private _targetContext = createHashMapFromArray [
+        ["targetGroupIds", []],
+        ["engagementZoneId", ""],
+        ["contactState", "OBSERVED"]
+    ];
+    if (_manager call ["_requestFireMission", [_targetPos, _rounds, _accuracy, _requestSide, "", "OBSERVED", false, _targetContext]]) then {
         _manager call ["_markSpotterCooldown", [_groupId]];
         _manager call ["_markObservedTargetCooldown", [_targetKey]];
         _requestsBySide set [_sideKey, (_requestsBySide get _sideKey) + 1];

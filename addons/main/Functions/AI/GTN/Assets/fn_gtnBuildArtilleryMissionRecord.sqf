@@ -13,6 +13,7 @@
  *   4: Accuracy / dispersion meters <NUMBER>
  *   5: Deterministic fire plan <HASHMAP>
  *   6: Request kind <STRING>
+ *   7: Target context <HASHMAP>
  *
  * Return Value:
  *   HASHMAP - Artillery mission record
@@ -25,8 +26,16 @@ params [
     ["_rounds", 0, [0]],
     ["_accuracy", 100, [0]],
     ["_firePlan", createHashMap],
-    ["_requestKind", "GENERAL", [""]]
+    ["_requestKind", "GENERAL", [""]],
+    ["_targetContext", createHashMap, [createHashMap]]
 ];
+
+private _targetGroupIds = [];
+private _engagementZoneId = "";
+private _contactState = "AREA";
+if ("targetGroupIds" in _targetContext) then { _targetGroupIds = +(_targetContext get "targetGroupIds"); };
+if ("engagementZoneId" in _targetContext) then { _engagementZoneId = _targetContext get "engagementZoneId"; };
+if ("contactState" in _targetContext) then { _contactState = _targetContext get "contactState"; };
 
 private _impactPoints = [];
 private _etaMin = -1;
@@ -91,6 +100,9 @@ createHashMapFromArray [
     ["plannedRounds", _plannedRounds],
     ["accuracy", _accuracy],
     ["requestKind", _requestKind],
+    ["targetGroupIds", _targetGroupIds],
+    ["engagementZoneId", _engagementZoneId],
+    ["contactState", _contactState],
     ["radius", _radius],
     ["impactPoints", _impactPoints],
     ["etaMin", _etaMin],
@@ -103,5 +115,8 @@ createHashMapFromArray [
     ["supplyNodeId", ""],
     ["supplyObjectiveId", ""],
     ["sideReadyAt", -1],
-    ["batteryReadyAt", -1]
+    ["batteryReadyAt", -1],
+    ["virtualLosses", 0],
+    ["virtualGroupsHit", 0],
+    ["virtualGroupsDestroyed", 0]
 ]

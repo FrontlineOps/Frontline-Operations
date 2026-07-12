@@ -36,7 +36,6 @@ class FLO {
         class initRestoreTrackedCrew {};
         class initRunPhase {};
         class initSideResourcesUninitialized {};
-        class initStartRadarDataLink {};
         class initActivatePlayer    {};
         class initDeployPlayer      {};
         class initClientFinalize    {};
@@ -158,10 +157,8 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\PlayerSupport";
 
         class gtnBuildSupportCooldownKey {};
-        class gtnOpenPlayerSupportRequestMap {};
         class gtnProcessPlayerSupportRequests {};
         class gtnRegisterPlayerSupportEvents {};
-        class gtnRefreshPlayerSupportActions {};
         class gtnResolveSupportObjective {};
         class gtnSubmitPlayerSupportRequest {};
         class gtnSubmitPlayerSupportRequestServer {};
@@ -190,6 +187,18 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnAirApplyVirtualCASEffect {};
+        class gtnAirAuthorizeSortie {};
+        class gtnAirCollectObjectiveTargetIds {};
+        class gtnAirDefenseActivateAgainstLiveAircraft {};
+        class gtnAirDefenseGetState {};
+        class gtnAirDefenseProcessContacts {};
+        class gtnAirDefenseResolveVirtualEngagement {};
+        class gtnAirDefenseStartContactWorker {};
+        class gtnAirDistancePointToSegment2D {};
+        class gtnAirInitializeOffMapReserves {};
+        class gtnAirParkCombatGroupOffMap {};
+        class gtnAirResolveReserveRoutePositions {};
         class gtnBroadcastCommanderRadioMessage {};
         class gtnBroadcastArtilleryRadio {};
         class gtnBuildArtilleryMissionRecord {};
@@ -201,6 +210,7 @@ class FLO {
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryCanRequestMission {};
         class gtnArtilleryCalculateMissionCost {};
+        class gtnArtilleryApplyVirtualFireEffect {};
         class gtnArtilleryAuthorizeMission {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
@@ -211,7 +221,6 @@ class FLO {
         class gtnSupportAssetCanProvideAbstractSupport {};
         class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
-        class gtnRadarDataLink          {};
     };
     
     class AITasks {

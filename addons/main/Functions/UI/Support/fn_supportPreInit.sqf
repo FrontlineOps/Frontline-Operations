@@ -1,0 +1,9 @@
+FLO_SupportDialogIdd = 9970;
+FLO_SupportBrowserIdc = 9971;
+FLO_SupportMapIdc = 9972;
+FLO_SupportBrowserReady = false;
+FLO_SupportKeybindInitialized = false;
+FLO_SupportSelectedType = "ARTY";
+FLO_SupportTargetPosition = [];
+FLO_SupportTargetIcon = getText (configFile >> "CfgMarkers" >> "mil_objective" >> "icon");
+FLO_SupportPlayerIcon = getText (configFile >> "CfgMarkers" >> "mil_start" >> "icon");

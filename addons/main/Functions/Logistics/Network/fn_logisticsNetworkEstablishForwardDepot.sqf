@@ -17,15 +17,8 @@ private _alreadyPresent = false;
 if (_alreadyPresent) exitWith { "" };
 
 [_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
-private _position = _objective get "position";
-private _nearestDistance = 1e12;
-{
-    private _node = _y;
-    if !((_node get "state") in ["CONNECTED", "STRAINED"]) then { continue };
-    if !(_node get "commanderSource") then { continue };
-    _nearestDistance = _nearestDistance min (_position distance2D (_node get "position"));
-} forEach _nodes;
-if (_nearestDistance <= (_network get "DEPOT_MIN_SPACING")) exitWith { "" };
+private _sourceRouteHops = [_network, _objectiveId] call FLO_fnc_logisticsNetworkGetSourceRouteHopCount;
+if (_sourceRouteHops < (_network get "DEPOT_MIN_SOURCE_HOPS")) exitWith { "" };
 
 private _treasury = FLO_SideResources get (_network get "_managedSideKey");
 private _cost = _network get "DEPOT_COST";
@@ -45,6 +38,7 @@ if !(_spendingDecision get "allowed") exitWith { "" };
 if !([_treasury, _cost, "LOGISTICS", "Forward depot establishment", "COMMANDER", _referenceId, true] call FLO_fnc_sideResourcesSpendResources) exitWith { "" };
 
 private _nodeId = format ["NODE_%1_DEPOT_%2", _network get "_managedSideKey", _objectiveId];
+private _position = _objective get "position";
 [_network, _nodeId, "DEPOT", "OBJECTIVE", _objectiveId, _position, _objectiveId, true, 0] call FLO_fnc_logisticsNetworkCreateNode;
 ["LOGISTICS", 2, format ["Forward depot %1 establishing at %2", _nodeId, _objectiveId]] call FLO_fnc_log;
 _nodeId

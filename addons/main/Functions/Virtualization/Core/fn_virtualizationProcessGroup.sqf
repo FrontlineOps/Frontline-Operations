@@ -37,6 +37,10 @@ private _replacementState = _groupData get "replacementState";
 private _activationDeferred = _groupData get "activationDeferred";
 private _unitCount = _groupData get "unitCount";
 private _position = _groupData get "position";
+private _groupActivationDist = _activationDist;
+if (_groupType in ["helicopter", "air", "jet"]) then {
+    _groupActivationDist = _activationDist * FLO_AirActivationDistanceMultiplier;
+};
 
 if (!_isActive && {_unitCount <= 0}) exitWith {
     ["VIRTUALIZATION", 2, format [
@@ -68,7 +72,7 @@ if !([_position] call FLO_fnc_validateGroupPosition) exitWith {
 };
 
 private _nearestDist = [_position] call FLO_fnc_virtualizationGetNearestCachedPlayerDistance;
-[_groupData, _nearestDist, _activationDist, _now] call FLO_fnc_virtualizationScheduleNextProcess;
+[_groupData, _nearestDist, _groupActivationDist, _now] call FLO_fnc_virtualizationScheduleNextProcess;
 
 if ([_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup) exitWith {};
 
@@ -87,7 +91,7 @@ if (!_isActive && {!_activationDeferred}) then {
     };
 };
 
-[_groupId, _groupData, _activationDist, _nearestDist, _forceVirtual, _missionLock, _replacementState, _inCombat, _virtStats] call FLO_fnc_virtualizationProcessActivationState;
+[_groupId, _groupData, _groupActivationDist, _nearestDist, _forceVirtual, _missionLock, _replacementState, _inCombat, _virtStats] call FLO_fnc_virtualizationProcessActivationState;
 
 _isActive = _groupData get "isActive";
 _realGroup = _groupData get "realGroup";

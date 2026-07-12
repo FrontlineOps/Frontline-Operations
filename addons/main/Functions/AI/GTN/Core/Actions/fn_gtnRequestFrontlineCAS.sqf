@@ -141,7 +141,13 @@ private _bestScore = -1e12;
 
 if (_bestObjectiveId == "" || {_bestScore < _minScore}) exitWith { _metrics };
 
-private _success = _cmdr call ["_requestCAS", [_bestObjectivePos, "CAS"]];
+private _targetGroupIds = [_ownSide, _bestObjectiveId] call FLO_fnc_gtnAirCollectObjectiveTargetIds;
+if (_targetGroupIds isEqualTo []) exitWith { _metrics };
+private _meta = createHashMapFromArray [
+    ["targetObjectiveId", _bestObjectiveId],
+    ["targetGroupIds", _targetGroupIds]
+];
+private _success = _cmdr call ["_requestCAS", [_bestObjectivePos, "CAS", _meta]];
 if (_success) then {
     _locks set [_bestObjectiveId, diag_tickTime + _lockSeconds];
     _metrics set ["requestedCount", 1];

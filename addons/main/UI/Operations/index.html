@@ -1287,7 +1287,7 @@
 
                 <section class="section">
                     <p class="eyebrow">Unsupported Footholds</p>
-                    <div class="row-list" id="foothold-list"><div class="empty-state">No pending integrations.</div></div>
+                    <div class="row-list" id="foothold-list"><div class="empty-state">No unsupported footholds.</div></div>
                 </section>
             </aside>
         </main>
@@ -1332,7 +1332,7 @@
                                 <div class="guide-phase"><strong>Prepare</strong><p>Reserve operation funds, stage forces, secure routes, and identify the intended objective or threat sector.</p></div>
                                 <div class="guide-phase"><strong>Assault</strong><p>Commit each operation on its assigned axis while replacements draw from that operation's allocation.</p></div>
                                 <div class="guide-phase"><strong>Secure</strong><p>Hold the captured area, defeat remaining resistance, and prevent an immediate reversal.</p></div>
-                                <div class="guide-phase"><strong>Consolidate</strong><p>Integrate the objective and establish forward sustainment when the line has advanced beyond existing support.</p></div>
+                                <div class="guide-phase"><strong>Consolidate</strong><p>Secure the objective and establish forward sustainment when the line has advanced beyond existing support.</p></div>
                                 <div class="guide-phase"><strong>Recovery</strong><p>Release unused funds, rebuild depleted formations, and return the theater to LULL.</p></div>
                             </div>
                             <div class="guide-callout">Only one operation is the main effort. Force readiness, connected logistics, treasury headroom, distinct axes, and defensive pressure determine whether support efforts open or withdraw. Connected player count is never part of that decision.</div>
@@ -1347,7 +1347,7 @@
                                 <div class="guide-block"><h3>Supporting Effort</h3><p>Attack a separate command-selected axis that widens the offensive without replacing the main effort.</p></div>
                                 <div class="guide-block"><h3>Support Area</h3><p>Protect source objectives, routes, depots, artillery, and transport assets that keep the assault supplied.</p></div>
                                 <div class="guide-block"><h3>Off Operation</h3><p>Sustained activity at another objective creates an opportunity report. Command may select it during a later LULL.</p></div>
-                                <div class="guide-block"><h3>Foothold</h3><p>A capture outside the active operation is not instantly integrated. Hold it and connect logistics so campaign benefits can follow.</p></div>
+                                <div class="guide-block"><h3>Foothold</h3><p>A capture outside the active operation becomes an unsupported foothold. Hold it and connect logistics to secure it for campaign benefits.</p></div>
                             </div>
                             <div class="guide-callout">Command Net's position report tells you whether you are in the main effort, a support area, a foothold, or operating independently.</div>
                         </article>
@@ -1360,7 +1360,7 @@
                                 <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
                                 <div class="guide-block"><h3>Committed</h3><p>Funds reserved separately for active operations. They remain in the balance but cannot be spent by unrelated purchases.</p></div>
                                 <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
-                                <div class="guide-block"><h3>Income</h3><p>Connected, integrated objectives generate resources every three minutes. Contested territory produces less.</p></div>
+                                <div class="guide-block"><h3>Income</h3><p>Connected, secured objectives generate resources every three minutes. Contested territory produces less.</p></div>
                                 <div class="guide-block"><h3>Doctrine</h3><p>Command conserves funds when reserves are low, spends normally while balanced, and can replace expensive assets while surplus remains.</p></div>
                                 <div class="guide-block"><h3>Urgency</h3><p>Routine losses wait behind a protected reserve. Active operations, enemy pressure, and objective collapse progressively unlock larger three-minute budgets.</p></div>
                             </div>
@@ -1393,7 +1393,7 @@
                                 <div class="guide-block"><h3>Store</h3><p>The Store replaces the Arsenal and request menu. Catalog availability follows the active base type, shared funds, and local supplies.</p></div>
                                 <div class="guide-block"><h3>Recruitable AI</h3><p>Recruits join the purchasing player's group and consume both shared funds and local supplies.</p></div>
                             </div>
-                            <div class="guide-callout">A base outside connected integrated territory remains isolated. Capture and integrate the route, or build where the network already reaches.</div>
+                            <div class="guide-callout">A base outside connected secured territory remains isolated. Secure a connected route, or build where the network already reaches.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="5">
@@ -1450,7 +1450,14 @@
 
             function readable(value) {
                 if (!value) { return "--"; }
-                return String(value).replace(/_/g, " ");
+                var state = String(value);
+                if (state === "INTEGRATED") { return "SECURED"; }
+                if (state === "CONSOLIDATING") { return "SECURING"; }
+                if (state === "FOOTHOLD") { return "UNSUPPORTED FOOTHOLD"; }
+                if (state === "integrated") { return "SECURED"; }
+                if (state === "integrating") { return "SECURING"; }
+                if (state === "foothold") { return "UNSUPPORTED FOOTHOLD"; }
+                return state.replace(/_/g, " ");
             }
 
             function formatTimer(seconds) {
@@ -1580,7 +1587,7 @@
                 if (operation.role === "SUPPORTING_EFFORT") {
                     if (operation.phase === "PREPARE") { return "Stage the supporting force and protect its independent logistics axis to " + operation.targetName + "."; }
                     if (operation.phase === "ASSAULT") { return "Widen the offensive by seizing " + operation.targetName + " without abandoning the main effort."; }
-                    if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is integrated."; }
+                    if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is secured."; }
                     return "Withdraw and rebuild the supporting force.";
                 }
                 if (operation.role === "DEFEND_MAIN_EFFORT" || operation.role === "DEFEND_SUPPORTING_EFFORT") {
@@ -1642,7 +1649,7 @@
                 appendDataRow(data, "Owner", readable(objective.owner));
                 appendDataRow(data, "Intent", readable(objective.intent));
                 appendDataRow(data, "Capture", readable(objective.captureState));
-                appendDataRow(data, "Integration", readable(objective.integrationState));
+                appendDataRow(data, "Territory Status", readable(objective.integrationState));
                 appendDataRow(data, "Friendly / Enemy", objective.friendlyCount + " / " + objective.enemyCount);
                 appendDataRow(data, "Priority", String(objective.priority));
             }
@@ -1796,7 +1803,7 @@
                 if (player.status === "OFF_OPERATION") {
                     note.textContent = "You are outside active operations. Local activity is reported as a future command opportunity.";
                 } else if (player.status === "IN_FOOTHOLD") {
-                    note.textContent = "You are holding unsupported territory. Supply access or a local base is required for integration.";
+                    note.textContent = "You are holding unsupported territory. Supply access or a local base is required to secure it.";
                 } else if (player.status === "OUTSIDE_OBJECTIVE") {
                     note.textContent = "You are outside a recognized objective at grid " + player.grid + ".";
                 } else {
@@ -1840,7 +1847,7 @@
                         footholds.push(objective);
                     }
                 }
-                renderRows("foothold-list", footholds, "No pending integrations.", function (row) {
+                renderRows("foothold-list", footholds, "No unsupported footholds.", function (row) {
                     return objectiveListRow(
                         row.id,
                         row.name,

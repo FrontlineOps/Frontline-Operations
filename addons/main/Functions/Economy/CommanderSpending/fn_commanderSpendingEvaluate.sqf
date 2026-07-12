@@ -12,7 +12,7 @@ if (_amount <= 0) then {
 };
 _category = toUpper _category;
 _urgency = toUpper _urgency;
-if !(_category in ["OPERATION", "REINFORCEMENT", "TRANSPORT", "ARTILLERY", "FORTIFICATION", "LOGISTICS", "DEVELOPMENT"]) then {
+if !(_category in ["OPERATION", "REINFORCEMENT", "TRANSPORT", "ARTILLERY", "AIR_SUPPORT", "FORTIFICATION", "LOGISTICS", "DEVELOPMENT"]) then {
     throw format ["Invalid commander spending category %1", _category];
 };
 if !(_urgency in ["ROUTINE", "OPERATIONAL", "PRESSURED", "CRITICAL"]) then {

@@ -25,7 +25,10 @@ if ((_groupData get "unitCount") <= 0) exitWith { false };
 if ((_groupData get "missionLock") != "") exitWith { false };
 if ((_groupData get "transportRole") && {_groupType in ["air", "helicopter", "jet"]}) exitWith { false };
 
-private _objectiveId = [(_groupData get "position")] call FLO_fnc_getNearestObjective;
+private _objectiveId = _groupData get "homeObjective";
+if (_objectiveId == "") then {
+    _objectiveId = [(_groupData get "position")] call FLO_fnc_getNearestObjective;
+};
 private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
 private _commander = FLO_GTN_CommandersBySide get _sideKey;
 private _worldState = _commander get "_worldState";

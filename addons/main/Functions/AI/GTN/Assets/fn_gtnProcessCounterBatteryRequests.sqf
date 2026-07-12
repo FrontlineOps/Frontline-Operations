@@ -105,7 +105,12 @@ private _requestsBySide = createHashMapFromArray [
 
     _selection params ["_score", "_reportKey", "_targetPos", "_rounds", "_accuracy", "_enemyGroupId"];
 
-    if (_manager call ["_requestFireMission", [_targetPos, _rounds, _accuracy, _side, "", "COUNTER_BATTERY"]]) then {
+    private _targetContext = createHashMapFromArray [
+        ["targetGroupIds", [_enemyGroupId]],
+        ["engagementZoneId", ""],
+        ["contactState", "COUNTER_BATTERY"]
+    ];
+    if (_manager call ["_requestFireMission", [_targetPos, _rounds, _accuracy, _side, "", "COUNTER_BATTERY", false, _targetContext]]) then {
         _cooldowns set [_reportKey, _now + _cooldownSeconds];
         _reports deleteAt _reportKey;
         _requestsBySide set [_sideKey, (_requestsBySide get _sideKey) + 1];

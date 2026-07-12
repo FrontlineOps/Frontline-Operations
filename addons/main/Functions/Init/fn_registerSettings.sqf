@@ -76,5 +76,16 @@ _artilleryBatteryCooldown call _settingsFn;
 _artilleryTreasuryCost call _settingsFn;
 _artilleryLocalSupplyCost call _settingsFn;
 
+private _airActivationMultiplier = [
+    "FLO_AirActivationDistanceMultiplier",
+    "SLIDER",
+    ["Aircraft activation distance multiplier", "Aircraft physically spawn at the normal virtualization distance multiplied by this value."],
+    ["FLO", "Virtualization"],
+    [1, 4, 2, 1],
+    1
+];
+
+_airActivationMultiplier call _settingsFn;
+
 missionNamespace setVariable ["FLO_SettingsRegistered", true];
 diag_log "[FLO_SETTINGS] Registered CBA settings";

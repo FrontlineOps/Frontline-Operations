@@ -114,6 +114,10 @@ for "_i" from 1 to _remainingGroups do {
 
     // Create the virtual group
     private _groupId = [_safePos, _groupType, _groupCfg, _objective, -1, _side] call FLO_fnc_createVirtualGroup;
+    if (_groupId == "") then { continue };
+    if (_groupType in ["helicopter", "air", "jet"]) then {
+        [_groupId] call FLO_fnc_gtnAirParkCombatGroupOffMap;
+    };
     _createdGroups pushBack _groupId;
 
     if (_groupType in ["motorized", "mechanized"]) then {

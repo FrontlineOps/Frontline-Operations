@@ -787,7 +787,14 @@
             }
 
             function readable(value) {
-                return String(value || "--").replace(/_/g, " ");
+                var state = String(value || "--");
+                if (state === "INTEGRATED") { return "SECURED"; }
+                if (state === "CONSOLIDATING") { return "SECURING"; }
+                if (state === "FOOTHOLD") { return "UNSUPPORTED FOOTHOLD"; }
+                if (state === "integrated") { return "SECURED"; }
+                if (state === "integrating") { return "SECURING"; }
+                if (state === "foothold") { return "UNSUPPORTED FOOTHOLD"; }
+                return state.replace(/_/g, " ");
             }
 
             function formatDuration(seconds) {
@@ -1058,7 +1065,7 @@
 
                 var list = document.createElement("div");
                 list.className = "detail-list";
-                list.appendChild(detailRow("Integration", readable(objective.integrationState)));
+                list.appendChild(detailRow("Territory Status", readable(objective.integrationState)));
                 list.appendChild(detailRow("Capture", readable(objective.captureState)));
                 list.appendChild(detailRow("Revenue Multiplier", Number(development.revenueMultiplier).toFixed(2) + "X"));
                 list.appendChild(detailRow(

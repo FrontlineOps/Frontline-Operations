@@ -40,6 +40,7 @@ class RscTitles {
 #include "UI\Deploy\DeployDialog.hpp"
 #include "UI\Operations\OperationsDialog.hpp"
 #include "UI\Development\DevelopmentDialog.hpp"
+#include "UI\Support\SupportDialog.hpp"
 
 class CfgRemoteExec {
     class Functions {

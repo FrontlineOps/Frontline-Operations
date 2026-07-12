@@ -57,6 +57,15 @@ if (_hasPerf) then {
 };
 if (_newGroupId == "") exitWith { "" };
 
+if (_groupType in ["helicopter", "air", "jet"]) exitWith {
+    if !([_newGroupId] call FLO_fnc_gtnAirParkCombatGroupOffMap) then {
+        [_newGroupId] call FLO_fnc_virtualizationRemoveGroup;
+        ""
+    } else {
+        _newGroupId
+    }
+};
+
 private _wps = [[_targetPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 20]];
 
 private _transitT0 = diag_tickTime;

@@ -28,8 +28,7 @@ private _allCreatedGroups = [];
 private _plannedObjectives = keys _spawnPlan;
 private _plannedTemplateCount = 0;
 private _plannedGroupCount = 0;
-private _staticAAForcedCount = 0;
-private _staticAAFailedCount = 0;
+private _staticAAVirtualCount = 0;
 
 // Process each indexed objective
 {
@@ -58,14 +57,8 @@ private _staticAAFailedCount = 0;
         [_groupId] call FLO_fnc_virtualizationAssignAutoPatrol;
 
         if ((_groupData get "groupType") == "static_aa") then {
-            [_groupId, createHashMapFromArray [["alwaysActive", true]]] call FLO_fnc_virtualizationPatchGroup;
-            if ([_groupId] call FLO_fnc_virtualizationForceActivateGroup) then {
-                _staticAAForcedCount = _staticAAForcedCount + 1;
-                ["VIRTUALIZATION", 3, format["Static AA %1 activated immediately (always-on)", _groupId]] call FLO_fnc_log;
-            } else {
-                _staticAAFailedCount = _staticAAFailedCount + 1;
-                ["VIRTUALIZATION", 2, format["Static AA %1 failed forced always-on activation during seeding", _groupId]] call FLO_fnc_log;
-            };
+            [_groupId, createHashMapFromArray [["alwaysActive", false]]] call FLO_fnc_virtualizationPatchGroup;
+            _staticAAVirtualCount = _staticAAVirtualCount + 1;
         };
     } forEach _objectiveGroups;
 
@@ -81,14 +74,13 @@ if (isNil "FLO_CiviliansInitialized" || {!FLO_CiviliansInitialized}) then {
 
 ["VIRTUALIZATION", 3, format["Finished initializing %1 objective groups - %2 groups created", _sideKey, count _allCreatedGroups]] call FLO_fnc_log;
 diag_log format [
-    "[FLO][PERF] Objective group seeding side=%1 objectives=%2 templates=%3 plannedGroups=%4 created=%5 staticAAForced=%6 staticAAFailed=%7 total=%8 ms",
+    "[FLO][PERF] Objective group seeding side=%1 objectives=%2 templates=%3 plannedGroups=%4 created=%5 staticAAVirtual=%6 total=%7 ms",
     _sideKey,
     count _plannedObjectives,
     _plannedTemplateCount,
     _plannedGroupCount,
     count _allCreatedGroups,
-    _staticAAForcedCount,
-    _staticAAFailedCount,
+    _staticAAVirtualCount,
     (diag_tickTime - _seedT0) * 1000
 ];
 

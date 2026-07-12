@@ -96,12 +96,6 @@ if (hasInterface) then {
         titleText ["Frontline Operations Group Presents...", "PLAIN", 3];
 
         StartingLocationDone = false;
-        FLO_GTN_PlayerSupportRespawnHandlerAdded = false;
-        FLO_GTN_PlayerSupportActionIds = [];
-        FLO_GTN_PlayerSupportActionOwner = objNull;
-        FLO_GTN_PlayerSupportMapClickEhId = -1;
-        FLO_GTN_PlayerSupportPendingType = "";
-        FLO_GTN_PlayerSupportCancelWatcherRunning = false;
         FLO_ClientFinalizeDone = false;
         FLO_ClientUiReady = false;
 

@@ -2,8 +2,8 @@
  * Function: FLO_fnc_gtnCombatSupportBonus
  * Author: Frontline Operations Development Group
  * Description:
- *   Computes support modifiers for one side while respecting virtual support
- *   cooldowns.
+ *   Preserves the support summary contract. Artillery and air effects are
+ *   applied only by explicit authorized missions.
  *
  * Arguments:
  *   0: Side <SIDE>
@@ -15,29 +15,8 @@
 
 params ["_side", "_supportAvailability"];
 
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
-private _now = diag_tickTime;
-private _artyBonus = 0;
-private _airBonus = 0;
-private _artyKey = _sideKey + "_ARTY";
-private _airKey = _sideKey + "_AIR";
-
-if (_supportAvailability get _artyKey) then {
-    if (_now >= (FLO_GTN_VirtualSupportCooldowns get _artyKey)) then {
-        _artyBonus = 1;
-        FLO_GTN_VirtualSupportCooldowns set [_artyKey, _now + 180];
-    };
-};
-
-if (_supportAvailability get _airKey) then {
-    if (_now >= (FLO_GTN_VirtualSupportCooldowns get _airKey)) then {
-        _airBonus = 1;
-        FLO_GTN_VirtualSupportCooldowns set [_airKey, _now + 240];
-    };
-};
-
 createHashMapFromArray [
-    ["total", _artyBonus + _airBonus],
-    ["artillery", _artyBonus],
-    ["air", _airBonus]
+    ["total", 0],
+    ["artillery", 0],
+    ["air", 0]
 ]
