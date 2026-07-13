@@ -21,7 +21,16 @@ private _spawned = 0;
     if ((typeName _x) isNotEqualTo "STRING") then { continue };
     if !(isClass (configFile >> "CfgVehicles" >> _x)) then { continue };
 
-    private _unit = _group createUnit [_x, _spawnPos, [], 3, "FORM"];
+    private _unit = [
+        _group,
+        _x,
+        _spawnPos,
+        [],
+        3,
+        "FORM",
+        "store recruit"
+    ] call FLO_fnc_createGroupUnit;
+    if (isNull _unit) then { continue };
     _unit enableAI "RADIOPROTOCOL";
 
     if ((_x == F_Assault_Eng) || {_x == F_Recon_Eng}) then {

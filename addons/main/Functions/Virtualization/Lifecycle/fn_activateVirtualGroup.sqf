@@ -77,9 +77,9 @@ if (isNull _realGroup) exitWith {
 };
 
 // ========================================================================
-// SIDE FIX - Ensure all units are on the correct side
-// This handles cases where mission makers use BLUFOR classnames as OPFOR enemies
-// The units' classname side doesn't matter - their group side determines allegiance
+// SIDE COMMIT - Arma's modern group createUnit syntax can retain each
+// classname's configured side inside an opposite-side group. Explicitly
+// rejoin and validate the complete group before exposing it to simulation.
 // ========================================================================
 private _sideCorrectionFailed = false;
 if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civilian}) then {

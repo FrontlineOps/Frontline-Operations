@@ -21,5 +21,14 @@ private _restoreCrew = if ("hadAICrew" in _attr) then { _attr get "hadAICrew" } 
 if (!_restoreCrew) exitWith {};
 
 if (getText (configFile >> "CfgVehicles" >> _type >> "crew") != "") then {
-    createVehicleCrew _entity;
+    private _crewGroup = createVehicleCrew _entity;
+    if (isNull _crewGroup || {(units _crewGroup) isEqualTo []}) exitWith {
+        ["SAVE", 1, format ["Failed to restore crew for tracked player asset %1", _type]] call FLO_fnc_log;
+    };
+
+    private _sideCorrectedGroup = [_crewGroup, west] call FLO_fnc_setSide;
+    if (isNull _sideCorrectedGroup) then {
+        ["SAVE", 1, format ["Failed to commit restored tracked player asset %1 crew to WEST", _type]] call FLO_fnc_log;
+        deleteVehicleCrew _entity;
+    };
 };

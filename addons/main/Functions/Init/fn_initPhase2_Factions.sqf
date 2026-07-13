@@ -422,5 +422,10 @@ publicVariable "FLO_FactionCatalog";
 F_Init = true;
 publicVariable "F_Init";
 
-diag_log format ["[FLO_INIT_P2] Factions loaded successfully: BLU=%1, OPF=%2, CIV=%3", _bluFaction, _opfFaction, _civFaction];
+["FACTIONS", 3, format [
+    "Committed campaign faction roles: WEST friendly=%1; EAST enemy=%2; CIVILIAN=%3",
+    _bluFaction,
+    _opfFaction,
+    _civFaction
+]] call FLO_fnc_log;
 true

@@ -31,38 +31,52 @@ if (_side isEqualType 0) then {
     _side = _side call BIS_fnc_sideType;
 };
 
-// Get the old group before we move units (for virtualization lookup)
-private _oldGroup = grpNull;
 private _inputGroup = grpNull;
+private _movingUnits = [];
 
 switch (true) do {
     case (_units isEqualType objNull): {
-        if (!isNull _units) then { _inputGroup = group _units; };
+        if (!isNull _units) then {
+            _inputGroup = group _units;
+            _movingUnits = [_units];
+        };
     };
     case (_units isEqualType []): {
-        if (_units isNotEqualTo []) then { _inputGroup = group (_units select 0); };
+        _movingUnits = _units select { !isNull _x };
+        if (_movingUnits isNotEqualTo []) then { _inputGroup = group (_movingUnits select 0); };
     };
     case (_units isEqualType grpNull): {
         _inputGroup = _units;
+        if (!isNull _inputGroup) then { _movingUnits = units _inputGroup; };
     };
 };
 
-if (
-    isNull _targetGroup
-    && {!isNull _inputGroup}
-    && {(side _inputGroup) isEqualTo _side}
-) exitWith {
-    _inputGroup
+if (_movingUnits isEqualTo []) exitWith {
+    ["VIRTUALIZATION", 1, format ["setSide received no units for target side %1", _side]] call FLO_fnc_log;
+    grpNull
 };
 
-// Determine target group - use provided or create new
+private _oldGroups = [];
+{
+    private _unitGroup = group _x;
+    if (!isNull _unitGroup) then {
+        _oldGroups pushBackUnique _unitGroup;
+    };
+} forEach _movingUnits;
+
+// Reuse the current group when its group-side is already correct. Rejoining
+// still matters because individual units can retain their config-defined side.
 private _newGroup = if (_targetGroup isEqualType grpNull && {!isNull _targetGroup}) then {
     _targetGroup
 } else {
     if (_targetGroup isEqualType objNull && {!isNull _targetGroup}) then {
         group _targetGroup
     } else {
-        createGroup [_side, true]
+        if (!isNull _inputGroup && {(side _inputGroup) isEqualTo _side}) then {
+            _inputGroup
+        } else {
+            createGroup [_side, true]
+        }
     };
 };
 
@@ -74,48 +88,58 @@ if (isNull _newGroup) exitWith {
     grpNull
 };
 
-// Move units based on input type
-switch (true) do {
-    case (_units isEqualType objNull): {
-        _oldGroup = group _units;
-        [_units] joinSilent _newGroup;
-    };
-    case (_units isEqualType []): {
-        if (_units isNotEqualTo []) then {
-            _oldGroup = group (_units select 0);
-        };
-        _units joinSilent _newGroup;
-    };
-    case (_units isEqualType grpNull): {
-        _oldGroup = _units;
-        (units _units) joinSilent _newGroup;
-    };
+if ((side _newGroup) isNotEqualTo _side) exitWith {
+    ["VIRTUALIZATION", 1, format [
+        "setSide target group has side %1 instead of requested side %2",
+        side _newGroup,
+        _side
+    ]] call FLO_fnc_log;
+    grpNull
 };
 
-// Update virtualization tracking if the old group was being tracked
-if (!isNull _oldGroup && {!isNil "FLO_VirtualForceRegistry"}) then {
+private _unitsToJoin = _movingUnits select {
+    (group _x) isNotEqualTo _newGroup || {(side _x) isNotEqualTo _side}
+};
+{
+    [_x] joinSilent _newGroup;
+} forEach _unitsToJoin;
+
+private _failedIndex = _movingUnits findIf {
+    (group _x) isNotEqualTo _newGroup || {(side _x) isNotEqualTo _side}
+};
+if (_failedIndex != -1) exitWith {
+    private _failedUnit = _movingUnits select _failedIndex;
+    ["VIRTUALIZATION", 1, format [
+        "setSide failed for %1: expected=%2 actualUnit=%3 actualGroup=%4",
+        typeOf _failedUnit,
+        _side,
+        side _failedUnit,
+        side group _failedUnit
+    ]] call FLO_fnc_log;
+    grpNull
+};
+
+// Update virtualization tracking if a tracked group was replaced.
+if (!isNil "FLO_VirtualForceRegistry" && {(_oldGroups findIf { _x isNotEqualTo _newGroup }) != -1}) then {
     private _groups = call FLO_fnc_virtualizationGetGroupMap;
-    
-    if (!isNil "_groups") then {
-        {
-            private _groupId = _x;
-            private _groupData = _y;
-            private _trackedGroup = _groupData get "realGroup";
-            
-            if (!isNil "_trackedGroup" && {_trackedGroup isEqualTo _oldGroup}) then {
-                // Update tracking to point to new group
-                [_groupData, _newGroup] call FLO_fnc_virtualizationSetRealGroup;
-                _groupData set ["side", _side];
-                
-                ["VIRTUALIZATION", 3, format["setSide: Updated tracking for %1 from old group to new %2 group", _groupId, _side]] call FLO_fnc_log;
-            };
-        } forEach _groups;
-    };
+    {
+        private _groupId = _x;
+        private _groupData = _y;
+        private _trackedGroup = _groupData get "realGroup";
+
+        if (_trackedGroup in _oldGroups && {_trackedGroup isNotEqualTo _newGroup}) then {
+            [_groupData, _newGroup] call FLO_fnc_virtualizationSetRealGroup;
+            _groupData set ["side", _side];
+
+            ["VIRTUALIZATION", 3, format ["setSide updated tracking for %1 to %2", _groupId, _side]] call FLO_fnc_log;
+        };
+    } forEach _groups;
 };
 
-// Delete old group if empty
-if (!isNull _oldGroup && {(units _oldGroup) isEqualTo []}) then {
-    deleteGroup _oldGroup;
-};
+{
+    if (_x isNotEqualTo _newGroup && {(units _x) isEqualTo []}) then {
+        deleteGroup _x;
+    };
+} forEach _oldGroups;
 
 _newGroup

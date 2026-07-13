@@ -29,8 +29,23 @@ private _crewSelCnt = count (units _crewFull) - 1;
 deleteVehicleCrew _vehicle;
 
 private _group = createGroup west;
+private _crewFailed = false;
 for "_x" from 0 to _crewSelCnt do {
-    private _unit = _group createUnit [_crewType, [0,0,0], [], 0, "CAN_COLLIDE"];
+    private _unit = [
+        _group,
+        _crewType,
+        [0, 0, 0],
+        [],
+        0,
+        "CAN_COLLIDE",
+        format ["placed vehicle=%1 crewIndex=%2", typeOf _vehicle, _x]
+    ] call FLO_fnc_createGroupUnit;
+    if (isNull _unit) exitWith { _crewFailed = true; };
+};
+
+if (_crewFailed) exitWith {
+    { deleteVehicle _x; } forEach units _group;
+    deleteGroup _group;
 };
 
 {
