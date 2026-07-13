@@ -41,7 +41,15 @@ private _createdCrew = [];
 private _hasDriver = getNumber (configFile >> "CfgVehicles" >> _vehicleType >> "hasDriver") > 0;
 private _turrets = allTurrets [_vehicle, false];
 if (_hasDriver) then {
-    private _driver = _realGroup createUnit [_crewType, _crewSpawnPos, [], 0, "NONE"];
+    private _driver = [
+        _realGroup,
+        _crewType,
+        _crewSpawnPos,
+        [],
+        0,
+        "NONE",
+        format ["vehicle=%1 role=driver", _vehicleType]
+    ] call FLO_fnc_createGroupUnit;
     if (isNull _driver) then {
         _crewFailed = true;
     } else {
@@ -52,7 +60,15 @@ if (_hasDriver) then {
 };
 
 {
-    private _gunner = _realGroup createUnit [_crewType, _crewSpawnPos, [], 0, "NONE"];
+    private _gunner = [
+        _realGroup,
+        _crewType,
+        _crewSpawnPos,
+        [],
+        0,
+        "NONE",
+        format ["vehicle=%1 role=turret%2", _vehicleType, _x]
+    ] call FLO_fnc_createGroupUnit;
     if (isNull _gunner) then {
         _crewFailed = true;
     } else {
@@ -63,7 +79,15 @@ if (_hasDriver) then {
 } forEach _turrets;
 
 if (!_hasDriver && {_turrets isEqualTo []}) then {
-    private _operator = _realGroup createUnit [_crewType, _crewSpawnPos, [], 0, "NONE"];
+    private _operator = [
+        _realGroup,
+        _crewType,
+        _crewSpawnPos,
+        [],
+        0,
+        "NONE",
+        format ["vehicle=%1 role=operator", _vehicleType]
+    ] call FLO_fnc_createGroupUnit;
     if (isNull _operator) then {
         _crewFailed = true;
     } else {

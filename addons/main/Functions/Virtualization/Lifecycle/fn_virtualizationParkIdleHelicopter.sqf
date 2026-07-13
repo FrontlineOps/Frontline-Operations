@@ -112,55 +112,12 @@ private _parkedVehicles = [];
 {
     private _parkPos = [_basePos, typeOf _x, _forEachIndex, 600] call FLO_fnc_virtualizationResolveIdleHelicopterParkPos;
     private _heliDir = getDir _x;
-    private _heliFuel = fuel _x;
-    private _heliDamage = damage _x;
-    private _heliType = typeOf _x;
-    private _crewUnits = (crew _x) select { alive _x };
-    private _crewRoles = _crewUnits apply {
-        [_x, assignedVehicleRole _x]
-    };
-
-    {
-        private _unit = _x select 0;
-        unassignVehicle _unit;
-        moveOut _unit;
-        _unit setPosATL _parkPos;
-    } forEach _crewRoles;
-
-    deleteVehicle _x;
-
-    private _parkedHeli = createVehicle [_heliType, _parkPos, [], 0, "NONE"];
-    _parkedHeli setDir _heliDir;
-    _parkedHeli setFuel _heliFuel;
-    _parkedHeli setDamage _heliDamage;
-    _parkedHeli setVectorUp [0, 0, 1];
-    _parkedHeli setVelocity [0, 0, 0];
-    _parkedHeli engineOn false;
-    _parkedVehicles pushBack _parkedHeli;
-
-    {
-        private _unit = _x select 0;
-        private _role = _x select 1;
-        private _roleType = toUpper (_role param [0, ""]);
-
-        switch (_roleType) do {
-            case "DRIVER": {
-                _unit moveInDriver _parkedHeli;
-            };
-            case "TURRET": {
-                _unit moveInTurret [_parkedHeli, _role param [1, []]];
-            };
-            case "CARGO": {
-                _unit moveInCargo _parkedHeli;
-            };
-            default {
-                _unit moveInAny _parkedHeli;
-            };
-        };
-    } forEach _crewRoles;
-
-    _parkedHeli setVelocity [0, 0, 0];
-    _parkedHeli engineOn false;
+    _x setPosATL _parkPos;
+    _x setDir _heliDir;
+    _x setVectorUp [0, 0, 1];
+    _x setVelocity [0, 0, 0];
+    _x engineOn false;
+    _parkedVehicles pushBack _x;
 } forEach _helicopters;
 
 if (_parkedVehicles isNotEqualTo []) then {

@@ -67,7 +67,7 @@ if ((FLO_ReputationHandle get "value") < 7) then {
 
     for "_i" from 1 to 4 do {
         private _unitType = if (!isNil "GuerMenArray" && {GuerMenArray isNotEqualTo []}) then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
-        _grp createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+        [_grp, _unitType, _spawnPos, [], 0, "NONE", "civilian repair ambush"] call FLO_fnc_createGroupUnit;
     };
 
     [_grp, _pos, 100] call FLO_fnc_taskPatrol;

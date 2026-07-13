@@ -119,7 +119,7 @@ switch (toUpper _mode) do {
 
                 for "_j" from 1 to 4 do {
                     private _unitType = if (!isNil "GuerMenArray" && {GuerMenArray isNotEqualTo []}) then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
-                    _grp createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+                    [_grp, _unitType, _spawnPos, [], 0, "NONE", "civilian checkpoint response"] call FLO_fnc_createGroupUnit;
                 };
 
                 _grp addWaypoint [_pos, 0] setWaypointType "SAD";

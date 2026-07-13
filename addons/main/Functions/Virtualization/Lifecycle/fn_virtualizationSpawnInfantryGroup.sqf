@@ -22,10 +22,28 @@ if (isNull _realGroup || {(units _realGroup) isEqualTo []}) then {
     if (isNull _realGroup) exitWith { grpNull };
 
     private _spawnCount = [6, _unitCount] select (_unitCount > 0);
+    private _spawnFailed = false;
     for "_i" from 1 to _spawnCount do {
         private _unitType = selectRandom _unitPool;
         private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-        _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
+        private _unit = [
+            _realGroup,
+            _unitType,
+            _spawnPos,
+            [],
+            0,
+            "NONE",
+            format ["virtual group=%1 type=infantry", _groupId]
+        ] call FLO_fnc_createGroupUnit;
+        if (isNull _unit) exitWith {
+            _spawnFailed = true;
+        };
+    };
+
+    if (_spawnFailed) exitWith {
+        { deleteVehicle _x; } forEach units _realGroup;
+        deleteGroup _realGroup;
+        _realGroup = grpNull;
     };
 };
 

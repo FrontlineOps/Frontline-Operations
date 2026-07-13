@@ -53,14 +53,44 @@ private _poolUnits = _pools get "units";
         continue;
     };
 
+    private _spawnFailed = false;
     if (_infComp isNotEqualTo []) then {
         {
-            _infGroup createUnit [_x, _position, [], 0, "NONE"];
+            private _unit = [
+                _infGroup,
+                _x,
+                _position,
+                [],
+                0,
+                "NONE",
+                format ["transport=%1 passengerGroup=%2", _groupId, _attachedId]
+            ] call FLO_fnc_createGroupUnit;
+            if (isNull _unit) exitWith { _spawnFailed = true; };
         } forEach _infComp;
     } else {
         for "_i" from 1 to _infUnitCount do {
-            _infGroup createUnit [selectRandom _poolUnits, _position, [], 0, "NONE"];
+            private _unit = [
+                _infGroup,
+                selectRandom _poolUnits,
+                _position,
+                [],
+                0,
+                "NONE",
+                format ["transport=%1 passengerGroup=%2", _groupId, _attachedId]
+            ] call FLO_fnc_createGroupUnit;
+            if (isNull _unit) exitWith { _spawnFailed = true; };
         };
+    };
+
+    if (_spawnFailed) then {
+        ["VIRTUALIZATION", 1, format [
+            "Transport %1 failed to create side-correct passenger group %2",
+            _groupId,
+            _attachedId
+        ]] call FLO_fnc_log;
+        { deleteVehicle _x; } forEach units _infGroup;
+        deleteGroup _infGroup;
+        continue;
     };
 
     private _attachedSide = _attachedData get "side";
