@@ -96,7 +96,7 @@ if ((_merged get "officers") isEqualTo [] && {(_merged get "groundInfantryUnits"
     };
 };
 
-["FACTIONS", 2, format [
+["FACTIONS", 3, format [
     "Merged auto military factions %1: units=%2 groups=%3 motorized=%4 mechanized=%5 armor=%6 mobileAA=%7 staticAA=%8 air=%9",
     _classes,
     count (_merged get "groundInfantryUnits"),

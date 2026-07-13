@@ -137,7 +137,18 @@ if ((_objective get "owner") == (_cmdr get "_ownSide")) exitWith {
     _decision
 };
 
-private _openingElapsedSeconds = [_operation get "phaseStartedAtDateNum", _now] call FLO_fnc_dateNumberDeltaSeconds;
+private _openingEligibleAt = _operation get "assaultOpeningEligibleAtDateNum";
+if (_openingEligibleAt < 0) then {
+    throw format ["Operation %1 has no ASSAULT opening eligibility time", _operationId];
+};
+private _openingDelayRemaining = [_now, _openingEligibleAt] call FLO_fnc_dateNumberDeltaSeconds;
+if (_openingCommit && {_openingDelayRemaining > 0}) exitWith {
+    _operation set ["assaultStatus", "SHAPING"];
+    _decision set ["status", "SHAPING"];
+    _decision
+};
+
+private _openingElapsedSeconds = [_openingEligibleAt, _now] call FLO_fnc_dateNumberDeltaSeconds;
 if (
     _openingCommit
     && {_activeCount < _activeTarget}

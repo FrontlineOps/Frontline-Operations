@@ -19,6 +19,9 @@ private _enemySide = [_viewerSide] call FLO_fnc_gtnTaskEnemySide;
 private _enemySideKey = ([_enemySide] call FLO_fnc_gtnSideContext) get "sideKey";
 private _viewerSideName = ["BLUFOR", "OPFOR"] select (_viewerSide isEqualTo east);
 private _state = _director get "_state";
+private _formationState = _state get "formationState";
+private _viewerDoctrine = (_formationState get "doctrineBySide") get _viewerSideKey;
+private _formationRows = [_viewerSideKey] call FLO_fnc_formationBuildSnapshot;
 private _operationsMap = _state get "operations";
 private _operationRows = [];
 
@@ -61,6 +64,16 @@ private _primaryOperation = createHashMapFromArray [
     ["resourceSpent", 0],
     ["resourceRemaining", 0],
     ["resourceReleased", 0],
+    ["assaultOpeningDelaySeconds", 0],
+    ["doctrine", _viewerDoctrine],
+    ["shapingStatus", "NONE"],
+    ["shapingFormationId", ""],
+    ["shapingObjectiveId", ""],
+    ["shapingObjectiveName", ""],
+    ["exploitationStatus", "NONE"],
+    ["exploitationFormationId", ""],
+    ["exploitationObjectiveId", ""],
+    ["exploitationObjectiveName", ""],
     ["drawdownPending", false]
 ];
 if (_operationRows isNotEqualTo []) then {
@@ -250,6 +263,8 @@ createHashMapFromArray [
     ["economy", _economy],
     ["logistics", _logistics],
     ["enemyLogisticsIntel", _enemyLogisticsIntel],
+    ["doctrine", _viewerDoctrine],
+    ["formations", _formationRows],
     ["opportunities", _opportunityRows],
     ["objectives", _nodes]
 ]

@@ -1,6 +1,7 @@
 /* Builds deterministic source-facing entry and assault routes for one wave. */
 params [
     "_director",
+    ["_objectiveId", "", [""]],
     "_objective",
     ["_approachSourcePos", [], [[]]],
     ["_groupIds", [], [[]]],
@@ -12,7 +13,15 @@ if (count _approachSourcePos < 2) then {
     throw "Assault approach lanes require a source-front anchor";
 };
 
-private _targetPos = _objective get "position";
+private _objectiveCenter = +(_objective get "position");
+private _targetPos = [_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor;
+if (_targetPos isEqualTo []) then {
+    ["CAMPAIGN", 1, format [
+        "Assault lane construction received objective %1 without a valid land anchor",
+        _objectiveId
+    ]] call FLO_fnc_log;
+    throw format ["No ground-assault anchor for objective %1", _objectiveId];
+};
 private _targetRadius = _objective get "radius";
 if (_targetRadius <= 0) then {
     throw format ["Assault approach lanes require a positive objective radius at %1", _targetPos];
@@ -35,8 +44,8 @@ private _approachDirection = _approachSourcePos getDir _targetPos;
 private _sourceDirection = _targetPos getDir _approachSourcePos;
 private _forwardVector = [sin _approachDirection, cos _approachDirection, 0];
 private _rightVector = [cos _approachDirection, -(sin _approachDirection), 0];
-private _entryBase = _targetPos getPos [_entryDepth, _sourceDirection];
-private _assaultBase = _targetPos getPos [_assaultDepth, _sourceDirection];
+private _entryBase = _targetPos getPos [_entryDepth - _assaultDepth, _sourceDirection];
+private _assaultBase = +_targetPos;
 
 private _rankedGroups = _groupIds apply {
     private _groupData = _groups get _x;
@@ -58,7 +67,9 @@ for "_laneIndex" from 0 to (_laneCount - 1) do {
 } forEach _rankedGroups;
 
 private _routes = createHashMap;
-private _landSearchRadius = ((_targetRadius * 0.15) min 100) max 25;
+private _landSearchRadius = _targetRadius;
+private _correctedEntryCount = 0;
+private _compressedAssaultCount = 0;
 {
     private _lane = _x;
     _lane sort true;
@@ -77,16 +88,28 @@ private _landSearchRadius = ((_targetRadius * 0.15) min 100) max 25;
 
         if (surfaceIsWater _entryPos) then {
             _entryPos = [_entryPos, _landSearchRadius] call FLO_fnc_getSafeLandPos;
+            _correctedEntryCount = _correctedEntryCount + 1;
         };
-        if (surfaceIsWater _assaultPos) then {
-            _assaultPos = [_assaultPos, _landSearchRadius] call FLO_fnc_getSafeLandPos;
+        if (surfaceIsWater _entryPos) then {
+            _entryPos = +_targetPos;
         };
-        if (surfaceIsWater _entryPos || {surfaceIsWater _assaultPos}) then {
-            throw format ["No land route for assault lane group %1 near %2", _groupId, _targetPos];
+        if (surfaceIsWater _assaultPos || {(_assaultPos distance2D _objectiveCenter) > _targetRadius}) then {
+            _assaultPos = +_targetPos;
+            _compressedAssaultCount = _compressedAssaultCount + 1;
         };
 
         _routes set [_groupId, [_entryPos, _assaultPos]];
     } forEach _lane;
 } forEach _lanes;
+
+["CAMPAIGN", 3, format [
+    "Assault lanes built objective=%1 groups=%2 lanes=%3 anchorOffset=%4m correctedEntries=%5 compressedAssaults=%6",
+    _objectiveId,
+    count _groupIds,
+    _laneCount,
+    round (_targetPos distance2D _objectiveCenter),
+    _correctedEntryCount,
+    _compressedAssaultCount
+]] call FLO_fnc_log;
 
 _routes

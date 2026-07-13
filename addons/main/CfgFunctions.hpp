@@ -132,6 +132,7 @@ class FLO {
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
     #include "Functions\AI\GTN\Operations\CfgFunctions.hpp"
+    #include "Functions\Formations\CfgFunctions.hpp"
     #include "Functions\UI\CfgFunctions.hpp"
     #include "Functions\Notifications\CfgFunctions.hpp"
 
@@ -263,6 +264,7 @@ class FLO {
         class storeCapabilityForCategory {};
         class storeCheckout {};
         class storeClearCargo {};
+        class storeCurrentLoadoutKitItems {};
         class storeDeployBase {};
         class storeDropGearItems {};
         class storeDropGearAddCount {};
@@ -270,6 +272,11 @@ class FLO {
         class storeIsItemBackedMagazine {};
         class storeIsMineMagazine {};
         class storeLegacyVehiclePrice {};
+        class storeKitAccumulateLine {};
+        class storeKitAppendCargo {};
+        class storeKitCategoryForClass {};
+        class storeKitDisplayName {};
+        class storeNormalizeRuntimeRadioClass {};
         class storeOpenDialog {};
         class storePreInit { preInit = 1; };
         class storePriceClass {};
@@ -280,7 +287,10 @@ class FLO {
         class storeRequestHydrate {};
         class storeSavedKitsDelete {};
         class storeSavedKitsLoad {};
+        class storeSavedKitsPersist {};
         class storeSavedKitsSave {};
+        class storeSavedKitValidateItem {};
+        class storeSavedKitValidateRecord {};
         class storeSendResponse {};
         class storeSpawnVehicle {};
         class storeSpawnSupplyShipment {};
@@ -330,6 +340,7 @@ class FLO {
         class factionBuildObjectiveGroupFieldSpecs {};
         class factionBuildTuningFieldSpecsFromIdcs {};
         class factionBuildVehiclePoolFromVariables {};
+        class factionClassIsCombatInfantry {};
         class factionClassifyVehicle {};
         class factionCollectDirectUnitVariables {};
         class factionCompactNumericText {};

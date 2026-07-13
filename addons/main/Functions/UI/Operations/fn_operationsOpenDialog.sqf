@@ -8,12 +8,18 @@ if (!FLO_MissionReady) exitWith {
 
 private _display = findDisplay FLO_OperationsDialogIdd;
 if (!isNull _display) exitWith {
-    if (_showGuide) then { [] call FLO_fnc_operationsShowGuide; };
+    if (_showGuide) then {
+        FLO_OperationsGuideIsOnboarding = true;
+        [] call FLO_fnc_operationsShowGuide;
+    };
     [] call FLO_fnc_operationsRequestSnapshot;
     true
 };
 
-if (_showGuide) then { FLO_OperationsGuideRequested = true; };
+if (_showGuide) then {
+    FLO_OperationsGuideRequested = true;
+    FLO_OperationsGuideIsOnboarding = true;
+};
 
 createDialog "FLO_OperationsDialog";
 _display = findDisplay FLO_OperationsDialogIdd;

@@ -75,6 +75,19 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
 private _objective = _objectives get _objectiveId;
 if ((_objective get "owner") != _enemySide) exitWith { _metrics };
+if (([_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor) isEqualTo []) exitWith {
+    ["CAMPAIGN", 2, format [
+        "Operation %1 withdrawing before dispatch: objective %2 has no ground-assault anchor",
+        _operationId,
+        _objectiveId
+    ]] call FLO_fnc_log;
+    _director call ["_completeOperation", [_operationId, "NO_TARGET", "NO_LAND_ASSAULT_ANCHOR"]];
+    _track set ["groupPool", []];
+    _metrics set ["preflightSkipped", true];
+    _metrics set ["remainingPool", 0];
+    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
+    _metrics
+};
 
 private _tCandidateBuild = diag_tickTime;
 private _attackCap = _operation get "assaultActiveTarget";
@@ -137,6 +150,7 @@ if (
 private _approachSourcePos = _track get "frontSectorAnchorPos";
 private _approachRoutes = [
     _director,
+    _objectiveId,
     _objective,
     _approachSourcePos,
     _poolEntries,

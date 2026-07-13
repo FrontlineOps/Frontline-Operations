@@ -56,7 +56,8 @@ if (_unitCount <= 0) exitWith {
 
 // Only use remaining waypoints from currentWaypointIndex onwards
 // This ensures groups that traveled virtually don't re-get completed waypoints
-private _waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx] call FLO_fnc_virtualizationGetRemainingWaypoints;
+private _generatedPatrol = (_groupData get "patrolConfig") isNotEqualTo [];
+private _waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx, _generatedPatrol] call FLO_fnc_virtualizationGetRemainingWaypoints;
 
 // Check if this is a transport with attached groups
 private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
@@ -123,6 +124,7 @@ _groupData set ["currentWaypointIndex", 0];
 // Set the real group in the group data
 [_groupData, _realGroup] call FLO_fnc_virtualizationSetRealGroup;
 [ _groupData, [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles ] call FLO_fnc_virtualizationSetRealVehicles;
+_groupData set ["activeInitialUnitCount", count units _realGroup];
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 _groupData set ["nextProcessAt", 0];

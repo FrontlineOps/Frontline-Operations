@@ -2,7 +2,20 @@
  * Function: FLO_fnc_virtualizationProcessInactiveMovement
  */
 
-params ["_groupId", "_groupData", "_now", "_virtStats"];
+params [
+    "_groupId",
+    "_groupData",
+    "_now",
+    "_virtStats",
+    ["_profilePhases", false, [false]]
+];
+
+if ((_groupData get "state") == "holding") exitWith {
+    if (_profilePhases) then {
+        _virtStats set ["phaseHoldingSkipsTotal", (_virtStats get "phaseHoldingSkipsTotal") + 1];
+    };
+    true
+};
 
 private _waypoints = _groupData get "waypoints";
 private _currentWpIdx = _groupData get "currentWaypointIndex";
@@ -20,7 +33,7 @@ if (_waypoints isNotEqualTo [] && {_currentWpIdx < count _waypoints}) then {
     private _distToWp = _position distance2D _wpPos;
     private _completionRadius = _wp param [6, 20];
 
-    if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD"] && {_distToWp > _completionRadius}) then {
+    if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD", "HOLD"] && {_distToWp > _completionRadius}) then {
         private _pendingMoveDistance = _carryMeters + (_virtualSpeed * _timeDelta);
         _groupData set ["lastMoveTime", _moveNow];
 
@@ -36,13 +49,23 @@ if (_waypoints isNotEqualTo [] && {_currentWpIdx < count _waypoints}) then {
                 private _dir = _position getDir _wpPos;
                 private _newPos = _position getPos [_moveDistance, _dir];
 
-                [_groupId, _newPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+                private _phaseStart = 0;
+                if (_profilePhases) then { _phaseStart = diag_tickTime; };
+                [_groupId, _groupData, _newPos] call FLO_fnc_virtualizationUpdateOwnedGroupPosition;
+                if (_profilePhases) then {
+                    _virtStats set ["phasePositionUpdateMsTotal", (_virtStats get "phasePositionUpdateMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+                    _virtStats set ["phasePositionUpdatesTotal", (_virtStats get "phasePositionUpdatesTotal") + 1];
+                };
                 _groupData set ["virtualMoveCarryMeters", (_pendingMoveDistance - _moveDistance) max 0];
                 [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
                 _virtStats set ["virtualMovesTotal", (_virtStats get "virtualMovesTotal") + 1];
                 _virtStats set ["virtualMovesThisBatch", (_virtStats get "virtualMovesThisBatch") + 1];
 
+                if (_profilePhases) then { _phaseStart = diag_tickTime; };
                 [_groupId, _groupData, _newPos] call FLO_fnc_transportProcessVirtualCarrier;
+                if (_profilePhases) then {
+                    _virtStats set ["phaseCarrierSyncMsTotal", (_virtStats get "phaseCarrierSyncMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+                };
             };
         };
     } else {

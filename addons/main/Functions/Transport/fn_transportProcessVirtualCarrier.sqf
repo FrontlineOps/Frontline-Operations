@@ -22,7 +22,6 @@ params [
 ];
 
 if (_groupId == "") exitWith { false };
-_groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
 if !([_groupData] call FLO_fnc_virtualizationIsTransportCarrier) exitWith { false };
 
 private _attachedIds = +([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);

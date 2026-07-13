@@ -176,9 +176,7 @@ private _resourceManager = createHashMapObject [[
             };
             _gtn set ["_campaignDirector", _director];
             (_self get "_gtnCommandersBySide") set [_key, _gtn];
-            _gtn call ["_start", []];
-            _self call ["_startCommanderLoop", [_gtn]];
-            ["GTN Resource Manager", 2, format["%1 commander started", _key]] call FLO_fnc_log;
+            ["GTN Resource Manager", 2, format["%1 commander initialized", _key]] call FLO_fnc_log;
         } else {
             ["GTN Resource Manager", 1, format["Failed to initialize %1 commander", _key]] call FLO_fnc_log;
         };
@@ -204,6 +202,12 @@ private _resourceManager = createHashMapObject [[
 
         private _map = _self get "_gtnCommandersBySide";
         if ((keys _map) isNotEqualTo []) exitWith {
+            FLO_GTN_CommandersBySide = _map;
+            [(_director call ["_getState", []]) get "formationState", _director, _self] call FLO_fnc_formationInitialize;
+            {
+                _y call ["_start", []];
+                _self call ["_startCommanderLoop", [_y]];
+            } forEach _map;
             _director call ["_start", []];
             ["GTN Resource Manager", 3, "Dual GTN already initialized"] call FLO_fnc_log;
         };
@@ -221,6 +225,11 @@ private _resourceManager = createHashMapObject [[
         // Keep commander objects server-local. They contain circular references
         // and are not safe to publicVariable.
         FLO_GTN_CommandersBySide = _self get "_gtnCommandersBySide";
+        [(_director call ["_getState", []]) get "formationState", _director, _self] call FLO_fnc_formationInitialize;
+        {
+            _y call ["_start", []];
+            _self call ["_startCommanderLoop", [_y]];
+        } forEach FLO_GTN_CommandersBySide;
         _self call ["_bindDirtyEvents", []];
         _director call ["_start", []];
 
@@ -236,10 +245,7 @@ private _resourceManager = createHashMapObject [[
     }]
 ]];
 
-// Start GTN immediately
-[_resourceManager] spawn {
-    params ["_mgr"];
-    _mgr call ["_initializeGTN", []];
-};
+// Complete GTN and formation initialization before dependent Phase 5 systems start.
+_resourceManager call ["_initializeGTN", []];
 
 _resourceManager

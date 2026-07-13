@@ -26,6 +26,7 @@ class GTNOperations {
     class campaignInitializeAssaultState {};
     class campaignIsObjectiveIntegrated {};
     class campaignObjectiveName {};
+    class campaignOperationalStateDefaults {};
     class campaignProcessIntegrations {};
     class campaignPrioritizeReinforcementTargets {};
     class campaignRegisterBase {};
@@ -34,11 +35,13 @@ class GTNOperations {
     class campaignReserveOperationBudget {};
     class campaignRevealTarget {};
     class campaignRequestSnapshot {};
+    class campaignResolveAssaultLandAnchor {};
     class campaignSelectTarget {};
     class campaignSideFromKey {};
     class campaignSyncPrimaryProjection {};
     class campaignTransition {};
     class campaignUpdateDefenderIntel {};
     class campaignValidateAssaultState {};
+    class campaignValidateOperationalState {};
     class campaignValidateOperationBudget {};
 };

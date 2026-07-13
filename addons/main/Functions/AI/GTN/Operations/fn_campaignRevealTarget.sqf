@@ -18,7 +18,7 @@ private _state = _director get "_state";
 _state set ["revision", (_state get "revision") + 1];
 [_state] call FLO_fnc_campaignSyncPrimaryProjection;
 
-["CAMPAIGN", 2, format [
+["CAMPAIGN", 3, format [
     "Operation %1 target revealed to defender (%2)",
     _operationId,
     _reason

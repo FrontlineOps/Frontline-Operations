@@ -26,6 +26,9 @@ private _sourceSchema = if ("schemaVersion" in _savedData) then {
 
 if (_sourceSchema == _currentSchema) exitWith {
     private _copy = [_savedData] call FLO_fnc_virtualizationCloneValue;
+    if ((_copy get "groupType") == "static_aa" && {_copy get "alwaysActive"}) then {
+        _copy set ["alwaysActive", false];
+    };
     [_copy, _groupId] call FLO_fnc_virtualizationValidateSavedGroup;
     _copy
 };
@@ -97,6 +100,10 @@ if (_legacyEngagementActive || {(_legacyPathSource find "GTN_ENGAGE") == 0}) the
     _migrated set ["defendLeaseUntil", -1];
     _migrated set ["garrisonPosition", [0, 0, 0]];
     _migrated set ["garrisonObjective", ""];
+};
+
+if ((_migrated get "groupType") == "static_aa" && {_migrated get "alwaysActive"}) then {
+    _migrated set ["alwaysActive", false];
 };
 
 [_migrated, _groupId] call FLO_fnc_virtualizationValidateSavedGroup;

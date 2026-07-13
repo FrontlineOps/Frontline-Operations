@@ -20,6 +20,23 @@ if (_role == "MAIN_EFFORT") then {
 };
 
 private _packageTarget = round (_packageMinimum + ((_packageMaximum - _packageMinimum) * _coverageScale));
+private _doctrine = _operation get "doctrine";
+switch (_doctrine) do {
+    case "BREAKTHROUGH": {
+        _packageTarget = (_packageTarget + 2) min (_packageMaximum + 2);
+        _activeTarget = _activeTarget + 2;
+        _waveSize = _waveSize + 1;
+    };
+    case "COUNTERATTACK": {
+        _activeTarget = _activeTarget + 1;
+    };
+    case "ECONOMY_OF_FORCE": {
+        private _minimumOpening = [5, 8] select (_role == "MAIN_EFFORT");
+        _packageTarget = _packageMinimum;
+        _activeTarget = _activeTarget min _minimumOpening;
+        _waveSize = _waveSize min 4;
+    };
+};
 private _now = dateToNumber date;
 _operation set ["assaultPackageTarget", _packageTarget];
 _operation set ["assaultActiveTarget", _activeTarget];
@@ -36,6 +53,8 @@ _operation set ["assaultLastArrivedCount", 0];
 _operation set ["assaultPauseCount", 0];
 _operation set ["assaultLastContested", false];
 _operation set ["assaultStatus", "READY"];
+_operation set ["assaultOpeningEligibleAtDateNum", _now];
 
 [_operation] call FLO_fnc_campaignValidateAssaultState;
+[_operation] call FLO_fnc_campaignValidateOperationalState;
 _operation

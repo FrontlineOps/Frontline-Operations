@@ -126,7 +126,7 @@ private _executor = createHashMapObject [[
             false
         };
 
-        ["GTN", 3, format [">>> EXECUTING PRIMITIVE: %1 with params: %2", _taskId, _params]] call FLO_fnc_log;
+        ["GTN", 5, format [">>> EXECUTING PRIMITIVE: %1 with params: %2", _taskId, _params]] call FLO_fnc_log;
 
         private _context = createHashMapFromArray [
             ["commander", _self get "_gtnCommander"],

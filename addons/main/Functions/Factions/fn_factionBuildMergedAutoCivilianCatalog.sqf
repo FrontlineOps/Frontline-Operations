@@ -30,7 +30,7 @@ private _vehicles = [];
     } forEach (_catalog get "vehicles");
 } forEach _classes;
 
-["FACTIONS", 2, format [
+["FACTIONS", 3, format [
     "Merged auto civilian factions %1: men=%2 vehicles=%3",
     _classes,
     count _men,

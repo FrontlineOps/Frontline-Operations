@@ -10,14 +10,21 @@
  * 1: Group Data <HASHMAP>
  * 2: Activation Distance <NUMBER>
  * 3: Current Time <NUMBER>
+ * 4: Profile Phases <BOOLEAN> (optional, default false)
  * Return Value:
  * None
  *
  * Example:
- * [_groupId, _groupData, 2000, diag_tickTime, nil] call FLO_fnc_virtualizationProcessGroup;
+ * [_groupId, _groupData, 2000, diag_tickTime, false] call FLO_fnc_virtualizationProcessGroup;
  */
 
-params ["_groupId", "_groupData", "_activationDist", "_now"];
+params [
+    "_groupId",
+    "_groupData",
+    "_activationDist",
+    "_now",
+    ["_profilePhases", false, [false]]
+];
 
 private _virtStats = FLO_VirtUpdate get "stats";
 
@@ -71,10 +78,27 @@ if !([_position] call FLO_fnc_validateGroupPosition) exitWith {
     };
 };
 
+private _phaseStart = 0;
+if (_profilePhases) then { _phaseStart = diag_tickTime; };
 private _nearestDist = [_position] call FLO_fnc_virtualizationGetNearestCachedPlayerDistance;
+if (_profilePhases) then {
+    _virtStats set ["phaseProximityMsTotal", (_virtStats get "phaseProximityMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+    _phaseStart = diag_tickTime;
+};
 [_groupData, _nearestDist, _groupActivationDist, _now] call FLO_fnc_virtualizationScheduleNextProcess;
+if (_profilePhases) then {
+    _virtStats set ["phaseScheduleMsTotal", (_virtStats get "phaseScheduleMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+    _phaseStart = diag_tickTime;
+};
 
-if ([_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup) exitWith {};
+private _attachedHandled = [_groupId, _groupData, _virtStats] call FLO_fnc_virtualizationProcessAttachedGroup;
+if (_profilePhases) then {
+    _virtStats set ["phaseAttachedMsTotal", (_virtStats get "phaseAttachedMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+    if (_attachedHandled) then {
+        _virtStats set ["phaseAttachedHandledTotal", (_virtStats get "phaseAttachedHandledTotal") + 1];
+    };
+};
+if (_attachedHandled) exitWith {};
 
 if (_isActive && {isNull _realGroup}) exitWith {
     [_groupId] call FLO_fnc_virtualizationRepairOrphanedActiveGroup;
@@ -82,7 +106,14 @@ if (_isActive && {isNull _realGroup}) exitWith {
 
 if (!_isActive && {!_activationDeferred}) then {
     if (!_inCombat) then {
-        [_groupId, _groupData, _now, _virtStats] call FLO_fnc_virtualizationProcessInactiveMovement;
+        if (_profilePhases) then {
+            _phaseStart = diag_tickTime;
+            _virtStats set ["phaseMovementCallsTotal", (_virtStats get "phaseMovementCallsTotal") + 1];
+        };
+        [_groupId, _groupData, _now, _virtStats, _profilePhases] call FLO_fnc_virtualizationProcessInactiveMovement;
+        if (_profilePhases) then {
+            _virtStats set ["phaseMovementMsTotal", (_virtStats get "phaseMovementMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+        };
     } else {
         if ((_groupData get "waypoints") isNotEqualTo []) then {
             _virtStats set ["movementPauseSkipsTotal", (_virtStats get "movementPauseSkipsTotal") + 1];
@@ -91,12 +122,23 @@ if (!_isActive && {!_activationDeferred}) then {
     };
 };
 
+if (_profilePhases) then { _phaseStart = diag_tickTime; };
 [_groupId, _groupData, _groupActivationDist, _nearestDist, _forceVirtual, _missionLock, _replacementState, _inCombat, _virtStats] call FLO_fnc_virtualizationProcessActivationState;
+if (_profilePhases) then {
+    _virtStats set ["phaseActivationMsTotal", (_virtStats get "phaseActivationMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+};
 
 _isActive = _groupData get "isActive";
 _realGroup = _groupData get "realGroup";
 
 if (_isActive && {!isNull _realGroup}) then {
+    if (_profilePhases) then {
+        _phaseStart = diag_tickTime;
+        _virtStats set ["phaseActiveCallsTotal", (_virtStats get "phaseActiveCallsTotal") + 1];
+    };
     [_groupId, _groupData, _realGroup, _tracksAssets, _replacementState, _nearestDist, _now, _virtStats] call FLO_fnc_virtualizationProcessActiveState;
+    if (_profilePhases) then {
+        _virtStats set ["phaseActiveMsTotal", (_virtStats get "phaseActiveMsTotal") + ((diag_tickTime - _phaseStart) * 1000)];
+    };
 };
 

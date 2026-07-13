@@ -20,13 +20,15 @@ private _inf = 0;
 private _armor = 0;
 
 {
+    private _groupId = _x select 0;
     private _gData = _x select 1;
     private _count = _gData get "unitCount";
     if (_count <= 0) then { continue };
 
     private _type = _gData get "groupType";
     private _weight = [_type] call FLO_fnc_gtnCombatTypeWeight;
-    _power = _power + (_count * _weight);
+    private _formationMultiplier = [_groupId] call FLO_fnc_formationGetCombatMultiplier;
+    _power = _power + (_count * _weight * _formationMultiplier);
     _units = _units + _count;
 
     if (_type isEqualTo "infantry") then { _inf = _inf + _count };

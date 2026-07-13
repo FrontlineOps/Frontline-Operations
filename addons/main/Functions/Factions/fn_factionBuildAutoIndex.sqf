@@ -49,7 +49,7 @@ private _registerFaction = {
 
     if !(_side in [0, 1, 2, 3]) exitWith {
         _droppedBadSide = _droppedBadSide + 1;
-        ["FACTIONS", 2, format ["DETAIL drop=%1 reason=badSide side=%2", _className, _side]] call FLO_fnc_log;
+        ["FACTIONS", 4, format ["DETAIL drop=%1 reason=badSide side=%2", _className, _side]] call FLO_fnc_log;
     };
 
     private _displayName = getText (_facCfg >> "displayName");
@@ -106,7 +106,12 @@ private _registerFaction = {
     if !(_factionLower in _factionsByLower) then { continue };
     if (getNumber (_vehCfg >> "scope") < 2) then { continue };
 
-    private _map = [_vehicleCounts, _unitCounts] select ((configName _vehCfg) isKindOf "Man");
+    private _isMan = (configName _vehCfg) isKindOf "Man";
+    if (_isMan) then {
+        private _factionMeta = _factionsByLower get _factionLower;
+        if ((_factionMeta get "side") != 3 && {!([configName _vehCfg, _faction] call FLO_fnc_factionClassIsCombatInfantry)}) then { continue };
+    };
+    private _map = [_vehicleCounts, _unitCounts] select _isMan;
 
     private _count = 0;
     if (_factionLower in _map) then {
@@ -127,7 +132,7 @@ private _byClass = createHashMap;
 
     if (_classLower in _blacklist) then {
         _droppedBlacklist = _droppedBlacklist + 1;
-        ["FACTIONS", 2, format ["DETAIL drop=%1 reason=blacklist", _className]] call FLO_fnc_log;
+        ["FACTIONS", 4, format ["DETAIL drop=%1 reason=blacklist", _className]] call FLO_fnc_log;
         continue;
     };
 
@@ -138,7 +143,7 @@ private _byClass = createHashMap;
 
     if (_unitCount <= 0) then {
         _droppedNoUnits = _droppedNoUnits + 1;
-        ["FACTIONS", 2, format ["DETAIL drop=%1 reason=noUnits side=%2", _className, _sideLabels select _side]] call FLO_fnc_log;
+        ["FACTIONS", 4, format ["DETAIL drop=%1 reason=noUnits side=%2", _className, _sideLabels select _side]] call FLO_fnc_log;
         continue;
     };
 
@@ -156,7 +161,7 @@ private _byClass = createHashMap;
     private _sideLabel = _sideLabels select _side;
     private _compat = ["CfgVehicles", "CfgGroups"] select (_cfgGroupCount > 0);
     private _label = format ["[AUTO] %1 - %2 (%3)", _sideLabel, _displayName, _className];
-    ["FACTIONS", 2, format [
+    ["FACTIONS", 4, format [
         "DETAIL keep=%1 side=%2 compatibility=%3 units=%4 vehicles=%5 cfgGroups=%6",
         _className,
         _sideLabel,
@@ -194,7 +199,7 @@ FLO_AutoFactionIndex = createHashMapFromArray [
     ["byClass", _byClass]
 ];
 
-["FACTIONS", 2, format [
+["FACTIONS", 3, format [
     "Auto faction index: scanned=%1 military=%2 civilian=%3 dropped(badSide)=%4 dropped(noUnits)=%5 dropped(blacklist)=%6 timeMs=%7",
     _totalScanned,
     count _military,

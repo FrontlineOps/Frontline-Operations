@@ -15,5 +15,6 @@ params ["_groupData"];
 
 _groupData set ["missionLock", ""];
 _groupData set ["missionType", ""];
+_groupData set ["nextProcessAt", 0];
 
 true

@@ -37,7 +37,7 @@ private _ownSide = _sideContext get "ownSide";
 private _enemySide = _sideContext get "enemySide";
 private _sideKey = _sideContext get "sideKey";
 
-["GTN", 2, format["Initializing GTN Commander System (%1)", _sideKey]] call FLO_fnc_log;
+["GTN", 3, format["Initializing GTN Commander System (%1)", _sideKey]] call FLO_fnc_log;
 
 // Create all subsystems
 private _worldState = [_sideContext] call FLO_fnc_gtnWorldState;
@@ -241,8 +241,8 @@ private _gtnCommander = createHashMapObject [[
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
         ["defenseContestedCollapseCap", 5], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
-        ["strategicOrderAssignmentsPerCycle", 16], // Carries one ten-group attack wave plus bounded defense/garrison work
-        ["attackAssignmentsPerCycle", 10], // Fill and replenish operation packages in useful waves
+        ["strategicOrderAssignmentsPerCycle", 16], // Carries one twelve-group opening plus bounded defense/garrison work
+        ["attackAssignmentsPerCycle", 12], // Supports the largest atomic doctrine opening without splitting its mass
         ["defenseAssignmentsPerCycle", 3], // 10-second baseline defense assignment cap for one commander slice
         ["garrisonAssignmentsPerCycle", 2], // 10-second baseline garrison assignment cap for one commander slice
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
@@ -305,7 +305,7 @@ private _gtnCommander = createHashMapObject [[
         private _tracks = _self get "_tracks";
         private _attackTracks = { (_x get "goal") == "capture_priority_objective" } count _tracks;
         private _defenseTracks = { (_x get "goal") == "protect_critical_assets" } count _tracks;
-        ["GTN", 2, format[
+        ["GTN", 3, format[
             "GTN Commander started (attack tracks: %1, defense tracks: %2, attack coverage: %3, defense coverage: %4, tempo: %5s)",
             _attackTracks,
             _defenseTracks,
@@ -318,7 +318,7 @@ private _gtnCommander = createHashMapObject [[
     // Stop the GTN commander
     ["_stop", {
         _self set ["_isRunning", 0];
-        ["GTN", 2, "GTN Commander stopped"] call FLO_fnc_log;
+        ["GTN", 3, "GTN Commander stopped"] call FLO_fnc_log;
     }],
 
     // Main update cycle - call this from commander's update loop
@@ -368,7 +368,7 @@ private _gtnCommander = createHashMapObject [[
         private _cycleIndex = _stats get "cyclesRun";
         _self call ["_resetStrategicOrderBudget", []];
         
-        ["GTN", 3, format["GTN Cycle %1 starting", _cycleIndex]] call FLO_fnc_log;
+        ["GTN", 4, format["GTN Cycle %1 starting", _cycleIndex]] call FLO_fnc_log;
 
         // Update world state
         private _ws = _self get "_worldState";
@@ -389,7 +389,7 @@ private _gtnCommander = createHashMapObject [[
         private _forces = _ws call ["_getForces", []];
         private _situation = _ws call ["_getTacticalSituation", []];
         private _enemyObjs = _ws call ["_getEnemyObjectives", []];
-        ["GTN", 3, format["World State: Available=%1, Momentum=%2, EnemyObjs=%3",
+        ["GTN", 4, format["World State: Available=%1, Momentum=%2, EnemyObjs=%3",
             _forces get "availableGroups",
             _situation get "momentum",
             count (keys _enemyObjs)
@@ -949,7 +949,7 @@ private _gtnCommander = createHashMapObject [[
         // Log allocation
         {
             private _track = _x;
-            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
+            ["GTN", 4, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
                 _track get "id",
                 _track get "goal",
                 count (_track get "groupPool"),
@@ -1122,7 +1122,7 @@ private _gtnCommander = createHashMapObject [[
         } forEach _result;
         _track set ["groupPool", _pool];
         
-        ["GTN", 3, format["Track %1: Consumed %2 groups (requested %3, %4 remaining in pool)", 
+        ["GTN", 4, format["Track %1: Consumed %2 groups (requested %3, %4 remaining in pool)",
             _track get "id", count _result, _count, count _pool]] call FLO_fnc_log;
         
         _result
@@ -1137,7 +1137,7 @@ private _gtnCommander = createHashMapObject [[
             if ((_x get "id") == _trackId) exitWith {
                 _x set ["goal", _newGoal];
                 _x set ["status", "IDLE"];  // Force replan
-                ["GTN", 2, format["Track %1 goal changed to: %2", _trackId, _newGoal]] call FLO_fnc_log;
+                ["GTN", 3, format["Track %1 goal changed to: %2", _trackId, _newGoal]] call FLO_fnc_log;
             };
         } forEach _tracks;
     }],
@@ -1623,7 +1623,7 @@ private _gtnCommander = createHashMapObject [[
                 if (_newOrder != "") then {
                     [_gData, _newOrder] call FLO_fnc_virtualizationSetCommanderOrder;
                 };
-                ["GTN", 3, format["Released group %1, order reset to '%2'", _groupId, _newOrder]] call FLO_fnc_log;
+                ["GTN", 5, format["Released group %1, order reset to '%2'", _groupId, _newOrder]] call FLO_fnc_log;
             };
         } forEach _groupIds;
         
@@ -2016,7 +2016,7 @@ private _gtnCommander = createHashMapObject [[
         private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
 
         private _waypoints = [
-            [_pos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 30]
+            [_pos, "MOVE", _mode, "FULL", _formation, "YELLOW", 30]
         ];
 
         [_groupId, _gData, "MOVE", _waypoints, _pos, "GTN_MOVE", "", _mode] call FLO_fnc_virtualizationCommitCommanderOrder;
@@ -2024,7 +2024,7 @@ private _gtnCommander = createHashMapObject [[
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
         true
     }],
 
@@ -2131,7 +2131,7 @@ private _gtnCommander = createHashMapObject [[
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 through %2 to attack %3 (%4)", _groupId, _entryPos, _attackPos, _objectiveId]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 through %2 to attack %3 (%4)", _groupId, _entryPos, _attackPos, _objectiveId]] call FLO_fnc_log;
         true
     }],
 
@@ -2241,7 +2241,7 @@ private _gtnCommander = createHashMapObject [[
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
         true
     }],
 
@@ -2337,7 +2337,7 @@ private _gtnCommander = createHashMapObject [[
 
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to garrison %2", _groupId, _objectiveId]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to garrison %2", _groupId, _objectiveId]] call FLO_fnc_log;
         true
     }],
 
@@ -2628,6 +2628,6 @@ private _gtnCommander = createHashMapObject [[
 _executor call ["_setGTNCommander", [_gtnCommander]];
 _worldState call ["_setCommander", [_gtnCommander]];
 
-["GTN", 2, "GTN Commander System initialized"] call FLO_fnc_log;
+["GTN", 3, "GTN Commander System initialized"] call FLO_fnc_log;
 
 _gtnCommander

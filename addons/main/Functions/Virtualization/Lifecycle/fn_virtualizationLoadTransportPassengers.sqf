@@ -78,6 +78,7 @@ private _poolUnits = _pools get "units";
 
     [_attachedData, _infGroup] call FLO_fnc_virtualizationSetRealGroup;
     [_attachedData] call FLO_fnc_virtualizationClearRealVehicles;
+    _attachedData set ["activeInitialUnitCount", count units _infGroup];
     _attachedData set ["isActive", true];
     _attachedData set ["lastStateChangeTime", diag_tickTime];
     _infGroup setVariable ["FLO_virtualGroupId", _attachedId];

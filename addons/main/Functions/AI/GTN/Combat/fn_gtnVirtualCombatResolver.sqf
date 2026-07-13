@@ -165,6 +165,10 @@ private _pfhId = [{
             count _eastRefs,
             count _westRefs
         ] call FLO_fnc_gtnCombatRecordEvent;
+        [
+            "FLO_GTN_VirtualCombatResolved",
+            [_event, _eastRefs apply { _x select 0 }, _westRefs apply { _x select 0 }]
+        ] call CBA_fnc_localEvent;
 
         [_event, _combatMarkerTTL] call FLO_fnc_gtnCombatUpdateMarker;
 

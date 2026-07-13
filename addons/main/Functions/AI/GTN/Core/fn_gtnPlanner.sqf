@@ -82,13 +82,13 @@ private _planner = createHashMapObject [[
         // Update world state before planning
         _ws call ["_update", []];
         
-        ["GTN", 3, format["Planning for goal: %1", _goalId]] call FLO_fnc_log;
+        ["GTN", 5, format["Planning for goal: %1", _goalId]] call FLO_fnc_log;
         
         // Create root node
         private _rootNode = _self call ["_createPlanNode", [_goalId, _params, 0]];
         
         // Decompose recursively
-        ["GTN", 3, format["Decomposing goal: %1", _goalId]] call FLO_fnc_log;
+        ["GTN", 5, format["Decomposing goal: %1", _goalId]] call FLO_fnc_log;
         private _plan = _self call ["_decompose", [_rootNode]];
 
         if (isNil "_plan") exitWith {
@@ -96,7 +96,7 @@ private _planner = createHashMapObject [[
             nil
         };
 
-        ["GTN", 3, format["Decomposition complete for: %1", _goalId]] call FLO_fnc_log;
+        ["GTN", 5, format["Decomposition complete for: %1", _goalId]] call FLO_fnc_log;
 
         // Flatten plan to executable sequence
         private _flatPlan = _self call ["_flattenPlan", [_plan]];
@@ -109,7 +109,7 @@ private _planner = createHashMapObject [[
         private _stats = _self get "_planningStats";
         _stats set ["plansGenerated", (_stats get "plansGenerated") + 1];
         
-        ["GTN", 3, format["Plan created with %1 tasks", count _flatPlan]] call FLO_fnc_log;
+        ["GTN", 4, format["Plan created with %1 tasks", count _flatPlan]] call FLO_fnc_log;
         
         _flatPlan
     }],
@@ -123,11 +123,11 @@ private _planner = createHashMapObject [[
         private _depth = _node get "depth";
         private _maxDepth = _self get "_maxDepth";
 
-        ["GTN", 3, format["Decomposing task: %1 at depth %2", _taskId, _depth]] call FLO_fnc_log;
+        ["GTN", 5, format["Decomposing task: %1 at depth %2", _taskId, _depth]] call FLO_fnc_log;
 
         // Depth check
         if (_depth > _maxDepth) exitWith {
-            ["GTN", 3, format["Max planning depth exceeded for: %1", _taskId]] call FLO_fnc_log;
+            ["GTN", 2, format["Max planning depth exceeded for: %1", _taskId]] call FLO_fnc_log;
             nil
         };
 
@@ -137,7 +137,7 @@ private _planner = createHashMapObject [[
         // Check if this is a primitive
         if (_goalLib call ["_isPrimitive", [_taskId]]) exitWith {
             // Primitives are leaf nodes - return as-is
-            ["GTN", 3, format["Found primitive: %1", _taskId]] call FLO_fnc_log;
+            ["GTN", 5, format["Found primitive: %1", _taskId]] call FLO_fnc_log;
             _node set ["isPrimitive", true];
             _node
         };
@@ -145,14 +145,14 @@ private _planner = createHashMapObject [[
         // Get goal definition
         private _goal = _goalLib call ["_getGoal", [_taskId]];
         if (isNil "_goal") exitWith {
-            ["GTN", 3, format["Unknown goal (not registered): %1", _taskId]] call FLO_fnc_log;
+            ["GTN", 1, format["Unknown goal (not registered): %1", _taskId]] call FLO_fnc_log;
             nil
         };
 
         // Check preconditions
         private _preconditions = _goal get "preconditions";
         if (!([_ws, _params] call _preconditions)) exitWith {
-            ["GTN", 3, format["Preconditions failed for: %1", _taskId]] call FLO_fnc_log;
+            ["GTN", 4, format["Preconditions failed for: %1", _taskId]] call FLO_fnc_log;
             nil
         };
         
@@ -189,7 +189,7 @@ private _planner = createHashMapObject [[
         private _methodId = _selectedMethod get "id";
         _node set ["methodUsed", _methodId];
         _node set ["methodScore", _bestScore];
-        ["GTN", 3, format["Selected method '%1' for '%2' (score: %3)", _methodId, _taskId, _bestScore]] call FLO_fnc_log;
+        ["GTN", 5, format["Selected method '%1' for '%2' (score: %3)", _methodId, _taskId, _bestScore]] call FLO_fnc_log;
 
         // Decompose subtasks
         private _subtasks = _selectedMethod get "subtasks";
@@ -283,7 +283,7 @@ private _planner = createHashMapObject [[
 
         if (_idx >= count _plan) exitWith {
             _self set ["_planStatus", "SUCCESS"];
-            ["GTN", 3, "Plan execution complete"] call FLO_fnc_log;
+            ["GTN", 4, "Plan execution complete"] call FLO_fnc_log;
             true
         };
 
@@ -360,7 +360,7 @@ private _planner = createHashMapObject [[
             private _stats = _self get "_planningStats";
             _stats set ["tasksExecuted", (_stats get "tasksExecuted") + 1];
 
-            ["GTN", 3, format["Task complete: %1", _taskId]] call FLO_fnc_log;
+            ["GTN", 5, format["Task complete: %1", _taskId]] call FLO_fnc_log;
             true
         };
 
@@ -410,7 +410,7 @@ private _planner = createHashMapObject [[
     ["_replan", {
         params ["_goalId", ["_params", []]];
 
-        ["GTN", 3, format["Replanning for goal: %1", _goalId]] call FLO_fnc_log;
+        ["GTN", 4, format["Replanning for goal: %1", _goalId]] call FLO_fnc_log;
 
         private _stats = _self get "_planningStats";
         _stats set ["replans", (_stats get "replans") + 1];

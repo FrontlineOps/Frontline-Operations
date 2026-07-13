@@ -33,7 +33,7 @@ if (_fullSweep) then {
     if (_urgent) then {
         _interval = 0.25;
     } else {
-        if ((_groupData get "waypoints") isNotEqualTo []) then {
+        if ((_groupData get "state") != "holding" && {(_groupData get "waypoints") isNotEqualTo []}) then {
             _interval = 0.5;
         };
     };

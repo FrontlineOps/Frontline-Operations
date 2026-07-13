@@ -17,6 +17,7 @@ createHashMapFromArray [
     ["unitCount", 0],
     ["side", east],
     ["isActive", false],
+    ["activeInitialUnitCount", 0],
     ["alwaysActive", false],
     ["realGroup", grpNull],
     ["realVehicles", []],

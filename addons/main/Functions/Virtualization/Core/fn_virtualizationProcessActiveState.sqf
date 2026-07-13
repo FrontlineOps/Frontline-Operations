@@ -38,7 +38,8 @@ if (!isNull _leader && {alive _leader}) then {
     };
 };
 
-if ([_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationConvertAssetCrewToInfantryRemnant) then {
+private _convertedCrewRemnant = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationConvertAssetCrewToInfantryRemnant;
+if (_convertedCrewRemnant) then {
     _tracksAssets = false;
 };
 
@@ -62,7 +63,8 @@ if ([
     _realGroup,
     _tracksAssets,
     _nearestDist,
-    _virtStats
+    _virtStats,
+    _convertedCrewRemnant
 ] call FLO_fnc_virtualizationResolveActiveStraggler) exitWith {
     true
 };

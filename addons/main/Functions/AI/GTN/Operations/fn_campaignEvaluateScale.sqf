@@ -132,7 +132,7 @@ for "_i" from 1 to _additionalSlots do {
     _plannedSelections pushBack _selection;
     _excludedObjectiveIds pushBack _objectiveId;
     _claimedSupplySourceObjectiveIds pushBackUnique (_selection get "supplySourceObjectiveId");
-    _targetPositions pushBack ((FLO_Objectives get _objectiveId) get "position");
+    _targetPositions pushBack (_selection get "assaultLandAnchor");
 };
 
 private _axisSlots = (_currentCount + (count _plannedSelections)) min _maximumCount;

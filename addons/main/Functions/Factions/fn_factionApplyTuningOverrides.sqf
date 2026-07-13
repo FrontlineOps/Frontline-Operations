@@ -40,7 +40,7 @@ if ((keys _tuning) isNotEqualTo []) then {
         "groupCounts"
     ];
 
-    ["FACTIONS", 2, format [
+    ["FACTIONS", 3, format [
         "Applied %1 force composition values: %2",
         _sideLabel,
         keys _tuning

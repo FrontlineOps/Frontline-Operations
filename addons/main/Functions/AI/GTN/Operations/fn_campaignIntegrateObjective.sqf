@@ -63,5 +63,5 @@ FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
 [] call FLO_fnc_refreshRespawnMarkersByTerritory;
 publicVariable "FLO_Objectives";
 
-["CAMPAIGN", 2, format ["Objective %1 integrated (%2)", _objectiveId, _reason]] call FLO_fnc_log;
+["CAMPAIGN", 3, format ["Objective %1 integrated (%2)", _objectiveId, _reason]] call FLO_fnc_log;
 true

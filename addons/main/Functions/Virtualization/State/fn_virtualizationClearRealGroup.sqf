@@ -14,6 +14,7 @@
 params ["_groupData"];
 
 _groupData set ["realGroup", grpNull];
+_groupData set ["activeInitialUnitCount", 0];
 
 true
 

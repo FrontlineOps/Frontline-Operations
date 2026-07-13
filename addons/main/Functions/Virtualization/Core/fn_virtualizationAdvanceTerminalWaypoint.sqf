@@ -7,8 +7,10 @@ params ["_groupId", "_groupData", "_currentIdx", "_waypoints", "_wpType"];
 private _isLastWp = _currentIdx >= (count _waypoints - 1);
 
 if (_isLastWp) exitWith {
-    [_groupData, "holding"] call FLO_fnc_virtualizationSetRuntimeState;
-    ["VIRTUALIZATION", 4, format ["Group %1 reached final %2 waypoint - entering holding state", _groupId, _wpType]] call FLO_fnc_log;
+    if ((_groupData get "state") != "holding") then {
+        [_groupData, "holding"] call FLO_fnc_virtualizationSetRuntimeState;
+        ["VIRTUALIZATION", 5, format ["Group %1 reached final %2 waypoint - entering holding state", _groupId, _wpType]] call FLO_fnc_log;
+    };
 };
 
 _waypoints deleteAt _currentIdx;

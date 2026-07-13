@@ -49,7 +49,7 @@ _metrics set ["processedTrackId", _trackId];
 if (_status == "IDLE") then {
     if (_goal == "capture_priority_objective" && {(_track get "phase") != "assault"}) exitWith {
         _metrics set ["phaseSkips", 1];
-        ["GTN", 3, format[
+        ["GTN", 4, format[
             "Track %1 phase=%2 objective=%3 - holding attack execution",
             _trackId,
             _track get "phase",
@@ -61,7 +61,7 @@ if (_status == "IDLE") then {
     private _pool = _track get "groupPool";
     if (_pool isEqualTo []) exitWith {
         _metrics set ["emptyPoolSkips", 1];
-        ["GTN", 3, format["Track %1 has no groups, skipping this cycle", _trackId]] call FLO_fnc_log;
+        ["GTN", 4, format["Track %1 has no groups, skipping this cycle", _trackId]] call FLO_fnc_log;
         _metrics
     };
 
@@ -71,7 +71,7 @@ if (_status == "IDLE") then {
     _metrics set ["planMs", (diag_tickTime - _tPlan) * 1000];
     private _plan = if (isNil "_planResult") then { [] } else { _planResult };
     if (_plan isEqualTo []) exitWith {
-        ["GTN", 3, format["Track %1: No plan for %2 (preconditions not met)", _trackId, _goal]] call FLO_fnc_log;
+        ["GTN", 4, format["Track %1: No plan for %2 (preconditions not met)", _trackId, _goal]] call FLO_fnc_log;
         _metrics
     };
 
@@ -79,7 +79,7 @@ if (_status == "IDLE") then {
     _metrics set ["planTaskTotal", count _plan];
     _track set ["status", "RUNNING"];
     _status = "RUNNING";
-    ["GTN", 3, format["Track %1: Started plan for %2 (%3 tasks)", _trackId, _goal, count _plan]] call FLO_fnc_log;
+    ["GTN", 4, format["Track %1: Started plan for %2 (%3 tasks)", _trackId, _goal, count _plan]] call FLO_fnc_log;
 };
 
 if (_status != "RUNNING") exitWith { _metrics };
@@ -104,7 +104,7 @@ switch (_planStatus) do {
                     if (_currentStatus == "PENDING") then {
                         private _taskId = _currentTask get "taskId";
                         _executor call ["_setActiveTrack", [_currentTask]];
-                        ["GTN", 3, format["Track %1: Executing %2", _trackId, _taskId]] call FLO_fnc_log;
+                        ["GTN", 5, format["Track %1: Executing %2", _trackId, _taskId]] call FLO_fnc_log;
 
                         _metrics set ["primitiveExecCalls", (_metrics get "primitiveExecCalls") + 1];
                         private _tExec = diag_tickTime;
@@ -172,7 +172,7 @@ switch (_planStatus) do {
 
     case "SUCCESS": {
         _metrics set ["plansCompleted", 1];
-        ["GTN", 3, format["Track %1: Plan completed successfully", _trackId]] call FLO_fnc_log;
+        ["GTN", 4, format["Track %1: Plan completed successfully", _trackId]] call FLO_fnc_log;
         _track set ["status", "IDLE"];
     };
 

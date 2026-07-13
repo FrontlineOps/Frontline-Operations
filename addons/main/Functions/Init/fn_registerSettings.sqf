@@ -35,6 +35,17 @@ private _campaignLaunchMode = [
 
 _campaignLaunchMode call _settingsFn;
 
+private _debugLevel = [
+    "FLO_Debug_Level",
+    "LIST",
+    ["RPT logging level", "Information is the production default. Debug and Trace add investigation detail and can materially increase RPT volume."],
+    ["FLO", "Diagnostics"],
+    [[1, 2, 3, 4, 5], ["Errors", "Warnings", "Information", "Debug", "Trace"], 2],
+    1
+];
+
+_debugLevel call _settingsFn;
+
 private _artillerySideCooldown = [
     "FLO_ArtillerySideCooldownSeconds",
     "SLIDER",

@@ -97,6 +97,8 @@ private _airByObjective = createHashMap;
 
 private _groundToCreate = (_groundReserveCount - _currentGround) max 0;
 private _airToCreate = (_airReserveCount - _currentAir) max 0;
+private _groundCreated = 0;
+private _airCreated = 0;
 
 if (_groundTransportPool isNotEqualTo []) then {
     for "_i" from 1 to _groundToCreate do {
@@ -111,8 +113,9 @@ if (_groundTransportPool isNotEqualTo []) then {
         if (_groundGroupId == "") then { continue };
         _createdGroups pushBack _groundGroupId;
         _groundByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
+        _groundCreated = _groundCreated + 1;
 
-        ["VIRTUALIZATION", 2, format [
+        ["VIRTUALIZATION", 4, format [
             "Seeded dedicated ground transport reserve %1 (%2/%3) for %4 at %5",
             _groundGroupId,
             _i,
@@ -143,8 +146,9 @@ if (_airTransportPool isNotEqualTo []) then {
         if (_airGroupId == "") then { continue };
         _createdGroups pushBack _airGroupId;
         _airByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
+        _airCreated = _airCreated + 1;
 
-        ["VIRTUALIZATION", 2, format [
+        ["VIRTUALIZATION", 4, format [
             "Seeded dedicated air transport reserve %1 (%2/%3) for %4 at %5",
             _airGroupId,
             _i,
@@ -160,6 +164,16 @@ if (_airTransportPool isNotEqualTo []) then {
             _sideKey
         ]] call FLO_fnc_log;
     };
+};
+
+if (_createdGroups isNotEqualTo []) then {
+    ["VIRTUALIZATION", 3, format [
+        "Transport reserve seeding complete for %1: ground=%2 air=%3 total=%4",
+        _sideKey,
+        _groundCreated,
+        _airCreated,
+        count _createdGroups
+    ]] call FLO_fnc_log;
 };
 
 _createdGroups

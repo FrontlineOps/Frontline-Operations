@@ -44,7 +44,7 @@ if (_defenderRecapture) exitWith {
     _objective set ["campaignBenefitsPending", false];
     _objective set ["captureIntegratedAtDateNum", dateToNumber date];
     _objective set ["captureState", "integrated"];
-    ["CAMPAIGN", 2, format ["Defender restored integrated control of operation target %1", _objectiveId]] call FLO_fnc_log;
+    ["CAMPAIGN", 3, format ["Defender restored integrated control of operation target %1", _objectiveId]] call FLO_fnc_log;
     _objective
 };
 
@@ -68,7 +68,7 @@ if (_operationCapture) then {
     _objective set ["captureIntegratedAtDateNum", -1];
 };
 
-["CAMPAIGN", 2, format [
+["CAMPAIGN", 3, format [
     "Objective %1 captured by %2 as %3",
     _objectiveId,
     _sideKey,

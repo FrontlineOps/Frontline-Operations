@@ -5,6 +5,7 @@ FLO_StoreCatalogCache = createHashMap;
 FLO_StorePlaceableMagazineCache = createHashMap;
 FLO_StorePlaceableMagazineCacheReady = false;
 FLO_StoreCheckoutSequence = 0;
+FLO_StoreSavedKitsCurrentSchemaVersion = 1;
 
 FLO_StoreSupplyShipmentClass = "FLO_SUPPLY_SHIPMENT";
 FLO_StoreSupplyShipmentCost = 300;
@@ -76,4 +77,25 @@ FLO_StoreFreeItemClasses = [
     "ace_quikclot",
     "ace_splint",
     "ace_tourniquet"
+];
+
+FLO_StoreRuntimeRadioBaseClasses = [
+    "TFAR_anprc152",
+    "TFAR_rf7800str",
+    "TFAR_anprc148jem",
+    "TFAR_fadak",
+    "TFAR_pnr1000a",
+    "TFAR_anprc154",
+    "TFAR_rt1523g",
+    "TFAR_rt1523g_big",
+    "TFAR_rt1523g_black",
+    "TFAR_rt1523g_fabric",
+    "TFAR_rt1523g_green",
+    "TFAR_rt1523g_rhs",
+    "TFAR_rt1523g_sage",
+    "TFAR_anprc155",
+    "TFAR_anprc155_coyote",
+    "TFAR_mr3000",
+    "TFAR_mr3000_multicam",
+    "TFAR_mr3000_rhs"
 ];

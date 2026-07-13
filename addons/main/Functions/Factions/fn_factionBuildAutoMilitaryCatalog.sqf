@@ -22,6 +22,8 @@ private _specOpsGroups = _groups get "specOpsGroups";
 private _groupUnits = _groups get "infantryUnits";
 
 private _units = +_groupUnits;
+private _usesUnitFallback = _groupUnits isEqualTo [];
+private _rejectedInfantry = [];
 private _vehiclePools = createHashMapFromArray [
     ["groundMotorized", []],
     ["groundMechanized", []],
@@ -49,8 +51,14 @@ private _rejectedRadarAssets = [];
 
     private _className = configName _vehCfg;
 
-    if (_className isKindOf "Man") then {
-        _units pushBackUnique _className;
+    if (_className isKindOf "CAManBase") then {
+        if (_usesUnitFallback) then {
+            if ([_className, _factionClass] call FLO_fnc_factionClassIsCombatInfantry) then {
+                _units pushBackUnique _className;
+            } else {
+                _rejectedInfantry pushBackUnique _className;
+            };
+        };
         continue;
     };
 
@@ -82,12 +90,14 @@ private _rejectedRadarAssets = [];
 
 _units = _units arrayIntersect _units;
 
-["FACTIONS", 2, format [
-    "DETAIL catalog=%1 units=%2 infantryGroups=%3 specOpsGroups=%4 motorized=%5 mechanized=%6 armor=%7 mobileAA=%8 staticAA=%9 radar=%10 airJet=%11 rejectedRadar=%12",
+["FACTIONS", 4, format [
+    "DETAIL catalog=%1 units=%2 infantryGroups=%3 specOpsGroups=%4 unitFallback=%5 rejectedInfantry=%6 motorized=%7 mechanized=%8 armor=%9 mobileAA=%10 staticAA=%11 radar=%12 airJet=%13 rejectedRadar=%14",
     _factionClass,
     count _units,
     count _infantryGroups,
     count _specOpsGroups,
+    _usesUnitFallback,
+    count _rejectedInfantry,
     _vehiclePools get "groundMotorized",
     _vehiclePools get "groundMechanized",
     _vehiclePools get "groundArmor",

@@ -66,10 +66,20 @@ private _trackGoals = createHashMap;
     if (count _approachSourcePos < 2) then {
         throw format ["Operation track %1 has no assault approach source anchor", _trackId];
     };
+    private _formationIndex = FLO_FormationState get "groupToFormation";
+    private _formations = FLO_FormationState get "formations";
     private _rankedCandidates = _remaining apply {
         private _groupPosition = (_groups get _x) get "position";
+        private _formationId = format ["ZZZ_%1", _x];
+        private _formationPosition = _groupPosition;
+        if (_x in _formationIndex) then {
+            _formationId = _formationIndex get _x;
+            private _leadId = (_formations get _formationId) get "leadGroupId";
+            if (_leadId in _groups) then { _formationPosition = (_groups get _leadId) get "position"; };
+        };
         [
-            _groupPosition distance2D _approachSourcePos,
+            _formationPosition distance2D _approachSourcePos,
+            _formationId,
             _groupPosition distance2D _targetPosition,
             _x
         ]
@@ -80,7 +90,7 @@ private _trackGoals = createHashMap;
         private _selectedIds = createHashMap;
         private _pool = [];
         for "_slot" from 0 to (_needed - 1) do {
-            private _groupId = (_rankedCandidates select _slot) select 2;
+            private _groupId = (_rankedCandidates select _slot) select 3;
             _pool pushBack _groupId;
             _selectedIds set [_groupId, true];
         };
