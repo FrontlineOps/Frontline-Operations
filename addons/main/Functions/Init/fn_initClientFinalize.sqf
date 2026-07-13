@@ -106,33 +106,6 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
 diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
 
 [] call FLO_fnc_initObjectiveRuntimeStateEvents;
-[] call FLO_fnc_gtnRefreshPlayerSupportActions;
-if (!FLO_GTN_PlayerSupportRespawnHandlerAdded) then {
-    addMissionEventHandler ["EntityRespawned", {
-        params ["_newUnit", "_oldUnit"];
-
-        if (_newUnit isEqualTo player) then {
-            if (!isNull FLO_GTN_PlayerSupportActionOwner) then {
-                {
-                    FLO_GTN_PlayerSupportActionOwner removeAction _x;
-                } forEach FLO_GTN_PlayerSupportActionIds;
-            };
-            {
-                player removeAction _x;
-            } forEach FLO_GTN_PlayerSupportActionIds;
-            FLO_GTN_PlayerSupportActionIds = [];
-            FLO_GTN_PlayerSupportActionOwner = objNull;
-            if (FLO_GTN_PlayerSupportMapClickEhId >= 0) then {
-                removeMissionEventHandler ["MapSingleClick", FLO_GTN_PlayerSupportMapClickEhId];
-                FLO_GTN_PlayerSupportMapClickEhId = -1;
-            };
-            FLO_GTN_PlayerSupportPendingType = "";
-            FLO_GTN_PlayerSupportCancelWatcherRunning = false;
-            [] call FLO_fnc_gtnRefreshPlayerSupportActions;
-        };
-    }];
-    FLO_GTN_PlayerSupportRespawnHandlerAdded = true;
-};
 
 diag_log "[FLO_INIT_CLIENT] Base supply is handled by the FLO Store.";
 

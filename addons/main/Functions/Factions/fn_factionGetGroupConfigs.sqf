@@ -65,14 +65,14 @@ for "_i" from 0 to (count _groupsRoot - 1) do {
 
         if (_unitClasses isEqualTo []) then { continue };
 
-        private _allMen = true;
+        private _allCombatInfantry = true;
         {
-            if !(_x isKindOf "Man") exitWith {
-                _allMen = false;
+            if !([_x, _factionClass] call FLO_fnc_factionClassIsCombatInfantry) exitWith {
+                _allCombatInfantry = false;
             };
         } forEach _unitClasses;
 
-        if (!_allMen) then { continue };
+        if (!_allCombatInfantry) then { continue };
 
         _infantryUnits append _unitClasses;
 

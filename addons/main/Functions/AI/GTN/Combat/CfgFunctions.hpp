@@ -8,6 +8,7 @@ class GTNCombatResolver {
     file = "\z\flo\addons\main\Functions\AI\GTN\Combat\Resolver";
 
     class gtnCombatApplyAttrition {};
+    class gtnCombatApplyGroupLoss {};
     class gtnCombatAveragePosition {};
     class gtnCombatAffectsClassification {};
     class gtnCombatClassifyGroups {};
@@ -29,6 +30,7 @@ class GTNCombatResolver {
     class gtnCombatPrepareRealGroupForCombat {};
     class gtnCombatRecordEvent {};
     class gtnCombatRegisterVirtualizationEvents {};
+    class gtnCombatRequestStalemateArtillery {};
     class gtnCombatResolveZoneDescriptor {};
     class gtnCombatResolveRemoteEngagement {};
     class gtnCombatSidePower {};

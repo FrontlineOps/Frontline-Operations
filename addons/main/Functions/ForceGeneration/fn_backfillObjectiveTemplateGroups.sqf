@@ -122,8 +122,7 @@ private _details = [];
             [_x] call FLO_fnc_virtualizationAssignAutoPatrol;
 
             if ((_groupData get "groupType") == "static_aa") then {
-                [_x, createHashMapFromArray [["alwaysActive", true]]] call FLO_fnc_virtualizationPatchGroup;
-                [_x] call FLO_fnc_virtualizationForceActivateGroup;
+                [_x, createHashMapFromArray [["alwaysActive", false]]] call FLO_fnc_virtualizationPatchGroup;
             };
         } forEach _newGroupIds;
 

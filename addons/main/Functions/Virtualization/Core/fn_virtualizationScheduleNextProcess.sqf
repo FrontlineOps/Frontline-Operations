@@ -27,14 +27,13 @@ if (_fullSweep) then {
         (_groupData get "activationDeferred")
         || {(_groupData get "missionLock") != ""}
         || {_groupData get "inCombat"}
-        || {_groupData get "engagementActive"}
         || {(_groupData get "replacementState") != ""}
     );
 
     if (_urgent) then {
         _interval = 0.25;
     } else {
-        if ((_groupData get "waypoints") isNotEqualTo []) then {
+        if ((_groupData get "state") != "holding" && {(_groupData get "waypoints") isNotEqualTo []}) then {
             _interval = 0.5;
         };
     };

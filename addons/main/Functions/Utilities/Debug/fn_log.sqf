@@ -24,6 +24,9 @@
     3 = Info and below (1-3)
     4 = Debug and below (1-4)
     5 = All levels (1-5)
+
+    Production defaults to 3 (Info). Debug and Trace are explicit profiling
+    choices through the FLO CBA Diagnostics setting or a direct override.
 */
 
 params [
@@ -33,7 +36,7 @@ params [
 ];
 
 if (isNil "FLO_Debug_Level") then {
-    FLO_Debug_Level = 2;
+    FLO_Debug_Level = 3;
 };
 
 private _shouldLog = _level <= FLO_Debug_Level;

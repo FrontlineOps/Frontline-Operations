@@ -375,7 +375,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
                     private _crate = createVehicle [_type, _pos, [], 0, "CAN_COLLIDE"];
 
                     if (!isNull _crate) then {
-                        [_crate, [[],[],[],[]]] call BIS_fnc_initAmmoBox;
+                        [_crate, false, [[], [], [], []]] call BIS_fnc_initAmmoBox;
                         _crate setVectorDirAndUp (_attr getOrDefault ["vectorDirAndUp", [[0,1,0], [0,0,1]]]);
                         _crate setPosASL _pos;
                         _crate setDamage (_attr getOrDefault ["damage", 0]);

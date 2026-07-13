@@ -79,14 +79,6 @@ if ((count _spatialMeta) != (count _groups)) then {
         throw format ["Virtual group %1 references missing organic parent %2", _groupId, _organicParent];
     };
 
-    private _engagementTarget = _groupData get "engagementTargetGroupId";
-    if (_engagementTarget == _groupId) then {
-        throw format ["Virtual group %1 targets itself for engagement", _groupId];
-    };
-    if (_engagementTarget != "" && {!(_engagementTarget in _groups)}) then {
-        throw format ["Virtual group %1 references missing engagement target %2", _groupId, _engagementTarget];
-    };
-
     private _meta = _spatialMeta get _groupId;
     if (isNil "_meta") then {
         throw format ["Virtual group %1 is missing spatial metadata", _groupId];

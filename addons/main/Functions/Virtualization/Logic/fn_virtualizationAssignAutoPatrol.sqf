@@ -33,6 +33,6 @@ if (_groupData get "isActive") then {
     [_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;
 };
 
-["VIRTUALIZATION", 4, format ["Assigned persistent auto-patrol to %1 (%2 waypoints)", _groupId, count _patrolWaypoints]] call FLO_fnc_log;
+["VIRTUALIZATION", 5, format ["Assigned persistent auto-patrol to %1 (%2 waypoints)", _groupId, count _patrolWaypoints]] call FLO_fnc_log;
 
 true

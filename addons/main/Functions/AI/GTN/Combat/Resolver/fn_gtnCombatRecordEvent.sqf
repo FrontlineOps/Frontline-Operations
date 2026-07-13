@@ -44,6 +44,7 @@ private _event = createHashMapFromArray [
     ["westEffectivePower", _outcome get "westEffectivePower"],
     ["eastSupport", _outcome get "eastSupport"],
     ["westSupport", _outcome get "westSupport"],
+    ["artilleryRequestedBy", _outcome get "artilleryRequestedBy"],
     ["eastBefore", _outcome get "eastBefore"],
     ["eastAfter", _outcome get "eastAfter"],
     ["westBefore", _outcome get "westBefore"],

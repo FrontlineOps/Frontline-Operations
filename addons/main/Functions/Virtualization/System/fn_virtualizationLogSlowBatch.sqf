@@ -19,12 +19,14 @@ _stats set ["slowBatchCount", (_stats get "slowBatchCount") + 1];
 _perf set ["nextSlowBatchLogAt", _now + (_perf get "logCooldownSec")];
 
 diag_log format [
-    "[FLO][PERF] Virtualization PFH processed %1 groups (batch %2-%3 of %4) in %5 ms | playerCache=%6 groupCache=%7 activations=%8 blocked=%9 deactivations=%10 activeUnits=%11/%12 deferred=%13 virtualMoves=%14 activeSyncs=%15 waypointAdv=%16 patrols=%17 attached=%18 movePaused=%19 deadband=%20 missionSkips=%21 eliminated=%22",
+    "[FLO][PERF] Virtualization PFH processed %1 groups (batch %2-%3 of %4) in %5 ms | due=%6 scheduledSkips=%7 playerCache=%8 groupCache=%9 activations=%10 blocked=%11 deactivations=%12 activeUnits=%13/%14 deferred=%15 virtualMoves=%16 activeSyncs=%17 waypointAdv=%18 patrols=%19 attached=%20 movePaused=%21 deadband=%22 missionSkips=%23 eliminated=%24",
     _processed,
     _batchStart,
     _batchEnd,
     _totalGroups,
     _batchMs,
+    _stats get "dueGroupsThisBatch",
+    _stats get "scheduledSkipsThisBatch",
     _stats get "lastPlayerCacheMs",
     _stats get "lastGroupCacheMs",
     _stats get "activationsThisBatch",

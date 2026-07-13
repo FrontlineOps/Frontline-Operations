@@ -1,10 +1,15 @@
 params ["_network"];
 
+private _persistedObjectiveId = _network get "_hqObjectiveId";
+if (_persistedObjectiveId != "") exitWith {
+    if !(_persistedObjectiveId in FLO_Objectives) then {
+        throw format ["Persisted %1 HQ references missing objective %2", _network get "_managedSideKey", _persistedObjectiveId];
+    };
+    _persistedObjectiveId
+};
+
 private _managedObjectiveIds = _network get "_managedObjectiveIds";
 if (_managedObjectiveIds isEqualTo []) exitWith { "" };
-
-private _persistedObjectiveId = _network get "_hqObjectiveId";
-if (_persistedObjectiveId != "" && {_persistedObjectiveId in _managedObjectiveIds}) exitWith { _persistedObjectiveId };
 
 private _startPosition = FLO_MissionConfig get "startPosition";
 private _managedSide = _network get "_managedSide";

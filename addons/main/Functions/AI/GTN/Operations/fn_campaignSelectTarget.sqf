@@ -23,6 +23,7 @@ private _minimumSourceSupply = _config get "operationLogisticsMinimumSupply";
 private _axisSeparation = _config get "operationAxisSeparationMeters";
 private _opportunities = (_director get "_state") get "opportunities";
 private _sideOpportunities = createHashMap;
+private _terrainRejected = 0;
 
 {
     if ((_y get "sideKey") == _sideKey && {(_y get "sampleCount") >= _minimumSamples}) then {
@@ -36,7 +37,11 @@ private _ranked = [];
     private _objective = _y;
     if (_objectiveId in _excludedObjectiveIds) then { continue };
 
-    private _objectivePosition = _objective get "position";
+    private _objectivePosition = [_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor;
+    if (_objectivePosition isEqualTo []) then {
+        _terrainRejected = _terrainRejected + 1;
+        continue;
+    };
     private _axisTooClose = false;
     {
         if ((_objectivePosition distance2D _x) < _axisSeparation) exitWith {
@@ -89,23 +94,32 @@ private _ranked = [];
     if (_objective get "contested") then { _score = _score + 40; };
     if (_objective get "underAttack") then { _score = _score + 20; };
 
-    _ranked pushBack [_score, _objectiveId, _sourcePairs, _fromOpportunity];
+    _ranked pushBack [_score, _objectiveId, _sourcePairs, _fromOpportunity, _objectivePosition];
 } forEach _frontline;
 
 _ranked sort false;
 if (_ranked isEqualTo []) exitWith {
+    if (_terrainRejected > 0) then {
+        ["CAMPAIGN", 4, format [
+            "Target selection rejected %1 frontline objectives without a ground-assault anchor for %2",
+            _terrainRejected,
+            _sideKey
+        ]] call FLO_fnc_log;
+    };
     createHashMapFromArray [
         ["objectiveId", ""],
         ["sourceObjectiveIds", []],
         ["supportObjectiveIds", []],
         ["supplySourceObjectiveId", ""],
-        ["fromOpportunity", false]
+        ["fromOpportunity", false],
+        ["assaultLandAnchor", []]
     ]
 };
 
 private _selected = _ranked select 0;
 private _objectiveId = _selected select 1;
 private _sourcePairs = _selected select 2;
+private _assaultLandAnchor = _selected select 4;
 private _supplyRanking = [];
 private _rankedSupplyIds = [];
 {
@@ -137,5 +151,6 @@ createHashMapFromArray [
     ["sourceObjectiveIds", _sourceObjectiveIds],
     ["supportObjectiveIds", _supportObjectiveIds],
     ["supplySourceObjectiveId", _selectedSupplySourceObjectiveId],
-    ["fromOpportunity", _selected select 3]
+    ["fromOpportunity", _selected select 3],
+    ["assaultLandAnchor", _assaultLandAnchor]
 ]

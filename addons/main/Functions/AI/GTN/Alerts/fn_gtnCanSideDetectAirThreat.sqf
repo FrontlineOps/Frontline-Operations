@@ -32,6 +32,7 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _radarGroupIds = ["queryRadius", [_airPos, 50000, _detectingSide, true]] call FLO_fnc_virtualizationSpatialIndex;
 
 private _canDetect = false;
+private _airDefenseState = call FLO_fnc_gtnAirDefenseGetState;
 {
     private _groupData = _groups get _x;
     if ((_groupData get "side") != _detectingSide) then {
@@ -43,7 +44,12 @@ private _canDetect = false;
         continue;
     };
 
-    if ((_groupData get "alwaysActive") || (_groupData get "isActive")) exitWith {
+    if ((_groupData get "unitCount") <= 0) then { continue };
+    private _detectionRange = [
+        _airDefenseState get "mobileDetectionRange",
+        _airDefenseState get "staticDetectionRange"
+    ] select (_groupType == "static_aa");
+    if (((_groupData get "position") distance2D _airPos) <= _detectionRange) exitWith {
         _canDetect = true;
     };
 } forEach _radarGroupIds;

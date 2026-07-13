@@ -42,16 +42,8 @@ private _remainingUnits = _totalUnits;
     _remainingUnits = _remainingUnits - _count;
     if (_loss <= 0) then { continue };
 
-    private _newCount = _count - _loss;
-    if (_newCount <= 0) then {
-        FLO_GTN_VirtualCombatResumeStates deleteAt _groupId;
-        [_groupId] call FLO_fnc_virtualizationRemoveGroup;
-    } else {
-        [
-            _groupId,
-            createHashMapFromArray [["unitCount", _newCount]]
-        ] call FLO_fnc_virtualizationPatchGroup;
-    };
+    private _appliedLoss = [_groupId, _loss] call FLO_fnc_gtnCombatApplyGroupLoss;
+    _remainingLosses = _remainingLosses + _loss - _appliedLoss;
 } forEach _sortedRefs;
 
 _targetLosses - _remainingLosses

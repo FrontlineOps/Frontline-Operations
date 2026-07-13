@@ -34,7 +34,11 @@ if ((keys _project) isEqualTo []) exitWith {
     ["That objective has no active development project.", "warning", false, _owner] call FLO_fnc_sendNotification;
     false
 };
-[_objectiveId, _objective] call FLO_fnc_objectiveDevelopmentValidateProject;
+[_objectiveId, _objective, true] call FLO_fnc_objectiveDevelopmentValidateProject;
+if ((_project get "state") == "FUNDING") exitWith {
+    ["That project is still awaiting treasury funding.", "warning", false, _owner] call FLO_fnc_sendNotification;
+    false
+};
 
 private _radius = FLO_ObjectiveDevelopmentConfig get "assignmentRadius";
 private _shipments = nearestObjects [getPosATL _player, ["CargoNet_01_box_F"], _radius] select {

@@ -65,6 +65,9 @@ if (_viewerIsAttacker && {_reservationId != ""}) then {
 };
 private _nextWaveRemaining = 0;
 private _pauseRemaining = 0;
+private _openingDelayRemaining = 0;
+private _shapingObjectiveName = "";
+private _exploitationObjectiveName = "";
 if (_viewerIsAttacker) then {
     private _nextWaveAt = _operation get "assaultNextWaveAtDateNum";
     if (_nextWaveAt >= 0) then {
@@ -73,6 +76,18 @@ if (_viewerIsAttacker) then {
     private _pauseUntil = _operation get "assaultPauseUntilDateNum";
     if (_pauseUntil >= 0) then {
         _pauseRemaining = round (([_now, _pauseUntil] call FLO_fnc_dateNumberDeltaSeconds) max 0);
+    };
+    private _openingEligibleAt = _operation get "assaultOpeningEligibleAtDateNum";
+    if (_openingEligibleAt >= 0) then {
+        _openingDelayRemaining = round (([_now, _openingEligibleAt] call FLO_fnc_dateNumberDeltaSeconds) max 0);
+    };
+    private _shapingObjectiveId = _operation get "shapingObjectiveId";
+    if (_shapingObjectiveId != "" && {_shapingObjectiveId in FLO_Objectives}) then {
+        _shapingObjectiveName = [_shapingObjectiveId] call FLO_fnc_campaignObjectiveName;
+    };
+    private _exploitationObjectiveId = _operation get "exploitationObjectiveId";
+    if (_exploitationObjectiveId != "" && {_exploitationObjectiveId in FLO_Objectives}) then {
+        _exploitationObjectiveName = [_exploitationObjectiveId] call FLO_fnc_campaignObjectiveName;
     };
 };
 
@@ -108,6 +123,16 @@ createHashMapFromArray [
     ["assaultWaveSequence", [0, _operation get "assaultWaveSequence"] select _viewerIsAttacker],
     ["assaultNextWaveSeconds", _nextWaveRemaining],
     ["assaultPauseSeconds", _pauseRemaining],
+    ["assaultOpeningDelaySeconds", _openingDelayRemaining],
     ["assaultStatus", ["CLASSIFIED", _operation get "assaultStatus"] select _viewerIsAttacker],
+    ["doctrine", ["CLASSIFIED", _operation get "doctrine"] select _viewerIsAttacker],
+    ["shapingStatus", ["CLASSIFIED", _operation get "shapingStatus"] select _viewerIsAttacker],
+    ["shapingFormationId", ["", _operation get "shapingFormationId"] select _viewerIsAttacker],
+    ["shapingObjectiveId", ["", _operation get "shapingObjectiveId"] select _viewerIsAttacker],
+    ["shapingObjectiveName", _shapingObjectiveName],
+    ["exploitationStatus", ["CLASSIFIED", _operation get "exploitationStatus"] select _viewerIsAttacker],
+    ["exploitationFormationId", ["", _operation get "exploitationFormationId"] select _viewerIsAttacker],
+    ["exploitationObjectiveId", ["", _operation get "exploitationObjectiveId"] select _viewerIsAttacker],
+    ["exploitationObjectiveName", _exploitationObjectiveName],
     ["drawdownPending", _operation get "drawdownPending"]
 ]

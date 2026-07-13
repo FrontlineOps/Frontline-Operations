@@ -39,7 +39,10 @@ private _engagement = if (_zoneId in _engagements) then {
     createHashMapFromArray [
         ["momentum", 0],
         ["roundCount", 0],
-        ["lastSeenAt", diag_tickTime]
+        ["lastSeenAt", diag_tickTime],
+        ["artilleryReadyAt", 0],
+        ["artilleryMissionCount", 0],
+        ["lastArtillerySide", ""]
     ]
 };
 private _roundCount = (_engagement get "roundCount") + 1;
@@ -95,6 +98,7 @@ createHashMapFromArray [
     ["westEffectivePower", _westEffectivePower],
     ["eastSupport", _supportEast get "total"],
     ["westSupport", _supportWest get "total"],
+    ["artilleryRequestedBy", ""],
     ["eastBefore", _eastBefore],
     ["eastAfter", (_eastBefore - _eastLosses) max 0],
     ["westBefore", _westBefore],

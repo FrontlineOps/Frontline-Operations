@@ -6,6 +6,7 @@ if (_objectiveId == "" || {!(_objectiveId in FLO_Objectives)}) exitWith { false 
 private _objective = FLO_Objectives get _objectiveId;
 private _project = _objective get "developmentProject";
 if ((keys _project) isEqualTo []) exitWith { false };
+if ((_project get "state") == "FUNDING") exitWith { false };
 
 private _shipmentSide = _shipment getVariable ["FLO_LogisticsSide", sideUnknown];
 if !(_shipmentSide in [west, east]) then {

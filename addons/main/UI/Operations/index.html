@@ -325,6 +325,66 @@
             line-height: 1.5;
         }
 
+        .guide-launcher {
+            display: grid;
+            width: 100%;
+            min-height: 64px;
+            grid-template-columns: 36px minmax(0, 1fr) 20px;
+            align-items: center;
+            gap: 12px;
+            margin-top: 18px;
+            padding: 11px 13px;
+            color: var(--text);
+            background: rgba(255, 184, 74, 0.09);
+            box-shadow: inset 3px 0 0 var(--amber), inset 0 0 0 1px rgba(255, 184, 74, 0.28);
+            text-align: left;
+        }
+
+        .guide-launcher:hover {
+            background: rgba(255, 184, 74, 0.16);
+            box-shadow: inset 3px 0 0 var(--amber), inset 0 0 0 1px rgba(255, 184, 74, 0.52);
+        }
+
+        .guide-launcher-icon {
+            display: grid;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border: 1px solid var(--amber);
+            color: var(--amber);
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .guide-launcher-copy {
+            min-width: 0;
+        }
+
+        .guide-launcher-copy strong,
+        .guide-launcher-copy span {
+            display: block;
+            overflow-wrap: anywhere;
+            text-transform: uppercase;
+        }
+
+        .guide-launcher-copy strong {
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .guide-launcher-copy span {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 9px;
+        }
+
+        .guide-launcher-arrow {
+            color: var(--amber);
+            font-size: 18px;
+            font-weight: 900;
+            text-align: right;
+        }
+
         .phase-list {
             display: grid;
             gap: 5px;
@@ -587,7 +647,7 @@
             inset: 0;
             z-index: 50;
             display: none;
-            padding: 6vh 7vw;
+            padding: 0;
             background: rgba(3, 8, 14, 0.985);
         }
 
@@ -601,10 +661,18 @@
             height: 100%;
             min-width: 0;
             min-height: 0;
-            grid-template-rows: 68px minmax(0, 1fr) 64px;
-            border: 1px solid var(--line-strong);
+            grid-template-rows: 76px minmax(0, 1fr) 68px;
+            border: 0;
             background: #07111a;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+            box-shadow: none;
+        }
+
+        .guide-overlay.onboarding #guide-close-button {
+            display: none;
+        }
+
+        .guide-overlay.onboarding .guide-header {
+            box-shadow: inset 4px 0 0 var(--amber);
         }
 
         .guide-header,
@@ -1052,7 +1120,7 @@
             }
 
             .guide-overlay {
-                padding: 3vh 3vw;
+                padding: 0;
             }
 
             .guide-body {
@@ -1194,7 +1262,6 @@
             </div>
 
             <div class="top-actions">
-                <button class="icon-button" id="guide-button" title="Field guide" aria-label="Open field guide">?</button>
                 <button class="icon-button" id="development-button" title="Open Regional Development" aria-label="Open Regional Development">&#9651;</button>
                 <button class="icon-button" id="fit-button" title="Fit theater" aria-label="Fit theater">&#9635;</button>
                 <button class="icon-button" id="player-button" title="Center on player" aria-label="Center on player">&#8853;</button>
@@ -1211,6 +1278,11 @@
                     <p class="intent-role" id="intent-role">Awaiting Orders</p>
                     <h1 class="intent-target" id="intent-target">Command Net Offline</h1>
                     <p class="intent-copy" id="intent-copy">Waiting for the server's current operational picture.</p>
+                    <button class="guide-launcher" id="guide-button" type="button" aria-label="Open campaign field guide">
+                        <span class="guide-launcher-icon">?</span>
+                        <span class="guide-launcher-copy"><strong>Campaign Field Guide</strong><span>Operations / logistics / support</span></span>
+                        <span class="guide-launcher-arrow">&#8594;</span>
+                    </button>
                 </section>
 
                 <section class="section">
@@ -1219,6 +1291,14 @@
                     <div class="phase-meta">
                         <span>Support Posture</span>
                         <strong id="support-posture">--</strong>
+                    </div>
+                    <div class="phase-meta">
+                        <span>Shaping</span>
+                        <strong id="operation-shaping">--</strong>
+                    </div>
+                    <div class="phase-meta">
+                        <span>Exploitation</span>
+                        <strong id="operation-exploitation">--</strong>
                     </div>
                     <div class="phase-meta">
                         <span>Operation Allocation</span>
@@ -1265,6 +1345,11 @@
                 </section>
 
                 <section class="section">
+                    <p class="eyebrow">Friendly Formations</p>
+                    <div class="row-list" id="formation-list"><div class="empty-state">No formed units.</div></div>
+                </section>
+
+                <section class="section">
                     <p class="eyebrow">Friendly Logistics</p>
                     <div class="row-list" id="logistics-list"><div class="empty-state">No connected nodes.</div></div>
                 </section>
@@ -1287,7 +1372,7 @@
 
                 <section class="section">
                     <p class="eyebrow">Unsupported Footholds</p>
-                    <div class="row-list" id="foothold-list"><div class="empty-state">No pending integrations.</div></div>
+                    <div class="row-list" id="foothold-list"><div class="empty-state">No unsupported footholds.</div></div>
                 </section>
             </aside>
         </main>
@@ -1307,112 +1392,205 @@
                 <header class="guide-header">
                     <div class="guide-heading">
                         <strong>Frontline Operations Field Guide</strong>
-                        <span>Campaign doctrine and sustainment</span>
+                        <span id="guide-mode-label">Campaign doctrine and sustainment</span>
                     </div>
                     <button class="icon-button close" id="guide-close-button" title="Close field guide" aria-label="Close field guide">&#10005;</button>
                 </header>
 
                 <div class="guide-body">
                     <nav class="guide-nav" aria-label="Field guide sections">
-                        <button class="guide-tab active" data-guide-index="0"><span class="guide-tab-index">01</span><span class="guide-tab-label">Campaign Rhythm</span></button>
-                        <button class="guide-tab" data-guide-index="1"><span class="guide-tab-index">02</span><span class="guide-tab-label">Your Role</span></button>
-                        <button class="guide-tab" data-guide-index="2"><span class="guide-tab-index">03</span><span class="guide-tab-label">Shared Treasury</span></button>
-                        <button class="guide-tab" data-guide-index="3"><span class="guide-tab-index">04</span><span class="guide-tab-label">Logistics</span></button>
-                        <button class="guide-tab" data-guide-index="4"><span class="guide-tab-index">05</span><span class="guide-tab-label">Bases and Forces</span></button>
-                        <button class="guide-tab" data-guide-index="5"><span class="guide-tab-index">06</span><span class="guide-tab-label">Command Intelligence</span></button>
+                        <button class="guide-tab active" data-guide-index="0"><span class="guide-tab-index">01</span><span class="guide-tab-label">Start Here</span></button>
+                        <button class="guide-tab" data-guide-index="1"><span class="guide-tab-index">02</span><span class="guide-tab-label">Campaign Cycle</span></button>
+                        <button class="guide-tab" data-guide-index="2"><span class="guide-tab-index">03</span><span class="guide-tab-label">Operations</span></button>
+                        <button class="guide-tab" data-guide-index="3"><span class="guide-tab-index">04</span><span class="guide-tab-label">Formations and Doctrine</span></button>
+                        <button class="guide-tab" data-guide-index="4"><span class="guide-tab-index">05</span><span class="guide-tab-label">Player Role and Capture</span></button>
+                        <button class="guide-tab" data-guide-index="5"><span class="guide-tab-index">06</span><span class="guide-tab-label">Shared Treasury</span></button>
+                        <button class="guide-tab" data-guide-index="6"><span class="guide-tab-index">07</span><span class="guide-tab-label">Logistics</span></button>
+                        <button class="guide-tab" data-guide-index="7"><span class="guide-tab-index">08</span><span class="guide-tab-label">Regional Development</span></button>
+                        <button class="guide-tab" data-guide-index="8"><span class="guide-tab-index">09</span><span class="guide-tab-label">Bases, Store, Recruits</span></button>
+                        <button class="guide-tab" data-guide-index="9"><span class="guide-tab-index">10</span><span class="guide-tab-label">Tactical Support</span></button>
+                        <button class="guide-tab" data-guide-index="10"><span class="guide-tab-index">11</span><span class="guide-tab-label">Command Intelligence</span></button>
                     </nav>
 
                     <div class="guide-content" id="guide-content">
                         <article class="guide-page active" data-guide-page="0">
-                            <p class="guide-kicker">01 / Campaign Rhythm</p>
-                            <h2 class="guide-title" id="guide-title">One campaign, one main effort</h2>
-                            <p class="guide-lede">The theater commander advances through a deliberate cycle instead of sending every force toward every fight. A main effort can be joined by up to two supporting operations when the theater can sustain them.</p>
+                            <p class="guide-kicker">01 / Start Here</p>
+                            <h2 class="guide-title" id="guide-title">Your first five minutes</h2>
+                            <p class="guide-lede">FLO is one persistent side campaign, not a chain of disconnected tasks. Your purchases, captures, deliveries, and combat decisions change the same theater picture used by every player and the AI commander.</p>
                             <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>Lull</strong><p>Reorganize, refill logistics, restore combat power, and select the next reachable objective.</p></div>
-                                <div class="guide-phase"><strong>Prepare</strong><p>Reserve operation funds, stage forces, secure routes, and identify the intended objective or threat sector.</p></div>
-                                <div class="guide-phase"><strong>Assault</strong><p>Commit each operation on its assigned axis while replacements draw from that operation's allocation.</p></div>
-                                <div class="guide-phase"><strong>Secure</strong><p>Hold the captured area, defeat remaining resistance, and prevent an immediate reversal.</p></div>
-                                <div class="guide-phase"><strong>Consolidate</strong><p>Integrate the objective and establish forward sustainment when the line has advanced beyond existing support.</p></div>
-                                <div class="guide-phase"><strong>Recovery</strong><p>Release unused funds, rebuild depleted formations, and return the theater to LULL.</p></div>
+                                <div class="guide-phase"><strong>1. Read Intent</strong><p>Check the commander's intent, active operation, current phase, and phase timer before choosing where to go.</p></div>
+                                <div class="guide-phase"><strong>2. Locate Yourself</strong><p>Read Your Position. It tells you whether you are in the main effort, a support area, a foothold, or outside command's current plan.</p></div>
+                                <div class="guide-phase"><strong>3. Check Sustainment</strong><p>Review Available treasury and the nearest node's Local Supplies. Both are required for most purchases and support requests.</p></div>
+                                <div class="guide-phase"><strong>4. Choose a Role</strong><p>Join the main effort, secure its logistics, defend a threatened area, or create a future opportunity away from the operation.</p></div>
+                                <div class="guide-phase"><strong>5. Finish the Fight</strong><p>Capturing an objective starts the hold. Stay through SECURE so enemy pressure cannot immediately reverse the gain.</p></div>
+                                <div class="guide-phase"><strong>6. Recheck Command</strong><p>Return to Command Net when the phase changes, a route fails, or the commander redirects the theater.</p></div>
                             </div>
-                            <div class="guide-callout">Only one operation is the main effort. Force readiness, connected logistics, treasury headroom, distinct axes, and defensive pressure determine whether support efforts open or withdraw. Connected player count is never part of that decision.</div>
+                            <div class="guide-callout">Best first move: follow the main effort and remain through SECURE. When that is already covered, protect its logistics or report pressure at another objective.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="1">
-                            <p class="guide-kicker">02 / Your Role</p>
-                            <h2 class="guide-title">Choose work that changes the campaign</h2>
-                            <p class="guide-lede">Players are the flexible force that connects command intent to battlefield results. You can reinforce the main effort, protect its support network, or develop a future opportunity.</p>
-                            <div class="guide-grid">
-                                <div class="guide-block"><h3>Main Effort</h3><p>Stage during PREPARE, attack during ASSAULT, and remain through SECURE. Leaving immediately after capture can allow the objective to collapse.</p></div>
-                                <div class="guide-block"><h3>Supporting Effort</h3><p>Attack a separate command-selected axis that widens the offensive without replacing the main effort.</p></div>
-                                <div class="guide-block"><h3>Support Area</h3><p>Protect source objectives, routes, depots, artillery, and transport assets that keep the assault supplied.</p></div>
-                                <div class="guide-block"><h3>Off Operation</h3><p>Sustained activity at another objective creates an opportunity report. Command may select it during a later LULL.</p></div>
-                                <div class="guide-block"><h3>Foothold</h3><p>A capture outside the active operation is not instantly integrated. Hold it and connect logistics so campaign benefits can follow.</p></div>
+                            <p class="guide-kicker">02 / Campaign Cycle</p>
+                            <h2 class="guide-title">How the theater advances</h2>
+                            <p class="guide-lede">Each operation moves through six phases. The phase tells you what command is trying to accomplish and whether the front should be resting, attacking, or holding a gain.</p>
+                            <div class="guide-phase-grid">
+                                <div class="guide-phase"><strong>Lull</strong><p>Command selects the next reachable effort while formations recover and logistics refill. This is the theater reserve period.</p></div>
+                                <div class="guide-phase"><strong>Prepare</strong><p>The target, budget, doctrine, routes, and intelligence picture are set. Campaign groups do not move during PREPARE.</p></div>
+                                <div class="guide-phase"><strong>Assault</strong><p>A doctrine-adjusted opening force commits as one mass. Follow-on waves replace losses or exploit progress at controlled intervals.</p></div>
+                                <div class="guide-phase"><strong>Secure</strong><p>Friendly forces hold the target, defeat remaining resistance, and prevent the objective from reversing.</p></div>
+                                <div class="guide-phase"><strong>Consolidate</strong><p>The captured objective is connected to command and logistics. Normal campaign benefits begin once integration succeeds.</p></div>
+                                <div class="guide-phase"><strong>Recovery</strong><p>Orders and unused funds release, formations rebuild, and the operation closes before command returns to LULL.</p></div>
                             </div>
-                            <div class="guide-callout">Command Net's position report tells you whether you are in the main effort, a support area, a foothold, or operating independently.</div>
+                            <div class="guide-callout">The theater can run one main operation and up to two supporting operations. Operation width is driven by force readiness, logistics, treasury, distinct axes, and defensive pressure, never by connected player count.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="2">
-                            <p class="guide-kicker">03 / Shared Treasury</p>
-                            <h2 class="guide-title">Every purchase is a theater decision</h2>
-                            <p class="guide-lede">Players and the AI commander spend the same side treasury. Equipment, recruits, vehicles, construction, support, minefields, replacements, and forward depots all compete for available resources.</p>
+                            <p class="guide-kicker">03 / Operations</p>
+                            <h2 class="guide-title">Main effort, support, and tempo</h2>
+                            <p class="guide-lede">An operation is a funded campaign commitment with its own target, source, assigned formations, opening mass, follow-on limit, and phase deadline.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
-                                <div class="guide-block"><h3>Committed</h3><p>Funds reserved separately for active operations. They remain in the balance but cannot be spent by unrelated purchases.</p></div>
-                                <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
-                                <div class="guide-block"><h3>Income</h3><p>Connected, integrated objectives generate resources every three minutes. Contested territory produces less.</p></div>
-                                <div class="guide-block"><h3>Doctrine</h3><p>Command conserves funds when reserves are low, spends normally while balanced, and can replace expensive assets while surplus remains.</p></div>
-                                <div class="guide-block"><h3>Urgency</h3><p>Routine losses wait behind a protected reserve. Active operations, enemy pressure, and objective collapse progressively unlock larger three-minute budgets.</p></div>
+                                <div class="guide-block"><h3>Main Effort</h3><p>The primary axis receives the largest opening force, priority funding, and the clearest command intent. Only one operation owns this role.</p></div>
+                                <div class="guide-block"><h3>Supporting Efforts</h3><p>Up to two smaller operations may open on distinct targets and supply sources when the theater has enough capacity to sustain them.</p></div>
+                                <div class="guide-block"><h3>Opening Mass</h3><p>Command waits for the required package, then commits it atomically. It does not pretend one or two isolated squads are a full assault.</p></div>
+                                <div class="guide-block"><h3>Approach Corridors</h3><p>Groups receive compact parallel lanes so formations converge on the same battle instead of scattering across the objective.</p></div>
+                                <div class="guide-block"><h3>Follow-On Waves</h3><p>Later waves launch on the operation's cadence and replace losses or exploit momentum. They remain bounded by the operation package.</p></div>
+                                <div class="guide-block"><h3>Shaping and Feints</h3><p>Deception forces use movement orders toward another credible target. They do not count as the operation's committed ATTACK mass.</p></div>
+                                <div class="guide-block"><h3>Allocation</h3><p>Command reserves part of the shared treasury for each operation. Unused allocation returns when the operation ends or withdraws.</p></div>
+                                <div class="guide-block"><h3>Support Area</h3><p>The source objective, routes, depots, artillery, and transports behind an operation are part of the fight even when they are not on the target.</p></div>
                             </div>
-                            <div class="guide-callout">Income and commander spending use the same treasury shown in Command Net. Committed operation funds remain reserved until the operation releases them.</div>
+                            <div class="guide-callout">Activity outside active operations is not ignored. Sustained pressure can become a reported opportunity that command evaluates during a later LULL.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="3">
-                            <p class="guide-kicker">04 / Logistics</p>
-                            <h2 class="guide-title">Shared funds authorize; local supplies fulfill</h2>
-                            <p class="guide-lede">Local Supplies are the stock currently available at one node. Supply Limit is the most that node can hold. A purchase or replacement needs both shared funds and enough supplies at the fulfilling node.</p>
-                            <div class="guide-node-grid">
-                                <div class="guide-node"><strong>HQ</strong><span class="guide-node-stat">Limit 10,000 / +2,500 every 3 min</span><p>Root of the network. Supports every Store category and commander force package.</p></div>
-                                <div class="guide-node"><strong>Depot</strong><span class="guide-node-stat">Limit 6,000 / +800 every 3 min</span><p>Full forward sustainment and a commander replacement source.</p></div>
-                                <div class="guide-node"><strong>FOB</strong><span class="guide-node-stat">Limit 4,000 / +400 every 3 min</span><p>Gear, recruits, ground vehicles, armor, helicopters, statics, logistics, and commander replacements.</p></div>
-                                <div class="guide-node"><strong>COP</strong><span class="guide-node-stat">Limit 800 / +100 every 3 min</span><p>Light local sustainment for gear, recruits, and cars. It cannot source commander replacements.</p></div>
-                            </div>
+                            <p class="guide-kicker">04 / Formations and Doctrine</p>
+                            <h2 class="guide-title">Named units with persistent experience</h2>
+                            <p class="guide-lede">Command groups compatible forces into named formations of three to six groups. Each formation keeps a lead group, branch, readiness, experience, rank, role, objective, and battle history across campaign saves.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Node States</h3><p>CONNECTED works normally. STRAINED is under pressure or at 25% supplies or less. ISOLATED has no valid route. DISABLED has lost its anchor.</p></div>
-                                <div class="guide-block"><h3>Supply Shipment</h3><p>Costs 300 shared funds and 300 local supplies at its origin. Deliver it to a different friendly node for up to 1,500 supplies, or bring it within 25 meters, assign it from a project's selected-objective panel, and deliver it inside that AO.</p></div>
+                                <div class="guide-block"><h3>Rank</h3><p>Formations progress from GREEN to REGULAR, VETERAN, and ELITE. Surviving combat and successful operations build experience.</p></div>
+                                <div class="guide-block"><h3>Readiness</h3><p>Movement and combat drain readiness. Connected reserve and recovery rebuild it. Readiness changes both virtual combat power and the physical AI skill applied when units activate.</p></div>
+                                <div class="guide-block"><h3>Breakthrough</h3><p>Masses two additional opening groups and one additional follow-on group, then may exploit a linked weak objective after success.</p></div>
+                                <div class="guide-block"><h3>Deception</h3><p>Sends a temporary ASSAULT-only feint toward a separate credible target before the main opening. Survivors return when the feint expires.</p></div>
+                                <div class="guide-block"><h3>Elastic Defense</h3><p>Withdraws a pressured formation from a bounded, noncritical salient to preserve it. Capitals and critical objectives are never abandoned this way.</p></div>
+                                <div class="guide-block"><h3>Counterattack</h3><p>Adds one opening group when command responds to pressure and attempts to reverse enemy momentum.</p></div>
+                                <div class="guide-block"><h3>Economy of Force</h3><p>Uses the minimum package on a lower-priority axis: eight opening groups for the main effort, five for support, and follow-ons of no more than four.</p></div>
+                                <div class="guide-block"><h3>Command Roster</h3><p>Command Net lists your side's formations, rank, readiness, role, active strength, and current objective. Enemy formation doctrine remains classified.</p></div>
                             </div>
+                            <div class="guide-callout">Doctrine changes how forces are committed; commander spending posture changes how money is protected. They are separate systems.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="4">
-                            <p class="guide-kicker">05 / Bases and Forces</p>
-                            <h2 class="guide-title">Build the support network you need</h2>
-                            <p class="guide-lede">FOBs and COPs are persistent operational positions, not movable supply containers. Their location and route connection determine what players and command can generate there.</p>
+                            <p class="guide-kicker">05 / Player Role and Capture</p>
+                            <h2 class="guide-title">Presence starts the capture; control finishes it</h2>
+                            <p class="guide-lede">Players are the flexible force between command intent and battlefield reality. Your role depends on where you fight, what the active operation needs, and whether the area can be held after contact.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>FOB</h3><p>Each side's first successful FOB deployment is free. Later FOBs cost 1,500 shared funds. FOBs provide Store access, recruitable AI, heavier vehicles, shipments, and commander replacements.</p></div>
-                                <div class="guide-block"><h3>COP</h3><p>A cheaper light position for local gear, recruits, and cars. Use it to hold ground without creating a full replacement hub.</p></div>
-                                <div class="guide-block"><h3>Store</h3><p>The Store replaces the Arsenal and request menu. Catalog availability follows the active base type, shared funds, and local supplies.</p></div>
-                                <div class="guide-block"><h3>Recruitable AI</h3><p>Recruits join the purchasing player's group and consume both shared funds and local supplies.</p></div>
+                                <div class="guide-block"><h3>Main or Support Effort</h3><p>Fight on command's selected axis, help create local superiority, and remain after the marker changes so SECURE can complete.</p></div>
+                                <div class="guide-block"><h3>Logistics and Security</h3><p>Protect source objectives, routes, bases, shipments, artillery, and transports. An isolated network can stop replacements and purchases.</p></div>
+                                <div class="guide-block"><h3>Opportunity</h3><p>Pressure away from an active operation can create a report for command. It is useful reconnaissance and shaping, not an instant new operation.</p></div>
+                                <div class="guide-block"><h3>Sustained Dominance</h3><p>Objective ownership requires maintained friendly control. A drive-by or momentary enemy absence is not enough to secure campaign ownership.</p></div>
+                                <div class="guide-block"><h3>Active Target Capture</h3><p>Capturing the operation target advances it into SECURE and CONSOLIDATE. Friendly presence must survive the counterpressure.</p></div>
+                                <div class="guide-block"><h3>Unsupported Foothold</h3><p>An off-operation capture becomes a foothold. Hold it and connect it to friendly command and logistics before expecting normal campaign benefits.</p></div>
                             </div>
-                            <div class="guide-callout">A base outside connected integrated territory remains isolated. Capture and integrate the route, or build where the network already reaches.</div>
+                            <div class="guide-callout">Leaving immediately after capture can reverse the gain. The Your Position panel always states your relationship to command's current effort.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="5">
-                            <p class="guide-kicker">06 / Command Intelligence</p>
-                            <h2 class="guide-title">Act on what your side actually knows</h2>
-                            <p class="guide-lede">Command Net combines commander intent, objective state, sustainment, player position, opportunities, footholds, and maintained intelligence. It is the primary campaign picture.</p>
+                            <p class="guide-kicker">06 / Shared Treasury</p>
+                            <h2 class="guide-title">Every purchase is a theater decision</h2>
+                            <p class="guide-lede">Players and the AI commander spend the same side treasury. Store purchases, recruits, vehicles, construction, tactical support, replacements, operations, and development all compete for the same money.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Friendly Logistics</h3><p>Your side sees its complete node list, local supplies, supply limits, state, and active routes. Foreign nodes must never appear as friendly.</p></div>
-                                <div class="guide-block"><h3>Enemy Logistics</h3><p>Enemy HQs and supply nodes appear only when recovered intelligence reports them. Reports show captured information and expire.</p></div>
-                                <div class="guide-block"><h3>Defender Warning</h3><p>During enemy PREPARE, defenders may see only a coarse threatened sector until contact, combat, or recovered intelligence reveals the target.</p></div>
-                                <div class="guide-block"><h3>Command Net</h3><p>Open it with the configured Operations Panel CBA keybind. The default binding is Ctrl+Shift+O.</p></div>
+                                <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
+                                <div class="guide-block"><h3>Committed</h3><p>Money reserved for active operations or funded projects. It remains in the balance but unrelated spending cannot use it.</p></div>
+                                <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
+                                <div class="guide-block"><h3>Income</h3><p>Connected and integrated objectives pay every three minutes. Contested pressure reduces their output.</p></div>
+                                <div class="guide-block"><h3>Spending Posture</h3><p>EMERGENCY, CONSERVE, BALANCED, and SURPLUS decide how aggressively command spends and how much reserve it protects.</p></div>
+                                <div class="guide-block"><h3>Competing Priorities</h3><p>Operation reservations protect offensives, but support, replacements, player purchases, shipments, and development still draw from what remains available.</p></div>
                             </div>
-                            <div class="guide-callout">Start each session by reading commander's intent, checking available funds and local supplies, then choosing the main effort, sustainment, security, or opportunity role.</div>
+                            <div class="guide-callout">A player's purchase has a real campaign cost, and the commander's spending affects what players can afford. Check Available before committing to a plan.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="6">
+                            <p class="guide-kicker">07 / Logistics</p>
+                            <h2 class="guide-title">Shared funds authorize; local supplies fulfill</h2>
+                            <p class="guide-lede">Local Supplies are the stock currently held at one node. Supply Limit is the maximum it can hold. Most purchases and replacements require both shared treasury and enough Local Supplies at the node fulfilling the request.</p>
+                            <div class="guide-node-grid">
+                                <div class="guide-node"><strong>HQ</strong><span class="guide-node-stat">10,000 limit / +2,500 per 3 min</span><p>The network root. It supports all Store categories and commander force packages.</p></div>
+                                <div class="guide-node"><strong>Depot</strong><span class="guide-node-stat">6,000 limit / +800 per 3 min</span><p>Full forward sustainment and a commander replacement source.</p></div>
+                                <div class="guide-node"><strong>FOB</strong><span class="guide-node-stat">4,000 limit / +400 per 3 min</span><p>Full player Store access and a commander replacement source.</p></div>
+                                <div class="guide-node"><strong>COP</strong><span class="guide-node-stat">800 limit / +100 per 3 min</span><p>Light gear, recruits, and cars. It cannot source commander replacements.</p></div>
+                            </div>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Node States</h3><p>CONNECTED works normally. STRAINED is pressured or low on stock. ISOLATED has no valid friendly route. DISABLED has lost its anchor.</p></div>
+                                <div class="guide-block"><h3>Routes and Integration</h3><p>Ownership alone is not enough. Forward nodes need connected, secured territory before command can reliably source forces and supplies through them.</p></div>
+                                <div class="guide-block"><h3>Supply Shipment</h3><p>A shipment costs 300 treasury and 300 Local Supplies at its origin. Deliver it to another friendly node for up to 1,500 supplies.</p></div>
+                                <div class="guide-block"><h3>Project Contribution</h3><p>A shipment may instead be assigned to a funded Development project and delivered inside its objective area to accelerate construction.</p></div>
+                            </div>
+                            <div class="guide-callout">When a purchase fails despite enough treasury, check the selected base's Local Supplies and route state. Available money cannot replace missing local stock.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="7">
+                            <p class="guide-kicker">08 / Regional Development</p>
+                            <h2 class="guide-title">Invest in the territory behind the front</h2>
+                            <p class="guide-lede">Command can fund persistent Revenue and Development projects at secure connected objectives. Projects reserve treasury first, then consume Local Supplies while construction is active.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Revenue</h3><p>Increases that objective's campaign income. Repeated levels can turn ordinary territory into a major long-term source of treasury.</p></div>
+                                <div class="guide-block"><h3>Development</h3><p>Reduces project costs around the objective. Completed Development levels also expand how many projects the side can run at once.</p></div>
+                                <div class="guide-block"><h3>Multiple Projects</h3><p>Each side may construct several projects simultaneously while it remains within its current project capacity.</p></div>
+                                <div class="guide-block"><h3>Funding and Construction</h3><p>Command commits the full treasury quote before work begins. Active construction then draws Local Supplies from the objective's logistics network.</p></div>
+                                <div class="guide-block"><h3>Player Contribution</h3><p>Assigned Supply Shipments can provide up to 25 percent of a project's required supplies and record the contributing player.</p></div>
+                                <div class="guide-block"><h3>Paused Work</h3><p>Combat pressure or a broken logistics connection pauses construction without silently consuming progress.</p></div>
+                                <div class="guide-block"><h3>Capture</h3><p>Completed branches retain a 75 percent level floor after capture. Unfinished funding is released when the owning side can no longer continue it.</p></div>
+                                <div class="guide-block"><h3>Development Net</h3><p>This separate command view shows project levels, quotes, funding, construction progress, Local Supplies, capacity, and contribution status.</p></div>
+                            </div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="8">
+                            <p class="guide-kicker">09 / Bases, Store, Recruits</p>
+                            <h2 class="guide-title">Build useful positions, not movable containers</h2>
+                            <p class="guide-lede">FOBs and COPs are persistent operational positions. Their placement and network connection determine what players can purchase and what command can source nearby.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>First FOB</h3><p>Each side's first successful FOB deployment is free. A failed placement does not consume that free deployment.</p></div>
+                                <div class="guide-block"><h3>Later FOBs</h3><p>Additional FOBs cost 1,500 shared treasury. They support gear, recruits, ground vehicles, armor, helicopters, statics, logistics, and commander replacements.</p></div>
+                                <div class="guide-block"><h3>COP</h3><p>A COP costs 600 and provides light gear, recruitable AI, and cars. It does not become a full commander replacement source.</p></div>
+                                <div class="guide-block"><h3>Persistent Placement</h3><p>Bases are deployed directly through their dedicated interface. They are not physical supply containers that must be dragged across the map.</p></div>
+                                <div class="guide-block"><h3>Store</h3><p>The Store replaces the Arsenal and request menu. Its catalog follows the active base type, shared treasury, and that base's Local Supplies.</p></div>
+                                <div class="guide-block"><h3>Recruitable AI</h3><p>Purchased recruits join the player's current group and consume both shared treasury and Local Supplies.</p></div>
+                            </div>
+                            <div class="guide-callout">An isolated base cannot fulfill its full role. Secure a connected route and keep the node supplied before depending on it for heavy purchases or replacements.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="9">
+                            <p class="guide-kicker">10 / Tactical Support</p>
+                            <h2 class="guide-title">Request effects from assigned command assets</h2>
+                            <p class="guide-lede">Tactical Support Net replaces default Arma support actions. Select a package, inspect its assigned assets and readiness, designate a map position, then transmit the request.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>ARTY</h3><p>Requests a field artillery fire mission from an assigned battery. Range, ammunition, treasury, Local Supplies, and battery cooldown all matter.</p></div>
+                                <div class="guide-block"><h3>CAS</h3><p>Requests a helicopter or jet strike against the designated point. Combat aircraft enter from off-map and may be defeated or driven off by enemy air defense.</p></div>
+                                <div class="guide-block"><h3>CAP</h3><p>Requests a timed combat air patrol over an area. CAP protects the airspace rather than striking one ground target.</p></div>
+                                <div class="guide-block"><h3>Assigned Assets</h3><p>The left panel lists the package's command assets, source, availability, and readiness. A package with no ready asset cannot launch.</p></div>
+                                <div class="guide-block"><h3>Target Designation</h3><p>Choose free terrain on the embedded map. The panel shows grid and danger-close status before transmission.</p></div>
+                                <div class="guide-block"><h3>Authorization</h3><p>The side needs enough Available treasury, the correct connected supply source, required Local Supplies, and clear player, objective, and asset cooldowns.</p></div>
+                            </div>
+                            <div class="guide-callout">No ready asset, no valid source, out of range, insufficient money or supplies, danger-close restrictions, or an active cooldown will deny the request without charging the side.</div>
+                        </article>
+
+                        <article class="guide-page" data-guide-page="10">
+                            <p class="guide-kicker">11 / Command Intelligence</p>
+                            <h2 class="guide-title">Act on what your side actually knows</h2>
+                            <p class="guide-lede">Command Net combines commander intent, operations, formations, objective state, sustainment, player position, opportunities, footholds, and maintained intelligence into the primary campaign picture.</p>
+                            <div class="guide-grid">
+                                <div class="guide-block"><h3>Friendly Picture</h3><p>Your side sees its own logistics network and formation roster, including node stock, routes, readiness, rank, roles, and current assignments.</p></div>
+                                <div class="guide-block"><h3>Enemy Logistics Intel</h3><p>Enemy HQs and supply nodes appear only through recovered intelligence. Reports reveal captured information temporarily and then expire.</p></div>
+                                <div class="guide-block"><h3>Defender Warning</h3><p>During enemy PREPARE, defenders receive a coarse threatened sector. Contact, combat, or intelligence must reveal the actual target.</p></div>
+                                <div class="guide-block"><h3>Classified Doctrine</h3><p>Your own side can inspect formation doctrine and status. Enemy shaping details and formation orders remain hidden until normal intelligence exposes activity.</p></div>
+                                <div class="guide-block"><h3>Session Order</h3><p>Read intent, locate yourself, check Available treasury and Local Supplies, choose a role, then use support and intelligence views as the situation demands.</p></div>
+                                <div class="guide-block"><h3>When Plans Change</h3><p>Reopen Command Net after phase transitions, captures, route failures, support denials, or new opportunity reports. The theater picture is persistent and dynamic.</p></div>
+                            </div>
+                            <div class="guide-callout">You are ready. Enter the theater, support the current intent, and return here whenever the campaign state stops being clear.</div>
                         </article>
                     </div>
                 </div>
 
                 <footer class="guide-footer">
-                    <span class="guide-progress" id="guide-progress">Section 01 / 06</span>
+                    <span class="guide-progress" id="guide-progress">Section 01 / 11</span>
                     <div class="guide-actions">
                         <button class="guide-action" id="guide-prev-button" type="button">&#8592; Previous</button>
                         <button class="guide-action primary" id="guide-next-button" type="button">Next &#8594;</button>
@@ -1432,7 +1610,7 @@
             var activeOperationId = "";
             var phaseDeadlineMs = 0;
             var guideIndex = 0;
-            var guidePageCount = 6;
+            var guidePageCount = 11;
 
             function byId(id) {
                 return document.getElementById(id);
@@ -1450,7 +1628,14 @@
 
             function readable(value) {
                 if (!value) { return "--"; }
-                return String(value).replace(/_/g, " ");
+                var state = String(value);
+                if (state === "INTEGRATED") { return "SECURED"; }
+                if (state === "CONSOLIDATING") { return "SECURING"; }
+                if (state === "FOOTHOLD") { return "UNSUPPORTED FOOTHOLD"; }
+                if (state === "integrated") { return "SECURED"; }
+                if (state === "integrating") { return "SECURING"; }
+                if (state === "foothold") { return "UNSUPPORTED FOOTHOLD"; }
+                return state.replace(/_/g, " ");
             }
 
             function formatTimer(seconds) {
@@ -1529,16 +1714,17 @@
                 for (i = 0; i < tabs.length; i += 1) {
                     tabs[i].className = "guide-tab" + (i === guideIndex ? " active" : "");
                 }
-                text("guide-progress", "Section " + String(guideIndex + 1).padStart(2, "0") + " / 06");
+                text("guide-progress", "Section " + String(guideIndex + 1).padStart(2, "0") + " / 11");
                 byId("guide-prev-button").disabled = guideIndex === 0;
                 byId("guide-next-button").textContent = guideIndex === guidePageCount - 1 ? "Enter Theater" : "Next \u2192";
                 byId("guide-content").scrollTop = 0;
             }
 
-            function openGuide() {
+            function openGuide(onboarding) {
                 var overlay = byId("guide-overlay");
-                overlay.className = "guide-overlay visible";
+                overlay.className = "guide-overlay visible" + (onboarding ? " onboarding" : "");
                 overlay.setAttribute("aria-hidden", "false");
+                text("guide-mode-label", onboarding ? "Deployment briefing / complete before entering theater" : "Campaign doctrine and sustainment");
                 setGuidePage(0);
                 send("operations::guideOpen");
             }
@@ -1580,7 +1766,7 @@
                 if (operation.role === "SUPPORTING_EFFORT") {
                     if (operation.phase === "PREPARE") { return "Stage the supporting force and protect its independent logistics axis to " + operation.targetName + "."; }
                     if (operation.phase === "ASSAULT") { return "Widen the offensive by seizing " + operation.targetName + " without abandoning the main effort."; }
-                    if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is integrated."; }
+                    if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is secured."; }
                     return "Withdraw and rebuild the supporting force.";
                 }
                 if (operation.role === "DEFEND_MAIN_EFFORT" || operation.role === "DEFEND_SUPPORTING_EFFORT") {
@@ -1642,7 +1828,7 @@
                 appendDataRow(data, "Owner", readable(objective.owner));
                 appendDataRow(data, "Intent", readable(objective.intent));
                 appendDataRow(data, "Capture", readable(objective.captureState));
-                appendDataRow(data, "Integration", readable(objective.integrationState));
+                appendDataRow(data, "Territory Status", readable(objective.integrationState));
                 appendDataRow(data, "Friendly / Enemy", objective.friendlyCount + " / " + objective.enemyCount);
                 appendDataRow(data, "Priority", String(objective.priority));
             }
@@ -1735,6 +1921,38 @@
                 return row;
             }
 
+            function formationListRow(formation) {
+                var row = document.createElement(formation.objectiveId ? "button" : "div");
+                if (formation.objectiveId) {
+                    row.type = "button";
+                    row.addEventListener("click", function () { selectObjective(formation.objectiveId, true); });
+                }
+                row.className = "list-row";
+                var title = document.createElement("div");
+                title.className = "list-row-title";
+                title.textContent = formation.name;
+                var status = document.createElement("div");
+                status.className = "list-row-meta";
+                var rank = document.createElement("span");
+                var readiness = document.createElement("span");
+                rank.textContent = readable(formation.rank) + " / " + readable(formation.branch);
+                readiness.textContent = "READINESS " + formation.readiness + "%";
+                status.appendChild(rank);
+                status.appendChild(readiness);
+                var assignment = document.createElement("div");
+                assignment.className = "list-row-meta";
+                var role = document.createElement("span");
+                var strength = document.createElement("span");
+                role.textContent = readable(formation.role) + " / " + formation.objectiveName;
+                strength.textContent = formation.activeCount + " ACTIVE / " + formation.memberCount + " GROUPS";
+                assignment.appendChild(role);
+                assignment.appendChild(strength);
+                row.appendChild(title);
+                row.appendChild(status);
+                row.appendChild(assignment);
+                return row;
+            }
+
             function enemyLogisticsIntelListRow(report) {
                 var row = document.createElement("div");
                 row.className = "list-row";
@@ -1770,6 +1988,12 @@
                 text("intent-target", intentTarget);
                 text("intent-copy", intentCopy(operation));
                 text("support-posture", readable(operation.supportPosture));
+                var shapingLabel = readable(operation.shapingStatus);
+                if (operation.shapingObjectiveName) { shapingLabel += " / " + operation.shapingObjectiveName; }
+                text("operation-shaping", shapingLabel);
+                var exploitationLabel = readable(operation.exploitationStatus);
+                if (operation.exploitationObjectiveName) { exploitationLabel += " / " + operation.exploitationObjectiveName; }
+                text("operation-exploitation", exploitationLabel);
                 text(
                     "operation-allocation",
                     operation.resourceBudget > 0
@@ -1796,7 +2020,7 @@
                 if (player.status === "OFF_OPERATION") {
                     note.textContent = "You are outside active operations. Local activity is reported as a future command opportunity.";
                 } else if (player.status === "IN_FOOTHOLD") {
-                    note.textContent = "You are holding unsupported territory. Supply access or a local base is required for integration.";
+                    note.textContent = "You are holding unsupported territory. Supply access or a local base is required to secure it.";
                 } else if (player.status === "OUTSIDE_OBJECTIVE") {
                     note.textContent = "You are outside a recognized objective at grid " + player.grid + ".";
                 } else {
@@ -1815,13 +2039,15 @@
                 var spending = snapshot.economy.commanderSpending;
                 var doctrine = byId("sustainment-doctrine");
                 doctrine.innerHTML = "";
-                appendDataRow(doctrine, "Doctrine", readable(spending.posture));
+                appendDataRow(doctrine, "Operational Doctrine", readable(snapshot.doctrine));
+                appendDataRow(doctrine, "Spending Posture", readable(spending.posture));
                 appendDataRow(doctrine, "Protected Reserve", formatResource(spending.reserveFloor));
                 appendDataRow(
                     doctrine,
                     "Routine Window",
                     formatResource(spending.recentCommanderSpend) + " / " + formatResource(spending.baseWindowBudget)
                 );
+                renderRows("formation-list", snapshot.formations, "No formed units.", formationListRow);
                 renderRows("logistics-list", snapshot.logistics.nodes, "No logistics nodes.", logisticsListRow);
                 renderRows("enemy-logistics-intel-list", snapshot.enemyLogisticsIntel, "No current reports.", enemyLogisticsIntelListRow);
                 renderRows("opportunity-list", snapshot.opportunities, "No active reports.", function (row) {
@@ -1840,7 +2066,7 @@
                         footholds.push(objective);
                     }
                 }
-                renderRows("foothold-list", footholds, "No pending integrations.", function (row) {
+                renderRows("foothold-list", footholds, "No unsupported footholds.", function (row) {
                     return objectiveListRow(
                         row.id,
                         row.name,
@@ -1863,7 +2089,7 @@
             }
 
             byId("fit-button").addEventListener("click", function () { send("operations::mapFit"); });
-            byId("guide-button").addEventListener("click", openGuide);
+            byId("guide-button").addEventListener("click", function () { openGuide(false); });
             byId("development-button").addEventListener("click", function () { send("operations::developmentOpen"); });
             byId("player-button").addEventListener("click", function () { send("operations::mapPlayer"); });
             byId("target-button").addEventListener("click", function () {
@@ -1902,12 +2128,12 @@
                     setGuidePage(Number(this.getAttribute("data-guide-index")));
                 });
             }
-            window.setInterval(renderClock, 250);
+            window.setInterval(renderClock, 1000);
 
             window.FLOOperations = {
                 applySnapshot: applySnapshot,
                 selectObjective: function (objectiveId) { selectObjective(objectiveId, false); },
-                openGuide: openGuide
+                openGuide: function (onboarding) { openGuide(Boolean(onboarding)); }
             };
 
             function demoSnapshot(screening) {
@@ -1942,7 +2168,9 @@
                         : { operationId: "OP_WEST_07", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
                     sourceObjectiveIds: screening ? [] : ["obj_2", "obj_4"], supportObjectiveIds: screening ? [] : ["obj_1", "obj_3"],
                     supportPosture: screening ? "SCREENING" : "COMMITTED", remainingSeconds: screening ? 426 : 1126, result: "", transitionReason: screening ? "COMMANDER_SELECTION" : "PREPARATION_COMPLETE",
-                    resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0, drawdownPending: false
+                    resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0, drawdownPending: false,
+                    shapingStatus: screening ? "CLASSIFIED" : "FEINT_RETURN", shapingObjectiveName: screening ? "" : "Panagia",
+                    exploitationStatus: screening ? "CLASSIFIED" : "READY", exploitationObjectiveName: ""
                 };
                 var supportOperation = {
                     id: "OP_WEST_08", isPrimary: false, role: "SUPPORTING_EFFORT", phase: "PREPARE", actualPhase: "PREPARE", targetVisible: true,
@@ -1954,6 +2182,11 @@
                 var operations = screening ? [operation] : [operation, supportOperation];
                 return {
                     revision: 27, viewerSide: "WEST", viewerSideName: "BLUFOR", enemySide: "EAST", worldSize: 30720,
+                    doctrine: screening ? "CLASSIFIED" : "BREAKTHROUGH",
+                    formations: screening ? [] : [
+                        { id: "FORM_WEST_MOT_1", name: "74th Motorized Regiment", branch: "MOTORIZED", rank: "VETERAN", readiness: 82, role: "ATTACK", activeCount: 4, memberCount: 5, objectiveId: "obj_5", objectiveName: "Pyrgos" },
+                        { id: "FORM_WEST_INF_1", name: "12th Infantry Battalion", branch: "INFANTRY", rank: "REGULAR", readiness: 94, role: "RESERVE", activeCount: 0, memberCount: 4, objectiveId: "", objectiveName: "THEATER RESERVE" }
+                    ],
                     operation: operation,
                     operations: operations,
                     threatSectors: operation.threatSector.visible ? [operation.threatSector] : [],

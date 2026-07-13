@@ -25,6 +25,7 @@ private _metrics = createHashMapFromArray [
     ["reinforcedObjectives", 0],
     ["startingAttackers", 0],
     ["replacementOrders", 0],
+    ["preflightSkipped", false],
     ["remainingPool", 0],
     ["candidateBuildMs", 0],
     ["nearestSelectionMs", 0],
@@ -74,6 +75,19 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
 private _objective = _objectives get _objectiveId;
 if ((_objective get "owner") != _enemySide) exitWith { _metrics };
+if (([_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor) isEqualTo []) exitWith {
+    ["CAMPAIGN", 2, format [
+        "Operation %1 withdrawing before dispatch: objective %2 has no ground-assault anchor",
+        _operationId,
+        _objectiveId
+    ]] call FLO_fnc_log;
+    _director call ["_completeOperation", [_operationId, "NO_TARGET", "NO_LAND_ASSAULT_ANCHOR"]];
+    _track set ["groupPool", []];
+    _metrics set ["preflightSkipped", true];
+    _metrics set ["remainingPool", 0];
+    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
+    _metrics
+};
 
 private _tCandidateBuild = diag_tickTime;
 private _attackCap = _operation get "assaultActiveTarget";
@@ -100,14 +114,48 @@ private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
 private _poolEntries = [];
 {
     private _gData = _groups get _x;
-    if (isNil "_gData") then { continue };
+    if (isNil "_gData") then {
+        throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: pool group %1 is missing", _x];
+    };
     if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
 
     _poolEntries pushBack _x;
 } forEach _pool;
 
-private _objectivePos = _objective get "position";
+private _decision = _track get "assaultWaveDecision";
+private _quota = _decision get "quota";
 private _assignmentLimit = [_cmdr, "attackAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
+private _strategicBudgetRemaining = _cmdr get "_strategicOrderBudgetRemaining";
+if (
+    _quota <= 0
+    || {(count _poolEntries) < _quota}
+    || {_assignmentLimit < _quota}
+    || {_strategicBudgetRemaining < _quota}
+) exitWith {
+    _track set ["groupPool", []];
+    _metrics set ["preflightSkipped", true];
+    _metrics set ["remainingPool", 0];
+    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
+    ["GTN", 3, format [
+        "Operation %1 wave preflight held: quota=%2 eligible=%3 assignmentLimit=%4 strategicBudget=%5",
+        _operationId,
+        _quota,
+        count _poolEntries,
+        _assignmentLimit,
+        _strategicBudgetRemaining
+    ]] call FLO_fnc_log;
+    _metrics
+};
+
+private _approachSourcePos = _track get "frontSectorAnchorPos";
+private _approachRoutes = [
+    _director,
+    _objectiveId,
+    _objective,
+    _approachSourcePos,
+    _poolEntries,
+    _groups
+] call FLO_fnc_campaignBuildAssaultApproachLanes;
 private _stop = false;
 
 while {!_stop && {_poolEntries isNotEqualTo []} && {_deficit > 0}} do {
@@ -120,7 +168,8 @@ while {!_stop && {_poolEntries isNotEqualTo []} && {_deficit > 0}} do {
     _metrics set ["nearestSelectionMs", (_metrics get "nearestSelectionMs") + ((diag_tickTime - _tSelection) * 1000)];
 
     private _tOrder = diag_tickTime;
-    private _ordered = _cmdr call ["_orderGroupAttack", [_groupId, _objectivePos, _objectiveId, true, _operationId]];
+    private _approachRoute = _approachRoutes get _groupId;
+    private _ordered = _cmdr call ["_orderGroupAttack", [_groupId, _approachRoute, _objectiveId, true, _operationId]];
     _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
 
     if (_ordered) then {
@@ -141,7 +190,8 @@ while {!_stop && {_poolEntries isNotEqualTo []} && {_deficit > 0}} do {
 };
 
 if ((_metrics get "assignedGroups") > 0) then {
-    [_director, _operationId, _metrics get "assignedGroups"] call FLO_fnc_campaignCommitAssaultWave;
+    private _openingComplete = !(_decision get "openingCommit") || {_activeAttackers >= _attackCap};
+    [_director, _operationId, _metrics get "assignedGroups", _openingComplete] call FLO_fnc_campaignCommitAssaultWave;
     if (_startingAttackers > 0) then {
         _metrics set ["reinforcedObjectives", 1];
         _metrics set ["replacementOrders", _metrics get "assignedGroups"];

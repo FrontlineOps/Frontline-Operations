@@ -8,6 +8,7 @@ class Logistics {
 class LogisticsNetwork {
     file = "\z\flo\addons\main\Functions\Logistics\Network";
 
+    class logisticsNetworkAnchorHQ {};
     class logisticsNetworkApplyObjectiveCaptureGrowth {};
     class logisticsNetworkCanNodeFulfill {};
     class logisticsNetworkBuildTargetPicture {};
@@ -33,6 +34,7 @@ class LogisticsNetwork {
     class logisticsNetworkGetNodeForBase {};
     class logisticsNetworkGetSideSnapshot {};
     class logisticsNetworkGetObjectiveSupplyBranch {};
+    class logisticsNetworkGetSourceRouteHopCount {};
     class logisticsNetworkGetRearAATargets {};
     class logisticsNetworkObjectiveIsCollapsePressure {};
     class logisticsNetworkObjectiveIsFrontlinePressure {};

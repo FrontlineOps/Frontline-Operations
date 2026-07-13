@@ -67,6 +67,16 @@ if ((_groupData get "unitCount") < 0) then {
 
 private _isActive = _groupData get "isActive";
 private _realGroup = _groupData get "realGroup";
+private _activeInitialUnitCount = _groupData get "activeInitialUnitCount";
+if (_activeInitialUnitCount < 0) then {
+    throw format ["Virtual group %1 has negative active initial unit count %2", _groupId, _activeInitialUnitCount];
+};
+if (_isActive && {_activeInitialUnitCount <= 0}) then {
+    throw format ["Active virtual group %1 has no activation-strength baseline", _groupId];
+};
+if (!_isActive && {_activeInitialUnitCount != 0}) then {
+    throw format ["Inactive virtual group %1 retains activation-strength baseline %2", _groupId, _activeInitialUnitCount];
+};
 if (_isActive != (!isNull _realGroup)) then {
     throw format [
         "Virtual group %1 lifecycle mismatch: isActive=%2 realGroupNull=%3",

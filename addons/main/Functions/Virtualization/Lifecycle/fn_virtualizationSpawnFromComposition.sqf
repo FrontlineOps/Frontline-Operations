@@ -8,7 +8,6 @@ private _spawnParkedHelicopters = _groupType == "helicopter"
     && { (_groupData get "waypoints") isEqualTo [] }
     && { (_groupData get "missionLock") == "" }
     && { (_groupData get "replacementState") == "" }
-    && { !(_groupData get "engagementActive") }
     && { ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers) isEqualTo [] }
     && { (_groupData get "state") == "idle" || { _groupData get "transportRole" } };
 

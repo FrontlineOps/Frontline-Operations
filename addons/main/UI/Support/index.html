@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FLO Tactical Support Net</title>
+    <style>
+        :root {
+            --bg: #071018;
+            --panel: #0b1822;
+            --panel-strong: #102330;
+            --line: #1d3b4a;
+            --line-soft: #132a36;
+            --text: #e7eef1;
+            --muted: #7f99a7;
+            --cyan: #25d1f5;
+            --amber: #f4b84a;
+            --green: #91ea58;
+            --red: #ff5468;
+            --white: #ffffff;
+            --font: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+            --mono: "Roboto Mono", Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            letter-spacing: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text);
+            background: transparent;
+            font-family: var(--font);
+            font-size: 14px;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: -2px;
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: 8.5vh minmax(0, 1fr);
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--line);
+            background: transparent;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 23% minmax(0, 1fr) auto;
+            border-bottom: 1px solid var(--line);
+            background: #09141c;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--amber);
+            color: var(--amber);
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .brand-title {
+            color: var(--white);
+            font-size: 18px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle,
+        .label,
+        .eyebrow {
+            color: var(--cyan);
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(130px, 1fr));
+            min-width: 0;
+        }
+
+        .status-cell {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            padding: 0 20px;
+            border-right: 1px solid var(--line-soft);
+        }
+
+        .status-value {
+            margin-top: 5px;
+            overflow: hidden;
+            color: var(--white);
+            font-family: var(--mono);
+            font-size: 17px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-value.cyan { color: var(--cyan); }
+        .status-value.green { color: var(--green); }
+        .status-value.amber { color: var(--amber); }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 12px;
+        }
+
+        .icon-button {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid var(--line);
+            border-radius: 2px;
+            color: var(--muted);
+            background: var(--panel);
+            font-size: 11px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .icon-button:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .icon-button.close:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 23% 56% 21%;
+            min-height: 0;
+            background: transparent;
+        }
+
+        .panel {
+            min-width: 0;
+            min-height: 0;
+            padding: 18px;
+            background: var(--bg);
+        }
+
+        .panel.left {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid var(--line);
+        }
+
+        .panel.right {
+            border-left: 1px solid var(--line);
+        }
+
+        .map-space {
+            min-width: 0;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .section-head {
+            margin-bottom: 10px;
+            padding-bottom: 9px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .section-title {
+            margin: 5px 0 0;
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .package-list {
+            display: grid;
+            flex: 0 0 auto;
+            gap: 6px;
+        }
+
+        .package {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            color: var(--text);
+            background: var(--panel);
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .package:hover {
+            border-color: #2f6075;
+            background: var(--panel-strong);
+        }
+
+        .package.active {
+            border-color: var(--cyan);
+            box-shadow: inset 3px 0 0 var(--cyan);
+            background: #0d2230;
+        }
+
+        .package-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .package-code {
+            color: var(--cyan);
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .package-ready {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .package-ready.has-ready {
+            color: var(--green);
+        }
+
+        .package-name {
+            margin-top: 3px;
+            color: var(--white);
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .package-asset {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .package-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+            margin-top: 7px;
+            padding-top: 6px;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .stat span,
+        .target-row span {
+            display: block;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .stat strong,
+        .target-row strong {
+            display: block;
+            margin-top: 4px;
+            color: var(--white);
+            font-family: var(--mono);
+            font-size: 12px;
+        }
+
+        .safety {
+            margin-top: 6px;
+            color: var(--amber);
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .asset-section {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid var(--line);
+        }
+
+        .asset-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 0 0 auto;
+            margin-bottom: 8px;
+        }
+
+        .asset-head strong {
+            color: var(--green);
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+
+        .asset-list {
+            display: grid;
+            align-content: start;
+            gap: 6px;
+            min-height: 0;
+            padding-right: 3px;
+            overflow-y: auto;
+        }
+
+        .asset-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 7px;
+            padding: 9px 10px;
+            border-left: 2px solid var(--line);
+            background: var(--panel);
+        }
+
+        .asset-row.ready { border-left-color: var(--green); }
+        .asset-row.active { border-left-color: var(--amber); }
+        .asset-row.unavailable { border-left-color: var(--red); }
+
+        .asset-name,
+        .asset-status {
+            overflow: hidden;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .asset-name {
+            color: var(--white);
+            font-size: 12px;
+        }
+
+        .asset-status {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 9px;
+            text-align: right;
+        }
+
+        .asset-row.ready .asset-status { color: var(--green); }
+        .asset-row.active .asset-status { color: var(--amber); }
+        .asset-row.unavailable .asset-status { color: var(--red); }
+
+        .asset-meta,
+        .asset-detail {
+            margin-top: 3px;
+            overflow: hidden;
+            color: var(--muted);
+            font-size: 10px;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .asset-detail {
+            max-width: 120px;
+            text-align: right;
+        }
+
+        .empty-state {
+            padding: 16px 10px;
+            border: 1px dashed var(--line);
+            color: var(--muted);
+            font-size: 11px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .target-box {
+            border: 1px solid var(--line);
+            background: var(--panel);
+        }
+
+        .target-state {
+            padding: 12px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .target-state strong {
+            display: block;
+            margin-top: 5px;
+            color: var(--amber);
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .target-state.ready strong {
+            color: var(--green);
+        }
+
+        .target-grid {
+            padding: 12px;
+            color: var(--white);
+            font-family: var(--mono);
+            font-size: 28px;
+            font-weight: 900;
+        }
+
+        .target-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .target-row {
+            min-width: 0;
+            padding: 10px;
+            border-right: 1px solid var(--line-soft);
+        }
+
+        .target-row:last-child {
+            border-right: 0;
+        }
+
+        .authorization {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 14px;
+            padding: 11px 12px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+        }
+
+        .authorization strong {
+            display: block;
+            margin-top: 3px;
+            color: var(--green);
+            font-family: var(--mono);
+            font-size: 17px;
+        }
+
+        .authorization-meta {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 10px;
+            text-align: right;
+            text-transform: uppercase;
+        }
+
+        .authorization-meta strong {
+            display: inline;
+            margin: 0 0 0 5px;
+            color: var(--white);
+            font-size: 11px;
+        }
+
+        .request-button {
+            width: 100%;
+            min-height: 43px;
+            margin-top: 14px;
+            border: 1px solid var(--green);
+            border-radius: 3px;
+            color: #071018;
+            background: var(--green);
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .request-button:hover {
+            background: #b0ff79;
+        }
+
+        .request-button:disabled {
+            border-color: var(--line);
+            color: #526773;
+            background: #10202a;
+            cursor: default;
+        }
+
+        @media (max-width: 1200px) {
+            html, body { font-size: 12px; }
+            .panel { padding: 12px; }
+            .brand-title { font-size: 15px; }
+            .status-cell { padding: 0 10px; }
+            .target-grid { font-size: 22px; }
+            .asset-row { padding: 7px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">FLO</div>
+                <div>
+                    <div class="brand-title">Frontline Operations</div>
+                    <div class="brand-subtitle">Tactical Support Net</div>
+                </div>
+            </div>
+            <div class="status-strip">
+                <div class="status-cell">
+                    <span class="label">Command</span>
+                    <strong class="status-value cyan" id="side-name">--</strong>
+                </div>
+                <div class="status-cell">
+                    <span class="label">Package</span>
+                    <strong class="status-value" id="selected-package">ARTY</strong>
+                </div>
+                <div class="status-cell">
+                    <span class="label">Target Grid</span>
+                    <strong class="status-value amber" id="target-grid-top">------</strong>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button class="icon-button" id="player-button" title="Center on player">YOU</button>
+                <button class="icon-button" id="target-button" title="Center on target">TGT</button>
+                <button class="icon-button close" id="close-button" title="Close">X</button>
+            </div>
+        </header>
+
+        <section class="workspace">
+            <aside class="panel left">
+                <div class="section-head">
+                    <div class="eyebrow">Support Package</div>
+                    <h1 class="section-title">Available Effects</h1>
+                </div>
+                <div class="package-list" id="package-list"></div>
+                <div class="asset-section">
+                    <div class="asset-head">
+                        <span class="eyebrow">Assigned Assets</span>
+                        <strong id="asset-count">0 / 0 READY</strong>
+                    </div>
+                    <div class="asset-list" id="asset-list">
+                        <div class="empty-state">Synchronizing command assets</div>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="map-space" aria-hidden="true"></div>
+
+            <aside class="panel right">
+                <div class="section-head">
+                    <div class="eyebrow">Target Acquisition</div>
+                    <h2 class="section-title">Fire Control</h2>
+                </div>
+
+                <div class="target-box">
+                    <div class="target-state" id="target-state">
+                        <span class="label">Designation</span>
+                        <strong id="target-status">Awaiting Target</strong>
+                    </div>
+                    <div class="target-grid" id="target-grid">------</div>
+                    <div class="target-details">
+                        <div class="target-row">
+                            <span>Easting</span>
+                            <strong id="target-east">--</strong>
+                        </div>
+                        <div class="target-row">
+                            <span>Northing</span>
+                            <strong id="target-north">--</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="authorization">
+                    <div>
+                        <span class="label">Available</span>
+                        <strong id="available-resources">0</strong>
+                    </div>
+                    <div class="authorization-meta">
+                        Committed <strong id="committed-resources">0</strong>
+                    </div>
+                </div>
+
+                <button class="request-button" id="request-button" disabled>Transmit Request</button>
+            </aside>
+        </section>
+
+    </main>
+
+    <script>
+        (function () {
+            "use strict";
+
+            var snapshot = null;
+
+            function byId(id) {
+                return document.getElementById(id);
+            }
+
+            function send(event, data) {
+                if (typeof A3API !== "undefined" && typeof A3API.SendAlert === "function") {
+                    A3API.SendAlert(JSON.stringify({ event: event, data: data || {} }));
+                }
+            }
+
+            function formatNumber(value) {
+                return Number(value || 0).toLocaleString("en-US");
+            }
+
+            function selectedPackage() {
+                if (!snapshot) { return null; }
+                for (var i = 0; i < snapshot.packages.length; i += 1) {
+                    if (snapshot.packages[i].type === snapshot.selectedType) {
+                        return snapshot.packages[i];
+                    }
+                }
+                return null;
+            }
+
+            function packageButton(item) {
+                var button = document.createElement("button");
+                button.className = "package" + (item.type === snapshot.selectedType ? " active" : "");
+                button.setAttribute("data-type", item.type);
+                button.innerHTML = "<div class=\"package-top\"><span class=\"package-code\">" + item.type + "</span>"
+                    + "<span class=\"package-ready" + (item.ready > 0 ? " has-ready" : "") + "\">"
+                    + item.ready + " / " + item.total + " READY</span></div>"
+                    + "<div class=\"package-name\">" + item.name + "</div>"
+                    + "<div class=\"package-asset\">" + item.asset + "</div>"
+                    + "<div class=\"package-stats\">"
+                    + "<div class=\"stat\"><span>Treasury</span><strong>" + item.treasury + "</strong></div>"
+                    + "<div class=\"stat\"><span>Local Supplies</span><strong>" + item.supply + "</strong></div>"
+                    + "</div><div class=\"safety\">" + item.safety + "</div>";
+                button.addEventListener("click", function () {
+                    send("support::select", { type: this.getAttribute("data-type") });
+                });
+                return button;
+            }
+
+            function renderPackages() {
+                var list = byId("package-list");
+                list.innerHTML = "";
+                for (var i = 0; i < snapshot.packages.length; i += 1) {
+                    list.appendChild(packageButton(snapshot.packages[i]));
+                }
+            }
+
+            function assetStatusClass(item) {
+                if (item.available) { return "ready"; }
+                if (item.status === "ON MISSION" || item.status === "AIRBORNE" || item.status === "TASKED") {
+                    return "active";
+                }
+                return "unavailable";
+            }
+
+            function assetRow(item) {
+                var row = document.createElement("div");
+                var identity = document.createElement("div");
+                var state = document.createElement("div");
+                var name = document.createElement("div");
+                var meta = document.createElement("div");
+                var status = document.createElement("div");
+                var detail = document.createElement("div");
+
+                row.className = "asset-row " + assetStatusClass(item);
+                name.className = "asset-name";
+                meta.className = "asset-meta";
+                status.className = "asset-status";
+                detail.className = "asset-detail";
+                name.textContent = item.callSign + " / " + item.displayName;
+                meta.textContent = item.kind + " / " + item.location;
+                status.textContent = item.status;
+                detail.textContent = item.statusDetail;
+                identity.appendChild(name);
+                identity.appendChild(meta);
+                state.appendChild(status);
+                state.appendChild(detail);
+                row.appendChild(identity);
+                row.appendChild(state);
+                return row;
+            }
+
+            function renderAssets() {
+                var list = byId("asset-list");
+                var total = 0;
+                var ready = 0;
+                list.innerHTML = "";
+
+                for (var i = 0; i < snapshot.assets.length; i += 1) {
+                    var item = snapshot.assets[i];
+                    if (item.supports.indexOf(snapshot.selectedType) === -1) { continue; }
+                    total += 1;
+                    if (item.available) { ready += 1; }
+                    list.appendChild(assetRow(item));
+                }
+
+                byId("asset-count").textContent = ready + " / " + total + " READY";
+                if (total === 0) {
+                    var empty = document.createElement("div");
+                    empty.className = "empty-state";
+                    empty.textContent = "No " + snapshot.selectedType + " assets assigned";
+                    list.appendChild(empty);
+                }
+            }
+
+            function renderTarget() {
+                var targetState = byId("target-state");
+                targetState.className = "target-state" + (snapshot.hasTarget ? " ready" : "");
+                byId("target-status").textContent = snapshot.hasTarget ? "Target Ready" : "Awaiting Target";
+                byId("target-grid").textContent = snapshot.targetGrid;
+                byId("target-grid-top").textContent = snapshot.targetGrid;
+                byId("target-east").textContent = snapshot.hasTarget ? Math.round(snapshot.targetPosition[0]) : "--";
+                byId("target-north").textContent = snapshot.hasTarget ? Math.round(snapshot.targetPosition[1]) : "--";
+                byId("request-button").disabled = !snapshot.hasTarget;
+            }
+
+            function applySnapshot(nextSnapshot) {
+                snapshot = nextSnapshot;
+                var selected = selectedPackage();
+                byId("side-name").textContent = snapshot.sideName + " SUPPORT";
+                byId("selected-package").textContent = selected ? selected.type : snapshot.selectedType;
+                byId("available-resources").textContent = formatNumber(snapshot.available);
+                byId("committed-resources").textContent = formatNumber(snapshot.committed);
+                renderPackages();
+                renderAssets();
+                renderTarget();
+            }
+
+            byId("player-button").addEventListener("click", function () { send("support::mapPlayer"); });
+            byId("target-button").addEventListener("click", function () { send("support::mapTarget"); });
+            byId("request-button").addEventListener("click", function () { send("support::submit"); });
+            byId("close-button").addEventListener("click", function () { send("support::close"); });
+
+            window.FLOSupport = { applySnapshot: applySnapshot };
+            send("support::ready");
+        }());
+    </script>
+</body>
+</html>

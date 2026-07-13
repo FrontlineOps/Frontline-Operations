@@ -49,7 +49,7 @@ private _batteryObjectiveId = [
 
 if (_batteryObjectiveId == "") exitWith {
     ["GTN Artillery", 3, format [
-        "%1 artillery mission denied - battery %2 is outside integrated logistics reach",
+        "%1 artillery mission denied - battery %2 is outside secured logistics reach",
         _sideKey,
         _groupId
     ]] call FLO_fnc_log;
@@ -82,7 +82,7 @@ private _reason = format ["%1 artillery mission (%2 rounds)", _requestKind, _rou
 private _spendingActor = ["COMMANDER", "PLAYER"] select (_requestKind == "PLAYER");
 private _spendingAllowed = true;
 if (_requestKind != "PLAYER") then {
-    private _urgency = ["OPERATIONAL", "PRESSURED"] select (_requestKind == "COUNTER_BATTERY");
+    private _urgency = ["OPERATIONAL", "PRESSURED"] select (_requestKind in ["COUNTER_BATTERY", "VIRTUAL_COMBAT"]);
     private _spendingDecision = [
         _treasury,
         _treasuryCost,

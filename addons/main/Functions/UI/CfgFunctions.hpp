@@ -73,3 +73,22 @@ class DevelopmentUI {
     class developmentRequestSnapshotServer {};
     class developmentUpdateDialog {};
 };
+
+class SupportUI {
+    file = "\z\flo\addons\main\Functions\UI\Support";
+
+    class supportAddWebEventHandler {};
+    class supportBuildSnapshot {};
+    class supportDrawMap {};
+    class supportFocusMap {};
+    class supportHandleMapClick {};
+    class supportHandleUiEvent {};
+    class supportInitClient { postInit = 1; };
+    class supportOpenDialog {};
+    class supportPreInit { preInit = 1; };
+    class supportReceiveSnapshot {};
+    class supportRequestSnapshot {};
+    class supportRequestSnapshotServer {};
+    class supportUpdateDialog {};
+    class supportWebAction {};
+};

@@ -1,5 +1,10 @@
 /* Records only successfully committed ATTACK orders against the package. */
-params ["_director", ["_operationId", "", [""]], ["_committedCount", 0, [0]]];
+params [
+    "_director",
+    ["_operationId", "", [""]],
+    ["_committedCount", 0, [0]],
+    ["_openingComplete", true, [true]]
+];
 
 if (_committedCount <= 0) exitWith { false };
 private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
@@ -15,13 +20,19 @@ if (_nextCommitted > _packageTarget) then {
 
 private _now = dateToNumber date;
 private _config = _director get "_config";
+private _waveSequence = _operation get "assaultWaveSequence";
 _operation set ["assaultCommittedTotal", _nextCommitted];
-_operation set ["assaultWaveSequence", (_operation get "assaultWaveSequence") + 1];
-_operation set [
-    "assaultNextWaveAtDateNum",
-    [_now, _config get "assaultWaveCooldownSeconds"] call FLO_fnc_dateNumberAddSeconds
-];
-_operation set ["assaultStatus", "ADVANCING"];
+if (_waveSequence == 0 && {!_openingComplete}) then {
+    _operation set ["assaultNextWaveAtDateNum", _now];
+    _operation set ["assaultStatus", "OPENING_COMMIT"];
+} else {
+    _operation set ["assaultWaveSequence", _waveSequence + 1];
+    _operation set [
+        "assaultNextWaveAtDateNum",
+        [_now, _config get "assaultWaveCooldownSeconds"] call FLO_fnc_dateNumberAddSeconds
+    ];
+    _operation set ["assaultStatus", "ADVANCING"];
+};
 [_operation] call FLO_fnc_campaignValidateAssaultState;
 
 private _state = _director get "_state";

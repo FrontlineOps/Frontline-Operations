@@ -5,7 +5,7 @@
  */
 
 createHashMapFromArray [
-    ["schemaVersion", 2],
+    ["schemaVersion", 3],
     ["id", ""],
     ["position", [0, 0, 0]],
     ["spawnPosition", [0, 0, 0]],
@@ -17,6 +17,7 @@ createHashMapFromArray [
     ["unitCount", 0],
     ["side", east],
     ["isActive", false],
+    ["activeInitialUnitCount", 0],
     ["alwaysActive", false],
     ["realGroup", grpNull],
     ["realVehicles", []],
@@ -47,13 +48,6 @@ createHashMapFromArray [
     ["activationDeferred", false],
     ["activationDeferredAt", -1],
     ["activationRetryAt", -1],
-    ["engagementActive", false],
-    ["engagementTargetGroupId", ""],
-    ["engagementTargetPos", []],
-    ["engagementTargetObjective", ""],
-    ["engagementReason", ""],
-    ["engagementExpiresAt", -1],
-    ["engagementLeashMeters", 0],
     ["reinforcementTargetPos", []],
     ["reinforcementRequestedObjective", ""],
     ["reinforcementDeliveryObjective", ""],

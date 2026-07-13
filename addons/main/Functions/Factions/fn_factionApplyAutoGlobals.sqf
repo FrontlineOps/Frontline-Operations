@@ -56,7 +56,7 @@ if (_role isEqualTo "civilian") exitWith {
     CivMenArray = _men;
     CivVehArray = _vehicles;
 
-    ["FACTIONS", 2, format [
+    ["FACTIONS", 3, format [
         "Applied auto civilian faction %1: men=%2 vehicles=%3",
         _factionLabel,
         count CivMenArray,
@@ -94,7 +94,7 @@ private _applied = switch (_role) do {
 
 if (!_applied) exitWith { false };
 
-["FACTIONS", 2, format [
+["FACTIONS", 3, format [
     "Applied auto %1 faction %2: units=%3 groups=%4 motorized=%5 mechanized=%6 armor=%7 air=%8",
     _role,
     _factionLabel,

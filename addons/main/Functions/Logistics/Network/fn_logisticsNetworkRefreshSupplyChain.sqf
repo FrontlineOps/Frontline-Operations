@@ -23,13 +23,7 @@ private _hqObjectiveId = _network get "_hqObjectiveId";
 
 if (_topologyDirty) then {
     _hqObjectiveId = [_network] call FLO_fnc_logisticsNetworkPickHQObjective;
-    if (_hqObjectiveId != "" && {_hqNodeId == ""}) then {
-        _hqNodeId = format ["NODE_%1_HQ", _network get "_managedSideKey"];
-        private _hqPosition = (FLO_Objectives get _hqObjectiveId) get "position";
-        if (_managedSide isEqualTo west) then { _hqPosition = +(FLO_MissionConfig get "startPosition"); };
-        [_network, _hqNodeId, "HQ", "POSITION", "", _hqPosition, _hqObjectiveId, false, -1] call FLO_fnc_logisticsNetworkCreateNode;
-        _network set ["_hqNodeId", _hqNodeId];
-    };
+    _hqNodeId = [_network, _hqObjectiveId] call FLO_fnc_logisticsNetworkAnchorHQ;
     _network set ["_hqObjectiveId", _hqObjectiveId];
 
     _routeInfo = createHashMap;

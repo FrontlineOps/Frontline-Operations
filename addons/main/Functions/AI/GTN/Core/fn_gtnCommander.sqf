@@ -37,7 +37,7 @@ private _ownSide = _sideContext get "ownSide";
 private _enemySide = _sideContext get "enemySide";
 private _sideKey = _sideContext get "sideKey";
 
-["GTN", 2, format["Initializing GTN Commander System (%1)", _sideKey]] call FLO_fnc_log;
+["GTN", 3, format["Initializing GTN Commander System (%1)", _sideKey]] call FLO_fnc_log;
 
 // Create all subsystems
 private _worldState = [_sideContext] call FLO_fnc_gtnWorldState;
@@ -166,9 +166,6 @@ private _gtnCommander = createHashMapObject [[
     ["_lastGarrisonSignature", ""],
     ["_minefieldDirty", true],
     ["_lastMinefieldRunAt", -1],
-    ["_lastEngagementSweepAt", -1],
-    ["_lastEngagementPictureBuiltAt", -1],
-    ["_lastEngagementActiveCount", 0],
     
     // Configuration
     ["_config", createHashMapFromArray [
@@ -182,7 +179,6 @@ private _gtnCommander = createHashMapObject [[
         ["minefieldRefreshMinSeconds", 90], // Frontline obstacle fields are strategic shaping work and should not rebuild every commander cycle
         ["minefieldMaxFields", 4], // Limit tracked defensive fields per side so the commander shapes the front instead of blanketing the map
         ["minefieldPlacementsPerCycle", 2], // Limit how many new fields one commander can lay on a single strategic update
-        ["engagementFullSweepMinSeconds", 20], // Fresh opportunistic target acquisition runs slower than engagement maintenance
         ["attackCoverageMultiplier", _attackCoverage], // Scales per-objective attack caps without multiplying ATK tracks
         ["defenseCoverageMultiplier", _defenseCoverage], // Scales per-objective defense caps without multiplying DEF tracks
         ["defenseObjectiveBaseMin", 2], // Quiet or low-contact objectives should not automatically pull four-plus defenders
@@ -245,20 +241,8 @@ private _gtnCommander = createHashMapObject [[
         ["defenseReserveGraphDepth", 2], // Defense reserve pulls stay on the friendly objective graph around the threatened sector
         ["defenseContestedCollapseForceRatio", 0.65], // Below this friendly/enemy ratio on a contested owned objective, surge defense stops feeding a collapse
         ["defenseContestedCollapseCap", 5], // Collapse-level contested objectives are stabilized with a limited holding force instead of full-cap dogpiles
-        ["engagementFreshSeconds", 180], // Fresh commander contact window used for exact opportunistic engagement targets
-        ["attackEngagementLeashMeters", 450], // Attack groups do not chase confirmed targets too far off their approach
-        ["defenseEngagementLeashMeters", 1500], // Defenders only engage confirmed targets local to their defended objective
-        ["garrisonEngagementLeashMeters", 1500], // Garrisons only engage confirmed targets local to their held objective
-        ["engagementTargetAssignmentDivisor", 12], // Bigger target-load buckets are required before another group may pile onto the same contact
-        ["engagementTargetMaxGroups", 2], // Opportunistic contact handling should spread out instead of tripling up on one target
-        ["engagementTargetLoadMultiplier", 0.85], // A target reaches its soft assignment load earlier so extra groups prefer other contacts
-        ["engagementAssignedLoadPenaltyDivisor", 3], // Existing assigned load should punish same-target selection more aggressively
-        ["engagementReservationPenaltyPerGroup", 28], // Each extra committed group sharply reduces the score of the same target
-        ["engagementSaturationPenalty", 60], // Saturated contacts should be strongly deprioritized against other valid targets
-        ["engagementRetaskMoveMeters", 60], // Refresh a live engagement only when the confirmed target meaningfully moved
-        ["engagementDurationSeconds", 90], // Tactical engagement overlays are short-lived and revert back to strategic routes
-        ["strategicOrderAssignmentsPerCycle", 16], // Carries one ten-group attack wave plus bounded defense/garrison work
-        ["attackAssignmentsPerCycle", 10], // Fill and replenish operation packages in useful waves
+        ["strategicOrderAssignmentsPerCycle", 16], // Carries one twelve-group opening plus bounded defense/garrison work
+        ["attackAssignmentsPerCycle", 12], // Supports the largest atomic doctrine opening without splitting its mass
         ["defenseAssignmentsPerCycle", 3], // 10-second baseline defense assignment cap for one commander slice
         ["garrisonAssignmentsPerCycle", 2], // 10-second baseline garrison assignment cap for one commander slice
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
@@ -288,7 +272,6 @@ private _gtnCommander = createHashMapObject [[
             ["allocateTracks", 0],
             ["trackPhases", 0],
             ["executeTracks", 0],
-            ["engagements", 0],
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
             ["playerSupport", 0],
@@ -322,7 +305,7 @@ private _gtnCommander = createHashMapObject [[
         private _tracks = _self get "_tracks";
         private _attackTracks = { (_x get "goal") == "capture_priority_objective" } count _tracks;
         private _defenseTracks = { (_x get "goal") == "protect_critical_assets" } count _tracks;
-        ["GTN", 2, format[
+        ["GTN", 3, format[
             "GTN Commander started (attack tracks: %1, defense tracks: %2, attack coverage: %3, defense coverage: %4, tempo: %5s)",
             _attackTracks,
             _defenseTracks,
@@ -335,7 +318,7 @@ private _gtnCommander = createHashMapObject [[
     // Stop the GTN commander
     ["_stop", {
         _self set ["_isRunning", 0];
-        ["GTN", 2, "GTN Commander stopped"] call FLO_fnc_log;
+        ["GTN", 3, "GTN Commander stopped"] call FLO_fnc_log;
     }],
 
     // Main update cycle - call this from commander's update loop
@@ -357,7 +340,6 @@ private _gtnCommander = createHashMapObject [[
             ["allocateTracks", 0],
             ["trackPhases", 0],
             ["executeTracks", 0],
-            ["engagements", 0],
             ["frontlineCAP", 0],
             ["frontlineCAS", 0],
             ["playerSupport", 0],
@@ -386,7 +368,7 @@ private _gtnCommander = createHashMapObject [[
         private _cycleIndex = _stats get "cyclesRun";
         _self call ["_resetStrategicOrderBudget", []];
         
-        ["GTN", 3, format["GTN Cycle %1 starting", _cycleIndex]] call FLO_fnc_log;
+        ["GTN", 4, format["GTN Cycle %1 starting", _cycleIndex]] call FLO_fnc_log;
 
         // Update world state
         private _ws = _self get "_worldState";
@@ -407,7 +389,7 @@ private _gtnCommander = createHashMapObject [[
         private _forces = _ws call ["_getForces", []];
         private _situation = _ws call ["_getTacticalSituation", []];
         private _enemyObjs = _ws call ["_getEnemyObjectives", []];
-        ["GTN", 3, format["World State: Available=%1, Momentum=%2, EnemyObjs=%3",
+        ["GTN", 4, format["World State: Available=%1, Momentum=%2, EnemyObjs=%3",
             _forces get "availableGroups",
             _situation get "momentum",
             count (keys _enemyObjs)
@@ -506,43 +488,6 @@ private _gtnCommander = createHashMapObject [[
         private _executeMetrics = _self call ["_executeAllTracks", []];
         _phaseMs set ["executeTracks", (diag_tickTime - _tPhase) * 1000];
 
-        // Overlay short-lived tactical engagements onto existing strategic orders using commander-confirmed intel.
-        private _engagementPicture = _ws call ["_getEnemyEngagementPicture", []];
-        private _engagementPictureBuiltAt = _engagementPicture get "builtAt";
-        private _engagementMetrics = createHashMapFromArray [
-            ["fullSweep", false],
-            ["pictureGroups", _engagementPicture get "groupCount"],
-            ["pictureObjectives", _engagementPicture get "objectiveCount"],
-            ["eligibleGroups", 0],
-            ["skippedInCombat", 0],
-            ["inactiveSweepSkipped", 0],
-            ["activeEngagements", 0],
-            ["appliedCount", 0],
-            ["retaskedCount", 0],
-            ["maintainedCount", 0],
-            ["restoredCount", 0],
-            ["failedRestores", 0],
-            ["activeAfterCount", _self get "_lastEngagementActiveCount"]
-        ];
-        private _engagementFullSweepDue = (_self get "_lastEngagementSweepAt") < 0
-            || {_engagementPictureBuiltAt != (_self get "_lastEngagementPictureBuiltAt")}
-            || {(_executeMetrics get "tasksExecuted") > 0}
-            || {(_garrisonMetrics get "assignedGroups") > 0}
-            || {(_garrisonMetrics get "releasedGroups") > 0}
-            || {(_attackAssignmentMetrics get "releasedCount") > 0}
-            || {_now - (_self get "_lastEngagementSweepAt") >= (((_self get "_config") get "engagementFullSweepMinSeconds") max 1)};
-        private _engagementNeedsMaintenance = (_self get "_lastEngagementActiveCount") > 0;
-        _tPhase = diag_tickTime;
-        if (_engagementFullSweepDue || {_engagementNeedsMaintenance}) then {
-            _engagementMetrics = [_self, _engagementFullSweepDue] call FLO_fnc_gtnManageOpportunisticEngagements;
-            _self set ["_lastEngagementActiveCount", _engagementMetrics get "activeAfterCount"];
-            if (_engagementFullSweepDue) then {
-                _self set ["_lastEngagementSweepAt", _now];
-                _self set ["_lastEngagementPictureBuiltAt", _engagementPictureBuiltAt];
-            };
-        };
-        _phaseMs set ["engagements", (diag_tickTime - _tPhase) * 1000];
-
         // Request one opportunistic CAP mission for the most threatened friendly frontline sector.
         _tPhase = diag_tickTime;
         private _frontlineCAPMetrics = [_self] call FLO_fnc_gtnRequestFrontlineCAP;
@@ -588,7 +533,6 @@ private _gtnCommander = createHashMapObject [[
             ["allocation", _allocationMetrics],
             ["trackPhases", _trackPhaseMetrics],
             ["execute", _executeMetrics],
-            ["engagements", _engagementMetrics],
             ["frontlineCAP", _frontlineCAPMetrics],
             ["frontlineCAS", _frontlineCASMetrics],
             ["playerSupport", _playerSupportMetrics],
@@ -608,7 +552,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 minefields=%14 allocate=%15 phases=%16 execute=%17 engage=%18 cap=%19 cas=%20 playerSupport=%21 defense=%22 staticAA=%23",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 garrisons=%13 minefields=%14 allocate=%15 phases=%16 execute=%17 cap=%18 cas=%19 playerSupport=%20 defense=%21 staticAA=%22",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -626,7 +570,6 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "allocateTracks",
                 _phaseMs get "trackPhases",
                 _phaseMs get "executeTracks",
-                _phaseMs get "engagements",
                 _phaseMs get "frontlineCAP",
                 _phaseMs get "frontlineCAS",
                 _phaseMs get "playerSupport",
@@ -735,7 +678,7 @@ private _gtnCommander = createHashMapObject [[
                 private _wsPhase = _wsPerf get "lastPhaseMs";
                 private _wsMeta = _wsPerf get "lastMeta";
                 diag_log format [
-                    "[FLO][PERF] GTN commander %1 worldState | total=%2 objectives=%3 forces=%4 support=%5 intel=%6 tactical=%7 | objCount=%8 available=%9 contacts=%10 combatContacts=%11 concentrations=%12 engagementGroups=%13 engagementObjectives=%14 supportRan=%15 intelRan=%16",
+                    "[FLO][PERF] GTN commander %1 worldState | total=%2 objectives=%3 forces=%4 support=%5 intel=%6 tactical=%7 | objCount=%8 available=%9 contacts=%10 combatContacts=%11 concentrations=%12 knownGroups=%13 knownGroupObjectives=%14 supportRan=%15 intelRan=%16",
                     _self get "_sideKey",
                     _wsPerf get "lastUpdateMs",
                     _wsPhase get "objectives",
@@ -748,30 +691,12 @@ private _gtnCommander = createHashMapObject [[
                     _wsMeta get "contactCount",
                     _wsMeta get "combatContactCount",
                     _wsMeta get "concentrationCount",
-                    _wsMeta get "engagementGroupCount",
-                    _wsMeta get "engagementObjectiveCount",
+                    _wsMeta get "knownGroupCount",
+                    _wsMeta get "knownGroupObjectiveCount",
                     _wsMeta get "supportSenseRan",
                     _wsMeta get "enemyIntelSenseRan"
                 ];
             };
-
-            diag_log format [
-                "[FLO][PERF] GTN commander %1 engagements | fullSweep=%2 pictureGroups=%3 pictureObjectives=%4 eligible=%5 active=%6 activeAfter=%7 applied=%8 retasked=%9 maintained=%10 restored=%11 failedRestore=%12 skippedCombat=%13 inactiveSweepSkipped=%14",
-                _self get "_sideKey",
-                _engagementMetrics get "fullSweep",
-                _engagementMetrics get "pictureGroups",
-                _engagementMetrics get "pictureObjectives",
-                _engagementMetrics get "eligibleGroups",
-                _engagementMetrics get "activeEngagements",
-                _engagementMetrics get "activeAfterCount",
-                _engagementMetrics get "appliedCount",
-                _engagementMetrics get "retaskedCount",
-                _engagementMetrics get "maintainedCount",
-                _engagementMetrics get "restoredCount",
-                _engagementMetrics get "failedRestores",
-                _engagementMetrics get "skippedInCombat",
-                _engagementMetrics get "inactiveSweepSkipped"
-            ];
 
             diag_log format [
                 "[FLO][PERF] GTN commander %1 maintenance | defenseReleased=%2 defenseTrimmed=%3 defenseHolds=%4 defenseLost=%5 attackReleased=%6 aaMoving=%7 aaDeployed=%8",
@@ -1024,7 +949,7 @@ private _gtnCommander = createHashMapObject [[
         // Log allocation
         {
             private _track = _x;
-            ["GTN", 3, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
+            ["GTN", 4, format["Track %1 (%2) allocated %3 groups (front sectors=%4)",
                 _track get "id",
                 _track get "goal",
                 count (_track get "groupPool"),
@@ -1197,7 +1122,7 @@ private _gtnCommander = createHashMapObject [[
         } forEach _result;
         _track set ["groupPool", _pool];
         
-        ["GTN", 3, format["Track %1: Consumed %2 groups (requested %3, %4 remaining in pool)", 
+        ["GTN", 4, format["Track %1: Consumed %2 groups (requested %3, %4 remaining in pool)",
             _track get "id", count _result, _count, count _pool]] call FLO_fnc_log;
         
         _result
@@ -1212,7 +1137,7 @@ private _gtnCommander = createHashMapObject [[
             if ((_x get "id") == _trackId) exitWith {
                 _x set ["goal", _newGoal];
                 _x set ["status", "IDLE"];  // Force replan
-                ["GTN", 2, format["Track %1 goal changed to: %2", _trackId, _newGoal]] call FLO_fnc_log;
+                ["GTN", 3, format["Track %1 goal changed to: %2", _trackId, _newGoal]] call FLO_fnc_log;
             };
         } forEach _tracks;
     }],
@@ -1698,7 +1623,7 @@ private _gtnCommander = createHashMapObject [[
                 if (_newOrder != "") then {
                     [_gData, _newOrder] call FLO_fnc_virtualizationSetCommanderOrder;
                 };
-                ["GTN", 3, format["Released group %1, order reset to '%2'", _groupId, _newOrder]] call FLO_fnc_log;
+                ["GTN", 5, format["Released group %1, order reset to '%2'", _groupId, _newOrder]] call FLO_fnc_log;
             };
         } forEach _groupIds;
         
@@ -2081,8 +2006,7 @@ private _gtnCommander = createHashMapObject [[
         private _existingTarget = _gData get "orderTargetPos";
         private _existingMode = _gData get "orderMode";
         private _hasRouteContext = ((_gData get "waypoints") isNotEqualTo []) || {(_gData get "pathToken") >= 0};
-        private _engagementRouteActive = [_gData] call FLO_fnc_gtnIsEngagementRouteActive;
-        if ((_gData get "commanderOrder") == "MOVE" && {!_engagementRouteActive} && {_existingMode == _mode} && {_hasRouteContext} && {count _existingTarget >= 2} && {_existingTarget distance2D _pos < 35}) exitWith {
+        if ((_gData get "commanderOrder") == "MOVE" && {_existingMode == _mode} && {_hasRouteContext} && {count _existingTarget >= 2} && {_existingTarget distance2D _pos < 35}) exitWith {
             if (isNil "FLO_GTN_OrderNoOps") then { FLO_GTN_OrderNoOps = createHashMap; };
             FLO_GTN_OrderNoOps set ["MOVE", (FLO_GTN_OrderNoOps getOrDefault ["MOVE", 0]) + 1];
             _self call ["_taskGroups", [[_groupId]]];
@@ -2092,7 +2016,7 @@ private _gtnCommander = createHashMapObject [[
         private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
 
         private _waypoints = [
-            [_pos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 30]
+            [_pos, "MOVE", _mode, "FULL", _formation, "YELLOW", 30]
         ];
 
         [_groupId, _gData, "MOVE", _waypoints, _pos, "GTN_MOVE", "", _mode] call FLO_fnc_virtualizationCommitCommanderOrder;
@@ -2100,7 +2024,7 @@ private _gtnCommander = createHashMapObject [[
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to move to %2 (%3)", _groupId, _pos, _mode]] call FLO_fnc_log;
         true
     }],
 
@@ -2108,7 +2032,7 @@ private _gtnCommander = createHashMapObject [[
     ["_orderGroupAttack", {
         params [
             "_groupId",
-            "_pos",
+            "_approachRoute",
             ["_objectiveId", ""],
             ["_consumeAssignmentBudget", false, [true]],
             ["_campaignOperationId", "", [""]]
@@ -2125,9 +2049,12 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
-        if (!(_pos isEqualType []) || {count _pos < 2}) exitWith {
-            ["GTN", 2, format["Cannot order attack - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
-            false
+        if (!(_approachRoute isEqualType []) || {count _approachRoute != 2}) then {
+            throw format ["GTN ATTACK requires a two-point approach route for %1: %2", _groupId, _approachRoute];
+        };
+        _approachRoute params ["_entryPos", "_attackPos"];
+        if (count _entryPos < 2 || {count _attackPos < 2}) then {
+            throw format ["GTN ATTACK route contains an invalid position for %1: %2", _groupId, _approachRoute];
         };
 
         private _ownSide = _self get "_ownSide";
@@ -2148,10 +2075,8 @@ private _gtnCommander = createHashMapObject [[
         private _existingAttackObjective = _gData get "attackObjective";
         private _existingCampaignOperationId = _gData get "campaignOperationId";
         private _hasRouteContext = ((_gData get "waypoints") isNotEqualTo []) || {(_gData get "pathToken") >= 0};
-        private _engagementRouteActive = [_gData] call FLO_fnc_gtnIsEngagementRouteActive;
         if (
             (_gData get "commanderOrder") == "ATTACK"
-            && {!_engagementRouteActive}
             && {_hasRouteContext}
             && {_objectiveId != ""}
             && {_existingAttackObjective == _objectiveId}
@@ -2163,12 +2088,6 @@ private _gtnCommander = createHashMapObject [[
             true
         };
 
-        private _attackPos = _pos;
-        private _randomAttackPos = [_objectiveId] call FLO_fnc_getRandomObjectivePos;
-        if (_randomAttackPos isNotEqualTo [0, 0, 0]) then {
-            _attackPos = _randomAttackPos;
-        };
-
         if (_consumeAssignmentBudget && {!(_self call ["_consumeStrategicOrderBudget", ["ATTACK"]])}) exitWith {
             ["GTN", 4, format["Skipped ATTACK order for %1: strategic order budget exhausted", _groupId]] call FLO_fnc_log;
             false
@@ -2177,7 +2096,7 @@ private _gtnCommander = createHashMapObject [[
         private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
 
         private _waypoints = [
-            [_attackPos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 75],
+            [_entryPos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 75],
             [_attackPos, "MOVE", "AWARE", "FULL", _formation, "YELLOW", 50]
         ];
 
@@ -2212,7 +2131,7 @@ private _gtnCommander = createHashMapObject [[
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to attack %2 (%3)", _groupId, _attackPos, _objectiveId]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 through %2 to attack %3 (%4)", _groupId, _entryPos, _attackPos, _objectiveId]] call FLO_fnc_log;
         true
     }],
 
@@ -2251,8 +2170,7 @@ private _gtnCommander = createHashMapObject [[
         private _saturated = false;
         if (_objectiveId != "") then {
             private _hasRouteContext = ((_gData get "waypoints") isNotEqualTo []) || {(_gData get "pathToken") >= 0};
-            private _engagementRouteActive = [_gData] call FLO_fnc_gtnIsEngagementRouteActive;
-            private _sameObjectiveAssigned = ((_gData get "commanderOrder") == "DEFEND") && {!_engagementRouteActive} && {(_gData get "defendObjective") == _objectiveId} && {_hasRouteContext};
+            private _sameObjectiveAssigned = ((_gData get "commanderOrder") == "DEFEND") && {(_gData get "defendObjective") == _objectiveId} && {_hasRouteContext};
             private _currentDefendPos = _gData get "orderTargetPos";
             private _sameHoldPos = _currentDefendPos isEqualType [] && {count _currentDefendPos >= 2} && {(_currentDefendPos distance2D _pos) < 20};
             _alreadyAssigned = _sameObjectiveAssigned && {_sameHoldPos};
@@ -2323,7 +2241,7 @@ private _gtnCommander = createHashMapObject [[
         // Mark as tasked
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to defend %2", _groupId, _pos]] call FLO_fnc_log;
         true
     }],
 
@@ -2361,11 +2279,9 @@ private _gtnCommander = createHashMapObject [[
         private _hasRouteContext = ((_gData get "waypoints") isNotEqualTo []) || {(_gData get "pathToken") >= 0};
         private _currentGarrisonPos = _gData get "garrisonPosition";
         private _sameHoldPos = _currentGarrisonPos isEqualType [] && {count _currentGarrisonPos >= 2} && {(_currentGarrisonPos distance2D _pos) < 20};
-        private _engagementRouteActive = [_gData] call FLO_fnc_gtnIsEngagementRouteActive;
         if (
             (_gData get "commanderOrder") == "GARRISON"
             && {(_gData get "garrisonObjective") == _objectiveId}
-            && {!_engagementRouteActive}
             && {_hasRouteContext}
             && {_sameHoldPos}
         ) exitWith {
@@ -2421,7 +2337,7 @@ private _gtnCommander = createHashMapObject [[
 
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 3, format["Ordered group %1 to garrison %2", _groupId, _objectiveId]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to garrison %2", _groupId, _objectiveId]] call FLO_fnc_log;
         true
     }],
 
@@ -2485,17 +2401,6 @@ private _gtnCommander = createHashMapObject [[
             if (count _targetPos < 2) then { continue };
             if ((_gData get "position") distance2D _targetPos > 120) then { continue };
 
-            if !(_gData get "isActive") then {
-                if !([_groupId] call FLO_fnc_virtualizationForceActivateGroup) then {
-                    ["GTN", 2, format [
-                        "Static AA %1 reached deployment objective %2 but forced activation failed",
-                        _groupId,
-                        [_gData] call FLO_fnc_virtualizationGetAATargetObjective
-                    ]] call FLO_fnc_log;
-                    continue;
-                };
-            };
-
             [
                 _groupId,
                 createHashMapFromArray [
@@ -2503,16 +2408,11 @@ private _gtnCommander = createHashMapObject [[
                     ["waypoints", []],
                     ["currentWaypointIndex", 0],
                     ["noWaypoints", true],
-                    ["alwaysActive", true]
+                    ["alwaysActive", false]
                 ]
             ] call FLO_fnc_virtualizationPatchGroup;
             [_gData, "AA_HOLD"] call FLO_fnc_virtualizationClearReplacementTransit;
             [_gData, "DEPLOYED", _targetPos, [_gData] call FLO_fnc_virtualizationGetAATargetObjective, _gData get "isStrategicAA"] call FLO_fnc_virtualizationSetAADeployState;
-
-            private _realGroup = _gData get "realGroup";
-            if (!isNull _realGroup) then {
-                [_realGroup] call CBA_fnc_clearWaypoints;
-            };
 
             ["GTN", 3, format[
                 "Static AA %1 deployed at %2 (objective %3)",
@@ -2728,6 +2628,6 @@ private _gtnCommander = createHashMapObject [[
 _executor call ["_setGTNCommander", [_gtnCommander]];
 _worldState call ["_setCommander", [_gtnCommander]];
 
-["GTN", 2, "GTN Commander System initialized"] call FLO_fnc_log;
+["GTN", 3, "GTN Commander System initialized"] call FLO_fnc_log;
 
 _gtnCommander

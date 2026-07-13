@@ -26,9 +26,9 @@ if (isNil "_worldState") exitWith {
 private _sideKey = _worldState get "_sideKey";
 private _enemySide = _worldState get "_enemySide";
 private _enemyIntel = _worldState call ["_getEnemyIntel", []];
-private _engagementPicture = _worldState call ["_getEnemyEngagementPicture", []];
-private _engagementGroups = _engagementPicture get "groups";
-private _freshSeconds = _worldState get "_enemyEngagementFreshSeconds";
+private _knownGroupPicture = _worldState call ["_getKnownEnemyGroupPicture", []];
+private _knownGroups = _knownGroupPicture get "groups";
+private _freshSeconds = _worldState get "_knownEnemyGroupFreshSeconds";
 private _enemyColor = ["ColorBLUFOR", "ColorOPFOR"] select (_enemySide isEqualTo east);
 
 private _enemyGroupMarkers = [];
@@ -75,7 +75,7 @@ private _enemyGroupMarkers = [];
         _label,
         _enemyColor
     ];
-} forEach _engagementGroups;
+} forEach _knownGroups;
 
 private _enemyConcentrationMarkers = [];
 private _concentrationFreshSeconds = _freshSeconds * 2;

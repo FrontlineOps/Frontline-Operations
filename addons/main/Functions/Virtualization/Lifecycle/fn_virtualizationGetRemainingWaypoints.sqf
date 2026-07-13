@@ -2,9 +2,15 @@
  * Function: FLO_fnc_virtualizationGetRemainingWaypoints
  */
 
-params ["_groupId", "_position", "_allWaypoints", "_currentWpIdx"];
+params [
+    "_groupId",
+    "_position",
+    "_allWaypoints",
+    "_currentWpIdx",
+    ["_generatedPatrol", false, [false]]
+];
 
-if (_currentWpIdx == 0 && {count _allWaypoints > 1}) then {
+if (!_generatedPatrol && {_currentWpIdx == 0} && {count _allWaypoints > 1}) then {
     private _nearestDist = 999999;
     private _nearestIdx = -1;
 

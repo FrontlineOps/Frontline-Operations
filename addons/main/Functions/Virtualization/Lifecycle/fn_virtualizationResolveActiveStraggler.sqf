@@ -12,6 +12,7 @@
  * 3: Tracks Assets <BOOL>
  * 4: Nearest Player Distance <NUMBER>
  * 5: Virtualization Stats <HASHMAP>
+ * 6: Converted Asset-Crew Remnant <BOOL>
  *
  * Return Value:
  * BOOL - True when the group was resolved and removed
@@ -23,7 +24,8 @@ params [
     ["_realGroup", grpNull, [grpNull]],
     ["_tracksAssets", false, [false]],
     ["_nearestDist", 0, [0]],
-    ["_virtStats", createHashMap, [createHashMap]]
+    ["_virtStats", createHashMap, [createHashMap]],
+    ["_convertedCrewRemnant", false, [false]]
 ];
 
 if (_groupId == "") exitWith { false };
@@ -31,7 +33,6 @@ if (_tracksAssets) exitWith { false };
 if (isNull _realGroup) exitWith { false };
 if ((_groupData get "transportRole")) exitWith { false };
 if ((_groupData get "inCombat")) exitWith { false };
-if ((_groupData get "engagementActive")) exitWith { false };
 if ((_groupData get "missionLock") != "") exitWith { false };
 if ((_groupData get "replacementState") != "") exitWith { false };
 if ((_groupData get "attachedTo") != "" || {(_groupData get "mountedIn") != ""}) exitWith { false };
@@ -42,6 +43,8 @@ if (_nearestDist <= _playerEvidenceRadius) exitWith { false };
 private _aliveUnits = units _realGroup select { alive _x };
 private _aliveUnitCount = count _aliveUnits;
 if (_aliveUnitCount <= 0 || {_aliveUnitCount > 3}) exitWith { false };
+private _activeInitialUnitCount = _groupData get "activeInitialUnitCount";
+if (!_convertedCrewRemnant && {_aliveUnitCount >= _activeInitialUnitCount}) exitWith { false };
 
 private _objectiveId = _groupData get "defendObjective";
 if (_objectiveId == "") then {
@@ -61,7 +64,7 @@ if (_objectiveId != "") then {
     };
 };
 
-["VIRTUALIZATION", 2, format [
+["VIRTUALIZATION", 4, format [
     "Resolving remote straggler group %1 (%2) with %3 survivors at %4m",
     _groupId,
     _groupData get "groupType",

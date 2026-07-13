@@ -36,7 +36,6 @@ class FLO {
         class initRestoreTrackedCrew {};
         class initRunPhase {};
         class initSideResourcesUninitialized {};
-        class initStartRadarDataLink {};
         class initActivatePlayer    {};
         class initDeployPlayer      {};
         class initClientFinalize    {};
@@ -64,7 +63,6 @@ class FLO {
         class gtnAllocateBaselineGarrisons {};
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
-        class gtnManageOpportunisticEngagements {};
         class gtnReleaseCompletedAttackAssignments {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
@@ -78,29 +76,17 @@ class FLO {
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
         class gtnBuildObjectiveAssignmentCache {};
-        class gtnAdjustEngagementTargetAssignment {};
-        class gtnApplyGroupEngagement {};
-        class gtnBuildEnemyEngagementPicture {};
-        class gtnBuildGroupEngagementContext {};
         class gtnGetSideClientOwners {};
         class gtnMarkCommanderStateDirty {};
         class gtnGetCachedReserveBands {};
         class gtnGetSideCommanderHandle {};
         class gtnGetTempoScaledAssignmentLimit {};
-        class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildObjectiveReserveBands {};
-        class gtnDistanceToSegment2D {};
-        class gtnEstimateEngagementTargetLoad {};
-        class gtnEvaluateGroupEngagementTarget {};
         class gtnExecuteTrackCycle {};
         class gtnGetAttackPressureProfile {};
         class gtnGroupIsStrategicallyAssignable {};
-        class gtnGetEngagementTargetAssignmentCap {};
-        class gtnIsEngagementRouteActive {};
         class gtnLogStrategicOrderPerf {};
         class gtnPickObjectiveGarrisonPosition {};
-        class gtnRestoreStrategicGroupRoute {};
-        class gtnSelectGroupEngagementTarget {};
         class gtnUpdateAttackTrackPhases {};
     };
 
@@ -108,6 +94,8 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\Intel";
 
         class gtnApproximateCommanderMarkerPosition {};
+        class gtnBuildKnownEnemyGroupPicture {};
+        class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildCommanderIntelPicture {};
         class gtnBuildCommanderIntelPublishSignature {};
         class gtnBuildEnemyLogisticsIntelSnapshot {};
@@ -144,6 +132,7 @@ class FLO {
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
     #include "Functions\AI\GTN\Operations\CfgFunctions.hpp"
+    #include "Functions\Formations\CfgFunctions.hpp"
     #include "Functions\UI\CfgFunctions.hpp"
     #include "Functions\Notifications\CfgFunctions.hpp"
 
@@ -169,10 +158,8 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\PlayerSupport";
 
         class gtnBuildSupportCooldownKey {};
-        class gtnOpenPlayerSupportRequestMap {};
         class gtnProcessPlayerSupportRequests {};
         class gtnRegisterPlayerSupportEvents {};
-        class gtnRefreshPlayerSupportActions {};
         class gtnResolveSupportObjective {};
         class gtnSubmitPlayerSupportRequest {};
         class gtnSubmitPlayerSupportRequestServer {};
@@ -201,6 +188,18 @@ class FLO {
 
         class gtnAirAssetManager        {};
         class gtnAirTaskOrder           {};
+        class gtnAirApplyVirtualCASEffect {};
+        class gtnAirAuthorizeSortie {};
+        class gtnAirCollectObjectiveTargetIds {};
+        class gtnAirDefenseActivateAgainstLiveAircraft {};
+        class gtnAirDefenseGetState {};
+        class gtnAirDefenseProcessContacts {};
+        class gtnAirDefenseResolveVirtualEngagement {};
+        class gtnAirDefenseStartContactWorker {};
+        class gtnAirDistancePointToSegment2D {};
+        class gtnAirInitializeOffMapReserves {};
+        class gtnAirParkCombatGroupOffMap {};
+        class gtnAirResolveReserveRoutePositions {};
         class gtnBroadcastCommanderRadioMessage {};
         class gtnBroadcastArtilleryRadio {};
         class gtnBuildArtilleryMissionRecord {};
@@ -212,6 +211,7 @@ class FLO {
         class gtnArtilleryGetAvailableGroups {};
         class gtnArtilleryCanRequestMission {};
         class gtnArtilleryCalculateMissionCost {};
+        class gtnArtilleryApplyVirtualFireEffect {};
         class gtnArtilleryAuthorizeMission {};
         class gtnArtilleryEvaluateObservedTarget {};
         class gtnArtilleryManager       {};
@@ -222,7 +222,6 @@ class FLO {
         class gtnSupportAssetCanProvideAbstractSupport {};
         class gtnArtillerySyncCachedGroup {};
         class gtnArtillerySyncObservedSpotter {};
-        class gtnRadarDataLink          {};
     };
     
     class AITasks {
@@ -265,6 +264,7 @@ class FLO {
         class storeCapabilityForCategory {};
         class storeCheckout {};
         class storeClearCargo {};
+        class storeCurrentLoadoutKitItems {};
         class storeDeployBase {};
         class storeDropGearItems {};
         class storeDropGearAddCount {};
@@ -272,6 +272,11 @@ class FLO {
         class storeIsItemBackedMagazine {};
         class storeIsMineMagazine {};
         class storeLegacyVehiclePrice {};
+        class storeKitAccumulateLine {};
+        class storeKitAppendCargo {};
+        class storeKitCategoryForClass {};
+        class storeKitDisplayName {};
+        class storeNormalizeRuntimeRadioClass {};
         class storeOpenDialog {};
         class storePreInit { preInit = 1; };
         class storePriceClass {};
@@ -282,7 +287,10 @@ class FLO {
         class storeRequestHydrate {};
         class storeSavedKitsDelete {};
         class storeSavedKitsLoad {};
+        class storeSavedKitsPersist {};
         class storeSavedKitsSave {};
+        class storeSavedKitValidateItem {};
+        class storeSavedKitValidateRecord {};
         class storeSendResponse {};
         class storeSpawnVehicle {};
         class storeSpawnSupplyShipment {};
@@ -332,6 +340,7 @@ class FLO {
         class factionBuildObjectiveGroupFieldSpecs {};
         class factionBuildTuningFieldSpecsFromIdcs {};
         class factionBuildVehiclePoolFromVariables {};
+        class factionClassIsCombatInfantry {};
         class factionClassifyVehicle {};
         class factionCollectDirectUnitVariables {};
         class factionCompactNumericText {};

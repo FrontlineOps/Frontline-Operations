@@ -11,7 +11,7 @@ if (_spawnPosition isEqualTo []) then { _spawnPosition = _base modelToWorld [5, 
 
 private _shipment = createVehicle ["CargoNet_01_box_F", _spawnPosition, [], 0, "NONE"];
 if (isNull _shipment) exitWith { objNull };
-[_shipment, [[], [], [], []]] call BIS_fnc_initAmmoBox;
+[_shipment, false, [[], [], [], []]] call BIS_fnc_initAmmoBox;
 _shipment setVariable ["FLO_LogisticsShipment", true, true];
 _shipment setVariable ["FLO_LogisticsDelivered", false, true];
 _shipment setVariable ["FLO_LogisticsSide", _access get "side", true];
@@ -23,5 +23,5 @@ _shipment setVariable ["FLO_DevelopmentTargetObjectiveId", "", true];
 _shipment setVariable ["FLO_save_crate", true, true];
 [_shipment, true, [0, 2, 0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, _shipment];
 
-["STORE", 2, format ["Spawned supply shipment %1 from node %2", netId _shipment, _node get "id"]] call FLO_fnc_log;
+["STORE", 3, format ["Spawned supply shipment %1 from node %2", netId _shipment, _node get "id"]] call FLO_fnc_log;
 _shipment

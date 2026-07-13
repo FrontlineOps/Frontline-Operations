@@ -14,9 +14,18 @@ private _investmentInterval = FLO_ObjectiveDevelopmentConfig get "investmentInte
 
     if (diag_tickTime >= (_nextInvestmentAt get _sideKey)) then {
         _nextInvestmentAt set [_sideKey, diag_tickTime + _investmentInterval];
-        private _candidate = [_side] call FLO_fnc_objectiveDevelopmentSelectInvestment;
-        if (_candidate != "" && {[_side, _candidate] call FLO_fnc_objectiveDevelopmentStartProject}) then {
+        private _fundingObjectiveId = [_sideKey] call FLO_fnc_objectiveDevelopmentGetFundingObjectiveId;
+        if (_fundingObjectiveId != "" && {[_side, _fundingObjectiveId] call FLO_fnc_objectiveDevelopmentFundProject}) then {
             _changed = true;
+        };
+
+        if (([_sideKey] call FLO_fnc_objectiveDevelopmentGetFundingObjectiveId) == "") then {
+            private _candidate = [_side] call FLO_fnc_objectiveDevelopmentSelectInvestment;
+            if ((keys _candidate) isNotEqualTo [] && {
+                [_side, _candidate get "objectiveId", _candidate get "branch"] call FLO_fnc_objectiveDevelopmentStartProject
+            }) then {
+                _changed = true;
+            };
         };
     };
 } forEach [west, east];

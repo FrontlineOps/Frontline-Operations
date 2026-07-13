@@ -35,6 +35,17 @@ private _campaignLaunchMode = [
 
 _campaignLaunchMode call _settingsFn;
 
+private _debugLevel = [
+    "FLO_Debug_Level",
+    "LIST",
+    ["RPT logging level", "Information is the production default. Debug and Trace add investigation detail and can materially increase RPT volume."],
+    ["FLO", "Diagnostics"],
+    [[1, 2, 3, 4, 5], ["Errors", "Warnings", "Information", "Debug", "Trace"], 2],
+    1
+];
+
+_debugLevel call _settingsFn;
+
 private _artillerySideCooldown = [
     "FLO_ArtillerySideCooldownSeconds",
     "SLIDER",
@@ -75,6 +86,17 @@ _artillerySideCooldown call _settingsFn;
 _artilleryBatteryCooldown call _settingsFn;
 _artilleryTreasuryCost call _settingsFn;
 _artilleryLocalSupplyCost call _settingsFn;
+
+private _airActivationMultiplier = [
+    "FLO_AirActivationDistanceMultiplier",
+    "SLIDER",
+    ["Aircraft activation distance multiplier", "Aircraft physically spawn at the normal virtualization distance multiplied by this value."],
+    ["FLO", "Virtualization"],
+    [1, 4, 2, 1],
+    1
+];
+
+_airActivationMultiplier call _settingsFn;
 
 missionNamespace setVariable ["FLO_SettingsRegistered", true];
 diag_log "[FLO_SETTINGS] Registered CBA settings";

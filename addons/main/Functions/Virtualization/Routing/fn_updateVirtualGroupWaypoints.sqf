@@ -55,7 +55,7 @@ call FLO_fnc_virtualizationTouchRegistry;
 ] call CBA_fnc_localEvent;
 
 // Log the update
-["VIRTUALIZATION", 3, format["Updated waypoints for virtual group %1", _groupId]] call FLO_fnc_log;
+["VIRTUALIZATION", 5, format["Updated waypoints for virtual group %1", _groupId]] call FLO_fnc_log;
 
 // Return success
 true

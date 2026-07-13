@@ -53,7 +53,7 @@ if !([_groupId, _groupData] call FLO_fnc_virtualizationAddGroup) exitWith {
 };
 
 // Log creation
-["VIRTUALIZATION", 3, format["Created virtual group %1 of type %2 at %3", _groupId, _groupType, _position]] call FLO_fnc_log;
+["VIRTUALIZATION", 5, format["Created virtual group %1 of type %2 at %3", _groupId, _groupType, _position]] call FLO_fnc_log;
 
 // Return the group ID
 _groupId 

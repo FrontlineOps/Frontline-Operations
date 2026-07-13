@@ -59,23 +59,45 @@ private _trackGoals = createHashMap;
 
     private _needed = _decision get "quota";
     _metrics set ["deficitCount", (_metrics get "deficitCount") + ((_goal - _existingCount) max 0)];
+    if (_needed <= 0) then { continue };
+
     private _targetPosition = (FLO_Objectives get _objectiveId) get "position";
+    private _approachSourcePos = _track get "frontSectorAnchorPos";
+    if (count _approachSourcePos < 2) then {
+        throw format ["Operation track %1 has no assault approach source anchor", _trackId];
+    };
+    private _formationIndex = FLO_FormationState get "groupToFormation";
+    private _formations = FLO_FormationState get "formations";
     private _rankedCandidates = _remaining apply {
-        [((_groups get _x) get "position") distance2D _targetPosition, _x]
+        private _groupPosition = (_groups get _x) get "position";
+        private _formationId = format ["ZZZ_%1", _x];
+        private _formationPosition = _groupPosition;
+        if (_x in _formationIndex) then {
+            _formationId = _formationIndex get _x;
+            private _leadId = (_formations get _formationId) get "leadGroupId";
+            if (_leadId in _groups) then { _formationPosition = (_groups get _leadId) get "position"; };
+        };
+        [
+            _formationPosition distance2D _approachSourcePos,
+            _formationId,
+            _groupPosition distance2D _targetPosition,
+            _x
+        ]
     };
     _rankedCandidates sort true;
 
-    private _takeCount = _needed min (count _rankedCandidates);
-    if (_takeCount > 0) then {
+    if ((count _rankedCandidates) >= _needed) then {
         private _selectedIds = createHashMap;
         private _pool = [];
-        for "_slot" from 0 to (_takeCount - 1) do {
-            private _groupId = (_rankedCandidates select _slot) select 1;
+        for "_slot" from 0 to (_needed - 1) do {
+            private _groupId = (_rankedCandidates select _slot) select 3;
             _pool pushBack _groupId;
             _selectedIds set [_groupId, true];
         };
         _track set ["groupPool", _pool];
         _remaining = _remaining select { !(_x in _selectedIds) };
+    } else {
+        _decision set ["status", "AWAITING_WAVE_MASS"];
     };
 } forEach _activeTracks;
 

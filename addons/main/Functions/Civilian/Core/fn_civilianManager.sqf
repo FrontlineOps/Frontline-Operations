@@ -334,6 +334,8 @@ private _civilianClass = [
     ["update", {
         if (isNil "FLO_Objectives") exitWith { false };
 
+        private _updateStart = diag_tickTime;
+        private _phaseStart = _updateStart;
         private _contexts = createHashMap;
         private _roles = ["resident", "vendor", "worker", "wanderer", "driver", "watcher"];
         {
@@ -347,15 +349,39 @@ private _civilianClass = [
                 } forEach _roles;
             } forEach [east, west];
         } forEach (keys FLO_Objectives);
+        private _contextMs = (diag_tickTime - _phaseStart) * 1000;
 
         _self set ["_objectiveContexts", _contexts];
         _self set ["_lastUpdate", diag_tickTime];
 
+        _phaseStart = diag_tickTime;
         private _memoryIngested = _self call ["ingestCombatEvents", []];
+        private _memoryMs = (diag_tickTime - _phaseStart) * 1000;
+        _phaseStart = diag_tickTime;
         private _gossipAdded = _self call ["propagateObjectiveGossip", []];
+        private _gossipMs = (diag_tickTime - _phaseStart) * 1000;
+        _phaseStart = diag_tickTime;
         private _retaskedCount = _self call ["updateCivilianRoutines", []];
+        private _routineMs = (diag_tickTime - _phaseStart) * 1000;
+        _phaseStart = diag_tickTime;
         private _protestResult = _self call ["updateProtests", []];
+        private _protestMs = (diag_tickTime - _phaseStart) * 1000;
         _protestResult params ["_activeProtestCount", "_startedProtests"];
+        private _totalMs = (diag_tickTime - _updateStart) * 1000;
+
+        if (_totalMs >= 5 || {FLO_Debug_Level >= 5}) then {
+            diag_log format [
+                "[FLO][PERF] Civilian manager total=%1ms contexts=%2 | build=%3 memory=%4 gossip=%5 routines=%6 protests=%7 retasked=%8",
+                _totalMs,
+                count _contexts,
+                _contextMs,
+                _memoryMs,
+                _gossipMs,
+                _routineMs,
+                _protestMs,
+                _retaskedCount
+            ];
+        };
 
         ["CIVILIAN", 3, format [
             "Civilian manager updated %1 objective contexts at rep %2 | memories=%3 gossip=%4 retasked=%5 protests=%6 started=%7",

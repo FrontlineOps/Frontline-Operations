@@ -7,7 +7,7 @@ params ["_groupId", "_groupData", "_sanitizedWaypoints", "_sourceTag"];
 if (_sanitizedWaypoints isNotEqualTo []) then {
     [_groupData, _sanitizedWaypoints, _sourceTag, "moving"] call FLO_fnc_virtualizationSetRouteState;
     private _speed = _groupData get "virtualSpeed";
-    ["VIRTUALIZATION", 3, format ["Set up virtual movement for group %1 (Speed: %2 m/s)", _groupId, _speed]] call FLO_fnc_log;
+    ["VIRTUALIZATION", 5, format ["Set up virtual movement for group %1 (Speed: %2 m/s)", _groupId, _speed]] call FLO_fnc_log;
 } else {
     [_groupData] call FLO_fnc_virtualizationClearPathRequest;
     _groupData set ["waypoints", []];

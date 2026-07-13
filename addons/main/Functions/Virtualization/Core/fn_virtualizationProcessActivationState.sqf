@@ -10,8 +10,6 @@ private _activationUnitCap = ["activationUnitCap"] call FLO_fnc_virtualizationGe
 private _activationResumeCap = ["activationResumeCap"] call FLO_fnc_virtualizationGetConfigValue;
 private _activationRetryCooldown = ["activationRetryCooldown"] call FLO_fnc_virtualizationGetConfigValue;
 private _activeUnitCount = FLO_VirtUpdate get "activeUnitCount";
-private _engagementActive = _groupData get "engagementActive";
-
 if (_activationDeferred && {_nearestDist > (_activationDist + 10)}) then {
     _groupData set ["activationDeferred", false];
     _groupData set ["activationDeferredAt", -1];
@@ -27,7 +25,7 @@ if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWit
         true
     };
 
-    private _bypassBudget = _inCombat || {_engagementActive} || {_missionLock != ""} || {_replacementState != ""};
+    private _bypassBudget = _inCombat || {_missionLock != ""} || {_replacementState != ""};
     private _activationLoad = [_groupData, true] call FLO_fnc_virtualizationGetGroupUnitLoad;
     private _projectedUnitCount = _activeUnitCount + _activationLoad;
     private _blockActivation = false;

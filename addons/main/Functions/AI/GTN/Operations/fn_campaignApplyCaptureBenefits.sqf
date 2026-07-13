@@ -25,7 +25,7 @@ private _growthDelaySeconds = _network get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECON
     _treasury,
     _captureReward,
     "CAPTURE",
-    format ["Integrated objective %1", _objectiveId],
+    format ["Secured objective %1", _objectiveId],
     "CAMPAIGN",
     _objectiveId,
     true
@@ -42,7 +42,7 @@ if (_forceGrowth > 0) then {
 _objective set ["campaignBenefitsPending", false];
 FLO_Objectives set [_objectiveId, _objective];
 
-["CAMPAIGN", 2, format [
+["CAMPAIGN", 3, format [
     "Integrated capture benefits applied: %1 gained %2 for %3",
     _sideKey,
     _captureReward,

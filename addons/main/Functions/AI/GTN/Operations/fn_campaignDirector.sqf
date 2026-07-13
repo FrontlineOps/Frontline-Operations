@@ -13,7 +13,7 @@ params [
 private _config = createHashMapFromArray [
     ["updateInterval", 5],
     ["scaleEvaluationInterval", 60],
-    ["scaleUpHoldSeconds", 600],
+    ["scaleUpHoldSeconds", 300],
     ["scaleDownHoldSeconds", 180],
     ["capacityRetrySeconds", 120],
     ["operationMaximumCount", 3],
@@ -37,7 +37,13 @@ private _config = createHashMapFromArray [
     ["supportAssaultPackageMaximum", 24],
     ["supportAssaultActiveTarget", 7],
     ["supportAssaultWaveSize", 4],
-    ["assaultWaveCooldownSeconds", 180],
+    ["assaultOpeningCommitMinimumSeconds", 30],
+    ["assaultWaveCooldownSeconds", 120],
+    ["assaultApproachLaneCount", 3],
+    ["assaultApproachLaneSpacingMeters", 120],
+    ["assaultApproachRankSpacingMeters", 90],
+    ["assaultApproachEntryDepthFraction", 0.72],
+    ["assaultApproachAssaultDepthFraction", 0.18],
     ["assaultLossPauseRatio", 0.35],
     ["assaultLossCulminationRatio", 0.55],
     ["assaultNoProgressSeconds", 300],
@@ -47,12 +53,12 @@ private _config = createHashMapFromArray [
     ["footholdMinimumHoldSeconds", 600],
     ["operationIntelContactFreshSeconds", 180],
     ["phaseDurations", createHashMapFromArray [
-        ["LULL", 600],
-        ["PREPARE", 600],
+        ["LULL", 300],
+        ["PREPARE", 300],
         ["ASSAULT", 1800],
         ["SECURE", 300],
         ["CONSOLIDATE", 600],
-        ["RECOVERY", 600]
+        ["RECOVERY", 300]
     ]]
 ];
 
@@ -114,12 +120,20 @@ private _director = createHashMapObject [[
                 ["assaultLastArrivedCount", _operation get "assaultLastArrivedCount"],
                 ["assaultPauseCount", _operation get "assaultPauseCount"],
                 ["assaultLastContested", _operation get "assaultLastContested"],
-                ["assaultStatus", _operation get "assaultStatus"]
+                ["assaultStatus", _operation get "assaultStatus"],
+                ["doctrine", _operation get "doctrine"],
+                ["assaultOpeningEligibleAtDateNum", _operation get "assaultOpeningEligibleAtDateNum"],
+                ["shapingStatus", _operation get "shapingStatus"],
+                ["shapingFormationId", _operation get "shapingFormationId"],
+                ["shapingObjectiveId", _operation get "shapingObjectiveId"],
+                ["exploitationStatus", _operation get "exploitationStatus"],
+                ["exploitationFormationId", _operation get "exploitationFormationId"],
+                ["exploitationObjectiveId", _operation get "exploitationObjectiveId"]
             ]];
         } forEach (_current get "operations");
 
         createHashMapFromArray [
-            ["schemaVersion", 6],
+            ["schemaVersion", 7],
             ["sequence", _current get "sequence"],
             ["revision", _current get "revision"],
             ["initiativeSideKey", _current get "initiativeSideKey"],
@@ -136,6 +150,7 @@ private _director = createHashMapObject [[
             ["lastCompletedOperationId", _current get "lastCompletedOperationId"],
             ["lastCompletedResult", _current get "lastCompletedResult"],
             ["opportunities", +(_current get "opportunities")],
+            ["formationState", [_current get "formationState"] call FLO_fnc_formationSerializeState],
             ["phase", _current get "phase"],
             ["phaseStartedAtDateNum", _current get "phaseStartedAtDateNum"],
             ["phaseEndsAtDateNum", _current get "phaseEndsAtDateNum"],
@@ -159,7 +174,7 @@ private _director = createHashMapObject [[
         _current set ["transitionReason", _reason];
         _current set ["revision", (_current get "revision") + 1];
         [_current] call FLO_fnc_campaignSyncPrimaryProjection;
-        ["CAMPAIGN", 2, format ["Campaign LULL extended %1s (%2)", _durationSeconds, _reason]] call FLO_fnc_log;
+        ["CAMPAIGN", 3, format ["Campaign LULL extended %1s (%2)", _durationSeconds, _reason]] call FLO_fnc_log;
     }],
 
     ["_enterLull", {
@@ -185,7 +200,7 @@ private _director = createHashMapObject [[
         _current set ["revision", (_current get "revision") + 1];
         [_current] call FLO_fnc_campaignSyncPrimaryProjection;
         ["FLO_Campaign_OperationChanged", [_current get "revision", "", "LULL"]] call CBA_fnc_localEvent;
-        ["CAMPAIGN", 2, format ["Initiative transferred to %1 (%2)", _nextInitiativeSideKey, _reason]] call FLO_fnc_log;
+        ["CAMPAIGN", 3, format ["Initiative transferred to %1 (%2)", _nextInitiativeSideKey, _reason]] call FLO_fnc_log;
     }],
 
     ["_beginOperation", {
@@ -255,6 +270,12 @@ private _director = createHashMapObject [[
         {
             _operation set [_x, _y];
         } forEach (call FLO_fnc_campaignAssaultStateDefaults);
+        {
+            _operation set [_x, _y];
+        } forEach (call FLO_fnc_campaignOperationalStateDefaults);
+        private _doctrines = (_current get "formationState") get "doctrineBySide";
+        _operation set ["doctrine", _doctrines get _attackerSideKey];
+        [_operation] call FLO_fnc_campaignValidateOperationalState;
 
         _operations set [_operationId, _operation];
         _order pushBack _operationId;
@@ -271,7 +292,7 @@ private _director = createHashMapObject [[
         };
         [_self, _operationId, "PREPARE", [_self, "PREPARE"] call FLO_fnc_campaignGetPhaseDuration, _reason] call FLO_fnc_campaignTransition;
 
-        ["CAMPAIGN", 2, format [
+        ["CAMPAIGN", 3, format [
             "Operation %1 started as %2: %3 attacks %4 from logistics axis %5",
             _operationId,
             _priorityRole,
@@ -308,7 +329,7 @@ private _director = createHashMapObject [[
                 _current set ["operationOrder", _order];
                 _current set ["revision", (_current get "revision") + 1];
                 [_current] call FLO_fnc_campaignSyncPrimaryProjection;
-                ["CAMPAIGN", 2, format ["Promoted operation %1 to main effort", _order select 0]] call FLO_fnc_log;
+                ["CAMPAIGN", 3, format ["Promoted operation %1 to main effort", _order select 0]] call FLO_fnc_log;
             };
         };
     }],
@@ -505,6 +526,17 @@ private _director = createHashMapObject [[
         private _objective = FLO_Objectives get _objectiveId;
         private _attackerSide = [_operation get "attackerSideKey"] call FLO_fnc_campaignSideFromKey;
         private _attackerOwnsTarget = (_objective get "owner") isEqualTo _attackerSide;
+        if (
+            _phase in ["PREPARE", "ASSAULT"]
+            && {([_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor) isEqualTo []}
+        ) exitWith {
+            ["CAMPAIGN", 2, format [
+                "Operation %1 withdrawing: objective %2 has no ground-assault anchor",
+                _operationId,
+                _objectiveId
+            ]] call FLO_fnc_log;
+            _self call ["_completeOperation", [_operationId, "NO_TARGET", "NO_LAND_ASSAULT_ANCHOR"]];
+        };
         switch (_phase) do {
             case "PREPARE": {
                 if (_attackerOwnsTarget) then {
@@ -596,7 +628,7 @@ private _director = createHashMapObject [[
             _directorRef call ["_update", []];
         }, _interval, [_self]] call CBA_fnc_addPerFrameHandler;
         _self set ["_pfhId", _pfhId];
-        ["CAMPAIGN", 2, format ["Campaign director started (%1s, max %2 operations)", _interval, (_self get "_config") get "operationMaximumCount"]] call FLO_fnc_log;
+        ["CAMPAIGN", 3, format ["Campaign director started (%1s, max %2 operations)", _interval, (_self get "_config") get "operationMaximumCount"]] call FLO_fnc_log;
         true
     }]
 ]];

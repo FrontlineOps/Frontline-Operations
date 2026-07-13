@@ -20,7 +20,8 @@ diag_log format ["[FLO_INIT_P4] Using virtualization distance: %1m activeUnitCap
 if (!isNil "InitializationOG" && {InitializationOG}) exitWith {
     diag_log "[FLO_INIT_P4] Virtualization already initialized (PFH start deferred to Phase 5)";
 
-    [] call FLO_fnc_initStartRadarDataLink;
+    call FLO_fnc_gtnAirInitializeOffMapReserves;
+    call FLO_fnc_gtnAirDefenseStartContactWorker;
     true
 };
 
@@ -65,7 +66,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 };
 
 if (_initializedFromSave) exitWith {
-    [] call FLO_fnc_initStartRadarDataLink;
+    call FLO_fnc_gtnAirInitializeOffMapReserves;
+    call FLO_fnc_gtnAirDefenseStartContactWorker;
     true
 };
 
@@ -120,7 +122,8 @@ private _reconcileT0 = diag_tickTime;
 [] call FLO_fnc_virtualizationReconcileTransportState;
 private _reconcileMs = (diag_tickTime - _reconcileT0) * 1000;
 
-[] call FLO_fnc_initStartRadarDataLink;
+call FLO_fnc_gtnAirInitializeOffMapReserves;
+call FLO_fnc_gtnAirDefenseStartContactWorker;
 
 // Mark initialization complete
 InitializationOG = true;

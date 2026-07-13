@@ -13,7 +13,7 @@ FLO_VirtUpdate set ["lastUpdateTime", _now];
 [ _now, _stats ] call FLO_fnc_virtualizationRefreshPlayerCache;
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
-if ((keys _groups) isEqualTo []) exitWith {
+if (count _groups == 0) exitWith {
     FLO_VirtUpdate set ["cachedGroupIds", []];
     FLO_VirtUpdate set ["activeUnitCount", 0];
     FLO_VirtUpdate set ["currentBatchIndex", 0];
@@ -36,6 +36,8 @@ _batchResult params ["_processed", "_batchStart", "_batchEnd", "_totalGroups"];
 
 private _batchMs = (diag_tickTime - _batchStartTime) * 1000;
 _stats set ["lastBatchMs", _batchMs];
+_stats set ["batchesRunTotal", (_stats get "batchesRunTotal") + 1];
+_stats set ["batchMsTotal", (_stats get "batchMsTotal") + _batchMs];
 if (_batchMs > (_stats get "peakBatchMs")) then {
     _stats set ["peakBatchMs", _batchMs];
 };

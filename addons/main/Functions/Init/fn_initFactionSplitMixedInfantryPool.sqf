@@ -23,22 +23,28 @@ private _unitClasses = [];
 
     if (_entry isEqualType configNull) then {
         if (isClass _entry) then {
-            _groupConfigs pushBack _entry;
             private _subclasses = "true" configClasses _entry;
+            private _groupUnitClasses = [];
+            private _validGroup = _subclasses isNotEqualTo [];
             {
                 private _unitClass = getText (_x >> "vehicle");
-                if (_unitClass isNotEqualTo "") then {
-                    _unitClasses pushBack _unitClass;
+                if (_unitClass == "" || {!([_unitClass] call FLO_fnc_factionClassIsCombatInfantry)}) exitWith {
+                    _validGroup = false;
                 };
+                _groupUnitClasses pushBackUnique _unitClass;
             } forEach _subclasses;
+            if (_validGroup) then {
+                _groupConfigs pushBack _entry;
+                _unitClasses append _groupUnitClasses;
+            };
         };
     };
 
     if (_entry isEqualType "") then {
-        if (_entry isNotEqualTo "") then {
-            _unitClasses pushBack _entry;
+        if ([_entry] call FLO_fnc_factionClassIsCombatInfantry) then {
+            _unitClasses pushBackUnique _entry;
         };
     };
 } forEach _entries;
 
-[_groupConfigs, _unitClasses]
+[_groupConfigs, _unitClasses arrayIntersect _unitClasses]

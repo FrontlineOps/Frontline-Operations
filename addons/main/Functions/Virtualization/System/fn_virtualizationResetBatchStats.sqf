@@ -4,25 +4,22 @@
 
 params ["_stats"];
 
-{
-    _stats set [_x, _y];
-} forEach (createHashMapFromArray [
-    ["groupsProcessedThisBatch", 0],
-    ["scheduledSkipsThisBatch", 0],
-    ["activationsThisBatch", 0],
-    ["activationBlocksThisBatch", 0],
-    ["deactivationsThisBatch", 0],
-    ["virtualMovesThisBatch", 0],
-    ["activePositionSyncsThisBatch", 0],
-    ["waypointAdvancesThisBatch", 0],
-    ["patrolAssignmentsThisBatch", 0],
-    ["attachedSyncsThisBatch", 0],
-    ["movementPauseSkipsThisBatch", 0],
-    ["movementDeadbandSkipsThisBatch", 0],
-    ["missionHoldSkipsThisBatch", 0],
-    ["eliminatedGroupsThisBatch", 0],
-    ["lastPlayerCacheMs", 0],
-    ["lastGroupCacheMs", 0]
-]);
+_stats set ["groupsProcessedThisBatch", 0];
+_stats set ["dueGroupsThisBatch", 0];
+_stats set ["scheduledSkipsThisBatch", 0];
+_stats set ["activationsThisBatch", 0];
+_stats set ["activationBlocksThisBatch", 0];
+_stats set ["deactivationsThisBatch", 0];
+_stats set ["virtualMovesThisBatch", 0];
+_stats set ["activePositionSyncsThisBatch", 0];
+_stats set ["waypointAdvancesThisBatch", 0];
+_stats set ["patrolAssignmentsThisBatch", 0];
+_stats set ["attachedSyncsThisBatch", 0];
+_stats set ["movementPauseSkipsThisBatch", 0];
+_stats set ["movementDeadbandSkipsThisBatch", 0];
+_stats set ["missionHoldSkipsThisBatch", 0];
+_stats set ["eliminatedGroupsThisBatch", 0];
+_stats set ["lastPlayerCacheMs", 0];
+_stats set ["lastGroupCacheMs", 0];
 
 true

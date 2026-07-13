@@ -39,7 +39,6 @@ if (_helicopters isEqualTo []) exitWith { false };
 
 if ((_groupData get "missionLock") != "") exitWith { false };
 if ((_groupData get "replacementState") != "") exitWith { false };
-if (_groupData get "engagementActive") exitWith { false };
 if ((_groupData get "attachedTo") != "") exitWith { false };
 if ((_groupData get "mountedIn") != "") exitWith { false };
 if (([_groupData] call FLO_fnc_virtualizationGetTransportPassengers) isNotEqualTo []) exitWith { false };

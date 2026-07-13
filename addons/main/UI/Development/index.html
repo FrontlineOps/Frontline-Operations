@@ -476,19 +476,37 @@
         .filter-button.active { color: var(--bg); background: var(--cyan); }
 
         .level-meter {
-            display: flex;
-            gap: 3px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
             margin-top: 10px;
         }
 
-        .level-segment {
-            width: 34px;
-            height: 4px;
-            background: var(--line);
+        .branch-level {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 0;
+            min-height: 26px;
+            padding: 4px 7px;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            background: #071119;
+            font-family: var(--mono);
+            font-size: 9px;
+            text-transform: uppercase;
         }
 
-        .level-segment.filled { background: var(--green); }
-        .level-segment.project { background: var(--amber); }
+        .branch-level strong {
+            margin-left: 6px;
+            color: var(--white);
+            white-space: nowrap;
+        }
+
+        .branch-level.project {
+            border-color: var(--amber);
+            box-shadow: inset 2px 0 var(--amber);
+        }
 
         .doctrine-view.active {
             display: block;
@@ -538,7 +556,7 @@
 
         .tier-row {
             display: grid;
-            grid-template-columns: 1.5fr repeat(4, minmax(90px, 0.8fr));
+            grid-template-columns: 1fr repeat(2, minmax(130px, 1fr));
             min-height: 60px;
             border-bottom: 1px solid var(--line);
         }
@@ -656,7 +674,7 @@
             .filters .filter-button { min-width: 58px; padding: 0 6px; }
             .doctrine-inner { width: calc(100% - 28px); padding-top: 18px; }
             .doctrine-heading { align-items: start; flex-direction: column; }
-            .tier-row { grid-template-columns: 1.3fr repeat(4, minmax(68px, 0.8fr)); }
+            .tier-row { grid-template-columns: 0.8fr repeat(2, minmax(100px, 1fr)); }
             .tier-cell { padding: 8px 7px; }
         }
     </style>
@@ -722,12 +740,12 @@
             <section class="view doctrine-view" data-view="doctrine">
                 <div class="doctrine-inner">
                     <header class="doctrine-heading">
-                        <div><span class="eyebrow">Development Doctrine</span><h1>Investment and Player Lift</h1></div>
-                        <p class="doctrine-summary">Command invests shared treasury and local supply into secure connected territory. Player shipments shorten construction without changing the completed income benefit.</p>
+                        <div><span class="eyebrow">Development Doctrine</span><h1>Revenue and Capacity</h1></div>
+                        <p class="doctrine-summary">Revenue compounds territory income. Development reduces local project cost and construction demand while expanding command's project capacity across the theater.</p>
                     </header>
                     <div class="doctrine-grid">
                         <section>
-                            <span class="eyebrow">Development Tiers</span>
+                            <span class="eyebrow">Progression Examples</span>
                             <div class="tier-table" id="tier-table"></div>
                         </section>
                         <section>
@@ -769,7 +787,14 @@
             }
 
             function readable(value) {
-                return String(value || "--").replace(/_/g, " ");
+                var state = String(value || "--");
+                if (state === "INTEGRATED") { return "SECURED"; }
+                if (state === "CONSOLIDATING") { return "SECURING"; }
+                if (state === "FOOTHOLD") { return "UNSUPPORTED FOOTHOLD"; }
+                if (state === "integrated") { return "SECURED"; }
+                if (state === "integrating") { return "SECURING"; }
+                if (state === "foothold") { return "UNSUPPORTED FOOTHOLD"; }
+                return state.replace(/_/g, " ");
             }
 
             function formatDuration(seconds) {
@@ -797,7 +822,7 @@
 
             function stateClass(state) {
                 if (state === "ACTIVE" || state === "INTEGRATED") { return "state"; }
-                if (state === "PAUSED_COMBAT" || state === "BLOCKED_LOGISTICS" || state === "FOOTHOLD") { return "state warn"; }
+                if (state === "FUNDING" || state === "PAUSED_COMBAT" || state === "BLOCKED_LOGISTICS" || state === "FOOTHOLD") { return "state warn"; }
                 return "state danger";
             }
 
@@ -817,14 +842,17 @@
                 var meter = document.createElement("div");
                 meter.className = "level-meter";
                 var development = objective.development;
-                var targetLevel = development.project.active ? development.project.targetLevel : -1;
-                for (var level = 1; level <= development.maxLevel; level += 1) {
-                    var segment = document.createElement("span");
-                    segment.className = "level-segment";
-                    if (level <= development.level) { segment.className += " filled"; }
-                    if (level === targetLevel) { segment.className += " project"; }
-                    meter.appendChild(segment);
-                }
+                var projectBranch = development.project.active ? development.project.branch : "";
+                var branches = [
+                    ["Revenue", development.revenueLevel, Number(development.revenueMultiplier).toFixed(2) + "X", "REVENUE"],
+                    ["Development", development.developmentLevel, Math.round(Number(development.developmentDiscount) * 100) + "%", "DEVELOPMENT"]
+                ];
+                branches.forEach(function (branch) {
+                    var item = document.createElement("span");
+                    item.className = "branch-level" + (projectBranch === branch[3] ? " project" : "");
+                    item.innerHTML = "<span>" + branch[0] + " L" + branch[1] + "</span><strong>" + branch[2] + "</strong>";
+                    meter.appendChild(item);
+                });
                 return meter;
             }
 
@@ -852,11 +880,11 @@
 
                 var meta = document.createElement("div");
                 meta.className = "row-meta";
-                meta.innerHTML = "<span>GRID " + objective.grid + "</span><span>" + readable(objective.development.name) + " &gt; " + readable(project.targetName) + "</span>";
+                meta.innerHTML = "<span>GRID " + objective.grid + "</span><span>" + readable(project.targetName) + "</span>";
 
                 var progressLabel = document.createElement("div");
                 progressLabel.className = "progress-label";
-                progressLabel.innerHTML = "<span>" + formatResource(project.supplyDelivered) + " / " + formatResource(project.supplyRequired) + " SUPPLY</span><strong>" + project.progressPercent + "%</strong>";
+                progressLabel.innerHTML = "<span>" + formatResource(project.progressCurrent) + " / " + formatResource(project.progressRequired) + " " + project.progressKind + "</span><strong>" + project.progressPercent + "%</strong>";
                 var track = document.createElement("div");
                 track.className = "progress-track";
                 var fill = document.createElement("div");
@@ -889,14 +917,18 @@
                 title.textContent = objective.name;
                 var subtitle = document.createElement("p");
                 subtitle.className = "detail-subtitle";
-                subtitle.textContent = "GRID " + objective.grid + " / " + readable(development.name) + " TO " + readable(project.targetName);
+                var currentLevel = project.branch === "REVENUE" ? development.revenueLevel : development.developmentLevel;
+                subtitle.textContent = "GRID " + objective.grid + " / " + project.branch + " L" + currentLevel + " TO L" + project.targetLevel;
 
                 var metrics = document.createElement("div");
                 metrics.className = "detail-grid";
+                var timeValue = project.state === "FUNDING"
+                    ? formatDuration(project.estimatedConstructionSeconds) + " AFTER FUNDING"
+                    : formatDuration(project.estimatedRemainingSeconds);
                 var metricValues = [
                     ["Progress", project.progressPercent + "%"],
-                    ["Time Remaining", formatDuration(project.estimatedRemainingSeconds)],
-                    ["Commander Supply", formatResource(project.commanderSupply)],
+                    ["Treasury Funding", formatResource(project.fundingReserved) + " / " + formatResource(project.fundingRequired)],
+                    ["Construction", timeValue],
                     ["Player Supply", formatResource(project.playerSupply) + " / " + formatResource(project.playerSupplyCap)]
                 ];
                 metricValues.forEach(function (entry) {
@@ -908,10 +940,17 @@
 
                 var list = document.createElement("div");
                 list.className = "detail-list";
+                list.appendChild(detailRow("Project Branch", project.branch));
+                list.appendChild(detailRow("Treasury Cost", formatResource(project.treasuryCost)));
+                list.appendChild(detailRow("Local Discount", Math.round(Number(project.discountApplied) * 100) + "%"));
                 list.appendChild(detailRow("Supply Source", project.sourceName || "Awaiting route"));
+                list.appendChild(detailRow("Commander Supply", formatResource(project.commanderSupply)));
                 list.appendChild(detailRow("Player Capacity", formatResource(project.playerCapacityRemaining)));
                 list.appendChild(detailRow("Shipment Size", formatResource(project.shipmentAmount)));
-                list.appendChild(detailRow("Income After Completion", Number((snapshot.tiers[project.targetLevel] || {}).incomeMultiplier || 1).toFixed(2) + "X"));
+                var completionEffect = project.branch === "REVENUE"
+                    ? Number(development.nextRevenueQuote.targetRevenueMultiplier).toFixed(2) + "X INCOME"
+                    : Math.round(Number(development.nextDevelopmentQuote.targetDevelopmentDiscount) * 100) + "% LOCAL DISCOUNT";
+                list.appendChild(detailRow("Completion Effect", completionEffect));
                 if (project.lastContributorName) {
                     list.appendChild(detailRow("Last Contributor", project.lastContributorName));
                 }
@@ -920,7 +959,9 @@
                 action.type = "button";
                 action.className = "action-button";
                 action.disabled = !project.canContribute;
-                action.textContent = project.canContribute ? "Assign Nearby Supply Shipment" : "Player Contribution Capacity Reached";
+                action.textContent = project.canContribute
+                    ? "Assign Nearby Supply Shipment"
+                    : (project.state === "FUNDING" ? "Awaiting Treasury Funding" : "Player Contribution Capacity Reached");
                 action.addEventListener("click", function () {
                     send("development::assignShipment", { objectiveId: objective.id });
                 });
@@ -938,7 +979,7 @@
                 var projects = activeObjectives();
                 var list = byId("project-list");
                 list.innerHTML = "";
-                byId("project-count").textContent = projects.length + " / " + snapshot.maximumConcurrentProjects;
+                byId("project-count").textContent = projects.length + " / " + snapshot.projectCapacity;
                 if (projects.length === 0) {
                     list.innerHTML = "<div class=\"empty-state\">No active regional investments</div>";
                     renderProjectDetail(null);
@@ -1010,10 +1051,10 @@
                 var metrics = document.createElement("div");
                 metrics.className = "detail-grid";
                 var values = [
-                    ["Current Tier", development.level + " / " + development.maxLevel],
-                    ["Development", readable(development.name)],
+                    ["Revenue Level", "L" + development.revenueLevel],
+                    ["Development Level", "L" + development.developmentLevel],
                     ["Income / Cycle", formatResource(development.incomePerCycle)],
-                    ["Multiplier", Number(development.incomeMultiplier).toFixed(2) + "X"]
+                    ["Project Discount", Math.round(Number(development.developmentDiscount) * 100) + "%"]
                 ];
                 values.forEach(function (entry) {
                     var metric = document.createElement("div");
@@ -1024,9 +1065,17 @@
 
                 var list = document.createElement("div");
                 list.className = "detail-list";
-                list.appendChild(detailRow("Integration", readable(objective.integrationState)));
+                list.appendChild(detailRow("Territory Status", readable(objective.integrationState)));
                 list.appendChild(detailRow("Capture", readable(objective.captureState)));
-                list.appendChild(detailRow("Next Tier", readable(development.nextName)));
+                list.appendChild(detailRow("Revenue Multiplier", Number(development.revenueMultiplier).toFixed(2) + "X"));
+                list.appendChild(detailRow(
+                    "Next Revenue",
+                    "+" + formatResource(development.nextRevenueQuote.addedIncome) + " / CYCLE FOR " + formatResource(development.nextRevenueQuote.treasuryCost)
+                ));
+                list.appendChild(detailRow(
+                    "Next Development",
+                    Math.round(Number(development.nextDevelopmentQuote.targetDevelopmentDiscount) * 100) + "% DISCOUNT FOR " + formatResource(development.nextDevelopmentQuote.treasuryCost)
+                ));
                 list.appendChild(detailRow("Current Project", development.project.active ? readable(development.project.targetName) : "None"));
                 list.appendChild(detailRow("Threat", objective.underAttack ? "Under attack" : (objective.contested ? "Contested" : "Secure")));
 
@@ -1057,26 +1106,29 @@
             function renderDoctrine() {
                 if (!snapshot) { return; }
                 var table = byId("tier-table");
-                table.innerHTML = "<div class=\"tier-row header\"><span class=\"tier-cell\">Tier</span><span class=\"tier-cell\">Treasury</span><span class=\"tier-cell\">Supply</span><span class=\"tier-cell\">Player Cap</span><span class=\"tier-cell\">Income</span></div>";
-                snapshot.tiers.forEach(function (tier) {
+                table.innerHTML = "<div class=\"tier-row header\"><span class=\"tier-cell\">Level</span><span class=\"tier-cell\">Revenue Multiplier</span><span class=\"tier-cell\">Development Discount</span></div>";
+                snapshot.revenuePreview.forEach(function (revenue, index) {
+                    var development = snapshot.developmentPreview[index];
                     var row = document.createElement("div");
                     row.className = "tier-row";
-                    row.innerHTML = "<span class=\"tier-cell tier-name\">" + tier.level + " / " + readable(tier.name) + "</span>"
-                        + "<span class=\"tier-cell\">" + formatResource(tier.treasuryCost) + "</span>"
-                        + "<span class=\"tier-cell\">" + formatResource(tier.supplyRequired) + "</span>"
-                        + "<span class=\"tier-cell\">" + formatResource(tier.playerSupplyCap) + "</span>"
-                        + "<span class=\"tier-cell\">" + Number(tier.incomeMultiplier).toFixed(2) + "X</span>";
+                    row.innerHTML = "<span class=\"tier-cell tier-name\">LEVEL " + revenue.level + "</span>"
+                        + "<span class=\"tier-cell\">" + Number(revenue.multiplier).toFixed(2) + "X</span>"
+                        + "<span class=\"tier-cell\">" + development.discountPercent + "%</span>";
                     table.appendChild(row);
                 });
 
                 var facts = byId("doctrine-facts");
+                var spending = snapshot.economy.commanderSpending;
                 var factRows = [
-                    ["Concurrent Projects", "Command can sustain " + snapshot.maximumConcurrentProjects + " regional projects at once."],
+                    ["Project Capacity", snapshot.projectCapacity + " simultaneous projects from " + snapshot.totalDevelopmentLevels + " completed Development levels. Next slot at " + snapshot.nextCapacityLevel + "."],
+                    ["Revenue", "Each level compounds objective income. Treasury pricing targets " + snapshot.revenuePaybackCycles + " income cycles before local discounts."],
+                    ["Development", "Each level reduces future local project treasury and supply demand. Base pricing is " + formatResource(snapshot.developmentBaseCost) + " multiplied by target level squared."],
+                    ["Funding Posture", readable(spending.posture) + " / " + formatResource(snapshot.economy.committed) + " treasury currently reserved."],
                     ["Commander Delivery", formatResource(snapshot.commanderSupplyPerTick) + " local supply is applied every " + formatDuration(snapshot.tickInterval) + " while the route remains viable."],
                     ["Player Lift", "Physical shipments can cover up to " + snapshot.playerContributionPercent + "% of a project's requirement."],
                     ["Assignment", "A friendly shipment must be within " + snapshot.assignmentRadius + " meters before it can be assigned."],
                     ["Combat Pressure", "Contested projects pause until security and logistics conditions recover."],
-                    ["Capture Damage", "A captured developed objective loses one tier instead of transferring its full benefit."]
+                    ["Capture Damage", "A captured objective retains " + snapshot.captureRetentionPercent + "% of each completed branch, rounded down."]
                 ];
                 facts.innerHTML = "";
                 factRows.forEach(function (entry) {
@@ -1104,7 +1156,7 @@
                 var economy = snapshot.economy;
                 byId("treasury-balance").textContent = formatResource(economy.balance);
                 byId("treasury-available").textContent = formatResource(economy.available);
-                byId("active-projects").textContent = snapshot.activeCount + " / " + snapshot.maximumConcurrentProjects;
+                byId("active-projects").textContent = snapshot.activeCount + " / " + snapshot.projectCapacity;
                 byId("income-rate").textContent = "+" + formatResource(economy.incomePerMinute);
                 byId("side-name").textContent = snapshot.sideName + " regional development";
                 byId("refresh-state").textContent = "Theater state synchronized";
@@ -1145,49 +1197,70 @@
             window.FLODevelopment = { applySnapshot: applySnapshot };
 
             function demoSnapshot() {
-                var tierRows = [
-                    { level: 0, name: "INTEGRATED", treasuryCost: 0, supplyRequired: 0, playerSupplyCap: 0, incomeMultiplier: 1 },
-                    { level: 1, name: "STABILIZED", treasuryCost: 400, supplyRequired: 6000, playerSupplyCap: 1500, incomeMultiplier: 2 },
-                    { level: 2, name: "DEVELOPED", treasuryCost: 900, supplyRequired: 12000, playerSupplyCap: 3000, incomeMultiplier: 4 },
-                    { level: 3, name: "REGIONAL_CENTER", treasuryCost: 1800, supplyRequired: 18000, playerSupplyCap: 4500, incomeMultiplier: 8 }
-                ];
-                function objective(id, name, grid, subtype, level, maxLevel, project, state) {
+                function revenueMultiplier(level) { return 1 + level + (0.5 * level * level); }
+                function developmentDiscount(level) { return 0.5 * level / (level + 5); }
+                function quote(branch, revenueLevel, developmentLevel, cost, supply, addedIncome) {
+                    return {
+                        branch: branch, targetLevel: (branch === "REVENUE" ? revenueLevel : developmentLevel) + 1,
+                        rawTreasuryCost: cost, discountApplied: developmentDiscount(developmentLevel), treasuryCost: cost,
+                        supplyRequired: supply, playerSupplyCap: Math.floor(supply * 0.25 / 1500) * 1500,
+                        addedIncome: addedIncome, currentRevenueMultiplier: revenueMultiplier(revenueLevel),
+                        targetRevenueMultiplier: branch === "REVENUE" ? revenueMultiplier(revenueLevel + 1) : revenueMultiplier(revenueLevel),
+                        currentDevelopmentDiscount: developmentDiscount(developmentLevel),
+                        targetDevelopmentDiscount: developmentDiscount(developmentLevel + (branch === "DEVELOPMENT" ? 1 : 0))
+                    };
+                }
+                function objective(id, name, grid, subtype, revenueLevel, developmentLevel, project, state) {
                     return {
                         id: id, name: name, grid: grid, position: [0, 0, 0], subtype: subtype, priority: 70,
                         captureState: state === "PAUSED_COMBAT" ? "contested" : "secure",
                         integrationState: state === "BLOCKED_LOGISTICS" ? "FOOTHOLD" : "INTEGRATED",
                         contested: state === "PAUSED_COMBAT", underAttack: state === "PAUSED_COMBAT",
                         development: {
-                            visible: true, level: level, maxLevel: maxLevel, name: tierRows[level].name,
-                            nextName: level < maxLevel ? tierRows[level + 1].name : "MAXIMUM",
-                            incomeMultiplier: tierRows[level].incomeMultiplier, incomePerCycle: 24 * tierRows[level].incomeMultiplier,
+                            visible: true, revenueLevel: revenueLevel, developmentLevel: developmentLevel,
+                            revenueMultiplier: revenueMultiplier(revenueLevel), developmentDiscount: developmentDiscount(developmentLevel),
+                            incomePerCycle: 24 * revenueMultiplier(revenueLevel),
+                            nextRevenueQuote: quote("REVENUE", revenueLevel, developmentLevel, 480, 7200, 60),
+                            nextDevelopmentQuote: quote("DEVELOPMENT", revenueLevel, developmentLevel, 1100, 16500, 0),
                             project: project || { active: false }
                         }
                     };
                 }
-                function project(state, targetLevel, delivered, required, playerSupply, playerCap) {
+                function project(branch, state, targetLevel, delivered, required, playerSupply, playerCap, fundingReserved, fundingRequired) {
+                    var funding = state === "FUNDING";
                     return {
-                        active: true, state: state, targetLevel: targetLevel, targetName: tierRows[targetLevel].name,
+                        active: true, branch: branch, state: state, targetLevel: targetLevel, targetName: branch + " LEVEL " + targetLevel,
+                        rawTreasuryCost: fundingRequired, discountApplied: 0.08, treasuryCost: fundingRequired,
+                        fundingReserved: fundingReserved, fundingRequired: fundingRequired, fundingRemaining: fundingRequired - fundingReserved,
+                        fundingPercent: Math.round(fundingReserved / fundingRequired * 100),
                         supplyRequired: required, supplyDelivered: delivered, commanderSupply: delivered - playerSupply,
                         playerSupply: playerSupply, playerSupplyCap: playerCap, playerCapacityRemaining: playerCap - playerSupply,
-                        progressPercent: Math.round((delivered / required) * 100), estimatedRemainingSeconds: ((required - delivered) / 300) * 60,
+                        supplyPercent: Math.round((delivered / required) * 100),
+                        progressKind: funding ? "TREASURY" : "SUPPLY",
+                        progressCurrent: funding ? fundingReserved : delivered, progressRequired: funding ? fundingRequired : required,
+                        progressPercent: Math.round((funding ? fundingReserved / fundingRequired : delivered / required) * 100),
+                        estimatedRemainingSeconds: ((required - delivered) / 300) * 60, estimatedConstructionSeconds: (required / 300) * 60,
                         playerTimeSavedSeconds: (playerSupply / 300) * 60, sourceObjectiveId: "obj_hq", sourceName: "Kavala",
-                        lastContributorName: playerSupply > 0 ? "Suzuki" : "", canContribute: playerCap - playerSupply >= 1500,
+                        lastContributorName: playerSupply > 0 ? "Suzuki" : "", canContribute: !funding && playerCap - playerSupply >= 1500,
                         shipmentAmount: 1500
                     };
                 }
                 return {
                     generatedAt: 120, sideKey: "WEST", sideName: "BLUFOR", keybind: "Ctrl+Shift+I",
-                    economy: { balance: 12740, committed: 2100, available: 10640, lastIncome: 294, incomePerMinute: 98, ledger: [] },
-                    activeCount: 3, maximumConcurrentProjects: 3, tickInterval: 60, commanderSupplyPerTick: 300,
-                    playerContributionPercent: 25, assignmentRadius: 25, tiers: tierRows,
+                    economy: { balance: 12740, committed: 400, available: 12340, lastIncome: 294, incomePerMinute: 98, commanderSpending: { posture: "BALANCED" } },
+                    activeCount: 3, projectCapacity: 4, totalDevelopmentLevels: 7, nextCapacityLevel: 16, levelsToNextCapacity: 9,
+                    tickInterval: 60, investmentInterval: 180, commanderSupplyPerTick: 300,
+                    playerContributionPercent: 25, assignmentRadius: 25, captureRetentionPercent: 75,
+                    revenuePaybackCycles: 8, developmentBaseCost: 300,
+                    revenuePreview: [0, 1, 3, 6, 10].map(function (level) { return { level: level, multiplier: revenueMultiplier(level) }; }),
+                    developmentPreview: [0, 1, 3, 6, 10].map(function (level) { return { level: level, discountPercent: Math.round(developmentDiscount(level) * 100) }; }),
                     objectives: [
-                        objective("obj_1", "Athira", "140188", "city", 1, 3, project("ACTIVE", 2, 7200, 12000, 1500, 3000), "ACTIVE"),
-                        objective("obj_2", "Pyrgos", "168127", "capital", 2, 3, project("PAUSED_COMBAT", 3, 6300, 18000, 3000, 4500), "PAUSED_COMBAT"),
-                        objective("obj_3", "Agios Dionysios", "092144", "local", 0, 2, project("BLOCKED_LOGISTICS", 1, 1500, 6000, 1500, 1500), "BLOCKED_LOGISTICS"),
-                        objective("obj_4", "Kavala", "036128", "capital", 3, 3, null, "INTEGRATED"),
-                        objective("obj_5", "Charkia", "214168", "city", 1, 3, null, "INTEGRATED"),
-                        objective("obj_6", "Koroni", "117183", "village", 0, 1, null, "INTEGRATED")
+                        objective("obj_1", "Athira", "140188", "city", 2, 1, project("REVENUE", "ACTIVE", 3, 7200, 12000, 1500, 3000, 900, 900), "ACTIVE"),
+                        objective("obj_2", "Pyrgos", "168127", "capital", 3, 2, project("DEVELOPMENT", "PAUSED_COMBAT", 3, 6300, 18000, 3000, 4500, 1800, 1800), "PAUSED_COMBAT"),
+                        objective("obj_3", "Agios Dionysios", "092144", "local", 1, 1, project("DEVELOPMENT", "FUNDING", 2, 0, 16500, 0, 3000, 400, 1100), "FUNDING"),
+                        objective("obj_4", "Kavala", "036128", "capital", 4, 2, null, "INTEGRATED"),
+                        objective("obj_5", "Charkia", "214168", "city", 2, 1, null, "INTEGRATED"),
+                        objective("obj_6", "Koroni", "117183", "village", 1, 0, null, "INTEGRATED")
                     ]
                 };
             }

@@ -47,7 +47,7 @@ if (_action == "calc_price") exitWith {
     // Analyzes the physical and technological capabilities of the vehicle based on Config
     private _capabilityMultiplier = 1.0;
     
-    // Advanced Sensors (Radar / RWR / Datalink)
+    // Advanced sensor suite
     // Presence of "SensorsManagerComponent" implies modern fire control
     if (isClass (_cfgArg >> "Components" >> "SensorsManagerComponent")) then {
         _capabilityMultiplier = _capabilityMultiplier + 0.30; 

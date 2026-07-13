@@ -13,7 +13,6 @@
 
 params ["_groupData"];
 
-[_groupData] call FLO_fnc_virtualizationClearEngagementState;
 _groupData set ["orderTargetPos", []];
 _groupData set ["orderMode", ""];
 _groupData set ["attackObjective", ""];
