@@ -10,15 +10,16 @@ if (_side in [west, east]) then {
 };
 
 private _isAdmin = (serverCommandAvailable "#kick") && {serverCommandAvailable "#debug"};
-private _isOfficer = (typeOf player == F_Officer) || {typeOf player == "B_G_officer_F"};
+private _isOfficer = [player] call FLO_fnc_factionUnitIsOfficer;
 private _hasAuthority = _isAdmin || {_isOfficer || {leader group player isEqualTo player}};
 private _authorityRole = "None";
 if (leader group player isEqualTo player) then { _authorityRole = "Squad Leader"; };
 if (_isOfficer) then { _authorityRole = "Officer"; };
 if (_isAdmin) then { _authorityRole = "Server Admin"; };
-private _factionName = if (_sideKey isEqualTo "EAST") then { "OPFOR" } else { markerText "Friendly_Handle" };
-if (_factionName isEqualTo "") then {
-    _factionName = _sideName;
+private _factionName = _sideName;
+if (_sideKey != "") then {
+    private _handleKey = ["bluforHandle", "opforHandle"] select (_side isEqualTo east);
+    _factionName = (FLO_MissionConfig get _handleKey) get "name";
 };
 
 private _pos = getPosATL player;

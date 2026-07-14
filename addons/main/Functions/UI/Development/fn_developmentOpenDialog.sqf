@@ -1,5 +1,5 @@
 if (!hasInterface) exitWith { false };
-if (!FLO_MissionReady) exitWith {
+if (!FLO_ClientUiReady) exitWith {
     ["Development is unavailable while FLO initializes.", "warning"] call FLO_fnc_displayNotification;
     false
 };

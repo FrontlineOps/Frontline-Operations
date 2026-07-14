@@ -41,7 +41,6 @@ class UtilitiesGame {
 
     class sideKey {};
     class opposingSide {};
-    class createGroupUnit {};
     class addReward {};
     class getRandomMagazine {};
     class addIntelServer {};

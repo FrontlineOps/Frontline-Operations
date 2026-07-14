@@ -18,7 +18,7 @@
 
 if (!isServer) exitWith {};
 
-["OBJECTIVEMONITOR", 2, "MonitorObjectiveDominance started"] call FLO_fnc_log;
+["OBJECTIVEMONITOR", 3, "MonitorObjectiveDominance started"] call FLO_fnc_log;
 
 // Wait for objectives to be initialized
 waitUntil { !isNil "FLO_Objectives" };
@@ -28,7 +28,7 @@ waitUntil { !isNil "FLO_Objectives" };
 private _captureTime = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
 private _captureSecureTime = ["get", "captureSecureTime"] call FLO_fnc_objectiveConfig;
 
-// 0.5s is reasonable for capture logic; clients poll faster for UI
+// Capture state updates at tactical cadence; clients receive owner-targeted events.
 private _updateInterval = 0.5;
 private _targetInactiveRefresh = 2;
 private _runtimeSyncInterval = 2;
@@ -70,12 +70,13 @@ while {true} do {
         {
             private _oId = _x;
             private _objData = FLO_Objectives get _oId;
-            // Active if player is within 1000m (allows for seeing capture status from distance)
+            private _radius = _objData get "radius";
+            // Keep large objective areas active across their full capture radius.
             private _dist = (_objData get "position") distance2D _pPos;
-            if (_dist < 1000) then {
+            if (_dist < (1000 max _radius)) then {
                 _activeObjectives pushBackUnique _oId;
             };
-            if (_dist < (_objData get "radius")) then {
+            if (_dist < _radius) then {
                 _liveObjectives pushBackUnique _oId;
             };
         } forEach _objKeys;
@@ -193,74 +194,18 @@ while {true} do {
         _forceRuntimeSync = false;
     };
 
-    // UI Event Logic (Optimized to only check Active Objectives close to players)
+    // Publish viewer-relative Capture UI state from the maintained objective data.
     {
-        if (alive _x && !isNull _x) then {
-            private _player = _x;
-            private _uid = getPlayerUID _player;
-            if (_uid == "") then { continue };
-            
-            private _pPos = getPosATL _player;
-            private _currentObjId = "";
-            private _closestDist = 9999;
-            private _currentObjData = createHashMap;
-
-            // Only check active objectives for UI presence
-            {
-                private _oId = _x;
-                private _oData = FLO_Objectives get _oId;
-                private _dist = (_oData get "position") distance2D _pPos;
-                if (_dist < (_oData get "radius")) then {
-                    // Check strict shape if needed, but radius implies check passed
-                    if (_dist < _closestDist) then {
-                        _closestDist = _dist;
-                        _currentObjId = _oId;
-                        _currentObjData = _oData;
-                    };
-                };
-            } forEach _activeObjectives; // only check active list
-
-            // Detect state change
-            private _previousObjId = FLO_PlayerObjectiveStates get _uid;
-            if (isNil "_previousObjId") then { _previousObjId = ""; };
-
-            if (_currentObjId != _previousObjId) then {
-                private _ownerId = owner _player;
-                if (_currentObjId != "") then {
-                    private _objName = _currentObjData get "name";
-                    ["FLO_CaptureUI_Show", [_objName, _currentObjId], _ownerId] call CBA_fnc_ownerEvent;
-                } else {
-                    ["FLO_CaptureUI_Hide", [], _ownerId] call CBA_fnc_ownerEvent;
-                };
-                FLO_PlayerObjectiveStates set [_uid, _currentObjId];
-            };
-
-            // Send Realtime Update
-            if (_currentObjId != "") then {
-                private _bluforCount = _currentObjData get "bluforCount";
-                private _opforCount = _currentObjData get "opforCount";
-                private _owner = _currentObjData get "owner";
-                
-                private _playerSide = side group _player;
-                private _friendlyCount = [_bluforCount, _opforCount] select (_playerSide isEqualTo east);
-                private _enemyCount = [_opforCount, _bluforCount] select (_playerSide isEqualTo east);
-                private _totalCount = _friendlyCount + _enemyCount;
-                private _ratio = if (_totalCount > 0) then { _friendlyCount / _totalCount } else { 0.5 };
-                private _captureState = _currentObjData get "captureState";
-                private _secureProgress = _currentObjData get "captureSecureProgress";
-                private _captureProgress = _currentObjData get "captureProgress";
-                
-                ["FLO_CaptureUI_Update", [
-                    _ratio,
-                    _friendlyCount,
-                    _enemyCount,
-                    str _owner,
-                    _captureState,
-                    _secureProgress,
-                    _captureProgress
-                ], owner _player] call CBA_fnc_ownerEvent;
-            };
+        private _player = _x;
+        if (isNull _player) then { continue };
+        if (!alive _player) then {
+            [_player, [], false] call FLO_fnc_captureUIPublishPlayerState;
+            continue;
         };
+        if !((side group _player) in [west, east]) then { continue };
+
+        private _match = [_player, _activeObjectives] call FLO_fnc_captureUIResolvePlayerObjective;
+        [_player, _match, false] call FLO_fnc_captureUIPublishPlayerState;
     } forEach _allPlayers;
 
     sleep _updateInterval;

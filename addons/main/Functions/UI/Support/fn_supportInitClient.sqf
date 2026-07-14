@@ -1,20 +1,16 @@
-if (!hasInterface || {FLO_SupportKeybindInitialized}) exitWith {};
-
-FLO_SupportKeybindInitialized = true;
+if (!hasInterface) exitWith { false };
+if (FLO_SupportKeybindInitialized) exitWith { true };
 
 [
-    { !isNull player },
-    {
-        [
-            "FLO",
-            "openSupportPanel",
-            ["Open Tactical Support Net", "Open artillery, CAS, and CAP requests."],
-            { [] call FLO_fnc_supportOpenDialog; true },
-            {},
-            [31, [true, true, false]],
-            false
-        ] call CBA_fnc_addKeybind;
+    "FLO",
+    "openSupportPanel",
+    ["Open Tactical Support Net", "Open artillery, CAS, and CAP requests."],
+    { [] call FLO_fnc_supportOpenDialog; true },
+    {},
+    [31, [true, true, false]],
+    false
+] call CBA_fnc_addKeybind;
 
-        diag_log "[FLO][Support] Ctrl+Shift+S keybind initialized";
-    }
-] call CBA_fnc_waitUntilAndExecute;
+FLO_SupportKeybindInitialized = true;
+["UI", 4, "Tactical Support keybind initialized"] call FLO_fnc_log;
+true

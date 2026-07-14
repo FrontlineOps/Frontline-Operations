@@ -78,6 +78,7 @@ class CfgRemoteExec {
         class FLO_fnc_baseDeployReceiveResult { allowedTargets = 1; jip = 0; };
         class FLO_fnc_campaignRequestSnapshot { allowedTargets = 2; jip = 0; };
         class FLO_fnc_objectiveDevelopmentAssignShipment { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_captureUIRequestStateServer { allowedTargets = 2; jip = 0; };
         class FLO_fnc_operationsReceiveSnapshot { allowedTargets = 1; jip = 0; };
         class FLO_fnc_developmentRequestSnapshotServer { allowedTargets = 2; jip = 0; };
         class FLO_fnc_developmentReceiveSnapshot { allowedTargets = 1; jip = 0; };

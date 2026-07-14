@@ -76,36 +76,6 @@ if (isNull _realGroup) exitWith {
     false
 };
 
-// ========================================================================
-// SIDE COMMIT - Arma's modern group createUnit syntax can retain each
-// classname's configured side inside an opposite-side group. Explicitly
-// rejoin and validate the complete group before exposing it to simulation.
-// ========================================================================
-private _sideCorrectionFailed = false;
-if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civilian}) then {
-    private _sideCorrectedGroup = [_realGroup, _side] call FLO_fnc_setSide;
-    if (isNull _sideCorrectedGroup) then {
-        ["VIRTUALIZATION", 1, format [
-            "Failed to apply side correction for %1 (%2) - cleaning up spawned assets",
-            _groupId,
-            _groupType
-        ]] call FLO_fnc_log;
-        [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
-        _sideCorrectionFailed = true;
-    } else {
-        _realGroup = _sideCorrectedGroup;
-    };
-};
-if (_sideCorrectionFailed) exitWith { false };
-if (isNull _realGroup) exitWith {
-    ["VIRTUALIZATION", 1, format [
-        "Failed to apply side correction for %1 (%2)",
-        _groupId,
-        _groupType
-    ]] call FLO_fnc_log;
-    false
-};
-
 if !([_groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition) exitWith {
     [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
     ["VIRTUALIZATION", 1, format [

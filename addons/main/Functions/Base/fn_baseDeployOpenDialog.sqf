@@ -1,6 +1,6 @@
 if (!hasInterface) exitWith { false };
 
-if !(missionNamespace getVariable ["FLO_MissionReady", false]) exitWith {
+if (!FLO_ClientUiReady) exitWith {
     ["Deployment is available after mission setup completes.", "warning"] call FLO_fnc_displayNotification;
     false
 };
@@ -22,12 +22,20 @@ if (!isNull _display) exitWith {
 createDialog "FLO_DeployDialog";
 _display = findDisplay FLO_BaseDeployDialogIdd;
 
-if (isNull _display) exitWith { false };
+if (isNull _display) exitWith {
+    ["The Deployment panel could not be opened.", "error"] call FLO_fnc_displayNotification;
+    false
+};
 
 FLO_BaseDeployBrowserReady = false;
 FLO_BaseDeployRenderKey = "";
 
 private _control = _display displayCtrl FLO_BaseDeployBrowserIdc;
+if (isNull _control) exitWith {
+    closeDialog 0;
+    ["The Deployment browser control is unavailable.", "error"] call FLO_fnc_displayNotification;
+    false
+};
 uiNamespace setVariable ["FLO_DeployControl", _control];
 
 [_control] call FLO_fnc_baseDeployAddWebEventHandler;

@@ -16,7 +16,7 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 23;
+private _saveVersion = 24;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -43,9 +43,10 @@ private _saveRadius = 300;
 
 try {
     private _cfg = createHashMap;
-    _cfg set ["friendlyHandle", FLO_FriendlyHandle];
-    _cfg set ["enemyHandle", FLO_EnemyHandle];
+    _cfg set ["bluforHandle", FLO_BluforHandle];
+    _cfg set ["opforHandle", FLO_OpforHandle];
     _cfg set ["civilianHandle", FLO_CivilianHandle];
+    _cfg set ["playerSideKey", [FLO_ActivePlayerSide] call FLO_fnc_sideKey];
     _cfg set ["startingResources", FLO_MissionConfig get "startingResources"];
     _cfg set ["reputationHandle", FLO_ReputationHandle];
     _cfg set ["westDifficultyHandle", FLO_WestDifficultyHandle];

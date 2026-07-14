@@ -316,7 +316,6 @@ class FLO {
         class baseDeployInitClient {};
         class baseDeployInitializeState {};
         class baseDeployOpenDialog {};
-        class baseDeployPostInit { postInit = 1; };
         class baseDeployPreInit { preInit = 1; };
         class baseDeployReceiveResult {};
         class baseDeployRequest {};
@@ -329,8 +328,8 @@ class FLO {
     class Factions {
         file = "\z\flo\addons\main\Functions\Factions";
 
-        class factionApplyAutoEnemyGlobals {};
-        class factionApplyAutoFriendlyGlobals {};
+        class factionApplyAutoBluforGlobals {};
+        class factionApplyAutoOpforGlobals {};
         class factionApplyAutoGlobals {};
         class factionBuildAutoCivilianCatalog {};
         class factionBuildAutoIndex {};
@@ -357,6 +356,9 @@ class FLO {
         class factionGetVariableArray {};
         class factionBuildCompositionDefaultsHandle {};
         class factionHandleSource {};
+        class factionHandleSide {};
+        class factionUnitIsOfficer {};
+        class factionValidateCatalogSide {};
         class factionIsUnsignedInt {};
         class factionMergePairs {};
         class factionApplyTuningOverrides {};

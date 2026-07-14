@@ -1,8 +1,8 @@
 /*
- * Function: FLO_fnc_factionApplyAutoFriendlyGlobals
+ * Function: FLO_fnc_factionApplyAutoBluforGlobals
  * Author: Frontline Operations Development Group
  * Description:
- *   Applies an auto-generated military catalog to the legacy friendly globals.
+ *   Applies an auto-generated military catalog to BLUFOR and its legacy globals.
  *
  * Arguments:
  *   0: Auto military catalog <HASHMAP>

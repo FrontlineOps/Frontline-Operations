@@ -16,6 +16,13 @@ params [["_factionClass", "", [""]]];
 private _empty = createHashMap;
 if (_factionClass == "") exitWith { _empty };
 
+private _factionCfg = missionConfigFile >> "CfgFactionClasses" >> _factionClass;
+if !(isClass _factionCfg) then {
+    _factionCfg = configFile >> "CfgFactionClasses" >> _factionClass;
+};
+if !(isClass _factionCfg) exitWith { _empty };
+private _expectedSide = getNumber (_factionCfg >> "side");
+
 private _groups = [_factionClass] call FLO_fnc_factionGetGroupConfigs;
 private _infantryGroups = _groups get "infantryGroups";
 private _specOpsGroups = _groups get "specOpsGroups";
@@ -48,12 +55,13 @@ private _rejectedRadarAssets = [];
     private _vehCfg = _x;
     if ((toLower (getText (_vehCfg >> "faction"))) != _factionLower) then { continue };
     if (getNumber (_vehCfg >> "scope") < 2) then { continue };
+    if (getNumber (_vehCfg >> "side") != _expectedSide) then { continue };
 
     private _className = configName _vehCfg;
 
     if (_className isKindOf "CAManBase") then {
         if (_usesUnitFallback) then {
-            if ([_className, _factionClass] call FLO_fnc_factionClassIsCombatInfantry) then {
+            if ([_className, _factionClass, _expectedSide] call FLO_fnc_factionClassIsCombatInfantry) then {
                 _units pushBackUnique _className;
             } else {
                 _rejectedInfantry pushBackUnique _className;
@@ -120,7 +128,8 @@ if (_officer != "") then {
     _officers pushBack _officer;
 };
 
-private _compositionDefaults = ["BLUFOR", "AUTO_STANDARD"] call FLO_fnc_factionGetCompositionDefaults;
+private _compositionSide = ["OPFOR", "BLUFOR"] select (_expectedSide == 1);
+private _compositionDefaults = [_compositionSide, "AUTO_STANDARD"] call FLO_fnc_factionGetCompositionDefaults;
 
 createHashMapFromArray [
     ["source", "auto"],

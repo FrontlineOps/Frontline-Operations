@@ -1,5 +1,9 @@
 /* Returns whether a public unit class is suitable for commander infantry pools. */
-params ["_unitClass", ["_factionClass", "", [""]]];
+params [
+    "_unitClass",
+    ["_factionClass", "", [""]],
+    ["_expectedSide", -1, [0]]
+];
 
 if !(_unitClass isEqualType "") then {
     throw "Combat infantry eligibility requires a classname string";
@@ -11,6 +15,7 @@ if !(isClass _cfg) exitWith { false };
 if (getNumber (_cfg >> "scope") < 2) exitWith { false };
 if !(_unitClass isKindOf "CAManBase") exitWith { false };
 if (_factionClass != "" && {toLower (getText (_cfg >> "faction")) != toLower _factionClass}) exitWith { false };
+if (_expectedSide >= 0 && {getNumber (_cfg >> "side") != _expectedSide}) exitWith { false };
 if (toLower (getText (_cfg >> "simulation")) != "soldier") exitWith { false };
 
 private _identity = toLower format [

@@ -139,7 +139,7 @@ private _runtimeMs = (diag_tickTime - _runtimeT0) * 1000;
 // Seed initial EAST/WEST ownership for new runs.
 diag_log "[FLO_INIT_P3] Seeding initial objective ownership...";
 private _seedT0 = diag_tickTime;
-[FLO_MissionConfig get "startPosition", FLO_StartingTerritoryWestRatio] call FLO_fnc_seedObjectiveOwnership;
+[FLO_MissionConfig get "startPosition", FLO_StartingTerritoryWestRatio, FLO_ActivePlayerSide] call FLO_fnc_seedObjectiveOwnership;
 private _seedMs = (diag_tickTime - _seedT0) * 1000;
 
 // Build objective graph

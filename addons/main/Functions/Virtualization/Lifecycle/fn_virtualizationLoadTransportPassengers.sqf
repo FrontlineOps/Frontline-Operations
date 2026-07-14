@@ -56,53 +56,24 @@ private _poolUnits = _pools get "units";
     private _spawnFailed = false;
     if (_infComp isNotEqualTo []) then {
         {
-            private _unit = [
-                _infGroup,
-                _x,
-                _position,
-                [],
-                0,
-                "NONE",
-                format ["transport=%1 passengerGroup=%2", _groupId, _attachedId]
-            ] call FLO_fnc_createGroupUnit;
+            private _unit = _infGroup createUnit [_x, _position, [], 0, "NONE"];
             if (isNull _unit) exitWith { _spawnFailed = true; };
         } forEach _infComp;
     } else {
         for "_i" from 1 to _infUnitCount do {
-            private _unit = [
-                _infGroup,
-                selectRandom _poolUnits,
-                _position,
-                [],
-                0,
-                "NONE",
-                format ["transport=%1 passengerGroup=%2", _groupId, _attachedId]
-            ] call FLO_fnc_createGroupUnit;
+            private _unit = _infGroup createUnit [selectRandom _poolUnits, _position, [], 0, "NONE"];
             if (isNull _unit) exitWith { _spawnFailed = true; };
         };
     };
 
     if (_spawnFailed) then {
         ["VIRTUALIZATION", 1, format [
-            "Transport %1 failed to create side-correct passenger group %2",
+            "Transport %1 failed to create passenger group %2",
             _groupId,
             _attachedId
         ]] call FLO_fnc_log;
         { deleteVehicle _x; } forEach units _infGroup;
         deleteGroup _infGroup;
-        continue;
-    };
-
-    private _attachedSide = _attachedData get "side";
-    if (!isNull _infGroup && {_attachedSide in [east, west, independent]} && {_attachedSide != civilian}) then {
-        _infGroup = [_infGroup, _attachedSide] call FLO_fnc_setSide;
-    };
-    if (isNull _infGroup) then {
-        ["VIRTUALIZATION", 1, format [
-            "Transport %1 failed to activate attached group %2 - side correction returned null group",
-            _groupId,
-            _attachedId
-        ]] call FLO_fnc_log;
         continue;
     };
 

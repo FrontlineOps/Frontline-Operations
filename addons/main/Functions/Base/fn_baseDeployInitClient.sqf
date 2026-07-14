@@ -1,4 +1,5 @@
-if (!hasInterface) exitWith {};
+if (!hasInterface) exitWith { false };
+if (FLO_BaseDeployClientInitialized) exitWith { true };
 
 ["FLO_Base_FirstFOBClaimed", {
     params ["_claims"];
@@ -9,18 +10,15 @@ if (!hasInterface) exitWith {};
 }] call CBA_fnc_addEventHandler;
 
 [
-    { !isNull player },
-    {
-        [
-            "FLO",
-            "openDeploymentPanel",
-            ["Open Deployment Panel", "Open the FLO FOB/COP deployment panel."],
-            { [] call FLO_fnc_baseDeployOpenDialog; true },
-            {},
-            [32, [true, true, false]],
-            false
-        ] call CBA_fnc_addKeybind;
+    "FLO",
+    "openDeploymentPanel",
+    ["Open Deployment Panel", "Open the FLO FOB/COP deployment panel."],
+    { [] call FLO_fnc_baseDeployOpenDialog; true },
+    {},
+    [32, [true, true, false]],
+    false
+] call CBA_fnc_addKeybind;
 
-        diag_log "[FLO][Base] Deployment keybind initialized";
-    }
-] call CBA_fnc_waitUntilAndExecute;
+FLO_BaseDeployClientInitialized = true;
+["UI", 4, "Deployment event and keybind initialized"] call FLO_fnc_log;
+true

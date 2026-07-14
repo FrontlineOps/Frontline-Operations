@@ -255,5 +255,4 @@ class VirtualizationUtilities {
     class virtualizationGetRealAssetVehicles {};
     class virtualizationUsesAssetStrength {};
     class validateGroupPosition   {};
-    class setSide                 {};
 };

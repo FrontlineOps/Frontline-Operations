@@ -16,9 +16,10 @@ if (isNil "FLO_MissionConfig") exitWith { false };
 
 private _config = FLO_MissionConfig;
 
-FLO_FriendlyHandle = _config get "friendlyHandle";
-FLO_EnemyHandle = _config get "enemyHandle";
+FLO_BluforHandle = _config get "bluforHandle";
+FLO_OpforHandle = _config get "opforHandle";
 FLO_CivilianHandle = _config get "civilianHandle";
+FLO_ActivePlayerSide = [_config get "playerSideKey"] call FLO_fnc_campaignSideFromKey;
 
 if (isNil "FLO_ReputationHandle") then {
     FLO_ReputationHandle = _config get "reputationHandle";

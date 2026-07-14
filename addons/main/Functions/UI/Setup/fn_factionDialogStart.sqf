@@ -16,10 +16,11 @@
  * [] call FLO_fnc_factionDialogStart;
  *
  * IDC Reference (from UI/constants.hpp):
- * FLO_IDC_FACTION_COMBO_PLAYER     = 1955
- * FLO_IDC_FACTION_COMBO_ENEMY      = 1956
+ * FLO_IDC_FACTION_COMBO_BLUFOR     = 1955
+ * FLO_IDC_FACTION_COMBO_OPFOR      = 1956
  * FLO_IDC_FACTION_COMBO_CIVILIAN   = 1957
  * FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE = 1958
+ * FLO_IDC_FACTION_COMBO_PLAYER_SIDE = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
  * FLO_IDC_FACTION_COMBO_WEST_AGGRESSION = 1961
  * FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE = 1962
@@ -52,13 +53,14 @@ private _startBtn = _display displayCtrl 1600;
 _startBtn ctrlEnable false;
 
 // Get all selections using numeric IDCs
-private _playerFactionSelections = [_display, 1955] call FLO_fnc_factionDialogGetSelections;
-private _enemyFactionSelections = [_display, 1956] call FLO_fnc_factionDialogGetSelections;
+private _bluforFactionSelections = [_display, 1955] call FLO_fnc_factionDialogGetSelections;
+private _opforFactionSelections = [_display, 1956] call FLO_fnc_factionDialogGetSelections;
 private _civilianFactionSelections = [_display, 1957] call FLO_fnc_factionDialogGetSelections;
-private _playerFaction = [_playerFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
-private _enemyFaction = [_enemyFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
+private _bluforFaction = [_bluforFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
+private _opforFaction = [_opforFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
 private _civilianFaction = [_civilianFactionSelections] call FLO_fnc_factionDialogJoinSelectionNames;
 private _westAttackCoverage = ([_display, 1958] call FLO_fnc_factionDialogGetSelection) select 0;
+private _playerSide = ([_display, 1959] call FLO_fnc_factionDialogGetSelection) select 0;
 private _reputation = ([_display, 1960] call FLO_fnc_factionDialogGetSelection) select 0;
 private _westDifficulty = ([_display, 1961] call FLO_fnc_factionDialogGetSelection) select 0;
 private _westDefenseCoverage = ([_display, 1962] call FLO_fnc_factionDialogGetSelection) select 0;
@@ -77,8 +79,8 @@ private _eastForceGrowth = ([_display, 1974] call FLO_fnc_factionDialogGetSelect
 private _eastGarrison = ([_display, 1975] call FLO_fnc_factionDialogGetSelection) select 0;
 
 private _selectionErrors =
-    (["Player", _playerFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
-    (["Enemy", _enemyFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
+    (["BLUFOR", _bluforFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
+    (["OPFOR", _opforFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
     (["Civilian", _civilianFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections);
 
 if (_selectionErrors isNotEqualTo []) exitWith {
@@ -88,9 +90,10 @@ if (_selectionErrors isNotEqualTo []) exitWith {
 };
 
 // Validate selections
-if (_playerFaction isEqualTo "" ||
-    _enemyFaction isEqualTo "" ||
+if (_bluforFaction isEqualTo "" ||
+    _opforFaction isEqualTo "" ||
     _civilianFaction isEqualTo "" ||
+    !(_playerSide in ["BLUFOR", "OPFOR"]) ||
     _westAttackCoverage isEqualTo "" ||
     _reputation isEqualTo "" ||
     _westDifficulty isEqualTo "" ||
@@ -134,14 +137,15 @@ private _eastFactionTuningHandle = _eastFactionTuningParse get "overrides";
 _display closeDisplay 1;
 
 // Log selections
-["UI", 3, format["Mission starting with: Player=%1, Enemy=%2, Civilian=%3",
-	_playerFaction, _enemyFaction, _civilianFaction]] call FLO_fnc_log;
+["UI", 3, format ["Mission starting with: BLUFOR=%1, OPFOR=%2, Civilian=%3, PlayerSide=%4",
+	_bluforFaction, _opforFaction, _civilianFaction, _playerSide]] call FLO_fnc_log;
 
 // Execute mission setup
 [
-    _playerFaction,
-    _enemyFaction,
+    _bluforFaction,
+    _opforFaction,
     _civilianFaction,
+    _playerSide,
     _westAttackCoverage,
     _reputation,
     _westDifficulty,
@@ -159,16 +163,17 @@ _display closeDisplay 1;
     _eastTempo,
     _eastForceGrowth,
     _eastGarrison,
-    _playerFactionSelections,
-    _enemyFactionSelections,
+    _bluforFactionSelections,
+    _opforFactionSelections,
     _civilianFactionSelections,
     _westFactionTuningHandle,
     _eastFactionTuningHandle
 ] spawn {
 	params [
-        "_playerFaction",
-        "_enemyFaction",
+		"_bluforFaction",
+		"_opforFaction",
         "_civilianFaction",
+        "_playerSide",
         "_westAttackCoverage",
         "_reputation",
         "_westDifficulty",
@@ -186,8 +191,8 @@ _display closeDisplay 1;
         "_eastTempo",
         "_eastForceGrowth",
         "_eastGarrison",
-        "_playerFactionSelections",
-        "_enemyFactionSelections",
+		"_bluforFactionSelections",
+		"_opforFactionSelections",
         "_civilianFactionSelections",
         "_westFactionTuningHandle",
         "_eastFactionTuningHandle"
@@ -295,10 +300,12 @@ _display closeDisplay 1;
 	// The Phase Manager (FLO_fnc_initPhase1_MissionConfig) is waiting for this
 	// ============================================================================
 
+	private _playerSideKey = ["WEST", "EAST"] select (_playerSide isEqualTo "OPFOR");
 	FLO_MissionConfig = createHashMapFromArray [
-		["friendlyHandle", [_playerFactionSelections] call FLO_fnc_factionDialogBuildFactionHandle],
-		["enemyHandle", [_enemyFactionSelections] call FLO_fnc_factionDialogBuildFactionHandle],
-		["civilianHandle", [_civilianFactionSelections] call FLO_fnc_factionDialogBuildFactionHandle],
+		["bluforHandle", [_bluforFactionSelections, 1] call FLO_fnc_factionDialogBuildFactionHandle],
+		["opforHandle", [_opforFactionSelections, 0] call FLO_fnc_factionDialogBuildFactionHandle],
+		["civilianHandle", [_civilianFactionSelections, 3] call FLO_fnc_factionDialogBuildFactionHandle],
+		["playerSideKey", _playerSideKey],
 		["reputationHandle", createHashMapFromArray [["value", _reputationValue], ["name", _reputation]]],
 		["westDifficultyHandle", _westDifficultyHandle],
 		["eastDifficultyHandle", _eastDifficultyHandle],
@@ -345,7 +352,7 @@ _display closeDisplay 1;
 				case 1: { "Loading factions..." };
 				case 2: { "Configuring factions..." };
 				case 3: { "Indexing objectives..." };
-				case 4: { "Setting up OPFOR forces..." };
+				case 4: { "Setting up campaign forces..." };
 				case 5: { "Starting mission systems..." };
 				case 99: { "Complete!" };
 				case -1: { "ERROR - Check server log" };
@@ -364,7 +371,7 @@ _display closeDisplay 1;
 		["UI", 3, "Mission initialization complete - ready to play"] call FLO_fnc_log;
 
 		// Create local respawn marker
-		private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+		private _activeSide = FLO_ActivePlayerSide;
 		private _respawnKey = ["west", "east"] select (_activeSide isEqualTo east);
         private _respawnMarkerName = format ["respawn_%1", _respawnKey];
         if !(_respawnMarkerName in allMapMarkers) then {

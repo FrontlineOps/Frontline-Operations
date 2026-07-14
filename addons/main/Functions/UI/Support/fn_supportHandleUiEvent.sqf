@@ -9,7 +9,7 @@ switch (_event) do {
         uiNamespace setVariable ["FLO_SupportControl", _control];
         FLO_SupportBrowserReady = true;
         [] call FLO_fnc_supportUpdateDialog;
-        diag_log "[FLO][Support] Browser ready";
+        ["UI", 4, "Tactical Support browser ready"] call FLO_fnc_log;
     };
     case "support::select": {
         private _type = toUpper (_data get "type");
@@ -39,7 +39,7 @@ switch (_event) do {
         closeDialog 0;
     };
     default {
-        diag_log format ["[FLO][Support] Unhandled browser event: %1", _event];
+        ["UI", 4, format ["Unhandled Tactical Support browser event: %1", _event]] call FLO_fnc_log;
     };
 };
 

@@ -15,10 +15,11 @@
  * [] call FLO_fnc_factionDialogPopulate;
  *
  * IDC Reference (from UI/constants.hpp):
- * FLO_IDC_FACTION_COMBO_PLAYER     = 1955
- * FLO_IDC_FACTION_COMBO_ENEMY      = 1956
+ * FLO_IDC_FACTION_COMBO_BLUFOR     = 1955
+ * FLO_IDC_FACTION_COMBO_OPFOR      = 1956
  * FLO_IDC_FACTION_COMBO_CIVILIAN   = 1957
  * FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE = 1958
+ * FLO_IDC_FACTION_COMBO_PLAYER_SIDE = 1959
  * FLO_IDC_FACTION_COMBO_REPUTATION = 1960
  * FLO_IDC_FACTION_COMBO_WEST_AGGRESSION = 1961
  * FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE = 1962
@@ -46,32 +47,34 @@ if (isNull _display) exitWith {
 };
 
 private _autoFactionIndex = [] call FLO_fnc_factionBuildAutoIndex;
-private _autoMilitaryFactions = _autoFactionIndex get "military";
+private _autoBluforFactions = _autoFactionIndex get "blufor";
+private _autoOpforFactions = _autoFactionIndex get "opfor";
 private _autoCivilianFactions = _autoFactionIndex get "civilian";
-private _militaryDefaultIndex = parseNumber (_autoMilitaryFactions isNotEqualTo []);
+private _bluforDefaultIndex = parseNumber (_autoBluforFactions isNotEqualTo []);
+private _opforDefaultIndex = parseNumber (_autoOpforFactions isNotEqualTo []);
 private _civilianDefaultIndex = parseNumber (_autoCivilianFactions isNotEqualTo []);
 
-private _friendlyCustom = ["friendly"] call FLO_fnc_factionGetCustomDefinition;
-private _enemyCustom = ["enemy"] call FLO_fnc_factionGetCustomDefinition;
+private _bluforCustom = ["blufor"] call FLO_fnc_factionGetCustomDefinition;
+private _opforCustom = ["opfor"] call FLO_fnc_factionGetCustomDefinition;
 private _civilianCustom = ["civilian"] call FLO_fnc_factionGetCustomDefinition;
 
 // ============================================================================
-// PLAYER FACTION (IDC 1955)
+// BLUFOR FACTION (IDC 1955)
 // ============================================================================
 
-private _playerCombo = _display displayCtrl 1955;
-private _playerFactions = [_friendlyCustom select 0];
+private _bluforCombo = _display displayCtrl 1955;
+private _bluforFactions = [_bluforCustom select 0];
 
-[_playerCombo, _playerFactions, _autoMilitaryFactions, _militaryDefaultIndex] call FLO_fnc_factionDialogAddFactionItems;
+[_bluforCombo, _bluforFactions, _autoBluforFactions, _bluforDefaultIndex] call FLO_fnc_factionDialogAddFactionItems;
 
 // ============================================================================
-// ENEMY FACTION (IDC 1956)
+// OPFOR FACTION (IDC 1956)
 // ============================================================================
 
-private _enemyCombo = _display displayCtrl 1956;
-private _enemyFactions = [_enemyCustom select 0];
+private _opforCombo = _display displayCtrl 1956;
+private _opforFactions = [_opforCustom select 0];
 
-[_enemyCombo, _enemyFactions, _autoMilitaryFactions, _militaryDefaultIndex] call FLO_fnc_factionDialogAddFactionItems;
+[_opforCombo, _opforFactions, _autoOpforFactions, _opforDefaultIndex] call FLO_fnc_factionDialogAddFactionItems;
 
 // ============================================================================
 // CIVILIAN FACTION (IDC 1957)
@@ -81,6 +84,9 @@ private _civilianCombo = _display displayCtrl 1957;
 private _civilianFactions = [_civilianCustom select 0];
 
 [_civilianCombo, _civilianFactions, _autoCivilianFactions, _civilianDefaultIndex] call FLO_fnc_factionDialogAddFactionItems;
+
+private _playerSideDefault = parseNumber ((side group player) isEqualTo east);
+[_display displayCtrl 1959, ["BLUFOR", "OPFOR"], _playerSideDefault] call FLO_fnc_factionDialogAddItems;
 
 // ============================================================================
 // AI COMMANDER POSTURE OPTIONS
@@ -210,13 +216,13 @@ private _territoryRatioOptions = [
 
 [_territoryRatioCombo, _territoryRatioOptions, 4] call FLO_fnc_factionDialogAddItems;
 
-_playerCombo ctrlAddEventHandler ["LBSelChanged", {
+_bluforCombo ctrlAddEventHandler ["LBSelChanged", {
     params ["_ctrl", "_selectedIndex"];
     [_ctrl, _selectedIndex] call FLO_fnc_factionDialogNormalizeMultiSelection;
     [ctrlParent _ctrl, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
 }];
 
-_enemyCombo ctrlAddEventHandler ["LBSelChanged", {
+_opforCombo ctrlAddEventHandler ["LBSelChanged", {
     params ["_ctrl", "_selectedIndex"];
     [_ctrl, _selectedIndex] call FLO_fnc_factionDialogNormalizeMultiSelection;
     [ctrlParent _ctrl, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
@@ -233,8 +239,9 @@ _civilianCombo ctrlAddEventHandler ["LBSelChanged", {
 ["composition"] call FLO_fnc_factionDialogShowCompositionTab;
 
 ["UI", 3, format [
-    "Faction dialog dropdowns populated (auto military=%1, auto civilian=%2)",
-    count _autoMilitaryFactions,
+    "Faction dialog dropdowns populated (BLUFOR=%1, OPFOR=%2, civilian=%3)",
+    count _autoBluforFactions,
+    count _autoOpforFactions,
     count _autoCivilianFactions
 ]] call FLO_fnc_log;
 

@@ -1,53 +1,61 @@
 /*
- * Function: FLO_fnc_seedObjectiveOwnership
- * Author: Frontline Operations Development Group
- * Description:
- *   Seeds initial EAST/WEST objective ownership from the selected start position.
- *
- * Arguments:
- *   0: Start position <ARRAY>
- *   1: WEST territory ratio <NUMBER> - Default 0.5
- *
- * Returns:
- *   BOOL - true when ownership was seeded
+ * Seeds initial EAST/WEST ownership while anchoring the configured player side
+ * at the selected campaign start position.
  */
 
 if (!isServer) exitWith { false };
 if (isNil "FLO_Objectives" || {FLO_Objectives isEqualTo []}) exitWith { false };
 
-params [["_startPos", [], [[]]], ["_westRatio", 0.5, [0]]];
+params [
+    ["_startPos", [], [[]]],
+    ["_westRatio", 0.5, [0]],
+    ["_anchorSide", sideUnknown]
+];
+
+if !(_anchorSide in [west, east]) then {
+    throw format ["Cannot seed objective ownership for unsupported anchor side %1", _anchorSide];
+};
 
 private _allObjectives = keys FLO_Objectives;
 private _objectiveCount = count _allObjectives;
 private _targetWestCount = round (_objectiveCount * _westRatio);
 if (_objectiveCount > 1) then {
-    if (_targetWestCount < 1) then { _targetWestCount = 1; };
-    if (_targetWestCount > (_objectiveCount - 1)) then { _targetWestCount = _objectiveCount - 1; };
+    _targetWestCount = (_targetWestCount max 1) min (_objectiveCount - 1);
 } else {
     _targetWestCount = _objectiveCount;
 };
-private _westOwned = [];
+
+private _targetAnchorCount = [
+    _targetWestCount,
+    _objectiveCount - _targetWestCount
+] select (_anchorSide isEqualTo east);
+if (_objectiveCount == 1) then {
+    _targetAnchorCount = 1;
+};
+private _opposingSide = [east, west] select (_anchorSide isEqualTo east);
+private _anchorOwned = [];
+private _opposingOwned = [];
 private _queue = [];
 private _queued = createHashMap;
-private _westSet = createHashMap;
+private _anchorSet = createHashMap;
 
-private _seedObjId = ([_allObjectives, [], {
+private _seedObjectiveId = ([_allObjectives, [], {
     (((FLO_Objectives get _x) get "position") distance2D _startPos)
 }, "ASCEND"] call BIS_fnc_sortBy) select 0;
 
-_queue pushBack _seedObjId;
-_queued set [_seedObjId, true];
+_queue pushBack _seedObjectiveId;
+_queued set [_seedObjectiveId, true];
 
-while {_queue isNotEqualTo [] && {count _westOwned < _targetWestCount}} do {
-    private _objId = _queue deleteAt 0;
-    if (isNil {_westSet get _objId}) then {
-        private _objData = FLO_Objectives get _objId;
-        _objData set ["owner", west];
-        FLO_Objectives set [_objId, _objData];
-        _westOwned pushBack _objId;
-        _westSet set [_objId, true];
+while {_queue isNotEqualTo [] && {count _anchorOwned < _targetAnchorCount}} do {
+    private _objectiveId = _queue deleteAt 0;
+    if (isNil {_anchorSet get _objectiveId}) then {
+        private _objective = FLO_Objectives get _objectiveId;
+        _objective set ["owner", _anchorSide];
+        FLO_Objectives set [_objectiveId, _objective];
+        _anchorOwned pushBack _objectiveId;
+        _anchorSet set [_objectiveId, true];
 
-        private _neighbors = +(_objData get "linkedObjectives");
+        private _neighbors = +(_objective get "linkedObjectives");
         _neighbors = [_neighbors, [], {
             (((FLO_Objectives get _x) get "position") distance2D _startPos)
         }, "ASCEND"] call BIS_fnc_sortBy;
@@ -59,8 +67,9 @@ while {_queue isNotEqualTo [] && {count _westOwned < _targetWestCount}} do {
             };
         } forEach _neighbors;
 
-        if (_queue isEqualTo [] && {count _westOwned < _targetWestCount}) then {
-            private _closestUnqueued = ([_allObjectives select { isNil {_queued get _x} }, [], {
+        if (_queue isEqualTo [] && {count _anchorOwned < _targetAnchorCount}) then {
+            private _unqueued = _allObjectives select { isNil {_queued get _x} };
+            private _closestUnqueued = ([_unqueued, [], {
                 (((FLO_Objectives get _x) get "position") distance2D _startPos)
             }, "ASCEND"] call BIS_fnc_sortBy) select 0;
             _queue pushBack _closestUnqueued;
@@ -69,39 +78,31 @@ while {_queue isNotEqualTo [] && {count _westOwned < _targetWestCount}} do {
     };
 };
 
-private _eastOwned = [];
 {
-    if (isNil {_westSet get _x}) then {
-        private _objData = FLO_Objectives get _x;
-        _objData set ["owner", east];
-        FLO_Objectives set [_x, _objData];
-        _eastOwned pushBack _x;
+    if (isNil {_anchorSet get _x}) then {
+        private _objective = FLO_Objectives get _x;
+        _objective set ["owner", _opposingSide];
+        FLO_Objectives set [_x, _objective];
+        _opposingOwned pushBack _x;
     };
 } forEach _allObjectives;
 
-// Ensure both sides own at least one objective.
-if (_westOwned isEqualTo [] || {_eastOwned isEqualTo []}) then {
-    if (count _allObjectives > 1) then {
-        private _sorted = [_allObjectives, [], {
-            (((FLO_Objectives get _x) get "position") distance2D _startPos)
-        }, "ASCEND"] call BIS_fnc_sortBy;
-        private _westObj = _sorted select 0;
-        private _eastObj = _sorted select -1;
+if ((_anchorOwned isEqualTo [] || {_opposingOwned isEqualTo []}) && {_objectiveCount > 1}) then {
+    private _sorted = [_allObjectives, [], {
+        (((FLO_Objectives get _x) get "position") distance2D _startPos)
+    }, "ASCEND"] call BIS_fnc_sortBy;
+    private _anchorObjectiveId = _sorted select 0;
+    private _opposingObjectiveId = _sorted select -1;
 
-        private _westObjData = FLO_Objectives get _westObj;
-        _westObjData set ["owner", west];
-        FLO_Objectives set [_westObj, _westObjData];
+    private _anchorObjective = FLO_Objectives get _anchorObjectiveId;
+    _anchorObjective set ["owner", _anchorSide];
+    FLO_Objectives set [_anchorObjectiveId, _anchorObjective];
 
-        private _eastObjData = FLO_Objectives get _eastObj;
-        _eastObjData set ["owner", east];
-        FLO_Objectives set [_eastObj, _eastObjData];
-
-        _westOwned = [_westObj];
-        _eastOwned = [_eastObj];
-    };
+    private _opposingObjective = FLO_Objectives get _opposingObjectiveId;
+    _opposingObjective set ["owner", _opposingSide];
+    FLO_Objectives set [_opposingObjectiveId, _opposingObjective];
 };
 
-// Refresh markers for seeded ownership.
 {
     [_x, FLO_Objectives get _x] call FLO_fnc_createObjectiveMarker;
 } forEach _allObjectives;
@@ -110,10 +111,12 @@ publicVariable "FLO_Objectives";
 FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
 [] call FLO_fnc_publishObjectiveRuntimeState;
 
-["OBJECTIVE", 2, format ["Seeded ownership from start position: WEST=%1 EAST=%2 ratio=%3 (anchor=%4)",
+["OBJECTIVE", 3, format [
+    "Seeded ownership: WEST=%1 EAST=%2 westRatio=%3 startSide=%4 anchor=%5",
     ({((FLO_Objectives get _x) get "owner") isEqualTo west} count _allObjectives),
     ({((FLO_Objectives get _x) get "owner") isEqualTo east} count _allObjectives),
     _westRatio,
+    [_anchorSide] call FLO_fnc_sideKey,
     _startPos
 ]] call FLO_fnc_log;
 

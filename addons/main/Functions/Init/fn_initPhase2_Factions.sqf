@@ -10,30 +10,13 @@
 
 if (!isServer) exitWith { false };
 
-diag_log "[FLO_INIT_P2] Loading faction definitions...";
-
-// Check if already loaded (saved game)
-private _hasSavedFactionState = !isNil "F_Init" && {F_Init}
-    && {!isNil "FLO_FactionCatalog"}
-    && {(!isNil "East_Ground_Infantry") || {!isNil "East_Groups"} || {!isNil "East_Units"}}
-    && {(!isNil "East_Ground_Motorized") || {!isNil "East_Ground_Vehicles_Light"}}
-    && {!isNil "East_Air_Transport"};
-
-if (_hasSavedFactionState) exitWith {
-    diag_log "[FLO_INIT_P2] Factions already loaded (saved game)";
-    true
-};
-
-if (!isNil "F_Init" && {F_Init}) then {
-    diag_log "[FLO_INIT_P2] Factions already loaded (saved game)";
-    diag_log "[FLO_INIT_P2] WARNING: Faction state incomplete despite F_Init=true, reloading...";
-};
+["FACTIONS", 3, "Loading native faction definitions"] call FLO_fnc_log;
 
 // Ensure handles exist
-if (isNil "FLO_FriendlyHandle" || isNil "FLO_EnemyHandle" || isNil "FLO_CivilianHandle") exitWith {
+if (isNil "FLO_BluforHandle" || isNil "FLO_OpforHandle" || isNil "FLO_CivilianHandle") exitWith {
     FLO_InitError = "Faction handles not set - Phase 1 may have failed";
     publicVariable "FLO_InitError";
-    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    ["FACTIONS", 1, FLO_InitError] call FLO_fnc_log;
     false
 };
 
@@ -43,25 +26,25 @@ publicVariable "F_Init";
 
 private _loadedOk = true;
 
-// Load friendly faction
-private _bluHandle = FLO_FriendlyHandle;
+// Load BLUFOR faction
+private _bluHandle = FLO_BluforHandle;
 private _bluFaction = _bluHandle get "name";
-_loadedOk = [_bluHandle, "friendly"] call FLO_fnc_initLoadFactionSelection;
+_loadedOk = [_bluHandle, "blufor"] call FLO_fnc_initLoadFactionSelection;
 if (!_loadedOk) exitWith {
-    FLO_InitError = format ["Friendly faction loading failed: %1", _bluFaction];
+    FLO_InitError = format ["BLUFOR faction loading failed: %1", _bluFaction];
     publicVariable "FLO_InitError";
-    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    ["FACTIONS", 1, FLO_InitError] call FLO_fnc_log;
     false
 };
 
-// Load enemy faction
-private _opfHandle = FLO_EnemyHandle;
+// Load OPFOR faction
+private _opfHandle = FLO_OpforHandle;
 private _opfFaction = _opfHandle get "name";
-_loadedOk = [_opfHandle, "enemy"] call FLO_fnc_initLoadFactionSelection;
+_loadedOk = [_opfHandle, "opfor"] call FLO_fnc_initLoadFactionSelection;
 if (!_loadedOk) exitWith {
-    FLO_InitError = format ["Enemy faction loading failed: %1", _opfFaction];
+    FLO_InitError = format ["OPFOR faction loading failed: %1", _opfFaction];
     publicVariable "FLO_InitError";
-    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    ["FACTIONS", 1, FLO_InitError] call FLO_fnc_log;
     false
 };
 
@@ -72,7 +55,7 @@ _loadedOk = [_civHandle, "civilian"] call FLO_fnc_initLoadFactionSelection;
 if (!_loadedOk) exitWith {
     FLO_InitError = format ["Civilian faction loading failed: %1", _civFaction];
     publicVariable "FLO_InitError";
-    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    ["FACTIONS", 1, FLO_InitError] call FLO_fnc_log;
     false
 };
 
@@ -91,7 +74,7 @@ if (isNil "East_Ground_Motorized" && {isNil "East_Ground_Vehicles_Light"}) then 
 if (_missingArrays isNotEqualTo []) exitWith {
     FLO_InitError = format ["Faction loading failed - missing arrays: %1", _missingArrays];
     publicVariable "FLO_InitError";
-    diag_log format ["[FLO_INIT_P2] ERROR: %1", FLO_InitError];
+    ["FACTIONS", 1, FLO_InitError] call FLO_fnc_log;
     false
 };
 
@@ -99,8 +82,8 @@ if (_missingArrays isNotEqualTo []) exitWith {
 // Broadcast faction data to clients for client-side catalog and UI systems.
 // ============================================================================
 
-// Player faction unit types (needed for permission checks)
-private _playerFactionVars = [
+// BLUFOR compatibility unit types used by existing shared systems.
+private _bluforCompatibilityUnitVars = [
     "F_Officer", "F_Assault_Eng", "F_Assault_TL", "F_Assault_SL", "F_Assault_Eod",
     "F_Assault_Mrk", "F_Assault_AT", "F_Assault_Amm", "F_Assault_Mg", "F_Assault_Med",
     "F_Assault_Uav", "F_Recon_Snp", "F_Recon_Sct", "F_Recon_TL", "F_Recon_Mrk",
@@ -108,11 +91,11 @@ private _playerFactionVars = [
     "F_Diver_TL", "F_Diver_Eod", "F_Diver_Rfl"
 ];
 
-// Player faction building types
+// BLUFOR compatibility building types used by existing shared systems.
 private _buildingVars = ["FLO_FactionFobType", "FLO_FactionFobTerminalType", "FLO_FactionCopType", "FLO_FactionCopTerminalType", "FLO_FactionRadar"];
 
 // Store vehicle and equipment lists
-private _requestMenuVars = [
+private _storeCompatibilityVars = [
     "F_Bike_List", "F_Car_List", "F_MRAP_List", "F_Truck_List",
     "F_Truck_Construction_List", "F_Truck_Ammo_List", "F_Truck_Respawn_List",
     "F_APC_List", "F_Tank_List", "F_Artillery_List",
@@ -132,7 +115,7 @@ private _squadCompVars = [
 private _civilianVars = ["CivVehArray", "CivMenArray"];
 
 // Broadcast all faction variables to clients
-private _allVarsToPublish = _playerFactionVars + _buildingVars + _requestMenuVars + _squadCompVars + _civilianVars;
+private _allVarsToPublish = _bluforCompatibilityUnitVars + _buildingVars + _storeCompatibilityVars + _squadCompVars + _civilianVars;
 private _publishedCount = 0;
 
 {
@@ -142,7 +125,7 @@ private _publishedCount = 0;
     };
 } forEach _allVarsToPublish;
 
-diag_log format ["[FLO_INIT_P2] Broadcast %1 faction variables to clients", _publishedCount];
+["FACTIONS", 4, format ["Published %1 compatibility faction variables", _publishedCount]] call FLO_fnc_log;
 
 // ============================================================================
 // SIDE CONTEXT AND FACTION CATALOG
@@ -151,9 +134,11 @@ diag_log format ["[FLO_INIT_P2] Broadcast %1 faction variables to clients", _pub
 FLO_MissionSides = [east, west];
 publicVariable "FLO_MissionSides";
 
-if (isNil "FLO_ActivePlayerSide") then {
-    FLO_ActivePlayerSide = sideUnknown;
-    publicVariable "FLO_ActivePlayerSide";
+if !(FLO_ActivePlayerSide in [east, west]) exitWith {
+    FLO_InitError = "Player side was not committed during Phase 1";
+    publicVariable "FLO_InitError";
+    ["FACTIONS", 1, FLO_InitError] call FLO_fnc_log;
+    false
 };
 
 private _eastFactionCompositionDefaults = [_opfHandle, "OPFOR"] call FLO_fnc_factionBuildCompositionDefaultsHandle;
@@ -236,6 +221,10 @@ private _eastMobileAA = [(if (!isNil "East_Mobile_AA") then { East_Mobile_AA } e
 private _eastStaticAA = [(if (!isNil "East_Static_AA") then { East_Static_AA } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
 private _eastBoat = [(if (!isNil "East_Boat") then { East_Boat } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
 private _eastRadar = [(if (!isNil "East_Radar") then { East_Radar } else { [] })] call FLO_fnc_factionExtractVehicleClasses;
+private _eastLogisticsConstruction = +_eastGroundTransport;
+private _eastLogisticsAmmo = +_eastGroundTransport;
+private _eastLogisticsRespawn = +_eastGroundTransport;
+private _eastContainers = [];
 
 private _westGroundMotorized = if (!isNil "West_Ground_Motorized") then {
     [West_Ground_Motorized] call FLO_fnc_factionExtractVehicleClasses
@@ -313,7 +302,7 @@ private _westBoat = if (!isNil "West_Boat") then {
 };
 private _westLogisticsConstruction = [["F_Truck_Construction_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
 private _westLogisticsAmmo = [["F_Truck_Ammo_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
-private _westLogisticsRespawn = [["F_Truck_Respawn_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
+private _westLogisticsRespawn = [["F_Truck_Respawn_List", "F_Heli_Respawn_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
 private _westContainers = [["F_Container_List"]] call FLO_fnc_factionBuildVehiclePoolFromVariables;
 
 private _eastOfficerUnits = if (!isNil "East_FireObserver") then {
@@ -327,8 +316,8 @@ private _westOfficerUnits = if (!isNil "F_Officer") then {
     if (_westInfantryUnits isNotEqualTo []) then { [_westInfantryUnits select 0] } else { [] }
 };
 
-diag_log format [
-    "[FLO_INIT_P2] WEST pool sizes: infUnits=%1 specOpsUnits=%2 motorized=%3 mechanized=%4 armor=%5 transport=%6 artillery=%7 heli=%8 airTransport=%9 jet=%10 mobileAA=%11 staticAA=%12 radar=%13 uav=%14 ugv=%15 boat=%16",
+["FACTIONS", 4, format [
+    "BLUFOR pool sizes: infUnits=%1 specOpsUnits=%2 motorized=%3 mechanized=%4 armor=%5 transport=%6 artillery=%7 heli=%8 airTransport=%9 jet=%10 mobileAA=%11 staticAA=%12 radar=%13 uav=%14 ugv=%15 boat=%16",
     count _westInfantryUnits,
     count _westSpecOpsUnits,
     count _westGroundMotorized,
@@ -345,7 +334,7 @@ diag_log format [
     count _westAirDrone,
     count _westGroundDrone,
     count _westBoat
-];
+]] call FLO_fnc_log;
 
 private _eastCatalog = createHashMapFromArray [
     ["groups", _eastInfantryGroups],
@@ -370,6 +359,10 @@ private _eastCatalog = createHashMapFromArray [
     ["mobileAA", _eastMobileAA],
     ["staticAA", _eastStaticAA],
     ["boat", _eastBoat],
+    ["logisticsConstruction", _eastLogisticsConstruction],
+    ["logisticsAmmo", _eastLogisticsAmmo],
+    ["logisticsRespawn", _eastLogisticsRespawn],
+    ["containers", _eastContainers],
     ["radar", _eastRadar],
     ["objectiveGroups", _eastFactionCompositionDefaults get "objectiveGroups"],
     ["objectiveGroupTypeCaps", _eastFactionCompositionDefaults get "objectiveGroupTypeCaps"],
@@ -412,6 +405,44 @@ private _westCatalog = createHashMapFromArray [
 [_eastCatalog, _eastFactionCompositionHandle, "OPFOR"] call FLO_fnc_factionApplyTuningOverrides;
 [_westCatalog, _westFactionCompositionHandle, "BLUFOR"] call FLO_fnc_factionApplyTuningOverrides;
 
+private _militarySideFields = [
+    "officers",
+    "groundInfantryGroups",
+    "groundInfantryUnits",
+    "groundSpecOpsGroups",
+    "groundSpecOpsUnits",
+    "groundMotorized",
+    "groundMechanized",
+    "groundArmor",
+    "groundTransport",
+    "groundArtillery",
+    "airHeli",
+    "airJet",
+    "airTransport",
+    "airDrone",
+    "groundDrone",
+    "mobileAA",
+    "staticAA",
+    "boat",
+    "logisticsConstruction",
+    "logisticsAmmo",
+    "logisticsRespawn",
+    "containers",
+    "radar"
+];
+
+[_westCatalog, 1, "BLUFOR", _militarySideFields] call FLO_fnc_factionValidateCatalogSide;
+[_eastCatalog, 0, "OPFOR", _militarySideFields] call FLO_fnc_factionValidateCatalogSide;
+[
+    createHashMapFromArray [
+        ["men", CivMenArray],
+        ["vehicles", CivVehArray]
+    ],
+    3,
+    "CIVILIAN",
+    ["men", "vehicles"]
+] call FLO_fnc_factionValidateCatalogSide;
+
 FLO_FactionCatalog = createHashMapFromArray [
     ["EAST", _eastCatalog],
     ["WEST", _westCatalog]
@@ -423,7 +454,7 @@ F_Init = true;
 publicVariable "F_Init";
 
 ["FACTIONS", 3, format [
-    "Committed campaign faction roles: WEST friendly=%1; EAST enemy=%2; CIVILIAN=%3",
+    "Committed native campaign factions: BLUFOR=%1; OPFOR=%2; CIVILIAN=%3",
     _bluFaction,
     _opfFaction,
     _civFaction

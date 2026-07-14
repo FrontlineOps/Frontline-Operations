@@ -30,41 +30,37 @@ if (isNil "InitializationOG" || {!InitializationOG}) exitWith {
 };
 
 // ============================================
-// HUMAN SIDE LOCK (first connected EAST/WEST side is authoritative)
+// HUMAN SIDE LOCK (configured player side is authoritative)
 // ============================================
-if (isNil "FLO_ActivePlayerSide") then {
-    FLO_ActivePlayerSide = sideUnknown;
-    publicVariable "FLO_ActivePlayerSide";
+if !(FLO_ActivePlayerSide in [east, west]) exitWith {
+    FLO_InitError = "Cannot start mission systems without a configured player side";
+    publicVariable "FLO_InitError";
+    ["INIT", 1, FLO_InitError] call FLO_fnc_log;
+    false
 };
+
+["INIT", 3, format ["Human slots locked to %1", [FLO_ActivePlayerSide] call FLO_fnc_sideKey]] call FLO_fnc_log;
 
 [] spawn {
     while {true} do {
         private _players = allPlayers select { side group _x in [east, west] };
 
-        if (!(FLO_ActivePlayerSide in [east, west]) && {_players isNotEqualTo []}) then {
-            FLO_ActivePlayerSide = side group (_players select 0);
-            publicVariable "FLO_ActivePlayerSide";
-            diag_log format ["[FLO_INIT_P5] Active player side locked to %1", FLO_ActivePlayerSide];
-        };
-
-        if (FLO_ActivePlayerSide in [east, west]) then {
-            {
-                private _pSide = side group _x;
-                if (_pSide in [east, west] && {_pSide != FLO_ActivePlayerSide}) then {
-                    if !(_x getVariable ["FLO_SideLockWarned", false]) then {
-                        ["Mission side is locked to the other faction. You are being moved to spectator.", "warning", false, owner _x] call FLO_fnc_sendNotification;
-                        _x setVariable ["FLO_SideLockWarned", true, false];
-                    };
-
-                    if !(_x getVariable ["FLO_SideLockedSpectator", false]) then {
-                        [true] remoteExec ["BIS_fnc_EGSpectator", owner _x];
-                        _x allowDamage false;
-                        _x setCaptive true;
-                        _x setVariable ["FLO_SideLockedSpectator", true, false];
-                    };
+        {
+            private _pSide = side group _x;
+            if (_pSide != FLO_ActivePlayerSide) then {
+                if !(_x getVariable ["FLO_SideLockWarned", false]) then {
+                    [format ["This campaign is configured for %1 players. Use a matching lobby slot.", [FLO_ActivePlayerSide] call FLO_fnc_sideKey], "warning", false, owner _x] call FLO_fnc_sendNotification;
+                    _x setVariable ["FLO_SideLockWarned", true, false];
                 };
-            } forEach _players;
-        };
+
+                if !(_x getVariable ["FLO_SideLockedSpectator", false]) then {
+                    [true] remoteExec ["BIS_fnc_EGSpectator", owner _x];
+                    _x allowDamage false;
+                    _x setCaptive true;
+                    _x setVariable ["FLO_SideLockedSpectator", true, false];
+                };
+            };
+        } forEach _players;
 
         sleep 5;
     };
@@ -263,14 +259,10 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
     };
 
     private _trackedCrewTypes = createHashMap;
-    private _samList = missionNamespace getVariable ["F_SAM_List", []];
+    private _playerCatalog = FLO_FactionCatalog get ([FLO_ActivePlayerSide] call FLO_fnc_sideKey);
     {
         _trackedCrewTypes set [_x, true];
-    } forEach ([_samList] call FLO_fnc_factionExtractVehicleClasses);
-
-    if (!isNil "FLO_FactionRadar" && {FLO_FactionRadar isEqualType ""} && {FLO_FactionRadar != ""}) then {
-        _trackedCrewTypes set [FLO_FactionRadar, true];
-    };
+    } forEach ((_playerCatalog get "staticAA") + (_playerCatalog get "radar"));
 
     // Restore vehicles
     if ("vehicles" in _savedData) then {

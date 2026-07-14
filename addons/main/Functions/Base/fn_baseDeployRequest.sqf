@@ -12,7 +12,7 @@ if !(_type in ["FOB", "COP"]) exitWith {
 };
 
 private _isAdmin = (admin _owner) > 0;
-private _isOfficer = (typeOf _player == F_Officer) || {typeOf _player == "B_G_officer_F"};
+private _isOfficer = [_player] call FLO_fnc_factionUnitIsOfficer;
 private _hasAuthority = _isAdmin || {_isOfficer || {leader group _player isEqualTo _player}};
 if (!_hasAuthority) exitWith {
     [false, "FOB/COP deployment requires admin, officer, or squad leader authority."] remoteExecCall ["FLO_fnc_baseDeployReceiveResult", _owner];

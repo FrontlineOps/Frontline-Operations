@@ -1,5 +1,7 @@
 params ["_className"];
 
+if (getNumber (configFile >> "CfgVehicles" >> _className >> "side") != 1) exitWith { -1 };
+
 private _price = -1;
 private _lists = [
     "F_Bike_List",

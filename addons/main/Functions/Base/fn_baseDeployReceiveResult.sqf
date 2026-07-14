@@ -3,7 +3,7 @@ params ["_success", "_message"];
 if (!hasInterface) exitWith {};
 
 if (isMultiplayer && {remoteExecutedOwner isNotEqualTo 2} && {remoteExecutedOwner isNotEqualTo 0}) exitWith {
-    diag_log format ["[FLO][Base] Rejected deploy result from owner %1", remoteExecutedOwner];
+    ["UI", 2, format ["Rejected Deployment result from owner %1", remoteExecutedOwner]] call FLO_fnc_log;
 };
 
 [_message, ["warning", "success"] select _success] call FLO_fnc_displayNotification;

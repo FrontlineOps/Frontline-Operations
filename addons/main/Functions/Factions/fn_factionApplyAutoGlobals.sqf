@@ -7,7 +7,7 @@
  *
  * Arguments:
  *   0: Faction handle <HASHMAP>
- *   1: Role <STRING> - "friendly", "enemy", or "civilian"
+ *   1: Role <STRING> - "blufor", "opfor", or "civilian"
  *
  * Return Value:
  *   BOOL
@@ -66,7 +66,7 @@ if (_role isEqualTo "civilian") exitWith {
     true
 };
 
-if !(_role in ["friendly", "enemy"]) exitWith {
+if !(_role in ["blufor", "opfor"]) exitWith {
     ["FACTIONS", 2, format ["Unknown auto faction role %1 for %2", _role, _factionClass]] call FLO_fnc_log;
     false
 };
@@ -88,8 +88,8 @@ if (_units isEqualTo []) exitWith {
 };
 
 private _applied = switch (_role) do {
-    case "friendly": { [_catalog] call FLO_fnc_factionApplyAutoFriendlyGlobals };
-    case "enemy": { [_catalog] call FLO_fnc_factionApplyAutoEnemyGlobals };
+    case "blufor": { [_catalog] call FLO_fnc_factionApplyAutoBluforGlobals };
+    case "opfor": { [_catalog] call FLO_fnc_factionApplyAutoOpforGlobals };
 };
 
 if (!_applied) exitWith { false };

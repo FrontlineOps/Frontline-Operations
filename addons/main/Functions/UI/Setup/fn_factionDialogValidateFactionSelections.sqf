@@ -23,28 +23,4 @@ if (count _selections > 1 && {_customSelections isNotEqualTo []}) then {
     _errors pushBack format ["%1 custom definitions cannot be combined with other factions", _label];
 };
 
-private _autoClasses = [];
-{
-    private _data = _x select 1;
-    if ((_data find "auto|") == 0) then {
-        _autoClasses pushBack (_data select [5]);
-    };
-} forEach _selections;
-
-if (count _autoClasses > 1) then {
-    private _autoSides = [];
-    {
-        private _cfg = configFile >> "CfgFactionClasses" >> _x;
-        if !(isClass _cfg) then {
-            _cfg = missionConfigFile >> "CfgFactionClasses" >> _x;
-        };
-        private _side = getNumber (_cfg >> "side");
-        _autoSides pushBackUnique _side;
-    } forEach _autoClasses;
-
-    if (count _autoSides > 1) then {
-        _errors pushBack format ["%1 merged auto factions must come from the same config side", _label];
-    };
-};
-
 _errors

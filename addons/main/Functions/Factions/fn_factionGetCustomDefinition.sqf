@@ -6,11 +6,11 @@
 params [["_role", "", [""]]];
 
 switch (toLower _role) do {
-    case "friendly": {
-        ["CUSTOM_PLAYER_FACTION", "\z\flo\addons\main\Factions\Custom\blu_custom.sqf"]
+    case "blufor": {
+        ["CUSTOM_BLUFOR_FACTION", "\z\flo\addons\main\Factions\Custom\blu_custom.sqf"]
     };
-    case "enemy": {
-        ["CUSTOM_ENEMY_FACTION", "\z\flo\addons\main\Factions\Custom\opf_custom.sqf"]
+    case "opfor": {
+        ["CUSTOM_OPFOR_FACTION", "\z\flo\addons\main\Factions\Custom\opf_custom.sqf"]
     };
     case "civilian": {
         ["CUSTOM_CIVILIAN_FACTION", "\z\flo\addons\main\Factions\Custom\civ_custom.sqf"]

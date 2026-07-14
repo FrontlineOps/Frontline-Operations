@@ -21,29 +21,22 @@ private _spawned = 0;
     if ((typeName _x) isNotEqualTo "STRING") then { continue };
     if !(isClass (configFile >> "CfgVehicles" >> _x)) then { continue };
 
-    private _unit = [
-        _group,
-        _x,
-        _spawnPos,
-        [],
-        3,
-        "FORM",
-        "store recruit"
-    ] call FLO_fnc_createGroupUnit;
+    private _unitCfg = configFile >> "CfgVehicles" >> _x;
+    private _unit = _group createUnit [_x, _spawnPos, [], 3, "FORM"];
     if (isNull _unit) then { continue };
     _unit enableAI "RADIOPROTOCOL";
 
-    if ((_x == F_Assault_Eng) || {_x == F_Recon_Eng}) then {
+    if (getNumber (_unitCfg >> "engineer") > 0) then {
         _unit setUnitTrait ["engineer", true];
         _unit setVariable ["ACE_isEngineer", true, true];
     };
 
-    if ((_x == F_Assault_Eod) || {_x == F_Recon_Eod}) then {
+    if (getNumber (_unitCfg >> "canDeactivateMines") > 0) then {
         _unit setUnitTrait ["explosiveSpecialist", true];
         _unit setVariable ["ACE_isEOD", true, true];
     };
 
-    if ((_x == F_Assault_Med) || {_x == F_Recon_Med}) then {
+    if (getNumber (_unitCfg >> "attendant") > 0) then {
         _unit setUnitTrait ["medic", true];
         _unit setVariable ["ace_medical_medicclass", 2, true];
     };

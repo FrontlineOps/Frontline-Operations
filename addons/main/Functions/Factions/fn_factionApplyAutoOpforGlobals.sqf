@@ -1,8 +1,8 @@
 /*
- * Function: FLO_fnc_factionApplyAutoEnemyGlobals
+ * Function: FLO_fnc_factionApplyAutoOpforGlobals
  * Author: Frontline Operations Development Group
  * Description:
- *   Applies an auto-generated military catalog to the legacy enemy globals.
+ *   Applies an auto-generated military catalog to OPFOR and its legacy globals.
  *
  * Arguments:
  *   0: Auto military catalog <HASHMAP>

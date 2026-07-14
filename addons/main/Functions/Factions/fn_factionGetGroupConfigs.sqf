@@ -67,7 +67,7 @@ for "_i" from 0 to (count _groupsRoot - 1) do {
 
         private _allCombatInfantry = true;
         {
-            if !([_x, _factionClass] call FLO_fnc_factionClassIsCombatInfantry) exitWith {
+            if !([_x, _factionClass, _side] call FLO_fnc_factionClassIsCombatInfantry) exitWith {
                 _allCombatInfantry = false;
             };
         } forEach _unitClasses;

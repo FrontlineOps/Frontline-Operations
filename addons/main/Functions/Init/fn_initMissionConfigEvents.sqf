@@ -20,7 +20,8 @@ if (!isNil "FLO_MissionConfigEventsInit" && {FLO_MissionConfigEventsInit}) exitW
         !isNil "FLO_MissionConfig"
         && {FLO_MissionConfig isEqualType createHashMap}
         && {(keys FLO_MissionConfig) isNotEqualTo []}
-        && {"friendlyHandle" in FLO_MissionConfig}
+        && {"bluforHandle" in FLO_MissionConfig}
+        && {"playerSideKey" in FLO_MissionConfig}
     };
 
     [] call FLO_fnc_applyMissionConfigLocally;

@@ -1,7 +1,7 @@
 params [["_showGuide", false, [false]]];
 
 if (!hasInterface) exitWith { false };
-if (!FLO_MissionReady) exitWith {
+if (!FLO_ClientUiReady) exitWith {
     ["Operations are unavailable while FLO initializes.", "warning"] call FLO_fnc_displayNotification;
     false
 };
@@ -44,6 +44,7 @@ if (isNull _map) exitWith {
 
 uiNamespace setVariable ["FLO_OperationsControl", _control];
 uiNamespace setVariable ["FLO_OperationsMapControl", _map];
+FLO_OperationsBrowserReady = false;
 FLO_OperationsLastSnapshot = createHashMap;
 FLO_OperationsMapDrawData = [];
 FLO_OperationsMapNodeDrawData = [];

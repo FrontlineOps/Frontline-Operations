@@ -42,7 +42,7 @@ switch (_event) do {
         closeDialog 0;
     };
     default {
-        diag_log format ["[FLO][Store] Unhandled store UI event: %1", _event];
+        ["UI", 4, format ["Unhandled Store browser event: %1", _event]] call FLO_fnc_log;
     };
 };
 

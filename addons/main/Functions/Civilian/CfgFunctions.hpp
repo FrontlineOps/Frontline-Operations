@@ -47,6 +47,7 @@ class CivilianMissions {
     file = "\z\flo\addons\main\Functions\Civilian\Missions";
 
     class civilianBuildMissionOffer {};
+    class civilianGetHostileForcePool {};
     class civilianMissionResolveAction {};
     class civilianMissionManager {};
     class civilianRequestMission {};
