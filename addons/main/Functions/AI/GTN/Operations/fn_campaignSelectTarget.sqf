@@ -24,6 +24,11 @@ private _axisSeparation = _config get "operationAxisSeparationMeters";
 private _opportunities = (_director get "_state") get "opportunities";
 private _sideOpportunities = createHashMap;
 private _terrainRejected = 0;
+private _excludedRejected = 0;
+private _axisRejected = 0;
+private _noIntegratedSourceRejected = 0;
+private _noSupplySourceRejected = 0;
+private _claimedSupplySourceRejected = 0;
 
 {
     if ((_y get "sideKey") == _sideKey && {(_y get "sampleCount") >= _minimumSamples}) then {
@@ -35,7 +40,10 @@ private _ranked = [];
 {
     private _objectiveId = _x;
     private _objective = _y;
-    if (_objectiveId in _excludedObjectiveIds) then { continue };
+    if (_objectiveId in _excludedObjectiveIds) then {
+        _excludedRejected = _excludedRejected + 1;
+        continue;
+    };
 
     private _objectivePosition = [_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor;
     if (_objectivePosition isEqualTo []) then {
@@ -48,9 +56,19 @@ private _ranked = [];
             _axisTooClose = true;
         };
     } forEach _existingTargetPositions;
-    if (_axisTooClose) then { continue };
+    if (_axisTooClose) then {
+        _axisRejected = _axisRejected + 1;
+        continue;
+    };
+
+    private _attackSourceObjectiveIds = _commander call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
+    if (_attackSourceObjectiveIds isEqualTo []) then {
+        _noIntegratedSourceRejected = _noIntegratedSourceRejected + 1;
+        continue;
+    };
 
     private _sourcePairs = [];
+    private _hasReachableSupply = false;
     {
         private _attackSourceObjectiveId = _x;
         private _supplySourceObjectiveId = [
@@ -60,13 +78,21 @@ private _ranked = [];
             _minimumSourceSupply
         ] call FLO_fnc_logisticsNetworkFindSupplySourceObjective;
         if (_supplySourceObjectiveId == "") then { continue };
+        _hasReachableSupply = true;
         if (_supplySourceObjectiveId in _claimedSupplySourceObjectiveIds) then { continue };
         if !(_supplySourceObjectiveId in _activeSupplyNodes) then {
             throw format ["Reachable supply source %1 is absent from active logistics state", _supplySourceObjectiveId];
         };
         _sourcePairs pushBack [_attackSourceObjectiveId, _supplySourceObjectiveId];
-    } forEach (_commander call ["_getFriendlyAttackSourceObjectives", [_objectiveId]]);
-    if (_sourcePairs isEqualTo []) then { continue };
+    } forEach _attackSourceObjectiveIds;
+    if (_sourcePairs isEqualTo []) then {
+        if (_hasReachableSupply) then {
+            _claimedSupplySourceRejected = _claimedSupplySourceRejected + 1;
+        } else {
+            _noSupplySourceRejected = _noSupplySourceRejected + 1;
+        };
+        continue;
+    };
 
     private _nearestSourceDistance = 1e12;
     private _bestSupplyRatio = 0;
@@ -99,13 +125,17 @@ private _ranked = [];
 
 _ranked sort false;
 if (_ranked isEqualTo []) exitWith {
-    if (_terrainRejected > 0) then {
-        ["CAMPAIGN", 4, format [
-            "Target selection rejected %1 frontline objectives without a ground-assault anchor for %2",
-            _terrainRejected,
-            _sideKey
-        ]] call FLO_fnc_log;
-    };
+    ["CAMPAIGN", 4, format [
+        "No campaign target for %1: frontline=%2 excluded=%3 terrain=%4 axis=%5 noIntegratedSource=%6 noSupply=%7 supplyClaimed=%8",
+        _sideKey,
+        count _frontline,
+        _excludedRejected,
+        _terrainRejected,
+        _axisRejected,
+        _noIntegratedSourceRejected,
+        _noSupplySourceRejected,
+        _claimedSupplySourceRejected
+    ]] call FLO_fnc_log;
     createHashMapFromArray [
         ["objectiveId", ""],
         ["sourceObjectiveIds", []],

@@ -25,6 +25,10 @@ class UtilitiesTime {
     class dateNumberAddSeconds {};
     class dateNumberDeltaSeconds {};
     class dateNumberSecondsPerYear {};
+    class operationalClockPreInit { preInit = 1; };
+    class operationalClockReset {};
+    class operationalDate {};
+    class operationalDateNumber {};
 };
 
 class UtilitiesUI {
@@ -41,6 +45,7 @@ class UtilitiesGame {
 
     class sideKey {};
     class opposingSide {};
+    class getConnectedHumanPlayers {};
     class addReward {};
     class getRandomMagazine {};
     class addIntelServer {};

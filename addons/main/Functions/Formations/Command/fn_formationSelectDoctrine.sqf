@@ -82,7 +82,7 @@ if ((_doctrines get _sideKey) != _doctrine) then {
     _doctrines set [_sideKey, _doctrine];
     _state set ["revision", (_state get "revision") + 1];
 };
-_state set ["lastDoctrineUpdateAtDateNum", dateToNumber date];
+_state set ["lastDoctrineUpdateAtDateNum", call FLO_fnc_operationalDateNumber];
 ["FORMATIONS", 3, format [
     "%1 doctrine %2 (formations=%3 readiness=%4 reserve=%5 mobile=%6 salients=%7 threats=%8 targets=%9 available=%10)",
     _sideKey, _doctrine, _formationCount, round _averageReadiness, _readyReserveCount, _mobileReadyCount,

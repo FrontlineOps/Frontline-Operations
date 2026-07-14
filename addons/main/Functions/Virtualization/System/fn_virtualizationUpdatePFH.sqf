@@ -48,12 +48,19 @@ switch (toLower _mode) do {
             true
         };
 
+        private _disconnectEhId = addMissionEventHandler ["HandleDisconnect", {
+            FLO_VirtUpdate set ["cachedPlayerPositions", []];
+            FLO_VirtUpdate set ["lastPlayerCacheTime", -1e10];
+            false
+        }];
+
         private _pfhId = [{
             if !(["enabled"] call FLO_fnc_virtualizationGetConfigValue) exitWith {};
             call FLO_fnc_virtualizationRunUpdateCycle;
         }, 0, []] call CBA_fnc_addPerFrameHandler;
 
         FLO_VirtUpdate set ["pfhId", _pfhId];
+        FLO_VirtUpdate set ["disconnectEhId", _disconnectEhId];
         FLO_VirtUpdate set ["running", true];
         FLO_VirtualGroupsUpdateLoopRunning = true;
 
@@ -66,6 +73,12 @@ switch (toLower _mode) do {
         if (_pfhId >= 0) then {
             [_pfhId] call CBA_fnc_removePerFrameHandler;
             FLO_VirtUpdate set ["pfhId", -1];
+        };
+
+        private _disconnectEhId = FLO_VirtUpdate get "disconnectEhId";
+        if (_disconnectEhId >= 0) then {
+            removeMissionEventHandler ["HandleDisconnect", _disconnectEhId];
+            FLO_VirtUpdate set ["disconnectEhId", -1];
         };
 
         FLO_VirtUpdate set ["running", false];

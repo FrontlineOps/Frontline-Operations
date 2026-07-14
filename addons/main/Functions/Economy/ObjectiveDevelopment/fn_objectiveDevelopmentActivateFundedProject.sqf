@@ -27,7 +27,7 @@ if !([_treasury, _reservationId, _cost, format ["Activated %1 level %2 at %3", _
 };
 
 _project set ["state", "ACTIVE"];
-_project set ["startedAtDateNum", dateToNumber date];
+_project set ["startedAtDateNum", call FLO_fnc_operationalDateNumber];
 _project set ["reservationId", ""];
 _objective set ["developmentProject", _project];
 [_objectiveId, _objective, true] call FLO_fnc_objectiveDevelopmentValidateProject;

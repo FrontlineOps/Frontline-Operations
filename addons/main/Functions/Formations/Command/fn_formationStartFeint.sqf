@@ -56,7 +56,7 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 } forEach (FLO_FormationState get "formations");
 _formationRows sort true;
 
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 if (_targetRows isEqualTo [] || {_formationRows isEqualTo []}) exitWith {
     _operation set ["shapingStatus", "FEINT_ABORTED"];
     _operation set ["assaultOpeningEligibleAtDateNum", _now];

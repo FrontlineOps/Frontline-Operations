@@ -386,7 +386,7 @@ private _worldState = createHashMapObject [[
             private _leader = leader group _x;
             if (isNull _leader || {!alive _leader}) then { continue };
             _scanLeaders pushBackUnique _leader;
-        } forEach allPlayers;
+        } forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 
         if (_scanLeaders isEqualTo []) then {
             {

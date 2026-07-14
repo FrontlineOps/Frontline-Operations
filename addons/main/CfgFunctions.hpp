@@ -39,6 +39,9 @@ class FLO {
         class initActivatePlayer    {};
         class initDeployPlayer      {};
         class initClientFinalize    {};
+        class playerSideAdapterApply {};
+        class playerSideAdapterInit {};
+        class playerSideAdapterRequest {};
         class addonPostInit         {postInit = 1;};
     };
 
@@ -209,6 +212,7 @@ class FLO {
         class gtnProcessArtilleryRadioQueue {};
         class gtnQueueArtilleryRadioMission {};
         class gtnArtilleryGetAvailableGroups {};
+        class gtnArtillerySelectLiveBattery {};
         class gtnArtilleryCanRequestMission {};
         class gtnArtilleryCalculateMissionCost {};
         class gtnArtilleryApplyVirtualFireEffect {};

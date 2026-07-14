@@ -139,16 +139,16 @@ private _axisSlots = (_currentCount + (count _plannedSelections)) min _maximumCo
 private _desiredCount = _baseCapacity min _axisSlots;
 private _reason = "FULL_CAPACITY";
 if (_desiredCount < _maximumCount) then {
-    _reason = if (_axisSlots == _desiredCount) then {
+    _reason = if (_axisSlots < _baseCapacity) then {
         "AXIS_LIMIT"
     } else {
-        if (_forceSlots == _desiredCount) then {
+        if (_forceSlots == _baseCapacity) then {
             "FORCE_LIMIT"
         } else {
-            if (_logisticsSlots == _desiredCount) then {
+            if (_logisticsSlots == _baseCapacity) then {
                 "LOGISTICS_LIMIT"
             } else {
-                ["DEFENSIVE_PRESSURE", "TREASURY_LIMIT"] select (_treasurySlots == _desiredCount);
+                ["DEFENSIVE_PRESSURE", "TREASURY_LIMIT"] select (_treasurySlots == _baseCapacity);
             };
         };
     };

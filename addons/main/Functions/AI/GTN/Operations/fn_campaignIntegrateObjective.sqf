@@ -27,7 +27,7 @@ if ((_objective get "campaignCapturedBySideKey") != _sideKey) exitWith {
 
 if (!_wasIntegrated) then {
     _objective set ["campaignIntegrationState", "INTEGRATED"];
-    _objective set ["captureIntegratedAtDateNum", dateToNumber date];
+    _objective set ["captureIntegratedAtDateNum", call FLO_fnc_operationalDateNumber];
     _objective set ["captureState", "integrated"];
     FLO_Objectives set [_objectiveId, _objective];
 };

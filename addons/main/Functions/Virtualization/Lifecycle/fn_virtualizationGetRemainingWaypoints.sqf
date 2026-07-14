@@ -26,10 +26,11 @@ if (!_generatedPatrol && {_currentWpIdx == 0} && {count _allWaypoints > 1}) then
     if (_nearestIdx > 0) then {
         private _distToFirst = (_allWaypoints select 0 select 0) distance2D _position;
         if (_nearestDist < 500 && _distToFirst > (_nearestDist + 200)) then {
-            ["VIRTUALIZATION", 2, format [
-                "WARNING: Group %1 activating with potentially stale waypoints! CurrentIdx: 0, NearestIdx: %2 (Dist: %3m vs First: %4m). Root cause: Virtual waypoints likely not deleting.",
+            ["VIRTUALIZATION", 3, format [
+                "Rebased stale activation route for %1 from waypoint 0 to %2 (nearest=%3m first=%4m)",
                 _groupId, _nearestIdx, round _nearestDist, round _distToFirst
             ]] call FLO_fnc_log;
+            _currentWpIdx = _nearestIdx;
         };
     };
 };

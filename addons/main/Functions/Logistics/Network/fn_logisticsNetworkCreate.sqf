@@ -6,6 +6,7 @@ if !(_sideContext in [east, west]) then {
 _network set ["_sideContext", _sideContext];
 [_network, _sideContext] call FLO_fnc_logisticsNetworkSetManagedSide;
 private _managedSideKey = _network get "_managedSideKey";
+private _dispatchDelay = -1;
 
 // HashMapObject class values are shared references unless each instance owns
 // fresh mutable state explicitly.
@@ -114,7 +115,7 @@ if (_savedState isEqualType createHashMap) then {
         private _savedNextDispatchAt = _savedState get "nextDispatchAt";
         private _maxDelay = _network get "DISPATCH_MAX_INTERVAL";
         if (_savedNextDispatchAt > time && {(_savedNextDispatchAt - time) <= _maxDelay}) then {
-            _network set ["_nextDispatchAt", _savedNextDispatchAt];
+            _dispatchDelay = _savedNextDispatchAt - time;
         };
     };
 };
@@ -126,11 +127,13 @@ _network set ["_objectiveSideIndexDirty", true];
 _network set ["_lastSupplyChainRefreshAt", -1];
 _network set ["_lastUpdate", time];
 
-if ((_network get "_nextDispatchAt") <= time) then {
+if (_dispatchDelay < 0) then {
     private _minInterval = _network get "DISPATCH_MIN_INTERVAL";
     private _maxInterval = _network get "DISPATCH_MAX_INTERVAL";
-    _network set ["_nextDispatchAt", time + _minInterval + random (_maxInterval - _minInterval)];
+    _dispatchDelay = _minInterval + random (_maxInterval - _minInterval);
 };
+_network set ["_nextDispatchAtTick", diag_tickTime + _dispatchDelay];
+_network set ["_nextDispatchAt", time + _dispatchDelay];
 
 {
     if ((_x getVariable ["FLO_BaseSide", sideUnknown]) isEqualTo (_network get "_managedSide")) then {

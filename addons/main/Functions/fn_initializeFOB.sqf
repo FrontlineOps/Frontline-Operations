@@ -184,7 +184,7 @@ _fobBuilding addEventHandler ["Killed", {
                 private _pSide = side group _x;
                 if (_pSide isEqualTo west) then { _bluforCount = _bluforCount + 1 };
                 if (_pSide isEqualTo east) then { _opforCount = _opforCount + 1 };
-            } forEach allPlayers;
+            } forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 
             if (_opforCount > _bluforCount && _opforCount > 0) then {
                 // Create status marker if needed

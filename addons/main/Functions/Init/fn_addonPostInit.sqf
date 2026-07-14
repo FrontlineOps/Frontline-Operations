@@ -7,6 +7,8 @@
  *   shell that loads the addon.
  */
 
+[] call FLO_fnc_playerSideAdapterInit;
+
 if (isServer) then {
     [] spawn {
         if (missionNamespace getVariable ["FLO_AddonServerBootstrapStarted", false]) exitWith {

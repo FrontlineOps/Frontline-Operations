@@ -8,7 +8,7 @@ params ["_config", ["_savedState", createHashMap, [createHashMap]]];
 
 private _validOperationPhases = ["PREPARE", "ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
 private _validIntelLevels = ["NONE", "SECTOR", "TARGET"];
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _emptyScaleMetrics = createHashMapFromArray [
     ["availableGroups", 0],
     ["activeAttackGroups", 0],

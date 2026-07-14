@@ -3,7 +3,7 @@ params ["_network"];
 [_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
 [_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
 private _nodes = _network get "_nodes";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _nodeRows = [];
 private _routes = [];
 private _counts = createHashMapFromArray [

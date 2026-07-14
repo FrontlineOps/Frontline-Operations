@@ -12,7 +12,7 @@ if (isNull _realGroup) exitWith { false };
 private _spawnVehicles = [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles;
 if (_spawnVehicles isEqualTo []) exitWith { false };
 
-private _eligiblePlayers = allPlayers select { alive _x };
+private _eligiblePlayers = [] call FLO_fnc_getConnectedHumanPlayers;
 if (_eligiblePlayers isEqualTo []) exitWith { false };
 
 private _requestedNearestDist = 1e10;

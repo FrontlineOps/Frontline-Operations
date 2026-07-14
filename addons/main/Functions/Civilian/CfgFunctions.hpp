@@ -9,6 +9,7 @@ class CivilianCore {
     class civilianBuildAmbientRoute {};
     class civilianBuildObjectivePoiCache {};
     class civilianResolveObjectiveContext {};
+    class civilianRefreshObjectiveContexts {};
     class civilianMergeObjectiveMemory {};
     class civilianIngestCombatEvents {};
     class civilianPropagateObjectiveGossip {};

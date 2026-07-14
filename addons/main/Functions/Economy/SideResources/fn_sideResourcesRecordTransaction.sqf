@@ -13,7 +13,7 @@ _treasury set ["_transactionSequence", _sequence];
 
 private _transaction = createHashMapFromArray [
     ["id", format ["%1:%2", _treasury get "_sideKey", _sequence]],
-    ["dateNum", dateToNumber date],
+    ["dateNum", call FLO_fnc_operationalDateNumber],
     ["kind", _kind],
     ["amount", _amount],
     ["category", toUpper _category],

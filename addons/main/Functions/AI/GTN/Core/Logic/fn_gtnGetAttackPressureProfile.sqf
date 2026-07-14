@@ -43,7 +43,7 @@ private _config = _cmdr get "_config";
 private _ownSide = _cmdr get "_ownSide";
 private _ws = _cmdr get "_worldState";
 private _objectives = _ws call ["_getObjectives", []];
-private _nowDateNum = dateToNumber date;
+private _nowDateNum = call FLO_fnc_operationalDateNumber;
 private _recentCaptureCount = if ("__recentCaptureCount" in _cache) then {
     _cache get "__recentCaptureCount"
 } else {

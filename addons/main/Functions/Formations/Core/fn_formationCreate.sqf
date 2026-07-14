@@ -40,7 +40,7 @@ _formations set [_formationId, createHashMapFromArray [
     ["victories", 0],
     ["defeats", 0],
     ["withdrawals", 0],
-    ["formedAtDateNum", dateToNumber date],
+    ["formedAtDateNum", call FLO_fnc_operationalDateNumber],
     ["lastCombatAtDateNum", -1],
     ["lastStrength", _strength],
     ["lastCombatZoneId", ""],

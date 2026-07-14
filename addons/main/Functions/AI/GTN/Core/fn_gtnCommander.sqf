@@ -131,6 +131,7 @@ private _gtnCommander = createHashMapObject [[
     ["_availabilityCacheBuiltAt", -1],
     ["_forceBaselineTotalGroups", 0],
     ["_attackFrontlineObjectives", createHashMap],
+    ["_attackFrontlineDirty", true],
     ["_attackSourceObjectivesCache", createHashMap],
     ["_attackPressureProfiles", createHashMap],
     ["_attackCapCache", createHashMap],
@@ -1740,10 +1741,15 @@ private _gtnCommander = createHashMapObject [[
         private _ws = _self get "_worldState";
         private _strictFrontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
         _self set ["_attackFrontlineObjectives", _strictFrontlineObjectives];
+        _self set ["_attackFrontlineDirty", false];
         _strictFrontlineObjectives
     }],
 
     ["_getAttackFrontlineEnemyObjectives", {
+        if (_self get "_attackFrontlineDirty") exitWith {
+            _self call ["_refreshAttackFrontline", []]
+        };
+
         _self get "_attackFrontlineObjectives"
     }],
 

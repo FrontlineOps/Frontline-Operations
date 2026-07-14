@@ -57,7 +57,7 @@ private _primaryOperation = createHashMapFromArray [
     ["supportObjectiveIds", []],
     ["supplySourceObjectiveId", ""],
     ["supportPosture", "ON_CALL"],
-    ["remainingSeconds", round (([dateToNumber date, _state get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds) max 0)],
+    ["remainingSeconds", round (([call FLO_fnc_operationalDateNumber, _state get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds) max 0)],
     ["result", ""],
     ["transitionReason", _state get "transitionReason"],
     ["resourceBudget", 0],
@@ -106,7 +106,7 @@ private _supportObjectiveIds = [];
 
 private _viewerOpportunityObjectives = createHashMap;
 private _opportunityRows = [];
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 {
     private _record = _y;
     if ((_record get "sideKey") != _viewerSideKey) then { continue };

@@ -148,14 +148,14 @@ if (_queue isEqualTo []) exitWith {
     ["LOGISTICS", 3, "No pending reinforcements after queue reconciliation"] call FLO_fnc_log;
 };
 
-private _nextDispatchAt = _net get "_nextDispatchAt";
-if (time < _nextDispatchAt) exitWith {
+private _nextDispatchAtTick = _net get "_nextDispatchAtTick";
+if (diag_tickTime < _nextDispatchAtTick) exitWith {
     _perf set ["status", "WAITING"];
     _net set ["_lastPerf", _perf];
-    ["LOGISTICS", 3, format [
+    ["LOGISTICS", 4, format [
         "Reinforcement queue pending: %1 groups | next dispatch in %2s",
         count _queue,
-        round (_nextDispatchAt - time)
+        round (_nextDispatchAtTick - diag_tickTime)
     ]] call FLO_fnc_log;
     _net set ["_lastUpdate", time];
 };
@@ -444,6 +444,7 @@ private _nextInterval = if (_backlogContinuation) then {
 } else {
     (_net get "DISPATCH_MIN_INTERVAL") + random ((_net get "DISPATCH_MAX_INTERVAL") - (_net get "DISPATCH_MIN_INTERVAL"))
 };
+_net set ["_nextDispatchAtTick", diag_tickTime + _nextInterval];
 _net set ["_nextDispatchAt", time + _nextInterval];
 
 ["LOGISTICS", 3, format [

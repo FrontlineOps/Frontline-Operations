@@ -55,7 +55,7 @@ private _supportPosture = switch (_phase) do {
     default { "RECOVERING" };
 };
 
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _remainingSeconds = round ([_now, _operation get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds);
 _remainingSeconds = _remainingSeconds max 0;
 private _resourceRemaining = 0;

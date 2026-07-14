@@ -38,7 +38,7 @@ private _round = _event get "roundCount";
     };
     _formation set ["lastCombatZoneId", _zoneId];
     _formation set ["lastCombatRound", _round];
-    _formation set ["lastCombatAtDateNum", dateToNumber date];
+    _formation set ["lastCombatAtDateNum", call FLO_fnc_operationalDateNumber];
     _formation set ["readiness", (((_formation get "readiness") - 3 - (_lossFraction * 12)) max 0) min 100];
     if (_surviving > 0) then {
         private _experienceGain = 1;

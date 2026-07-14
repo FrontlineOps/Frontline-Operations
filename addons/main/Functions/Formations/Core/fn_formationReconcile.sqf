@@ -32,7 +32,7 @@ private _changed = false;
             _formation set ["roleMemberIds", []];
             _formation set ["roleObjectiveId", ""];
             _formation set ["roleOperationId", ""];
-            _formation set ["roleStartedAtDateNum", dateToNumber date];
+            _formation set ["roleStartedAtDateNum", call FLO_fnc_operationalDateNumber];
             _formation set ["roleEndsAtDateNum", -1];
             _formation set ["returnObjectiveId", ""];
             _changed = true;

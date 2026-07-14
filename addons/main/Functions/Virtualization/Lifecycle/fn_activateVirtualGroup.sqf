@@ -88,7 +88,8 @@ if !([_groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition) exitW
 
 [_groupType, _realGroup] call FLO_fnc_virtualizationDistributeIntelItems;
 
-// Reset currentWaypointIndex only after activation succeeded.
+// Commit the remaining route only after activation succeeded.
+_groupData set ["waypoints", _waypoints];
 _groupData set ["currentWaypointIndex", 0];
 
 // Set the real group in the group data

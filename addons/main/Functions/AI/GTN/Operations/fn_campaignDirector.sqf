@@ -167,7 +167,7 @@ private _director = createHashMapObject [[
         if ((_current get "operationOrder") isNotEqualTo []) then {
             throw "Cannot extend campaign LULL while operations exist";
         };
-        private _now = dateToNumber date;
+        private _now = call FLO_fnc_operationalDateNumber;
         _current set ["phase", "LULL"];
         _current set ["phaseStartedAtDateNum", _now];
         _current set ["phaseEndsAtDateNum", [_now, _durationSeconds] call FLO_fnc_dateNumberAddSeconds];
@@ -186,7 +186,7 @@ private _director = createHashMapObject [[
 
         private _nextInitiativeSideKey = _current get "defenderSideKey";
         private _nextDefenderSideKey = _current get "initiativeSideKey";
-        private _now = dateToNumber date;
+        private _now = call FLO_fnc_operationalDateNumber;
         private _duration = [_self, "LULL"] call FLO_fnc_campaignGetPhaseDuration;
         _current set ["initiativeSideKey", _nextInitiativeSideKey];
         _current set ["defenderSideKey", _nextDefenderSideKey];
@@ -243,7 +243,7 @@ private _director = createHashMapObject [[
         private _defenderSideKey = _current get "defenderSideKey";
         private _sequence = (_current get "sequence") + 1;
         private _operationId = format ["OP_%1_%2", _attackerSideKey, _sequence];
-        private _now = dateToNumber date;
+        private _now = call FLO_fnc_operationalDateNumber;
         private _operation = createHashMapFromArray [
             ["operationId", _operationId],
             ["priorityRole", _priorityRole],
@@ -395,7 +395,7 @@ private _director = createHashMapObject [[
     ["_evaluateScaling", {
         private _current = _self get "_state";
         private _evaluation = [_self] call FLO_fnc_campaignEvaluateScale;
-        private _now = dateToNumber date;
+        private _now = call FLO_fnc_operationalDateNumber;
         private _currentCount = _evaluation get "currentCount";
         private _desiredCount = _evaluation get "desiredCount";
         _current set ["desiredOperationCount", _desiredCount];
@@ -456,7 +456,7 @@ private _director = createHashMapObject [[
         private _current = _self get "_state";
         private _evaluation = [_self] call FLO_fnc_campaignEvaluateScale;
         _current set ["desiredOperationCount", _evaluation get "desiredCount"];
-        _current set ["lastScaleEvaluationAtDateNum", dateToNumber date];
+        _current set ["lastScaleEvaluationAtDateNum", call FLO_fnc_operationalDateNumber];
         _current set ["scaleReason", _evaluation get "reason"];
         _current set ["scaleMetrics", _evaluation get "metrics"];
 
@@ -509,7 +509,7 @@ private _director = createHashMapObject [[
         params [["_operationId", "", [""]]];
         private _operation = [_self, _operationId] call FLO_fnc_campaignGetOperation;
         private _phase = _operation get "phase";
-        private _now = dateToNumber date;
+        private _now = call FLO_fnc_operationalDateNumber;
         private _deadlineReached = ([_now, _operation get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds) <= 0;
 
         if (_phase == "RECOVERY") exitWith {
@@ -590,7 +590,7 @@ private _director = createHashMapObject [[
 
         private _current = _self get "_state";
         private _order = _current get "operationOrder";
-        private _now = dateToNumber date;
+        private _now = call FLO_fnc_operationalDateNumber;
         if (_order isEqualTo []) exitWith {
             if ((_current get "phase") != "LULL") then {
                 throw format ["Empty campaign registry has phase %1", _current get "phase"];

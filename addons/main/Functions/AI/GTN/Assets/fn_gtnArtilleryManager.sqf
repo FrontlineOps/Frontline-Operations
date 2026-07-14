@@ -30,6 +30,8 @@ if (isNil "FLO_GTNArtilleryManager") then {
         ["objectiveCooldowns", createHashMap],
         ["sideCooldowns", createHashMap],
         ["batteryCooldowns", createHashMap],
+        ["firePlanRejections", createHashMap],
+        ["firePlanRejectSeconds", 300],
         ["artilleryGroupsBySide", createHashMapFromArray [
             ["ALL", createHashMap],
             ["EAST", createHashMap],
@@ -187,7 +189,7 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 alive _x &&
                 {side group _x == _requestSide} &&
                 {(getPosATL _x) distance2D _targetPos <= _dangerRadius}
-            } count allPlayers;
+            } count ([] call FLO_fnc_getConnectedHumanPlayers);
 
             _playersDangerClose == 0
         }],
@@ -284,57 +286,69 @@ if (isNil "FLO_GTNArtilleryManager") then {
             private _requestStatus = [_self, _requestSide, _objectiveId] call FLO_fnc_gtnArtilleryCanRequestMission;
             if !(_requestStatus select 0) exitWith { false };
 
-            private _missions = _self get "missions";
+            private _isLiveArea = if (_forceLive) then { true } else { _self call ["_isLiveArea", [_targetPos]] };
             private _artGroups = [_self, _requestSide] call FLO_fnc_gtnArtilleryGetAvailableGroups;
             if (_requestKind == "VIRTUAL_COMBAT") then {
                 _artGroups = _artGroups select { !((_x select 1) get "isActive") };
             };
 
-            ["GTN Artillery", 3, format["Found %1 artillery groups", count _artGroups]] call FLO_fnc_log;
+            ["GTN Artillery", 4, format ["Found %1 artillery groups for %2 request", count _artGroups, _requestKind]] call FLO_fnc_log;
 
             if (_artGroups isEqualTo []) exitWith { false };
 
-            ["GTN Artillery", 3, format["Available (not on mission): %1. Missions map: %2", count _artGroups, _missions]] call FLO_fnc_log;
-
-            // Select nearest group to target (single pass)
-            private _sel = [];
-            private _bestDist = 1e12;
-            {
-                _x params ["_gid", "_gData"];
-                private _dist = (_gData get "position") distance2D _targetPos;
-                if (_dist < _bestDist) then {
-                    _bestDist = _dist;
-                    _sel = [_gid, _gData];
+            private _gid = "";
+            private _gdata = createHashMap;
+            private _realGroup = grpNull;
+            private _firePlan = createHashMap;
+            private _activatedForSelection = false;
+            private _selectionFailed = false;
+            if (_isLiveArea) then {
+                private _selection = [_self, _artGroups, _targetPos, _rounds, _accuracy] call FLO_fnc_gtnArtillerySelectLiveBattery;
+                _gid = _selection get "groupId";
+                if (_gid == "") then {
+                    _selectionFailed = true;
+                    ["GTN Artillery", 4, format [
+                        "No live battery could service %1: candidates=%2 cooldownRejected=%3 activationFailures=%4 emptyPlans=%5",
+                        _targetPos,
+                        count _artGroups,
+                        _selection get "rejectedCooldown",
+                        _selection get "activationFailures",
+                        _selection get "emptyPlans"
+                    ]] call FLO_fnc_log;
+                } else {
+                    _gdata = _selection get "groupData";
+                    _realGroup = _selection get "realGroup";
+                    _firePlan = _selection get "firePlan";
+                    _activatedForSelection = _selection get "activatedForSelection";
                 };
-            } forEach _artGroups;
-            if (_sel isEqualTo []) exitWith { false };
+            } else {
+                private _bestDist = 1e12;
+                {
+                    _x params ["_candidateId", "_candidateData"];
+                    private _distance = (_candidateData get "position") distance2D _targetPos;
+                    if (_distance < _bestDist) then {
+                        _bestDist = _distance;
+                        _gid = _candidateId;
+                        _gdata = _candidateData;
+                    };
+                } forEach _artGroups;
+                _selectionFailed = _gid == "";
+            };
+            if (_selectionFailed) exitWith { false };
 
-            private _gid = _sel select 0;
-            private _gdata = _sel select 1;
             private _batteryStatus = [_self, _requestSide, _objectiveId, _gid] call FLO_fnc_gtnArtilleryCanRequestMission;
-            if !(_batteryStatus select 0) exitWith { false };
-            private _isLiveArea = if (_forceLive) then { true } else { _self call ["_isLiveArea", [_targetPos]] };
+            if !(_batteryStatus select 0) exitWith {
+                if (_activatedForSelection) then {
+                    [_gid, _gdata] call FLO_fnc_deactivateVirtualGroup;
+                };
+                false
+            };
             private _targetSide = if (_requestSide isEqualTo east) then {
                 west
             } else {
                 if (_requestSide isEqualTo west) then { east } else { sideUnknown };
             };
-            private _liveActivationFailed = false;
-
-            if (_isLiveArea && {!(_gdata get "isActive")} && {!([_gid] call FLO_fnc_virtualizationTryActivateGroup)}) then {
-                _liveActivationFailed = true;
-            };
-
-            if (_liveActivationFailed) exitWith {
-                ["GTN Artillery", 2, format [
-                    "Live-area artillery request for %1 failed - unable to activate battery %2",
-                    _targetPos,
-                    _gid
-                ]] call FLO_fnc_log;
-                false
-            };
-
-            ["GTN Artillery", 3, format["Selected group %1, isActive: %2, liveArea: %3", _gid, _gdata get "isActive", _isLiveArea]] call FLO_fnc_log;
+            ["GTN Artillery", 4, format ["Selected group %1, isActive: %2, liveArea: %3", _gid, _gdata get "isActive", _isLiveArea]] call FLO_fnc_log;
 
             // Non-live area: keep support entirely virtual.
             if (!_isLiveArea) exitWith {
@@ -366,26 +380,13 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 true
             };
 
-            private _realGroup = _gdata get "realGroup";
-            if (isNull _realGroup) exitWith {
-                ["GTN Artillery", 1, format [
-                    "Artillery request failed - selected battery %1 has no realGroup after live activation",
-                    _gid
-                ]] call FLO_fnc_log;
-                false
-            };
-            private _firePlan = [_realGroup, _targetPos, _rounds, _accuracy] call FLO_fnc_gtnBuildArtilleryFirePlan;
-            if ((keys _firePlan) isEqualTo []) exitWith {
-                ["GTN Artillery", 1, format [
-                    "Artillery request failed - selected battery %1 produced an empty fire plan at %2",
-                    _gid,
-                    _targetPos
-                ]] call FLO_fnc_log;
-                false
-            };
-
             private _missionRecord = [_gid, _gdata, _targetPos, _rounds, _accuracy, _firePlan, _requestKind, _targetContext] call FLO_fnc_gtnBuildArtilleryMissionRecord;
-            if !([_self, _gid, _gdata, _requestSide, _objectiveId, _missionRecord] call FLO_fnc_gtnArtilleryAuthorizeMission) exitWith { false };
+            if !([_self, _gid, _gdata, _requestSide, _objectiveId, _missionRecord] call FLO_fnc_gtnArtilleryAuthorizeMission) exitWith {
+                if (_activatedForSelection) then {
+                    [_gid, _gdata] call FLO_fnc_deactivateVirtualGroup;
+                };
+                false
+            };
 
             if (_targetSide in [east, west]) then {
                 private _alertPayload = [];

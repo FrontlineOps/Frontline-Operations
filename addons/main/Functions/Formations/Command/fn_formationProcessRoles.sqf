@@ -8,7 +8,7 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _formations = _state get "formations";
 private _campaignState = _director call ["_getState", []];
 private _operations = _campaignState get "operations";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _changed = false;
 private _campaignChanged = false;
 

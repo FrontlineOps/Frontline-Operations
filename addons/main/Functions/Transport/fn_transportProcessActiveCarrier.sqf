@@ -58,7 +58,7 @@ private _liveCarrierVehicles = _carrierVehicles select { alive _x };
 _groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
 if (([_groupData] call FLO_fnc_virtualizationGetTransportPassengers) isEqualTo []) exitWith {
     if ((_groupData get "dismountAtWaypoint") >= 0 || {(_groupData get "transportInsertMode") != ""}) then {
-        ["TRANSPORT", 2, format [
+        ["TRANSPORT", 3, format [
             "Carrier %1 has no surviving attached passengers after manifest cleanup - clearing dismount state",
             _groupId
         ]] call FLO_fnc_log;

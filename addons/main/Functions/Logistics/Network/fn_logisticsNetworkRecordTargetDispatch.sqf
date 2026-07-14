@@ -18,7 +18,7 @@ params ["_net", "_objectiveId"];
 if (_objectiveId == "") exitWith { false };
 
 private _history = _net get "_recentReinforcementDispatches";
-_history pushBack [_objectiveId, time + (_net get "REINFORCEMENT_RECENT_TARGET_WINDOW")];
+_history pushBack [_objectiveId, diag_tickTime + (_net get "REINFORCEMENT_RECENT_TARGET_WINDOW")];
 
 _net set ["_recentReinforcementDispatches", _history];
 _net set ["_lastReinforcementTarget", _objectiveId];

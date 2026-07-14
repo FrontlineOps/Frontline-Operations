@@ -30,13 +30,15 @@ private _serializedNodes = createHashMap;
     _serializedNodes set [_x, _copy];
 } forEach (_network get "_nodes");
 
+private _remainingDispatchDelay = ((_network get "_nextDispatchAtTick") - diag_tickTime) max 0;
+
 createHashMapFromArray [
     ["schemaVersion", 2],
     ["initialComposition", _network get "_initialComposition"],
     ["stats", _network get "_stats"],
     ["lastReinforcementTarget", _network get "_lastReinforcementTarget"],
     ["reinforcementQueue", _network get "_reinforcementQueue"],
-    ["nextDispatchAt", _network get "_nextDispatchAt"],
+    ["nextDispatchAt", time + _remainingDispatchDelay],
     ["nodes", _serializedNodes],
     ["hqNodeId", _network get "_hqNodeId"],
     ["hqObjectiveId", _network get "_hqObjectiveId"],

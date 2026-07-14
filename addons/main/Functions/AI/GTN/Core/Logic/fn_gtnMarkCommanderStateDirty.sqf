@@ -34,7 +34,7 @@ switch (_dirtyReason) do {
         _commander set ["_availabilityCacheDirty", true];
         _commander set ["_reserveBandsCache", createHashMap];
         _commander set ["_attackSourceObjectivesCache", createHashMap];
-        _commander set ["_attackFrontlineObjectives", createHashMap];
+        _commander set ["_attackFrontlineDirty", true];
         _commander set ["_attackPressureProfiles", createHashMap];
         _commander set ["_minefieldDirty", true];
         _commander set ["_lastGarrisonSignature", ""];
@@ -46,7 +46,7 @@ switch (_dirtyReason) do {
         _commander set ["_availabilityCacheDirty", true];
         _commander set ["_reserveBandsCache", createHashMap];
         _commander set ["_attackSourceObjectivesCache", createHashMap];
-        _commander set ["_attackFrontlineObjectives", createHashMap];
+        _commander set ["_attackFrontlineDirty", true];
         _commander set ["_attackPressureProfiles", createHashMap];
         _commander set ["_minefieldDirty", true];
         _commander set ["_lastGarrisonSignature", ""];

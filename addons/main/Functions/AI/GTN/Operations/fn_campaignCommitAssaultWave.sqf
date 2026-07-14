@@ -18,7 +18,7 @@ if (_nextCommitted > _packageTarget) then {
     throw format ["Operation %1 wave exceeds package: %2 > %3", _operationId, _nextCommitted, _packageTarget];
 };
 
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _config = _director get "_config";
 private _waveSequence = _operation get "assaultWaveSequence";
 _operation set ["assaultCommittedTotal", _nextCommitted];

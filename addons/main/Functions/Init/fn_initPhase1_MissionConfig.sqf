@@ -106,6 +106,13 @@ FLO_CivilianHandle = FLO_MissionConfig get "civilianHandle";
 FLO_ActivePlayerSide = [_playerSideKey] call FLO_fnc_campaignSideFromKey;
 publicVariable "FLO_ActivePlayerSide";
 
+private _adaptedPlayerCount = 0;
+{
+    if ([_x] call FLO_fnc_playerSideAdapterApply) then {
+        _adaptedPlayerCount = _adaptedPlayerCount + 1;
+    };
+} forEach ([] call FLO_fnc_getConnectedHumanPlayers);
+
 FLO_ReputationHandle = FLO_MissionConfig get "reputationHandle";
 FLO_WestDifficultyHandle = FLO_MissionConfig get "westDifficultyHandle";
 FLO_EastDifficultyHandle = FLO_MissionConfig get "eastDifficultyHandle";
@@ -152,5 +159,13 @@ publicVariable "StartingLocationDone";
     FLO_CivilianHandle get "name",
     _playerSideKey
 ]] call FLO_fnc_log;
+
+if (_adaptedPlayerCount > 0) then {
+    ["INIT", 3, format [
+        "Adapted %1 connected human slot(s) to campaign side %2",
+        _adaptedPlayerCount,
+        _playerSideKey
+    ]] call FLO_fnc_log;
+};
 
 true

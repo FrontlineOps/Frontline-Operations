@@ -5,7 +5,7 @@ params [
 ];
 
 if (((_state get "doctrineBySide") get _sideKey) != "ELASTIC_DEFENSE") exitWith { false };
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _lastWithdrawalAt = (_state get "lastWithdrawalAtBySide") get _sideKey;
 if (_lastWithdrawalAt >= 0 && {([_lastWithdrawalAt, _now] call FLO_fnc_dateNumberDeltaSeconds) < 300}) exitWith { false };
 

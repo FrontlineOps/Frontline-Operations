@@ -29,9 +29,7 @@ if (isNil "InitializationOG" || {!InitializationOG}) exitWith {
     false
 };
 
-// ============================================
-// HUMAN SIDE LOCK (configured player side is authoritative)
-// ============================================
+// The configured campaign side is authoritative for runtime human groups.
 if !(FLO_ActivePlayerSide in [east, west]) exitWith {
     FLO_InitError = "Cannot start mission systems without a configured player side";
     publicVariable "FLO_InitError";
@@ -39,32 +37,7 @@ if !(FLO_ActivePlayerSide in [east, west]) exitWith {
     false
 };
 
-["INIT", 3, format ["Human slots locked to %1", [FLO_ActivePlayerSide] call FLO_fnc_sideKey]] call FLO_fnc_log;
-
-[] spawn {
-    while {true} do {
-        private _players = allPlayers select { side group _x in [east, west] };
-
-        {
-            private _pSide = side group _x;
-            if (_pSide != FLO_ActivePlayerSide) then {
-                if !(_x getVariable ["FLO_SideLockWarned", false]) then {
-                    [format ["This campaign is configured for %1 players. Use a matching lobby slot.", [FLO_ActivePlayerSide] call FLO_fnc_sideKey], "warning", false, owner _x] call FLO_fnc_sendNotification;
-                    _x setVariable ["FLO_SideLockWarned", true, false];
-                };
-
-                if !(_x getVariable ["FLO_SideLockedSpectator", false]) then {
-                    [true] remoteExec ["BIS_fnc_EGSpectator", owner _x];
-                    _x allowDamage false;
-                    _x setCaptive true;
-                    _x setVariable ["FLO_SideLockedSpectator", true, false];
-                };
-            };
-        } forEach _players;
-
-        sleep 5;
-    };
-};
+["INIT", 3, format ["Human lobby slots target campaign side %1", [FLO_ActivePlayerSide] call FLO_fnc_sideKey]] call FLO_fnc_log;
 
 // Initialize side resources early so restored/started systems can consume them.
 if (([] call FLO_fnc_initSideResourcesUninitialized) && {!isNil "FLO_fnc_sideResources"}) then {
@@ -257,6 +230,8 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
             diag_log format ["[FLO_INIT_P5] Restored mission time: %1", _date];
         };
     };
+
+    call FLO_fnc_operationalClockReset;
 
     private _trackedCrewTypes = createHashMap;
     private _playerCatalog = FLO_FactionCatalog get ([FLO_ActivePlayerSide] call FLO_fnc_sideKey);

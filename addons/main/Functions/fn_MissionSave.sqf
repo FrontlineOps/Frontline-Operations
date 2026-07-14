@@ -24,7 +24,7 @@ private _saveVersion = 24;
 private _data = createHashMap;
 _data set ["saveVersion", _saveVersion];
 _data set ["saveTimestamp", systemTimeUTC];
-_data set ["time", date];
+_data set ["time", call FLO_fnc_operationalDate];
 
 // ============================================================================
 // PRE-SAVE CLEANUP

@@ -37,7 +37,7 @@ switch (_doctrine) do {
         _waveSize = _waveSize min 4;
     };
 };
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 _operation set ["assaultPackageTarget", _packageTarget];
 _operation set ["assaultActiveTarget", _activeTarget];
 _operation set ["assaultWaveSize", _waveSize];

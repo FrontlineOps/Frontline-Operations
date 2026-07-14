@@ -42,7 +42,7 @@ if (_defenderRecapture) exitWith {
     _objective set ["campaignOperationId", ""];
     _objective set ["campaignCapturedBySideKey", ""];
     _objective set ["campaignBenefitsPending", false];
-    _objective set ["captureIntegratedAtDateNum", dateToNumber date];
+    _objective set ["captureIntegratedAtDateNum", call FLO_fnc_operationalDateNumber];
     _objective set ["captureState", "integrated"];
     ["CAMPAIGN", 3, format ["Defender restored integrated control of operation target %1", _objectiveId]] call FLO_fnc_log;
     _objective
@@ -60,7 +60,7 @@ if (_operationCapture) then {
     _objective set ["campaignOperationId", _matchedOperationId];
     _objective set [
         "captureIntegratedAtDateNum",
-        [dateToNumber date, _integrationSeconds] call FLO_fnc_dateNumberAddSeconds
+        [call FLO_fnc_operationalDateNumber, _integrationSeconds] call FLO_fnc_dateNumberAddSeconds
     ];
 } else {
     _objective set ["campaignIntegrationState", "FOOTHOLD"];

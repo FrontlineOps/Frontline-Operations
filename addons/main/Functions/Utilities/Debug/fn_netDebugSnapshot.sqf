@@ -35,7 +35,7 @@ createHashMapFromArray [
     ["windowSeconds", _windowSeconds],
     ["windowAgeSeconds", if (_windowStartedAt >= 0) then { diag_tickTime - _windowStartedAt } else { -1 }],
     ["serverFps", diag_fps],
-    ["players", count allPlayers],
+    ["players", count ([false] call FLO_fnc_getConnectedHumanPlayers)],
     ["aiUnits", { !isPlayer _x } count allUnits],
     ["groups", count allGroups],
     ["vehicles", count vehicles],

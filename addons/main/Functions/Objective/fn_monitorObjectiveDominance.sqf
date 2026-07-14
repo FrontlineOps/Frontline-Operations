@@ -46,7 +46,7 @@ private _objKeys = keys FLO_Objectives;
 
 while {true} do {
     private _currentTime = diag_tickTime;
-    private _currentDateNum = dateToNumber date;
+    private _currentDateNum = call FLO_fnc_operationalDateNumber;
 
     if (isNil "FLO_Objectives") then {
         waitUntil { !isNil "FLO_Objectives" };
@@ -62,7 +62,7 @@ while {true} do {
 
     private _activeObjectives = [];
     private _liveObjectives = [];
-    private _allPlayers = allPlayers;
+    private _allPlayers = [] call FLO_fnc_getConnectedHumanPlayers;
     
     // === IDENTIFY ACTIVE OBJECTIVES (Near Players) ===
     {

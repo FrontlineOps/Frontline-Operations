@@ -72,7 +72,7 @@ private _defenderCount = [
     _objective get "friendlyCount"
 ] select ((_objective get "owner") == (_cmdr get "_enemySide"));
 private _contested = _objective get "contested";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _madeProgress = false;
 
 private _lastProgressAt = _operation get "assaultLastProgressAtDateNum";

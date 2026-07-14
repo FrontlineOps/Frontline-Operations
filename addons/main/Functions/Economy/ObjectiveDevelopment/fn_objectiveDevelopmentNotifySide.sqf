@@ -11,6 +11,6 @@ if (_message == "") then { throw "Development notification message cannot be emp
     if ((side group _x) isEqualTo _side) then {
         [_message, _type, false, owner _x] call FLO_fnc_sendNotification;
     };
-} forEach allPlayers;
+} forEach ([false] call FLO_fnc_getConnectedHumanPlayers);
 
 true

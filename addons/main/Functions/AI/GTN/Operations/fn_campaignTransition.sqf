@@ -14,7 +14,7 @@ if !(_nextPhase in ["PREPARE", "ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"]) 
 
 private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
 private _previousPhase = _operation get "phase";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 
 _operation set ["phase", _nextPhase];
 _operation set ["phaseStartedAtDateNum", _now];

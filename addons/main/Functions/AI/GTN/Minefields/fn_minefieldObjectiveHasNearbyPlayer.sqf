@@ -28,7 +28,7 @@ if (_playerPositions isEqualTo []) then {
         if (alive _x && {(side group _x) isEqualTo _playerSide}) then {
             _playerPositions pushBack (getPosATL _x);
         };
-    } forEach allPlayers;
+    } forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 };
 if (_playerPositions isEqualTo []) exitWith { false };
 

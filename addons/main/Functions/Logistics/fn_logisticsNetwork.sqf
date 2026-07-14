@@ -92,6 +92,7 @@ private _logisticsClass = [
     ["_enemySide", west],
     ["_reinforcementQueue", []],
     ["_nextDispatchAt", 0],
+    ["_nextDispatchAtTick", 0],
     ["_loopStarted", false],
     ["_loopPfhId", -1],
     ["_nodes", createHashMap],
@@ -181,4 +182,4 @@ FLO_Logistics_Networks = createHashMap;
     FLO_Logistics_Networks set [_sideKey, _network];
 } forEach [east, west];
 
-["LOGISTICS", 2, "Initialized explicit WEST/EAST logistics networks"] call FLO_fnc_log;
+["LOGISTICS", 3, "Initialized explicit WEST/EAST logistics networks"] call FLO_fnc_log;

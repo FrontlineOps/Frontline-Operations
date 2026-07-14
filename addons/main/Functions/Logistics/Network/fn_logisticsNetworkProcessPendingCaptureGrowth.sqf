@@ -24,7 +24,7 @@ private _metrics = createHashMapFromArray [
 
 if ((_net get "OBJECTIVE_CAPTURE_FORCE_GROWTH") <= 0) exitWith { _metrics };
 
-private _nowDateNum = dateToNumber date;
+private _nowDateNum = call FLO_fnc_operationalDateNumber;
 private _managedSide = _net get "_managedSide";
 private _managedObjectiveIds = _net get "_managedObjectiveIds";
 

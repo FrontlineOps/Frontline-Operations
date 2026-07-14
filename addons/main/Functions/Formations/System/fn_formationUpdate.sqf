@@ -12,7 +12,7 @@ if (FLO_FormationReconcileDirty) then {
 private _reconcileMs = (diag_tickTime - _reconcileStartedAt) * 1000;
 
 private _readinessStartedAt = diag_tickTime;
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _lastUpdate = _state get "lastReadinessUpdateAtDateNum";
 private _elapsedSeconds = 30;
 if (_lastUpdate >= 0) then {
