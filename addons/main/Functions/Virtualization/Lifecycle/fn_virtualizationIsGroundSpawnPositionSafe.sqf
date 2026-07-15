@@ -12,7 +12,7 @@ if (_vehicleType == "" || {!isClass (configFile >> "CfgVehicles" >> _vehicleType
     throw format ["Ground spawn validation received invalid vehicle class %1", _vehicleType];
 };
 if (count _candidate < 2 || {count _origin < 2} || {_maxDistance <= 0}) exitWith { false };
-if ((_candidate select 0) < 100 && {(_candidate select 1) < 100}) exitWith { false };
+if !([_candidate] call FLO_fnc_validateGroupPosition) exitWith { false };
 if ((_candidate distance2D _origin) > _maxDistance) exitWith { false };
 if (surfaceIsWater _candidate) exitWith { false };
 

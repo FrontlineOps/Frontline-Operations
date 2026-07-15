@@ -1,9 +1,9 @@
 params ["_itemsByCategory", "_seen"];
 
-private _supportCatalog = [] call FLO_fnc_storeBuildSupportCatalog;
+private _beforeCount = count _seen;
 {
     _x params ["_className", "_entryKind", "_category"];
     [_itemsByCategory, _seen, _className, _entryKind, _category] call FLO_fnc_storeAppendCatalogItem;
-} forEach (_supportCatalog get "items");
+} forEach FLO_StoreSupportCatalogItems;
 
-_supportCatalog get "counts"
+(count _seen) - _beforeCount

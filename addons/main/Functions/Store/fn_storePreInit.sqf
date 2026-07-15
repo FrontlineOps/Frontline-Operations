@@ -7,17 +7,6 @@ FLO_StoreCatalogCache = createHashMap;
 FLO_StorePlaceableMagazineCache = createHashMap;
 FLO_StorePlaceableMagazineCacheReady = false;
 FLO_StoreCheckoutSequence = 0;
-FLO_StoreOptionalModDefinitions = [
-    ["ACE", "ace_"],
-    ["KAT", "kat_"],
-    ["ACM", "acm_"]
-];
-FLO_StoreOptionalModIndex = [] call FLO_fnc_storeBuildOptionalModIndex;
-FLO_StoreSupportCatalogCache = createHashMapFromArray [
-    ["ready", false],
-    ["items", []],
-    ["counts", createHashMap]
-];
 
 FLO_StoreSupplyShipmentClass = "FLO_SUPPLY_SHIPMENT";
 FLO_StoreSupplyShipmentCost = 300;

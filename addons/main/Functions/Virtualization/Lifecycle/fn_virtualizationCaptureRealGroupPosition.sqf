@@ -13,8 +13,8 @@ if (isNull _anchor) then {
 };
 
 private _currentPos = getPos _anchor;
-if ((_currentPos select 0) <= 100 && (_currentPos select 1) <= 100) exitWith {
-    ["VIRTUALIZATION", 2, format ["WARNING: Invalid position %1 for group %2 - keeping original", _currentPos, _groupId]] call FLO_fnc_log;
+if !([_currentPos, false, format ["capture group=%1", _groupId]] call FLO_fnc_validateGroupPosition) exitWith {
+    ["VIRTUALIZATION", 2, format ["Invalid physical position %1 for group %2; retaining authoritative position", _currentPos, _groupId]] call FLO_fnc_log;
     false
 };
 

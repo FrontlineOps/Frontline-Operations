@@ -82,7 +82,7 @@ if ((_groupData get "dismountAtWaypoint") >= 0) then {
 
 _realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtualizationSpawnRealGroup;
 if (isNull _realGroup) exitWith {
-    ["VIRTUALIZATION", 1, format [
+    ["VIRTUALIZATION", 2, format [
         "Failed to spawn real group for %1 (%2) at %3",
         _groupId,
         _groupType,

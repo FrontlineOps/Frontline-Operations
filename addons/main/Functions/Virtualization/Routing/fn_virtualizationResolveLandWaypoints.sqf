@@ -17,9 +17,8 @@ params [
     ["_closeLoop", false, [true]]
 ];
 
-if (surfaceIsWater _startPos) then {
-    ["VIRTUALIZATION", 1, format ["LAND route starts in water source=%1 position=%2", _sourceTag, _startPos]] call FLO_fnc_log;
-    throw format ["FLO_fnc_virtualizationResolveLandWaypoints: LAND route starts in water at %1", _startPos];
+if (surfaceIsWater _startPos) exitWith {
+    [false, [], "START_IN_WATER", createHashMapFromArray [["segments", 0], ["emitted", 0]], []]
 };
 
 if (_waypoints isEqualTo []) exitWith {

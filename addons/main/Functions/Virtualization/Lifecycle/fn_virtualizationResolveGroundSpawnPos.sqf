@@ -87,7 +87,7 @@ if (_spawnPos isEqualTo []) then {
 };
 
 if (_spawnPos isEqualTo []) then {
-    ["VIRTUALIZATION", 1, format [
+    ["VIRTUALIZATION", 2, format [
         "No safe %1 spawn position for group=%2 vehicle=%3 origin=%4 search=%5m max=%6m",
         _label,
         _groupId,

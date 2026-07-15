@@ -269,8 +269,6 @@ class FLO {
         class storeBuildCategoryPayload {};
         class storeBuildHydratePayload {};
         class storeBuildKitsPayload {};
-        class storeBuildOptionalModIndex {};
-        class storeBuildSupportCatalog {};
         class storeCategoryForVehicle {};
         class storeCategoryForWeapon {};
         class storeCapabilityForCategory {};
@@ -293,7 +291,6 @@ class FLO {
         class storeNormalizeRuntimeRadioClass {};
         class storeOpenDialog {};
         class storeOpenKitsDialog {};
-        class storeOptionalModForConfig {};
         class storePreInit { preInit = 1; };
         class storeMagazineCombatTraits {};
         class storePriceAttachment {};

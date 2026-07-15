@@ -15,6 +15,31 @@ private _groupIds = (_front get "committedGroupIds") select {
 };
 if (_groupIds isEqualTo []) exitWith { false };
 
+private _assignmentId = _front get "formalOperationId";
+if (_assignmentId == "") then { _assignmentId = _front get "probeId"; };
+private _ownSide = _cmdr get "_ownSide";
+private _rejectionCounts = createHashMap;
+private _allAssignable = {
+    [
+        _groups get _x,
+        _ownSide,
+        ["infantry", "motorized", "mechanized", "armor"],
+        ["ATTACK"],
+        _assignmentId,
+        _rejectionCounts
+    ] call FLO_fnc_gtnGroupIsStrategicallyAssignable
+} count _groupIds == count _groupIds;
+if (!_allAssignable) exitWith {
+    ["CAMPAIGN", 4, format [
+        "Probe front %1 axis shift deferred source=%2 groups=%3 rejections=%4",
+        _front get "probeId",
+        _nextSourceObjectiveId,
+        count _groupIds,
+        _rejectionCounts
+    ]] call FLO_fnc_log;
+    false
+};
+
 private _objectiveId = _front get "objectiveId";
 private _objective = FLO_Objectives get _objectiveId;
 private _routes = [
@@ -28,9 +53,6 @@ private _routes = [
 if ((count (keys _routes)) != count _groupIds) then {
     throw format ["Probe front %1 reroute count %2 does not match groups %3", _front get "probeId", count (keys _routes), count _groupIds];
 };
-private _assignmentId = _front get "formalOperationId";
-if (_assignmentId == "") then { _assignmentId = _front get "probeId"; };
-
 private _previousRoutes = createHashMap;
 {
     _previousRoutes set [_x, +((_groups get _x) get "waypoints")];
