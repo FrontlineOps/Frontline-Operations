@@ -120,7 +120,6 @@ private _tempoOptions = [
 ];
 
 private _forceGrowthOptions = [
-    "None _ 0 Groups Per Capture",
     "Low _ 1 Group Per Capture",
     "Standard _ 2 Groups Per Capture",
     "High _ 3 Groups Per Capture"
@@ -150,7 +149,7 @@ private _garrisonOptions = [
 } forEach [1963, 1973];
 
 {
-    [_display displayCtrl _x, _forceGrowthOptions, 2] call FLO_fnc_factionDialogAddItems;
+    [_display displayCtrl _x, _forceGrowthOptions, 1] call FLO_fnc_factionDialogAddItems;
 } forEach [1966, 1974];
 
 {

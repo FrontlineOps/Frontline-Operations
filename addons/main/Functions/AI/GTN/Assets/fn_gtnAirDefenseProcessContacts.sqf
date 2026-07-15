@@ -10,7 +10,12 @@ private _airCandidates = 0;
 private _liveContacts = 0;
 private _virtualContacts = 0;
 private _playerContactCount = 0;
-private _mapSize = getNumber (configFile >> "CfgWorlds" >> worldName >> "mapSize");
+private _mapSize = worldSize;
+if (_mapSize <= 1000) then {
+    private _message = format ["Engine worldSize is invalid while processing air-defense contacts: %1", _mapSize];
+    ["GTN Air Defense", 1, _message] call FLO_fnc_log;
+    throw _message;
+};
 
 {
     private _airId = _x;

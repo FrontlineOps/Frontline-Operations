@@ -27,7 +27,9 @@ private _protectedFields = [
     "attachedTo",
     "attachedGroups",
     "attachedType",
-    "mountedIn"
+    "mountedIn",
+    "landRouteStartBlocked",
+    "landRouteRetryAt"
 ];
 _protectedFields append (call FLO_fnc_virtualizationGetRouteOwnedFields);
 private _defaults = call FLO_fnc_virtualizationCreateGroupRecordDefaults;

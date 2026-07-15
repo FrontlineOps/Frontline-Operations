@@ -40,7 +40,7 @@ if (_bestObjectiveId != "" && {_bestObjectiveId != _hqObjectiveId}) then {
     private _nodeId = format ["NODE_%1_DEPOT_%2", _network get "_managedSideKey", _bestObjectiveId];
     private _position = (FLO_Objectives get _bestObjectiveId) get "position";
     [_network, _nodeId, "DEPOT", "OBJECTIVE", _bestObjectiveId, _position, _bestObjectiveId, false, -1] call FLO_fnc_logisticsNetworkCreateNode;
-    ["LOGISTICS", 2, format ["Seeded initial %1 depot at %2", _network get "_managedSideKey", _bestObjectiveId]] call FLO_fnc_log;
+    ["LOGISTICS", 3, format ["Seeded initial %1 depot at %2", _network get "_managedSideKey", _bestObjectiveId]] call FLO_fnc_log;
 };
 
 _network set ["_initialInfrastructureSeeded", true];

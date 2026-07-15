@@ -180,11 +180,9 @@ switch (_stage) do {
     };
 
     case "REINFORCE_SUCCESS": {
-        private _checkpoint = _front get "reinforcementProgressCheckpoint";
         private _assaultMassReady = _activeCount >= (_config get "probeAssaultMinimumGroups");
         private _reinforcementAvailable =
             (_front get "reinforcementCount") < (_config get "probeMaximumReinforcementFormations");
-        private _newProgress = (_front get "progressSamples") > _checkpoint;
 
         if (_assaultMassReady) then {
             _front set ["supportProgressCheckpoint", _front get "progressSamples"];
@@ -194,21 +192,41 @@ switch (_stage) do {
             if (!_reinforcementAvailable) then {
                 [_director, _cmdr, _front, "REINFORCEMENT_CAP_BELOW_ASSAULT_MASS"] call FLO_fnc_campaignReleaseProbeFront;
             } else {
-                if (_newProgress) then {
-                    if (_commitAllowed && {_actionDue}) then {
-                        _metrics set ["selectionAttempted", true];
-                        private _selection = [_director, _cmdr, _front, _selectionDiagnostics] call FLO_fnc_campaignSelectProbeFormation;
-                        private _selectionFailed = !([_director, _cmdr, _front, _selection, true] call FLO_fnc_campaignCommitProbeFormation);
-                        if (_selectionFailed) then {
-                            [_front, "STALLED", "REINFORCEMENT_UNAVAILABLE"] call FLO_fnc_campaignSetProbeStage;
-                        } else {
-                            _front set ["reinforcementProgressCheckpoint", _front get "progressSamples"];
-                            _metrics set ["committed", true];
+                if (_commitAllowed && {_actionDue}) then {
+                    _metrics set ["selectionAttempted", true];
+                    private _selection = [_director, _cmdr, _front, _selectionDiagnostics] call FLO_fnc_campaignSelectProbeFormation;
+                    private _selectionFailed = !([_director, _cmdr, _front, _selection, true] call FLO_fnc_campaignCommitProbeFormation);
+                    if (_selectionFailed) then {
+                        private _concentration = createHashMapFromArray [
+                            ["movedFormationCount", 0],
+                            ["movedGroupCount", 0],
+                            ["donorProbeIds", []],
+                            ["assaultMassReady", false]
+                        ];
+                        if ((keys _selection) isEqualTo []) then {
+                            _concentration = [
+                                _director,
+                                _cmdr,
+                                _front,
+                                _activeCount,
+                                _selectionDiagnostics
+                            ] call FLO_fnc_campaignConcentrateProbeMass;
                         };
-                    };
-                } else {
-                    if ((_front get "stalledSamples") >= _stallThreshold) then {
-                        [_front, "STALLED", "REINFORCEMENT_DID_NOT_ADVANCE"] call FLO_fnc_campaignSetProbeStage;
+                        if ((_concentration get "movedFormationCount") > 0) then {
+                            _front set ["reinforcementProgressCheckpoint", _front get "progressSamples"];
+                            _metrics set ["changed", true];
+                            _metrics set ["committed", true];
+                            if (_concentration get "assaultMassReady") then {
+                                _front set ["supportProgressCheckpoint", _front get "progressSamples"];
+                                _front set ["evaluatedSupportMissionCount", _front get "supportMissionCount"];
+                                [_front, "COMMIT_SUPPORT", "ASSAULT_MASS_CONCENTRATED"] call FLO_fnc_campaignSetProbeStage;
+                            };
+                        } else {
+                            [_front, "STALLED", "REINFORCEMENT_UNAVAILABLE"] call FLO_fnc_campaignSetProbeStage;
+                        };
+                    } else {
+                        _front set ["reinforcementProgressCheckpoint", _front get "progressSamples"];
+                        _metrics set ["committed", true];
                     };
                 };
             };

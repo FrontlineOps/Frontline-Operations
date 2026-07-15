@@ -39,6 +39,8 @@ createHashMapFromArray [
     ["pathStartedAt", -1],
     ["pathSource", ""],
     ["pathWaypointSettings", []],
+    ["landRouteStartBlocked", false],
+    ["landRouteRetryAt", -1],
     ["vehicleType", ""],
     ["comp", []],
     ["missionLock", ""],

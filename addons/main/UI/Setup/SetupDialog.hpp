@@ -468,7 +468,7 @@ class FLO_FactionSelectDialog
 			x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
 			y = FLO_Q(FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H));
 			w = FLO_Q(FACTION_SIDE_FIELD_W);
-			tooltip = "How many extra force slots WEST earns after secure captures";
+			tooltip = "How many extra force slots WEST earns after each secure capture";
 		};
 
 		class LabelWestGarrison: FLO_RscText_Label
@@ -582,7 +582,7 @@ class FLO_FactionSelectDialog
 			x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
 			y = FLO_Q(FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H));
 			w = FLO_Q(FACTION_SIDE_FIELD_W);
-			tooltip = "How many extra force slots EAST earns after secure captures";
+			tooltip = "How many extra force slots EAST earns after each secure capture";
 		};
 
 		class LabelEastGarrison: FLO_RscText_Label

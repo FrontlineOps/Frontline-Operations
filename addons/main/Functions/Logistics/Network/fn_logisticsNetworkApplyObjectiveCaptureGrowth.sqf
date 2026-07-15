@@ -16,7 +16,9 @@
 params ["_net", ["_objectiveId", ""]];
 
 private _growthCount = _net get "OBJECTIVE_CAPTURE_FORCE_GROWTH";
-if (_growthCount <= 0) exitWith { 0 };
+if !(_growthCount in [1, 2, 3]) then {
+    throw format ["Invalid mandatory objective capture force growth %1", _growthCount];
+};
 
 private _initialComposition = _net get "_initialComposition";
 private _eligibleTypes = [];

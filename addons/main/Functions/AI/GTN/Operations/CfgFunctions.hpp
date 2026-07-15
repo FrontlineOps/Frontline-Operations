@@ -15,6 +15,7 @@ class GTNOperations {
     class campaignCreateState {};
     class campaignCommitAssaultWave {};
     class campaignCommitProbeFormation {};
+    class campaignConcentrateProbeMass {};
     class campaignConfigureOffensiveState {};
     class campaignDirector {};
     class campaignEvaluateScale {};

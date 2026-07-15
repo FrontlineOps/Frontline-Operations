@@ -58,6 +58,7 @@ _net set ["_loopStarted", true];
 
                     if (_net get "_enabled") then {
                         private _t0 = diag_tickTime;
+                        [_net] call FLO_fnc_logisticsNetworkMaintainDepotCoverage;
                         [_net] call FLO_fnc_logisticsNetworkRefillNodes;
                         [_net] call FLO_fnc_logisticsNetworkProcessDeliveries;
                         [_net] call FLO_fnc_logisticsNetworkCheckAndReplace;
@@ -65,32 +66,30 @@ _net set ["_loopStarted", true];
 
                         if (_dt > 0.01) then {
                             private _perf = _net get "_lastPerf";
-                            if (isNil "_perf") then {
-                                _perf = createHashMap;
-                            };
                             diag_log format [
-                                "[FLO][PERF] Logistics %1 total=%2ms queue=%3 needed=%4 targets=%5 attempted=%6 created=%7 status=%8 | phases refresh=%9 compose=%10 reserve=%11 target=%12 dispatch=%13 | failures pool=%14 funds=%15 target=%16 delivery=%17 spawn=%18 create=%19 | resources=%20->%21",
+                                "[FLO][PERF] Logistics %1 total=%2ms queue=%3 needed=%4 targets=%5 attempted=%6 created=%7 status=%8 | phases refresh=%9 compose=%10 reserve=%11 target=%12 dispatch=%13 | failures pool=%14 funds=%15 target=%16 delivery=%17 supply=%18 changed=%19 create=%20 | resources=%21->%22",
                                 _net get "_managedSideKey",
                                 _dt * 1000,
                                 count (_net get "_reinforcementQueue"),
-                                _perf getOrDefault ["neededCount", 0],
-                                _perf getOrDefault ["targetCount", 0],
-                                _perf getOrDefault ["attempted", 0],
-                                _perf getOrDefault ["created", 0],
-                                _perf getOrDefault ["status", "UNKNOWN"],
-                                _perf getOrDefault ["refreshMs", 0],
-                                _perf getOrDefault ["compositionMs", 0],
-                                _perf getOrDefault ["reserveMs", 0],
-                                _perf getOrDefault ["targetMs", 0],
-                                _perf getOrDefault ["dispatchMs", 0],
-                                _perf getOrDefault ["failNoTargetPool", 0],
-                                _perf getOrDefault ["failSpendResources", 0],
-                                (_perf getOrDefault ["failNoTargetObj", 0]) + (_perf getOrDefault ["failSaturatedTarget", 0]),
-                                _perf getOrDefault ["failNoDeliveryObjective", 0],
-                                _perf getOrDefault ["failNoSpawnPos", 0],
-                                _perf getOrDefault ["failCreateReplacement", 0],
-                                _perf getOrDefault ["resourcesBefore", 0],
-                                _perf getOrDefault ["resourcesAfter", 0]
+                                _perf get "neededCount",
+                                _perf get "targetCount",
+                                _perf get "attempted",
+                                _perf get "created",
+                                _perf get "status",
+                                _perf get "refreshMs",
+                                _perf get "compositionMs",
+                                _perf get "reserveMs",
+                                _perf get "targetMs",
+                                _perf get "dispatchMs",
+                                _perf get "failNoTargetPool",
+                                _perf get "failSpendResources",
+                                (_perf get "failNoTargetObj") + (_perf get "failSaturatedTarget"),
+                                _perf get "failNoDeliveryObjective",
+                                _perf get "failNoSupplySource",
+                                _perf get "failSupplyChanged",
+                                _perf get "failCreateReplacement",
+                                _perf get "resourcesBefore",
+                                _perf get "resourcesAfter"
                             ];
                         };
                     };

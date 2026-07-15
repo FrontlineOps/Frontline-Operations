@@ -25,6 +25,7 @@ private _config = createHashMapFromArray [
     ["operationSupportBudgetMaximum", 1500],
     ["probeFormationMinimumReadiness", 50],
     ["probeCommitmentPaceSeconds", 90],
+    ["probeConcentrationDonorRecoverySeconds", 180],
     ["probeProgressDistanceMeters", 150],
     ["probeMinimumContactConfidence", 0.25],
     ["probeContactSamplesForReinforcement", 2],

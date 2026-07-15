@@ -209,6 +209,7 @@ class VirtualizationState {
     class virtualizationClearMountedIn {};
     class virtualizationGetMountedTransport {};
     class virtualizationTransportChainContains {};
+    class virtualizationResetCarrierInsertState {};
     class virtualizationLinkTransportGroups {};
     class virtualizationUnlinkTransportGroups {};
     class virtualizationPruneTransportPassenger {};

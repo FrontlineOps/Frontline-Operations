@@ -40,5 +40,12 @@ if !([_treasury, _cost, "LOGISTICS", "Forward depot establishment", "COMMANDER",
 private _nodeId = format ["NODE_%1_DEPOT_%2", _network get "_managedSideKey", _objectiveId];
 private _position = _objective get "position";
 [_network, _nodeId, "DEPOT", "OBJECTIVE", _objectiveId, _position, _objectiveId, true, 0] call FLO_fnc_logisticsNetworkCreateNode;
-["LOGISTICS", 2, format ["Forward depot %1 establishing at %2", _nodeId, _objectiveId]] call FLO_fnc_log;
+["LOGISTICS", 3, format [
+    "Forward depot establishing side=%1 node=%2 objective=%3 hops=%4 reference=%5",
+    _network get "_managedSideKey",
+    _nodeId,
+    _objectiveId,
+    _sourceRouteHops,
+    _referenceId
+]] call FLO_fnc_log;
 _nodeId

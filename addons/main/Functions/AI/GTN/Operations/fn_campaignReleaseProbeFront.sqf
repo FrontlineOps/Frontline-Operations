@@ -3,8 +3,13 @@ params [
     "_director",
     "_cmdr",
     ["_front", createHashMap, [createHashMap]],
-    ["_reason", "", [""]]
+    ["_reason", "", [""]],
+    ["_recoverySeconds", 0, [0]]
 ];
+
+if (_recoverySeconds < 0) then {
+    throw format ["Probe recovery delay cannot be negative: %1", _recoverySeconds];
+};
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _releaseIds = (_front get "committedGroupIds") select { _x in _groups };
@@ -50,7 +55,7 @@ _front set ["lastContactAt", -1];
 _front set ["reinforcementProgressCheckpoint", 0];
 _front set ["supportProgressCheckpoint", 0];
 _front set ["evaluatedSupportMissionCount", _front get "supportMissionCount"];
-_front set ["nextActionAtDateNum", _now];
+_front set ["nextActionAtDateNum", [_now, _recoverySeconds] call FLO_fnc_dateNumberAddSeconds];
 [_front, "REGROUP", _reason] call FLO_fnc_campaignSetProbeStage;
 
 ["CAMPAIGN", 3, format [

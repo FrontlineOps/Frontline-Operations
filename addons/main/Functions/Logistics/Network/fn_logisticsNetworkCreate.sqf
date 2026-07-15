@@ -186,6 +186,7 @@ _network set ["_supplyChainDirty", true];
 _network set ["_objectiveSideIndexDirty", true];
 _network set ["_lastSupplyChainRefreshAt", -1];
 _network set ["_lastUpdate", time];
+_network set ["_nextDepotPlanningAtTick", diag_tickTime];
 
 if (_dispatchDelay < 0) then {
     private _minInterval = _network get "DISPATCH_MIN_INTERVAL";

@@ -51,6 +51,7 @@ class LogisticsNetwork {
     class logisticsNetworkRegisterBaseNode {};
     class logisticsNetworkReplenishTransportReserves {};
     class logisticsNetworkMarkSupplyChainDirty {};
+    class logisticsNetworkMaintainDepotCoverage {};
     class logisticsNetworkRecordDelivery {};
     class logisticsNetworkRecordReplacement {};
     class logisticsNetworkRecordTargetDispatch {};

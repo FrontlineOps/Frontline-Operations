@@ -116,6 +116,20 @@ if (_mountedIn != "" && {_mountedIn != _attachedTo}) then {
 if ((_groupData get "isTransport") != (_attachedGroups isNotEqualTo [])) then {
     throw format ["Virtual group %1 carrier flag does not match its passenger manifest", _groupId];
 };
+if (_attachedGroups isEqualTo []) then {
+    private _retainsCarrierInsertState = (
+        (_groupData get "dismountAtWaypoint") != -1
+        || {(_groupData get "transportInsertMode") != ""}
+        || {(_groupData get "transportInsertPos") isNotEqualTo []}
+        || {_groupData get "transportLandCommandIssued"}
+        || {_groupData get "transportUnloadCommandIssued"}
+        || {(_groupData get "transportUnloadIssuedAt") != -1}
+        || {(_groupData get "executionState") == "TRANSPORT"}
+    );
+    if (_retainsCarrierInsertState) then {
+        throw format ["Virtual group %1 empty passenger manifest retains carrier insert state", _groupId];
+    };
+};
 if ((count _attachedGroups) != (count (_attachedGroups arrayIntersect _attachedGroups))) then {
     throw format ["Virtual group %1 has duplicate passenger references", _groupId];
 };

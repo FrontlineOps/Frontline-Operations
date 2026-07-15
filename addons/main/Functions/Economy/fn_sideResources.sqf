@@ -7,15 +7,15 @@ if (!isServer) exitWith { createHashMap };
 if ((keys FLO_SideResources) isNotEqualTo []) exitWith { FLO_SideResources };
 
 private _commanderSpendingPolicy = createHashMapFromArray [
-    ["windowSeconds", 180],
     ["reserveMinimum", 1200],
     ["reserveBalanceFraction", 0.30],
     ["reserveIncomeSeconds", 540],
     ["balancedRunwaySeconds", 360],
     ["emergencyReserve", 300],
-    ["bootstrapWindowBudget", 300],
     ["balancedRunwayMinimum", 1200],
     ["denialLogCooldownSeconds", 30],
+    ["developmentIncomeHorizonSeconds", 180],
+    ["developmentBootstrapIncome", 300],
     ["developmentFundingFractions", createHashMapFromArray [
         ["CONSERVE", 0.25],
         ["BALANCED", 0.50]
@@ -23,12 +23,6 @@ private _commanderSpendingPolicy = createHashMapFromArray [
     ["developmentFundingMinimums", createHashMapFromArray [
         ["CONSERVE", 25],
         ["BALANCED", 50]
-    ]],
-    ["urgencyBudgetMultipliers", createHashMapFromArray [
-        ["ROUTINE", 1],
-        ["OPERATIONAL", 2],
-        ["PRESSURED", 3],
-        ["CRITICAL", 6]
     ]],
     ["urgencyReserveMultipliers", createHashMapFromArray [
         ["ROUTINE", 1],

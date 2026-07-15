@@ -33,11 +33,7 @@ if !(_strategic isEqualType false && {_commitment isEqualType false} && {_reserv
 
 private _state = [_treasury] call FLO_fnc_commanderSpendingGetState;
 private _policy = _treasury get "COMMANDER_SPENDING_POLICY";
-private _budgetMultiplier = (_policy get "urgencyBudgetMultipliers") get _urgency;
 private _reserveMultiplier = (_policy get "urgencyReserveMultipliers") get _urgency;
-private _windowBudget = round ((_state get "baseWindowBudget") * _budgetMultiplier);
-private _recentSpend = _state get "recentCommanderSpend";
-private _windowRemaining = (_windowBudget - _recentSpend) max 0;
 private _requiredReserve = if (_urgency == "CRITICAL") then {
     _state get "emergencyReserve"
 } else {
@@ -48,29 +44,10 @@ if (!_reserved) then {
     _postSpendAvailable = _postSpendAvailable - _amount;
 };
 
-private _singleStrategicPurchase = _strategic
-    && {_recentSpend <= 0}
-    && {
-        if (_urgency == "ROUTINE") then {
-            _postSpendAvailable >= (_state get "surplusFloor")
-        } else {
-            true
-        }
-    };
-private _maximumAmount = ((_state get "available") - _requiredReserve) max 0;
-if (!_commitment) then {
-    private _windowAllowance = _windowRemaining;
-    if (_singleStrategicPurchase) then {
-        _windowAllowance = _windowAllowance max _amount;
-    };
-    _maximumAmount = _maximumAmount min _windowAllowance;
-};
-if (_reserved) then {
-    _maximumAmount = [_windowRemaining, _amount] select _commitment;
-    if (_singleStrategicPurchase) then {
-        _maximumAmount = _maximumAmount max _amount;
-    };
-};
+private _maximumAmount = [
+    ((_state get "available") - _requiredReserve) max 0,
+    _amount
+] select _reserved;
 
 private _allowed = true;
 private _reason = "APPROVED";
@@ -81,11 +58,6 @@ if (!_reserved && {_postSpendAvailable < (_state get "emergencyReserve")}) then 
     if (!_reserved && {_postSpendAvailable < _requiredReserve}) then {
         _allowed = false;
         _reason = "DOCTRINE_RESERVE";
-    } else {
-        if (!_commitment && {_amount > _maximumAmount}) then {
-            _allowed = false;
-            _reason = "WINDOW_BUDGET";
-        };
     };
 };
 
@@ -100,11 +72,10 @@ private _decision = createHashMapFromArray [
     ["requiredReserve", _requiredReserve],
     ["emergencyReserve", _state get "emergencyReserve"],
     ["postSpendAvailable", _postSpendAvailable],
-    ["recentCommanderSpend", _recentSpend],
-    ["windowBudget", _windowBudget],
-    ["windowRemaining", _windowRemaining],
     ["maximumAmount", _maximumAmount],
-    ["singleStrategicPurchase", _singleStrategicPurchase]
+    ["strategic", _strategic],
+    ["commitment", _commitment],
+    ["reserved", _reserved]
 ];
 
 if (!_allowed) then {
@@ -113,8 +84,8 @@ if (!_allowed) then {
     private _lastLoggedAt = if (_denialKey in _denials) then { _denials get _denialKey } else { -1e12 };
     if ((diag_tickTime - _lastLoggedAt) >= (_policy get "denialLogCooldownSeconds")) then {
         _denials set [_denialKey, diag_tickTime];
-        ["ECONOMY", 3, format [
-            "%1 commander spend denied category=%2 urgency=%3 amount=%4 posture=%5 reason=%6 available=%7 reserve=%8 recent=%9/%10 ref=%11",
+        ["ECONOMY", 4, format [
+            "%1 commander spend denied category=%2 urgency=%3 amount=%4 posture=%5 reason=%6 available=%7 reserve=%8 ref=%9",
             _state get "sideKey",
             _category,
             _urgency,
@@ -123,8 +94,6 @@ if (!_allowed) then {
             _reason,
             _state get "available",
             _requiredReserve,
-            _recentSpend,
-            _windowBudget,
             _context get "referenceId"
         ]] call FLO_fnc_log;
     };

@@ -8,9 +8,11 @@ if !(_side in [east, west]) then {
     throw format ["Cannot resolve air reserve positions for side %1", _side];
 };
 
-private _mapSize = getNumber (configFile >> "CfgWorlds" >> worldName >> "mapSize");
+private _mapSize = worldSize;
 if (_mapSize <= 1000) then {
-    throw format ["World %1 has invalid mapSize %2", worldName, _mapSize];
+    private _message = format ["Engine worldSize is invalid while resolving air reserve routes: %1", _mapSize];
+    ["GTN Air", 1, _message] call FLO_fnc_log;
+    throw _message;
 };
 
 private _referenceY = (_referencePos select 1) max 500 min (_mapSize - 500);

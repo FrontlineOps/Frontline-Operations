@@ -232,7 +232,6 @@ _display closeDisplay 1;
     ];
 
     private _forceGrowthMap = createHashMapFromArray [
-        ["None _ 0 Groups Per Capture", 0],
         ["Low _ 1 Group Per Capture", 1],
         ["Standard _ 2 Groups Per Capture", 2],
         ["High _ 3 Groups Per Capture", 3]

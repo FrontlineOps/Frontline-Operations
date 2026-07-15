@@ -17,6 +17,10 @@ if ((_groupData get "state") != "idle") exitWith { false };
 if (_groupData get "autoPatrol") exitWith { false };
 if ((_groupData get "patrolConfig") isNotEqualTo []) exitWith { false };
 if ((_groupData get "waypoints") isNotEqualTo []) exitWith { false };
+if (
+    (_groupData get "landRouteStartBlocked")
+    && {diag_tickTime < (_groupData get "landRouteRetryAt")}
+) exitWith { false };
 
 private _patrolPlan = [_groupData, _centerOverride] call FLO_fnc_virtualizationBuildPatrolPlan;
 if (_patrolPlan isEqualTo []) exitWith { false };

@@ -18,6 +18,9 @@ if !(isNil "_carrierData") then {
     _carrierCandidate set ["attachedGroups", _passengerIds];
     _carrierCandidate set ["isTransport", _passengerIds isNotEqualTo []];
     _carrierCandidate set ["nextProcessAt", 0];
+    if (_passengerIds isEqualTo []) then {
+        [_carrierCandidate, _carrierGroupId] call FLO_fnc_virtualizationResetCarrierInsertState;
+    };
     [_carrierCandidate, _carrierGroupId] call FLO_fnc_virtualizationValidateGroup;
 };
 
@@ -31,7 +34,20 @@ _passengerCandidate set ["nextProcessAt", 0];
 if !(isNil "_carrierCandidate") then {
     {
         _carrierData set [_x, _carrierCandidate get _x];
-    } forEach ["attachedGroups", "isTransport", "nextProcessAt"];
+    } forEach [
+        "attachedGroups",
+        "isTransport",
+        "dismountAtWaypoint",
+        "transportInsertMode",
+        "transportInsertPos",
+        "transportLandCommandIssued",
+        "transportUnloadCommandIssued",
+        "transportUnloadIssuedAt",
+        "executionState",
+        "missionLock",
+        "missionType",
+        "nextProcessAt"
+    ];
 };
 {
     _passengerData set [_x, _passengerCandidate get _x];

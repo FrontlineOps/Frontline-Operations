@@ -2041,11 +2041,7 @@
                 appendDataRow(doctrine, "Operational Doctrine", readable(snapshot.doctrine));
                 appendDataRow(doctrine, "Spending Posture", readable(spending.posture));
                 appendDataRow(doctrine, "Protected Reserve", formatResource(spending.reserveFloor));
-                appendDataRow(
-                    doctrine,
-                    "Routine Window",
-                    formatResource(spending.recentCommanderSpend) + " / " + formatResource(spending.baseWindowBudget)
-                );
+                appendDataRow(doctrine, "Emergency Reserve", formatResource(spending.emergencyReserve));
                 renderRows("formation-list", snapshot.formations, "No formed units.", formationListRow);
                 renderRows("logistics-list", snapshot.logistics.nodes, "No logistics nodes.", logisticsListRow);
                 renderRows("enemy-logistics-intel-list", snapshot.enemyLogisticsIntel, "No current reports.", enemyLogisticsIntelListRow);
@@ -2207,9 +2203,7 @@
                             reserveFloor: 2226,
                             emergencyReserve: 300,
                             surplusFloor: 3426,
-                            recentCommanderSpend: 0,
-                            baseWindowBudget: 300,
-                            windowSeconds: 180
+                            developmentIncomeBasis: 300
                         },
                         ledger: []
                     },
