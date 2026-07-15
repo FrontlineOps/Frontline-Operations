@@ -35,7 +35,6 @@ private _serializedFormations = createHashMap;
 } forEach (_state get "formations");
 
 createHashMapFromArray [
-    ["schemaVersion", 1],
     ["revision", _state get "revision"],
     ["formations", _serializedFormations],
     ["sequenceByKey", +(_state get "sequenceByKey")],

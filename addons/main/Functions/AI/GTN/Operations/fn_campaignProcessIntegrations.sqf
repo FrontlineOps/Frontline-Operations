@@ -9,7 +9,7 @@ params ["_director"];
 
 private _config = _director get "_config";
 private _minimumHoldSeconds = _config get "footholdMinimumHoldSeconds";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _integratedCount = 0;
 
 FLO_CampaignBases = FLO_CampaignBases select { !isNull _x && {alive _x} };

@@ -29,8 +29,7 @@ try {
         if (!isNull _civilian) then {
             if (_civilian getUnitTrait 'engineer') then {
                 [50, ""INSURGENT""] call FLO_fnc_sendRewardNotification;
-                private _reportSide = missionNamespace getVariable ['FLO_ActivePlayerSide', west];
-                if !(_reportSide in [east, west]) then { _reportSide = west; };
+                private _reportSide = FLO_ActivePlayerSide;
                 [50, _reportSide, 'Insurgent turned in at a campaign base', netId _civilian] call FLO_fnc_addReward;
                 [_civilian, _reportSide] call FLO_fnc_gtnAlertCivilianReport;
                 deleteVehicle _civilian;

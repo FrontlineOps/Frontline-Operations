@@ -18,9 +18,17 @@ if (!isNull _display) exitWith {
 createDialog "FLO_StoreDialog";
 _display = findDisplay FLO_StoreDialogIdd;
 
-if (isNull _display) exitWith { false };
+if (isNull _display) exitWith {
+    ["The Store could not be opened.", "error"] call FLO_fnc_displayNotification;
+    false
+};
 
 private _control = _display displayCtrl FLO_StoreBrowserIdc;
+if (isNull _control) exitWith {
+    closeDialog 0;
+    ["The Store browser control is unavailable.", "error"] call FLO_fnc_displayNotification;
+    false
+};
 uiNamespace setVariable ["FLO_StoreControl", _control];
 
 [_control] call FLO_fnc_storeAddWebEventHandler;

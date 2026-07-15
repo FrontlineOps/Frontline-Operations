@@ -1,7 +1,8 @@
 /* Reserves a bounded treasury allocation for one operation. */
 params [
     "_director",
-    ["_operationId", "", [""]]
+    ["_operationId", "", [""]],
+    ["_budgetOverride", -1, [0]]
 ];
 
 private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
@@ -10,11 +11,14 @@ if ((_operation get "resourceReservationId") != "") then {
 };
 
 private _sideKey = _operation get "attackerSideKey";
-private _budget = [
-    _director,
-    _sideKey,
-    _operation get "priorityRole"
-] call FLO_fnc_campaignCalculateOperationBudget;
+private _budget = _budgetOverride;
+if (_budget < 0) then {
+    _budget = [
+        _director,
+        _sideKey,
+        _operation get "priorityRole"
+    ] call FLO_fnc_campaignCalculateOperationBudget;
+};
 if (_budget <= 0) then {
     throw format ["Operation %1 cannot reserve its minimum campaign budget", _operationId];
 };

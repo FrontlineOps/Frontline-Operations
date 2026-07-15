@@ -20,33 +20,34 @@ if (isServer && !hasInterface) exitWith {
 
 if (missionNamespace getVariable ["FLO_ClientFinalizeDone", false]) exitWith {};
 
-diag_log "[FLO_INIT_CLIENT] Mission initialization complete, setting up client...";
+["INIT", 3, "Client finalization started"] call FLO_fnc_log;
 
 // Wait for mission loaded screen to finish
 waitUntil { !isNull player };
 waitUntil { player == player };
 
+if !([] call FLO_fnc_applyMissionConfigLocally) then {
+    private _message = "Client finalization received no authoritative mission config";
+    ["INIT", 1, _message] call FLO_fnc_log;
+    throw _message;
+};
 FLO_ClientFinalizeDone = true;
 
-[] call FLO_fnc_applyMissionConfigLocally;
-
 // Create respawn marker if needed
-private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
+private _activeSide = FLO_ActivePlayerSide;
 private _respawnKey = ["west", "east"] select (_activeSide isEqualTo east);
 private _respawnMarkerName = format ["respawn_%1", _respawnKey];
 private _respawnPos = getMarkerPos _respawnMarkerName;
 if (_respawnPos isEqualTo [0,0,0]) then {
-    if (!isNil "FLO_MissionConfig") then {
-        private _startPos = FLO_MissionConfig getOrDefault ["startPosition", getPos player];
-        private _respawnMarker = createMarkerLocal [_respawnMarkerName, _startPos];
-        _respawnMarker setMarkerTypeLocal "hd_start";
-        _respawnMarker setMarkerTextLocal "Respawn";
-        diag_log format ["[FLO_INIT_CLIENT] Created respawn marker at %1", _startPos];
-    };
+    private _startPos = FLO_MissionConfig get "startPosition";
+    private _respawnMarker = createMarkerLocal [_respawnMarkerName, _startPos];
+    _respawnMarker setMarkerTypeLocal "hd_start";
+    _respawnMarker setMarkerTextLocal "Respawn";
+    ["INIT", 3, format ["Created %1 respawn marker at %2", _respawnKey, _startPos]] call FLO_fnc_log;
 };
 
 private _baseRespawnPos = getMarkerPos _respawnMarkerName;
-if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
+if (_baseRespawnPos isEqualTo [0,0,0]) then {
     _baseRespawnPos = FLO_MissionConfig get "startPosition";
 };
 
@@ -64,12 +65,7 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
             continue;
         };
 
-        private _activeSide = missionNamespace getVariable ["FLO_ActivePlayerSide", side player];
-        if !(_activeSide in [east, west]) then {
-            sleep 5;
-            continue;
-        };
-
+        private _activeSide = FLO_ActivePlayerSide;
         private _enemySide = if (_activeSide isEqualTo east) then { west } else { east };
         private _owner = sideUnknown;
 
@@ -103,28 +99,23 @@ if (_baseRespawnPos isEqualTo [0,0,0] && {!isNil "FLO_MissionConfig"}) then {
 };
 
 // Initialize client-side systems
-diag_log "[FLO_INIT_CLIENT] Setting up HUD and UI...";
+["INIT", 3, "Setting up client HUD and UI"] call FLO_fnc_log;
 
 [] call FLO_fnc_initObjectiveRuntimeStateEvents;
 
-diag_log "[FLO_INIT_CLIENT] Base supply is handled by the FLO Store.";
+["INIT", 4, "Base supply is handled by the FLO Store"] call FLO_fnc_log;
 
 // Set briefing/notes
-if (!isNil "FLO_MissionConfig") then {
-    private _friendlyName = (FLO_MissionConfig getOrDefault ["friendlyHandle", createHashMap]) getOrDefault ["name", "Unknown"];
-    private _enemyName = (FLO_MissionConfig getOrDefault ["enemyHandle", createHashMap]) getOrDefault ["name", "Unknown"];
-    
-    player createDiaryRecord ["Diary", ["Mission Status", 
-        format ["<font color='#00ff00'>Mission Active</font><br/><br/>Friendly Forces: %1<br/>Enemy Forces: %2<br/><br/>Objectives indexed: %3",
-            _friendlyName,
-            _enemyName,
-            count (missionNamespace getVariable ["FLO_Objectives", []])
-        ]
-    ]];
-};
+private _bluforName = (FLO_MissionConfig get "bluforHandle") get "name";
+private _opforName = (FLO_MissionConfig get "opforHandle") get "name";
 
-// Set MarLOCC for backwards compatibility
-MarLOCC = 1;
+player createDiaryRecord ["Diary", ["Mission Status",
+    format ["<font color='#00ff00'>Mission Active</font><br/><br/>BLUFOR: %1<br/>OPFOR: %2<br/><br/>Objectives indexed: %3",
+        _bluforName,
+        _opforName,
+        count FLO_Objectives
+    ]
+]];
 
 [] spawn {
     if !([] call FLO_fnc_initDeployPlayer) exitWith {};
@@ -136,6 +127,7 @@ MarLOCC = 1;
     hintSilent "";
     [{
         FLO_ClientUiReady = true;
-        diag_log "[FLO_INIT_CLIENT] Client deployment and UI readiness complete";
+        ["FLO_ClientUIReady", []] call CBA_fnc_localEvent;
+        ["INIT", 3, "Client deployment and UI readiness complete"] call FLO_fnc_log;
     }, [], 2] call CBA_fnc_waitAndExecute;
 };

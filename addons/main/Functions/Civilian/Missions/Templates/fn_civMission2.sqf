@@ -31,21 +31,27 @@ private _taskId = _offer get "missionId";
 ["STR_FLO_MISSIONCIV_DELIVER", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
 if ((FLO_ReputationHandle get "value") < 7) then {
-    private _grp1 = createGroup [east, true];
+    private _hostileForce = call FLO_fnc_civilianGetHostileForcePool;
+    _hostileForce params ["_hostileSide", "_hostileUnits"];
+    private _grp1 = createGroup [_hostileSide, true];
     private _ambushPos = [_deliveryPos, 50, 150, 3, 0, 20, 0] call BIS_fnc_findSafePos;
     for "_i" from 1 to 4 do {
-        private _unitType = if (!isNil "GuerMenArray" && {GuerMenArray isNotEqualTo []}) then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
-        [_grp1, _unitType, _ambushPos, [], 0, "NONE", "civilian delivery ambush one"] call FLO_fnc_createGroupUnit;
+        _grp1 createUnit [selectRandom _hostileUnits, _ambushPos, [], 0, "NONE"];
     };
-    [_grp1, _deliveryPos, 200] call FLO_fnc_taskPatrol;
+    if !([_grp1, _deliveryPos, 200] call FLO_fnc_taskPatrol) then {
+        { deleteVehicle _x; } forEach units _grp1;
+        deleteGroup _grp1;
+    };
 
-    private _grp2 = createGroup [east, true];
+    private _grp2 = createGroup [_hostileSide, true];
     private _ambushPos2 = [_deliveryPos, 50, 150, 3, 0, 20, 0] call BIS_fnc_findSafePos;
     for "_i" from 1 to 4 do {
-        private _unitType = if (!isNil "GuerMenArray" && {GuerMenArray isNotEqualTo []}) then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
-        [_grp2, _unitType, _ambushPos2, [], 0, "NONE", "civilian delivery ambush two"] call FLO_fnc_createGroupUnit;
+        _grp2 createUnit [selectRandom _hostileUnits, _ambushPos2, [], 0, "NONE"];
     };
-    [_grp2, _deliveryPos, 100] call FLO_fnc_taskPatrol;
+    if !([_grp2, _deliveryPos, 100] call FLO_fnc_taskPatrol) then {
+        { deleteVehicle _x; } forEach units _grp2;
+        deleteGroup _grp2;
+    };
 };
 
 private _trigger = createTrigger ["EmptyDetector", _deliveryPos, false];

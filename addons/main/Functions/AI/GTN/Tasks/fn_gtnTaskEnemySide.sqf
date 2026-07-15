@@ -5,15 +5,14 @@
  *   Returns the opposing side for player task selection.
  *
  * Arguments:
- *   0: Side <SIDE|STRING>
+ *   0: Side <SIDE>
  *
  * Return Value:
  *   Enemy side <SIDE>
  */
 
-params ["_side"];
+params [["_side", sideUnknown]];
 
-private _normalizedSide = [_side] call FLO_fnc_gtnTaskNormalizeSide;
-if !(_normalizedSide in [east, west]) exitWith { sideUnknown };
+if !(_side in [east, west]) exitWith { sideUnknown };
 
-([_normalizedSide] call FLO_fnc_gtnSideContext) get "enemySide"
+([_side] call FLO_fnc_gtnSideContext) get "enemySide"

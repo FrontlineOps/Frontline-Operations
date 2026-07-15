@@ -1242,7 +1242,7 @@
 
             <div class="operation-strip">
                 <div class="operation-cell">
-                    <span class="badge-label">Operation <span id="operation-count">0 / 3</span></span>
+                    <span class="badge-label">Operations <span id="operation-count">0</span></span>
                     <select class="operation-select" id="operation-select" aria-label="Select operation">
                         <option value="">No active operation</option>
                     </select>
@@ -1418,7 +1418,7 @@
                             <h2 class="guide-title" id="guide-title">Your first five minutes</h2>
                             <p class="guide-lede">FLO is one persistent side campaign, not a chain of disconnected tasks. Your purchases, captures, deliveries, and combat decisions change the same theater picture used by every player and the AI commander.</p>
                             <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>1. Read Intent</strong><p>Check the commander's intent, active operation, current phase, and phase timer before choosing where to go.</p></div>
+                                <div class="guide-phase"><strong>1. Read Intent</strong><p>Check the commander's intent, active operation, and phase status before choosing where to go. Probing is ongoing; committed phases show a timer.</p></div>
                                 <div class="guide-phase"><strong>2. Locate Yourself</strong><p>Read Your Position. It tells you whether you are in the main effort, a support area, a foothold, or outside command's current plan.</p></div>
                                 <div class="guide-phase"><strong>3. Check Sustainment</strong><p>Review Available treasury and the nearest node's Local Supplies. Both are required for most purchases and support requests.</p></div>
                                 <div class="guide-phase"><strong>4. Choose a Role</strong><p>Join the main effort, secure its logistics, defend a threatened area, or create a future opportunity away from the operation.</p></div>
@@ -1431,33 +1431,32 @@
                         <article class="guide-page" data-guide-page="1">
                             <p class="guide-kicker">02 / Campaign Cycle</p>
                             <h2 class="guide-title">How the theater advances</h2>
-                            <p class="guide-lede">Each operation moves through six phases. The phase tells you what command is trying to accomplish and whether the front should be resting, attacking, or holding a gain.</p>
+                            <p class="guide-lede">Each operation moves through five phases. The phase tells you whether command is testing the front, committing an assault, or securing a gain.</p>
                             <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>Lull</strong><p>Command selects the next reachable effort while formations recover and logistics refill. This is the theater reserve period.</p></div>
-                                <div class="guide-phase"><strong>Prepare</strong><p>The target, budget, doctrine, routes, and intelligence picture are set. Campaign groups do not move during PREPARE.</p></div>
+                                <div class="guide-phase"><strong>Probing</strong><p>Formations continuously test reachable enemy fronts. Ground gained and useful contact can draw whole reinforcing formations, artillery, and aircraft; failed commitments regroup instead of replacing destroyed groups forever. Probing has no fixed deadline.</p></div>
                                 <div class="guide-phase"><strong>Assault</strong><p>A doctrine-adjusted opening force commits as one mass. Follow-on waves replace losses or exploit progress at controlled intervals.</p></div>
                                 <div class="guide-phase"><strong>Secure</strong><p>Friendly forces hold the target, defeat remaining resistance, and prevent the objective from reversing.</p></div>
                                 <div class="guide-phase"><strong>Consolidate</strong><p>The captured objective is connected to command and logistics. Normal campaign benefits begin once integration succeeds.</p></div>
-                                <div class="guide-phase"><strong>Recovery</strong><p>Orders and unused funds release, formations rebuild, and the operation closes before command returns to LULL.</p></div>
+                                <div class="guide-phase"><strong>Recovery</strong><p>Orders and unused funds release, formations rebuild, and command quickly resumes probing for the next operation.</p></div>
                             </div>
-                            <div class="guide-callout">The theater can run one main operation and up to two supporting operations. Operation width is driven by force readiness, logistics, treasury, distinct axes, and defensive pressure, never by connected player count.</div>
+                            <div class="guide-callout">The theater can run one main operation and as many supporting operations as mature probes, logistics, and available treasury can sustain. Connected player count never changes that width.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="2">
                             <p class="guide-kicker">03 / Operations</p>
                             <h2 class="guide-title">Main effort, support, and tempo</h2>
-                            <p class="guide-lede">An operation is a funded campaign commitment with its own target, source, assigned formations, opening mass, follow-on limit, and phase deadline.</p>
+                            <p class="guide-lede">An operation is a funded campaign commitment with its own target, source, assigned formations, opening mass, follow-on limit, and current phase state.</p>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Main Effort</h3><p>The primary axis receives the largest opening force, priority funding, and the clearest command intent. Only one operation owns this role.</p></div>
-                                <div class="guide-block"><h3>Supporting Efforts</h3><p>Up to two smaller operations may open on distinct targets and supply sources when the theater has enough capacity to sustain them.</p></div>
+                                <div class="guide-block"><h3>Supporting Efforts</h3><p>Additional operations may open wherever mature frontline probes, logistics, and available treasury can sustain them.</p></div>
                                 <div class="guide-block"><h3>Opening Mass</h3><p>Command waits for the required package, then commits it atomically. It does not pretend one or two isolated squads are a full assault.</p></div>
                                 <div class="guide-block"><h3>Approach Corridors</h3><p>Groups receive compact parallel lanes so formations converge on the same battle instead of scattering across the objective.</p></div>
-                                <div class="guide-block"><h3>Follow-On Waves</h3><p>Later waves launch on the operation's cadence and replace losses or exploit momentum. They remain bounded by the operation package.</p></div>
+                                <div class="guide-block"><h3>Follow-On Waves</h3><p>Probe commitments are finite and formation-based: destroyed groups do not reopen their slots. Once a formal assault begins, later waves reinforce or exploit momentum only within its committed assault package.</p></div>
                                 <div class="guide-block"><h3>Shaping and Feints</h3><p>Deception forces use movement orders toward another credible target. They do not count as the operation's committed ATTACK mass.</p></div>
                                 <div class="guide-block"><h3>Allocation</h3><p>Command reserves part of the shared treasury for each operation. Unused allocation returns when the operation ends or withdraws.</p></div>
                                 <div class="guide-block"><h3>Support Area</h3><p>The source objective, routes, depots, artillery, and transports behind an operation are part of the fight even when they are not on the target.</p></div>
                             </div>
-                            <div class="guide-callout">Activity outside active operations is not ignored. Sustained pressure can become a reported opportunity that command evaluates during a later LULL.</div>
+                            <div class="guide-callout">Activity outside active operations is not ignored. Sustained pressure can become a reported opportunity that command evaluates while probing the front.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="3">
@@ -1500,7 +1499,7 @@
                                 <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
                                 <div class="guide-block"><h3>Committed</h3><p>Money reserved for active operations or funded projects. It remains in the balance but unrelated spending cannot use it.</p></div>
                                 <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
-                                <div class="guide-block"><h3>Income</h3><p>Connected and integrated objectives pay every three minutes. Contested pressure reduces their output.</p></div>
+                                <div class="guide-block"><h3>Income</h3><p>Connected and secured objectives pay every 30 seconds. The displayed rate is normalized per minute; contested pressure reduces each batch.</p></div>
                                 <div class="guide-block"><h3>Spending Posture</h3><p>EMERGENCY, CONSERVE, BALANCED, and SURPLUS decide how aggressively command spends and how much reserve it protects.</p></div>
                                 <div class="guide-block"><h3>Competing Priorities</h3><p>Operation reservations protect offensives, but support, replacements, player purchases, shipments, and development still draw from what remains available.</p></div>
                             </div>
@@ -1519,7 +1518,7 @@
                             </div>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Node States</h3><p>CONNECTED works normally. STRAINED is pressured or low on stock. ISOLATED has no valid friendly route. DISABLED has lost its anchor.</p></div>
-                                <div class="guide-block"><h3>Routes and Integration</h3><p>Ownership alone is not enough. Forward nodes need connected, secured territory before command can reliably source forces and supplies through them.</p></div>
+                                <div class="guide-block"><h3>Forward Depots</h3><p>A completed operation can establish a depot for 500 resources at the next connected objective. One shipment activates it immediately, or rear-echelon supply completes it after two minutes.</p></div>
                                 <div class="guide-block"><h3>Supply Shipment</h3><p>A shipment costs 300 treasury and 300 Local Supplies at its origin. Deliver it to another friendly node for up to 1,500 supplies.</p></div>
                                 <div class="guide-block"><h3>Project Contribution</h3><p>A shipment may instead be assigned to a funded Development project and delivered inside its objective area to accelerate construction.</p></div>
                             </div>
@@ -1579,7 +1578,7 @@
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Friendly Picture</h3><p>Your side sees its own logistics network and formation roster, including node stock, routes, readiness, rank, roles, and current assignments.</p></div>
                                 <div class="guide-block"><h3>Enemy Logistics Intel</h3><p>Enemy HQs and supply nodes appear only through recovered intelligence. Reports reveal captured information temporarily and then expire.</p></div>
-                                <div class="guide-block"><h3>Defender Warning</h3><p>During enemy PREPARE, defenders receive a coarse threatened sector. Contact, combat, or intelligence must reveal the actual target.</p></div>
+                                <div class="guide-block"><h3>Defender Warning</h3><p>When an enemy probe becomes a committed operation, defenders receive the confirmed assault objective. Background probe activity remains part of the wider frontline picture.</p></div>
                                 <div class="guide-block"><h3>Classified Doctrine</h3><p>Your own side can inspect formation doctrine and status. Enemy shaping details and formation orders remain hidden until normal intelligence exposes activity.</p></div>
                                 <div class="guide-block"><h3>Session Order</h3><p>Read intent, locate yourself, check Available treasury and Local Supplies, choose a role, then use support and intelligence views as the situation demands.</p></div>
                                 <div class="guide-block"><h3>When Plans Change</h3><p>Reopen Command Net after phase transitions, captures, route failures, support denials, or new opportunity reports. The theater picture is persistent and dynamic.</p></div>
@@ -1604,7 +1603,7 @@
         (function () {
             "use strict";
 
-            var phaseOrder = ["LULL", "PREPARE", "ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
+            var phaseOrder = ["ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
             var snapshot = null;
             var selectedId = "";
             var activeOperationId = "";
@@ -1683,7 +1682,7 @@
                 if (operations.length === 0) {
                     var empty = document.createElement("option");
                     empty.value = "";
-                    empty.textContent = "Theater Reserve / Lull";
+                    empty.textContent = "Active Front / Probing";
                     select.appendChild(empty);
                     select.disabled = true;
                     activeOperationId = "";
@@ -1700,7 +1699,7 @@
                     if (!activeFound) { activeOperationId = operations[0].id; }
                     select.value = activeOperationId;
                 }
-                text("operation-count", String(operations.length) + " / 3");
+                text("operation-count", String(operations.length));
             }
 
             function setGuidePage(nextIndex) {
@@ -1736,9 +1735,20 @@
                 send("operations::guideComplete");
             }
 
+            function setPhaseDeadline(operation) {
+                var remainingSeconds = Number(operation.remainingSeconds);
+                phaseDeadlineMs = remainingSeconds < 0
+                    ? -1
+                    : Date.now() + (Math.max(0, remainingSeconds || 0) * 1000);
+            }
+
             function renderClock() {
                 if (!snapshot) {
                     text("phase-timer", "--:--");
+                    return;
+                }
+                if (phaseDeadlineMs < 0) {
+                    text("phase-timer", "ONGOING");
                     return;
                 }
                 var remainingSeconds = Math.max(0, Math.ceil((phaseDeadlineMs - Date.now()) / 1000));
@@ -1746,25 +1756,16 @@
             }
 
             function intentCopy(operation) {
-                if (operation.phase === "SCREEN") {
-                    if (operation.threatSector && operation.threatSector.visible) {
-                        return "Enemy preparations indicate a likely approach around grid " + operation.threatSector.grid
-                            + ". Screen the sector and report confirmed contacts; the exact objective remains unconfirmed.";
-                    }
-                    return "Maintain local security and report enemy pressure. Enemy main effort is not yet confirmed.";
-                }
-                if (operation.phase === "LULL" || !operation.id) {
-                    return "Reorganize, restore combat power, and protect the current line while theater command selects the next effort.";
+                if (!operation.id) {
+                    return "Maintain contact across the front while theater command selects the next concentrated effort.";
                 }
                 if (operation.role === "MAIN_EFFORT") {
-                    if (operation.phase === "PREPARE") { return "Stage combat power and preserve the approach to " + operation.targetName + "."; }
                     if (operation.phase === "ASSAULT") { return "Seize " + operation.targetName + " and defeat resistance inside the objective."; }
                     if (operation.phase === "SECURE") { return "Hold " + operation.targetName + " while the captured area is secured."; }
                     if (operation.phase === "CONSOLIDATE") { return "Protect " + operation.targetName + " until supply and command links are established."; }
                     return "Recover combat power after the completed main effort.";
                 }
                 if (operation.role === "SUPPORTING_EFFORT") {
-                    if (operation.phase === "PREPARE") { return "Stage the supporting force and protect its independent logistics axis to " + operation.targetName + "."; }
                     if (operation.phase === "ASSAULT") { return "Widen the offensive by seizing " + operation.targetName + " without abandoning the main effort."; }
                     if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is secured."; }
                     return "Withdraw and rebuild the supporting force.";
@@ -1778,15 +1779,13 @@
             function renderPhases(activePhase) {
                 var list = byId("phase-list");
                 list.innerHTML = "";
-                var screening = activePhase === "SCREEN";
-                var displayedPhase = screening ? "PREPARE" : activePhase;
-                var activeIndex = phaseOrder.indexOf(displayedPhase);
+                var activeIndex = phaseOrder.indexOf(activePhase);
                 for (var i = 0; i < phaseOrder.length; i += 1) {
                     var item = document.createElement("div");
                     item.className = "phase-step";
                     if (activeIndex >= 0 && i < activeIndex) { item.className += " complete"; }
                     if (i === activeIndex) { item.className += " active"; }
-                    item.textContent = screening && phaseOrder[i] === "PREPARE" ? "PREPARE / SCREEN" : phaseOrder[i];
+                    item.textContent = phaseOrder[i];
                     list.appendChild(item);
                 }
             }
@@ -1981,7 +1980,7 @@
                 text("phase-badge", readable(operation.phase));
                 renderClock();
                 text("intent-role", readable(operation.role));
-                var intentTarget = operation.targetVisible ? operation.targetName : (operation.phase === "LULL" ? "Theater Reserve" : "Intent Undisclosed");
+                var intentTarget = operation.targetVisible ? operation.targetName : (!operation.id ? "Active Front" : "Intent Undisclosed");
                 if (!operation.targetVisible && operation.intelLevel === "SECTOR" && operation.threatSector.visible) {
                     intentTarget = operation.threatSector.label;
                 }
@@ -2080,7 +2079,7 @@
                 snapshot = nextSnapshot;
                 renderOperationSelector();
                 var operation = activeOperation();
-                phaseDeadlineMs = Date.now() + (Math.max(0, Number(operation.remainingSeconds) || 0) * 1000);
+                setPhaseDeadline(operation);
                 if (!selectedId || !findObjective(selectedId)) {
                     selectedId = operation.targetId || snapshot.player.objectiveId || "";
                 }
@@ -2103,7 +2102,7 @@
             byId("operation-select").addEventListener("change", function () {
                 activeOperationId = this.value;
                 var operation = activeOperation();
-                phaseDeadlineMs = Date.now() + (Math.max(0, Number(operation.remainingSeconds) || 0) * 1000);
+                setPhaseDeadline(operation);
                 if (operation.targetId) {
                     selectedId = operation.targetId;
                     renderSelected();
@@ -2140,7 +2139,7 @@
                 var nodes = [
                     ["obj_1", "Kavala", [3600, 12800, 0], "WEST", "SUPPORT"],
                     ["obj_2", "Agios Dionysios", [9200, 14400, 0], "WEST", "SUPPORT"],
-                    ["obj_3", "Athira", [14000, 18800, 0], "WEST", "SCREEN"],
+                    ["obj_3", "Athira", [14000, 18800, 0], "WEST", screening ? "DEFEND_MAIN" : "SUPPORT"],
                     ["obj_4", "Zaros", [9100, 8700, 0], "WEST", "NONE"],
                     ["obj_5", "Pyrgos", [16800, 12700, 0], "EAST", screening ? "NONE" : "MAIN_EFFORT"],
                     ["obj_6", "Charkia", [21400, 16800, 0], "EAST", screening ? "NONE" : "SUPPORTING_EFFORT"],
@@ -2160,24 +2159,22 @@
                 }
                 var operation = {
                     id: screening ? "OP_EAST_08" : "OP_WEST_07", isPrimary: true,
-                    role: screening ? "SCREEN" : "MAIN_EFFORT", phase: screening ? "SCREEN" : "ASSAULT", actualPhase: screening ? "PREPARE" : "ASSAULT", targetVisible: !screening,
-                    targetId: screening ? "" : "obj_5", targetName: screening ? "Undisclosed" : "Pyrgos", targetPosition: screening ? [] : [16800, 12700, 0],
-                    intelLevel: screening ? "SECTOR" : "TARGET", intelReason: screening ? "OPERATION_ASSESSMENT" : "COMMANDER_INTENT",
-                    threatSector: screening
-                        ? { operationId: "OP_EAST_08", visible: true, position: [15100, 13900, 0], longAxis: 2100, shortAxis: 1100, direction: 118, grid: "151139", label: "THREATENED APPROACH" }
-                        : { operationId: "OP_WEST_07", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
+                    role: screening ? "DEFEND_MAIN_EFFORT" : "MAIN_EFFORT", phase: "ASSAULT", actualPhase: "ASSAULT", targetVisible: true,
+                    targetId: screening ? "obj_3" : "obj_5", targetName: screening ? "Athira" : "Pyrgos", targetPosition: screening ? [14000, 18800, 0] : [16800, 12700, 0],
+                    intelLevel: "TARGET", intelReason: screening ? "FORMAL_OPERATION" : "COMMANDER_INTENT",
+                    threatSector: { operationId: screening ? "OP_EAST_08" : "OP_WEST_07", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
                     sourceObjectiveIds: screening ? [] : ["obj_2", "obj_4"], supportObjectiveIds: screening ? [] : ["obj_1", "obj_3"],
-                    supportPosture: screening ? "SCREENING" : "COMMITTED", remainingSeconds: screening ? 426 : 1126, result: "", transitionReason: screening ? "COMMANDER_SELECTION" : "PREPARATION_COMPLETE",
+                    supportPosture: "COMMITTED", remainingSeconds: screening ? 784 : 1126, result: "", transitionReason: "MATURE_PROBE_PROMOTED",
                     resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0, drawdownPending: false,
                     shapingStatus: screening ? "CLASSIFIED" : "FEINT_RETURN", shapingObjectiveName: screening ? "" : "Panagia",
                     exploitationStatus: screening ? "CLASSIFIED" : "READY", exploitationObjectiveName: ""
                 };
                 var supportOperation = {
-                    id: "OP_WEST_08", isPrimary: false, role: "SUPPORTING_EFFORT", phase: "PREPARE", actualPhase: "PREPARE", targetVisible: true,
+                    id: "OP_WEST_08", isPrimary: false, role: "SUPPORTING_EFFORT", phase: "ASSAULT", actualPhase: "ASSAULT", targetVisible: true,
                     targetId: "obj_6", targetName: "Charkia", targetPosition: [21400, 16800, 0], intelLevel: "TARGET", intelReason: "COMMANDER_INTENT",
                     threatSector: { operationId: "OP_WEST_08", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
-                    sourceObjectiveIds: ["obj_3"], supportObjectiveIds: ["obj_1"], supportPosture: "STAGING", remainingSeconds: 435,
-                    result: "", transitionReason: "CAPACITY_SCALE_UP", resourceBudget: 600, resourceSpent: 0, resourceRemaining: 600, resourceReleased: 0, drawdownPending: false
+                    sourceObjectiveIds: ["obj_3"], supportObjectiveIds: ["obj_1"], supportPosture: "COMMITTED", remainingSeconds: 948,
+                    result: "", transitionReason: "MATURE_PROBE_PROMOTED", resourceBudget: 600, resourceSpent: 0, resourceRemaining: 600, resourceReleased: 0, drawdownPending: false
                 };
                 var operations = screening ? [operation] : [operation, supportOperation];
                 return {
@@ -2196,7 +2193,7 @@
                         metrics: { availableGroups: 31, activeAttackGroups: 8, offensiveGroups: 26, forceSlots: 2, logisticsSlots: 2, treasurySlots: 3, axisSlots: 2, pressureCap: 3, threatenedObjectives: 0, forceDeficit: 0 }
                     },
                     player: screening
-                        ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "OFF_OPERATION" }
+                        ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "DEFENDING_MAIN_EFFORT" }
                         : { grid: "168127", position: [15700, 12100, 0], objectiveId: "obj_5", status: "IN_MAIN_EFFORT" },
                     summary: { friendlyObjectives: 5, enemyObjectives: 4, footholds: 1, opportunities: 1 },
                     economy: {

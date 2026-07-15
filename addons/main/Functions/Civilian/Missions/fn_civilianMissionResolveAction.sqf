@@ -113,16 +113,29 @@ switch (toUpper _mode) do {
         ["ScoreAdded", ["Checkpoint Established", 0]] remoteExec ["BIS_fnc_showNotification", 0];
 
         if ((FLO_ReputationHandle get "value") < 7) then {
+            private _hostileForce = call FLO_fnc_civilianGetHostileForcePool;
+            _hostileForce params ["_hostileSide", "_hostileUnits"];
             for "_i" from 1 to 2 do {
                 private _spawnPos = [_pos, 300, 400, 3, 0, 20, 0] call BIS_fnc_findSafePos;
-                private _grp = createGroup [east, true];
+                private _grp = createGroup [_hostileSide, true];
 
                 for "_j" from 1 to 4 do {
-                    private _unitType = if (!isNil "GuerMenArray" && {GuerMenArray isNotEqualTo []}) then { selectRandom GuerMenArray } else { "O_G_Soldier_F" };
-                    [_grp, _unitType, _spawnPos, [], 0, "NONE", "civilian checkpoint response"] call FLO_fnc_createGroupUnit;
+                    _grp createUnit [selectRandom _hostileUnits, _spawnPos, [], 0, "NONE"];
                 };
 
-                _grp addWaypoint [_pos, 0] setWaypointType "SAD";
+                private _routeInstalled = [
+                    _grp,
+                    [[_pos, "SAD", "AWARE", "NORMAL", "WEDGE", "YELLOW", 0]],
+                    "LAND",
+                    "CIV_CHECKPOINT_ATTACK",
+                    false,
+                    true
+                ] call FLO_fnc_taskApplyRoute;
+                if (!_routeInstalled) then {
+                    { deleteVehicle _x; } forEach units _grp;
+                    deleteGroup _grp;
+                    continue;
+                };
                 { _x setUnitPos "MIDDLE"; } forEach units _grp;
             };
         };

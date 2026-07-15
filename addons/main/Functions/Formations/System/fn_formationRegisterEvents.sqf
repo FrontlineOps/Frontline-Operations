@@ -29,7 +29,7 @@ FLO_FormationEventHandlers set ["operation", ["FLO_Campaign_OperationChanged", {
         [FLO_FormationState, FLO_FormationDirector] call FLO_fnc_formationProcessRoles;
         [FLO_FormationDirector, _operationId] call FLO_fnc_formationStartExploitation;
     };
-    if (_phase == "LULL") then {
+    if (_phase == "PROBING" && {_operationId == ""}) then {
         [FLO_FormationState, "WEST"] call FLO_fnc_formationSelectDoctrine;
         [FLO_FormationState, "EAST"] call FLO_fnc_formationSelectDoctrine;
     };

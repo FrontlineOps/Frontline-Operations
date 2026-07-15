@@ -9,6 +9,9 @@ switch (_event) do {
     case "operations::ready": {
         uiNamespace setVariable ["FLO_OperationsControl", _control];
         FLO_OperationsBrowserReady = true;
+        if ((keys FLO_OperationsLastSnapshot) isNotEqualTo []) then {
+            [FLO_OperationsLastSnapshot] call FLO_fnc_operationsUpdateDialog;
+        };
         [] call FLO_fnc_operationsRequestSnapshot;
         if (FLO_OperationsGuideRequested) then {
             [FLO_fnc_operationsShowGuide, []] call CBA_fnc_execNextFrame;
@@ -43,7 +46,7 @@ switch (_event) do {
             _matched = true;
         } forEach (FLO_OperationsLastSnapshot get "operations");
         if (!_matched) then {
-            diag_log format ["[FLO][Operations] Unknown operation focus request: %1", _operationId];
+            ["UI", 4, format ["Unknown operation focus request: %1", _operationId]] call FLO_fnc_log;
         };
     };
     case "operations::selectObjective": {
@@ -65,7 +68,7 @@ switch (_event) do {
         closeDialog 0;
     };
     default {
-        diag_log format ["[FLO][Operations] Unhandled browser event: %1", _event];
+        ["UI", 4, format ["Unhandled Operations browser event: %1", _event]] call FLO_fnc_log;
     };
 };
 

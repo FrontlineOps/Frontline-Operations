@@ -19,4 +19,9 @@ private _underPressure = [_captureProgress > 0, _captureProgress < 0] select (_s
 if (_underPressure) then { _multiplier = _multiplier * 0.85; };
 _multiplier = _multiplier * ([_objective] call FLO_fnc_objectiveDevelopmentIncomeMultiplier);
 
-[((_treasury get "RESOURCE_VALUES") get (_objective get "subtype")) * _multiplier, _status]
+private _incomeInterval = _treasury get "UPDATE_INTERVAL";
+if !(_incomeInterval isEqualType 0 && {_incomeInterval > 0}) then {
+    throw format ["Invalid %1 income interval: %2", _treasury get "_sideKey", _incomeInterval];
+};
+private _perMinuteRate = (_treasury get "RESOURCE_VALUES") get (_objective get "subtype");
+[(_perMinuteRate * (_incomeInterval / 60)) * _multiplier, _status]

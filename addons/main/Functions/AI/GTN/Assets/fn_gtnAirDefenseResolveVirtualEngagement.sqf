@@ -67,15 +67,50 @@ if (_aaData get "isActive") exitWith {
 (_state get "pairReadyAt") set [_pairKey, diag_tickTime + (_state get "pairCooldownSeconds")];
 (_state get "aaReadyAt") set [_aaId, diag_tickTime + (_state get "aaCooldownSeconds")];
 private _airType = _airData get "groupType";
-private _requestedLoss = parseNumber !(((_aaData get "groupType") == "mobile_aa") && {_airType == "jet"});
+private _aaType = _aaData get "groupType";
+private _exposureByAircraft = _state get "virtualExposureByAircraft";
+private _exposureCount = 0;
+if (_airGroupId in _exposureByAircraft) then {
+    private _exposure = _exposureByAircraft get _airGroupId;
+    if ((diag_tickTime - (_exposure select 1)) < (_state get "virtualExposureResetSeconds")) then {
+        _exposureCount = _exposure select 0;
+    };
+};
+_exposureCount = _exposureCount + 1;
+
+private _lossThreshold = [
+    _state get "mobileLossExposureThreshold",
+    _state get "staticLossExposureThreshold"
+] select (_aaType == "static_aa");
+if (_airType == "jet") then {
+    _lossThreshold = _lossThreshold + (_state get "jetExposureThresholdBonus");
+};
+
+private _requestedLoss = parseNumber (_exposureCount >= _lossThreshold);
 private _appliedLoss = 0;
 if (_requestedLoss > 0) then {
     _appliedLoss = [_airGroupId, _requestedLoss] call FLO_fnc_gtnCombatApplyGroupLoss;
+    if (_appliedLoss > 0) then {
+        _exposureByAircraft deleteAt _airGroupId;
+    } else {
+        _exposureByAircraft set [_airGroupId, [_exposureCount, diag_tickTime]];
+    };
+} else {
+    _exposureByAircraft set [_airGroupId, [_exposureCount, diag_tickTime]];
 };
 
 private _status = "ABORTED";
 if !(_airGroupId in (call FLO_fnc_virtualizationGetGroupMap)) then { _status = "DESTROYED"; };
-["GTN Air Defense", 2, format ["%1 %2 engaged virtual aircraft %3: %4 losses=%5", _enemySide, _aaId, _airGroupId, _status, _appliedLoss]] call FLO_fnc_log;
+["GTN Air Defense", 3, format [
+    "%1 %2 engaged virtual aircraft %3: %4 exposure=%5/%6 losses=%7",
+    _enemySide,
+    _aaId,
+    _airGroupId,
+    _status,
+    _exposureCount,
+    _lossThreshold,
+    _appliedLoss
+]] call FLO_fnc_log;
 ["FLO_GTN_VirtualAirDefenseEngagement", [_aaId, _airGroupId, _status, _appliedLoss]] call CBA_fnc_localEvent;
 
 createHashMapFromArray [["status", _status], ["aaGroupId", _aaId], ["losses", _appliedLoss]]

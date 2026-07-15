@@ -32,7 +32,7 @@ private _deliveryRadius = _network get "NODE_DELIVERY_RADIUS";
                         owner _x
                     ] call FLO_fnc_sendNotification;
                 };
-            } forEach allPlayers;
+            } forEach ([false] call FLO_fnc_getConnectedHumanPlayers);
         };
         continue;
     };
@@ -50,7 +50,7 @@ private _deliveryRadius = _network get "NODE_DELIVERY_RADIUS";
                 if (getPlayerUID _x == _contributorUid) then {
                     ["That logistics node is already at its Supply Limit; the shipment was retained.", "warning", false, owner _x] call FLO_fnc_sendNotification;
                 };
-            } forEach allPlayers;
+            } forEach ([false] call FLO_fnc_getConnectedHumanPlayers);
         };
         continue;
     };
@@ -64,10 +64,10 @@ private _deliveryRadius = _network get "NODE_DELIVERY_RADIUS";
     _shipment setVariable ["FLO_LogisticsDelivered", true, true];
     _node set ["deliveryCount", (_node get "deliveryCount") + 1];
     _node set ["lastPlayerDeliveryAmount", _restored];
-    _node set ["lastPlayerDeliveryAtDateNum", dateToNumber date];
+    _node set ["lastPlayerDeliveryAtDateNum", call FLO_fnc_operationalDateNumber];
     _node set ["lastPlayerContributorName", _contributorName];
     if ((_node get "state") == "ESTABLISHING" && {(_node get "deliveryCount") >= (_node get "requiredDeliveries")}) then {
-        _node set ["establishAtDateNum", dateToNumber date];
+        _node set ["establishAtDateNum", call FLO_fnc_operationalDateNumber];
     };
 
     deleteVehicle _shipment;
@@ -84,7 +84,7 @@ private _deliveryRadius = _network get "NODE_DELIVERY_RADIUS";
                 owner _x
             ] call FLO_fnc_sendNotification;
         };
-    } forEach allPlayers;
+    } forEach ([false] call FLO_fnc_getConnectedHumanPlayers);
 } forEach (_network get "_nodes");
 
 if (_accepted > 0) then {

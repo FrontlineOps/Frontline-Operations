@@ -72,10 +72,6 @@ private _totalInfantry = 0;
     _totalInfantry = _totalInfantry + _dismountCount;
 } forEach _dismountCounts;
 
-if (_attachPassengers && {count _dismountTargetPos >= 2}) then {
-    [_carrierGroupId, createHashMapFromArray [["dismountAtWaypoint", 0]]] call FLO_fnc_virtualizationPatchGroup;
-};
-
 ["VIRTUALIZATION", 3, format [
     "Created %1 organic %2 dismount groups (%3 infantry total) for %4",
     count _createdGroupIds,

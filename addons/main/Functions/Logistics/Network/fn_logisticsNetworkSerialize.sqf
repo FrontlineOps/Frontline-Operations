@@ -2,6 +2,12 @@ params ["_network"];
 
 [_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
 
+private _initialComposition = _network get "_initialComposition";
+private _stats = _network get "_stats";
+if !(_initialComposition isEqualType createHashMap && {_stats isEqualType createHashMap}) then {
+    throw format ["Logistics network %1 is not ready to serialize", _network get "_managedSideKey"];
+};
+
 private _serializedNodes = createHashMap;
 {
     private _copy = createHashMapFromArray [
@@ -14,10 +20,6 @@ private _serializedNodes = createHashMap;
         ["position", +(_y get "position")],
         ["state", _y get "state"],
         ["throughput", _y get "throughput"],
-        ["throughputMax", _y get "throughputMax"],
-        ["refillAmount", _y get "refillAmount"],
-        ["commanderSource", _y get "commanderSource"],
-        ["capabilities", +(_y get "capabilities")],
         ["deliveryCount", _y get "deliveryCount"],
         ["lastPlayerDeliveryAmount", _y get "lastPlayerDeliveryAmount"],
         ["lastPlayerDeliveryAtDateNum", _y get "lastPlayerDeliveryAtDateNum"],
@@ -30,13 +32,14 @@ private _serializedNodes = createHashMap;
     _serializedNodes set [_x, _copy];
 } forEach (_network get "_nodes");
 
+private _remainingDispatchDelay = ((_network get "_nextDispatchAtTick") - diag_tickTime) max 0;
+
 createHashMapFromArray [
-    ["schemaVersion", 2],
-    ["initialComposition", _network get "_initialComposition"],
-    ["stats", _network get "_stats"],
+    ["initialComposition", _initialComposition],
+    ["stats", _stats],
     ["lastReinforcementTarget", _network get "_lastReinforcementTarget"],
     ["reinforcementQueue", _network get "_reinforcementQueue"],
-    ["nextDispatchAt", _network get "_nextDispatchAt"],
+    ["nextDispatchAt", time + _remainingDispatchDelay],
     ["nodes", _serializedNodes],
     ["hqNodeId", _network get "_hqNodeId"],
     ["hqObjectiveId", _network get "_hqObjectiveId"],

@@ -14,8 +14,13 @@ params [
     ["_terrainFactor", 1, [0]],
     ["_autoPatrol", false, [true]],
     ["_countMode", "FACTION", [""]],
-    ["_initialGroundComposition", false, [true]]
+    ["_initialGroundComposition", false, [true]],
+    ["_movementDomain", "", [""]]
 ];
+
+if !(_movementDomain in ["LAND", "AIR", "WATER"]) then {
+    throw format ["FLO_fnc_virtualizationCreateArchetype: invalid movement domain %1", _movementDomain];
+};
 
 createHashMapFromArray [
     ["spawnKind", _spawnKind],
@@ -27,5 +32,6 @@ createHashMapFromArray [
     ["terrainFactor", _terrainFactor],
     ["autoPatrol", _autoPatrol],
     ["countMode", _countMode],
-    ["initialGroundComposition", _initialGroundComposition]
+    ["initialGroundComposition", _initialGroundComposition],
+    ["movementDomain", _movementDomain]
 ]

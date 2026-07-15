@@ -5,8 +5,6 @@
  *   evidence. Headless clients are simulation infrastructure, not observers.
  */
 
-(allPlayers select {
-    alive _x && {!(_x isKindOf "HeadlessClient_F")}
-}) apply {
+([] call FLO_fnc_getConnectedHumanPlayers) apply {
     getPosATL _x
 }

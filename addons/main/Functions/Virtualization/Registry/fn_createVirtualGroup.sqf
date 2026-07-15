@@ -34,6 +34,17 @@ _position = [_position] call FLO_fnc_virtualizationNormalizePosition;
 if !([_position, true, format ["createVirtualGroup %1 home=%2 side=%3", _groupType, _homeObjective, _side]] call FLO_fnc_validateGroupPosition) exitWith {
     ""
 };
+private _movementDomain = ([_groupType] call FLO_fnc_virtualizationGetArchetype) get "movementDomain";
+if (_movementDomain == "LAND" && {surfaceIsWater _position}) exitWith {
+    ["VIRTUALIZATION", 2, format [
+        "Rejected initial LAND group on water type=%1 home=%2 side=%3 position=%4",
+        _groupType,
+        _homeObjective,
+        _side,
+        _position
+    ]] call FLO_fnc_log;
+    ""
+};
 
 private _groupId = call FLO_fnc_virtualizationGenerateGroupId;
 private _groupData = [

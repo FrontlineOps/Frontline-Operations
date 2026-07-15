@@ -1,6 +1,6 @@
 params ["_network"];
 
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _lastRefill = _network get "_lastNodeRefillAtDateNum";
 if (_lastRefill < 0) exitWith {
     _network set ["_lastNodeRefillAtDateNum", _now];

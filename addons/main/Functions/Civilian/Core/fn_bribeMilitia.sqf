@@ -18,7 +18,7 @@ if ((remoteExecutedOwner > 2) && {_owner isNotEqualTo remoteExecutedOwner}) exit
 };
 
 private _isAdmin = (admin _owner) > 0;
-private _isOfficer = (typeOf _requester isEqualTo F_Officer) || {typeOf _requester isEqualTo "B_G_officer_F"};
+private _isOfficer = [_requester] call FLO_fnc_factionUnitIsOfficer;
 if (!_isAdmin && {!_isOfficer}) exitWith {
     ["You are not authorized to bribe the militia.", "warning", false, _owner] call FLO_fnc_sendNotification;
     false

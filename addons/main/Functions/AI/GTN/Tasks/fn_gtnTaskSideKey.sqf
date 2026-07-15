@@ -5,15 +5,14 @@
  *   Returns the GTN task state key for a playable side.
  *
  * Arguments:
- *   0: Side <SIDE|STRING>
+ *   0: Side <SIDE>
  *
  * Return Value:
  *   Side key <STRING>
  */
 
-params ["_side"];
+params [["_side", sideUnknown]];
 
-private _normalizedSide = [_side] call FLO_fnc_gtnTaskNormalizeSide;
-if !(_normalizedSide in [east, west]) exitWith { "" };
+if !(_side in [east, west]) exitWith { "" };
 
-([_normalizedSide] call FLO_fnc_gtnSideContext) get "sideKey"
+([_side] call FLO_fnc_gtnSideContext) get "sideKey"

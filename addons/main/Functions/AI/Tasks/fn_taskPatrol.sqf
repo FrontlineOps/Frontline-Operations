@@ -13,6 +13,7 @@
  * 3: Waypoint count <NUMBER> (default: 4)
  * 4: Behavior <STRING> (default: "AWARE")
  * 5: Speed <STRING> (default: "LIMITED")
+ * 6: Movement domain <STRING> (default: "LAND")
  *
  * Return Value:
  * Success <BOOL>
@@ -27,25 +28,29 @@ params [
     ["_radius", 200, [0]],
     ["_waypointCount", 4, [0]],
     ["_behavior", "AWARE", [""]],
-    ["_speed", "LIMITED", [""]]
+    ["_speed", "LIMITED", [""]],
+    ["_movementDomain", "LAND", [""]]
 ];
 
-if (isNull _group) exitWith { false };
-if (_pos isEqualTo []) then { _pos = getPos (leader _group); };
+if (isNull _group) then { throw "FLO_fnc_taskPatrol: group is null"; };
+private _leader = leader _group;
+if (isNull _leader) then { throw "FLO_fnc_taskPatrol: group has no leader"; };
+if (_pos isEqualTo []) then { _pos = getPosATL _leader; };
+if (!(count _pos in [2, 3]) || {_pos findIf {!(_x isEqualType 0)} >= 0}) then {
+    throw format ["FLO_fnc_taskPatrol: invalid center position %1", _pos];
+};
+if (_radius < 0) then {
+    throw format ["FLO_fnc_taskPatrol: invalid patrol radius %1", _radius];
+};
+if (_waypointCount < 1 || {_waypointCount != floor _waypointCount}) then {
+    throw format ["FLO_fnc_taskPatrol: invalid waypoint count %1", _waypointCount];
+};
+if !(_movementDomain in ["LAND", "AIR", "WATER"]) then {
+    throw format ["FLO_fnc_taskPatrol: invalid movement domain %1", _movementDomain];
+};
 
-// Clear existing waypoints
-[_group] call CBA_fnc_clearWaypoints;
-
-// Set group behavior
-_group setBehaviour _behavior;
-_group setSpeedMode _speed;
-_group setCombatMode "YELLOW";
-_group setFormation selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND"];
-
-// Store patrol config for virtualization
-_group setVariable ["FLO_patrolConfig", [_pos, _radius, _waypointCount, _behavior, _speed], true];
-
-private _firstWpIdx = 0;
+private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND"];
+private _semanticWaypoints = [];
 
 // Generate waypoints spread around center
 for "_i" from 0 to (_waypointCount - 1) do {
@@ -54,29 +59,27 @@ for "_i" from 0 to (_waypointCount - 1) do {
     private _dist = _radius * (0.5 + random 0.5);
     private _wpPos = _pos getPos [_dist, _angle];
     
-    // Ensure on land
-    if (surfaceIsWater _wpPos) then { _wpPos = _pos; };
-    
-    private _wp = _group addWaypoint [_wpPos, 10];
-    _wp setWaypointType "MOVE";
-    _wp setWaypointBehaviour _behavior;
-    _wp setWaypointSpeed _speed;
-    _wp setWaypointTimeout [8, 12, 20];
-    _wp setWaypointCompletionRadius 15;
-    
-    if (_i == 0) then {
-        _firstWpIdx = _wp select 1;
-    };
+    if (_movementDomain == "LAND" && {surfaceIsWater _wpPos}) then { _wpPos = _pos; };
+    _semanticWaypoints pushBack [_wpPos, "MOVE", _behavior, _speed, _formation, "YELLOW", 15];
 };
 
-// Set the LAST waypoint to loop back to the first via setCurrentWaypoint
-private _lastWp = [_group, (count waypoints _group) - 1];
-_lastWp setWaypointStatements [
-    "true",
-    format ["(group this) setCurrentWaypoint [(group this), %1];", _firstWpIdx]
-];
+if !([
+    _group,
+    _semanticWaypoints,
+    _movementDomain,
+    "TASK_PATROL",
+    true,
+    true,
+    [8, 12, 20]
+] call FLO_fnc_taskApplyRoute) exitWith { false };
 
-["VIRTUALIZATION", 3, format["TaskPatrol assigned to %1: center %2, radius %3, %4 waypoints", _group, _pos, _radius, _waypointCount]] call FLO_fnc_log;
+_group setBehaviour _behavior;
+_group setSpeedMode _speed;
+_group setCombatMode "YELLOW";
+_group setFormation _formation;
+_group setVariable ["FLO_patrolConfig", [_pos, _radius, _waypointCount, _behavior, _speed], true];
+
+["VIRTUALIZATION", 5, format["TaskPatrol assigned to %1: center %2, radius %3, %4 waypoints", _group, _pos, _radius, _waypointCount]] call FLO_fnc_log;
 
 true
 

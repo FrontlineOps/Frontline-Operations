@@ -4,11 +4,11 @@ if (!isServer || {isNull _player}) exitWith { false };
 
 private _owner = owner _player;
 if (remoteExecutedOwner > 2 && {remoteExecutedOwner != _owner}) exitWith {
-    diag_log format [
-        "[FLO][Development] Rejected snapshot owner %1 for player owner %2",
+    ["UI", 2, format [
+        "Rejected Development snapshot owner %1 for player owner %2",
         remoteExecutedOwner,
         _owner
-    ];
+    ]] call FLO_fnc_log;
     false
 };
 
@@ -20,13 +20,13 @@ private _startedAt = diag_tickTime;
 private _snapshot = [_player] call FLO_fnc_objectiveDevelopmentBuildUiSnapshot;
 private _elapsed = diag_tickTime - _startedAt;
 if (_elapsed > 0.01) then {
-    diag_log format [
-        "[FLO][PERF] Development snapshot side=%1 time=%2ms objectives=%3 projects=%4",
+    ["PERF", 4, format [
+        "Development snapshot side=%1 time=%2ms objectives=%3 projects=%4",
         _snapshot get "sideKey",
         round (_elapsed * 100000) / 100,
         count (_snapshot get "objectives"),
         _snapshot get "activeCount"
-    ];
+    ]] call FLO_fnc_log;
 };
 [_snapshot] remoteExecCall ["FLO_fnc_developmentReceiveSnapshot", _owner];
 true

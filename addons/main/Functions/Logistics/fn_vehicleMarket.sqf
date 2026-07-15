@@ -70,12 +70,15 @@ if (_action == "calc_price") exitWith {
     _scrapValue = _scrapValue * _capabilityMultiplier;
 
     // CAPTURE BONUS (Market Demand)
-    // High demand for foreign tech (OPFOR/INDEP)
-    private _side = getNumber (_cfgArg >> "side");
+    private _marketSide = FLO_ActivePlayerSide;
+    private _marketConfigSide = 1 - parseNumber (_marketSide isEqualTo east);
+    private _vehicleConfigSide = getNumber (_cfgArg >> "side");
     private _demandMultiplier = 1.0;
-    
-    if (_side == 0) then { _demandMultiplier = 1.5; }; // OPFOR (East) -> +50%
-    if (_side == 2) then { _demandMultiplier = 1.25; }; // INDEP -> +25%
+
+    if (_vehicleConfigSide in [0, 1] && {_vehicleConfigSide != _marketConfigSide}) then {
+        _demandMultiplier = 1.5;
+    };
+    if (_vehicleConfigSide == 2) then { _demandMultiplier = 1.25; };
     
     _scrapValue = _scrapValue * _demandMultiplier;
     
@@ -83,53 +86,36 @@ if (_action == "calc_price") exitWith {
     // FACTION PRICE CAP
     // =================================================================================
     // To prevent economic exploits, we cap the sell price at the original buy price
-    // if the vehicle is available in the player's faction menu.
-    
-    // Collect all faction lists
-    private _factionPriceLists = [
-        missionNamespace getVariable ["F_Bike_List", []],
-        missionNamespace getVariable ["F_Car_List", []],
-        missionNamespace getVariable ["F_MRAP_List", []],
-        missionNamespace getVariable ["F_Truck_List", []],
-        missionNamespace getVariable ["F_Truck_Construction_List", []],
-        missionNamespace getVariable ["F_Truck_Ammo_List", []],
-        missionNamespace getVariable ["F_Truck_Respawn_List", []],
-        missionNamespace getVariable ["F_APC_List", []],
-        missionNamespace getVariable ["F_Tank_List", []],
-        missionNamespace getVariable ["F_Artillery_List", []],
-        missionNamespace getVariable ["F_Heli_List", []],
-        missionNamespace getVariable ["F_Heli_Respawn_List", []],
-        missionNamespace getVariable ["F_Heli_Gunship_List", []],
-        missionNamespace getVariable ["F_Plane_List", []],
-        missionNamespace getVariable ["F_Boat_List", []],
-        missionNamespace getVariable ["F_UAV_List", []],
-        missionNamespace getVariable ["F_UGV_List", []],
-        missionNamespace getVariable ["F_Container_List", []],
-        missionNamespace getVariable ["F_Turret_List", []],
-        missionNamespace getVariable ["F_SAM_List", []]
+    // if the vehicle is available in that side's Store catalog.
+    private _sourceCatalog = FLO_FactionCatalog get ([_marketSide] call FLO_fnc_sideKey);
+    private _vehiclePoolKeys = [
+        "groundMotorized",
+        "groundMechanized",
+        "groundArmor",
+        "groundTransport",
+        "groundArtillery",
+        "airTransport",
+        "airHeli",
+        "airJet",
+        "airDrone",
+        "groundDrone",
+        "staticAA",
+        "boat"
     ];
-
+    private _isPurchasable = (_vehiclePoolKeys findIf { _type in (_sourceCatalog get _x) }) >= 0;
     private _buyPrice = -1;
-
-    // Search for vehicle in lists
-    {
-        private _list = _x;
-        {
-            _x params ["_class", "_price"];
-            if (_class == _type) exitWith {
-                _buyPrice = _price;
-            };
-        } forEach _list;
-        
-        if (_buyPrice > -1) exitWith {};
-    } forEach _factionPriceLists;
+    if (_isPurchasable) then {
+        private _category = [_type] call FLO_fnc_storeCategoryForVehicle;
+        _buyPrice = [_type, _category, "vehicle"] call FLO_fnc_storePriceClass;
+    };
 
     // Apply Cap if vehicle is purchasable
     if (_buyPrice > -1) then {
         // If calculated value exceeds buy price, cap it
         if (_scrapValue > _buyPrice) then {
+            private _calculatedValue = _scrapValue;
             _scrapValue = _buyPrice;
-            ["MARKET", 3, format ["Price capped for %1: Calc $%2 -> Cap $%3", _type, _scrapValue, _buyPrice]] call FLO_fnc_log;
+            ["MARKET", 4, format ["Price capped for %1: Calc $%2 -> Cap $%3", _type, _calculatedValue, _buyPrice]] call FLO_fnc_log;
         };
     };
 
@@ -145,8 +131,9 @@ if (_action == "sell") exitWith {
     };
     if (isNull _requester || {(_requester distance2D _vehicle) > 15}) exitWith { false };
     if (remoteExecutedOwner > 2 && {owner _requester != remoteExecutedOwner}) exitWith { false };
+    if ((side group _requester) isNotEqualTo FLO_ActivePlayerSide) exitWith { false };
 
-    private _price = [_vehicle, "calc_price"] call FLO_fnc_vehicleMarket;
+    private _price = [_vehicle, "calc_price", _requester] call FLO_fnc_vehicleMarket;
     private _side = side group _requester;
     private _sideKey = [_side] call FLO_fnc_sideKey;
     private _treasury = FLO_SideResources get _sideKey;
@@ -173,7 +160,7 @@ if (_action == "sell") exitWith {
 
 // === ACTION CONFIRMATION ===
 if (_action == "open_menu") exitWith {
-    private _price = [_vehicle, "calc_price"] call FLO_fnc_vehicleMarket;
+    private _price = [_vehicle, "calc_price", player] call FLO_fnc_vehicleMarket;
     private _name = getText (configOf _vehicle >> "displayName");
     
     // TODO: Use a nicer dialog, but for now BIS_fnc_guiMessage is robust

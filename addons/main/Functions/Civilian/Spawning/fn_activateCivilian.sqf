@@ -29,6 +29,9 @@ private _realGroup = createGroup [civilian, true];
 private _spawnedUnits = [];
 private _spawnedVehicles = [];
 private _spawnFailed = false;
+private _civilianCatalog = FLO_FactionCatalog get "CIVILIAN";
+private _civilianMen = _civilianCatalog get "men";
+private _civilianVehicles = _civilianCatalog get "vehicles";
 
 switch (_groupType) do {
     case "civilian";
@@ -45,22 +48,14 @@ switch (_groupType) do {
         };
 
         for "_i" from 1 to _unitCount do {
-            private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
+            private _unitType = if (_spawnClass != "") then { _spawnClass } else { selectRandom _civilianMen };
             private _spawnPos = if (_groupType == "civ_building") then {
                 +_anchorPos
             } else {
                 [_spawnBasis, 3, 12, 1, 0, 0.5, 0] call BIS_fnc_findSafePos
             };
 
-            private _unit = [
-                _realGroup,
-                _unitType,
-                _spawnPos,
-                [],
-                0,
-                "NONE",
-                format ["civilian virtual group=%1", _groupId]
-            ] call FLO_fnc_createGroupUnit;
+            private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
             if (isNull _unit) exitWith { _spawnFailed = true; };
             _spawnedUnits pushBack _unit;
         };
@@ -68,7 +63,7 @@ switch (_groupType) do {
 
     case "civilianVehicle";
     case "civ_car": {
-        private _vehicleType = selectRandom CivVehArray;
+        private _vehicleType = selectRandom _civilianVehicles;
         private _spawnPos = if ((_position distance2D _routineAnchorPos) > 80) then {
             +_routineAnchorPos
         } else {
@@ -83,16 +78,8 @@ switch (_groupType) do {
         _vehicle setDamage 0;
         _spawnedVehicles pushBack _vehicle;
 
-        private _driverType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
-        private _driver = [
-            _realGroup,
-            _driverType,
-            [0, 0, 0],
-            [],
-            0,
-            "NONE",
-            format ["civilian vehicle group=%1 role=driver", _groupId]
-        ] call FLO_fnc_createGroupUnit;
+        private _driverType = if (_spawnClass != "") then { _spawnClass } else { selectRandom _civilianMen };
+        private _driver = _realGroup createUnit [_driverType, [0, 0, 0], [], 0, "NONE"];
         if (isNull _driver) then {
             _spawnFailed = true;
         } else {
@@ -104,16 +91,8 @@ switch (_groupType) do {
         private _passengerCount = (count _cargoPositions) min (floor random 3);
         for "_i" from 0 to (_passengerCount - 1) do {
             if (_spawnFailed) exitWith {};
-            private _passengerType = if (_spawnClass != "") then { _spawnClass } else { selectRandom CivMenArray };
-            private _passenger = [
-                _realGroup,
-                _passengerType,
-                [0, 0, 0],
-                [],
-                0,
-                "NONE",
-                format ["civilian vehicle group=%1 role=passenger", _groupId]
-            ] call FLO_fnc_createGroupUnit;
+            private _passengerType = if (_spawnClass != "") then { _spawnClass } else { selectRandom _civilianMen };
+            private _passenger = _realGroup createUnit [_passengerType, [0, 0, 0], [], 0, "NONE"];
             if (isNull _passenger) exitWith { _spawnFailed = true; };
             _passenger moveInCargo _vehicle;
             _spawnedUnits pushBack _passenger;

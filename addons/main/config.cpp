@@ -37,6 +37,7 @@ class RscTitles {
 
 #include "UI\Setup\SetupDialog.hpp"
 #include "UI\Store\StoreDialog.hpp"
+#include "UI\Store\StoreKitsDialog.hpp"
 #include "UI\Deploy\DeployDialog.hpp"
 #include "UI\Operations\OperationsDialog.hpp"
 #include "UI\Development\DevelopmentDialog.hpp"
@@ -61,6 +62,7 @@ class CfgRemoteExec {
         class FLO_fnc_gtnCommanderRadioMessage { allowedTargets = 0; jip = 0; };
         class FLO_fnc_initClientFinalize { allowedTargets = 0; jip = 1; };
         class FLO_fnc_initActivatePlayer { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_playerSideAdapterRequest { allowedTargets = 2; jip = 0; };
         class FLO_fnc_gtnSyncAlertBatch { allowedTargets = 0; jip = 0; };
         class FLO_fnc_gtnSyncCommanderIntelMarkers { allowedTargets = 0; jip = 0; };
         class FLO_fnc_gtnQueueArtilleryRadioMission { allowedTargets = 0; jip = 0; };
@@ -78,6 +80,7 @@ class CfgRemoteExec {
         class FLO_fnc_baseDeployReceiveResult { allowedTargets = 1; jip = 0; };
         class FLO_fnc_campaignRequestSnapshot { allowedTargets = 2; jip = 0; };
         class FLO_fnc_objectiveDevelopmentAssignShipment { allowedTargets = 2; jip = 0; };
+        class FLO_fnc_captureUIRequestStateServer { allowedTargets = 2; jip = 0; };
         class FLO_fnc_operationsReceiveSnapshot { allowedTargets = 1; jip = 0; };
         class FLO_fnc_developmentRequestSnapshotServer { allowedTargets = 2; jip = 0; };
         class FLO_fnc_developmentReceiveSnapshot { allowedTargets = 1; jip = 0; };

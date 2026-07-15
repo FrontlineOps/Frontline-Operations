@@ -42,6 +42,10 @@ if !(_side in [west, east]) exitWith {
     _payload set ["message", "Store is only available to BLUFOR and OPFOR."];
     _payload
 };
+if (_side isNotEqualTo FLO_ActivePlayerSide) exitWith {
+    _payload set ["message", "Your lobby slot does not match the configured player side."];
+    _payload
+};
 
 private _sideKey = ["WEST", "EAST"] select (_side isEqualTo east);
 if (isNil { _base getVariable "FLO_BaseSide" }) then {

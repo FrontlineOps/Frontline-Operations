@@ -8,11 +8,35 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _formations = _state get "formations";
 private _campaignState = _director call ["_getState", []];
 private _operations = _campaignState get "operations";
-private _now = dateToNumber date;
+private _fronts = _campaignState get "frontlineProbes";
+private _frontByFormation = createHashMap;
+{
+    private _probeId = _x;
+    {
+        if !(_x in _formations) then {
+            private _message = format ["Probe front %1 references missing formation %2", _probeId, _x];
+            ["FORMATIONS", 1, _message] call FLO_fnc_log;
+            throw _message;
+        };
+        if (_x in _frontByFormation) then {
+            private _message = format [
+                "Probe fronts %1 and %2 both own formation %3",
+                _frontByFormation get _x,
+                _probeId,
+                _x
+            ];
+            ["FORMATIONS", 1, _message] call FLO_fnc_log;
+            throw _message;
+        };
+        _frontByFormation set [_x, _probeId];
+    } forEach (_y get "formationIds");
+} forEach _fronts;
+private _now = call FLO_fnc_operationalDateNumber;
 private _changed = false;
 private _campaignChanged = false;
 
 {
+    private _formationId = _x;
     private _formation = _y;
     private _sideKey = _formation get "sideKey";
     private _cmdr = FLO_GTN_CommandersBySide get _sideKey;
@@ -21,6 +45,11 @@ private _campaignChanged = false;
     private _role = _formation get "role";
 
     if (_role == "RESERVE") then {
+        if ((_formation get "roleMemberIds") isEqualTo [] && {(_formation get "roleOperationId") != ""}) then {
+            _formation set ["roleOperationId", ""];
+            _formation set ["returnObjectiveId", ""];
+            _changed = true;
+        };
         private _attackMembers = _livingMembers select { ((_groups get _x) get "commanderOrder") == "ATTACK" };
         if (_attackMembers isNotEqualTo []) then {
             private _operationId = (_groups get (_attackMembers select 0)) get "campaignOperationId";
@@ -39,14 +68,35 @@ private _campaignChanged = false;
     };
 
     if (_role == "MAIN") then {
+        private _assignmentId = _formation get "roleOperationId";
+        private _roleObjectiveId = _formation get "roleObjectiveId";
         private _activeAttackMembers = (_formation get "roleMemberIds") select {
-            _x in _groups && {((_groups get _x) get "commanderOrder") == "ATTACK"}
+            _x in _groups
+            && {((_groups get _x) get "unitCount") > 0}
+            && {((_groups get _x) get "commanderOrder") == "ATTACK"}
+            && {((_groups get _x) get "campaignOperationId") == _assignmentId}
+            && {((_groups get _x) get "attackObjective") == _roleObjectiveId}
         };
-        _formation set ["roleMemberIds", _activeAttackMembers];
+        if (_activeAttackMembers isNotEqualTo (_formation get "roleMemberIds")) then {
+            _formation set ["roleMemberIds", _activeAttackMembers];
+            _changed = true;
+        };
+        if (_formationId in _frontByFormation) then {
+            private _front = _fronts get (_frontByFormation get _formationId);
+            private _memberIds = _formation get "memberIds";
+            private _currentCommittedIds = _front get "committedGroupIds";
+            private _nextCommittedIds = _currentCommittedIds select { !(_x in _memberIds) };
+            {
+                _nextCommittedIds pushBackUnique _x;
+            } forEach _activeAttackMembers;
+            if (_nextCommittedIds isNotEqualTo _currentCommittedIds) then {
+                _front set ["committedGroupIds", _nextCommittedIds];
+                _campaignChanged = true;
+            };
+        };
         if (_activeAttackMembers isEqualTo []) then {
             _formation set ["role", "RECOVERY"];
             _formation set ["roleObjectiveId", _formation get "homeObjectiveId"];
-            _formation set ["roleOperationId", ""];
             _formation set ["roleStartedAtDateNum", _now];
             _formation set ["roleEndsAtDateNum", [_now, 180] call FLO_fnc_dateNumberAddSeconds];
             _changed = true;
@@ -55,13 +105,47 @@ private _campaignChanged = false;
     };
 
     if (_role == "RECOVERY") then {
+        if (_livingMembers isEqualTo [] && {_formationId in _frontByFormation}) then {
+            private _probeId = _frontByFormation get _formationId;
+            private _front = _fronts get _probeId;
+            private _memberIds = _formation get "memberIds";
+            _front set [
+                "committedGroupIds",
+                (_front get "committedGroupIds") select { !(_x in _memberIds) }
+            ];
+            _front set [
+                "formationIds",
+                (_front get "formationIds") select { _x != _formationId }
+            ];
+            [_probeId, _front] call FLO_fnc_campaignValidateProbeFrontState;
+            _formation set ["roleOperationId", ""];
+            _campaignChanged = true;
+            _changed = true;
+        };
         private _endsAt = _formation get "roleEndsAtDateNum";
         if (_livingMembers isNotEqualTo [] && {_endsAt >= 0} && {([_now, _endsAt] call FLO_fnc_dateNumberDeltaSeconds) <= 0}) then {
+            if (_formationId in _frontByFormation) then {
+                private _probeId = _frontByFormation get _formationId;
+                private _front = _fronts get _probeId;
+                private _memberIds = _formation get "memberIds";
+                _front set [
+                    "committedGroupIds",
+                    (_front get "committedGroupIds") select { !(_x in _memberIds) }
+                ];
+                _front set [
+                    "formationIds",
+                    (_front get "formationIds") select { _x != _formationId }
+                ];
+                [_probeId, _front] call FLO_fnc_campaignValidateProbeFrontState;
+                _campaignChanged = true;
+            };
             _formation set ["role", "RESERVE"];
             _formation set ["roleMemberIds", []];
             _formation set ["roleObjectiveId", ""];
+            _formation set ["roleOperationId", ""];
             _formation set ["roleStartedAtDateNum", -1];
             _formation set ["roleEndsAtDateNum", -1];
+            _formation set ["returnObjectiveId", ""];
             _changed = true;
         };
         continue;
@@ -180,6 +264,19 @@ private _campaignChanged = false;
         };
     };
 } forEach _formations;
+
+{
+    private _front = _y;
+    if (
+        (_front get "formalOperationId") == ""
+        && {(_front get "committedGroupIds") isEqualTo []}
+        && {!((_front get "stage") in ["PROBE", "REGROUP"])}
+    ) then {
+        private _cmdr = FLO_GTN_CommandersBySide get (_front get "sideKey");
+        [_director, _cmdr, _front, "PROBE_FORCE_RELEASED"] call FLO_fnc_campaignReleaseProbeFront;
+        _campaignChanged = true;
+    };
+} forEach _fronts;
 
 if (_changed) then {
     _state set ["revision", (_state get "revision") + 1];

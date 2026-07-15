@@ -29,7 +29,12 @@ private _targetRevenueMultiplier = _currentRevenueMultiplier;
 if (_branch == "REVENUE") then {
     _targetRevenueMultiplier = [_targetLevel] call FLO_fnc_objectiveDevelopmentRevenueMultiplier;
     private _baseIncome = (_treasury get "RESOURCE_VALUES") get (_objective get "subtype");
-    _addedIncome = _baseIncome * (_targetRevenueMultiplier - _currentRevenueMultiplier);
+    private _incomeInterval = _treasury get "UPDATE_INTERVAL";
+    if !(_incomeInterval isEqualType 0 && {_incomeInterval > 0}) then {
+        throw format ["Invalid %1 Development income interval: %2", _sideKey, _incomeInterval];
+    };
+    _addedIncome = (_baseIncome * (_incomeInterval / 60))
+        * (_targetRevenueMultiplier - _currentRevenueMultiplier);
     _rawTreasuryCost = ceil (_addedIncome * (FLO_ObjectiveDevelopmentConfig get "revenuePaybackCycles"));
 } else {
     _rawTreasuryCost = (FLO_ObjectiveDevelopmentConfig get "developmentBaseCost") * _targetLevel * _targetLevel;

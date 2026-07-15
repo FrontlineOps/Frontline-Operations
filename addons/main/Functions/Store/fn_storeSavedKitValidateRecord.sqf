@@ -1,19 +1,23 @@
-params ["_record", "_recordIndex", ["_legacy", false, [false]]];
+params ["_record", "_recordIndex"];
 
 if !(_record isEqualType createHashMap) then {
     throw format ["Store saved-kit record %1 is not a HashMap", _recordIndex];
 };
+private _requiredKeys = ["id", "name", "items"];
 {
     if !(_x in _record) then {
         throw format ["Store saved-kit record %1 is missing %2", _recordIndex, _x];
     };
-} forEach ["id", "name", "items", "updatedAt"];
+} forEach _requiredKeys;
+private _unexpectedKeys = (keys _record) select {!(_x in _requiredKeys)};
+if (_unexpectedKeys isNotEqualTo []) then {
+    throw format ["Store saved-kit record %1 has unexpected fields %2", _recordIndex, _unexpectedKeys];
+};
 
 private _id = _record get "id";
 private _name = _record get "name";
 private _items = _record get "items";
-private _updatedAt = _record get "updatedAt";
-if !(_id isEqualType "" && {_name isEqualType ""} && {_items isEqualType []} && {_updatedAt isEqualType 0}) then {
+if !(_id isEqualType "" && {_name isEqualType ""} && {_items isEqualType []}) then {
     throw format ["Store saved-kit record %1 has invalid field types", _recordIndex];
 };
 if (_id == "" || {_name == ""} || {count _name > 40}) then {
@@ -25,7 +29,7 @@ if (_items isEqualTo []) then {
 
 private _normalizedItems = [];
 for "_i" from 0 to ((count _items) - 1) do {
-    _normalizedItems append ([_items select _i, _id, _i, _legacy] call FLO_fnc_storeSavedKitValidateItem);
+    _normalizedItems append ([_items select _i, _id, _i] call FLO_fnc_storeSavedKitValidateItem);
 };
 if ((count _normalizedItems) > 60) then {
     throw format ["Store saved kit %1 exceeds 60 normalized item lines", _id];
@@ -34,6 +38,5 @@ if ((count _normalizedItems) > 60) then {
 createHashMapFromArray [
     ["id", _id],
     ["name", _name],
-    ["items", _normalizedItems],
-    ["updatedAt", _updatedAt]
+    ["items", _normalizedItems]
 ]

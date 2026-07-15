@@ -12,15 +12,26 @@ if (_savedPayload isNotEqualTo objNull) then {
         throw format ["Invalid %1 treasury save payload: %2", _sideKey, typeName _savedPayload];
     };
 
-    if ("balance" in _savedPayload) then {
-        _balance = _savedPayload get "balance";
-        _reservations = _savedPayload get "reservations";
-        _ledger = _savedPayload get "ledger";
-        _transactionSequence = _savedPayload get "transactionSequence";
-        _lastIncome = _savedPayload get "lastIncome";
-    } else {
-        _balance = _savedPayload get "resources";
+    private _requiredFields = [
+        "balance",
+        "reservations",
+        "ledger",
+        "transactionSequence",
+        "lastIncome"
+    ];
+    private _missingFields = _requiredFields select { !(_x in _savedPayload) };
+    if (_missingFields isNotEqualTo []) then {
+        throw format ["Saved %1 treasury is missing fields %2", _sideKey, _missingFields];
     };
+    private _unexpectedFields = (keys _savedPayload) select { !(_x in _requiredFields) };
+    if (_unexpectedFields isNotEqualTo []) then {
+        throw format ["Saved %1 treasury has unsupported fields %2", _sideKey, _unexpectedFields];
+    };
+    _balance = _savedPayload get "balance";
+    _reservations = _savedPayload get "reservations";
+    _ledger = _savedPayload get "ledger";
+    _transactionSequence = _savedPayload get "transactionSequence";
+    _lastIncome = _savedPayload get "lastIncome";
 };
 
 if (!(_balance isEqualType 0) || {_balance < 0}) then {
@@ -32,15 +43,14 @@ if !(_reservations isEqualType createHashMap) then {
 if !(_ledger isEqualType []) then {
     throw format ["Invalid %1 treasury ledger: %2", _sideKey, typeName _ledger];
 };
-
-if (!isNil "FLO_SavedGameData" && {(FLO_SavedGameData get "saveVersion") < 21} && {_side isEqualTo west}) then {
-    private _legacyConfig = FLO_SavedGameData get "config";
-    private _legacyMoney = _legacyConfig get "moneyHandle";
-    private _legacyBalance = _legacyMoney get "value";
-    if !(_legacyBalance isEqualType 0 && {_legacyBalance >= 0}) then {
-        throw format ["Invalid legacy WEST money balance: %1", _legacyBalance];
-    };
-    _balance = _balance + _legacyBalance;
+if !(_transactionSequence isEqualType 0 && {_transactionSequence >= 0} && {_transactionSequence == floor _transactionSequence}) then {
+    throw format ["Invalid %1 treasury transaction sequence: %2", _sideKey, _transactionSequence];
+};
+if !(_lastIncome isEqualType 0 && {_lastIncome >= 0}) then {
+    throw format ["Invalid %1 treasury last income: %2", _sideKey, _lastIncome];
+};
+if ((count _ledger) > (_treasury get "LEDGER_LIMIT")) then {
+    throw format ["%1 treasury ledger exceeds its %2-entry limit", _sideKey, _treasury get "LEDGER_LIMIT"];
 };
 
 _treasury set ["_side", _side];

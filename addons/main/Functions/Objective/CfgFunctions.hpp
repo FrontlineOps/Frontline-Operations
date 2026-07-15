@@ -25,7 +25,6 @@ class ObjectiveUtilities {
     class getObjectiveNearPlayer {};
     class getObjectivePosition {};
     class isPositionInObjective {};
-    class objectiveNormalizeOwner {};
     class objectiveOwnerAtPosition {};
     class createObjectiveMarker {};
     class publishObjectiveRuntimeState {};

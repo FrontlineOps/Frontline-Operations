@@ -5,7 +5,7 @@ params [
 ];
 
 if (((_state get "doctrineBySide") get _sideKey) != "ELASTIC_DEFENSE") exitWith { false };
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _lastWithdrawalAt = (_state get "lastWithdrawalAtBySide") get _sideKey;
 if (_lastWithdrawalAt >= 0 && {([_lastWithdrawalAt, _now] call FLO_fnc_dateNumberDeltaSeconds) < 300}) exitWith { false };
 
@@ -56,6 +56,7 @@ private _selected = [];
         private _formationId = _index get _groupId;
         private _formation = _formations get _formationId;
         if !((_formation get "role") in ["RESERVE", "RECOVERY"]) then { continue };
+        if ((_formation get "roleOperationId") != "") then { continue };
         private _members = [];
         if (_formationId in _membersByFormation) then { _members = _membersByFormation get _formationId; };
         _members pushBack _groupId;

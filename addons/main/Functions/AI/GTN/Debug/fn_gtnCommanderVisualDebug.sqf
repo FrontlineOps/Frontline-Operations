@@ -201,7 +201,9 @@ if (isNil "FLO_GTN_CommanderDebugMarkers") then { FLO_GTN_CommanderDebugMarkers 
                 private _objId = _x;
                 private _objData = _friendlyObjectives get _objId;
                 private _objPos = _objData get "position";
-                private _enemyPressure = { side _x == _enemySide && {_x distance2D _objPos < _detectRange} } count allPlayers;
+                private _enemyPressure = {
+                    side _x == _enemySide && {_x distance2D _objPos < _detectRange}
+                } count ([] call FLO_fnc_getConnectedHumanPlayers);
                 if (_enemyPressure > 0) then {
                     _reinforcementPointRows pushBack [_objId, _enemyPressure, _objData get "priority", _objPos];
                 };

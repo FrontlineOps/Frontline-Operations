@@ -72,7 +72,10 @@ if (_syncedCount <= 0) exitWith {
 [_groupData] call FLO_fnc_virtualizationClearRealVehicles;
 _groupData set ["isActive", false];
 _groupData set ["lastStateChangeTime", diag_tickTime];
+_groupData set ["lastMoveTime", diag_tickTime];
+_groupData set ["virtualMoveCarryMeters", 0];
 _groupData set ["nextProcessAt", 0];
+[_groupData] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
 
 [_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
 call FLO_fnc_virtualizationTouchRegistry;

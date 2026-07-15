@@ -9,6 +9,7 @@ params [
 
 createHashMapFromArray [
     ["pfhId", -1],
+    ["disconnectEhId", -1],
     ["running", false],
     ["lastUpdateTime", 0],
     ["lastPlayerCacheTime", 0],

@@ -24,7 +24,7 @@ switch (_event) do {
         closeDialog 0;
     };
     default {
-        diag_log format ["[FLO][Base] Unhandled deployment UI event: %1", _event];
+        ["UI", 4, format ["Unhandled Deployment browser event: %1", _event]] call FLO_fnc_log;
     };
 };
 

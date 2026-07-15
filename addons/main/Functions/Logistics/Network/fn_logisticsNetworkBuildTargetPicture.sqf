@@ -21,7 +21,7 @@ private _managedSide = _net get "_managedSide";
 private _friendlyCountKey = ["bluforCount", "opforCount"] select (_managedSide isEqualTo east);
 private _enemyCountKey = ["opforCount", "bluforCount"] select (_managedSide isEqualTo east);
 private _collapseRatio = _net get "REINFORCEMENT_OBJECTIVE_CONTESTED_COLLAPSE_FORCE_RATIO";
-private _players = allPlayers;
+private _players = [] call FLO_fnc_getConnectedHumanPlayers;
 private _hasPlayers = _players isNotEqualTo [];
 
 private _pressureTargets = [];

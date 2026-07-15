@@ -26,7 +26,7 @@ FLO_GTN_PlayerTasks = createHashMap;
     };
 
     while {FLO_GTN_PlayerTaskBridgeRunning} do {
-        private _activeSide = [FLO_ActivePlayerSide] call FLO_fnc_gtnTaskNormalizeSide;
+        private _activeSide = FLO_ActivePlayerSide;
         if !(_activeSide in [west, east]) then {
             throw format ["FLO_fnc_gtnPlayerTaskBridge: invalid active player side %1", FLO_ActivePlayerSide];
         };
@@ -123,7 +123,7 @@ FLO_GTN_PlayerTasks = createHashMap;
             _state set ["operationId", _operationId];
             _state set ["objectiveId", _objectiveId];
             _state set ["role", _role];
-            ["GTN_TASKS", 2, format ["Published %1 task %2 for operation %3", _role, _newTaskId, _operationId]] call FLO_fnc_log;
+            ["GTN_TASKS", 3, format ["Published %1 task %2 for operation %3", _role, _newTaskId, _operationId]] call FLO_fnc_log;
         };
 
         FLO_GTN_PlayerTasks set [_sideKey, _state];
@@ -131,5 +131,5 @@ FLO_GTN_PlayerTasks = createHashMap;
     };
 };
 
-["GTN_TASKS", 2, "Operation task bridge started (15s interval)"] call FLO_fnc_log;
+["GTN_TASKS", 3, "Operation task bridge started (15s interval)"] call FLO_fnc_log;
 true

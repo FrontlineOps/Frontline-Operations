@@ -8,6 +8,4 @@ if ("startingResources" in FLO_MissionConfig) exitWith {
     _startingResources
 };
 
-if (!isNil "FLO_SavedGameData" && {(FLO_SavedGameData get "saveVersion") < 21}) exitWith { 5000 };
-
 throw "Current mission config is missing required startingResources"

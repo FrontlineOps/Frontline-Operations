@@ -30,6 +30,10 @@ private _until = _plan get "until";
 private _mood = _plan get "mood";
 private _source = _plan get "source";
 
+if !([_groupId, _waypoints, true, _source] call FLO_fnc_updateVirtualGroupWaypoints) exitWith {
+    false
+};
+
 private _changes = createHashMapFromArray [
     ["civilianRoutineState", _state],
     ["civilianLastRoutineAt", diag_tickTime],
@@ -42,12 +46,6 @@ private _changes = createHashMapFromArray [
     ["noWaypoints", _waypoints isEqualTo []]
 ];
 [_groupId, _changes] call FLO_fnc_virtualizationPatchGroup;
-
-if !(_groupData get "isActive") then {
-    [_groupId, _anchorPos] call FLO_fnc_virtualizationUpdateGroupPosition;
-};
-
-[_groupId, _waypoints, false, true, _source] call FLO_fnc_updateVirtualGroupWaypoints;
 
 private _realGroup = _groupData get "realGroup";
 if (!isNull _realGroup) then {

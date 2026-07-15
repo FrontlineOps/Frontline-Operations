@@ -1,41 +1,22 @@
 /*
  * Function: FLO_fnc_findRoadPath
- * Author: Frontline Operations Development Group
  * Description:
- * Resolves a waypoint array between two positions using cached water-aware
- * routing. Straight land routes resolve directly; only water crossings receive
- * coarse detour pivots.
- *
- * Arguments:
- * 0: Start Position <ARRAY>
- * 1: End Position <ARRAY>
- * 2: Callback <CODE> - Receives [_resolved, _posArray, _args]
- * 3: (Optional) Additional arguments to pass to callback <ARRAY> (Default: [])
- * 4: (Optional) Include Trails <BOOL> (Default: false)
- * 5: (Optional) Source Tag <STRING> (Default: "")
- *
- * Return Value:
- * Nothing
- *
- * Example:
- * [_startPos, _endPos, _callback, [], false] call FLO_fnc_findRoadPath;
+ *   Resolves a water-safe land path synchronously and returns [success, path].
+ *   Returned paths exclude the supplied start and include the exact endpoint.
  */
 
 params [
-    ["_startPos", [0,0], [[]], [2,3]],
-    ["_endPos", [0,0], [[]], [2,3]],
-    ["_code", {}, [{}]],
-    ["_args", [], [[]]],
+    ["_startPos", [0, 0], [[]], [2, 3]],
+    ["_endPos", [0, 0], [[]], [2, 3]],
     ["_trails", false, [true]],
     ["_sourceTag", "", [""]]
 ];
 
-if (count _startPos > 2) then { _startPos resize 2; };
-if (count _endPos > 2) then { _endPos resize 2; };
-
-if (_sourceTag == "") then {
-    _sourceTag = "UNSPECIFIED";
-};
+_startPos = +_startPos;
+_endPos = +_endPos;
+if (count _startPos > 2) then { _startPos set [2, 0]; } else { _startPos pushBack 0; };
+if (count _endPos > 2) then { _endPos set [2, 0]; } else { _endPos pushBack 0; };
+if (_sourceTag == "") then { _sourceTag = "UNSPECIFIED"; };
 
 private _attemptsBySource = FLO_PF_SourceStats get "attempts";
 _attemptsBySource set [_sourceTag, (_attemptsBySource getOrDefault [_sourceTag, 0]) + 1];
@@ -67,81 +48,60 @@ if (_now >= FLO_PF_RequestNextPruneAt) then {
     FLO_PF_RequestNextPruneAt = _now + FLO_PF_RequestPruneInterval;
 };
 
-private _dist = _startPos distance2D _endPos;
-private _routingModeKey = "GROUND";
-if (_trails) then {
-    _routingModeKey = "TRAILS";
-} else {
-    if (_sourceTag == "LOGI_REINF") then {
-        _routingModeKey = "LOGI_REINF";
-    };
+private _routingModeKey = ["GROUND", "TRAILS"] select _trails;
+if (!_trails && {_sourceTag == "LOGI_REINF"}) then {
+    _routingModeKey = "LOGI_REINF";
 };
 
-private _cellSize = FLO_PF_RequestCellSize;
-if (_dist > 6000) then {
-    _cellSize = _cellSize * 4;
-} else {
-    if (_dist > 3000) then {
-        _cellSize = _cellSize * 3;
-    } else {
-        if (_dist > 1200) then {
-            _cellSize = _cellSize * 2;
-        };
-    };
-};
+private _routeKey = format ["%1>%2|%3", str _startPos, str _endPos, _routingModeKey];
+private _reverseRouteKey = format ["%1>%2|%3", str _endPos, str _startPos, _routingModeKey];
 
-if (_sourceTag == "LOGI_REINF") then {
-    // Strategic reinforcement transit does not need near-unique cache keys.
-    // Coarser buckets increase cache/pending reuse across repeated supply hops.
-    if (_dist > 5000) then {
-        if (_cellSize < 720) then { _cellSize = 720; };
-    } else {
-        if (_dist > 2500) then {
-            if (_cellSize < 540) then { _cellSize = 540; };
-        } else {
-            if (_cellSize < 360) then { _cellSize = 360; };
-        };
-    };
-};
-
-private _cellKey = {
-    params ["_pos", "_size"];
-    format ["%1_%2", round ((_pos select 0) / _size), round ((_pos select 1) / _size)]
-};
-
-private _sKey = format ["%1@%2", [_startPos, _cellSize] call _cellKey, _cellSize];
-private _eKey = format ["%1@%2", [_endPos, _cellSize] call _cellKey, _cellSize];
-private _routeKey = format ["%1>%2|%3", _sKey, _eKey, _routingModeKey];
-private _reverseRouteKey = format ["%1>%2|%3", _eKey, _sKey, _routingModeKey];
-
+private _cachedPath = [];
 if (_routeKey in FLO_PF_RequestCache) then {
     private _cached = FLO_PF_RequestCache get _routeKey;
-    _cached params ["_path", "_expiresAt"];
-    if (_now < _expiresAt) exitWith {
-        private _cacheHitsBySource = FLO_PF_SourceStats get "cacheHit";
-        _cacheHitsBySource set [_sourceTag, (_cacheHitsBySource getOrDefault [_sourceTag, 0]) + 1];
-        FLO_PF_Perf set ["cacheHits", (FLO_PF_Perf get "cacheHits") + 1];
-        [true, +_path, _args] call _code;
+    _cached params ["_fullPath", "_expiresAt"];
+    if (_now < _expiresAt
+        && {count _fullPath >= 2}
+        && {(_fullPath select 0) isEqualTo _startPos}
+        && {(_fullPath select -1) isEqualTo _endPos}) then {
+        _cachedPath = (+_fullPath) select [1];
+    } else {
+        FLO_PF_RequestCache deleteAt _routeKey;
     };
-    FLO_PF_RequestCache deleteAt _routeKey;
+};
+
+if (_cachedPath isNotEqualTo []) exitWith {
+    private _cacheHitsBySource = FLO_PF_SourceStats get "cacheHit";
+    _cacheHitsBySource set [_sourceTag, (_cacheHitsBySource getOrDefault [_sourceTag, 0]) + 1];
+    FLO_PF_Perf set ["cacheHits", (FLO_PF_Perf get "cacheHits") + 1];
+    [true, +_cachedPath]
 };
 
 if (_reverseRouteKey in FLO_PF_RequestCache) then {
     private _cachedReverse = FLO_PF_RequestCache get _reverseRouteKey;
-    _cachedReverse params ["_path", "_expiresAt"];
-    if (_now < _expiresAt) exitWith {
-        private _cacheHitsBySource = FLO_PF_SourceStats get "cacheHit";
-        _cacheHitsBySource set [_sourceTag, (_cacheHitsBySource getOrDefault [_sourceTag, 0]) + 1];
-        FLO_PF_Perf set ["cacheHits", (FLO_PF_Perf get "cacheHits") + 1];
-        private _reversedPath = +_path;
-        reverse _reversedPath;
-        [true, _reversedPath, _args] call _code;
+    _cachedReverse params ["_fullReversePath", "_expiresAt"];
+    if (_now < _expiresAt
+        && {count _fullReversePath >= 2}
+        && {(_fullReversePath select 0) isEqualTo _endPos}
+        && {(_fullReversePath select -1) isEqualTo _startPos}) then {
+        private _reversedFullPath = +_fullReversePath;
+        reverse _reversedFullPath;
+        _cachedPath = _reversedFullPath select [1];
+    } else {
+        FLO_PF_RequestCache deleteAt _reverseRouteKey;
     };
-    FLO_PF_RequestCache deleteAt _reverseRouteKey;
+};
+
+if (_cachedPath isNotEqualTo []) exitWith {
+    private _cacheHitsBySource = FLO_PF_SourceStats get "cacheHit";
+    _cacheHitsBySource set [_sourceTag, (_cacheHitsBySource getOrDefault [_sourceTag, 0]) + 1];
+    FLO_PF_Perf set ["cacheHits", (FLO_PF_Perf get "cacheHits") + 1];
+    [true, +_cachedPath]
 };
 
 private _newSearchBySource = FLO_PF_SourceStats get "newSearch";
 _newSearchBySource set [_sourceTag, (_newSearchBySource getOrDefault [_sourceTag, 0]) + 1];
+
 private _sampleStep = FLO_PF_WaterSampleStep;
 if (_trails) then {
     _sampleStep = FLO_PF_WaterSampleStepTrails;
@@ -152,23 +112,52 @@ if (_trails) then {
 };
 
 private _tResolve = diag_tickTime;
-private _routeResult = [_startPos, _endPos, _sampleStep, 0] call FLO_fnc_buildWaterAwarePath;
-_routeResult params ["_resolvedPath", "_sampleChecks", "_usedFallback"];
-if (_resolvedPath isEqualTo []) then {
-    _resolvedPath = [+_endPos];
-    _usedFallback = true;
+private _resolvedPath = [];
+private _sampleChecks = 0;
+private _resolved = !(surfaceIsWater _startPos) && {!(surfaceIsWater _endPos)};
+
+if (_resolved) then {
+    private _routeResult = [_startPos, _endPos, _sampleStep, 0] call FLO_fnc_buildWaterAwarePath;
+    _resolvedPath = _routeResult select 0;
+    _sampleChecks = _routeResult select 1;
+    _resolved = _resolvedPath isNotEqualTo [] && {!(_routeResult select 2)};
 };
+
+if (_resolved) then {
+    private _validation = [_startPos, _resolvedPath, FLO_PF_WaterValidationStep] call FLO_fnc_validateWaterAwarePath;
+    _sampleChecks = _sampleChecks + (_validation select 1);
+    _resolved = _validation select 0;
+};
+
+if (!_resolved && {_sampleStep > FLO_PF_WaterValidationStep} && {!(surfaceIsWater _startPos)} && {!(surfaceIsWater _endPos)}) then {
+    private _fineResult = [_startPos, _endPos, FLO_PF_WaterValidationStep, 0] call FLO_fnc_buildWaterAwarePath;
+    _resolvedPath = _fineResult select 0;
+    _sampleChecks = _sampleChecks + (_fineResult select 1);
+    _resolved = _resolvedPath isNotEqualTo [] && {!(_fineResult select 2)};
+
+    if (_resolved) then {
+        private _fineValidation = [_startPos, _resolvedPath, FLO_PF_WaterValidationStep] call FLO_fnc_validateWaterAwarePath;
+        _sampleChecks = _sampleChecks + (_fineValidation select 1);
+        _resolved = _fineValidation select 0;
+    };
+};
+
+if (!_resolved) then {
+    _resolvedPath = [];
+} else {
+    private _fullPath = [+_startPos];
+    _fullPath append _resolvedPath;
+    FLO_PF_RequestCache set [_routeKey, [_fullPath, diag_tickTime + FLO_PF_RequestTTL]];
+};
+
 private _resolvedMs = (diag_tickTime - _tResolve) * 1000;
-
-FLO_PF_RequestCache set [_routeKey, [+_resolvedPath, diag_tickTime + FLO_PF_RequestTTL]];
-
-private _metrics = FLO_PF_Scheduler call ["GetMetrics"];
+private _metrics = FLO_PF_Metrics;
 _metrics set ["submitted", (_metrics get "submitted") + 1];
 _metrics set ["nodeSteps", (_metrics get "nodeSteps") + _sampleChecks];
-if (_usedFallback) then {
-    _metrics set ["completedPartial", (_metrics get "completedPartial") + 1];
-} else {
+if (_resolved) then {
     _metrics set ["completedSuccess", (_metrics get "completedSuccess") + 1];
+} else {
+    _metrics set ["completedPartial", (_metrics get "completedPartial") + 1];
 };
 _metrics set ["resolvedCount", (_metrics get "resolvedCount") + 1];
 _metrics set ["resolvedNodeStepsLast", _sampleChecks];
@@ -200,10 +189,10 @@ private _emittedLastBySource = FLO_PF_SourceStats get "emittedWaypointsLast";
 private _emittedTotalBySource = FLO_PF_SourceStats get "emittedWaypointsTotal";
 private _emittedPeakBySource = FLO_PF_SourceStats get "emittedWaypointsPeak";
 
-if (_usedFallback) then {
-    _completedPartialBySource set [_sourceTag, (_completedPartialBySource getOrDefault [_sourceTag, 0]) + 1];
-} else {
+if (_resolved) then {
     _completedSuccessBySource set [_sourceTag, (_completedSuccessBySource getOrDefault [_sourceTag, 0]) + 1];
+} else {
+    _completedPartialBySource set [_sourceTag, (_completedPartialBySource getOrDefault [_sourceTag, 0]) + 1];
 };
 _resolvedCountBySource set [_sourceTag, (_resolvedCountBySource getOrDefault [_sourceTag, 0]) + 1];
 _resolvedNodeStepsLastBySource set [_sourceTag, _sampleChecks];
@@ -225,15 +214,15 @@ if ((count _resolvedPath) > (_emittedPeakBySource getOrDefault [_sourceTag, 0]))
 private _perf = FLO_PF_Perf;
 if (_resolvedMs >= (_perf get "slowSearchThresholdMs") && {diag_tickTime >= (_perf get "nextSlowSearchLogAt")}) then {
     _perf set ["nextSlowSearchLogAt", diag_tickTime + (_perf get "logCooldownSec")];
-    diag_log format [
-        "[FLO][PERF] Water route source=%1 status=%2 distance=%3 m waypoints=%4 samples=%5 resolved in %6 ms",
+    ["PERF", 4, format [
+        "Water route source=%1 status=%2 distance=%3m waypoints=%4 samples=%5 elapsedMs=%6",
         _sourceTag,
-        ["SUCCESS", "PARTIAL"] select (_usedFallback),
-        _dist,
+        ["NO_LAND_ROUTE", "SUCCESS"] select _resolved,
+        _startPos distance2D _endPos,
         count _resolvedPath,
         _sampleChecks,
         _resolvedMs
-    ];
+    ]] call FLO_fnc_log;
 };
 
-[!_usedFallback, +_resolvedPath, _args] call _code;
+[_resolved, +_resolvedPath]

@@ -352,8 +352,9 @@ if (isNil "FLO_GTNAirAssetManager") then {
             private _forceLive = ("forceLive" in _meta) && {_meta get "forceLive"};
             private _playerRequested = ("playerSupport" in _meta) && {_meta get "playerSupport"};
             private _targetGroupIds = if ("targetGroupIds" in _meta) then { +(_meta get "targetGroupIds") } else { [] };
-            if (_missionType == "CAS" && {!_forceLive} && {_targetGroupIds isEqualTo []}) exitWith {
-                ["GTN Air Asset Manager", 2, format ["Rejected virtual CAS by %1 without reported target IDs", _gid]] call FLO_fnc_log;
+            private _areaContact = ("areaContact" in _meta) && {_meta get "areaContact"};
+            if (_missionType == "CAS" && {!_forceLive} && {_targetGroupIds isEqualTo []} && {!_areaContact}) exitWith {
+                ["GTN Air Asset Manager", 2, format ["Rejected virtual CAS by %1 without reported target intelligence", _gid]] call FLO_fnc_log;
                 []
             };
 
@@ -377,6 +378,10 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 ["targetPos", +_targetPos],
                 ["targetGroupIds", _targetGroupIds],
                 ["targetObjectiveId", if ("targetObjectiveId" in _meta) then { _meta get "targetObjectiveId" } else { "" }],
+                ["areaContact", _areaContact],
+                ["contactConfidence", if ("contactConfidence" in _meta) then { _meta get "contactConfidence" } else { 1 }],
+                ["contactAgeSeconds", if ("contactAgeSeconds" in _meta) then { _meta get "contactAgeSeconds" } else { 0 }],
+                ["uncertaintyRadius", if ("uncertaintyRadius" in _meta) then { _meta get "uncertaintyRadius" } else { 0 }],
                 ["reservePos", _reservePos],
                 ["ingressPos", _ingressPos],
                 ["egressPos", _egressPos],
@@ -606,7 +611,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 private _waypoints = [
                     [_rtbPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 50]
                 ];
-                [_groupId, _waypoints, false, true, "GTN_AIR"] call FLO_fnc_updateVirtualGroupWaypoints;
+                [_groupId, _waypoints, true, "GTN_AIR"] call FLO_fnc_updateVirtualGroupWaypoints;
 
                 ["GTN Air Asset Manager", 3, format["Virtual RTB waypoints for %1 to %2", _groupId, _rtbPos]] call FLO_fnc_log;
             };

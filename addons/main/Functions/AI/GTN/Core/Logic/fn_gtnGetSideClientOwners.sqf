@@ -20,6 +20,6 @@ private _owners = [];
     if (!isNull _x && {(side group _x) isEqualTo _side}) then {
         _owners pushBackUnique (owner _x);
     };
-} forEach allPlayers;
+} forEach ([false] call FLO_fnc_getConnectedHumanPlayers);
 
 _owners

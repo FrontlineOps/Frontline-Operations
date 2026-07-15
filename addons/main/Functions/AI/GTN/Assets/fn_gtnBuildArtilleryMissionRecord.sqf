@@ -33,9 +33,15 @@ params [
 private _targetGroupIds = [];
 private _engagementZoneId = "";
 private _contactState = "AREA";
+private _contactConfidence = 1;
+private _contactAgeSeconds = 0;
+private _uncertaintyRadius = 0;
 if ("targetGroupIds" in _targetContext) then { _targetGroupIds = +(_targetContext get "targetGroupIds"); };
 if ("engagementZoneId" in _targetContext) then { _engagementZoneId = _targetContext get "engagementZoneId"; };
 if ("contactState" in _targetContext) then { _contactState = _targetContext get "contactState"; };
+if ("contactConfidence" in _targetContext) then { _contactConfidence = _targetContext get "contactConfidence"; };
+if ("contactAgeSeconds" in _targetContext) then { _contactAgeSeconds = _targetContext get "contactAgeSeconds"; };
+if ("uncertaintyRadius" in _targetContext) then { _uncertaintyRadius = _targetContext get "uncertaintyRadius"; };
 
 private _impactPoints = [];
 private _etaMin = -1;
@@ -103,6 +109,9 @@ createHashMapFromArray [
     ["targetGroupIds", _targetGroupIds],
     ["engagementZoneId", _engagementZoneId],
     ["contactState", _contactState],
+    ["contactConfidence", _contactConfidence],
+    ["contactAgeSeconds", _contactAgeSeconds],
+    ["uncertaintyRadius", _uncertaintyRadius],
     ["radius", _radius],
     ["impactPoints", _impactPoints],
     ["etaMin", _etaMin],

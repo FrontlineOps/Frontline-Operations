@@ -32,6 +32,33 @@ private _insertMode = _missionPlan get "mode";
 private _insertPos = _missionPlan get "insertPos";
 private _completionRadius = _missionPlan get "completionRadius";
 private _orderTag = _missionPlan get "orderTag";
+private _waypoints = [
+    [_insertPos, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", _completionRadius]
+];
+private _carrierArchetype = [(_transportData get "groupType")] call FLO_fnc_virtualizationGetArchetype;
+private _routePreflightAllowed = true;
+private _routePreflightReason = "";
+if ((_carrierArchetype get "movementDomain") == "LAND") then {
+    private _preflight = [
+        _transportData get "position",
+        _waypoints,
+        true,
+        _orderTag,
+        false
+    ] call FLO_fnc_virtualizationResolveLandWaypoints;
+    _routePreflightAllowed = _preflight select 0;
+    _routePreflightReason = _preflight select 2;
+};
+
+if (!_routePreflightAllowed) exitWith {
+    ["TRANSPORT", 2, format [
+        "Request failed: no land route for carrier %1 to insert %2 (%3)",
+        _transportId,
+        _infantryGroupId,
+        _routePreflightReason
+    ]] call FLO_fnc_log;
+    false
+};
 
 [_transportId, _infantryGroupId] call FLO_fnc_transportPoolClaim;
 
@@ -45,13 +72,15 @@ if !([_infantryGroupId, _transportId] call FLO_fnc_transportAttach) exitWith {
     false
 };
 
-private _waypoints = [
-    [_insertPos, "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", _completionRadius]
-];
-[_transportId, _waypoints, false, true, _orderTag] call FLO_fnc_updateVirtualGroupWaypoints;
+if !([_transportId, _waypoints, true, _orderTag] call FLO_fnc_updateVirtualGroupWaypoints) then {
+    ["TRANSPORT", 1, format ["Preflighted carrier route failed during commit carrier=%1 passenger=%2", _transportId, _infantryGroupId]] call FLO_fnc_log;
+    throw format ["FLO_fnc_transportCommitMissionPlan: preflighted route failed for %1", _transportId];
+};
+
+private _dismountWaypointIndex = count (_transportData get "waypoints") - 1;
 
 private _carrierChanges = createHashMapFromArray [
-    ["dismountAtWaypoint", 0],
+    ["dismountAtWaypoint", _dismountWaypointIndex],
     ["transportInsertMode", _insertMode],
     ["transportInsertPos", _insertPos],
     ["transportLandCommandIssued", false],

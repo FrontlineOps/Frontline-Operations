@@ -34,7 +34,7 @@ private _growthDelaySeconds = _network get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECON
 if (_forceGrowth > 0) then {
     _objective set [
         "captureGrowthEligibleAtDateNum",
-        [dateToNumber date, _growthDelaySeconds] call FLO_fnc_dateNumberAddSeconds
+        [call FLO_fnc_operationalDateNumber, _growthDelaySeconds] call FLO_fnc_dateNumberAddSeconds
     ];
     _objective set ["captureGrowthPending", true];
 };

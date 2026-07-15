@@ -10,7 +10,6 @@ if ((keys _project) isEqualTo []) exitWith { true };
 private _requiredKeys = [
     "sideKey",
     "branch",
-    "pricingVersion",
     "state",
     "targetLevel",
     "createdAtDateNum",
@@ -31,6 +30,10 @@ private _missing = _requiredKeys select { !(_x in _project) };
 if (_missing isNotEqualTo []) then {
     throw format ["Development project %1 is missing fields %2", _objectiveId, _missing];
 };
+private _unexpected = (keys _project) select { !(_x in _requiredKeys) };
+if (_unexpected isNotEqualTo []) then {
+    throw format ["Development project %1 has unsupported fields %2", _objectiveId, _unexpected];
+};
 
 private _owner = _objective get "owner";
 if !(_owner in [west, east]) then {
@@ -45,20 +48,10 @@ private _branch = _project get "branch";
 if !(_branch in (FLO_ObjectiveDevelopmentConfig get "validBranches")) then {
     throw format ["Development project %1 has invalid branch %2", _objectiveId, _branch];
 };
-private _pricingVersion = _project get "pricingVersion";
-if !(_pricingVersion in [1, FLO_ObjectiveDevelopmentConfig get "pricingVersion"]) then {
-    throw format ["Development project %1 has invalid pricing version %2", _objectiveId, _pricingVersion];
-};
-if (_pricingVersion == 1 && {_branch != "REVENUE"}) then {
-    throw format ["Legacy Development project %1 must use the Revenue branch", _objectiveId];
-};
 
 private _state = _project get "state";
 if !(_state in (FLO_ObjectiveDevelopmentConfig get "validProjectStates")) then {
     throw format ["Development project %1 has invalid state %2", _objectiveId, _state];
-};
-if (_pricingVersion == 1 && {_state == "FUNDING"}) then {
-    throw format ["Legacy Development project %1 cannot own a funding reservation", _objectiveId];
 };
 
 private _level = [_objective, _branch] call FLO_fnc_objectiveDevelopmentGetBranchLevel;
@@ -131,34 +124,16 @@ if (_state == "FUNDING") then {
     };
 };
 
-if (_pricingVersion == 1) then {
-    if !(_targetLevel in [1, 2, 3]) then {
-        throw format ["Legacy Development project %1 has invalid target level %2", _objectiveId, _targetLevel];
-    };
-    private _legacyTreasuryCosts = [0, 400, 900, 1800];
-    private _legacySupplyRequirements = [0, 6000, 12000, 18000];
-    private _legacyPlayerCaps = [0, 1500, 3000, 4500];
-    if (
-        (_project get "rawTreasuryCost") != (_legacyTreasuryCosts select _targetLevel)
-        || {(_project get "treasuryCost") != (_legacyTreasuryCosts select _targetLevel)}
-        || {(_project get "supplyRequired") != (_legacySupplyRequirements select _targetLevel)}
-        || {(_project get "playerSupplyCap") != (_legacyPlayerCaps select _targetLevel)}
-        || {(_project get "discountApplied") != 0}
-    ) then {
-        throw format ["Legacy Development project %1 has invalid migrated pricing", _objectiveId];
-    };
-};
-
-if (_validateEconomics && {_pricingVersion == (FLO_ObjectiveDevelopmentConfig get "pricingVersion")}) then {
+if (_validateEconomics) then {
     private _quote = [_owner, _objectiveId, _objective, _branch] call FLO_fnc_objectiveDevelopmentBuildProjectQuote;
     {
         private _field = _x;
         if ((_project get _field) != (_quote get _field)) then {
-            throw format ["Development project %1 %2 does not match pricing version %3", _objectiveId, _field, _pricingVersion];
+            throw format ["Development project %1 %2 does not match the current quote", _objectiveId, _field];
         };
     } forEach ["targetLevel", "rawTreasuryCost", "treasuryCost", "supplyRequired", "playerSupplyCap"];
     if (abs ((_project get "discountApplied") - (_quote get "discountApplied")) > 0.000001) then {
-        throw format ["Development project %1 discount does not match pricing version %2", _objectiveId, _pricingVersion];
+        throw format ["Development project %1 discount does not match the current quote", _objectiveId];
     };
 };
 

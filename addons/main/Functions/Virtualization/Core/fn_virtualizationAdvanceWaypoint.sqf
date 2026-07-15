@@ -45,13 +45,12 @@ if (_waypoints isEqualTo [] || _currentIdx >= count _waypoints) exitWith {
 
 private _currentWp = _waypoints select _currentIdx;
 private _wpType = _currentWp select 1;
-// Patrol detection is explicit in virtual group state.
-private _hasLegacyCycle = (_waypoints findIf { (_x select 1) == "CYCLE" }) >= 0;
-private _isPatrol = (_groupData get "autoPatrol") || {(_groupData get "patrolConfig") isNotEqualTo []} || {_hasLegacyCycle};
+// Patrol detection is explicit in virtual group state or route topology.
+private _hasCycle = (_waypoints findIf { (_x select 1) == "CYCLE" }) >= 0;
+private _isPatrol = (_groupData get "autoPatrol") || {(_groupData get "patrolConfig") isNotEqualTo []} || {_hasCycle};
 
 switch (_wpType) do {
-    // CYCLE - legacy support, loop back to first waypoint
-    // NOTE: We're phasing out CYCLE in favor of autoPatrol/patrolConfig
+    // CYCLE loops a current patrol route back to its first waypoint.
     case "CYCLE": {
         if (count _waypoints == 1) then {
             _groupData set ["waypoints", []];
@@ -63,7 +62,7 @@ switch (_wpType) do {
         } else {
             _groupData set ["currentWaypointIndex", 0];
             [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
-            ["VIRTUALIZATION", 5, format ["Group %1 cycling to first waypoint (legacy CYCLE)", _groupId]] call FLO_fnc_log;
+            ["VIRTUALIZATION", 5, format ["Group %1 cycling to first patrol waypoint", _groupId]] call FLO_fnc_log;
         };
     };
 

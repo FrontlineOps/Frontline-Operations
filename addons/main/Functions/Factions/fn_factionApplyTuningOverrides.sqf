@@ -2,8 +2,8 @@
  * Function: FLO_fnc_factionApplyTuningOverrides
  * Author: Frontline Operations Development Group
  * Description:
- *   Applies validated mission setup faction composition values to a side catalog
- *   and mirrors the tuned values back to legacy side globals.
+ *   Applies validated mission setup faction composition values to a side
+ *   catalog.
  *
  * Arguments:
  *   0: Side faction catalog <HASHMAP>
@@ -48,22 +48,5 @@ if ((keys _tuning) isNotEqualTo []) then {
 };
 
 [_catalog, _sideLabel] call FLO_fnc_factionSanitizeCompositionForCatalog;
-
-switch (_sideLabel) do {
-    case "OPFOR": {
-        East_Transport_Reserve_Ground_Count = _catalog get "transportReserveGroundCount";
-        East_Transport_Reserve_Air_Count = _catalog get "transportReserveAirCount";
-        OPFOR_Objective_Groups = _catalog get "objectiveGroups";
-        East_Objective_Group_Type_Caps = _catalog get "objectiveGroupTypeCaps";
-        OPFOR_Group_Counts = _catalog get "groupCounts";
-    };
-    case "BLUFOR": {
-        West_Transport_Reserve_Ground_Count = _catalog get "transportReserveGroundCount";
-        West_Transport_Reserve_Air_Count = _catalog get "transportReserveAirCount";
-        BLUFOR_Objective_Groups = _catalog get "objectiveGroups";
-        West_Objective_Group_Type_Caps = _catalog get "objectiveGroupTypeCaps";
-        BLUFOR_Group_Counts = _catalog get "groupCounts";
-    };
-};
 
 true

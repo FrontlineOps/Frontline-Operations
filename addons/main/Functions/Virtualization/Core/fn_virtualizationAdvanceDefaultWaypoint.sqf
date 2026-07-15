@@ -14,6 +14,10 @@ if (_isPatrol) exitWith {
 
 _waypoints deleteAt _currentIdx;
 _groupData set ["waypoints", _waypoints];
+private _dismountIdx = _groupData get "dismountAtWaypoint";
+if (_dismountIdx > _currentIdx) then {
+    _groupData set ["dismountAtWaypoint", _dismountIdx - 1];
+};
 
 if (_waypoints isNotEqualTo []) exitWith {
     _groupData set ["currentWaypointIndex", _currentIdx min (count _waypoints - 1)];

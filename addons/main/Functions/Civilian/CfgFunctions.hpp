@@ -9,6 +9,7 @@ class CivilianCore {
     class civilianBuildAmbientRoute {};
     class civilianBuildObjectivePoiCache {};
     class civilianResolveObjectiveContext {};
+    class civilianRefreshObjectiveContexts {};
     class civilianMergeObjectiveMemory {};
     class civilianIngestCombatEvents {};
     class civilianPropagateObjectiveGossip {};
@@ -25,6 +26,7 @@ class CivilianSpawning {
     file = "\z\flo\addons\main\Functions\Civilian\Spawning";
 
     class spawnCivilians {};
+    class civilianApplyInitialRoutine {};
     class activateCivilian {};
 };
 
@@ -33,7 +35,6 @@ class CivilianBehavior {
 
     class civilianActions {};
     class civilianConfigureActionsLocal {};
-    class civilianInvestigateAction {};
     class civilianRequestIntel {};
     class civilianRecordIntelInteraction {};
     class civilianSelectObjectiveProtesters {};
@@ -47,6 +48,7 @@ class CivilianMissions {
     file = "\z\flo\addons\main\Functions\Civilian\Missions";
 
     class civilianBuildMissionOffer {};
+    class civilianGetHostileForcePool {};
     class civilianMissionResolveAction {};
     class civilianMissionManager {};
     class civilianRequestMission {};

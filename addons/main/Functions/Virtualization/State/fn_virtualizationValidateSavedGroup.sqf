@@ -8,6 +8,7 @@ params [
 ];
 
 private _defaults = call FLO_fnc_virtualizationCreateGroupRecordDefaults;
+private _persistentFields = call FLO_fnc_virtualizationGetPersistentFields;
 {
     if !(_x in _savedData) then {
         throw format ["Saved virtual group %1 missing field %2", _expectedId, _x];
@@ -24,18 +25,20 @@ private _defaults = call FLO_fnc_virtualizationCreateGroupRecordDefaults;
             typeName _prototype
         ];
     };
-} forEach (call FLO_fnc_virtualizationGetPersistentFields);
+} forEach _persistentFields;
+
+private _unexpectedFields = (keys _savedData) select { !(_x in _persistentFields) };
+if (_unexpectedFields isNotEqualTo []) then {
+    throw format [
+        "Saved virtual group %1 contains fields outside the current record contract: %2",
+        _expectedId,
+        _unexpectedFields
+    ];
+};
 
 private _groupId = _savedData get "id";
 if (_expectedId == "" || {_groupId != _expectedId}) then {
     throw format ["Saved virtual group key/id mismatch: key=%1 record=%2", _expectedId, _groupId];
-};
-if ((_savedData get "schemaVersion") != (_defaults get "schemaVersion")) then {
-    throw format [
-        "Saved virtual group %1 has unsupported schema %2",
-        _groupId,
-        _savedData get "schemaVersion"
-    ];
 };
 if !([_savedData get "position"] call FLO_fnc_validateGroupPosition) then {
     throw format ["Saved virtual group %1 has invalid position", _groupId];
@@ -46,5 +49,15 @@ if !([_savedData get "spawnPosition"] call FLO_fnc_validateGroupPosition) then {
 if ((_savedData get "unitCount") < 0) then {
     throw format ["Saved virtual group %1 has negative unit count", _groupId];
 };
+
+[
+    _groupId,
+    _savedData get "waypoints",
+    _savedData get "currentWaypointIndex",
+    _savedData get "dismountAtWaypoint",
+    _savedData get "pathToken",
+    _savedData get "pathTargetPos",
+    _savedData get "pathWaypointSettings"
+] call FLO_fnc_virtualizationValidateWaypointState;
 
 true

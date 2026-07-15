@@ -4,9 +4,9 @@
  * Description:
  *   Repairs an impossible active-group state where virtualization still marks
  *   the group active but its canonical live-engine group handle is gone.
- *   Asset-tracked groups can be virtualized back from surviving vehicle
- *   references; non-recoverable groups are removed so ghost strength does not
- *   persist.
+ *   A surviving operational crew can restore the canonical group handle.
+ *   Crewless assets remain abandoned in the physical world while their ghost
+ *   virtual combat strength is removed.
  *
  * Arguments:
  *   0: Group ID <STRING>
@@ -30,6 +30,25 @@ private _recoverableAssets = if (_tracksAssets) then {
     []
 };
 private _recoverableCount = count _recoverableAssets;
+private _replacementRealGroup = grpNull;
+{
+    private _asset = _x;
+    {
+        private _role = assignedVehicleRole _x;
+        private _candidateGroup = group _x;
+        if (
+            alive _x
+            && {!isPlayer _x}
+            && {_role isNotEqualTo []}
+            && {toLower (_role select 0) != "cargo"}
+            && {!isNull _candidateGroup}
+            && {(_candidateGroup getVariable ["FLO_virtualGroupId", ""]) == _groupId}
+        ) exitWith {
+            _replacementRealGroup = _candidateGroup;
+        };
+    } forEach (crew _asset);
+    if (!isNull _replacementRealGroup) exitWith {};
+} forEach _recoverableAssets;
 private _attachedTo = [_groupData] call FLO_fnc_virtualizationGetTransportAttachment;
 private _mountedIn = [_groupData] call FLO_fnc_virtualizationGetMountedTransport;
 private _attachedPassengerCount = count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);
@@ -51,6 +70,22 @@ private _trackedRealVehicles = count (_groupData get "realVehicles");
     _groupData get "position"
 ]] call FLO_fnc_log;
 
+if (!isNull _replacementRealGroup) exitWith {
+    [_groupData, _replacementRealGroup] call FLO_fnc_virtualizationSetRealGroup;
+    [_groupData, _recoverableAssets] call FLO_fnc_virtualizationSetRealVehicles;
+    _replacementRealGroup setVariable ["FLO_virtualGroupId", _groupId];
+    [_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
+    call FLO_fnc_virtualizationTouchRegistry;
+
+    ["VIRTUALIZATION", 3, format [
+        "Recovered active group %1 (%2) from surviving operational crew and %3 tracked assets",
+        _groupId,
+        _groupType,
+        _recoverableCount
+    ]] call FLO_fnc_log;
+    true
+};
+
 if (_recoverableCount <= 0) exitWith {
     if (_attachedPassengerCount > 0) then {
         [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
@@ -65,35 +100,17 @@ if (_recoverableCount <= 0) exitWith {
     true
 };
 
-private _recoverableComp = _recoverableAssets apply { typeOf _x };
 if (_attachedPassengerCount > 0) then {
     [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
 };
-_groupData set ["unitCount", _recoverableCount];
-[_groupData, _recoverableComp] call FLO_fnc_virtualizationSetAssetComposition;
-[_groupData, grpNull, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
 [_groupData] call FLO_fnc_virtualizationClearRealGroup;
 [_groupData] call FLO_fnc_virtualizationClearRealVehicles;
-_groupData set ["isActive", false];
-_groupData set ["lastStateChangeTime", diag_tickTime];
 
-_groupData set ["activationDeferred", false];
-_groupData set ["activationDeferredAt", -1];
-_groupData set ["activationRetryAt", -1];
-
-[_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
-call FLO_fnc_virtualizationTouchRegistry;
-
-[
-    "FLO_Virtualization_GroupDeactivated",
-    [_groupId, [_groupId] call FLO_fnc_virtualizationSnapshotGroup]
-] call CBA_fnc_localEvent;
-
-["VIRTUALIZATION", 2, format [
-    "Virtualized orphaned active group %1 (%2) with %3 recoverable live assets",
+["VIRTUALIZATION", 3, format [
+    "Removed orphaned active group %1 (%2) after its operational crew was lost; %3 abandoned assets remain physical",
     _groupId,
     _groupType,
     _recoverableCount
 ]] call FLO_fnc_log;
 
-true
+[_groupId] call FLO_fnc_virtualizationRemoveGroup

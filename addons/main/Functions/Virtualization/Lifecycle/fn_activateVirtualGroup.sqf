@@ -54,10 +54,8 @@ if (_unitCount <= 0) exitWith {
     false
 };
 
-// Only use remaining waypoints from currentWaypointIndex onwards
-// This ensures groups that traveled virtually don't re-get completed waypoints
 private _generatedPatrol = (_groupData get "patrolConfig") isNotEqualTo [];
-private _waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx, _generatedPatrol] call FLO_fnc_virtualizationGetRemainingWaypoints;
+private _waypoints = [];
 
 // Check if this is a transport with attached groups
 private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
@@ -65,6 +63,23 @@ private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrie
 // Resolve a safe spawn position without changing authoritative virtual state.
 // The position is committed only after every spawn step succeeds.
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
+_waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx, _generatedPatrol] call FLO_fnc_virtualizationGetRemainingWaypoints;
+private _newDismountIndex = -1;
+if ((_groupData get "dismountAtWaypoint") >= 0) then {
+    private _insertPos = _groupData get "transportInsertPos";
+    if (count _insertPos < 2) then { _insertPos = _groupData get "reinforcementTargetPos"; };
+    _newDismountIndex = _waypoints findIf { ((_x select 0) distance2D _insertPos) < 1 };
+    if (_newDismountIndex < 0) then {
+        ["VIRTUALIZATION", 1, format [
+            "Activation route lost transport insert endpoint group=%1 insert=%2 waypoints=%3",
+            _groupId,
+            _insertPos,
+            count _waypoints
+        ]] call FLO_fnc_log;
+        throw format ["Activation route for %1 lost its transport insert endpoint", _groupId];
+    };
+};
+
 _realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtualizationSpawnRealGroup;
 if (isNull _realGroup) exitWith {
     ["VIRTUALIZATION", 1, format [
@@ -76,33 +91,19 @@ if (isNull _realGroup) exitWith {
     false
 };
 
-// ========================================================================
-// SIDE COMMIT - Arma's modern group createUnit syntax can retain each
-// classname's configured side inside an opposite-side group. Explicitly
-// rejoin and validate the complete group before exposing it to simulation.
-// ========================================================================
-private _sideCorrectionFailed = false;
-if (!isNull _realGroup && {_side in [east, west, independent]} && {_side != civilian}) then {
-    private _sideCorrectedGroup = [_realGroup, _side] call FLO_fnc_setSide;
-    if (isNull _sideCorrectedGroup) then {
-        ["VIRTUALIZATION", 1, format [
-            "Failed to apply side correction for %1 (%2) - cleaning up spawned assets",
-            _groupId,
-            _groupType
-        ]] call FLO_fnc_log;
-        [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
-        _sideCorrectionFailed = true;
-    } else {
-        _realGroup = _sideCorrectedGroup;
-    };
+private _routeCandidate = [_groupData] call FLO_fnc_virtualizationCloneValue;
+_routeCandidate set ["position", +_position];
+_routeCandidate set ["waypoints", _waypoints];
+_routeCandidate set ["currentWaypointIndex", 0];
+if (_newDismountIndex >= 0) then {
+    _routeCandidate set ["dismountAtWaypoint", _newDismountIndex];
 };
-if (_sideCorrectionFailed) exitWith { false };
-if (isNull _realGroup) exitWith {
-    ["VIRTUALIZATION", 1, format [
-        "Failed to apply side correction for %1 (%2)",
-        _groupId,
-        _groupType
-    ]] call FLO_fnc_log;
+[_routeCandidate, _realGroup] call FLO_fnc_virtualizationSetRealGroup;
+[_routeCandidate, [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles] call FLO_fnc_virtualizationSetRealVehicles;
+_routeCandidate set ["isActive", true];
+if !([_groupId, _routeCandidate] call FLO_fnc_virtualizationApplyRealRoute) exitWith {
+    [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+    ["VIRTUALIZATION", 2, format ["Activation route publication rejected for %1", _groupId]] call FLO_fnc_log;
     false
 };
 
@@ -118,8 +119,12 @@ if !([_groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition) exitW
 
 [_groupType, _realGroup] call FLO_fnc_virtualizationDistributeIntelItems;
 
-// Reset currentWaypointIndex only after activation succeeded.
+// Commit the remaining route only after activation succeeded.
+_groupData set ["waypoints", _waypoints];
 _groupData set ["currentWaypointIndex", 0];
+if (_newDismountIndex >= 0) then {
+    _groupData set ["dismountAtWaypoint", _newDismountIndex];
+};
 
 // Set the real group in the group data
 [_groupData, _realGroup] call FLO_fnc_virtualizationSetRealGroup;
@@ -136,7 +141,6 @@ if (_isTransport) then {
 
 [_groupId, _groupData, _requestedPosition, _position, _realGroup] call FLO_fnc_virtualizationWarnSuspiciousActivation;
 
-[_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;
 [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationParkIdleHelicopter;
 
 [_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;

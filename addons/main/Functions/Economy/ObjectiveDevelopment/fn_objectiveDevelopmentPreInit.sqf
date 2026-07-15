@@ -1,12 +1,10 @@
 FLO_ObjectiveDevelopmentConfig = createHashMapFromArray [
-    ["schemaVersion", 2],
-    ["pricingVersion", 2],
     ["tickInterval", 60],
     ["investmentInterval", 180],
     ["baseProjectSlots", 3],
     ["projectSlotDivisor", 4],
     ["maximumFundingProjects", 1],
-    ["revenuePaybackCycles", 8],
+    ["revenuePaybackCycles", 48],
     ["developmentBaseCost", 300],
     ["developmentCapacityValueFraction", 0.25],
     ["supplyPerTreasury", 15],
@@ -28,8 +26,6 @@ FLO_ObjectiveDevelopmentConfig = createHashMapFromArray [
         throw format ["Objective Development config %1 must be a positive integer, got %2", _x, _value];
     };
 } forEach [
-    "schemaVersion",
-    "pricingVersion",
     "tickInterval",
     "investmentInterval",
     "baseProjectSlots",

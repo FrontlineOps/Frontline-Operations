@@ -15,6 +15,10 @@ if (_isLastWp) exitWith {
 
 _waypoints deleteAt _currentIdx;
 _groupData set ["waypoints", _waypoints];
+private _dismountIdx = _groupData get "dismountAtWaypoint";
+if (_dismountIdx > _currentIdx) then {
+    _groupData set ["dismountAtWaypoint", _dismountIdx - 1];
+};
 _groupData set ["currentWaypointIndex", _currentIdx min (count _waypoints - 1)];
 [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
 ["VIRTUALIZATION", 4, format ["Group %1 completed %2 waypoint - advancing to next", _groupId, _wpType]] call FLO_fnc_log;

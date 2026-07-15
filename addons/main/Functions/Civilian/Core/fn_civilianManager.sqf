@@ -19,6 +19,7 @@ private _civilianClass = [
     ["#type", "CivilianManager"],
     ["CONFIG", FLO_CivilianConfig],
     ["_objectiveContexts", createHashMap],
+    ["_objectiveContextSignatures", createHashMap],
     ["_objectivePoiCaches", createHashMap],
     ["_objectiveMemories", createHashMap],
     ["_lastUpdate", -1],
@@ -148,7 +149,9 @@ private _civilianClass = [
 
         private _cfg = _self get "CONFIG";
         private _radius = _cfg get "FLEE_RADIUS";
-        private _nearbyPlayers = allPlayers select { alive _x && {_position distance2D (getPosATL _x) <= _radius} };
+        private _nearbyPlayers = ([] call FLO_fnc_getConnectedHumanPlayers) select {
+            _position distance2D (getPosATL _x) <= _radius
+        };
         if (_nearbyPlayers isEqualTo []) exitWith { false };
 
         private _objective = FLO_Objectives get _objectiveId;
@@ -326,7 +329,7 @@ private _civilianClass = [
             ]];
             _cooldowns set [_objectiveId, _expiresAt + (FLO_CivilianConfig get "PROTEST_COOLDOWN_SECONDS")];
             _started = _started + 1;
-        } forEach (allPlayers select { alive _x });
+        } forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 
         [count (keys _activeProtests), _started]
     }],
@@ -336,22 +339,9 @@ private _civilianClass = [
 
         private _updateStart = diag_tickTime;
         private _phaseStart = _updateStart;
-        private _contexts = createHashMap;
-        private _roles = ["resident", "vendor", "worker", "wanderer", "driver", "watcher"];
-        {
-            private _objectiveId = _x;
-            {
-                private _side = _x;
-                {
-                    private _role = _x;
-                    private _cacheKey = format ["%1|%2|%3", _objectiveId, _role, _side];
-                    _contexts set [_cacheKey, [_objectiveId, _role, _side] call FLO_fnc_civilianResolveObjectiveContext];
-                } forEach _roles;
-            } forEach [east, west];
-        } forEach (keys FLO_Objectives);
+        private _contextRefresh = [_self] call FLO_fnc_civilianRefreshObjectiveContexts;
         private _contextMs = (diag_tickTime - _phaseStart) * 1000;
 
-        _self set ["_objectiveContexts", _contexts];
         _self set ["_lastUpdate", diag_tickTime];
 
         _phaseStart = diag_tickTime;
@@ -371,9 +361,11 @@ private _civilianClass = [
 
         if (_totalMs >= 5 || {FLO_Debug_Level >= 5}) then {
             diag_log format [
-                "[FLO][PERF] Civilian manager total=%1ms contexts=%2 | build=%3 memory=%4 gossip=%5 routines=%6 protests=%7 retasked=%8",
+                "[FLO][PERF] Civilian manager total=%1ms contexts=%2 rebuilt=%3 changedObjectives=%4 | build=%5 memory=%6 gossip=%7 routines=%8 protests=%9 retasked=%10",
                 _totalMs,
-                count _contexts,
+                _contextRefresh get "totalContexts",
+                _contextRefresh get "rebuiltContexts",
+                _contextRefresh get "changedObjectives",
                 _contextMs,
                 _memoryMs,
                 _gossipMs,
@@ -383,9 +375,11 @@ private _civilianClass = [
             ];
         };
 
-        ["CIVILIAN", 3, format [
-            "Civilian manager updated %1 objective contexts at rep %2 | memories=%3 gossip=%4 retasked=%5 protests=%6 started=%7",
-            count (keys _contexts),
+        ["CIVILIAN", 4, format [
+            "Civilian manager refreshed %1/%2 objective contexts across %3 changed objectives at rep %4 | memories=%5 gossip=%6 retasked=%7 protests=%8 started=%9",
+            _contextRefresh get "rebuiltContexts",
+            _contextRefresh get "totalContexts",
+            _contextRefresh get "changedObjectives",
             _self call ["getReputation", []],
             _memoryIngested,
             _gossipAdded,
@@ -419,7 +413,7 @@ private _civilianClass = [
     ["init", {
         _self call ["update", []];
         _self call ["start", []];
-        ["CIVILIAN", 2, "Civilian manager initialized and worker started"] call FLO_fnc_log;
+        ["CIVILIAN", 3, "Civilian manager initialized and worker started"] call FLO_fnc_log;
         true
     }]
 ];

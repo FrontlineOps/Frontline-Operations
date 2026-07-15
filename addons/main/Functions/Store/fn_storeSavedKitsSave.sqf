@@ -52,9 +52,8 @@ if (_id == "") then {
 private _record = [createHashMapFromArray [
     ["id", _id],
     ["name", _name],
-    ["items", _items],
-    ["updatedAt", floor diag_tickTime]
-], count _next, false] call FLO_fnc_storeSavedKitValidateRecord;
+    ["items", _items]
+], count _next] call FLO_fnc_storeSavedKitValidateRecord;
 _next pushBack _record;
 [_next] call FLO_fnc_storeSavedKitsPersist;
 ["STORE", 3, format [

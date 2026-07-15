@@ -11,7 +11,7 @@ private _state = _director get "_state";
 private _config = _director get "_config";
 private _opportunities = _state get "opportunities";
 private _activeObjectiveId = _state get "objectiveId";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _changed = false;
 private _sampled = 0;
 
@@ -71,7 +71,7 @@ private _sampled = 0;
     };
 
     _sampled = _sampled + 1;
-} forEach allPlayers;
+} forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 
 private _expireSeconds = _config get "opportunityExpireSeconds";
 {

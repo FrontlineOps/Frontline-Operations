@@ -16,11 +16,22 @@ params [["_factionClass", "", [""]]];
 private _men = [];
 private _vehicles = [];
 private _factionLower = toLower _factionClass;
+private _factionCfg = missionConfigFile >> "CfgFactionClasses" >> _factionClass;
+if !(isClass _factionCfg) then {
+    _factionCfg = configFile >> "CfgFactionClasses" >> _factionClass;
+};
+if !(isClass _factionCfg) exitWith {
+    createHashMapFromArray [["men", []], ["vehicles", []]]
+};
+if (getNumber (_factionCfg >> "side") != 3) exitWith {
+    createHashMapFromArray [["men", []], ["vehicles", []]]
+};
 
 {
     private _vehCfg = _x;
     if ((toLower (getText (_vehCfg >> "faction"))) != _factionLower) then { continue };
     if (getNumber (_vehCfg >> "scope") < 2) then { continue };
+    if (getNumber (_vehCfg >> "side") != 3) then { continue };
 
     private _className = configName _vehCfg;
     if (_className isKindOf "Man") then {

@@ -15,7 +15,7 @@
 
 params ["_net", ["_minPlayerDistance", 3000]];
 
-private _players = allPlayers;
+private _players = [] call FLO_fnc_getConnectedHumanPlayers;
 private _objectiveIds = _net get "_managedObjectiveIds";
 private _rearObjectives = [];
 

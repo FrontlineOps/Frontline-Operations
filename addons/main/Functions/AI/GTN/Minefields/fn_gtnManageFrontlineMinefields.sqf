@@ -83,11 +83,11 @@ if (_activePlayerSide in [east, west]) then {
         if (alive _x && {(side group _x) isEqualTo _activePlayerSide}) then {
             _activePlayerPositions pushBack (getPosATL _x);
         };
-    } forEach allPlayers;
+    } forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 };
 private _maxFields = _config get "minefieldMaxFields";
 private _placementsPerCycle = _config get "minefieldPlacementsPerCycle";
-private _nowDateNum = dateToNumber date;
+private _nowDateNum = call FLO_fnc_operationalDateNumber;
 private _frontlineEnemyObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
 
 private _tPhase = diag_tickTime;

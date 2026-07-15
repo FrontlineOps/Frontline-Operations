@@ -1,19 +1,4 @@
-/*
- * Function: FLO_fnc_gtnRequestFrontlineCAS
- * Author: Frontline Operations Development Group
- *
- * Description:
- *   Requests one opportunistic CAS mission for the best-supported active
- *   frontline attack objective. Uses maintained GTN state, objective analysis,
- *   and per-objective locks to avoid air spam.
- *
- * Arguments:
- *   0: GTN Commander <HASHMAP>
- *
- * Return Value:
- *   Metrics <HASHMAP>
- */
-
+/* Requests one paid CAS mission from maintained frontline contact intelligence. */
 params [["_cmdr", nil]];
 
 private _metrics = createHashMapFromArray [
@@ -23,142 +8,115 @@ private _metrics = createHashMapFromArray [
     ["lockedCount", 0],
     ["requestedCount", 0],
     ["selectedObjective", ""],
-    ["selectedScore", 0]
+    ["selectedScore", 0],
+    ["authorized", false]
 ];
-
 if (isNil "_cmdr") exitWith { _metrics };
 
 private _ws = _cmdr get "_worldState";
 if !(_ws call ["_isAssetAvailable", ["cas"]]) exitWith { _metrics };
 _metrics set ["assetAvailable", true];
+if ((_cmdr get "_frontlineSupportPictureBuiltAt") < 0) exitWith { _metrics };
 
-private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
-if ((keys _frontlineObjectives) isEqualTo []) exitWith { _metrics };
-
-private _assaultObjectives = [];
-{
-    if ((_x get "goal") != "capture_priority_objective") then { continue };
-    if ((_x get "phase") != "assault") then { continue };
-
-    private _objectiveId = _x get "phaseObjectiveId";
-    if (_objectiveId != "") then {
-        _assaultObjectives pushBackUnique _objectiveId;
-    };
-} forEach (_cmdr get "_tracks");
-
-if (_assaultObjectives isEqualTo []) exitWith { _metrics };
-
-private _groups = call FLO_fnc_virtualizationGetGroupMap;
-private _ownSide = _cmdr get "_ownSide";
-private _activeAttackCounts = createHashMap;
-
-{
-    private _gData = _y;
-    if ((_gData get "side") != _ownSide) then { continue };
-    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
-
-    private _attackObjective = _gData get "attackObjective";
-    if (_attackObjective == "") then { continue };
-
-    private _activeAttackCount = if (_attackObjective in _activeAttackCounts) then {
-        _activeAttackCounts get _attackObjective
-    } else {
-        0
-    };
-    _activeAttackCounts set [_attackObjective, _activeAttackCount + 1];
-} forEach _groups;
-
-if ((keys _activeAttackCounts) isEqualTo []) exitWith { _metrics };
-
+private _director = _cmdr get "_campaignDirector";
+private _state = _director call ["_getState", []];
+private _fronts = _state get "frontlineProbes";
+private _picture = _cmdr get "_frontlineSupportPicture";
+private _sideKey = _cmdr get "_sideKey";
+private _enemySide = _cmdr get "_enemySide";
+private _objectives = _ws call ["_getObjectives", []];
+private _config = _cmdr get "_config";
 private _locks = _cmdr get "_frontlineCASLocks";
-private _lockSeconds = ((_cmdr get "_config") get "frontlineCASObjectiveLockSeconds");
-private _minAttackers = ((_cmdr get "_config") get "frontlineCASMinAttackers");
-private _minScore = ((_cmdr get "_config") get "frontlineCASMinScore");
+private _now = diag_tickTime;
 
 private _expiredLocks = [];
 {
-    private _objectiveId = _x;
-    private _lockedUntil = _locks get _objectiveId;
-    if (_lockedUntil <= diag_tickTime || !(_objectiveId in _frontlineObjectives)) then {
-        _expiredLocks pushBack _objectiveId;
+    if ((_locks get _x) <= _now || {!(_x in _objectives)}) then {
+        _expiredLocks pushBack _x;
     };
 } forEach (keys _locks);
 { _locks deleteAt _x; } forEach _expiredLocks;
 
+private _bestProbeId = "";
 private _bestObjectiveId = "";
-private _bestObjectivePos = [];
 private _bestScore = -1e12;
-
 {
-    private _objectiveId = _x;
-    if !(_objectiveId in _assaultObjectives) then { continue };
-
+    private _probeId = _x;
+    private _front = _y;
+    if ((_front get "sideKey") != _sideKey) then { continue };
+    if ((_front get "stage") in ["SHIFT_AXIS", "REGROUP"]) then { continue };
+    private _objectiveId = _front get "objectiveId";
+    if !(_objectiveId in _objectives) then {
+        throw format ["Frontline CAS probe %1 references missing objective %2", _probeId, _objectiveId];
+    };
+    if (((_objectives get _objectiveId) get "owner") isNotEqualTo _enemySide) then { continue };
     _metrics set ["candidateCount", (_metrics get "candidateCount") + 1];
-
-    if !(_objectiveId in _activeAttackCounts) then { continue };
-
-    private _activeAttackers = _activeAttackCounts get _objectiveId;
-    if (_activeAttackers < _minAttackers) then { continue };
-
     if (_objectiveId in _locks) then {
         _metrics set ["lockedCount", (_metrics get "lockedCount") + 1];
         continue;
     };
+    if ((_front get "lastActiveGroupCount") < (_config get "frontlineCASMinAttackers")) then { continue };
+    private _contact = _picture get _probeId;
+    if ((_contact get "reportCount") <= 0) then { continue };
+    if ((_contact get "confidence") < ((_director get "_config") get "probeMinimumContactConfidence")) then { continue };
 
-    private _objective = _frontlineObjectives get _objectiveId;
-    private _analysis = _ws call ["_getObjectiveAnalysis", [_objectiveId]];
-    if (isNil "_analysis") then { continue };
-
+    private _stageBonus = switch (_front get "stage") do {
+        case "DEVELOP_CONTACT": { 15 };
+        case "REINFORCE_SUCCESS": { 25 };
+        case "COMMIT_SUPPORT": { 55 };
+        case "ASSAULT": { 70 };
+        case "STALLED": { 35 };
+        case "SUPPORT": { 60 };
+        default { 0 };
+    };
+    private _score = (_contact get "score") + _stageBonus + ((_front get "lastActiveGroupCount") * 5);
     _metrics set ["eligibleCount", (_metrics get "eligibleCount") + 1];
-
-    private _priority = _objective get "priority";
-    private _attackCap = _cmdr call ["_getAttackCapForObjective", [_objectiveId]];
-    private _casPressure = _analysis get "totalDefensePower";
-    private _score = (_activeAttackers * 18) + (_priority * 0.5) + (_casPressure / 40);
-
-    if ((_objective get "contested")) then {
-        _score = _score + 20;
-    };
-
-    if ((_analysis get "hasArmor")) then {
-        _score = _score + 40;
-    };
-
-    if ((_analysis get "hasAA")) then {
-        _score = _score - 15;
-    };
-
-    if (_attackCap > 0) then {
-        _score = _score + (linearConversion [_minAttackers, _attackCap max _minAttackers, _activeAttackers, 0, 20, true]);
-    };
-
     if (_score > _bestScore) then {
+        _bestProbeId = _probeId;
         _bestObjectiveId = _objectiveId;
-        _bestObjectivePos = _objective get "position";
         _bestScore = _score;
     };
-} forEach (keys _frontlineObjectives);
+} forEach _fronts;
 
-if (_bestObjectiveId == "" || {_bestScore < _minScore}) exitWith { _metrics };
-
-private _targetGroupIds = [_ownSide, _bestObjectiveId] call FLO_fnc_gtnAirCollectObjectiveTargetIds;
-if (_targetGroupIds isEqualTo []) exitWith { _metrics };
+if (_bestProbeId == "" || {_bestScore < (_config get "frontlineCASMinScore")}) exitWith { _metrics };
+private _contact = _picture get _bestProbeId;
+private _targetGroupIds = +(_contact get "targetGroupIds");
 private _meta = createHashMapFromArray [
     ["targetObjectiveId", _bestObjectiveId],
-    ["targetGroupIds", _targetGroupIds]
+    ["targetGroupIds", _targetGroupIds],
+    ["areaContact", _targetGroupIds isEqualTo []],
+    ["contactConfidence", _contact get "confidence"],
+    ["contactAgeSeconds", _contact get "ageSeconds"],
+    ["uncertaintyRadius", _contact get "uncertaintyRadius"]
 ];
-private _success = _cmdr call ["_requestCAS", [_bestObjectivePos, "CAS", _meta]];
-if (_success) then {
-    _locks set [_bestObjectiveId, diag_tickTime + _lockSeconds];
-    _metrics set ["requestedCount", 1];
-    _metrics set ["selectedObjective", _bestObjectiveId];
-    _metrics set ["selectedScore", _bestScore];
+private _authorized = _cmdr call ["_requestCAS", [_contact get "targetPos", "CAS", _meta]];
+_metrics set ["requestedCount", 1];
+_metrics set ["selectedObjective", _bestObjectiveId];
+_metrics set ["selectedScore", _bestScore];
+_metrics set ["authorized", _authorized];
+[
+    _director,
+    _sideKey,
+    _bestObjectiveId,
+    "AIR",
+    _authorized
+] call FLO_fnc_campaignRecordProbeSupport;
+_locks set [
+    _bestObjectiveId,
+    _now + ([
+        _config get "frontlineCASRetrySeconds",
+        _config get "frontlineCASObjectiveLockSeconds"
+    ] select _authorized)
+];
 
-    ["GTN", 3, format[
-        "Frontline CAS requested for %1 (score=%2, attackers=%3)",
+if (_authorized) then {
+    ["GTN", 3, format [
+        "Frontline CAS authorized for %1 from %2 contact reports (score=%3 age=%4s exact=%5)",
         _bestObjectiveId,
+        _contact get "reportCount",
         round _bestScore,
-        _activeAttackCounts get _bestObjectiveId
+        round (_contact get "ageSeconds"),
+        count _targetGroupIds
     ]] call FLO_fnc_log;
 };
 

@@ -36,6 +36,12 @@ if !(_side in [west, east]) exitWith {
         ["message", "Base deployment is only available to BLUFOR and OPFOR."]
     ]
 };
+if (_side isNotEqualTo FLO_ActivePlayerSide) exitWith {
+    createHashMapFromArray [
+        ["success", false],
+        ["message", "Your lobby slot does not match the configured player side."]
+    ]
+};
 
 private _pos = getPosATL _player;
 if (surfaceIsWater _pos) exitWith {

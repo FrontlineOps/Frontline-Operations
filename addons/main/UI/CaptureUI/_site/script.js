@@ -36,15 +36,20 @@ class CaptureUI {
         }
     }
 
-    update(ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress) {
-        this.targetRatio = Math.max(0, Math.min(1, ratio));
-        
-        // Default owner to EAST if not provided (safety)
-        const currentOwner = owner || "EAST";
-        const state = captureState || "held";
+    applyState(snapshot) {
+        const friendlyRatio = Math.max(0, Math.min(1, snapshot.ratio));
+        const friendlyIsWest = snapshot.friendlySide === 'WEST';
+        const friendlyClass = friendlyIsWest ? 'captured-blue' : 'captured-red';
+        const enemyClass = friendlyIsWest ? 'captured-red' : 'captured-blue';
+        this.targetRatio = friendlyIsWest ? friendlyRatio : 1 - friendlyRatio;
+
+        const friendlyCount = snapshot.friendlyCount;
+        const enemyCount = snapshot.enemyCount;
+        const ownership = snapshot.ownership;
+        const state = snapshot.captureState;
 
         if (state === 'securing') {
-            const pct = Math.max(0, Math.min(100, Math.round((secureProgress || 0) * 100)));
+            const pct = Math.max(0, Math.min(100, Math.round(snapshot.secureProgress * 100)));
             this.setStatus(`SECURING ${pct}%`, 'securing');
             this.updateGlow();
             return;
@@ -63,29 +68,31 @@ class CaptureUI {
         }
 
         if (state === 'integrating') {
-            this.setStatus('INTEGRATING', currentOwner === "WEST" ? 'captured-blue' : 'captured-red');
+            this.setStatus('INTEGRATING', ownership === 'FRIENDLY' ? friendlyClass : enemyClass);
             this.updateGlow();
             return;
         }
-        
-        if (currentOwner === "WEST") {
-            // WE OWN IT
-            if (opforCount === 0) {
-                this.setStatus('CAPTURED', 'captured-blue');
-            } else if (opforCount > bluforCount) {
+
+        if (ownership === 'FRIENDLY') {
+            if (enemyCount === 0) {
+                this.setStatus('CAPTURED', friendlyClass);
+            } else if (enemyCount > friendlyCount) {
                 this.setStatus('LOSING GROUND', 'losing');
             } else {
                 this.setStatus('DEFENDING', 'contested');
             }
-        } else {
-            // ENEMY OWNS IT (EAST/GUER)
-            if (bluforCount === 0) {
-                this.setStatus('ENEMY HELD', 'captured-red');
-            } else if (bluforCount > opforCount) {
+        } else if (ownership === 'ENEMY') {
+            if (friendlyCount === 0) {
+                this.setStatus('ENEMY HELD', enemyClass);
+            } else if (friendlyCount > enemyCount) {
                 this.setStatus('CAPTURING', 'capturing');
             } else {
                 this.setStatus('CONTESTED', 'contested');
             }
+        } else if (friendlyCount > enemyCount) {
+            this.setStatus('CAPTURING', 'capturing');
+        } else {
+            this.setStatus('CONTESTED', 'contested');
         }
         
         // Update glow effect
@@ -137,25 +144,13 @@ class CaptureUI {
 // Initialize
 function initCaptureUI() {
     captureUI = new CaptureUI();
+    window.FLOCapture = captureUI;
     console.log('FLO Capture UI initialized');
     
     // Notify Arma that UI is ready
     if (typeof A3API !== 'undefined' && typeof A3API.SendAlert === 'function') {
         A3API.SendAlert(JSON.stringify({ event: 'captureUI::ready' }));
     }
-}
-
-// Global API for SQF calls
-function showCaptureUI(objectiveName) {
-    if (captureUI) captureUI.show(objectiveName);
-}
-
-function hideCaptureUI() {
-    if (captureUI) captureUI.hide();
-}
-
-function updateCaptureUI(ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress) {
-    if (captureUI) captureUI.update(ratio, bluforCount, opforCount, owner, captureState, secureProgress, captureProgress);
 }
 
 // Auto-initialize

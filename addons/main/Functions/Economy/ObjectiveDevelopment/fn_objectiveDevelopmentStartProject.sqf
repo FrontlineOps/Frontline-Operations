@@ -49,10 +49,9 @@ if !([
 private _project = createHashMapFromArray [
     ["sideKey", _sideKey],
     ["branch", _branch],
-    ["pricingVersion", FLO_ObjectiveDevelopmentConfig get "pricingVersion"],
     ["state", "FUNDING"],
     ["targetLevel", _targetLevel],
-    ["createdAtDateNum", dateToNumber date],
+    ["createdAtDateNum", call FLO_fnc_operationalDateNumber],
     ["startedAtDateNum", 0],
     ["rawTreasuryCost", _quote get "rawTreasuryCost"],
     ["discountApplied", _quote get "discountApplied"],

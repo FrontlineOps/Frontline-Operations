@@ -15,62 +15,120 @@ if (!isServer) exitWith { false };
 diag_log "[FLO_INIT_P3] Initializing objectives...";
 private _phaseT0 = diag_tickTime;
 
-// Check if loading from saved game
-if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
+// Restore only the exact current objective shape published by save detection.
+if (FLO_IsLoadedSave) then {
     private _savedData = FLO_SavedGameData;
-
-    // Check if objectives exist in save
-    if ("objectives" in _savedData) then {
-        private _restoreT0 = diag_tickTime;
-        FLO_Objectives = _savedData get "objectives";
-
-        private _captureTimeCfg = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
-        private _captureSecureTimeCfg = ["get", "captureSecureTime"] call FLO_fnc_objectiveConfig;
-        {
-            private _objId = _x;
-            private _objData = FLO_Objectives get _objId;
-            if (isNil {_objData get "owner"}) then { _objData set ["owner", east]; };
-            private _owner = _objData get "owner";
-            if (_owner isEqualType "") then {
-                private _ownerKey = toUpper _owner;
-                if (_ownerKey isEqualTo "EAST") then { _objData set ["owner", east]; };
-                if (_ownerKey isEqualTo "WEST") then { _objData set ["owner", west]; };
-            };
-            if (isNil {_objData get "priority"}) then { _objData set ["priority", 0]; };
-            if (isNil {_objData get "captureProgress"}) then { _objData set ["captureProgress", 0]; };
-            if (isNil {_objData get "bluforCount"}) then { _objData set ["bluforCount", 0]; };
-            if (isNil {_objData get "opforCount"}) then { _objData set ["opforCount", 0]; };
-            if (isNil {_objData get "captureTime"}) then { _objData set ["captureTime", _captureTimeCfg]; };
-            if (isNil {_objData get "captureState"}) then { _objData set ["captureState", "held"]; };
-            if (isNil {_objData get "captureSide"}) then { _objData set ["captureSide", sideUnknown]; };
-            if (isNil {_objData get "captureSecureStartedAt"}) then { _objData set ["captureSecureStartedAt", -1]; };
-            if (isNil {_objData get "captureSecureProgress"}) then { _objData set ["captureSecureProgress", 0]; };
-            if (isNil {_objData get "captureSecureTime"}) then { _objData set ["captureSecureTime", _captureSecureTimeCfg]; };
-            if (isNil {_objData get "captureStatusChangedAt"}) then { _objData set ["captureStatusChangedAt", -1]; };
-            if (isNil {_objData get "captureIntegratedAtDateNum"}) then { _objData set ["captureIntegratedAtDateNum", -1]; };
-            if (isNil {_objData get "campaignIntegrationState"}) then { _objData set ["campaignIntegrationState", "INTEGRATED"]; };
-            if (isNil {_objData get "campaignOperationId"}) then { _objData set ["campaignOperationId", ""]; };
-            if (isNil {_objData get "campaignCapturedBySideKey"}) then { _objData set ["campaignCapturedBySideKey", ""]; };
-            if (isNil {_objData get "campaignBenefitsPending"}) then { _objData set ["campaignBenefitsPending", false]; };
-            _objData = [_objId, _objData] call FLO_fnc_objectiveDevelopmentInitializeObjective;
-            FLO_Objectives set [_objId, _objData];
-        } forEach (keys FLO_Objectives);
-
-        publicVariable "FLO_Objectives";
-        private _runtimeT0 = diag_tickTime;
-        FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
-        [] call FLO_fnc_publishObjectiveRuntimeState;
-        private _runtimeMs = (diag_tickTime - _runtimeT0) * 1000;
-        private _restoreMs = (_runtimeT0 - _restoreT0) * 1000;
-
-        diag_log format ["[FLO_INIT_P3] Restored %1 objectives from save", count FLO_Objectives];
-        diag_log format [
-            "[FLO][PERF] Phase3 save restore objectives=%1 restore=%2 ms runtime=%3 ms",
-            count FLO_Objectives,
-            _restoreMs,
-            _runtimeMs
-        ];
+    private _restoreT0 = diag_tickTime;
+    private _savedObjectives = _savedData get "objectives";
+    if ((keys _savedObjectives) isEqualTo []) then {
+        private _error = "Current mission save contains no objectives";
+        ["INIT", 1, _error] call FLO_fnc_log;
+        throw _error;
     };
+
+    private _requiredObjectiveTypes = [
+        ["type", ""], ["subtype", ""], ["position", []], ["priority", 0],
+        ["radius", 0], ["polygon", []], ["usePolygon", true], ["structures", []],
+        ["structureCount", 0], ["structurePositions", []], ["location", ""],
+        ["locType", ""], ["owner", sideUnknown], ["captureProgress", 0],
+        ["captureState", ""], ["captureSide", sideUnknown], ["captureSecureStartedAt", 0],
+        ["captureSecureProgress", 0], ["captureSecureTime", 0],
+        ["captureStatusChangedAt", 0], ["captureIntegratedAtDateNum", 0],
+        ["bluforCount", 0], ["opforCount", 0], ["contested", true],
+        ["underAttack", true], ["captureTime", 0], ["capturedAtDateNum", 0],
+        ["capturedFrom", sideUnknown], ["captureGrowthEligibleAtDateNum", 0],
+        ["captureGrowthPending", true], ["campaignIntegrationState", ""],
+        ["campaignOperationId", ""], ["campaignCapturedBySideKey", ""],
+        ["campaignBenefitsPending", true], ["name", ""], ["markerIds", []],
+        ["linkedObjectives", []], ["mergedCount", 0], ["revenueLevel", 0],
+        ["developmentLevel", 0], ["developmentProject", createHashMap]
+    ];
+    private _requiredObjectiveFields = _requiredObjectiveTypes apply { _x # 0 };
+    {
+        private _objId = _x;
+        if !(_objId isEqualType "" && {_objId != ""}) then {
+            throw format ["Current mission save has invalid objective key %1", _objId];
+        };
+        private _objData = _savedObjectives get _objId;
+        if !(_objData isEqualType createHashMap) then {
+            throw format ["Saved objective %1 has invalid record type %2", _objId, typeName _objData];
+        };
+        private _unexpectedObjectiveFields = (keys _objData) select {
+            !(_x in _requiredObjectiveFields)
+        };
+        if (_unexpectedObjectiveFields isNotEqualTo []) then {
+            throw format [
+                "Saved objective %1 has unexpected fields %2",
+                _objId,
+                _unexpectedObjectiveFields
+            ];
+        };
+        {
+            _x params ["_field", "_prototype"];
+            if !(_field in _objData) then {
+                throw format ["Saved objective %1 is missing required field %2", _objId, _field];
+            };
+            private _value = _objData get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format [
+                    "Saved objective %1 field %2 has invalid type %3",
+                    _objId,
+                    _field,
+                    typeName _value
+                ];
+            };
+        } forEach _requiredObjectiveTypes;
+
+        private _position = _objData get "position";
+        if ((count _position) < 2 || {{!(_x isEqualType 0)} count _position > 0}) then {
+            throw format ["Saved objective %1 has invalid position %2", _objId, _position];
+        };
+        if ((_objData get "location") != _objId) then {
+            throw format ["Saved objective %1 has mismatched location field", _objId];
+        };
+        if !((_objData get "owner") in [east, west]) then {
+            throw format ["Saved objective %1 has invalid owner %2", _objId, _objData get "owner"];
+        };
+        if !((_objData get "captureSide") in [east, west, sideUnknown]) then {
+            throw format ["Saved objective %1 has invalid capture side", _objId];
+        };
+        if !((_objData get "capturedFrom") in [east, west, sideUnknown]) then {
+            throw format ["Saved objective %1 has invalid captured-from side", _objId];
+        };
+        if !((_objData get "captureState") in ["held", "contested", "clearing", "securing", "integrating", "integrated"]) then {
+            throw format ["Saved objective %1 has invalid capture state %2", _objId, _objData get "captureState"];
+        };
+        if !((_objData get "campaignIntegrationState") in ["INTEGRATED", "FOOTHOLD", "CONSOLIDATING"]) then {
+            throw format [
+                "Saved objective %1 has invalid campaign integration state %2",
+                _objId,
+                _objData get "campaignIntegrationState"
+            ];
+        };
+        if !((_objData get "campaignCapturedBySideKey") in ["", "EAST", "WEST"]) then {
+            throw format ["Saved objective %1 has invalid captured-by side key", _objId];
+        };
+        _savedObjectives set [
+            _objId,
+            [_objId, _objData] call FLO_fnc_objectiveDevelopmentInitializeObjective
+        ];
+    } forEach (keys _savedObjectives);
+
+    FLO_Objectives = _savedObjectives;
+    publicVariable "FLO_Objectives";
+    private _runtimeT0 = diag_tickTime;
+    FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
+    [] call FLO_fnc_publishObjectiveRuntimeState;
+    private _runtimeMs = (diag_tickTime - _runtimeT0) * 1000;
+    private _restoreMs = (_runtimeT0 - _restoreT0) * 1000;
+
+    ["INIT", 3, format ["Restored %1 current-version objectives", count FLO_Objectives]] call FLO_fnc_log;
+    diag_log format [
+        "[FLO][PERF] Phase3 save restore objectives=%1 restore=%2 ms runtime=%3 ms",
+        count FLO_Objectives,
+        _restoreMs,
+        _runtimeMs
+    ];
 };
 
 // If we already have objectives (from save), just start monitoring
@@ -130,6 +188,13 @@ if ((keys FLO_Objectives) isEqualTo []) exitWith {
     diag_log format ["[FLO_INIT_P3] ERROR: %1", FLO_InitError];
     false
 };
+private _captureTime = ["get", "captureTime"] call FLO_fnc_objectiveConfig;
+private _captureSecureTime = ["get", "captureSecureTime"] call FLO_fnc_objectiveConfig;
+{
+    private _objective = FLO_Objectives get _x;
+    _objective set ["captureTime", _captureTime];
+    _objective set ["captureSecureTime", _captureSecureTime];
+} forEach (keys FLO_Objectives);
 diag_log format ["[FLO_INIT_P3] Objective indexer created %1 objectives", count keys FLO_Objectives];
 private _runtimeT0 = diag_tickTime;
 FLO_ObjectiveRuntimeState = [] call FLO_fnc_buildObjectiveRuntimeState;
@@ -139,7 +204,7 @@ private _runtimeMs = (diag_tickTime - _runtimeT0) * 1000;
 // Seed initial EAST/WEST ownership for new runs.
 diag_log "[FLO_INIT_P3] Seeding initial objective ownership...";
 private _seedT0 = diag_tickTime;
-[FLO_MissionConfig get "startPosition", FLO_StartingTerritoryWestRatio] call FLO_fnc_seedObjectiveOwnership;
+[FLO_MissionConfig get "startPosition", FLO_StartingTerritoryWestRatio, FLO_ActivePlayerSide] call FLO_fnc_seedObjectiveOwnership;
 private _seedMs = (diag_tickTime - _seedT0) * 1000;
 
 // Build objective graph

@@ -19,14 +19,9 @@
  * [] call IDS_Logistics_fnc_initLogistics
  */
 
-// Initialize the array for tracking placed entities
-if (isNil "IDS_Logistics_PlacedEntities") then { IDS_Logistics_PlacedEntities = []; };
-
-// Initialize entity holding state flag
-if (isNil "IDS_Logistics_isHolding") then { IDS_Logistics_isHolding = false; };
-
-// Initialize currently manipulated entity reference
-if (isNil "IDS_Logistics_currentEntity") then { IDS_Logistics_currentEntity = objNull; };
+IDS_Logistics_PlacedEntities = [];
+IDS_Logistics_isHolding = false;
+IDS_Logistics_currentEntity = objNull;
 
 // Initialize UI variables
 uiNamespace setVariable ["IDS_Logistics_shiftPressed", false];
@@ -35,7 +30,12 @@ uiNamespace setVariable ["IDS_Logistics_altPressed", false];
 
 // Initialize entities array from config
 IDS_Logistics_Entities = [];
-private _entitiesConfig = missionConfigFile >> "CfgLogistics" >> "Entities";
+private _entitiesConfig = configFile >> "CfgLogistics" >> "Entities";
+if !(isClass _entitiesConfig) then {
+    private _message = "Addon CfgLogistics/Entities is unavailable";
+    ["IDS_LOGISTICS", 1, _message] call FLO_fnc_log;
+    throw _message;
+};
 
 // Iterate through all entity classes in the config
 for "_i" from 0 to (count _entitiesConfig - 1) do {
@@ -51,7 +51,13 @@ for "_i" from 0 to (count _entitiesConfig - 1) do {
     };
 };
 
-// Debug logging
-diag_log "=== IDS Logistics Initialization ===";
-diag_log format ["Loaded %1 buildable entities", count IDS_Logistics_Entities];
-diag_log "IDS Logistics initialized.";
+if (IDS_Logistics_Entities isEqualTo []) then {
+    private _message = "Addon CfgLogistics/Entities contains no buildable entities";
+    ["IDS_LOGISTICS", 1, _message] call FLO_fnc_log;
+    throw _message;
+};
+
+["IDS_LOGISTICS", 3, format [
+    "IDS Logistics initialized with %1 buildable entities",
+    count IDS_Logistics_Entities
+]] call FLO_fnc_log;

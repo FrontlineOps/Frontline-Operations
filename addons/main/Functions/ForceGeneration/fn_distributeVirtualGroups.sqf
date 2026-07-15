@@ -34,6 +34,7 @@ private _markerName = format ["obj_%1", _objective];
 
 private _sideKey = [_side] call FLO_fnc_sideKey;
 private _catalog = FLO_FactionCatalog get _sideKey;
+private _movementDomain = ([_groupType] call FLO_fnc_virtualizationGetArchetype) get "movementDomain";
 
 // Ensure position is valid
 if (_position isEqualTo [0,0,0]) exitWith {
@@ -44,6 +45,7 @@ if (_position isEqualTo [0,0,0]) exitWith {
 
 // Initialize return array for group IDs
 private _createdGroups = [];
+private _rejectedLandPlacements = 0;
 
 // Adjust radius based on group type with some randomness
 private _baseFactor = switch (_groupType) do {
@@ -110,7 +112,36 @@ for "_i" from 1 to _remainingGroups do {
     };
 
     // Find safe position near the calculated point
-    private _safePos = [_groupPos, 0, 30, 3, 0, 0.5, 0] call BIS_fnc_findSafePos;
+    private _localDefaults = [+_groupPos, +_groupPos];
+    private _safePos = [_groupPos, 0, 30, 3, 0, 0.5, 0, [], _localDefaults] call BIS_fnc_findSafePos;
+    if (_movementDomain == "LAND") then {
+        if (count _safePos < 2) then {
+            _rejectedLandPlacements = _rejectedLandPlacements + 1;
+            continue;
+        };
+
+        if (count _safePos > 2) then {
+            _safePos set [2, 0];
+        } else {
+            _safePos pushBack 0;
+        };
+
+        if (surfaceIsWater _safePos) then {
+            _safePos = [_safePos, _distributionRadius max 100] call FLO_fnc_getSafeLandPos;
+            if (count _safePos >= 2) then {
+                if (count _safePos > 2) then {
+                    _safePos set [2, 0];
+                } else {
+                    _safePos pushBack 0;
+                };
+            };
+        };
+
+        if (count _safePos < 2 || {surfaceIsWater _safePos}) then {
+            _rejectedLandPlacements = _rejectedLandPlacements + 1;
+            continue;
+        };
+    };
 
     // Create the virtual group
     private _groupId = [_safePos, _groupType, _groupCfg, _objective, -1, _side] call FLO_fnc_createVirtualGroup;
@@ -129,6 +160,16 @@ for "_i" from 1 to _remainingGroups do {
 
     // Log creation
     ["VIRTUALIZATION", 3, format["Distributed %1 group at %2 - position: %3", _groupType, _markerName, _safePos]] call FLO_fnc_log;
+};
+
+if (_rejectedLandPlacements > 0) then {
+    ["VIRTUALIZATION", 2, format [
+        "Rejected generated LAND placements objective=%1 type=%2 rejected=%3 requested=%4",
+        _objective,
+        _groupType,
+        _rejectedLandPlacements,
+        _count
+    ]] call FLO_fnc_log;
 };
 
 // Return array of created group IDs

@@ -1121,7 +1121,7 @@
                 var spending = snapshot.economy.commanderSpending;
                 var factRows = [
                     ["Project Capacity", snapshot.projectCapacity + " simultaneous projects from " + snapshot.totalDevelopmentLevels + " completed Development levels. Next slot at " + snapshot.nextCapacityLevel + "."],
-                    ["Revenue", "Each level compounds objective income. Treasury pricing targets " + snapshot.revenuePaybackCycles + " income cycles before local discounts."],
+                    ["Revenue", "Each level compounds objective income. Treasury pricing targets about " + snapshot.revenuePaybackMinutes + " minutes of added income before local discounts."],
                     ["Development", "Each level reduces future local project treasury and supply demand. Base pricing is " + formatResource(snapshot.developmentBaseCost) + " multiplied by target level squared."],
                     ["Funding Posture", readable(spending.posture) + " / " + formatResource(snapshot.economy.committed) + " treasury currently reserved."],
                     ["Commander Delivery", formatResource(snapshot.commanderSupplyPerTick) + " local supply is applied every " + formatDuration(snapshot.tickInterval) + " while the route remains viable."],

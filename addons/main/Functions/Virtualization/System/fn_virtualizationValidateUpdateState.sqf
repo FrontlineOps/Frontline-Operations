@@ -4,6 +4,7 @@
 
 private _requiredKeys = [
     "pfhId",
+    "disconnectEhId",
     "running",
     "lastUpdateTime",
     "lastPlayerCacheTime",

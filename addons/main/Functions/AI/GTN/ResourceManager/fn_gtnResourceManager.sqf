@@ -14,7 +14,6 @@ private _config = call FLO_fnc_gtnConfig;
 
 private _resourceManager = createHashMapObject [[
     ["_config", _config],
-    ["_gtnCommander", nil], // Backward compatibility alias (EAST commander)
     ["_gtnCommandersBySide", createHashMap],
     ["_virtGroupRemovedEH", -1],
     ["_dirtyEventEhIds", createHashMap],
@@ -25,11 +24,11 @@ private _resourceManager = createHashMapObject [[
         params ["_side"];
         if (_side isEqualTo east) exitWith { "EAST" };
         if (_side isEqualTo west) exitWith { "WEST" };
-        "EAST"
+        throw format ["GTN Resource Manager received unsupported side %1", _side];
     }],
 
     ["_getCommanderBySide", {
-        params [["_side", east]];
+        params ["_side"];
         private _key = _self call ["_sideKey", [_side]];
         (_self get "_gtnCommandersBySide") get _key
     }],
@@ -191,12 +190,18 @@ private _resourceManager = createHashMapObject [[
 
         private _director = _self get "_campaignDirector";
         if (isNil "_director") then {
-            private _savedCampaignState = createHashMap;
-            if (FLO_IsLoadedSave && {"campaignOperation" in FLO_SavedGameData}) then {
-                _savedCampaignState = FLO_SavedGameData get "campaignOperation";
+            private _restoreCampaignState = FLO_IsLoadedSave;
+            private _savedCampaignState = if (_restoreCampaignState) then {
+                FLO_SavedGameData get "campaignOperation"
+            } else {
+                createHashMap
             };
 
-            _director = [_self, _savedCampaignState] call FLO_fnc_campaignDirector;
+            _director = [
+                _self,
+                _savedCampaignState,
+                _restoreCampaignState
+            ] call FLO_fnc_campaignDirector;
             _self set ["_campaignDirector", _director];
         };
 
@@ -218,9 +223,6 @@ private _resourceManager = createHashMapObject [[
                 _self call ["_initializeSideCommander", [_x]];
             };
         } forEach _sides;
-
-        // Backward compatibility: preserve singleton field as EAST commander.
-        _self set ["_gtnCommander", _self call ["_getCommanderBySide", [east]]];
 
         // Keep commander objects server-local. They contain circular references
         // and are not safe to publicVariable.

@@ -261,7 +261,7 @@
         }
 
         .operator-panel {
-            grid-template-rows: auto minmax(0, 1.9fr) minmax(0, 0.85fr);
+            grid-template-rows: auto minmax(0, 1fr);
             min-height: 0;
             overflow: hidden auto;
             overscroll-behavior: contain;
@@ -1235,18 +1235,6 @@
                     <div class="scroll-list" id="cartList"></div>
                 </section>
 
-                <section class="operator-section">
-                    <div class="panel-head">
-                        <div class="panel-title">
-                            <div class="overline">Presets</div>
-                            <h2>Kits</h2>
-                        </div>
-                    </div>
-                    <div class="kit-tools">
-                        <input id="kitName" type="text" maxlength="40" placeholder="Kit name">
-                    </div>
-                    <div class="scroll-list" id="kitList"></div>
-                </section>
             </aside>
         </div>
 
@@ -1255,7 +1243,7 @@
             <div class="bottom-actions">
                 <button class="action-btn secondary" type="button" onclick="FOOFStore.back()">Back</button>
                 <button class="action-btn secondary" type="button" onclick="FOOFStore.clearCart()">Clear</button>
-                <button class="action-btn secondary" type="button" onclick="FOOFStore.saveKit()">Save Kit</button>
+                <button class="action-btn secondary" type="button" onclick="FOOFStore.openKits()">Kits</button>
                 <button class="action-btn good" type="button" onclick="FOOFStore.checkout()">Checkout</button>
                 <button class="action-btn danger" type="button" onclick="FOOFStore.close()">Close</button>
             </div>
@@ -1287,7 +1275,6 @@
                 currentCategory: "",
                 items: [],
                 cart: [],
-                savedKits: [],
                 pendingAttachmentAdd: null,
                 selectedItem: null,
                 activeContainer: "auto",
@@ -1315,7 +1302,7 @@
             var textureObservationTimer = 0;
             var messageTimer = 0;
             var pendingServerScrollRestore = null;
-            var scrollContainerIds = ["categoryList", "itemList", "cartList", "kitList", "attachmentList"];
+            var scrollContainerIds = ["categoryList", "itemList", "cartList", "attachmentList"];
 
             var containerLabels = {
                 auto: "Equip",
@@ -2418,64 +2405,6 @@
                 restoreScrollSnapshot(scrollSnapshot);
             }
 
-            function renderSavedKits(preserveScroll) {
-                var list = node("kitList");
-                var scrollSnapshot = scrollSnapshotFor(preserveScroll);
-                var i;
-
-                clear(list);
-
-                if (state.savedKits.length === 0) {
-                    list.appendChild(empty("No saved kits."));
-                    restoreScrollSnapshot(scrollSnapshot);
-                    return;
-                }
-
-                for (i = 0; i < state.savedKits.length; i += 1) {
-                    (function (kit) {
-                        var row = document.createElement("div");
-                        var info = document.createElement("div");
-                        var name = document.createElement("div");
-                        var meta = document.createElement("div");
-                        var actions = document.createElement("div");
-                        var load = document.createElement("button");
-                        var del = document.createElement("button");
-
-                        row.className = "kit-line";
-                        name.className = "name";
-                        meta.className = "meta";
-                        name.textContent = kit.name;
-                        meta.textContent = String((kit.items || []).length) + " lines";
-                        info.appendChild(name);
-                        info.appendChild(meta);
-
-                        actions.className = "container-row";
-
-                        load.type = "button";
-                        load.className = "chip selected";
-                        load.textContent = "Load";
-                        load.onclick = function () {
-                            FOOFStore.loadKit(kit);
-                        };
-
-                        del.type = "button";
-                        del.className = "chip";
-                        del.textContent = "Delete";
-                        del.onclick = function () {
-                            send("store::kitDelete", { id: kit.id });
-                        };
-
-                        actions.appendChild(load);
-                        actions.appendChild(del);
-                        row.appendChild(info);
-                        row.appendChild(actions);
-                        list.appendChild(row);
-                    }(state.savedKits[i]));
-                }
-
-                restoreScrollSnapshot(scrollSnapshot);
-            }
-
             window.FOOFStore = {
                 receive: function (event, payload) {
                     if (event === "store::hydrate") {
@@ -2536,12 +2465,11 @@
                         }
                     }
 
-                    if (event === "store::savedKits") {
-                        state.savedKits = payload.kits || [];
-                        renderSavedKits(true);
-
-                        if (payload.message) {
-                            message(payload.message, payload.success ? "good" : "error");
+                    if (event === "store::kitLoaded") {
+                        if (payload.success && payload.kit) {
+                            FOOFStore.loadKit(payload.kit);
+                        } else {
+                            message(payload.message || "Saved kit unavailable.", "error");
                         }
                     }
                 },
@@ -2616,17 +2544,8 @@
                     state.query = value || "";
                     renderItems(false);
                 },
-                saveKit: function () {
-                    var name = node("kitName").value;
-
-                    if (!name || !name.replace(/\s/g, "")) {
-                        message("Name the kit first.", "error");
-                        return;
-                    }
-
-                    send("store::kitSave", {
-                        name: name
-                    });
+                openKits: function () {
+                    send("store::kitsOpen", {});
                 },
                 loadKit: function (kit) {
                     state.cart = [];

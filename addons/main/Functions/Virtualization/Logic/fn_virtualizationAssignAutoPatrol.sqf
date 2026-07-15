@@ -23,14 +23,8 @@ if (_patrolPlan isEqualTo []) exitWith { false };
 
 _patrolPlan params ["_patrolWaypoints", "_patrolConfig"];
 
-[_groupData, _patrolWaypoints, "AUTO_PATROL", "moving"] call FLO_fnc_virtualizationSetRouteState;
-[_groupId, createHashMapFromArray [
-    ["patrolConfig", _patrolConfig],
-    ["autoPatrol", true]
-]] call FLO_fnc_virtualizationPatchGroup;
-
-if (_groupData get "isActive") then {
-    [_groupId, _groupData] call FLO_fnc_virtualizationApplyRealRoute;
+if !([_groupId, _patrolWaypoints, true, "AUTO_PATROL", true, _patrolConfig] call FLO_fnc_updateVirtualGroupWaypoints) exitWith {
+    false
 };
 
 ["VIRTUALIZATION", 5, format ["Assigned persistent auto-patrol to %1 (%2 waypoints)", _groupId, count _patrolWaypoints]] call FLO_fnc_log;

@@ -31,7 +31,7 @@ if (isNil "_obj") exitWith { false };
 private _previousOwner = _obj get "owner";
 if (_previousOwner isEqualTo _newOwner) exitWith { false };
 
-private _captureDateNum = dateToNumber date;
+private _captureDateNum = call FLO_fnc_operationalDateNumber;
 
 _obj = [_objectiveId, _obj, _previousOwner, _newOwner] call FLO_fnc_objectiveDevelopmentHandleCapture;
 

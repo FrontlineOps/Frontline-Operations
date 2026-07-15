@@ -6,8 +6,13 @@ private _balance = _treasury get "_balance";
 private _committed = [_treasury] call FLO_fnc_sideResourcesGetCommitted;
 private _available = [_treasury] call FLO_fnc_sideResourcesGetAvailable;
 private _incomeCycle = _treasury get "_lastIncome";
+private _incomeInterval = _treasury get "UPDATE_INTERVAL";
+if !(_incomeInterval isEqualType 0 && {_incomeInterval > 0}) then {
+    throw format ["Invalid %1 commander income interval: %2", _treasury get "_sideKey", _incomeInterval];
+};
+private _incomePerMinute = (_incomeCycle * 60) / _incomeInterval;
 private _windowSeconds = _policy get "windowSeconds";
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 private _recentCommanderSpend = 0;
 private _recentByCategory = createHashMap;
 private _recentCountByCategory = createHashMap;
@@ -37,10 +42,11 @@ private _recentCountByCategory = createHashMap;
 
 private _reserveFloor = (_policy get "reserveMinimum")
     max (round (_balance * (_policy get "reserveBalanceFraction")))
-    max (round (_incomeCycle * (_policy get "reserveIncomeCycles")));
+    max (round (_incomePerMinute * ((_policy get "reserveIncomeSeconds") / 60)));
 private _emergencyReserve = _policy get "emergencyReserve";
-private _baseWindowBudget = _incomeCycle max (_policy get "bootstrapWindowBudget");
-private _balancedRunway = (_policy get "balancedRunwayMinimum") max (_incomeCycle * 2);
+private _baseWindowBudget = (_incomePerMinute * (_windowSeconds / 60)) max (_policy get "bootstrapWindowBudget");
+private _balancedRunway = (_policy get "balancedRunwayMinimum")
+    max (_incomePerMinute * ((_policy get "balancedRunwaySeconds") / 60));
 private _surplusFloor = _reserveFloor + _balancedRunway;
 private _posture = "SURPLUS";
 if (_available <= _emergencyReserve) then {
@@ -62,7 +68,7 @@ createHashMapFromArray [
     ["committed", _committed],
     ["available", _available],
     ["incomeCycle", _incomeCycle],
-    ["incomePerMinute", round ((_incomeCycle * 60) / (_treasury get "UPDATE_INTERVAL"))],
+    ["incomePerMinute", round _incomePerMinute],
     ["reserveFloor", _reserveFloor],
     ["emergencyReserve", _emergencyReserve],
     ["surplusFloor", _surplusFloor],

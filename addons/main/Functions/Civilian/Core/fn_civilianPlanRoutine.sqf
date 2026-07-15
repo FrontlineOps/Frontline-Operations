@@ -148,8 +148,9 @@ private _anchorPool = switch (_targetState) do {
     case "work": { [_workPois, _parkingPois] select (_isVehicleGroup) };
     case "observe": { _observePois };
     case "shelter": { _shelterPois };
-    case "return": { _homePois };
-    default { _homePois };
+    case "home";
+    case "return": { [] };
+    default { [] };
 };
 
 if (_anchorPool isNotEqualTo []) then {

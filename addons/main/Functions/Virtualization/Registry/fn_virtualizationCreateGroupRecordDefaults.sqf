@@ -1,11 +1,10 @@
 /*
  * Function: FLO_fnc_virtualizationCreateGroupRecordDefaults
  * Description:
- *   Single source of truth for the live virtual-group record schema.
+ *   Single source of truth for the live virtual-group record shape.
  */
 
 createHashMapFromArray [
-    ["schemaVersion", 3],
     ["id", ""],
     ["position", [0, 0, 0]],
     ["spawnPosition", [0, 0, 0]],

@@ -31,7 +31,7 @@ if (isNil "FLO_Objectives") exitWith { "" };
 private _keys = keys FLO_Objectives;
 if (_keys isEqualTo []) exitWith { "" };
 
-private _players = allPlayers;
+private _players = [] call FLO_fnc_getConnectedHumanPlayers;
 if (_players isEqualTo []) exitWith { [_refPos, _filterSide] call FLO_fnc_getNearestObjective };
 
 // Filter objectives near any player within _maxDist

@@ -28,8 +28,13 @@ if ((_vehicleClass == "rhsusf_stryker_m1126_m2_d") or (_vehicleClass == "rhsusf_
     [_vehicle, ["Tan", 1]] call BIS_fnc_initVehicle;
 };
 
-// Apply woodland MRZR texture for woodland US factions.
-if (((markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ CUP + RHS") or (markerText "Friendly_Handle" == "United States Armed Forces _ Woodland _ RHS")) and (_vehicleClass == "rhsusf_mrzr4_d")) then {
+// Apply woodland MRZR texture for the configured human-side woodland US faction.
+private _playerFactionHandle = [FLO_OpforHandle, FLO_BluforHandle] select (FLO_ActivePlayerSide isEqualTo west);
+private _playerFactionName = _playerFactionHandle get "name";
+if ((_playerFactionName in [
+    "United States Armed Forces _ Woodland _ CUP + RHS",
+    "United States Armed Forces _ Woodland _ RHS"
+]) && {_vehicleClass isEqualTo "rhsusf_mrzr4_d"}) then {
     [_vehicle, ["mud_olive", 1]] call BIS_fnc_initVehicle;
 };
 
@@ -39,7 +44,8 @@ if (_fromStore) then {
 
 if !(_vehicle getVariable ["FLO_StoreVehicle", false]) exitWith {};
 
-private _constructionVehicleTypes = F_Truck_Construction_List apply { _x # 0 };
+private _playerCatalog = FLO_FactionCatalog get ([FLO_ActivePlayerSide] call FLO_fnc_sideKey);
+private _constructionVehicleTypes = _playerCatalog get "logisticsConstruction";
 if ((_vehicleClass in _constructionVehicleTypes) and !(_vehicle getVariable ["FLO_BuildActionAdded", false])) then {
     private _supportRoles = _vehicle getVariable ["FLO_SupportVehicleRoles", []];
     _supportRoles pushBackUnique "build";
@@ -62,7 +68,7 @@ if ((_vehicleClass in _constructionVehicleTypes) and !(_vehicle getVariable ["FL
     ];
 };
 
-private _medicalVehicleTypes = (F_Truck_Respawn_List + F_Heli_Respawn_List) apply { _x # 0 };
+private _medicalVehicleTypes = _playerCatalog get "logisticsRespawn";
 if ((_vehicleClass in _medicalVehicleTypes) and !(_vehicle getVariable ["FLO_MedicalSupportConfigured", false])) then {
     private _supportRoles = _vehicle getVariable ["FLO_SupportVehicleRoles", []];
     _supportRoles pushBackUnique "respawn";

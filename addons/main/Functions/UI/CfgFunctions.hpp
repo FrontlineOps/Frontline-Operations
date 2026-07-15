@@ -1,13 +1,24 @@
 class UI {
     file = "\z\flo\addons\main\Functions\UI";
 
+    class initClientUI { postInit = 1; };
+    class initClientUIPreInit { preInit = 1; };
     class safeConfirm {};
 };
 
 class UICapture {
     file = "\z\flo\addons\main\Functions\UI\CaptureUI";
 
-    class captureUI {};
+    class captureUIHandleUiEvent {};
+    class captureUIOnLoad {};
+    class captureUIOnUnload {};
+    class captureUIOpen {};
+    class captureUIPreInit { preInit = 1; };
+    class captureUIPublishPlayerState {};
+    class captureUIRender {};
+    class captureUIRequestState {};
+    class captureUIRequestStateServer {};
+    class captureUIResolvePlayerObjective {};
     class initCaptureUIEvents {};
 };
 
@@ -48,7 +59,7 @@ class OperationsUI {
     class operationsFocusMap {};
     class operationsHandleMapClick {};
     class operationsHandleUiEvent {};
-    class operationsInitClient { postInit = 1; };
+    class operationsInitClient {};
     class operationsOpenDialog {};
     class operationsPreInit { preInit = 1; };
     class operationsReceiveSnapshot {};
@@ -65,7 +76,7 @@ class DevelopmentUI {
 
     class developmentAddWebEventHandler {};
     class developmentHandleUiEvent {};
-    class developmentInitClient { postInit = 1; };
+    class developmentInitClient {};
     class developmentOpenDialog {};
     class developmentPreInit { preInit = 1; };
     class developmentReceiveSnapshot {};
@@ -83,7 +94,7 @@ class SupportUI {
     class supportFocusMap {};
     class supportHandleMapClick {};
     class supportHandleUiEvent {};
-    class supportInitClient { postInit = 1; };
+    class supportInitClient {};
     class supportOpenDialog {};
     class supportPreInit { preInit = 1; };
     class supportReceiveSnapshot {};

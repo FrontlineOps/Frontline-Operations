@@ -33,7 +33,7 @@ F_Diver_Eod = "B_diver_exp_F";    // Diver Explosive specialist
 
 // Default base objects and vehicles
 // FLO_FactionRadar feeds the commander radar pool.
-FLO_FactionRadar = "B_Radar_System_01_F";      // Use "I_E_Radar_System_01_F" for Woodland Camo   // "B_Radar_System_01_F" for Desert Camo
+FLO_FactionRadar = "B_Radar_System_01_F";
 
 FLO_FactionFobType = "Land_Cargo_HQ_V3_F";      // Use "Land_Cargo_HQ_V1_F" for Woodland Camo   // "Land_Cargo_HQ_V3_F" for Desert Camo
 FLO_FactionFobTerminalType = "Land_TripodScreen_01_large_sand_F";      // Use "Land_TripodScreen_01_large_F" for Woodland Camo   // "Land_TripodScreen_01_large_sand_F" for Desert Camo

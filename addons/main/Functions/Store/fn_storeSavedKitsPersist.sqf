@@ -7,7 +7,6 @@ if !(_kits isEqualType []) then {
     throw "Store saved-kit persistence requires an array";
 };
 
-profileNamespace setVariable ["FLO_StoreSavedKitsSchemaVersion", FLO_StoreSavedKitsCurrentSchemaVersion];
 profileNamespace setVariable ["FLO_StoreSavedKits", _kits];
 saveProfileNamespace;
 true

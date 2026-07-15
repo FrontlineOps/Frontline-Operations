@@ -32,7 +32,7 @@ private _throughput = if (_initialThroughput < 0) then { _throughputMax } else {
 private _establishAtDateNum = -1;
 if (_establishing) then {
     _establishAtDateNum = [
-        dateToNumber date,
+        call FLO_fnc_operationalDateNumber,
         _network get "DEPOT_AUTO_ESTABLISH_SECONDS"
     ] call FLO_fnc_dateNumberAddSeconds;
 };

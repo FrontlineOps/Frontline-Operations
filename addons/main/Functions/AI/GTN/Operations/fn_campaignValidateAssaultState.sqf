@@ -1,4 +1,4 @@
-/* Validates one operation's persisted ASSAULT wave ledger. */
+/* Validates one operation's persisted offensive wave ledger. */
 params ["_operation"];
 
 private _operationId = _operation get "operationId";
@@ -27,6 +27,17 @@ if (_committed > _packageTarget) then {
 if (_losses > _committed) then {
     throw format ["Operation %1 reports %2 losses from %3 commitments", _operationId, _losses, _committed];
 };
+if (
+    (_committed == 0 && {_waveSequence != 0})
+    || {_committed > 0 && {_waveSequence == 0}}
+) then {
+    throw format [
+        "Operation %1 has inconsistent committed mass %2 and wave sequence %3",
+        _operationId,
+        _committed,
+        _waveSequence
+    ];
+};
 if (_activeTarget > _packageTarget || {_waveSize > _activeTarget}) then {
     throw format [
         "Operation %1 has invalid package/active/wave policy %2/%3/%4",
@@ -37,7 +48,7 @@ if (_activeTarget > _packageTarget || {_waveSize > _activeTarget}) then {
     ];
 };
 if ((_operation get "phase") == "ASSAULT" && {_packageTarget <= 0}) then {
-    throw format ["Operation %1 is in ASSAULT without initialized wave state", _operationId];
+    throw format ["Operation %1 is in %2 without initialized wave state", _operationId, _operation get "phase"];
 };
 
 true

@@ -1,13 +1,18 @@
-params ["_entry", "_kitId", "_lineIndex", ["_legacy", false, [false]]];
+params ["_entry", "_kitId", "_lineIndex"];
 
 if !(_entry isEqualType createHashMap) then {
     throw format ["Store saved kit %1 line %2 is not a HashMap", _kitId, _lineIndex];
 };
+private _requiredKeys = ["className", "entryKind", "category", "name", "priceValue", "quantity", "container", "slot"];
 {
     if !(_x in _entry) then {
         throw format ["Store saved kit %1 line %2 is missing %3", _kitId, _lineIndex, _x];
     };
-} forEach ["className", "entryKind", "category", "name", "priceValue", "quantity", "container", "slot"];
+} forEach _requiredKeys;
+private _unexpectedKeys = (keys _entry) select {!(_x in _requiredKeys)};
+if (_unexpectedKeys isNotEqualTo []) then {
+    throw format ["Store saved kit %1 line %2 has unexpected fields %3", _kitId, _lineIndex, _unexpectedKeys];
+};
 
 private _className = _entry get "className";
 private _entryKind = _entry get "entryKind";
@@ -42,7 +47,7 @@ if !(_container in FLO_StoreGearContainers) then {
 if !(_slot in ["", "primary", "handgun", "secondary", "assigned", "uniform", "vest", "backpack", "headgear", "facewear", "binocular"]) then {
     throw format ["Store saved kit %1 line %2 has invalid slot %3", _kitId, _lineIndex, _slot];
 };
-if (_quantity != floor _quantity || {_quantity < 1} || {_quantity > ([20, 50] select _legacy)}) then {
+if (_quantity != floor _quantity || {_quantity < 1} || {_quantity > 20}) then {
     throw format ["Store saved kit %1 line %2 has invalid quantity %3", _kitId, _lineIndex, _quantity];
 };
 

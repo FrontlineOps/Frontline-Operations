@@ -16,8 +16,8 @@ class FLO_CaptureUI {
     duration = 1e11;
     fadein = 0;
     fadeout = 0;
-    onLoad = "uiNamespace setVariable ['FLO_CaptureUI_Display', _this select 0]";
-    onUnLoad = "uiNamespace setVariable ['FLO_CaptureUI_Display', displayNull]";
+    onLoad = "[_this select 0] call FLO_fnc_captureUIOnLoad";
+    onUnload = "[] call FLO_fnc_captureUIOnUnload";
 
     class ControlsBackground {};
 

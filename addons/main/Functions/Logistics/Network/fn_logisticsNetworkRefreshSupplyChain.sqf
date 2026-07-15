@@ -76,7 +76,7 @@ if (_topologyDirty) then {
 [_network] call FLO_fnc_logisticsNetworkSeedInitialDepot;
 
 private _activeSources = createHashMap;
-private _now = dateToNumber date;
+private _now = call FLO_fnc_operationalDateNumber;
 {
     private _node = _y;
     private _nodeType = _node get "type";

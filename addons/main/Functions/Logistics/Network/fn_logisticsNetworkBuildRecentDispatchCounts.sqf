@@ -15,7 +15,7 @@
 params ["_net"];
 
 private _history = _net get "_recentReinforcementDispatches";
-private _now = time;
+private _now = diag_tickTime;
 private _pruned = [];
 private _counts = createHashMap;
 

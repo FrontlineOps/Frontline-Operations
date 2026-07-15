@@ -13,12 +13,13 @@ if (_managedObjectiveIds isEqualTo []) exitWith { "" };
 
 private _startPosition = FLO_MissionConfig get "startPosition";
 private _managedSide = _network get "_managedSide";
+private _preferFarFromStart = _managedSide isNotEqualTo FLO_ActivePlayerSide;
 private _bestObjectiveId = "";
-private _bestDistance = [1e12, -1] select (_managedSide isEqualTo east);
+private _bestDistance = [1e12, -1] select _preferFarFromStart;
 
 {
     private _distance = _startPosition distance2D ((FLO_Objectives get _x) get "position");
-    private _isBetter = [_distance < _bestDistance, _distance > _bestDistance] select (_managedSide isEqualTo east);
+    private _isBetter = [_distance < _bestDistance, _distance > _bestDistance] select _preferFarFromStart;
     if (_isBetter) then {
         _bestDistance = _distance;
         _bestObjectiveId = _x;

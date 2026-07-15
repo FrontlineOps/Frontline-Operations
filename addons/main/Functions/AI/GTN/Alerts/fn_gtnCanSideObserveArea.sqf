@@ -31,7 +31,7 @@ private _playersNear = {
     alive _x &&
     {side group _x == _observingSide} &&
     {(getPosATL _x) distance2D _position <= _radius}
-} count allPlayers;
+} count ([] call FLO_fnc_getConnectedHumanPlayers);
 if (_playersNear > 0) exitWith { true };
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;

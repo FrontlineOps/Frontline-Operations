@@ -8,7 +8,7 @@
  *   0: Force rebuild <BOOL> (optional)
  *
  * Return Value:
- *   HASHMAP with keys military, civilian, byClass
+ *   HASHMAP with keys blufor, opfor, civilian, byClass
  */
 
 params [["_force", false, [false]]];
@@ -33,45 +33,40 @@ private _blacklist = createHashMapFromArray [
     ["interactive_f", true]
 ];
 
-private _registerFaction = {
-    params ["_facCfg"];
-
-    private _className = configName _facCfg;
-    private _classLower = toLower _className;
-    if (_classLower in _factionsByLower) exitWith {};
-
-    _totalScanned = _totalScanned + 1;
-
-    private _side = getNumber (_facCfg >> "side");
-    if !(isNumber (_facCfg >> "side")) then {
-        _side = -1;
-    };
-
-    if !(_side in [0, 1, 2, 3]) exitWith {
-        _droppedBadSide = _droppedBadSide + 1;
-        ["FACTIONS", 4, format ["DETAIL drop=%1 reason=badSide side=%2", _className, _side]] call FLO_fnc_log;
-    };
-
-    private _displayName = getText (_facCfg >> "displayName");
-    if (_displayName == "") then {
-        _displayName = _className;
-    };
-
-    _factionsByLower set [_classLower, createHashMapFromArray [
-        ["class", _className],
-        ["displayName", _displayName],
-        ["side", _side]
-    ]];
-};
-
 {
     private _root = _x;
     if (isClass _root) then {
         for "_i" from 0 to (count _root - 1) do {
             private _facCfg = _root select _i;
-            if (isClass _facCfg) then {
-                [_facCfg] call _registerFaction;
+            if !(isClass _facCfg) then { continue };
+
+            private _className = configName _facCfg;
+            private _classLower = toLower _className;
+            if (_classLower in _factionsByLower) then { continue };
+
+            _totalScanned = _totalScanned + 1;
+
+            private _side = if (isNumber (_facCfg >> "side")) then {
+                getNumber (_facCfg >> "side")
+            } else {
+                -1
             };
+            if !(_side in [0, 1, 3]) then {
+                _droppedBadSide = _droppedBadSide + 1;
+                ["FACTIONS", 4, format ["DETAIL drop=%1 reason=badSide side=%2", _className, _side]] call FLO_fnc_log;
+                continue;
+            };
+
+            private _displayName = getText (_facCfg >> "displayName");
+            if (_displayName == "") then {
+                _displayName = _className;
+            };
+
+            _factionsByLower set [_classLower, createHashMapFromArray [
+                ["class", _className],
+                ["displayName", _displayName],
+                ["side", _side]
+            ]];
         };
     };
 } forEach [
@@ -107,8 +102,9 @@ private _registerFaction = {
     if (getNumber (_vehCfg >> "scope") < 2) then { continue };
 
     private _isMan = (configName _vehCfg) isKindOf "Man";
+    private _factionMeta = _factionsByLower get _factionLower;
+    if (getNumber (_vehCfg >> "side") != (_factionMeta get "side")) then { continue };
     if (_isMan) then {
-        private _factionMeta = _factionsByLower get _factionLower;
         if ((_factionMeta get "side") != 3 && {!([configName _vehCfg, _faction] call FLO_fnc_factionClassIsCombatInfantry)}) then { continue };
     };
     private _map = [_vehicleCounts, _unitCounts] select _isMan;
@@ -120,7 +116,8 @@ private _registerFaction = {
     _map set [_factionLower, _count + 1];
 } forEach ("true" configClasses (configFile >> "CfgVehicles"));
 
-private _military = [];
+private _blufor = [];
+private _opfor = [];
 private _civilian = [];
 private _byClass = createHashMap;
 
@@ -183,26 +180,29 @@ private _byClass = createHashMap;
     ];
 
     _byClass set [_className, _entry];
-    if (_side == 3) then {
-        _civilian pushBack _entry;
-    } else {
-        _military pushBack _entry;
+    switch (_side) do {
+        case 0: { _opfor pushBack _entry };
+        case 1: { _blufor pushBack _entry };
+        case 3: { _civilian pushBack _entry };
     };
 } forEach _factionsByLower;
 
-_military = [_military, [], { _x get "label" }, "ASCEND"] call BIS_fnc_sortBy;
+_blufor = [_blufor, [], { _x get "label" }, "ASCEND"] call BIS_fnc_sortBy;
+_opfor = [_opfor, [], { _x get "label" }, "ASCEND"] call BIS_fnc_sortBy;
 _civilian = [_civilian, [], { _x get "label" }, "ASCEND"] call BIS_fnc_sortBy;
 
 FLO_AutoFactionIndex = createHashMapFromArray [
-    ["military", _military],
+    ["blufor", _blufor],
+    ["opfor", _opfor],
     ["civilian", _civilian],
     ["byClass", _byClass]
 ];
 
 ["FACTIONS", 3, format [
-    "Auto faction index: scanned=%1 military=%2 civilian=%3 dropped(badSide)=%4 dropped(noUnits)=%5 dropped(blacklist)=%6 timeMs=%7",
+    "Auto faction index: scanned=%1 blufor=%2 opfor=%3 civilian=%4 dropped(badSide)=%5 dropped(noUnits)=%6 dropped(blacklist)=%7 timeMs=%8",
     _totalScanned,
-    count _military,
+    count _blufor,
+    count _opfor,
     count _civilian,
     _droppedBadSide,
     _droppedNoUnits,

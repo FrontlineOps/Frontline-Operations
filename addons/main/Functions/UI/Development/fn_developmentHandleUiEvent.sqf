@@ -8,6 +8,9 @@ switch (_event) do {
     case "development::ready": {
         uiNamespace setVariable ["FLO_DevelopmentControl", _control];
         FLO_DevelopmentBrowserReady = true;
+        if ((keys FLO_DevelopmentLastSnapshot) isNotEqualTo []) then {
+            [FLO_DevelopmentLastSnapshot] call FLO_fnc_developmentUpdateDialog;
+        };
         [] call FLO_fnc_developmentRequestSnapshot;
     };
     case "development::refresh": {
@@ -24,7 +27,7 @@ switch (_event) do {
         closeDialog 0;
     };
     default {
-        diag_log format ["[FLO][Development] Unhandled browser event: %1", _event];
+        ["UI", 4, format ["Unhandled Development browser event: %1", _event]] call FLO_fnc_log;
     };
 };
 

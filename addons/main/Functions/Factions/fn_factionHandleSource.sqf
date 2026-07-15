@@ -2,8 +2,7 @@
  * Function: FLO_fnc_factionHandleSource
  * Author: Frontline Operations Development Group
  * Description:
- *   Returns a faction handle source, preserving "preset" as the legacy
- *   default for handles without a source key.
+ *   Returns the required source from a current faction handle.
  *
  * Arguments:
  * 0: Faction handle <HASHMAP>
@@ -11,7 +10,11 @@
  * Returns:
  * Source <STRING>
  */
-params ["_handle"];
+params [["_handle", createHashMap, [createHashMap]]];
 
-if ("source" in _handle) exitWith { _handle get "source" };
-"preset"
+private _source = _handle get "source";
+if !(_source isEqualType "" && {_source in ["custom", "auto", "auto_multi"]}) then {
+    throw format ["Faction handle has invalid source %1", _source];
+};
+
+_source

@@ -224,56 +224,75 @@ class FLO_FactionSelectDialog
 			text = "FACTIONS";
 			x = FLO_Q(FACTION_FULL_X + (0.8 * GUI_GRID_W));
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (0.35 * GUI_GRID_H));
-			w = FLO_Q(FACTION_FULL_W - (1.6 * GUI_GRID_W));
+			w = FLO_Q(22 * GUI_GRID_W);
 			h = FLO_Q(FACTION_LABEL_H);
+		};
+
+		class LabelPlayerSide: FLO_RscText_Label
+		{
+			idc = FLO_IDC_NONE;
+			text = "PLAYER SIDE";
+			x = FLO_Q(FACTION_FULL_X + FACTION_FULL_W - (15.2 * GUI_GRID_W));
+			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (0.35 * GUI_GRID_H));
+			w = FLO_Q(5.2 * GUI_GRID_W);
+			h = FLO_Q(FACTION_LABEL_H);
+		};
+
+		class ComboPlayerSide: FLO_FactionCombo
+		{
+			idc = FLO_IDC_FACTION_COMBO_PLAYER_SIDE;
+			x = FLO_Q(FACTION_FULL_X + FACTION_FULL_W - (9.2 * GUI_GRID_W));
+			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (0.16 * GUI_GRID_H));
+			w = FLO_Q(8.4 * GUI_GRID_W);
+			tooltip = "Choose the human campaign side. Players must use matching BLUFOR or OPFOR lobby slots.";
 		};
 
 		class CardFactionsHint: FLO_RscText_Muted
 		{
 			idc = FLO_IDC_NONE;
-			text = "These define the three sides present in the campaign. Select multiple compatible auto factions to merge their pools.";
+			text = "Each catalog is locked to its native Arma side. Select multiple factions to merge pools for that side.";
 			x = FLO_Q(FACTION_FULL_X + (0.8 * GUI_GRID_W));
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.0 * GUI_GRID_H));
 			w = FLO_Q(FACTION_FULL_W - (1.6 * GUI_GRID_W));
 			h = FLO_Q(FACTION_LABEL_H);
 		};
 
-		class LabelPlayerFaction: FLO_RscText_Label
+		class LabelBluforFaction: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Player Faction(s)";
+			text = "BLUFOR Faction(s)";
 			x = FLO_Q(FACTION_THIRD_X1);
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H));
 			w = FLO_Q(FACTION_THIRD_W);
 			h = FLO_Q(FACTION_LABEL_H);
 		};
 
-		class ComboPlayerFaction: FLO_FactionMultiList
+		class ComboBluforFaction: FLO_FactionMultiList
 		{
-			idc = FLO_IDC_FACTION_COMBO_PLAYER;
+			idc = FLO_IDC_FACTION_COMBO_BLUFOR;
 			x = FLO_Q(FACTION_THIRD_X1);
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H));
 			w = FLO_Q(FACTION_THIRD_W);
-			tooltip = "Select one player faction, or multiple compatible auto factions to merge BLUFOR pools.";
+			tooltip = "Select one or more native BLUFOR factions (config side 1).";
 		};
 
-		class LabelEnemyFaction: FLO_RscText_Label
+		class LabelOpforFaction: FLO_RscText_Label
 		{
 			idc = FLO_IDC_NONE;
-			text = "Enemy Faction(s)";
+			text = "OPFOR Faction(s)";
 			x = FLO_Q(FACTION_THIRD_X2);
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H));
 			w = FLO_Q(FACTION_THIRD_W);
 			h = FLO_Q(FACTION_LABEL_H);
 		};
 
-		class ComboEnemyFaction: FLO_FactionMultiList
+		class ComboOpforFaction: FLO_FactionMultiList
 		{
-			idc = FLO_IDC_FACTION_COMBO_ENEMY;
+			idc = FLO_IDC_FACTION_COMBO_OPFOR;
 			x = FLO_Q(FACTION_THIRD_X2);
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H));
 			w = FLO_Q(FACTION_THIRD_W);
-			tooltip = "Select one enemy faction, or multiple compatible auto factions to merge OPFOR pools.";
+			tooltip = "Select one or more native OPFOR factions (config side 0).";
 		};
 
 		class LabelCivilianFaction: FLO_RscText_Label
@@ -292,7 +311,7 @@ class FLO_FactionSelectDialog
 			x = FLO_Q(FACTION_THIRD_X3);
 			y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H));
 			w = FLO_Q(FACTION_THIRD_W);
-			tooltip = "Select one civilian faction, or multiple compatible auto factions to merge civilian pools.";
+			tooltip = "Select one or more native civilian factions (config side 3).";
 		};
 
 		// ====================================================================
@@ -1310,9 +1329,3 @@ class FLO_FactionSelectDialog
 		};
 	};
 };
-
-// ============================================================================
-// LEGACY ALIAS (for backward compatibility)
-// ============================================================================
-
-class factionselect_dialog2: FLO_FactionSelectDialog {};

@@ -1,5 +1,5 @@
 if (!hasInterface) exitWith { false };
-if (!FLO_MissionReady) exitWith {
+if (!FLO_ClientUiReady) exitWith {
     ["Tactical support is unavailable while FLO initializes.", "warning"] call FLO_fnc_displayNotification;
     false
 };
@@ -53,7 +53,7 @@ _map ctrlAddEventHandler ["MouseButtonClick", {
     [] call FLO_fnc_supportUpdateDialog;
 }, [], 1] call CBA_fnc_waitAndExecute;
 
-diag_log "[FLO][Support] Dialog opened and snapshot requested";
+["UI", 4, "Tactical Support dialog opened and snapshot requested"] call FLO_fnc_log;
 ["PLAYER"] call FLO_fnc_supportFocusMap;
 
 true

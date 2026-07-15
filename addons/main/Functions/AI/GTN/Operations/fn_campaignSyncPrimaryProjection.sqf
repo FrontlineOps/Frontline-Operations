@@ -1,13 +1,10 @@
-/* Validates the registry and projects its primary operation onto legacy fields. */
+/* Validates the registry and projects its primary operation onto the campaign read model. */
 params ["_state"];
 
 private _operations = _state get "operations";
 private _order = _state get "operationOrder";
 private _operationIds = keys _operations;
 
-if ((count _order) > 3) then {
-    throw format ["Campaign registry exceeds three operations: %1", _order];
-};
 if ((count (_order arrayIntersect _order)) != (count _order)) then {
     throw format ["Campaign operation order contains duplicate IDs: %1", _order];
 };
@@ -24,6 +21,13 @@ if ((count _operationIds) != (count _order)) then {
         throw format ["Campaign operation registry contains unordered operation %1", _x];
     };
 } forEach _operationIds;
+
+private _activeOrder = _order select { ((_operations get _x) get "phase") != "RECOVERY" };
+if (_activeOrder isNotEqualTo []) then {
+    private _recoveryOrder = _order select { ((_operations get _x) get "phase") == "RECOVERY" };
+    _order = _activeOrder + _recoveryOrder;
+    _state set ["operationOrder", _order];
+};
 
 if (_order isEqualTo []) exitWith {
     _state set ["primaryOperationId", ""];

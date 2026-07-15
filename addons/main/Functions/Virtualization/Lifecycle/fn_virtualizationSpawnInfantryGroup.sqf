@@ -26,15 +26,7 @@ if (isNull _realGroup || {(units _realGroup) isEqualTo []}) then {
     for "_i" from 1 to _spawnCount do {
         private _unitType = selectRandom _unitPool;
         private _spawnPos = [_position, 5, 20, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-        private _unit = [
-            _realGroup,
-            _unitType,
-            _spawnPos,
-            [],
-            0,
-            "NONE",
-            format ["virtual group=%1 type=infantry", _groupId]
-        ] call FLO_fnc_createGroupUnit;
+        private _unit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
         if (isNull _unit) exitWith {
             _spawnFailed = true;
         };

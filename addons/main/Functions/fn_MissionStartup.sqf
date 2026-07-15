@@ -16,21 +16,22 @@ if (!isServer) exitWith {};
 
 ["STARTUP", 3, "MissionStartup beginning..."] call FLO_fnc_log;
 
-// ============================================================================
-// DEFAULTS AND VALIDATION
-// ============================================================================
-
-// Set defaults for missing faction variables
-if (isNil "FLO_FactionFobType") then { FLO_FactionFobType = "Land_Cargo_HQ_V3_F"; ["STARTUP", 2, "FLO_FactionFobType not set, using default"] call FLO_fnc_log; };
-if (isNil "FLO_FactionFobTerminalType") then { FLO_FactionFobTerminalType = "Land_Cargo20_military_green_F"; };
-if (isNil "FLO_FactionCopType") then { FLO_FactionCopType = "Land_Cargo_Patrol_V3_F"; ["STARTUP", 2, "FLO_FactionCopType not set, using default"] call FLO_fnc_log; };
-if (isNil "FLO_FactionCopTerminalType") then { FLO_FactionCopTerminalType = "Land_Cargo10_military_green_F"; };
-
-// Ensure vehicle lists exist
-if (isNil "F_Truck_Respawn_List") then { F_Truck_Respawn_List = []; };
-if (isNil "F_Heli_Respawn_List") then { F_Heli_Respawn_List = []; };
-if (isNil "F_Truck_Construction_List") then { F_Truck_Construction_List = []; };
-if (isNil "F_Truck_Ammo_List") then { F_Truck_Ammo_List = []; };
+{
+    if (isNil _x) then {
+        ["STARTUP", 1, format ["Missing required faction base asset %1", _x]] call FLO_fnc_log;
+        throw format ["Mission startup requires faction base asset %1", _x];
+    };
+    private _className = missionNamespace getVariable _x;
+    if !(_className isEqualType "" && {_className != ""}) then {
+        ["STARTUP", 1, format ["Invalid faction base asset %1=%2", _x, _className]] call FLO_fnc_log;
+        throw format ["Mission startup requires non-empty faction base asset %1", _x];
+    };
+} forEach [
+    "FLO_FactionFobType",
+    "FLO_FactionFobTerminalType",
+    "FLO_FactionCopType",
+    "FLO_FactionCopTerminalType"
+];
 
 // Unique ID counter for markers
 private _markerCounter = 0;

@@ -48,7 +48,7 @@ private _trackGoals = createHashMap;
     };
     private _decision = [_director, _cmdr, _operationId, _activeGroupIds] call FLO_fnc_campaignEvaluateAssaultWave;
     _track set ["groupPool", []];
-    _track set ["assaultWaveDecision", _decision];
+    _track set ["offensiveWaveDecision", _decision];
     private _existingCount = _decision get "activeCount";
     private _goal = _decision get "activeTarget";
     _trackExistingCounts set [_trackId, _existingCount];
@@ -64,7 +64,7 @@ private _trackGoals = createHashMap;
     private _targetPosition = (FLO_Objectives get _objectiveId) get "position";
     private _approachSourcePos = _track get "frontSectorAnchorPos";
     if (count _approachSourcePos < 2) then {
-        throw format ["Operation track %1 has no assault approach source anchor", _trackId];
+        throw format ["Operation track %1 has no offensive approach source anchor", _trackId];
     };
     private _formationIndex = FLO_FormationState get "groupToFormation";
     private _formations = FLO_FormationState get "formations";
@@ -116,12 +116,14 @@ private _trackGoals = createHashMap;
 } forEach _activeTracks;
 _metrics set ["remainingCount", count _remaining];
 
-["GTN", 3, format [
-    "Assault pool allocation: candidates=%1 tracks=%2 deficit=%3 pooled=%4 ready=%5",
-    _metrics get "candidateCount",
-    count _activeTracks,
-    _metrics get "deficitCount",
-    _metrics get "assignedCount",
-    _metrics get "readyTrackCount"
-]] call FLO_fnc_log;
+if (FLO_Debug_Level >= 4) then {
+    ["GTN", 4, format [
+        "Offensive pool allocation: candidates=%1 tracks=%2 deficit=%3 pooled=%4 ready=%5",
+        _metrics get "candidateCount",
+        count _activeTracks,
+        _metrics get "deficitCount",
+        _metrics get "assignedCount",
+        _metrics get "readyTrackCount"
+    ]] call FLO_fnc_log;
+};
 _metrics

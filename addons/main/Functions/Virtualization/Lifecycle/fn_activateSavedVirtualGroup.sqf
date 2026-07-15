@@ -79,15 +79,7 @@ switch (true) do {
 
     default {
         private _spawnPos = [_position, 2, 25, 1, 0, 0.5, 0] call BIS_fnc_findSafePos;
-        _createdUnit = [
-            _realGroup,
-            _unitType,
-            _spawnPos,
-            [],
-            0,
-            "NONE",
-            format ["saved virtual group type=%1", _groupType]
-        ] call FLO_fnc_createGroupUnit;
+        _createdUnit = _realGroup createUnit [_unitType, _spawnPos, [], 0, "NONE"];
     };
 };
 

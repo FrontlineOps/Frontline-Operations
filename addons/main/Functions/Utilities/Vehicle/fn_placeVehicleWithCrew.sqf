@@ -21,36 +21,10 @@ deleteVehicle _reference;
 _vehicle enableSimulation true;
 _vehicle allowDamage true;
 
-// Create crew
-private _vehicleConfig = (configOf _vehicle);
-private _crewType = [west, _vehicleConfig] call BIS_fnc_selectCrew;
-private _crewFull = createVehicleCrew _vehicle;
-private _crewSelCnt = count (units _crewFull) - 1;
-deleteVehicleCrew _vehicle;
-
-private _group = createGroup west;
-private _crewFailed = false;
-for "_x" from 0 to _crewSelCnt do {
-    private _unit = [
-        _group,
-        _crewType,
-        [0, 0, 0],
-        [],
-        0,
-        "CAN_COLLIDE",
-        format ["placed vehicle=%1 crewIndex=%2", typeOf _vehicle, _x]
-    ] call FLO_fnc_createGroupUnit;
-    if (isNull _unit) exitWith { _crewFailed = true; };
+private _group = createVehicleCrew _vehicle;
+if (isNull _group || {(units _group) isEqualTo []}) exitWith {
+    ["VEHICLE", 1, format ["Failed to create native crew for placed vehicle %1", typeOf _vehicle]] call FLO_fnc_log;
 };
-
-if (_crewFailed) exitWith {
-    { deleteVehicle _x; } forEach units _group;
-    deleteGroup _group;
-};
-
-{
-    _x moveInAny _vehicle;
-} forEach units _group;
 
 if (hasInterface && {!isNull player}) then {
     player hcSetGroup [_group];

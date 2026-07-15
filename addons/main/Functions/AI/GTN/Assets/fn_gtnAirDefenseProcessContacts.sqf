@@ -37,14 +37,11 @@ private _mapSize = getNumber (configFile >> "CfgWorlds" >> worldName >> "mapSize
 } forEach _groups;
 
 private _playerAircraft = [];
-private _headlessClients = entities "HeadlessClient_F";
 {
-    if (!alive _x) then { continue };
-    if (_x in _headlessClients) then { continue };
     private _vehicle = vehicle _x;
     if (_vehicle == _x || {!(_vehicle isKindOf "Air")}) then { continue };
     _playerAircraft pushBackUnique [_vehicle, side group _x];
-} forEach allPlayers;
+} forEach ([] call FLO_fnc_getConnectedHumanPlayers);
 {
     _x params ["_aircraft", "_side"];
     [_aircraft, _side] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
@@ -53,6 +50,12 @@ private _headlessClients = entities "HeadlessClient_F";
 } forEach _playerAircraft;
 
 private _lastContacts = _state get "lastLiveContactAt";
+private _virtualExposureByAircraft = _state get "virtualExposureByAircraft";
+{
+    if !(_x in _groups) then {
+        _virtualExposureByAircraft deleteAt _x;
+    };
+} forEach (keys _virtualExposureByAircraft);
 private _graceRows = count (keys _lastContacts);
 {
     private _aaId = _x;

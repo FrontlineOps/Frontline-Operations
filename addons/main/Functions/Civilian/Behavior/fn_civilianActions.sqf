@@ -42,7 +42,7 @@ params ["_civUnits"];
 
     if (!_isProtester && {!_isDetained} && {!isNil "FLO_CivilianManager"}) then {
         if (FLO_CivilianManager call ["shouldFlee", [getPosATL _unit]]) then {
-            private _players = allPlayers select { alive _x };
+            private _players = [] call FLO_fnc_getConnectedHumanPlayers;
             if (_players isNotEqualTo []) then {
                 private _nearestPlayer = _players param [0, objNull];
                 private _nearestDistance = 1e12;

@@ -49,15 +49,9 @@ if (_vehiclePlans isEqualTo []) exitWith {
 ["GTN Artillery", 3, format["Artillery %1 - found %2 valid guns", _gid, count _vehiclePlans]] call FLO_fnc_log;
 
 // === PHASE 2: Clear patrol and waypoints ===
-[
-    _gid,
-    createHashMapFromArray [
-        ["patrolConfig", []],
-        ["autoPatrol", false],
-        ["waypoints", []],
-        ["currentWaypointIndex", 0]
-    ]
-] call FLO_fnc_virtualizationPatchGroup;
+if !([_gid, [], true, "GTN_ARTILLERY_FIRE"] call FLO_fnc_updateVirtualGroupWaypoints) then {
+    throw format ["Artillery %1 route clear was rejected", _gid];
+};
 
 // Clear the FLO_patrolConfig variable from real group
 _realGroup setVariable ["FLO_patrolConfig", nil, true];

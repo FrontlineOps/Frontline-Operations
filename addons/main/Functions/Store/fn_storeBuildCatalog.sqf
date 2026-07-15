@@ -63,6 +63,7 @@ private _vehiclePoolKeys = [
 } forEach _vehiclePoolKeys;
 
 [_itemsByCategory, _seen, FLO_StoreSupplyShipmentClass, "supply", "logistics"] call FLO_fnc_storeAppendCatalogItem;
+private _optionalItemCounts = [_itemsByCategory, _seen] call FLO_fnc_storeAppendSupportItems;
 
 {
     private _category = _x select 0;
@@ -78,4 +79,12 @@ private _catalog = createHashMapFromArray [
 ];
 
 FLO_StoreCatalogCache set [_cacheKey, _catalog];
+
+["STORE", 3, format [
+    "Catalog built: side=%1 entries=%2 optionalMods=%3 optionalItems=%4",
+    _sideKey,
+    count _seen,
+    FLO_StoreOptionalModIndex get "activeMods",
+    _optionalItemCounts
+]] call FLO_fnc_log;
 _catalog

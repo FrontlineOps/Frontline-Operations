@@ -6,18 +6,20 @@
  *
  * Arguments:
  * 0: Selections <ARRAY>
+ * 1: Native config side <NUMBER>
  *
  * Returns:
  * Faction handle <HASHMAP>
  */
-params ["_selections"];
+params ["_selections", "_side"];
 
 private _selection = (_selections apply { _x select 0 }) joinString " + ";
 private _data = (_selections select 0) select 1;
 
 private _handle = createHashMapFromArray [
     ["name", _selection],
-    ["source", "custom"]
+    ["source", "custom"],
+    ["side", _side]
 ];
 
 if (count _selections > 1) then {

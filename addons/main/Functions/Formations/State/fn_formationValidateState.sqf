@@ -2,7 +2,6 @@
 params ["_state"];
 
 private _requiredStateFields = [
-    "schemaVersion",
     "revision",
     "formations",
     "sequenceByKey",
@@ -12,25 +11,40 @@ private _requiredStateFields = [
     "lastWithdrawalAtBySide",
     "groupToFormation"
 ];
+private _unexpectedStateFields = (keys _state) select {
+    !(_x in _requiredStateFields)
+};
+if (_unexpectedStateFields isNotEqualTo []) then {
+    throw format [
+        "Formation state has unexpected fields %1",
+        _unexpectedStateFields
+    ];
+};
 {
     if !(_x in _state) then {
         throw format ["Formation state is missing required field %1", _x];
     };
 } forEach _requiredStateFields;
-if ((_state get "schemaVersion") != 1) then {
-    throw format ["Invalid runtime formation schema %1", _state get "schemaVersion"];
-};
-
 private _validDoctrines = ["BREAKTHROUGH", "DECEPTION", "ELASTIC_DEFENSE", "COUNTERATTACK", "ECONOMY_OF_FORCE"];
 private _doctrines = _state get "doctrineBySide";
 private _withdrawals = _state get "lastWithdrawalAtBySide";
+private _sideKeys = ["WEST", "EAST"];
+private _unexpectedDoctrineKeys = (keys _doctrines) select { !(_x in _sideKeys) };
+private _unexpectedWithdrawalKeys = (keys _withdrawals) select { !(_x in _sideKeys) };
+if (_unexpectedDoctrineKeys isNotEqualTo [] || {_unexpectedWithdrawalKeys isNotEqualTo []}) then {
+    throw format [
+        "Formation side state has unexpected doctrine keys %1 or withdrawal keys %2",
+        _unexpectedDoctrineKeys,
+        _unexpectedWithdrawalKeys
+    ];
+};
 {
     if !(_x in _doctrines) then { throw format ["Formation state has no %1 doctrine", _x]; };
     if !((_doctrines get _x) in _validDoctrines) then {
         throw format ["Invalid %1 doctrine %2", _x, _doctrines get _x];
     };
     if !(_x in _withdrawals) then { throw format ["Formation state has no %1 withdrawal timestamp", _x]; };
-} forEach ["WEST", "EAST"];
+} forEach _sideKeys;
 
 private _validBranches = ["infantry", "motorized", "mechanized", "armor", "artillery", "air_defense", "helicopter", "fixed_wing"];
 private _validRoles = ["RESERVE", "MAIN", "FEINT", "FEINT_RETURN", "EXPLOIT", "WITHDRAW", "RECOVERY"];
@@ -45,6 +59,16 @@ private _seenMembers = createHashMap;
         "role", "roleMemberIds", "roleObjectiveId", "roleOperationId", "roleStartedAtDateNum",
         "roleEndsAtDateNum", "returnObjectiveId"
     ];
+    private _unexpectedFormationFields = (keys _formation) select {
+        !(_x in _requiredFormationFields)
+    };
+    if (_unexpectedFormationFields isNotEqualTo []) then {
+        throw format [
+            "Formation %1 has unexpected fields %2",
+            _formationId,
+            _unexpectedFormationFields
+        ];
+    };
     {
         if !(_x in _formation) then {
             throw format ["Formation %1 is missing required field %2", _formationId, _x];

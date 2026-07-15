@@ -25,7 +25,7 @@ _reservations set [_reservationId, createHashMapFromArray [
     ["reason", _reason],
     ["actor", _actor],
     ["referenceId", _referenceId],
-    ["createdAtDateNum", dateToNumber date]
+    ["createdAtDateNum", call FLO_fnc_operationalDateNumber]
 ]];
 _treasury set ["_lastUpdate", time];
 [_treasury, "RESERVE", _amount, _category, _reason, _actor, _referenceId] call FLO_fnc_sideResourcesRecordTransaction;
