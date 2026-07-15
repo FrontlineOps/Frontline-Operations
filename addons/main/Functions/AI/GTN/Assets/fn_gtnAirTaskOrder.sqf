@@ -179,11 +179,29 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                         private _maxTravelTime = 600;  // Max 10 min to reach target
                         private _travelStart = time;
                         private _alertSent = false;
+                        private _noPlayerSince = -1;
+                        private _revirtualized = false;
 
                         // Wait for aircraft to reach target area (or timeout/destroyed)
                         waitUntil {
                             sleep 5;
                             if (!alive _a) exitWith { true };
+
+                            private _remainingMissionSeconds = ((_maxTravelTime - (time - _travelStart)) max 0) + _duration;
+                            private _presenceResult = [
+                                _a,
+                                _gid,
+                                _missionType,
+                                _targetPos,
+                                _remainingMissionSeconds,
+                                _noPlayerSince
+                            ] call FLO_fnc_gtnAirTryRevirtualizeLiveMission;
+                            _presenceResult params ["_transitioned", "_nextNoPlayerSince"];
+                            _noPlayerSince = _nextNoPlayerSince;
+                            if (_transitioned) exitWith {
+                                _revirtualized = true;
+                                true
+                            };
 
                             if (
                                 !_alertSent &&
@@ -198,6 +216,7 @@ if (isNil "FLO_GTNAirTaskOrder") then {
                             (_dist < _arrivalRadius) || (time - _travelStart > _maxTravelTime)
                         };
 
+                        if (_revirtualized) exitWith {};
                         if (!alive _a) exitWith {
                             ["GTN ATO", 3, format["Aircraft %1 destroyed en route", _gid]] call FLO_fnc_log;
                             if (!isNil "_gid" && {_gid != ""}) then {
@@ -235,9 +254,28 @@ if (isNil "FLO_GTNAirTaskOrder") then {
 
                         waitUntil {
                             sleep 10;
-                            !alive _a || time >= _missionEnd
+                            if (!alive _a) exitWith { true };
+
+                            private _remainingMissionSeconds = (_missionEnd - time) max 0;
+                            private _presenceResult = [
+                                _a,
+                                _gid,
+                                _missionType,
+                                _targetPos,
+                                _remainingMissionSeconds,
+                                _noPlayerSince
+                            ] call FLO_fnc_gtnAirTryRevirtualizeLiveMission;
+                            _presenceResult params ["_transitioned", "_nextNoPlayerSince"];
+                            _noPlayerSince = _nextNoPlayerSince;
+                            if (_transitioned) exitWith {
+                                _revirtualized = true;
+                                true
+                            };
+
+                            time >= _missionEnd
                         };
 
+                        if (_revirtualized) exitWith {};
                         private _reason = if (!alive _a) then {
                             "aircraft destroyed"
                         } else {

@@ -52,6 +52,7 @@ private _cellKeyStride = (_cellKeyBase * 2) + 1;
     private _isCombatParticipant = _groupType in _directCombatTypes;
     if !(_side in [east, west]) then { continue };
     if (([_gData] call FLO_fnc_virtualizationGetTransportAttachment) != "") then { continue };
+    if (_groupType in ["air", "helicopter", "jet"] && {(_gData get "missionLock") == "AIR"}) then { continue };
 
     if (_isSupportProvider) then {
         if ([_gData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {

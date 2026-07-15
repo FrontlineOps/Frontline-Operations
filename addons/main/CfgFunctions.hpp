@@ -205,6 +205,7 @@ class FLO {
         class gtnAirInitializeOffMapReserves {};
         class gtnAirParkCombatGroupOffMap {};
         class gtnAirResolveReserveRoutePositions {};
+        class gtnAirTryRevirtualizeLiveMission {};
         class gtnBroadcastCommanderRadioMessage {};
         class gtnBroadcastArtilleryRadio {};
         class gtnBuildArtilleryMissionRecord {};

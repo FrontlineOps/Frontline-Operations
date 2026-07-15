@@ -66,6 +66,7 @@ private _campaignChanged = false;
             };
         };
     };
+    if (_role == "RESERVE") then { continue; };
 
     if (_role == "MAIN") then {
         private _assignmentId = _formation get "roleOperationId";
