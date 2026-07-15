@@ -23,7 +23,7 @@ private _spawnFailed = false;
 
 if (_radarPool isNotEqualTo []) then {
     private _radarType = selectRandom _radarPool;
-    private _radarPos = [_groupId, _position, 20, 140, 15, 0.1, 180, "Static AA radar", _radarType, false] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+    private _radarPos = [_groupId, _position, 20, 250, 8, 0.1, 300, "Static AA radar", _radarType, false] call FLO_fnc_virtualizationResolveGroundSpawnPos;
     if (_radarPos isEqualTo []) then {
         _spawnFailed = true;
     };
@@ -44,7 +44,7 @@ for "_i" from 1 to _unitCount do {
     private _samType = selectRandom _staticAAPool;
     private _offset = 25 + (15 * _i);
     private _angle = (360 / _unitCount) * _i;
-    private _spawnPos = [_groupId, _position, _offset, 180, 15, 0.1, 220, "Static AA launcher", _samType, false] call FLO_fnc_virtualizationResolveGroundSpawnPos;
+    private _spawnPos = [_groupId, _position, _offset, 300, 5, 0.1, 350, "Static AA launcher", _samType, false] call FLO_fnc_virtualizationResolveGroundSpawnPos;
     if (_spawnPos isEqualTo []) then {
         _spawnFailed = true;
         continue

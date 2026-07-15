@@ -6,7 +6,7 @@
  *   Checks that position is:
  *   - Not nil
  *   - An array with at least 2 elements
- *   - Not near the map origin (which indicates an error)
+ *   - Not the exact engine origin sentinel
  *
  * Arguments:
  * 0: Position <ARRAY> - Position to validate
@@ -51,14 +51,14 @@ if (count _position < 2) exitWith {
     false
 };
 
-// Check not near origin (indicates failed position lookup)
+// Reject only the engine failure sentinel. Low positive coordinates are valid
+// playable positions on terrains whose world bounds approach the map origin.
 private _x = _position select 0;
 private _y = _position select 1;
-private _originThreshold = 100;
 
-if ((_x * _x) + (_y * _y) < (_originThreshold * _originThreshold)) exitWith {
+if (abs _x < 0.001 && {abs _y < 0.001}) exitWith {
     if (_logErrors) then {
-        ["VIRTUALIZATION", 1, format["Invalid position (near origin) - %1: %2", _context, _position]] call FLO_fnc_log;
+        ["VIRTUALIZATION", 1, format["Invalid position (origin sentinel) - %1: %2", _context, _position]] call FLO_fnc_log;
     };
     false
 };
