@@ -2,8 +2,8 @@
  * Function: FLO_fnc_factionBuildVehiclePoolFromVariables
  * Author: Frontline Operations Development Group
  * Description:
- *   Builds a de-duplicated vehicle class pool from legacy faction variable
- *   names.
+ *   Builds a de-duplicated vehicle class pool from required custom faction
+ *   array inputs.
  *
  * Arguments:
  * 0: Variable names <ARRAY>

@@ -62,7 +62,6 @@ switch (toLower _mode) do {
         FLO_VirtUpdate set ["pfhId", _pfhId];
         FLO_VirtUpdate set ["disconnectEhId", _disconnectEhId];
         FLO_VirtUpdate set ["running", true];
-        FLO_VirtualGroupsUpdateLoopRunning = true;
 
         ["VIRTUALIZATION", 3, "Update PFH started (unscheduled)"] call FLO_fnc_log;
         true
@@ -82,7 +81,6 @@ switch (toLower _mode) do {
         };
 
         FLO_VirtUpdate set ["running", false];
-        FLO_VirtualGroupsUpdateLoopRunning = false;
 
         ["VIRTUALIZATION", 3, "Update PFH stopped"] call FLO_fnc_log;
         true

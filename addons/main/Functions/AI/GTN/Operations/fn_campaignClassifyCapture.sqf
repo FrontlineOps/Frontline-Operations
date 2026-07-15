@@ -34,7 +34,7 @@ if (_matchedOperationId != "") then {
     _defenderRecapture = (_operation get "defenderSideKey") == _sideKey
         && {(_operation get "phase") in ["SECURE", "CONSOLIDATE"]};
     _operationCapture = (_operation get "attackerSideKey") == _sideKey
-        && {(_operation get "phase") in ["PREPARE", "ASSAULT"]};
+        && {(_operation get "phase") == "ASSAULT"};
 };
 
 if (_defenderRecapture) exitWith {

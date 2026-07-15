@@ -27,7 +27,7 @@ if (!_loadedSave) then {
         _ready
     };
 } else {
-    ["INIT", 3, "Phase 1 using migrated saved mission configuration"] call FLO_fnc_log;
+    ["INIT", 3, "Phase 1 using validated current saved mission configuration"] call FLO_fnc_log;
 };
 
 if (
@@ -59,8 +59,9 @@ private _requiredFields = [
     "eastGTNForceGrowthHandle",
     "westGTNGarrisonHandle",
     "eastGTNGarrisonHandle",
+    "westFactionTuningHandle",
+    "eastFactionTuningHandle",
     "startingResources",
-    "enemyPresence",
     "objectiveSizeThreshold",
     "virtualizationDistance",
     "virtualizationUnitCap",
@@ -127,23 +128,9 @@ FLO_EastGTN_ForceGrowthHandle = FLO_MissionConfig get "eastGTNForceGrowthHandle"
 FLO_WestGTN_GarrisonHandle = FLO_MissionConfig get "westGTNGarrisonHandle";
 FLO_EastGTN_GarrisonHandle = FLO_MissionConfig get "eastGTNGarrisonHandle";
 
-FLO_WestFactionTuningHandle = createHashMap;
-if ("westFactionTuningHandle" in FLO_MissionConfig) then {
-    FLO_WestFactionTuningHandle = FLO_MissionConfig get "westFactionTuningHandle";
-};
-FLO_EastFactionTuningHandle = createHashMap;
-if ("eastFactionTuningHandle" in FLO_MissionConfig) then {
-    FLO_EastFactionTuningHandle = FLO_MissionConfig get "eastFactionTuningHandle";
-};
+FLO_WestFactionTuningHandle = FLO_MissionConfig get "westFactionTuningHandle";
+FLO_EastFactionTuningHandle = FLO_MissionConfig get "eastFactionTuningHandle";
 
-FLO_DifficultyHandle = FLO_EastDifficultyHandle;
-FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
-FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
-FLO_GTN_TempoHandle = FLO_EastGTN_TempoHandle;
-FLO_GTN_ForceGrowthHandle = FLO_EastGTN_ForceGrowthHandle;
-FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
-
-EnemyPrec = FLO_MissionConfig get "enemyPresence";
 FLO_ObjectiveSizeThreshold = FLO_MissionConfig get "objectiveSizeThreshold";
 FLO_VirtualizationDistance = FLO_MissionConfig get "virtualizationDistance";
 FLO_VirtualizationUnitCap = FLO_MissionConfig get "virtualizationUnitCap";

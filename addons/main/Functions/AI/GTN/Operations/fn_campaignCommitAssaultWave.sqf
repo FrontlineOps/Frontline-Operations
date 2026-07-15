@@ -8,8 +8,9 @@ params [
 
 if (_committedCount <= 0) exitWith { false };
 private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
-if ((_operation get "phase") != "ASSAULT") then {
-    throw format ["Cannot commit ASSAULT wave to %1 in phase %2", _operationId, _operation get "phase"];
+private _phase = _operation get "phase";
+if (_phase != "ASSAULT") then {
+    throw format ["Cannot commit assault wave to %1 in phase %2", _operationId, _phase];
 };
 
 private _nextCommitted = (_operation get "assaultCommittedTotal") + _committedCount;
@@ -38,5 +39,5 @@ if (_waveSequence == 0 && {!_openingComplete}) then {
 private _state = _director get "_state";
 _state set ["revision", (_state get "revision") + 1];
 [_state] call FLO_fnc_campaignSyncPrimaryProjection;
-["FLO_Campaign_OperationChanged", [_state get "revision", _operationId, "ASSAULT"]] call CBA_fnc_localEvent;
+["FLO_Campaign_OperationChanged", [_state get "revision", _operationId, _phase]] call CBA_fnc_localEvent;
 true

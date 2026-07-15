@@ -17,7 +17,7 @@ private _expectedReservations = createHashMap;
         throw format ["Operation %1 overspent its resource budget", _operationId];
     };
 
-    private _activePhase = (_operation get "phase") in ["PREPARE", "ASSAULT", "SECURE", "CONSOLIDATE"];
+    private _activePhase = (_operation get "phase") in ["ASSAULT", "SECURE", "CONSOLIDATE"];
     if (!_activePhase && {_reservationId != ""}) then {
         throw format ["Inactive operation %1 retained reservation %2", _operationId, _reservationId];
     };

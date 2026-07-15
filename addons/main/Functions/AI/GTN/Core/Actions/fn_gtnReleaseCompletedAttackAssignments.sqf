@@ -3,9 +3,8 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- *   Retains only ATTACK orders owned by a registered operation while that
- *   exact operation is in ASSAULT. Legacy, expired, and mismatched orders are
- *   returned to the commander's available pool.
+ *   Retains ATTACK orders owned by an active formal operation or canonical
+ *   persistent probe front. Expired and mismatched orders return to reserve.
  *
  * Arguments:
  * 0: GTN Commander <HASHMAP>
@@ -32,6 +31,7 @@ if (isNil "_director") then {
 
 private _state = _director call ["_getState", []];
 private _operations = _state get "operations";
+private _fronts = _state get "frontlineProbes";
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
@@ -54,6 +54,17 @@ private _releaseIds = [];
             && {(_operation get "objectiveId") == _objectiveId}
             && {_objectiveId in _objectives}
             && {((_objectives get _objectiveId) get "owner") == _enemySide};
+    } else {
+        if (_operationId in _fronts) then {
+            private _front = _fronts get _operationId;
+            _retain = (_front get "formalOperationId") == ""
+                && {(_front get "sideKey") == (_cmdr get "_sideKey")}
+                && {(_front get "objectiveId") == _objectiveId}
+                && {_groupId in (_front get "committedGroupIds")}
+                && {(_front get "stage") != "REGROUP"}
+                && {_objectiveId in _objectives}
+                && {((_objectives get _objectiveId) get "owner") == _enemySide};
+        };
     };
 
     if (!_retain) then {
@@ -63,7 +74,7 @@ private _releaseIds = [];
 
 {
     private _gData = _groups get _x;
-    [_x, [], false, true, "GTN_OPERATION_RELEASE"] call FLO_fnc_updateVirtualGroupWaypoints;
+    [_x, [], true, "GTN_OPERATION_RELEASE"] call FLO_fnc_updateVirtualGroupWaypoints;
     [_gData] call FLO_fnc_virtualizationClearMissionLock;
 } forEach _releaseIds;
 

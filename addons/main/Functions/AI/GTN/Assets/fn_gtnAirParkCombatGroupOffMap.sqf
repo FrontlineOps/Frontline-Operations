@@ -27,7 +27,7 @@ private _homePos = (FLO_Objectives get _homeObjective) get "position";
 private _routePositions = [_groupData get "side", _homePos] call FLO_fnc_gtnAirResolveReserveRoutePositions;
 private _reservePos = _routePositions select 0;
 
-[_groupId, [], false, false, "GTN_AIR_RESERVE"] call FLO_fnc_updateVirtualGroupWaypoints;
+[_groupId, [], false, "GTN_AIR_RESERVE"] call FLO_fnc_updateVirtualGroupWaypoints;
 private _changes = createHashMapFromArray [
     ["forceVirtual", true],
     ["noWaypoints", true],

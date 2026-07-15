@@ -5,7 +5,6 @@
  */
 
 [
-    "schemaVersion",
     "id",
     "position",
     "spawnPosition",

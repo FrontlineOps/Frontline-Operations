@@ -122,18 +122,16 @@ class VirtualizationLifecycle {
 class VirtualizationRouting {
     file = "\z\flo\addons\main\Functions\Virtualization\Routing";
 
-    class virtualizationApplyDirectWaypointUpdate {};
     class updateVirtualGroupWaypoints      {};
     class virtualizationApplyRealRoute     {};
-    class virtualizationRequestPathRouteUpdate {};
     class virtualizationRefreshCurrentWaypointSpeed {};
     class virtualizationResolveMovePlatformClass {};
     class virtualizationResolveMoveSpeedMps {};
     class virtualizationSanitizeWaypoints  {};
+    class virtualizationResolveLandWaypoints {};
+    class virtualizationResolveLandRouteContinuation {};
+    class virtualizationValidateLandRoute {};
     class virtualizationComputeVirtualSpeed {};
-    class virtualizationSetRouteState      {};
-    class virtualizationApplyBootstrapWaypoint {};
-    class virtualizationHandlePathResolved {};
 };
 
 class VirtualizationCore {
@@ -164,10 +162,11 @@ class VirtualizationState {
     file = "\z\flo\addons\main\Functions\Virtualization\State";
 
     class virtualizationGetPersistentFields {};
+    class virtualizationGetRouteOwnedFields {};
     class virtualizationValidateGroup {};
     class virtualizationValidateSavedGroup {};
+    class virtualizationValidateWaypointState {};
     class virtualizationValidateRegistry {};
-    class virtualizationMigrateSavedGroup {};
     class virtualizationSerializeRegistry {};
     class virtualizationRestoreRegistry {};
     class virtualizationRebuildDerivedState {};
@@ -196,7 +195,6 @@ class VirtualizationState {
     class virtualizationGetAADeployState {};
     class virtualizationGetAATargetPos {};
     class virtualizationGetAATargetObjective {};
-    class virtualizationSetPendingPathRequest {};
     class virtualizationClearPathRequest {};
     class virtualizationSetTransportAttachment {};
     class virtualizationClearTransportAttachment {};
@@ -224,6 +222,7 @@ class VirtualizationState {
     class virtualizationRestoreCommanderState {};
     class virtualizationRestoreMissionState {};
     class virtualizationRestorePathState {};
+    class virtualizationRestoreRouteState {};
     class virtualizationRestoreAAState {};
     class virtualizationRestoreTransportState {};
     class virtualizationRestoreReplacementState {};

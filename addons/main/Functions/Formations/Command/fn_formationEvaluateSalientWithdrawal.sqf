@@ -56,6 +56,7 @@ private _selected = [];
         private _formationId = _index get _groupId;
         private _formation = _formations get _formationId;
         if !((_formation get "role") in ["RESERVE", "RECOVERY"]) then { continue };
+        if ((_formation get "roleOperationId") != "") then { continue };
         private _members = [];
         if (_formationId in _membersByFormation) then { _members = _membersByFormation get _formationId; };
         _members pushBack _groupId;

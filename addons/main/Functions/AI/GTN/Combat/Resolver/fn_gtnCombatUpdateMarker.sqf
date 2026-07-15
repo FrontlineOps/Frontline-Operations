@@ -3,7 +3,7 @@
  * Author: Frontline Operations Development Group
  * Description:
  *   Creates or refreshes the debug marker for a recorded virtual combat event
- *   using a compact WEST-perspective combat status label.
+ *   using a compact active-player-side combat status label.
  *
  * Arguments:
  *   0: Combat event <HASHMAP>
@@ -19,6 +19,10 @@ if (!FLO_GTN_CombatDebugEnabled) exitWith {};
 
 private _winner = _event get "winner";
 if !(_winner in [east, west]) exitWith {};
+if !(FLO_ActivePlayerSide in [east, west]) then {
+    ["GTN_COMBAT", 1, format ["Cannot render combat marker for invalid player side %1", FLO_ActivePlayerSide]] call FLO_fnc_log;
+    throw "FLO_fnc_gtnCombatUpdateMarker requires a valid active player side";
+};
 
 private _zoneId = _event get "objectiveId";
 private _pos = _event get "position";
@@ -31,20 +35,18 @@ _id setMarkerTypeLocal "loc_Attack";
 _id setMarkerSizeLocal [0.4, 0.4];
 _id setMarkerAlphaLocal 0.85;
 
-private _winnerLabel = "EAST";
 private _color = "ColorEAST";
 if (_winner isEqualTo west) then {
-    _winnerLabel = "WEST";
     _color = "ColorWEST";
 };
 
-private _westStatus = ["Losing", "Winning"] select (_winner isEqualTo west);
+private _playerStatus = ["LOSING", "WINNING"] select (_winner isEqualTo FLO_ActivePlayerSide);
 if (_event get "decisive") then {
-    _westStatus = format ["%1 / Decisive", _westStatus];
+    _playerStatus = format ["%1 / DECISIVE", _playerStatus];
 };
 
 _id setMarkerColorLocal _color;
-_id setMarkerText format ["COMBAT %1", _westStatus];
+_id setMarkerText format ["COMBAT %1", _playerStatus];
 
 FLO_GTN_CombatDebugMarkers set [_id, diag_tickTime + _markerTTL];
 

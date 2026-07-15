@@ -26,6 +26,7 @@ class CivilianSpawning {
     file = "\z\flo\addons\main\Functions\Civilian\Spawning";
 
     class spawnCivilians {};
+    class civilianApplyInitialRoutine {};
     class activateCivilian {};
 };
 
@@ -34,7 +35,6 @@ class CivilianBehavior {
 
     class civilianActions {};
     class civilianConfigureActionsLocal {};
-    class civilianInvestigateAction {};
     class civilianRequestIntel {};
     class civilianRecordIntelInteraction {};
     class civilianSelectObjectiveProtesters {};

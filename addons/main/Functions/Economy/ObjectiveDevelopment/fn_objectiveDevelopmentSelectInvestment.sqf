@@ -14,8 +14,7 @@ private _routeInfo = _network get "_supplyRouteInfo";
 private _supplyPerTick = FLO_ObjectiveDevelopmentConfig get "commanderSupplyPerTick";
 private _enemyCountKey = ["opforCount", "bluforCount"] select (_side isEqualTo east);
 private _totalDevelopmentLevels = [_side] call FLO_fnc_objectiveDevelopmentGetTotalDevelopmentLevels;
-private _policy = _treasury get "COMMANDER_SPENDING_POLICY";
-private _incomeBasis = (_spendingState get "incomeCycle") max (_policy get "bootstrapWindowBudget");
+private _incomeBasis = _spendingState get "baseWindowBudget";
 private _capacityProgress = sqrt ((_totalDevelopmentLevels + 1) / (FLO_ObjectiveDevelopmentConfig get "projectSlotDivisor"))
     - sqrt (_totalDevelopmentLevels / (FLO_ObjectiveDevelopmentConfig get "projectSlotDivisor"));
 private _ranked = [];

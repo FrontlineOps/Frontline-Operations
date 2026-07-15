@@ -13,7 +13,6 @@ params [
 if ((keys _changes) isEqualTo []) exitWith { true };
 
 private _protectedFields = [
-    "schemaVersion",
     "id",
     "position",
     "spawnPosition",
@@ -30,6 +29,7 @@ private _protectedFields = [
     "attachedType",
     "mountedIn"
 ];
+_protectedFields append (call FLO_fnc_virtualizationGetRouteOwnedFields);
 private _defaults = call FLO_fnc_virtualizationCreateGroupRecordDefaults;
 private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 private _candidate = [_groupData] call FLO_fnc_virtualizationCloneValue;

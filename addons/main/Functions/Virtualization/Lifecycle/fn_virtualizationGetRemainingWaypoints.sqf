@@ -1,5 +1,8 @@
 /*
  * Function: FLO_fnc_virtualizationGetRemainingWaypoints
+ * Description:
+ *   Returns the remaining activation route and revalidates LAND geometry from
+ *   the actual activation position without skipping required detour pivots.
  */
 
 params [
@@ -10,33 +13,48 @@ params [
     ["_generatedPatrol", false, [false]]
 ];
 
-if (!_generatedPatrol && {_currentWpIdx == 0} && {count _allWaypoints > 1}) then {
-    private _nearestDist = 999999;
-    private _nearestIdx = -1;
+private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
+private _archetype = [_groupData get "groupType"] call FLO_fnc_virtualizationGetArchetype;
+private _movementDomain = _archetype get "movementDomain";
+if (_movementDomain != "LAND" || {_allWaypoints isEqualTo []}) exitWith {
+    private _remainingIndex = _currentWpIdx;
+    if (!_generatedPatrol && {_remainingIndex == 0} && {count _allWaypoints > 1}) then {
+        private _nearestDist = 999999;
+        private _nearestIdx = -1;
+        {
+            private _dist = ((_x select 0) distance2D _position);
+            if (_dist < _nearestDist) then {
+                _nearestDist = _dist;
+                _nearestIdx = _forEachIndex;
+            };
+        } forEach _allWaypoints;
 
-    {
-        private _wPos = _x select 0;
-        private _dist = _wPos distance2D _position;
-        if (_dist < _nearestDist) then {
-            _nearestDist = _dist;
-            _nearestIdx = _forEachIndex;
-        };
-    } forEach _allWaypoints;
-
-    if (_nearestIdx > 0) then {
-        private _distToFirst = (_allWaypoints select 0 select 0) distance2D _position;
-        if (_nearestDist < 500 && _distToFirst > (_nearestDist + 200)) then {
-            ["VIRTUALIZATION", 3, format [
-                "Rebased stale activation route for %1 from waypoint 0 to %2 (nearest=%3m first=%4m)",
-                _groupId, _nearestIdx, round _nearestDist, round _distToFirst
-            ]] call FLO_fnc_log;
-            _currentWpIdx = _nearestIdx;
+        if (_nearestIdx > 0) then {
+            private _distToFirst = ((_allWaypoints select 0) select 0) distance2D _position;
+            if (_nearestDist < 500 && {_distToFirst > (_nearestDist + 200)}) then {
+                _remainingIndex = _nearestIdx;
+            };
         };
     };
+
+    if (_remainingIndex > 0 && {_remainingIndex < count _allWaypoints}) then {
+        _allWaypoints select [_remainingIndex, count _allWaypoints - _remainingIndex]
+    } else {
+        +_allWaypoints
+    }
 };
 
-if (_currentWpIdx > 0 && {_currentWpIdx < count _allWaypoints}) then {
-    _allWaypoints select [_currentWpIdx, count _allWaypoints - _currentWpIdx]
-} else {
-    _allWaypoints
-}
+private _routeResult = [
+    _position,
+    _allWaypoints,
+    _currentWpIdx,
+    _generatedPatrol || {_groupData get "autoPatrol"},
+    "ACTIVATION_REBASE"
+] call FLO_fnc_virtualizationResolveLandRouteContinuation;
+_routeResult params ["_resolved", "_resolvedWaypoints", "_reason"];
+if (!_resolved) then {
+    ["VIRTUALIZATION", 1, format ["Activation route rebase failed group=%1 reason=%2", _groupId, _reason]] call FLO_fnc_log;
+    throw format ["FLO_fnc_virtualizationGetRemainingWaypoints: no land route for %1", _groupId];
+};
+
+_resolvedWaypoints

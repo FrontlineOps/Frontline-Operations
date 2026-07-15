@@ -54,7 +54,7 @@ private _friendlyCount = [_bluforCount, _opforCount] select (_playerSide isEqual
 private _enemyCount = [_opforCount, _bluforCount] select (_playerSide isEqualTo east);
 private _totalCount = _friendlyCount + _enemyCount;
 private _ratio = if (_totalCount > 0) then { _friendlyCount / _totalCount } else { 0.5 };
-private _objectiveOwner = [_objective get "owner"] call FLO_fnc_objectiveNormalizeOwner;
+private _objectiveOwner = _objective get "owner";
 private _ownership = "NEUTRAL";
 if (_objectiveOwner isEqualTo _playerSide) then {
     _ownership = "FRIENDLY";

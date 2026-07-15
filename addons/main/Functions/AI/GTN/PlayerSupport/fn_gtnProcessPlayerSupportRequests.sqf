@@ -184,10 +184,9 @@ private _assignedThisCycle = 0;
     };
     [_requestSide, "HQ", _approvalText] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
     ["GTN Player Support", 3, format [
-        "%1 approved %2 request %3 for %4",
+        "%1 approved %2 request for %3",
         _cmdr get "_sideKey",
         _type,
-        _request get "id",
         _validation get "targetLabel"
     ]] call FLO_fnc_log;
 } forEach _requests;

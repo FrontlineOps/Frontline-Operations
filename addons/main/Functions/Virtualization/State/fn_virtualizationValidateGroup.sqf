@@ -1,7 +1,7 @@
 /*
  * Function: FLO_fnc_virtualizationValidateGroup
  * Description:
- *   Validates one live record against the canonical schema and core lifecycle
+ *   Validates one live record against the canonical shape and core lifecycle
  *   invariants. Cross-record relationships are validated by the registry.
  */
 
@@ -38,14 +38,6 @@ if (_groupId == "") then {
 if (_expectedId != "" && {_groupId != _expectedId}) then {
     throw format ["Virtual group key/id mismatch: key=%1 record=%2", _expectedId, _groupId];
 };
-if ((_groupData get "schemaVersion") != (_defaults get "schemaVersion")) then {
-    throw format [
-        "Virtual group %1 has unsupported live schema %2",
-        _groupId,
-        _groupData get "schemaVersion"
-    ];
-};
-
 private _position = _groupData get "position";
 if !([_position] call FLO_fnc_validateGroupPosition) then {
     throw format ["Virtual group %1 has invalid position %2", _groupId, _position];
@@ -89,16 +81,15 @@ if (!_isActive && {(_groupData get "realVehicles") isNotEqualTo []}) then {
     throw format ["Inactive virtual group %1 retains real vehicles", _groupId];
 };
 
-private _waypoints = _groupData get "waypoints";
-private _waypointIndex = _groupData get "currentWaypointIndex";
-if (_waypointIndex < 0 || {_waypointIndex > count _waypoints}) then {
-    throw format [
-        "Virtual group %1 has invalid waypoint index %2/%3",
-        _groupId,
-        _waypointIndex,
-        count _waypoints
-    ];
-};
+[
+    _groupId,
+    _groupData get "waypoints",
+    _groupData get "currentWaypointIndex",
+    _groupData get "dismountAtWaypoint",
+    _groupData get "pathToken",
+    _groupData get "pathTargetPos",
+    _groupData get "pathWaypointSettings"
+] call FLO_fnc_virtualizationValidateWaypointState;
 private _attachedTo = _groupData get "attachedTo";
 private _attachedType = _groupData get "attachedType";
 private _mountedIn = _groupData get "mountedIn";

@@ -49,7 +49,6 @@ if !([
 private _project = createHashMapFromArray [
     ["sideKey", _sideKey],
     ["branch", _branch],
-    ["pricingVersion", FLO_ObjectiveDevelopmentConfig get "pricingVersion"],
     ["state", "FUNDING"],
     ["targetLevel", _targetLevel],
     ["createdAtDateNum", call FLO_fnc_operationalDateNumber],

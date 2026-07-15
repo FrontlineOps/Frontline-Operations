@@ -14,6 +14,8 @@ private _targetPos = _missionRecord get "targetPos";
 private _plannedRounds = _missionRecord get "plannedRounds";
 private _accuracy = _missionRecord get "accuracy";
 private _contactState = _missionRecord get "contactState";
+private _contactConfidence = _missionRecord get "contactConfidence";
+private _contactAgeSeconds = _missionRecord get "contactAgeSeconds";
 private _targetGroupIds = +(_missionRecord get "targetGroupIds");
 private _exactTargets = _targetGroupIds isNotEqualTo [];
 private _impactRadius = (((_accuracy max 80) * 3) max 300) min 700;
@@ -27,7 +29,14 @@ private _contactFactor = switch (_contactState) do {
     case "ENGAGEMENT": { 1 };
     case "COUNTER_BATTERY": { 1.15 };
     case "OBSERVED": { 1.1 };
+    case "FRONTLINE_FRESH": { 1 };
+    case "FRONTLINE_STALE": { 0.65 };
     default { 0.7 };
+};
+if ((_contactState find "FRONTLINE_") == 0) then {
+    _contactFactor = _contactFactor
+        * ((_contactConfidence max 0.25) min 1)
+        * linearConversion [0, 900, _contactAgeSeconds, 1, 0.35, true];
 };
 private _candidates = [];
 

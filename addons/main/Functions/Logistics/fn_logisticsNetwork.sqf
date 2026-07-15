@@ -71,10 +71,10 @@ private _logisticsClass = [
     ["NODE_DELIVERY_RADIUS", 20],
     ["NODE_REFILL_INTERVAL", 180],
     ["SHIPMENT_THROUGHPUT", 1500],
-    ["DEPOT_COST", 1000],
-    ["DEPOT_MIN_SOURCE_HOPS", 2],
-    ["DEPOT_REQUIRED_DELIVERIES", 2],
-    ["DEPOT_AUTO_ESTABLISH_SECONDS", 600],
+    ["DEPOT_COST", 500],
+    ["DEPOT_MIN_SOURCE_HOPS", 1],
+    ["DEPOT_REQUIRED_DELIVERIES", 1],
+    ["DEPOT_AUTO_ESTABLISH_SECONDS", 120],
     ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
     ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
     ["OBJECTIVE_CAPTURE_FORCE_GROWTH", 0],
@@ -164,22 +164,49 @@ private _logisticsClass = [
 ];
 
 private _savedBySide = createHashMap;
-if (!isNil "FLO_SavedGameData" && {"logisticsNetworkBySide" in FLO_SavedGameData}) then {
-    _savedBySide = FLO_SavedGameData get "logisticsNetworkBySide";
-    if !(_savedBySide isEqualType createHashMap) then {
-        throw format ["Invalid saved logisticsNetworkBySide payload: %1", typeName _savedBySide];
+private _restoring = FLO_IsLoadedSave;
+private _initializedNetworks = createHashMap;
+private _initializationError = "";
+
+try {
+    if (_restoring) then {
+        _savedBySide = FLO_SavedGameData get "logisticsNetworkBySide";
+        if !(_savedBySide isEqualType createHashMap) then {
+            throw format ["Invalid saved logisticsNetworkBySide payload: %1", typeName _savedBySide];
+        };
+        private _missingSides = ["WEST", "EAST"] select { !(_x in _savedBySide) };
+        private _unexpectedSides = (keys _savedBySide) select { !(_x in ["WEST", "EAST"]) };
+        if (_missingSides isNotEqualTo [] || {_unexpectedSides isNotEqualTo []}) then {
+            throw format [
+                "Saved logistics networks have missing=%1 unsupported=%2",
+                _missingSides,
+                _unexpectedSides
+            ];
+        };
     };
+
+    {
+        private _side = _x;
+        private _sideKey = [_side] call FLO_fnc_sideKey;
+        private _savedPayload = false;
+        if (_restoring) then {
+            _savedPayload = _savedBySide get _sideKey;
+        };
+        private _network = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
+        _network set ["OBJECTIVE_CAPTURE_FORCE_GROWTH", (([_side, "forceGrowth"] call FLO_fnc_gtnGetSideCommanderHandle) get "value")];
+        _initializedNetworks set [_sideKey, _network];
+    } forEach [east, west];
+} catch {
+    _initializationError = _exception;
 };
 
-FLO_Logistics_Networks = createHashMap;
-{
-    private _side = _x;
-    private _sideKey = [_side] call FLO_fnc_sideKey;
-    private _savedPayload = false;
-    if (_sideKey in _savedBySide) then { _savedPayload = _savedBySide get _sideKey; };
-    private _network = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
-    _network set ["OBJECTIVE_CAPTURE_FORCE_GROWTH", (([_side, "forceGrowth"] call FLO_fnc_gtnGetSideCommanderHandle) get "value")];
-    FLO_Logistics_Networks set [_sideKey, _network];
-} forEach [east, west];
+if (_initializationError != "") then {
+    private _severity = [1, 2] select _restoring;
+    private _context = ["initialization failed", "saved state was refused"] select _restoring;
+    ["LOGISTICS", _severity, format ["Logistics Network %1: %2", _context, _initializationError]] call FLO_fnc_log;
+    throw _initializationError;
+};
+
+FLO_Logistics_Networks = _initializedNetworks;
 
 ["LOGISTICS", 3, "Initialized explicit WEST/EAST logistics networks"] call FLO_fnc_log;

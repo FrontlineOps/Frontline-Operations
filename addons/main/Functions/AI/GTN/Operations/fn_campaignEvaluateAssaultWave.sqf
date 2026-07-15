@@ -25,11 +25,12 @@ private _decision = createHashMapFromArray [
 ];
 
 private _operation = [_director, _operationId] call FLO_fnc_campaignGetOperation;
-if ((_operation get "phase") != "ASSAULT") then {
-    throw format ["Cannot evaluate ASSAULT wave for %1 in phase %2", _operationId, _operation get "phase"];
+private _phase = _operation get "phase";
+if (_phase != "ASSAULT") then {
+    throw format ["Cannot evaluate assault wave for %1 in phase %2", _operationId, _phase];
 };
 if ((_operation get "assaultPackageTarget") <= 0) then {
-    _operation = [_director, _operationId] call FLO_fnc_campaignInitializeAssaultState;
+    throw format ["Operation %1 entered ASSAULT without a configured package", _operationId];
 };
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
@@ -114,8 +115,11 @@ private _config = _director get "_config";
 private _noProgressSeconds = [_lastProgressAt, _now] call FLO_fnc_dateNumberDeltaSeconds;
 private _remainingPackage = (_packageTarget - _committed) max 0;
 private _openingCommit = (_operation get "assaultWaveSequence") == 0;
+private _assaultTrackCount = {
+    (_x get "goal") == "capture_priority_objective" && {(_x get "phase") == "assault"}
+} count (_cmdr get "_tracks");
 private _openingTimeoutSeconds = (_config get "assaultOpeningCommitMinimumSeconds") max (
-    (_cmdr get "_updateInterval") * ((_config get "operationMaximumCount") + 1)
+    (_cmdr get "_updateInterval") * ((_assaultTrackCount max 1) + 1)
 );
 
 _decision set ["activeCount", _activeCount];
@@ -139,7 +143,7 @@ if ((_objective get "owner") == (_cmdr get "_ownSide")) exitWith {
 
 private _openingEligibleAt = _operation get "assaultOpeningEligibleAtDateNum";
 if (_openingEligibleAt < 0) then {
-    throw format ["Operation %1 has no ASSAULT opening eligibility time", _operationId];
+    throw format ["Operation %1 has no offensive opening eligibility time", _operationId];
 };
 private _openingDelayRemaining = [_now, _openingEligibleAt] call FLO_fnc_dateNumberDeltaSeconds;
 if (_openingCommit && {_openingDelayRemaining > 0}) exitWith {

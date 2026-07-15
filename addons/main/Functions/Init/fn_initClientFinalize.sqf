@@ -117,9 +117,6 @@ player createDiaryRecord ["Diary", ["Mission Status",
     ]
 ]];
 
-// Set MarLOCC for backwards compatibility
-MarLOCC = 1;
-
 [] spawn {
     if !([] call FLO_fnc_initDeployPlayer) exitWith {};
 

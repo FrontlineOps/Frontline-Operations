@@ -19,12 +19,12 @@ private _protectedFloor = _state get "reserveFloor";
 private _budget = _remainingCost;
 if (_posture == "CONSERVE") then {
     _protectedFloor = _state get "emergencyReserve";
-    private _incomeBasis = (_state get "incomeCycle") max (_policy get "bootstrapWindowBudget");
+    private _incomeBasis = _state get "baseWindowBudget";
     _budget = (_policy get "developmentFundingMinimums") get "CONSERVE";
     _budget = _budget max (round (_incomeBasis * ((_policy get "developmentFundingFractions") get "CONSERVE")));
 };
 if (_posture == "BALANCED") then {
-    private _incomeBasis = (_state get "incomeCycle") max (_policy get "bootstrapWindowBudget");
+    private _incomeBasis = _state get "baseWindowBudget";
     _budget = (_policy get "developmentFundingMinimums") get "BALANCED";
     _budget = _budget max (round (_incomeBasis * ((_policy get "developmentFundingFractions") get "BALANCED")));
 };

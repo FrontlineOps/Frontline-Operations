@@ -10,6 +10,5 @@ private _claims = createHashMapFromArray [
 ];
 
 createHashMapFromArray [
-    ["schemaVersion", 1],
     ["firstFOBClaimedBySide", _claims]
 ]

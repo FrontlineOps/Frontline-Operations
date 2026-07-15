@@ -75,6 +75,7 @@ createHashMapFromArray [
     ["assignmentRadius", _config get "assignmentRadius"],
     ["captureRetentionPercent", round ((_config get "captureRetention") * 100)],
     ["revenuePaybackCycles", _config get "revenuePaybackCycles"],
+    ["revenuePaybackMinutes", round (((_config get "revenuePaybackCycles") * (_treasury get "UPDATE_INTERVAL")) / 60)],
     ["developmentBaseCost", _config get "developmentBaseCost"],
     ["revenuePreview", _revenuePreview],
     ["developmentPreview", _developmentPreview],

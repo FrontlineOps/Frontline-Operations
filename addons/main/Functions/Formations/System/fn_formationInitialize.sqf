@@ -16,6 +16,7 @@ FLO_FormationResourceManager = _resourceManager;
 FLO_FormationReconcileDirty = true;
 
 [_state] call FLO_fnc_formationReconcile;
+[(_director call ["_getState", []])] call FLO_fnc_campaignValidateProbeOwnership;
 if ((_state get "lastDoctrineUpdateAtDateNum") < 0) then {
     [_state, "WEST"] call FLO_fnc_formationSelectDoctrine;
     [_state, "EAST"] call FLO_fnc_formationSelectDoctrine;

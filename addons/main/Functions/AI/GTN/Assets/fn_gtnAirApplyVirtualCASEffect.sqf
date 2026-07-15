@@ -1,4 +1,4 @@
-/* Applies one authorized virtual CAS mission to exact reported targets. */
+/* Applies one authorized virtual CAS mission to exact or last-known contact targets. */
 params [["_missionRecord", nil]];
 
 if (!isServer) then { throw "Virtual CAS effects are server-owned"; };
@@ -8,8 +8,21 @@ private _airSide = _missionRecord get "side";
 private _enemySide = [east, west] select (_airSide isEqualTo east);
 private _airType = _missionRecord get "aircraftGroupType";
 private _targetIds = +(_missionRecord get "targetGroupIds");
+private _areaContact = _missionRecord get "areaContact";
+private _targetPos = _missionRecord get "targetPos";
+private _uncertaintyRadius = _missionRecord get "uncertaintyRadius";
+private _contactConfidence = _missionRecord get "contactConfidence";
+private _contactAge = _missionRecord get "contactAgeSeconds";
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _candidates = [];
+
+if (_targetIds isEqualTo []) then {
+    if (!_areaContact) then {
+        throw format ["Virtual CAS mission %1 has no exact or area contact", _missionRecord get "missionId"];
+    };
+    private _searchRadius = (_uncertaintyRadius max 120) min 900;
+    _targetIds = ["queryRadius", [_targetPos, _searchRadius, _enemySide, true]] call FLO_fnc_virtualizationSpatialIndex;
+};
 
 {
     private _groupId = _x;
@@ -18,6 +31,7 @@ private _candidates = [];
     if ((_groupData get "side") isNotEqualTo _enemySide) then { continue };
     if (_groupData get "isActive") then { continue };
     if ((_groupData get "unitCount") <= 0) then { continue };
+    if (_areaContact && {((_groupData get "position") distance2D _targetPos) > ((_uncertaintyRadius max 120) min 900)}) then { continue };
 
     private _groupType = _groupData get "groupType";
     if !(_groupType in ["infantry", "motorized", "mechanized", "armor", "mobile_aa", "artillery", "static_aa"]) then { continue };
@@ -54,12 +68,17 @@ if (_candidates isEqualTo []) exitWith { _result };
 _candidates sort true;
 private _targetCount = 2 min count _candidates;
 private _baseLoss = [3, 5] select (_airType == "jet");
+private _contactFactor = if (_areaContact) then {
+    ((_contactConfidence max 0.2) min 1) * linearConversion [0, 900, _contactAge, 1, 0.3, true]
+} else {
+    1
+};
 for "_index" from 0 to (_targetCount - 1) do {
     (_candidates select _index) params ["_priority", "_groupId", "_exposure"];
     if !(_groupId in _groups) then { continue };
     private _groupData = _groups get _groupId;
     private _currentCount = _groupData get "unitCount";
-    private _requestedLoss = ((round (_baseLoss * _exposure / (1 + (_index * 0.35)))) max 1) min _currentCount;
+    private _requestedLoss = ((round (_baseLoss * _exposure * _contactFactor / (1 + (_index * 0.35)))) max 1) min _currentCount;
     private _appliedLoss = [_groupId, _requestedLoss] call FLO_fnc_gtnCombatApplyGroupLoss;
     if (_appliedLoss <= 0) then { continue };
     _result set ["totalLosses", (_result get "totalLosses") + _appliedLoss];

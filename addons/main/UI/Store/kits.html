@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FLO Loadout Library</title>
+    <style>
+        :root {
+            --bg: #050b10;
+            --surface: #09141d;
+            --surface-2: #0d1b26;
+            --line: #203746;
+            --line-strong: #2a5368;
+            --text: #e8f0f4;
+            --muted: #7892a2;
+            --cyan: #24d4ff;
+            --amber: #efb83f;
+            --green: #87e65b;
+            --red: #ff5e70;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text);
+            background: var(--bg);
+            font-family: "Arial Narrow", Arial, sans-serif;
+            letter-spacing: 0;
+        }
+
+        button,
+        input {
+            font: inherit;
+            letter-spacing: 0;
+        }
+
+        button {
+            border: 1px solid var(--line-strong);
+            border-radius: 4px;
+            color: var(--text);
+            background: #102331;
+            cursor: pointer;
+        }
+
+        button:hover,
+        button:focus {
+            border-color: var(--cyan);
+            outline: none;
+        }
+
+        button:disabled {
+            cursor: default;
+            opacity: 0.35;
+        }
+
+        .shell {
+            display: grid;
+            grid-template-rows: 88px minmax(0, 1fr) 70px;
+            width: 100vw;
+            height: 100vh;
+            padding: 18px 24px;
+            gap: 12px;
+            background: #061019;
+        }
+
+        .topbar,
+        .actionbar {
+            display: grid;
+            align-items: stretch;
+            border: 1px solid var(--line);
+            background: var(--surface);
+        }
+
+        .topbar {
+            grid-template-columns: 310px minmax(0, 1fr);
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 14px 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .overline,
+        .metric-label,
+        .section-label,
+        .item-meta {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .overline,
+        .section-label {
+            color: var(--cyan);
+        }
+
+        h1,
+        h2,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            margin-top: 3px;
+            font-size: 30px;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 22px;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(150px, 1fr));
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            padding: 12px 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .metric:last-child {
+            border-right: 0;
+        }
+
+        .metric-value {
+            margin-top: 4px;
+            overflow: hidden;
+            color: var(--amber);
+            font-size: 21px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr) 390px;
+            min-height: 0;
+            border: 1px solid var(--line);
+            background: var(--surface);
+        }
+
+        .pane {
+            display: grid;
+            min-width: 0;
+            min-height: 0;
+            border-right: 1px solid var(--line);
+        }
+
+        .pane:last-child {
+            border-right: 0;
+        }
+
+        .library {
+            grid-template-rows: auto auto minmax(0, 1fr);
+        }
+
+        .details,
+        .current {
+            grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .pane-head {
+            padding: 16px;
+            border-bottom: 1px solid var(--line);
+            background: var(--surface-2);
+        }
+
+        .search,
+        .name-input {
+            width: 100%;
+            height: 42px;
+            border: 1px solid var(--line-strong);
+            border-radius: 4px;
+            color: var(--text);
+            background: #061019;
+            padding: 0 12px;
+            outline: none;
+        }
+
+        .search:focus,
+        .name-input:focus {
+            border-color: var(--cyan);
+        }
+
+        .library-search {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .list,
+        .loadout-list {
+            min-height: 0;
+            overflow: hidden auto;
+            overscroll-behavior: contain;
+        }
+
+        .kit-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            min-height: 64px;
+            padding: 10px 14px;
+            border: 0;
+            border-bottom: 1px solid var(--line);
+            border-radius: 0;
+            text-align: left;
+            background: transparent;
+        }
+
+        .kit-row:hover {
+            background: #102330;
+        }
+
+        .kit-row.selected {
+            border-left: 3px solid var(--cyan);
+            background: #102735;
+        }
+
+        .kit-name,
+        .item-name {
+            overflow: hidden;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .kit-name {
+            font-size: 17px;
+            text-transform: uppercase;
+        }
+
+        .kit-count {
+            min-width: 44px;
+            color: var(--amber);
+            font-size: 13px;
+            font-weight: 800;
+            text-align: right;
+        }
+
+        .loadout-list {
+            padding: 0 18px 18px;
+        }
+
+        .group {
+            margin-top: 14px;
+        }
+
+        .group-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 4px;
+            border-bottom: 1px solid var(--line-strong);
+            color: var(--cyan);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            min-height: 52px;
+            padding: 8px 4px;
+            border-bottom: 1px solid #152936;
+        }
+
+        .item-name {
+            font-size: 15px;
+        }
+
+        .item-meta {
+            margin-top: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .item-qty {
+            color: var(--amber);
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .current-tools {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .save-button {
+            min-width: 92px;
+            padding: 0 14px;
+            border-color: #557d3f;
+            color: var(--green);
+        }
+
+        .empty {
+            padding: 24px 16px;
+            color: var(--muted);
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .actionbar {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .message {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            padding: 0 18px;
+            overflow: hidden;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .message.good {
+            color: var(--green);
+        }
+
+        .message.error {
+            color: var(--red);
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-left: 1px solid var(--line);
+        }
+
+        .action {
+            min-width: 112px;
+            height: 44px;
+            padding: 0 14px;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .action.primary {
+            border-color: #2c718c;
+            color: var(--cyan);
+        }
+
+        .action.danger {
+            border-color: #793642;
+            color: var(--red);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #061019;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2a5368;
+        }
+
+        @media (max-width: 1360px) {
+            .workspace {
+                grid-template-columns: 280px minmax(0, 1fr) 330px;
+            }
+
+            .topbar {
+                grid-template-columns: 280px minmax(0, 1fr);
+            }
+
+            .shell {
+                padding: 14px 18px;
+            }
+        }
+
+        @media (max-height: 760px) {
+            .shell {
+                grid-template-rows: 72px minmax(0, 1fr) 62px;
+                padding: 12px 16px;
+                gap: 8px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+
+            .pane-head {
+                padding: 12px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <section class="brand">
+                <div class="overline">FLO / Tactical Supply</div>
+                <h1>Loadout Library</h1>
+            </section>
+            <section class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Saved</div>
+                    <div class="metric-value" id="savedCount">0</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Selected</div>
+                    <div class="metric-value" id="selectedName">None</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Current Loadout</div>
+                    <div class="metric-value" id="currentCount">0 items</div>
+                </div>
+            </section>
+        </header>
+
+        <section class="workspace">
+            <aside class="pane library">
+                <header class="pane-head">
+                    <div class="section-label">Saved Loadouts</div>
+                    <h2>Library</h2>
+                </header>
+                <div class="library-search">
+                    <input class="search" id="kitSearch" type="text" maxlength="40" placeholder="Filter loadouts" oninput="FLOOKits.filter(this.value)">
+                </div>
+                <div class="list" id="kitList"></div>
+            </aside>
+
+            <section class="pane details">
+                <header class="pane-head">
+                    <div class="section-label">Selected Loadout</div>
+                    <h2 id="detailTitle">No Selection</h2>
+                </header>
+                <div class="loadout-list" id="detailList"></div>
+            </section>
+
+            <aside class="pane current">
+                <header class="pane-head">
+                    <div class="section-label">Equipped Now</div>
+                    <h2>Current</h2>
+                    <div class="current-tools">
+                        <input class="name-input" id="kitName" type="text" maxlength="40" placeholder="Loadout name">
+                        <button class="save-button" type="button" onclick="FLOOKits.saveCurrent()">Save</button>
+                    </div>
+                </header>
+                <div class="loadout-list" id="currentList"></div>
+            </aside>
+        </section>
+
+        <footer class="actionbar">
+            <div class="message" id="message">Loading loadouts.</div>
+            <div class="actions">
+                <button class="action" type="button" onclick="FLOOKits.refresh()">Refresh</button>
+                <button class="action danger" id="deleteButton" type="button" onclick="FLOOKits.removeSelected()">Delete</button>
+                <button class="action primary" id="loadButton" type="button" onclick="FLOOKits.loadSelected()">Load to Cart</button>
+                <button class="action" type="button" onclick="FLOOKits.close()">Close</button>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            "use strict";
+
+            var state = {
+                kits: [],
+                currentItems: [],
+                selectedId: "",
+                query: "",
+                pendingName: "",
+                deleteArmedId: ""
+            };
+
+            function node(id) {
+                return document.getElementById(id);
+            }
+
+            function send(event, data) {
+                var payload = JSON.stringify({ event: event, data: data || {} });
+                if (typeof A3API !== "undefined" && A3API.SendAlert) {
+                    A3API.SendAlert(payload);
+                }
+            }
+
+            function setText(id, value) {
+                var target = node(id);
+                if (target) {
+                    target.textContent = value;
+                }
+            }
+
+            function clear(target) {
+                while (target.firstChild) {
+                    target.removeChild(target.firstChild);
+                }
+            }
+
+            function message(value, tone) {
+                var target = node("message");
+                target.textContent = value || "";
+                target.className = "message" + (tone ? " " + tone : "");
+            }
+
+            function quantity(items) {
+                var total = 0;
+                var i;
+                for (i = 0; i < items.length; i += 1) {
+                    total += Number(items[i].quantity || 1);
+                }
+                return total;
+            }
+
+            function selectedKit() {
+                var i;
+                for (i = 0; i < state.kits.length; i += 1) {
+                    if (state.kits[i].id === state.selectedId) {
+                        return state.kits[i];
+                    }
+                }
+                return null;
+            }
+
+            function groupName(item) {
+                var slot = item.slot || "";
+                var container = item.container || "auto";
+                var labels = {
+                    primary: "Primary Weapon",
+                    handgun: "Handgun",
+                    secondary: "Launcher",
+                    assigned: "Assigned Items",
+                    uniform: "Uniform",
+                    vest: "Vest",
+                    backpack: "Backpack",
+                    headgear: "Headgear",
+                    facewear: "Facewear",
+                    binocular: "Observation"
+                };
+                if (labels[slot]) {
+                    return labels[slot];
+                }
+                if (container !== "auto") {
+                    return container.charAt(0).toUpperCase() + container.slice(1) + " Cargo";
+                }
+                return (item.category || "Items").toUpperCase();
+            }
+
+            function grouped(items) {
+                var groups = [];
+                var index = {};
+                var i;
+                for (i = 0; i < items.length; i += 1) {
+                    var label = groupName(items[i]);
+                    if (typeof index[label] === "undefined") {
+                        index[label] = groups.length;
+                        groups.push({ label: label, items: [] });
+                    }
+                    groups[index[label]].items.push(items[i]);
+                }
+                return groups;
+            }
+
+            function renderLoadout(targetId, items) {
+                var target = node(targetId);
+                var groups = grouped(items || []);
+                var i;
+                var j;
+                clear(target);
+
+                if (groups.length === 0) {
+                    var empty = document.createElement("div");
+                    empty.className = "empty";
+                    empty.textContent = "No loadout items.";
+                    target.appendChild(empty);
+                    return;
+                }
+
+                for (i = 0; i < groups.length; i += 1) {
+                    var section = document.createElement("section");
+                    var head = document.createElement("div");
+                    var count = document.createElement("span");
+                    section.className = "group";
+                    head.className = "group-head";
+                    head.textContent = groups[i].label;
+                    count.textContent = String(quantity(groups[i].items));
+                    head.appendChild(count);
+                    section.appendChild(head);
+
+                    for (j = 0; j < groups[i].items.length; j += 1) {
+                        var item = groups[i].items[j];
+                        var row = document.createElement("div");
+                        var info = document.createElement("div");
+                        var name = document.createElement("div");
+                        var meta = document.createElement("div");
+                        var qty = document.createElement("div");
+                        row.className = "item-row";
+                        name.className = "item-name";
+                        meta.className = "item-meta";
+                        qty.className = "item-qty";
+                        name.textContent = item.name || item.className || "Unknown";
+                        meta.textContent = item.className || "";
+                        qty.textContent = "x" + String(item.quantity || 1);
+                        info.appendChild(name);
+                        info.appendChild(meta);
+                        row.appendChild(info);
+                        row.appendChild(qty);
+                        section.appendChild(row);
+                    }
+                    target.appendChild(section);
+                }
+            }
+
+            function renderLibrary() {
+                var target = node("kitList");
+                var query = state.query.toLowerCase();
+                var visible = 0;
+                var i;
+                clear(target);
+
+                for (i = 0; i < state.kits.length; i += 1) {
+                    (function (kit) {
+                        if (query && String(kit.name || "").toLowerCase().indexOf(query) < 0) {
+                            return;
+                        }
+                        visible += 1;
+                        var row = document.createElement("button");
+                        var info = document.createElement("div");
+                        var name = document.createElement("div");
+                        var meta = document.createElement("div");
+                        var count = document.createElement("div");
+                        row.type = "button";
+                        row.className = "kit-row" + (kit.id === state.selectedId ? " selected" : "");
+                        name.className = "kit-name";
+                        meta.className = "item-meta";
+                        count.className = "kit-count";
+                        name.textContent = kit.name;
+                        meta.textContent = String((kit.items || []).length) + " lines";
+                        count.textContent = String(quantity(kit.items || []));
+                        info.appendChild(name);
+                        info.appendChild(meta);
+                        row.appendChild(info);
+                        row.appendChild(count);
+                        row.onclick = function () {
+                            state.selectedId = kit.id;
+                            state.deleteArmedId = "";
+                            node("kitName").value = kit.name;
+                            render();
+                        };
+                        target.appendChild(row);
+                    }(state.kits[i]));
+                }
+
+                if (visible === 0) {
+                    var empty = document.createElement("div");
+                    empty.className = "empty";
+                    empty.textContent = state.kits.length ? "No matching loadouts." : "No saved loadouts.";
+                    target.appendChild(empty);
+                }
+            }
+
+            function render() {
+                var kit = selectedKit();
+                renderLibrary();
+                renderLoadout("detailList", kit ? kit.items || [] : []);
+                renderLoadout("currentList", state.currentItems);
+                setText("savedCount", String(state.kits.length));
+                setText("selectedName", kit ? kit.name : "None");
+                setText("detailTitle", kit ? kit.name : "No Selection");
+                setText("currentCount", String(quantity(state.currentItems)) + " items");
+                node("loadButton").disabled = !kit;
+                node("deleteButton").disabled = !kit;
+                node("deleteButton").textContent = kit && state.deleteArmedId === kit.id ? "Confirm Delete" : "Delete";
+            }
+
+            window.FLOOKits = {
+                receive: function (payload) {
+                    state.kits = payload.kits || [];
+                    state.currentItems = payload.currentItems || [];
+
+                    if (state.pendingName) {
+                        var wanted = state.pendingName.toLowerCase();
+                        var i;
+                        for (i = 0; i < state.kits.length; i += 1) {
+                            if (String(state.kits[i].name || "").toLowerCase() === wanted) {
+                                state.selectedId = state.kits[i].id;
+                            }
+                        }
+                        state.pendingName = "";
+                    }
+
+                    if (!selectedKit()) {
+                        state.selectedId = state.kits.length ? state.kits[0].id : "";
+                    }
+
+                    state.deleteArmedId = "";
+                    render();
+                    if (payload.message) {
+                        message(payload.message, payload.success ? "good" : "error");
+                    } else {
+                        message("Loadout library ready.", "good");
+                    }
+                },
+                filter: function (value) {
+                    state.query = value || "";
+                    renderLibrary();
+                },
+                saveCurrent: function () {
+                    var name = node("kitName").value || "";
+                    if (!name.replace(/\s/g, "")) {
+                        message("Name the loadout first.", "error");
+                        return;
+                    }
+                    state.pendingName = name;
+                    send("storeKits::save", { name: name });
+                },
+                loadSelected: function () {
+                    var kit = selectedKit();
+                    if (kit) {
+                        send("storeKits::load", { id: kit.id });
+                    }
+                },
+                removeSelected: function () {
+                    var kit = selectedKit();
+                    if (!kit) {
+                        return;
+                    }
+                    if (state.deleteArmedId !== kit.id) {
+                        state.deleteArmedId = kit.id;
+                        render();
+                        message("Confirm deletion of " + kit.name + ".", "error");
+                        return;
+                    }
+                    send("storeKits::delete", { id: kit.id });
+                },
+                refresh: function () {
+                    send("storeKits::refresh", {});
+                },
+                close: function () {
+                    send("storeKits::close", {});
+                }
+            };
+
+            window.addEventListener("load", function () {
+                send("storeKits::ready", {});
+            });
+        }());
+    </script>
+</body>
+</html>

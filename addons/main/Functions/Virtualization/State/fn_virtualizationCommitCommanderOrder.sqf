@@ -61,8 +61,12 @@ if (_order == "ATTACK" && {_objectiveId == "" || {_campaignOperationId == ""}}) 
 private _orderStart = diag_tickTime;
 
 private _tRoute = diag_tickTime;
-[_groupId, _waypoints, false, true, _routeSource] call FLO_fnc_updateVirtualGroupWaypoints;
+private _routeCommitted = [_groupId, _waypoints, true, _routeSource] call FLO_fnc_updateVirtualGroupWaypoints;
 private _routeMs = (diag_tickTime - _tRoute) * 1000;
+
+if (!_routeCommitted) exitWith {
+    [false, _routeMs, 0, 0, (diag_tickTime - _orderStart) * 1000]
+};
 
 private _tAssign = diag_tickTime;
 switch (_order) do {

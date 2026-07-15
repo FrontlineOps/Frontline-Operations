@@ -123,7 +123,19 @@ switch (toUpper _mode) do {
                     _grp createUnit [selectRandom _hostileUnits, _spawnPos, [], 0, "NONE"];
                 };
 
-                _grp addWaypoint [_pos, 0] setWaypointType "SAD";
+                private _routeInstalled = [
+                    _grp,
+                    [[_pos, "SAD", "AWARE", "NORMAL", "WEDGE", "YELLOW", 0]],
+                    "LAND",
+                    "CIV_CHECKPOINT_ATTACK",
+                    false,
+                    true
+                ] call FLO_fnc_taskApplyRoute;
+                if (!_routeInstalled) then {
+                    { deleteVehicle _x; } forEach units _grp;
+                    deleteGroup _grp;
+                    continue;
+                };
                 { _x setUnitPos "MIDDLE"; } forEach units _grp;
             };
         };

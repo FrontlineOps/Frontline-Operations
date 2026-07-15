@@ -35,7 +35,6 @@ if (!_crossesWater) exitWith { [[], 0] };
 
 private _sampleCount = 0;
 private _detour = [];
-private _bestFallback = [];
 private _segmentDir = _startPos getDir _endPos;
 private _waterSpan = (_firstWater distance2D _lastWater) max (_sampleStep * 1.5);
 private _spanMid = [
@@ -70,10 +69,6 @@ for "_offset" from _offsetStart to _offsetMax step _offsetStep do {
         private _rightProfile = [_candidate, _endPos, _sampleStep] call FLO_fnc_pathSegmentWaterProfile;
         _sampleCount = _sampleCount + (_leftProfile select 1) + (_rightProfile select 1);
 
-        if ((_bestFallback isEqualTo []) && {_candidate distance2D _spanMid > (_sampleStep * 0.5)}) then {
-            _bestFallback = [+_candidate];
-        };
-
         if (!(_leftProfile select 0) && {!(_rightProfile select 0)}) exitWith {
             _detour = [+_candidate];
         };
@@ -90,10 +85,6 @@ for "_offset" from _offsetStart to _offsetMax step _offsetStep do {
         };
         if (surfaceIsWater _exitDetour) then { continue };
 
-        if (_bestFallback isEqualTo [] && {_entryDetour distance2D _exitDetour > (_sampleStep * 0.5)}) then {
-            _bestFallback = [+_entryDetour, +_exitDetour];
-        };
-
         private _legA = [_startPos, _entryDetour, _sampleStep] call FLO_fnc_pathSegmentWaterProfile;
         private _legB = [_entryDetour, _exitDetour, _sampleStep] call FLO_fnc_pathSegmentWaterProfile;
         private _legC = [_exitDetour, _endPos, _sampleStep] call FLO_fnc_pathSegmentWaterProfile;
@@ -105,10 +96,6 @@ for "_offset" from _offsetStart to _offsetMax step _offsetStep do {
     } forEach [90, -90];
 
     if (_detour isNotEqualTo []) exitWith {};
-};
-
-if (_detour isEqualTo []) then {
-    _detour = _bestFallback;
 };
 
 [_detour, _sampleCount]

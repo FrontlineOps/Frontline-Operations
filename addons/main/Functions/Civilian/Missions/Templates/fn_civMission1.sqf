@@ -29,7 +29,8 @@ private _taskId = _offer get "missionId";
 [true, _taskId, [_offer get "briefing", _offer get "taskTitle", ""], _pos, "CREATED", 1, true, "repair", true] call BIS_fnc_taskCreate;
 ["STR_FLO_MISSIONCIV_REPAIR", "info"] remoteExec ["FLO_fnc_sendNotification", 0];
 
-private _vehicleType = if (!isNil "CivVehArray" && {CivVehArray isNotEqualTo []}) then { selectRandom CivVehArray } else { "C_Offroad_01_F" };
+private _civilianVehicles = (FLO_FactionCatalog get "CIVILIAN") get "vehicles";
+private _vehicleType = if (_civilianVehicles isNotEqualTo []) then { selectRandom _civilianVehicles } else { "C_Offroad_01_F" };
 private _vehicle = createVehicle [_vehicleType, _pos, [], 0, "NONE"];
 _vehicle setDir (_road getDir ((roadsConnectedTo _road) param [0, _road]));
 _vehicle setDamage 0.7;
@@ -71,7 +72,10 @@ if ((FLO_ReputationHandle get "value") < 7) then {
         _grp createUnit [selectRandom _hostileUnits, _spawnPos, [], 0, "NONE"];
     };
 
-    [_grp, _pos, 100] call FLO_fnc_taskPatrol;
+    if !([_grp, _pos, 100] call FLO_fnc_taskPatrol) then {
+        { deleteVehicle _x; } forEach units _grp;
+        deleteGroup _grp;
+    };
 };
 
 createHashMapFromArray [

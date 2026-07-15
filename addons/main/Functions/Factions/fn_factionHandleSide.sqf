@@ -1,22 +1,16 @@
 /* Returns the single native config side owned by a faction handle. */
 params [["_handle", createHashMap, [createHashMap]]];
 
-if !("name" in _handle) then {
-    throw "Faction handle has no name";
-};
-
 private _name = _handle get "name";
+if !(_name isEqualType "" && {_name != ""}) then {
+    throw format ["Faction handle has invalid name %1", _name];
+};
 private _source = [_handle] call FLO_fnc_factionHandleSource;
 private _side = switch (_source) do {
-    case "custom";
-    case "preset": {
+    case "custom": {
         switch (_name) do {
-            case "CUSTOM_BLUFOR_FACTION";
-            case "CUSTOM_PLAYER_FACTION": { 1 };
+            case "CUSTOM_BLUFOR_FACTION": { 1 };
             case "CUSTOM_OPFOR_FACTION": { 0 };
-            case "CUSTOM_ENEMY_FACTION": {
-                throw "Legacy custom enemy faction used non-native INDFOR assets and cannot migrate as OPFOR";
-            };
             case "CUSTOM_CIVILIAN_FACTION": { 3 };
             default { throw format ["Unsupported custom faction handle %1", _name] };
         }
@@ -64,11 +58,9 @@ private _side = switch (_source) do {
     default { throw format ["Unsupported faction handle source %1 for %2", _source, _name] };
 };
 
-if ("side" in _handle) then {
-    private _declaredSide = _handle get "side";
-    if !(_declaredSide isEqualType 0 && {_declaredSide == _side}) then {
-        throw format ["Faction handle %1 declares side %2 but resolves to %3", _name, _declaredSide, _side];
-    };
+private _declaredSide = _handle get "side";
+if !(_declaredSide isEqualType 0 && {_declaredSide == _side}) then {
+    throw format ["Faction handle %1 declares side %2 but resolves to %3", _name, _declaredSide, _side];
 };
 
 _side

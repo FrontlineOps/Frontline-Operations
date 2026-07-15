@@ -18,9 +18,6 @@ if (isServer) then {
 
         private _globalVars = createHashMapFromArray [
             ["FLO_StartingLocationComplete", 0],
-            ["MarLOCC", 0],
-            ["AVENGLOCC", 1],
-            ["ConVLocc", 0],
             ["FLO_Objectives_Debug", false],
             ["StartingLocationDone", false],
             ["F_Init", false],
@@ -39,10 +36,7 @@ if (isServer) then {
             ["FLO_GTN_CommanderDebugEnabled", false],
             ["FLO_GTN_CommanderDebugRunning", false],
             ["FLO_GTN_CommanderDebugMarkers", createHashMap],
-            ["FLO_GTN_CombatDebugEnabled", true],
-            ["FLO_GTN_AttackHandle", createHashMapFromArray [["value", 4], ["name", "Conservative"]]],
-            ["FLO_GTN_DefenseHandle", createHashMapFromArray [["value", 4], ["name", "Minimal Coverage"]]],
-            ["FLO_GTN_TempoHandle", createHashMapFromArray [["value", 10], ["name", "10s"]]]
+            ["FLO_GTN_CombatDebugEnabled", true]
         ];
 
         {

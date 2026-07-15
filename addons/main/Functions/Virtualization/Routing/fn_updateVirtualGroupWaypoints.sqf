@@ -1,61 +1,141 @@
 /*
  * Function: FLO_fnc_updateVirtualGroupWaypoints
- * Author: Frontline Operations Development Group
  * Description:
- * Updates the waypoints for a virtual group. If the group is active, updates its real waypoints.
- * If inactive, stores the waypoints for virtual movement processing.
- * Now supports pathfinding integration for road-based movement.
- *
- * Arguments:
- * 0: Group ID <STRING> - Unique identifier for the virtual group
- * 1: Waypoints <ARRAY> - Array of waypoint data in format:
- *   Each waypoint is an array: [position, type, behavior, speed, formation, combat mode, completion radius]
- * 2: (Optional) Use Road Pathfinding <BOOLEAN> - Whether to use road pathfinding (Default: false)
- * 3: (Optional) Allow Trails <BOOLEAN> - Whether to allow trails for pathfinding (Default: false)
- * 4: (Optional) Request Source <STRING> - Source tag for pathfinding telemetry (Default: "")
+ *   Canonical route mutation boundary. LAND routes are fully resolved before
+ *   state changes; AIR and WATER routes remain direct.
  *
  * Return Value:
- * Success <BOOLEAN>
- *
- * Example:
- * ["vgroup_1", [[getMarkerPos "marker_1", "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20]]] call FLO_fnc_updateVirtualGroupWaypoints;
- * ["vgroup_1", [[getMarkerPos "marker_1", "MOVE", "AWARE", "NORMAL", "COLUMN", "YELLOW", 20]], true] call FLO_fnc_updateVirtualGroupWaypoints;
+ *   Success <BOOLEAN>
  */
 
 params [
-    "_groupId",
-    "_waypoints",
-    ["_usePathfinding", false, [true]],
+    ["_groupId", "", [""]],
+    ["_waypoints", [], [[]]],
     ["_allowTrails", true, [true]],
-    ["_requestSource", "", [""]]
+    ["_requestSource", "", [""]],
+    ["_closeLoop", false, [true]],
+    ["_patrolConfig", [], [[]]]
 ];
 
 private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
-// Get the current position of the group
-private _currentPos = _groupData get "position";
-
 private _groupType = _groupData get "groupType";
-private _isNavalGroup = _groupType in ["boat", "naval", "submarine"];
-private _sanitizedWaypoints = [_groupType, _waypoints] call FLO_fnc_virtualizationSanitizeWaypoints;
-
+private _archetype = [_groupType] call FLO_fnc_virtualizationGetArchetype;
+private _movementDomain = _archetype get "movementDomain";
+private _autoPatrolRequested = _patrolConfig isNotEqualTo [];
+if (_autoPatrolRequested && {!_closeLoop}) then {
+    throw format ["Auto-patrol route for %1 must request closed-loop resolution", _groupId];
+};
+if (_autoPatrolRequested && {_movementDomain != "LAND"}) then {
+    throw format ["Auto-patrol route for %1 requires LAND movement, got %2", _groupId, _movementDomain];
+};
+private _sanitizedWaypoints = [_movementDomain, _waypoints] call FLO_fnc_virtualizationSanitizeWaypoints;
+if (_autoPatrolRequested && {_sanitizedWaypoints isEqualTo []}) then {
+    throw format ["Auto-patrol route for %1 requires movement waypoints", _groupId];
+};
 private _sourceTag = ["VG_GENERIC", _requestSource] select (_requestSource != "");
-private _effectiveUsePathfinding = _usePathfinding;
+private _routeWaypoints = _sanitizedWaypoints;
+private _routeAllowed = true;
+private _routeFailureReason = "";
 
-if (_sanitizedWaypoints isEqualTo [] || !_effectiveUsePathfinding) then {
-    [_groupId, _groupData, _sanitizedWaypoints, _sourceTag] call FLO_fnc_virtualizationApplyDirectWaypointUpdate;
-} else {
-    [_groupId, _groupData, _currentPos, _sanitizedWaypoints, _allowTrails, _sourceTag, _isNavalGroup, _groupType] call FLO_fnc_virtualizationRequestPathRouteUpdate;
+if (_movementDomain == "LAND" && {_sanitizedWaypoints isNotEqualTo []}) then {
+    private _currentPos = if (_groupData get "isActive") then {
+        private _realGroup = _groupData get "realGroup";
+        private _leader = leader _realGroup;
+        if (isNull _leader) then {
+            throw format ["Active LAND group %1 has no real leader", _groupId];
+        };
+        getPosATL _leader
+    } else {
+        +(_groupData get "position")
+    };
+    private _routeResult = [_currentPos, _sanitizedWaypoints, _allowTrails, _sourceTag, _closeLoop] call FLO_fnc_virtualizationResolveLandWaypoints;
+    _routeResult params ["_resolved", "_resolvedWaypoints", "_reason"];
+
+    _routeAllowed = _resolved;
+    _routeFailureReason = _reason;
+    if (_resolved) then {
+        _routeWaypoints = _resolvedWaypoints;
+    };
 };
 
+if (!_routeAllowed) exitWith {
+    ["VIRTUALIZATION", 2, format [
+        "Rejected LAND route group=%1 source=%2 reason=%3 semanticWaypoints=%4",
+        _groupId,
+        _sourceTag,
+        _routeFailureReason,
+        count _sanitizedWaypoints
+    ]] call FLO_fnc_log;
+    false
+};
+
+private _candidate = [_groupData] call FLO_fnc_virtualizationCloneValue;
+if (_routeWaypoints isNotEqualTo []) then {
+    [_candidate] call FLO_fnc_virtualizationClearPathRequest;
+    _candidate set ["waypoints", _routeWaypoints];
+    _candidate set ["pathSource", _sourceTag];
+    _candidate set ["patrolConfig", if (_autoPatrolRequested) then { [_patrolConfig] call FLO_fnc_virtualizationCloneValue } else { [] }];
+    _candidate set ["autoPatrol", _autoPatrolRequested];
+    _candidate set ["idleHelicopterParked", false];
+    _candidate set ["currentWaypointIndex", 0];
+    _candidate set ["lastMoveTime", diag_tickTime];
+    _candidate set ["virtualMoveCarryMeters", 0];
+    _candidate set ["nextProcessAt", 0];
+    [_candidate] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
+    [_candidate, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
+} else {
+    [_candidate] call FLO_fnc_virtualizationClearPathRequest;
+    _candidate set ["waypoints", []];
+    _candidate set ["pathSource", _sourceTag];
+    _candidate set ["patrolConfig", []];
+    _candidate set ["autoPatrol", false];
+    _candidate set ["currentWaypointIndex", 0];
+    _candidate set ["virtualMoveCarryMeters", 0];
+    _candidate set ["nextProcessAt", 0];
+    [_candidate] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
+    [_candidate, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
+};
+
+[_candidate, _groupId] call FLO_fnc_virtualizationValidateGroup;
+if (_autoPatrolRequested) then {
+    private _routeValidation = [
+        _groupId,
+        _candidate get "position",
+        _candidate get "waypoints",
+        _candidate get "currentWaypointIndex",
+        true,
+        _candidate get "patrolConfig"
+    ] call FLO_fnc_virtualizationValidateLandRoute;
+    if !(_routeValidation select 0) then {
+        ["VIRTUALIZATION", 1, format [
+            "Resolved auto-patrol route failed exact validation group=%1 reason=%2",
+            _groupId,
+            _routeValidation select 1
+        ]] call FLO_fnc_log;
+        throw format ["Auto-patrol route for %1 rejected after resolution: %2", _groupId, _routeValidation select 1];
+    };
+};
+private _physicalRouteAllowed = true;
+if (_candidate get "isActive") then {
+    _physicalRouteAllowed = [_groupId, _candidate] call FLO_fnc_virtualizationApplyRealRoute;
+};
+if (!_physicalRouteAllowed) exitWith { false };
+
+private _committedFields = call FLO_fnc_virtualizationGetRouteOwnedFields;
+_committedFields append ["idleHelicopterParked", "nextProcessAt", "state"];
+{
+    _groupData set [_x, [_candidate get _x] call FLO_fnc_virtualizationCloneValue];
+} forEach _committedFields;
 [_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
 call FLO_fnc_virtualizationTouchRegistry;
+private _changedFields = ["waypoints", "state", "pathToken"];
+if (_autoPatrolRequested) then {
+    _changedFields append ["autoPatrol", "patrolConfig"];
+};
 [
     "FLO_Virtualization_GroupPatched",
-    [_groupId, ["waypoints", "state", "pathToken"]]
+    [_groupId, _changedFields]
 ] call CBA_fnc_localEvent;
 
-// Log the update
-["VIRTUALIZATION", 5, format["Updated waypoints for virtual group %1", _groupId]] call FLO_fnc_log;
-
-// Return success
+["VIRTUALIZATION", 5, format ["Updated waypoints for virtual group %1", _groupId]] call FLO_fnc_log;
 true

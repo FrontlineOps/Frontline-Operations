@@ -37,6 +37,7 @@ class RscTitles {
 
 #include "UI\Setup\SetupDialog.hpp"
 #include "UI\Store\StoreDialog.hpp"
+#include "UI\Store\StoreKitsDialog.hpp"
 #include "UI\Deploy\DeployDialog.hpp"
 #include "UI\Operations\OperationsDialog.hpp"
 #include "UI\Development\DevelopmentDialog.hpp"

@@ -10,8 +10,6 @@ params ["_groupId", "_groupData"];
 private _realGroup = _groupData get "realGroup";
 if (isNull _realGroup) exitWith { false };
 
-[_realGroup] call CBA_fnc_clearWaypoints;
-
 private _homeObjective = _groupData get "homeObjective";
 if (_homeObjective isEqualTo "civ_building") then {
     {
@@ -21,67 +19,66 @@ if (_homeObjective isEqualTo "civ_building") then {
 };
 
 private _patrolConfig = _groupData get "patrolConfig";
-if (_patrolConfig isNotEqualTo []) exitWith {
+private _archetype = [(_groupData get "groupType")] call FLO_fnc_virtualizationGetArchetype;
+private _movementDomain = _archetype get "movementDomain";
+if (_patrolConfig isNotEqualTo [] && {_movementDomain != "LAND"}) exitWith {
     _patrolConfig params ["_patrolCenter", "_patrolRadius", "_wpCount", "_behavior", "_speed"];
-    _realGroup setSpeedMode _speed;
-    [_realGroup, _patrolCenter, _patrolRadius, _wpCount, _behavior, _speed] call FLO_fnc_taskPatrol;
-    ["VIRTUALIZATION", 3, format ["Group %1: Applied patrol route (center %2, radius %3)", _groupId, _patrolCenter, _patrolRadius]] call FLO_fnc_log;
-    true
+    private _applied = [_realGroup, _patrolCenter, _patrolRadius, _wpCount, _behavior, _speed, _movementDomain] call FLO_fnc_taskPatrol;
+    if (_applied) then {
+        ["VIRTUALIZATION", 5, format ["Group %1: Applied patrol route (center %2, radius %3)", _groupId, _patrolCenter, _patrolRadius]] call FLO_fnc_log;
+    };
+    _applied
 };
 
-if (_groupData get "noWaypoints") exitWith { true };
+if (_groupData get "noWaypoints") exitWith {
+    [_realGroup] call CBA_fnc_clearWaypoints;
+    true
+};
 
 private _waypoints = _groupData get "waypoints";
-if (_waypoints isEqualTo []) exitWith { true };
-
-private _firstWpType = (_waypoints select 0) select 1;
-if (_firstWpType == "CYCLE" && {count _waypoints == 1}) exitWith {
-    ["VIRTUALIZATION", 2, format ["Group %1 has only CYCLE waypoint - skipping", _groupId]] call FLO_fnc_log;
+if (_waypoints isEqualTo []) exitWith {
+    [_realGroup] call CBA_fnc_clearWaypoints;
     true
 };
 
-private _hadCycle = (_waypoints findIf { (_x select 1) == "CYCLE" }) != -1;
-private _filteredWaypoints = _waypoints select { (_x select 1) != "CYCLE" };
-private _firstWpSpeed = (_filteredWaypoints select 0) select 3;
-_realGroup setSpeedMode _firstWpSpeed;
-
-{
-    private _wpPos = _x select 0;
-    private _wpType = _x select 1;
-    private _wpBehavior = _x select 2;
-    private _wpSpeed = _x select 3;
-    private _wpFormation = _x select 4;
-    private _wpMode = _x select 5;
-    private _wpCompletionRadius = _x param [6, 20];
+private _hadCycle = (_waypoints findIf { (_x select 1) == "CYCLE" }) != -1 || {_groupData get "autoPatrol"};
+private _physicalWaypoints = _waypoints apply {
+    private _waypoint = +_x;
+    private _wpType = _waypoint select 1;
+    private _wpBehavior = _waypoint select 2;
+    private _wpMode = _waypoint select 5;
 
     private _effectiveType = switch (_wpType) do {
+        case "CYCLE": { "MOVE" };
         case "SAD": { _wpBehavior = "COMBAT"; _wpMode = "RED"; "MOVE" };
         case "DESTROY": { _wpBehavior = "COMBAT"; _wpMode = "RED"; "MOVE" };
         case "GUARD": { _wpBehavior = "COMBAT"; _wpMode = "RED"; "HOLD" };
         default { _wpType };
     };
 
-    private _wp = _realGroup addWaypoint [_wpPos, 0];
-    _wp setWaypointType _effectiveType;
-    _wp setWaypointBehaviour _wpBehavior;
-    _wp setWaypointSpeed _wpSpeed;
-    _wp setWaypointFormation _wpFormation;
-    _wp setWaypointCombatMode _wpMode;
-    _wp setWaypointCompletionRadius _wpCompletionRadius;
-
     if (_wpType != _effectiveType) then {
         ["VIRTUALIZATION", 4, format ["Group %1: Converted %2 to %3", _groupId, _wpType, _effectiveType]] call FLO_fnc_log;
     };
-} forEach _filteredWaypoints;
 
-if (_hadCycle && {count waypoints _realGroup > 1}) then {
-    private _lastWp = [_realGroup, (count waypoints _realGroup) - 1];
-    _lastWp setWaypointStatements [
-        "true",
-        format ["(group this) setCurrentWaypoint [(group this), %1];", 1]
-    ];
-    ["VIRTUALIZATION", 4, format ["Group %1: Added loop statement to last waypoint", _groupId]] call FLO_fnc_log;
+    _waypoint set [1, _effectiveType];
+    _waypoint set [2, _wpBehavior];
+    _waypoint set [5, _wpMode];
+    _waypoint
 };
+
+private _routeApplied = [
+    _realGroup,
+    _physicalWaypoints,
+    _movementDomain,
+    format ["VG_ACTIVATE_%1", _groupId],
+    _hadCycle,
+    true,
+    [0, 0, 0],
+    _movementDomain == "LAND"
+] call FLO_fnc_taskApplyRoute;
+if (!_routeApplied) exitWith { false };
+
+_realGroup setSpeedMode ((_physicalWaypoints select 0) select 3);
 
 if ((_groupData get "groupType") == "helicopter" && {([_groupData] call FLO_fnc_virtualizationIsTransportCarrier)}) then {
     private _transportVehicles = ([_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles) select { !isNull _x && {alive _x} };

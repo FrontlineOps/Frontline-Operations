@@ -54,7 +54,7 @@ _metrics set ["phaseObjective", _objectiveId];
 
 if (_phase != "assault") exitWith { _metrics };
 if (_objectiveId == "" || {_operationId == ""}) then {
-    throw "FLO_fnc_gtnAllocateFrontlineAttacks: ASSAULT has no objective or operation id";
+    throw "FLO_fnc_gtnAllocateFrontlineAttacks: offensive track has no objective or operation id";
 };
 if !(_operationId in _operations) then {
     throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: track operation %1 is missing", _operationId];
@@ -122,7 +122,7 @@ private _poolEntries = [];
     _poolEntries pushBack _x;
 } forEach _pool;
 
-private _decision = _track get "assaultWaveDecision";
+private _decision = _track get "offensiveWaveDecision";
 private _quota = _decision get "quota";
 private _assignmentLimit = [_cmdr, "attackAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
 private _strategicBudgetRemaining = _cmdr get "_strategicOrderBudgetRemaining";
@@ -156,6 +156,32 @@ private _approachRoutes = [
     _poolEntries,
     _groups
 ] call FLO_fnc_campaignBuildAssaultApproachLanes;
+private _routePreflightFailed = false;
+{
+    private _groupId = _x;
+    private _semanticWaypoints = (_approachRoutes get _groupId) apply {
+        [_x, "MOVE", "AWARE", "FULL", "STAG COLUMN", "YELLOW", 25]
+    };
+    private _preflight = [
+        (_groups get _groupId) get "position",
+        _semanticWaypoints,
+        true,
+        "GTN_ATTACK_PREFLIGHT",
+        false
+    ] call FLO_fnc_virtualizationResolveLandWaypoints;
+    if !(_preflight select 0) then {
+        _routePreflightFailed = true;
+    };
+} forEach (_poolEntries select [0, _quota]);
+
+if (_routePreflightFailed) exitWith {
+    _track set ["groupPool", []];
+    _metrics set ["preflightSkipped", true];
+    _metrics set ["remainingPool", 0];
+    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
+    ["GTN", 2, format ["Operation %1 wave held because one or more groups have no land route", _operationId]] call FLO_fnc_log;
+    _metrics
+};
 private _stop = false;
 
 while {!_stop && {_poolEntries isNotEqualTo []} && {_deficit > 0}} do {

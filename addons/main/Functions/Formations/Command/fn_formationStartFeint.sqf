@@ -48,6 +48,7 @@ private _groups = call FLO_fnc_virtualizationGetGroupMap;
 {
     private _formation = _y;
     if ((_formation get "sideKey") != _sideKey || {(_formation get "role") != "RESERVE"}) then { continue };
+    if ((_formation get "roleOperationId") != "") then { continue };
     if !((_formation get "branch") in ["infantry", "motorized", "mechanized", "armor"]) then { continue };
     private _livingMembers = (_formation get "memberIds") select { _x in _groups && {((_groups get _x) get "unitCount") > 0} };
     if ((count _livingMembers) < 3 || {(_formation get "readiness") < 55}) then { continue };

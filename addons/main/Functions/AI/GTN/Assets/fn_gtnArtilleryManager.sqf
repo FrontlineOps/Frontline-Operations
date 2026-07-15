@@ -444,9 +444,11 @@ if (isNil "FLO_GTNArtilleryManager") then {
                 private _dist = 300 + random 300;
                 private _newPos = _cur getPos [_dist, _dir];
                 private _wps = [[_newPos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", 10]];
-                [_gid, _wps, false] call FLO_fnc_updateVirtualGroupWaypoints;
-
-                ["GTN Artillery", 3, format["Artillery %1 shoot-and-scoot to %2", _gid, _newPos]] call FLO_fnc_log;
+                if ([_gid, _wps] call FLO_fnc_updateVirtualGroupWaypoints) then {
+                    ["GTN Artillery", 3, format["Artillery %1 shoot-and-scoot to %2", _gid, _newPos]] call FLO_fnc_log;
+                } else {
+                    ["GTN Artillery", 2, format["Artillery %1 could not find a land shoot-and-scoot route", _gid]] call FLO_fnc_log;
+                };
             };
 
             // Wait for relocation then release
@@ -463,11 +465,6 @@ if (isNil "FLO_GTNArtilleryManager") then {
 
                     // Reset state to idle so virtualization can assign new patrol
                     [_gdata, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
-                    [
-                        _gid,
-                        createHashMapFromArray [["autoPatrol", false]]
-                    ] call FLO_fnc_virtualizationPatchGroup;
-
                     if ((_gdata get "isActive") && {!isNull (_gdata get "realGroup")}) then {
                         [_gid, _gdata] call FLO_fnc_deactivateVirtualGroup;
                     };

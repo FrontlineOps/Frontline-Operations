@@ -51,14 +51,16 @@ private _resumed = 0;
     private _resumeWaypoint = +_waypointSettings;
     _resumeWaypoint set [0, _pendingTarget];
 
-    [_groupData] call FLO_fnc_virtualizationClearPathRequest;
-
-    [_groupId, [_resumeWaypoint], true, _allowTrails, _source] call FLO_fnc_updateVirtualGroupWaypoints;
-    _resumed = _resumed + 1;
+    if ([_groupId, [_resumeWaypoint], _allowTrails, _source] call FLO_fnc_updateVirtualGroupWaypoints) then {
+        _resumed = _resumed + 1;
+    } else {
+        ["VIRTUALIZATION", 1, format ["Required saved route could not resume for %1", _groupId]] call FLO_fnc_log;
+        throw format ["FLO_fnc_virtualizationResumeSavedRoutes: no land route for %1", _groupId];
+    };
 } forEach _groups;
 
 if (_resumed > 0) then {
-    ["VIRTUALIZATION", 2, format ["Reissued %1 saved route requests after load", _resumed]] call FLO_fnc_log;
+    ["VIRTUALIZATION", 3, format ["Reissued %1 saved route requests after load", _resumed]] call FLO_fnc_log;
 };
 
 _resumed

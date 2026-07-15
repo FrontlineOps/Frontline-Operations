@@ -16,14 +16,13 @@
 if (!isServer) exitWith { false };
 
 private _saveStartTime = diag_tickTime;
-private _saveVersion = 24;
+private _saveVersion = FLO_MissionSaveVersion;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
 // Create fresh save data
 private _data = createHashMap;
 _data set ["saveVersion", _saveVersion];
-_data set ["saveTimestamp", systemTimeUTC];
 _data set ["time", call FLO_fnc_operationalDate];
 
 // ============================================================================
@@ -61,18 +60,13 @@ try {
     _cfg set ["eastGTNForceGrowthHandle", FLO_EastGTN_ForceGrowthHandle];
     _cfg set ["westGTNGarrisonHandle", FLO_WestGTN_GarrisonHandle];
     _cfg set ["eastGTNGarrisonHandle", FLO_EastGTN_GarrisonHandle];
-    if (!isNil "FLO_WestFactionTuningHandle") then { _cfg set ["westFactionTuningHandle", FLO_WestFactionTuningHandle]; };
-    if (!isNil "FLO_EastFactionTuningHandle") then { _cfg set ["eastFactionTuningHandle", FLO_EastFactionTuningHandle]; };
+    _cfg set ["westFactionTuningHandle", FLO_WestFactionTuningHandle];
+    _cfg set ["eastFactionTuningHandle", FLO_EastFactionTuningHandle];
     _cfg set ["objectiveSizeThreshold", FLO_ObjectiveSizeThreshold];
     _cfg set ["virtualizationDistance", FLO_VirtualizationDistance];
     _cfg set ["virtualizationUnitCap", FLO_VirtualizationUnitCap];
     _cfg set ["startingTerritoryWestRatio", FLO_StartingTerritoryWestRatio];
     _cfg set ["startPosition", FLO_MissionConfig get "startPosition"];
-    _cfg set ["enemyPrec", EnemyPrec];
-    if (!isNil "FLO_FactionFobType") then { _cfg set ["fobType", FLO_FactionFobType]; };
-    if (!isNil "FLO_FactionFobTerminalType") then { _cfg set ["fobContainerType", FLO_FactionFobTerminalType]; };
-    if (!isNil "FLO_FactionCopType") then { _cfg set ["opType", FLO_FactionCopType]; };
-    if (!isNil "FLO_FactionCopTerminalType") then { _cfg set ["opContainerType", FLO_FactionCopTerminalType]; };
     _data set ["config", _cfg];
     ["SAVE", 3, format ["Config: %1 items", count keys _cfg]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Config failed: %1", _exception]] call FLO_fnc_log; };
@@ -154,8 +148,8 @@ try {
 
     // Exclude FOB/OP container types - they are saved as part of FOB/OP data
     private _excludeContainers = createHashMap;
-    if (!isNil "FLO_FactionFobTerminalType") then { _excludeContainers set [FLO_FactionFobTerminalType, true]; };
-    if (!isNil "FLO_FactionCopTerminalType") then { _excludeContainers set [FLO_FactionCopTerminalType, true]; };
+    _excludeContainers set [FLO_FactionFobTerminalType, true];
+    _excludeContainers set [FLO_FactionCopTerminalType, true];
     // Also exclude common fallback container types
     _excludeContainers set ["Land_TripodScreen_01_large_sand_F", true];
     _excludeContainers set ["Land_Cargo20_military_green_F", true];
@@ -249,9 +243,13 @@ try {
 
     _data set ["minefields", _minefieldArray];
 
-    if (!isNil "FLO_MinefieldObjectiveCooldowns" && {FLO_MinefieldObjectiveCooldowns isEqualType createHashMap}) then {
-        _data set ["minefieldObjectiveCooldowns", FLO_MinefieldObjectiveCooldowns];
+    if !(FLO_MinefieldObjectiveCooldowns isEqualType createHashMap) then {
+        throw format [
+            "Minefield objective cooldowns have invalid type %1",
+            typeName FLO_MinefieldObjectiveCooldowns
+        ];
     };
+    _data set ["minefieldObjectiveCooldowns", FLO_MinefieldObjectiveCooldowns];
 
     ["SAVE", 3, format ["Commander minefields: %1", count _minefieldArray]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Commander minefields failed: %1", _exception]] call FLO_fnc_log; };
@@ -263,10 +261,15 @@ try {
 try {
     private _fobArray = [];
     private _opArray = [];
-    private _fobType = if (!isNil "FLO_FactionFobType") then { FLO_FactionFobType } else { "" };
-    private _fobContainerType = if (!isNil "FLO_FactionFobTerminalType") then { FLO_FactionFobTerminalType } else { "" };
-    private _opType = if (!isNil "FLO_FactionCopType") then { FLO_FactionCopType } else { "" };
-    private _opContainerType = if (!isNil "FLO_FactionCopTerminalType") then { FLO_FactionCopTerminalType } else { "" };
+    private _fobType = FLO_FactionFobType;
+    private _fobContainerType = FLO_FactionFobTerminalType;
+    private _opType = FLO_FactionCopType;
+    private _opContainerType = FLO_FactionCopTerminalType;
+    {
+        if !(_x isEqualType "" && {_x != ""} && {isClass (configFile >> "CfgVehicles" >> _x)}) then {
+            throw format ["Base structure class is invalid: %1", _x];
+        };
+    } forEach [_fobType, _fobContainerType, _opType, _opContainerType];
 
     // Find and save FOBs with their containers
     if (_fobType != "") then {
@@ -275,6 +278,16 @@ try {
             if (!isNull _x && alive _x && { _x getVariable ["FLO_FOB_Initialized", false] }) then {
                 private _building = _x;
                 private _marker = _building getVariable ["fobMarkerName", ""];
+                private _baseSide = _building getVariable "FLO_BaseSide";
+                private _baseSaveId = _building getVariable "FLO_BaseSaveId";
+                private _logisticsNodeId = _building getVariable "FLO_LogisticsNodeId";
+                if (
+                    !(_baseSide in [east, west])
+                    || {!(_baseSaveId isEqualType "" && {_baseSaveId != ""})}
+                    || {!(_logisticsNodeId isEqualType "" && {_logisticsNodeId != ""})}
+                ) then {
+                    throw format ["FOB at %1 has invalid save identity", getPosASL _building];
+                };
 
                 // Find the container that's near this FOB
                 private _nearContainer = objNull;
@@ -289,9 +302,9 @@ try {
                     ["buildingDir", getDir _building],
                     ["buildingVectorUp", vectorUp _building],
                     ["markerName", _marker],
-                    ["baseSideKey", [_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_sideKey],
-                    ["baseSaveId", _building getVariable ["FLO_BaseSaveId", ""]],
-                    ["logisticsNodeId", _building getVariable ["FLO_LogisticsNodeId", ""]]
+                    ["baseSideKey", [_baseSide] call FLO_fnc_sideKey],
+                    ["baseSaveId", _baseSaveId],
+                    ["logisticsNodeId", _logisticsNodeId]
                 ];
 
                 // Add container data if found
@@ -314,6 +327,16 @@ try {
             if (!isNull _x && alive _x && { _x getVariable ["FLO_OP_Initialized", false] }) then {
                 private _building = _x;
                 private _marker = _building getVariable ["opMarkerName", ""];
+                private _baseSide = _building getVariable "FLO_BaseSide";
+                private _baseSaveId = _building getVariable "FLO_BaseSaveId";
+                private _logisticsNodeId = _building getVariable "FLO_LogisticsNodeId";
+                if (
+                    !(_baseSide in [east, west])
+                    || {!(_baseSaveId isEqualType "" && {_baseSaveId != ""})}
+                    || {!(_logisticsNodeId isEqualType "" && {_logisticsNodeId != ""})}
+                ) then {
+                    throw format ["OP at %1 has invalid save identity", getPosASL _building];
+                };
 
                 // Find the container that's near this OP
                 private _nearContainer = objNull;
@@ -328,9 +351,9 @@ try {
                     ["buildingDir", getDir _building],
                     ["buildingVectorUp", vectorUp _building],
                     ["markerName", _marker],
-                    ["baseSideKey", [_building getVariable ["FLO_BaseSide", sideUnknown]] call FLO_fnc_sideKey],
-                    ["baseSaveId", _building getVariable ["FLO_BaseSaveId", ""]],
-                    ["logisticsNodeId", _building getVariable ["FLO_LogisticsNodeId", ""]]
+                    ["baseSideKey", [_baseSide] call FLO_fnc_sideKey],
+                    ["baseSaveId", _baseSaveId],
+                    ["logisticsNodeId", _logisticsNodeId]
                 ];
 
                 // Add container data if found
@@ -348,7 +371,6 @@ try {
 
     _data set ["fobs", _fobArray];
     _data set ["ops", _opArray];
-    _data set ["structureTypes", [_fobType, _fobContainerType, _opType, _opContainerType]];
     ["SAVE", 3, format ["Structures: %1 FOBs, %2 OPs", count _fobArray, count _opArray]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Structures failed: %1", _exception]] call FLO_fnc_log; };
 
@@ -436,43 +458,71 @@ try {
 // ============================================================================
 
 try {
-    if (!isNil "IDS_Logistics_PlacedEntities" && {IDS_Logistics_PlacedEntities isNotEqualTo []}) then {
-        private _idsEntities = [];
-        {
-            if (!isNull _x && alive _x) then {
-                _idsEntities pushBack createHashMapFromArray [
-                    ["class", typeOf _x],
-                    ["posASL", getPosASL _x],
-                    ["direction", getDir _x],
-                    ["vectorUp", vectorUp _x],
-                    ["damage", damage _x]
-                ];
-            };
-        } forEach IDS_Logistics_PlacedEntities;
-        _data set ["idsLogisticsEntities", _idsEntities];
-        ["SAVE", 3, format ["IDS Logistics: %1 placed entities", count _idsEntities]] call FLO_fnc_log;
+    if !(IDS_Logistics_PlacedEntities isEqualType []) then {
+        throw format [
+            "IDS Logistics registry has invalid type %1",
+            typeName IDS_Logistics_PlacedEntities
+        ];
     };
+    private _idsEntities = [];
+    {
+        if (!isNull _x && alive _x) then {
+            _idsEntities pushBack createHashMapFromArray [
+                ["class", typeOf _x],
+                ["posASL", getPosASL _x],
+                ["direction", getDir _x],
+                ["vectorUp", vectorUp _x],
+                ["damage", damage _x]
+            ];
+        };
+    } forEach IDS_Logistics_PlacedEntities;
+    _data set ["idsLogisticsEntities", _idsEntities];
+    ["SAVE", 3, format ["IDS Logistics: %1 placed entities", count _idsEntities]] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["IDS Logistics failed: %1", _exception]] call FLO_fnc_log; };
 
 // ============================================================================
 // FINALIZATION
 // ============================================================================
 
-private _requiredKeys = [
-    "time",
-    "markers",
-    "vehicles",
-    "objects",
-    "config",
-    "objectives",
-    "virtualGroups",
-    "campaignOperation",
-    "baseDeploymentState",
-    "sideResources",
-    "logisticsNetworkBySide"
+private _requiredRootTypes = [
+    ["saveVersion", 0],
+    ["time", []],
+    ["markers", createHashMap],
+    ["vehicles", createHashMap],
+    ["objects", createHashMap],
+    ["crates", createHashMap],
+    ["minefields", []],
+    ["minefieldObjectiveCooldowns", createHashMap],
+    ["fobs", []],
+    ["ops", []],
+    ["config", createHashMap],
+    ["objectives", createHashMap],
+    ["virtualGroups", createHashMap],
+    ["aiCommanders", createHashMap],
+    ["campaignOperation", createHashMap],
+    ["baseDeploymentState", createHashMap],
+    ["sideResources", createHashMap],
+    ["logisticsNetworkBySide", createHashMap],
+    ["idsLogisticsEntities", []]
 ];
 private _isValid = true;
-{ if (!(_x in _data)) then { _isValid = false; ["SAVE", 1, format ["Missing key: %1", _x]] call FLO_fnc_log; }; } forEach _requiredKeys;
+{
+    _x params ["_key", "_prototype"];
+    if !(_key in _data) then {
+        _isValid = false;
+        ["SAVE", 1, format ["Missing required root field: %1", _key]] call FLO_fnc_log;
+    } else {
+        private _value = _data get _key;
+        if !(_value isEqualType _prototype) then {
+            _isValid = false;
+            ["SAVE", 1, format [
+                "Required root field %1 has invalid type %2",
+                _key,
+                typeName _value
+            ]] call FLO_fnc_log;
+        };
+    };
+} forEach _requiredRootTypes;
 
 if (_isValid) then {
     try {

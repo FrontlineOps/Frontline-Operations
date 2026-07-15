@@ -32,7 +32,10 @@ _postWp params [
 private _waypoints = [
     [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 50]
 ];
-[_infantryGroupId, _waypoints, false, true, _sourceTag] call FLO_fnc_updateVirtualGroupWaypoints;
+if !([_infantryGroupId, _waypoints, true, _sourceTag] call FLO_fnc_updateVirtualGroupWaypoints) exitWith {
+    ["TRANSPORT", 2, format ["Retained post-dismount task for %1 because no land route was available", _infantryGroupId]] call FLO_fnc_log;
+    false
+};
 private _changes = createHashMapFromArray [["postDismountWaypoint", []]];
 if ((_infData get "missionLock") == "TRANSPORT") then {
     _changes set ["missionLock", ""];

@@ -37,6 +37,7 @@ private _reservationId = format ["AIR:%1:%2", _sideKey, _missionId];
 private _reason = format ["%1 air sortie", _missionType];
 private _actor = ["COMMANDER", "PLAYER"] select _playerRequested;
 
+private _spendingAllowed = true;
 if (!_playerRequested) then {
     private _spendingDecision = [
         _treasury,
@@ -45,8 +46,9 @@ if (!_playerRequested) then {
         "OPERATIONAL",
         createHashMapFromArray [["strategic", true], ["commitment", false], ["reserved", false], ["referenceId", _missionId]]
     ] call FLO_fnc_commanderSpendingEvaluate;
-    if !(_spendingDecision get "allowed") exitWith { false };
+    _spendingAllowed = _spendingDecision get "allowed";
 };
+if (!_spendingAllowed) exitWith { false };
 
 if !(_treasury call ["reserve", [_reservationId, _treasuryCost, "AIR_SUPPORT", _reason, _actor, _missionId]]) exitWith { false };
 if !([_network, _sourceNodeId, _localSupplyCost, _reason] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {

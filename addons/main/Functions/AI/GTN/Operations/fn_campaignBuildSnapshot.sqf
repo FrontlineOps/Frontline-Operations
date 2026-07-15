@@ -27,7 +27,7 @@ private _operationRows = [];
 
 {
     private _operationId = _x;
-    _operationRows pushBack ([_director, _operationsMap get _operationId, _viewerSideKey, _treasury, _forEachIndex == 0] call FLO_fnc_campaignBuildOperationSnapshot);
+    _operationRows pushBack ([_operationsMap get _operationId, _viewerSideKey, _treasury, _forEachIndex == 0] call FLO_fnc_campaignBuildOperationSnapshot);
 } forEach (_state get "operationOrder");
 
 private _emptyThreatSector = createHashMapFromArray [
@@ -43,12 +43,12 @@ private _emptyThreatSector = createHashMapFromArray [
 private _primaryOperation = createHashMapFromArray [
     ["id", ""],
     ["isPrimary", true],
-    ["role", "REORGANIZE"],
-    ["phase", "LULL"],
-    ["actualPhase", "LULL"],
+    ["role", "PROBING"],
+    ["phase", "PROBING"],
+    ["actualPhase", "PROBING"],
     ["targetVisible", false],
     ["targetId", ""],
-    ["targetName", "Theater Reserve"],
+    ["targetName", "Active Front"],
     ["targetPosition", []],
     ["intelLevel", "NONE"],
     ["intelReason", "NO_ACTIVE_OPERATION"],
@@ -56,7 +56,7 @@ private _primaryOperation = createHashMapFromArray [
     ["sourceObjectiveIds", []],
     ["supportObjectiveIds", []],
     ["supplySourceObjectiveId", ""],
-    ["supportPosture", "ON_CALL"],
+    ["supportPosture", "CONTACT"],
     ["remainingSeconds", round (([call FLO_fnc_operationalDateNumber, _state get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds) max 0)],
     ["result", ""],
     ["transitionReason", _state get "transitionReason"],

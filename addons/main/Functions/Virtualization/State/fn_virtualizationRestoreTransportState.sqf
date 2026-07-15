@@ -1,8 +1,7 @@
 /*
  * Function: FLO_fnc_virtualizationRestoreTransportState
  * Description:
- *   Applies already-migrated and schema-validated transport state. Legacy
- *   normalization belongs exclusively to virtualizationMigrateSavedGroup.
+ *   Applies exact transport state after current-save validation.
  */
 
 params ["_groupData", "_savedData"];

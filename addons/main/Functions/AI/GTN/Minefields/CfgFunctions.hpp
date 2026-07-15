@@ -32,5 +32,6 @@ class GTNMinefields {
     class minefieldRegisterSpacingPos {};
     class minefieldRestoreSavedFields {};
     class minefieldSerializeField {};
+    class minefieldValidateSavedField {};
     class minefieldValidateSlotCandidate {};
 };

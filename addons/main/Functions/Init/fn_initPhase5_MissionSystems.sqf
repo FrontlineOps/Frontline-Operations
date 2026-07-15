@@ -47,116 +47,220 @@ if (([] call FLO_fnc_initSideResourcesUninitialized) && {!isNil "FLO_fnc_sideRes
 // ============================================
 // RESTORE FOBs AND OPs FROM SAVE
 // ============================================
-if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
+if (FLO_IsLoadedSave) then {
     diag_log "[FLO_INIT_P5] Restoring FOBs and OPs from save...";
 
     private _savedData = FLO_SavedGameData;
+    private _requiredBaseRecordTypes = [
+        ["buildingType", ""],
+        ["buildingPosASL", []],
+        ["buildingDir", 0],
+        ["buildingVectorUp", []],
+        ["markerName", ""],
+        ["baseSideKey", ""],
+        ["baseSaveId", ""],
+        ["logisticsNodeId", ""]
+    ];
+    private _containerRecordTypes = [
+        ["containerType", ""],
+        ["containerPosASL", []],
+        ["containerDir", 0],
+        ["containerVectorUp", []]
+    ];
+    private _requiredBaseRecordFields = _requiredBaseRecordTypes apply { _x # 0 };
+    private _containerRecordFields = _containerRecordTypes apply { _x # 0 };
 
     // Restore FOBs
-    if ("fobs" in _savedData) then {
-        private _fobArray = _savedData get "fobs";
-        private _fobCount = 0;
-
+    private _fobArray = _savedData get "fobs";
+    {
+        private _fobData = _x;
+        if !(_fobData isEqualType createHashMap) then {
+            throw format ["Saved FOB %1 has invalid record type %2", _forEachIndex, typeName _fobData];
+        };
         {
-            private _fobData = _x;
-
-            // Create the FOB building
-            private _buildingType = _fobData getOrDefault ["buildingType", ""];
-            private _buildingPos = _fobData getOrDefault ["buildingPosASL", []];
-
-            if (_buildingType != "" && _buildingPos isNotEqualTo []) then {
-                private _building = createVehicle [_buildingType, [0,0,0], [], 0, "CAN_COLLIDE"];
-                _building setPosASL _buildingPos;
-                _building setDir (_fobData getOrDefault ["buildingDir", 0]);
-                _building setVectorUp (_fobData getOrDefault ["buildingVectorUp", [0,0,1]]);
-                private _baseSideKey = _fobData getOrDefault ["baseSideKey", "WEST"];
-                private _baseSaveId = _fobData getOrDefault [
-                    "baseSaveId",
-                    format ["BASE_%1_FOB_%2_%3", _baseSideKey, round (_buildingPos select 0), round (_buildingPos select 1)]
-                ];
-                _building setVariable ["FLO_BaseSide", [_baseSideKey] call FLO_fnc_campaignSideFromKey, true];
-                _building setVariable ["FLO_BaseType", "FOB", true];
-                _building setVariable ["FLO_BaseSaveId", _baseSaveId, true];
-                _building setVariable ["FLO_LogisticsNodeId", _fobData getOrDefault ["logisticsNodeId", format ["NODE_%1", _baseSaveId]], true];
-
-                // Store marker name for later initialization
-                private _markerName = _fobData getOrDefault ["markerName", ""];
-                if (_markerName != "") then {
-                    _building setVariable ["fobMarkerName", _markerName, true];
-                    _building setVariable ["FLO_FOB_MarkersRestored", true, true];
-                };
-
-                // Create the container if saved
-                private _containerType = _fobData getOrDefault ["containerType", ""];
-                private _containerPos = _fobData getOrDefault ["containerPosASL", []];
-
-                if (_containerType != "" && _containerPos isNotEqualTo []) then {
-                    private _container = createVehicle [_containerType, [0,0,0], [], 0, "CAN_COLLIDE"];
-                    _container setPosASL _containerPos;
-                    _container setDir (_fobData getOrDefault ["containerDir", 0]);
-                    _container setVectorUp (_fobData getOrDefault ["containerVectorUp", [0,0,1]]);
-                };
-
-                _fobCount = _fobCount + 1;
-                diag_log format ["[FLO_INIT_P5] Restored FOB at %1", _buildingPos];
+            _x params ["_field", "_prototype"];
+            if !(_field in _fobData) then {
+                throw format ["Saved FOB %1 is missing required field %2", _forEachIndex, _field];
             };
-        } forEach _fobArray;
+            private _value = _fobData get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved FOB %1 field %2 has invalid type %3", _forEachIndex, _field, typeName _value];
+            };
+        } forEach _requiredBaseRecordTypes;
+        private _containerFieldCount = {_x # 0 in _fobData} count _containerRecordTypes;
+        if !(_containerFieldCount in [0, count _containerRecordTypes]) then {
+            throw format ["Saved FOB %1 has an incomplete container record", _forEachIndex];
+        };
+        if (_containerFieldCount > 0) then {
+            {
+                _x params ["_field", "_prototype"];
+                private _value = _fobData get _field;
+                if !(_value isEqualType _prototype) then {
+                    throw format ["Saved FOB %1 field %2 has invalid type %3", _forEachIndex, _field, typeName _value];
+                };
+            } forEach _containerRecordTypes;
+        };
+        private _allowedFobFields = +_requiredBaseRecordFields;
+        if (_containerFieldCount > 0) then {
+            _allowedFobFields append _containerRecordFields;
+        };
+        private _unexpectedFobFields = (keys _fobData) select {
+            !(_x in _allowedFobFields)
+        };
+        if (_unexpectedFobFields isNotEqualTo []) then {
+            throw format [
+                "Saved FOB %1 has unexpected fields %2",
+                _forEachIndex,
+                _unexpectedFobFields
+            ];
+        };
 
-        diag_log format ["[FLO_INIT_P5] Restored %1 FOBs from save", _fobCount];
-    };
+        private _buildingType = _fobData get "buildingType";
+        private _buildingPos = _fobData get "buildingPosASL";
+        private _baseSideKey = _fobData get "baseSideKey";
+        private _baseSaveId = _fobData get "baseSaveId";
+        private _logisticsNodeId = _fobData get "logisticsNodeId";
+        if (
+            _buildingType == ""
+            || {!isClass (configFile >> "CfgVehicles" >> _buildingType)}
+            || {(count _buildingPos) < 2}
+            || {!(_baseSideKey in ["EAST", "WEST"])}
+            || {_baseSaveId == ""}
+            || {_logisticsNodeId == ""}
+        ) then {
+            throw format ["Saved FOB %1 has invalid required values", _forEachIndex];
+        };
+
+        private _building = createVehicle [_buildingType, [0,0,0], [], 0, "CAN_COLLIDE"];
+        if (isNull _building) then {
+            throw format ["Failed to restore saved FOB %1 of type %2", _forEachIndex, _buildingType];
+        };
+        _building setPosASL _buildingPos;
+        _building setDir (_fobData get "buildingDir");
+        _building setVectorUp (_fobData get "buildingVectorUp");
+        _building setVariable ["FLO_BaseSide", [_baseSideKey] call FLO_fnc_campaignSideFromKey, true];
+        _building setVariable ["FLO_BaseType", "FOB", true];
+        _building setVariable ["FLO_BaseSaveId", _baseSaveId, true];
+        _building setVariable ["FLO_LogisticsNodeId", _logisticsNodeId, true];
+
+        private _markerName = _fobData get "markerName";
+        if (_markerName != "") then {
+            _building setVariable ["fobMarkerName", _markerName, true];
+            _building setVariable ["FLO_FOB_MarkersRestored", true, true];
+        };
+
+        if (_containerFieldCount > 0) then {
+            private _containerType = _fobData get "containerType";
+            if (_containerType == "" || {!isClass (configFile >> "CfgVehicles" >> _containerType)}) then {
+                throw format ["Saved FOB %1 has invalid container type %2", _forEachIndex, _containerType];
+            };
+            private _container = createVehicle [_containerType, [0,0,0], [], 0, "CAN_COLLIDE"];
+            if (isNull _container) then {
+                throw format ["Failed to restore saved FOB %1 container type %2", _forEachIndex, _containerType];
+            };
+            _container setPosASL (_fobData get "containerPosASL");
+            _container setDir (_fobData get "containerDir");
+            _container setVectorUp (_fobData get "containerVectorUp");
+        };
+    } forEach _fobArray;
+
+    ["INIT", 3, format ["Restored %1 FOBs from current save", count _fobArray]] call FLO_fnc_log;
 
     // Restore OPs
-    if ("ops" in _savedData) then {
-        private _opArray = _savedData get "ops";
-        private _opCount = 0;
-
+    private _opArray = _savedData get "ops";
+    {
+        private _opData = _x;
+        if !(_opData isEqualType createHashMap) then {
+            throw format ["Saved OP %1 has invalid record type %2", _forEachIndex, typeName _opData];
+        };
         {
-            private _opData = _x;
-
-            // Create the OP building
-            private _buildingType = _opData getOrDefault ["buildingType", ""];
-            private _buildingPos = _opData getOrDefault ["buildingPosASL", []];
-
-            if (_buildingType != "" && _buildingPos isNotEqualTo []) then {
-                private _building = createVehicle [_buildingType, [0,0,0], [], 0, "CAN_COLLIDE"];
-                _building setPosASL _buildingPos;
-                _building setDir (_opData getOrDefault ["buildingDir", 0]);
-                _building setVectorUp (_opData getOrDefault ["buildingVectorUp", [0,0,1]]);
-                private _baseSideKey = _opData getOrDefault ["baseSideKey", "WEST"];
-                private _baseSaveId = _opData getOrDefault [
-                    "baseSaveId",
-                    format ["BASE_%1_COP_%2_%3", _baseSideKey, round (_buildingPos select 0), round (_buildingPos select 1)]
-                ];
-                _building setVariable ["FLO_BaseSide", [_baseSideKey] call FLO_fnc_campaignSideFromKey, true];
-                _building setVariable ["FLO_BaseType", "COP", true];
-                _building setVariable ["FLO_BaseSaveId", _baseSaveId, true];
-                _building setVariable ["FLO_LogisticsNodeId", _opData getOrDefault ["logisticsNodeId", format ["NODE_%1", _baseSaveId]], true];
-
-                // Store marker name for later initialization
-                private _markerName = _opData getOrDefault ["markerName", ""];
-                if (_markerName != "") then {
-                    _building setVariable ["opMarkerName", _markerName, true];
-                    _building setVariable ["FLO_OP_MarkersRestored", true, true];
-                };
-
-                // Create the container if saved
-                private _containerType = _opData getOrDefault ["containerType", ""];
-                private _containerPos = _opData getOrDefault ["containerPosASL", []];
-
-                if (_containerType != "" && _containerPos isNotEqualTo []) then {
-                    private _container = createVehicle [_containerType, [0,0,0], [], 0, "CAN_COLLIDE"];
-                    _container setPosASL _containerPos;
-                    _container setDir (_opData getOrDefault ["containerDir", 0]);
-                    _container setVectorUp (_opData getOrDefault ["containerVectorUp", [0,0,1]]);
-                };
-
-                _opCount = _opCount + 1;
-                diag_log format ["[FLO_INIT_P5] Restored OP at %1", _buildingPos];
+            _x params ["_field", "_prototype"];
+            if !(_field in _opData) then {
+                throw format ["Saved OP %1 is missing required field %2", _forEachIndex, _field];
             };
-        } forEach _opArray;
+            private _value = _opData get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved OP %1 field %2 has invalid type %3", _forEachIndex, _field, typeName _value];
+            };
+        } forEach _requiredBaseRecordTypes;
+        private _containerFieldCount = {_x # 0 in _opData} count _containerRecordTypes;
+        if !(_containerFieldCount in [0, count _containerRecordTypes]) then {
+            throw format ["Saved OP %1 has an incomplete container record", _forEachIndex];
+        };
+        if (_containerFieldCount > 0) then {
+            {
+                _x params ["_field", "_prototype"];
+                private _value = _opData get _field;
+                if !(_value isEqualType _prototype) then {
+                    throw format ["Saved OP %1 field %2 has invalid type %3", _forEachIndex, _field, typeName _value];
+                };
+            } forEach _containerRecordTypes;
+        };
+        private _allowedOpFields = +_requiredBaseRecordFields;
+        if (_containerFieldCount > 0) then {
+            _allowedOpFields append _containerRecordFields;
+        };
+        private _unexpectedOpFields = (keys _opData) select {
+            !(_x in _allowedOpFields)
+        };
+        if (_unexpectedOpFields isNotEqualTo []) then {
+            throw format [
+                "Saved OP %1 has unexpected fields %2",
+                _forEachIndex,
+                _unexpectedOpFields
+            ];
+        };
 
-        diag_log format ["[FLO_INIT_P5] Restored %1 OPs from save", _opCount];
-    };
+        private _buildingType = _opData get "buildingType";
+        private _buildingPos = _opData get "buildingPosASL";
+        private _baseSideKey = _opData get "baseSideKey";
+        private _baseSaveId = _opData get "baseSaveId";
+        private _logisticsNodeId = _opData get "logisticsNodeId";
+        if (
+            _buildingType == ""
+            || {!isClass (configFile >> "CfgVehicles" >> _buildingType)}
+            || {(count _buildingPos) < 2}
+            || {!(_baseSideKey in ["EAST", "WEST"])}
+            || {_baseSaveId == ""}
+            || {_logisticsNodeId == ""}
+        ) then {
+            throw format ["Saved OP %1 has invalid required values", _forEachIndex];
+        };
+
+        private _building = createVehicle [_buildingType, [0,0,0], [], 0, "CAN_COLLIDE"];
+        if (isNull _building) then {
+            throw format ["Failed to restore saved OP %1 of type %2", _forEachIndex, _buildingType];
+        };
+        _building setPosASL _buildingPos;
+        _building setDir (_opData get "buildingDir");
+        _building setVectorUp (_opData get "buildingVectorUp");
+        _building setVariable ["FLO_BaseSide", [_baseSideKey] call FLO_fnc_campaignSideFromKey, true];
+        _building setVariable ["FLO_BaseType", "COP", true];
+        _building setVariable ["FLO_BaseSaveId", _baseSaveId, true];
+        _building setVariable ["FLO_LogisticsNodeId", _logisticsNodeId, true];
+
+        private _markerName = _opData get "markerName";
+        if (_markerName != "") then {
+            _building setVariable ["opMarkerName", _markerName, true];
+            _building setVariable ["FLO_OP_MarkersRestored", true, true];
+        };
+
+        if (_containerFieldCount > 0) then {
+            private _containerType = _opData get "containerType";
+            if (_containerType == "" || {!isClass (configFile >> "CfgVehicles" >> _containerType)}) then {
+                throw format ["Saved OP %1 has invalid container type %2", _forEachIndex, _containerType];
+            };
+            private _container = createVehicle [_containerType, [0,0,0], [], 0, "CAN_COLLIDE"];
+            if (isNull _container) then {
+                throw format ["Failed to restore saved OP %1 container type %2", _forEachIndex, _containerType];
+            };
+            _container setPosASL (_opData get "containerPosASL");
+            _container setDir (_opData get "containerDir");
+            _container setVectorUp (_opData get "containerVectorUp");
+        };
+    } forEach _opArray;
+
+    ["INIT", 3, format ["Restored %1 OPs from current save", count _opArray]] call FLO_fnc_log;
 };
 
 // ============================================
@@ -177,7 +281,7 @@ diag_log "[FLO_INIT_P5] Base deployment state initialized";
 // ============================================
 // ENTITY RESTORATION FROM SAVE
 // ============================================
-if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameData"}) then {
+if (FLO_IsLoadedSave) then {
     diag_log "[FLO_INIT_P5] Restoring entities from save...";
 
     private _savedData = FLO_SavedGameData;
@@ -193,43 +297,67 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
     };
 
     // Restore markers
-    if ("markers" in _savedData) then {
-        private _markerHash = _savedData get "markers";
-        private _loadedMarkers = 0;
-
+    private _markerHash = _savedData get "markers";
+    private _requiredMarkerTypes = [
+        ["pos", []], ["type", ""], ["brush", ""], ["shape", ""],
+        ["size", []], ["text", ""], ["dir", 0], ["color", ""], ["alpha", 0]
+    ];
+    private _requiredMarkerFields = _requiredMarkerTypes apply { _x # 0 };
+    private _loadedMarkers = 0;
+    {
+        private _markerName = _x;
+        private _attr = _markerHash get _markerName;
+        if !(_markerName isEqualType "" && {_markerName != ""}) then {
+            throw format ["Current save has invalid marker key %1", _markerName];
+        };
+        if !(_attr isEqualType createHashMap) then {
+            throw format ["Saved marker %1 has invalid record type %2", _markerName, typeName _attr];
+        };
+        private _unexpectedMarkerFields = (keys _attr) select {
+            !(_x in _requiredMarkerFields)
+        };
+        if (_unexpectedMarkerFields isNotEqualTo []) then {
+            throw format [
+                "Saved marker %1 has unexpected fields %2",
+                _markerName,
+                _unexpectedMarkerFields
+            ];
+        };
         {
-            private _markerName = _x;
-            private _attr = _markerHash get _markerName;
-
-            if ((_markerName find _combatMarkerPrefix) != 0 && {!isNil "_attr" && {_attr isEqualType createHashMap}}) then {
-                if (getMarkerColor _markerName != "") then { deleteMarker _markerName };
-
-                private _marker = createMarker [_markerName, [0,0,0]];
-                _marker setMarkerPosLocal (_attr getOrDefault ["pos", [0,0,0]]);
-                _marker setMarkerTypeLocal (_attr getOrDefault ["type", "mil_dot"]);
-                _marker setMarkerBrushLocal (_attr getOrDefault ["brush", "Solid"]);
-                _marker setMarkerShapeLocal (_attr getOrDefault ["shape", "ICON"]);
-                _marker setMarkerSizeLocal (_attr getOrDefault ["size", [1,1]]);
-                _marker setMarkerTextLocal (_attr getOrDefault ["text", ""]);
-                _marker setMarkerDirLocal (_attr getOrDefault ["dir", 0]);
-                _marker setMarkerColorLocal (_attr getOrDefault ["color", "ColorBlack"]);
-                _marker setMarkerAlpha (_attr getOrDefault ["alpha", 1]);
-
-                _loadedMarkers = _loadedMarkers + 1;
+            _x params ["_field", "_prototype"];
+            if !(_field in _attr) then {
+                throw format ["Saved marker %1 is missing required field %2", _markerName, _field];
             };
-        } forEach (keys _markerHash);
+            private _value = _attr get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved marker %1 field %2 has invalid type %3", _markerName, _field, typeName _value];
+            };
+        } forEach _requiredMarkerTypes;
 
-        diag_log format ["[FLO_INIT_P5] Restored %1 markers", _loadedMarkers];
-    };
+        if ((_markerName find _combatMarkerPrefix) != 0) then {
+            if (getMarkerColor _markerName != "") then { deleteMarker _markerName };
+            private _marker = createMarker [_markerName, [0,0,0]];
+            _marker setMarkerPosLocal (_attr get "pos");
+            _marker setMarkerTypeLocal (_attr get "type");
+            _marker setMarkerBrushLocal (_attr get "brush");
+            _marker setMarkerShapeLocal (_attr get "shape");
+            _marker setMarkerSizeLocal (_attr get "size");
+            _marker setMarkerTextLocal (_attr get "text");
+            _marker setMarkerDirLocal (_attr get "dir");
+            _marker setMarkerColorLocal (_attr get "color");
+            _marker setMarkerAlpha (_attr get "alpha");
+            _loadedMarkers = _loadedMarkers + 1;
+        };
+    } forEach (keys _markerHash);
+    ["INIT", 3, format ["Restored %1 markers from current save", _loadedMarkers]] call FLO_fnc_log;
 
     // Restore date/time
-    if ("time" in _savedData) then {
-        private _date = _savedData get "time";
-        if (!isNil "_date" && {_date isEqualType []}) then {
-            setDate _date;
-            diag_log format ["[FLO_INIT_P5] Restored mission time: %1", _date];
-        };
+    private _date = _savedData get "time";
+    if (count _date != 5 || {{!(_x isEqualType 0)} count _date > 0}) then {
+        throw format ["Current save has malformed mission time %1", _date];
     };
+    setDate _date;
+    ["INIT", 3, format ["Restored mission time %1", _date]] call FLO_fnc_log;
 
     call FLO_fnc_operationalClockReset;
 
@@ -240,225 +368,384 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
     } forEach ((_playerCatalog get "staticAA") + (_playerCatalog get "radar"));
 
     // Restore vehicles
-    if ("vehicles" in _savedData) then {
-        private _vehHash = _savedData get "vehicles";
-        private _loadedVehicles = 0;
-
+    private _vehHash = _savedData get "vehicles";
+    private _requiredVehicleTypes = [
+        ["type", ""], ["posATL", []], ["fuel", 0], ["damage", 0],
+        ["damagedHitpoints", []], ["vectorDirAndUp", []], ["locked", 0],
+        ["engineOn", true], ["hadAICrew", true], ["storeVehicle", true],
+        ["mobileRespawnVehicle", true], ["supportVehicleRoles", []]
+    ];
+    private _requiredVehicleFields = _requiredVehicleTypes apply { _x # 0 };
+    private _loadedVehicles = 0;
+    {
+        private _vehId = _x;
+        private _attr = _vehHash get _vehId;
+        if !(_vehId isEqualType "" && {_vehId != ""}) then {
+            throw format ["Current save has invalid vehicle key %1", _vehId];
+        };
+        if !(_attr isEqualType createHashMap) then {
+            throw format ["Saved vehicle %1 has invalid record type %2", _vehId, typeName _attr];
+        };
+        private _unexpectedVehicleFields = (keys _attr) select {
+            !(_x in _requiredVehicleFields)
+        };
+        if (_unexpectedVehicleFields isNotEqualTo []) then {
+            throw format [
+                "Saved vehicle %1 has unexpected fields %2",
+                _vehId,
+                _unexpectedVehicleFields
+            ];
+        };
         {
-            private _vehId = _x;
-            private _attr = _vehHash get _vehId;
-
-            if (!isNil "_attr" && {_attr isEqualType createHashMap}) then {
-                private _type = _attr getOrDefault ["type", ""];
-
-                if (_type != "" && {isClass (configFile >> "CfgVehicles" >> _type)}) then {
-                    private _veh = createVehicle [_type, [0,0,0], [], 0, "CAN_COLLIDE"];
-
-                    if (!isNull _veh) then {
-                        _veh setVectorDirAndUp (_attr getOrDefault ["vectorDirAndUp", [[0,1,0], [0,0,1]]]);
-                        _veh setPosATL (_attr getOrDefault ["posATL", [0,0,0]]);
-                        _veh setFuel (_attr getOrDefault ["fuel", 1]);
-                        _veh setDamage (_attr getOrDefault ["damage", 0]);
-                        _veh lock (_attr getOrDefault ["locked", 0]);
-                        _veh setVariable ["FLO_SaveID", _vehId, true];
-                        private _isStoreVehicle = if ("storeVehicle" in _attr) then {
-                            _attr get "storeVehicle"
-                        } else {
-                            "requestMenuVehicle" in _attr && {_attr get "requestMenuVehicle"}
-                        };
-                        if (_isStoreVehicle) then {
-                            _veh setVariable ["FLO_StoreVehicle", true, true];
-                        };
-                        if (_attr getOrDefault ["mobileRespawnVehicle", false]) then {
-                            _veh setVariable ["FLO_MobileRespawnVehicle", true, true];
-                        };
-                        private _supportVehicleRoles = _attr getOrDefault ["supportVehicleRoles", []];
-                        if (_supportVehicleRoles isNotEqualTo []) then {
-                            _veh setVariable ["FLO_SupportVehicleRoles", _supportVehicleRoles, true];
-                        };
-
-                        // Load hitpoint damages
-                        private _damagedHitpoints = _attr getOrDefault ["damagedHitpoints", []];
-                        { _x params ["_hp", "_dmg"]; _veh setHitPointDamage [_hp, _dmg]; } forEach _damagedHitpoints;
-
-                        if (_attr getOrDefault ["engineOn", false]) then { _veh engineOn true; };
-                        [_veh, _type, _attr, _trackedCrewTypes] call FLO_fnc_initRestoreTrackedCrew;
-
-                        _loadedVehicles = _loadedVehicles + 1;
-                    };
-                };
+            _x params ["_field", "_prototype"];
+            if !(_field in _attr) then {
+                throw format ["Saved vehicle %1 is missing required field %2", _vehId, _field];
             };
-        } forEach (keys _vehHash);
+            private _value = _attr get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved vehicle %1 field %2 has invalid type %3", _vehId, _field, typeName _value];
+            };
+        } forEach _requiredVehicleTypes;
 
-        diag_log format ["[FLO_INIT_P5] Restored %1 vehicles", _loadedVehicles];
-    };
+        private _type = _attr get "type";
+        private _posATL = _attr get "posATL";
+        private _vectorDirAndUp = _attr get "vectorDirAndUp";
+        if (
+            _type == ""
+            || {!isClass (configFile >> "CfgVehicles" >> _type)}
+            || {(count _posATL) < 2}
+            || {count _vectorDirAndUp != 2}
+            || {{!(_x isEqualType []) || {count _x != 3}} count _vectorDirAndUp > 0}
+        ) then {
+            throw format ["Saved vehicle %1 has invalid spatial or class state", _vehId];
+        };
+        private _damagedHitpoints = _attr get "damagedHitpoints";
+        {
+            if !(
+                _x isEqualType []
+                && {count _x == 2}
+                && {(_x # 0) isEqualType ""}
+                && {(_x # 1) isEqualType 0}
+            ) then {
+                throw format ["Saved vehicle %1 has malformed hitpoint record %2", _vehId, _x];
+            };
+        } forEach _damagedHitpoints;
+
+        private _veh = createVehicle [_type, [0,0,0], [], 0, "CAN_COLLIDE"];
+        if (isNull _veh) then {
+            throw format ["Failed to restore saved vehicle %1 of type %2", _vehId, _type];
+        };
+        _veh setVectorDirAndUp _vectorDirAndUp;
+        _veh setPosATL _posATL;
+        _veh setFuel (_attr get "fuel");
+        _veh setDamage (_attr get "damage");
+        _veh lock (_attr get "locked");
+        _veh setVariable ["FLO_SaveID", _vehId, true];
+        if (_attr get "storeVehicle") then {
+            _veh setVariable ["FLO_StoreVehicle", true, true];
+        };
+        if (_attr get "mobileRespawnVehicle") then {
+            _veh setVariable ["FLO_MobileRespawnVehicle", true, true];
+        };
+        private _supportVehicleRoles = _attr get "supportVehicleRoles";
+        if (_supportVehicleRoles isNotEqualTo []) then {
+            _veh setVariable ["FLO_SupportVehicleRoles", _supportVehicleRoles, true];
+        };
+        { _x params ["_hp", "_dmg"]; _veh setHitPointDamage [_hp, _dmg]; } forEach _damagedHitpoints;
+        if (_attr get "engineOn") then { _veh engineOn true; };
+        [_veh, _type, _attr, _trackedCrewTypes] call FLO_fnc_initRestoreTrackedCrew;
+        _loadedVehicles = _loadedVehicles + 1;
+    } forEach (keys _vehHash);
+    ["INIT", 3, format ["Restored %1 vehicles from current save", _loadedVehicles]] call FLO_fnc_log;
 
     // Restore objects
-    if ("objects" in _savedData) then {
-        private _objHash = _savedData get "objects";
-        private _loadedObjects = 0;
-
+    private _objHash = _savedData get "objects";
+    private _requiredObjectTypes = [
+        ["type", ""], ["posASL", []], ["vectorDirAndUp", []],
+        ["damage", 0], ["hadAICrew", true]
+    ];
+    private _requiredObjectFields = _requiredObjectTypes apply { _x # 0 };
+    private _loadedObjects = 0;
+    {
+        private _objId = _x;
+        private _attr = _objHash get _objId;
+        if !(_objId isEqualType "" && {_objId != ""}) then {
+            throw format ["Current save has invalid object key %1", _objId];
+        };
+        if !(_attr isEqualType createHashMap) then {
+            throw format ["Saved object %1 has invalid record type %2", _objId, typeName _attr];
+        };
+        private _unexpectedObjectFields = (keys _attr) select {
+            !(_x in _requiredObjectFields)
+        };
+        if (_unexpectedObjectFields isNotEqualTo []) then {
+            throw format [
+                "Saved object %1 has unexpected fields %2",
+                _objId,
+                _unexpectedObjectFields
+            ];
+        };
         {
-            private _objId = _x;
-            private _attr = _objHash get _objId;
-
-            if (!isNil "_attr" && {_attr isEqualType createHashMap}) then {
-                private _type = _attr getOrDefault ["type", ""];
-
-                if (_type != "" && {isClass (configFile >> "CfgVehicles" >> _type)}) then {
-                    private _obj = createVehicle [_type, [0,0,0], [], 0, "CAN_COLLIDE"];
-
-                    if (!isNull _obj) then {
-                        _obj setVectorDirAndUp (_attr getOrDefault ["vectorDirAndUp", [[0,1,0], [0,0,1]]]);
-                        _obj setPosASL (_attr getOrDefault ["posASL", [0,0,0]]);
-                        _obj setDamage (_attr getOrDefault ["damage", 0]);
-                        _obj setVariable ["IDS_Logistics_isPlacedEntity", _attr getOrDefault ["isPlacedEntity", false], true];
-                        _obj setVariable ["FLO_SaveID", _objId, true];
-                        [_obj, _type, _attr, _trackedCrewTypes] call FLO_fnc_initRestoreTrackedCrew;
-
-                        _loadedObjects = _loadedObjects + 1;
-                    };
-                };
+            _x params ["_field", "_prototype"];
+            if !(_field in _attr) then {
+                throw format ["Saved object %1 is missing required field %2", _objId, _field];
             };
-        } forEach (keys _objHash);
+            private _value = _attr get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved object %1 field %2 has invalid type %3", _objId, _field, typeName _value];
+            };
+        } forEach _requiredObjectTypes;
 
-        diag_log format ["[FLO_INIT_P5] Restored %1 objects", _loadedObjects];
-    };
+        private _type = _attr get "type";
+        private _posASL = _attr get "posASL";
+        private _vectorDirAndUp = _attr get "vectorDirAndUp";
+        if (
+            _type == ""
+            || {!isClass (configFile >> "CfgVehicles" >> _type)}
+            || {(count _posASL) < 2}
+            || {count _vectorDirAndUp != 2}
+            || {{!(_x isEqualType []) || {count _x != 3}} count _vectorDirAndUp > 0}
+        ) then {
+            throw format ["Saved object %1 has invalid spatial or class state", _objId];
+        };
+
+        private _obj = createVehicle [_type, [0,0,0], [], 0, "CAN_COLLIDE"];
+        if (isNull _obj) then {
+            throw format ["Failed to restore saved object %1 of type %2", _objId, _type];
+        };
+        _obj setVectorDirAndUp _vectorDirAndUp;
+        _obj setPosASL _posASL;
+        _obj setDamage (_attr get "damage");
+        _obj setVariable ["FLO_SaveID", _objId, true];
+        [_obj, _type, _attr, _trackedCrewTypes] call FLO_fnc_initRestoreTrackedCrew;
+        _loadedObjects = _loadedObjects + 1;
+    } forEach (keys _objHash);
+    ["INIT", 3, format ["Restored %1 objects from current save", _loadedObjects]] call FLO_fnc_log;
 
     // Restore supply crates
-    if ("crates" in _savedData) then {
-        private _crateHash = _savedData get "crates";
-        private _loadedCrates = 0;
-
+    private _crateHash = _savedData get "crates";
+    private _requiredCrateTypes = [
+        ["type", ""], ["posASL", []], ["vectorDirAndUp", []],
+        ["items", []], ["damage", 0], ["locked", 0]
+    ];
+    private _shipmentRecordTypes = [
+        ["logisticsShipment", true], ["logisticsDelivered", true],
+        ["logisticsSideKey", ""], ["logisticsOriginNodeId", ""],
+        ["logisticsThroughput", 0], ["logisticsContributorUID", ""],
+        ["logisticsContributorName", ""], ["developmentTargetObjectiveId", ""]
+    ];
+    private _requiredCrateFields = _requiredCrateTypes apply { _x # 0 };
+    private _shipmentRecordFields = _shipmentRecordTypes apply { _x # 0 };
+    private _loadedCrates = 0;
+    {
+        private _crateId = _x;
+        private _attr = _crateHash get _crateId;
+        if !(_crateId isEqualType "" && {_crateId != ""}) then {
+            throw format ["Current save has invalid crate key %1", _crateId];
+        };
+        if !(_attr isEqualType createHashMap) then {
+            throw format ["Saved crate %1 has invalid record type %2", _crateId, typeName _attr];
+        };
         {
-            private _crateId = _x;
-            private _attr = _crateHash get _crateId;
-
-            if (!isNil "_attr" && {_attr isEqualType createHashMap}) then {
-                private _type = _attr getOrDefault ["type", ""];
-
-                if (_type != "" && {isClass (configFile >> "CfgVehicles" >> _type)}) then {
-                    private _pos = _attr getOrDefault ["posASL", [0,0,0]];
-                    private _crate = createVehicle [_type, _pos, [], 0, "CAN_COLLIDE"];
-
-                    if (!isNull _crate) then {
-                        [_crate, false, [[], [], [], []]] call BIS_fnc_initAmmoBox;
-                        _crate setVectorDirAndUp (_attr getOrDefault ["vectorDirAndUp", [[0,1,0], [0,0,1]]]);
-                        _crate setPosASL _pos;
-                        _crate setDamage (_attr getOrDefault ["damage", 0]);
-                        _crate setVariable ["FLO_save_crate", true, true];
-                        _crate setVariable ["FLO_SaveID", _crateId, true];
-                        if (_attr getOrDefault ["logisticsShipment", false]) then {
-                            private _shipmentSideKey = _attr get "logisticsSideKey";
-                            private _shipmentOriginNodeId = _attr get "logisticsOriginNodeId";
-                            private _shipmentThroughput = _attr get "logisticsThroughput";
-                            if (_shipmentOriginNodeId == "" || {!(_shipmentThroughput isEqualType 0 && {_shipmentThroughput > 0})}) then {
-                                throw format ["Saved logistics shipment %1 is malformed", _crateId];
-                            };
-                            _crate setVariable ["FLO_LogisticsShipment", true, true];
-                            _crate setVariable ["FLO_LogisticsDelivered", _attr get "logisticsDelivered", true];
-                            _crate setVariable ["FLO_LogisticsSide", [_shipmentSideKey] call FLO_fnc_campaignSideFromKey, true];
-                            _crate setVariable ["FLO_LogisticsOriginNodeId", _shipmentOriginNodeId, true];
-                            _crate setVariable ["FLO_LogisticsThroughput", _shipmentThroughput, true];
-                            if ("logisticsContributorUID" in _attr) then {
-                                _crate setVariable ["FLO_LogisticsContributorUID", _attr get "logisticsContributorUID", true];
-                            } else {
-                                _crate setVariable ["FLO_LogisticsContributorUID", "", true];
-                            };
-                            if ("logisticsContributorName" in _attr) then {
-                                _crate setVariable ["FLO_LogisticsContributorName", _attr get "logisticsContributorName", true];
-                            } else {
-                                _crate setVariable ["FLO_LogisticsContributorName", "", true];
-                            };
-                            if ("developmentTargetObjectiveId" in _attr) then {
-                                _crate setVariable ["FLO_DevelopmentTargetObjectiveId", _attr get "developmentTargetObjectiveId", true];
-                            } else {
-                                _crate setVariable ["FLO_DevelopmentTargetObjectiveId", "", true];
-                            };
-                        };
-
-                        // Load items
-                        private _items = _attr getOrDefault ["items", []];
-                        {
-                            _x params ["_itemClass", "_count", ["_itemType", "item"]];
-                            switch (_itemType) do {
-                                case "weapon": { _crate addWeaponCargoGlobal [_itemClass, _count]; };
-                                case "magazine": { _crate addMagazineCargoGlobal [_itemClass, _count]; };
-                                case "backpack": { _crate addBackpackCargoGlobal [_itemClass, _count]; };
-                                default { _crate addItemCargoGlobal [_itemClass, _count]; };
-                            };
-                        } forEach _items;
-
-                        [_crate, true, [0,2,0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, _crate];
-                        _loadedCrates = _loadedCrates + 1;
-                    };
+            _x params ["_field", "_prototype"];
+            if !(_field in _attr) then {
+                throw format ["Saved crate %1 is missing required field %2", _crateId, _field];
+            };
+            private _value = _attr get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved crate %1 field %2 has invalid type %3", _crateId, _field, typeName _value];
+            };
+        } forEach _requiredCrateTypes;
+        private _shipmentFieldCount = {_x # 0 in _attr} count _shipmentRecordTypes;
+        if !(_shipmentFieldCount in [0, count _shipmentRecordTypes]) then {
+            throw format ["Saved crate %1 has an incomplete logistics-shipment record", _crateId];
+        };
+        if (_shipmentFieldCount > 0) then {
+            {
+                _x params ["_field", "_prototype"];
+                private _value = _attr get _field;
+                if !(_value isEqualType _prototype) then {
+                    throw format ["Saved shipment %1 field %2 has invalid type %3", _crateId, _field, typeName _value];
                 };
+            } forEach _shipmentRecordTypes;
+            if !(_attr get "logisticsShipment") then {
+                throw format ["Saved crate %1 has a false logistics-shipment discriminator", _crateId];
             };
-        } forEach (keys _crateHash);
+            if !((_attr get "logisticsSideKey") in ["EAST", "WEST"]) then {
+                throw format ["Saved shipment %1 has invalid side key", _crateId];
+            };
+            if ((_attr get "logisticsOriginNodeId") == "" || {(_attr get "logisticsThroughput") <= 0}) then {
+                throw format ["Saved logistics shipment %1 has invalid origin or throughput", _crateId];
+            };
+        };
+        private _allowedCrateFields = +_requiredCrateFields;
+        if (_shipmentFieldCount > 0) then {
+            _allowedCrateFields append _shipmentRecordFields;
+        };
+        private _unexpectedCrateFields = (keys _attr) select {
+            !(_x in _allowedCrateFields)
+        };
+        if (_unexpectedCrateFields isNotEqualTo []) then {
+            throw format [
+                "Saved crate %1 has unexpected fields %2",
+                _crateId,
+                _unexpectedCrateFields
+            ];
+        };
 
-        diag_log format ["[FLO_INIT_P5] Restored %1 supply crates", _loadedCrates];
+        private _type = _attr get "type";
+        private _pos = _attr get "posASL";
+        private _vectorDirAndUp = _attr get "vectorDirAndUp";
+        if (
+            _type == ""
+            || {!isClass (configFile >> "CfgVehicles" >> _type)}
+            || {(count _pos) < 2}
+            || {count _vectorDirAndUp != 2}
+            || {{!(_x isEqualType []) || {count _x != 3}} count _vectorDirAndUp > 0}
+        ) then {
+            throw format ["Saved crate %1 has invalid spatial or class state", _crateId];
+        };
+        private _items = _attr get "items";
+        {
+            if !(
+                _x isEqualType []
+                && {count _x == 3}
+                && {(_x # 0) isEqualType ""}
+                && {(_x # 1) isEqualType 0}
+                && {(_x # 1) > 0}
+                && {(_x # 2) in ["weapon", "magazine", "item", "backpack"]}
+            ) then {
+                throw format ["Saved crate %1 has malformed cargo record %2", _crateId, _x];
+            };
+        } forEach _items;
+
+        private _crate = createVehicle [_type, _pos, [], 0, "CAN_COLLIDE"];
+        if (isNull _crate) then {
+            throw format ["Failed to restore saved crate %1 of type %2", _crateId, _type];
+        };
+        [_crate, false, [[], [], [], []]] call BIS_fnc_initAmmoBox;
+        _crate setVectorDirAndUp _vectorDirAndUp;
+        _crate setPosASL _pos;
+        _crate setDamage (_attr get "damage");
+        _crate lock (_attr get "locked");
+        _crate setVariable ["FLO_save_crate", true, true];
+        _crate setVariable ["FLO_SaveID", _crateId, true];
+        if (_shipmentFieldCount > 0) then {
+            private _shipmentSideKey = _attr get "logisticsSideKey";
+            _crate setVariable ["FLO_LogisticsShipment", true, true];
+            _crate setVariable ["FLO_LogisticsDelivered", _attr get "logisticsDelivered", true];
+            _crate setVariable ["FLO_LogisticsSide", [_shipmentSideKey] call FLO_fnc_campaignSideFromKey, true];
+            _crate setVariable ["FLO_LogisticsOriginNodeId", _attr get "logisticsOriginNodeId", true];
+            _crate setVariable ["FLO_LogisticsThroughput", _attr get "logisticsThroughput", true];
+            _crate setVariable ["FLO_LogisticsContributorUID", _attr get "logisticsContributorUID", true];
+            _crate setVariable ["FLO_LogisticsContributorName", _attr get "logisticsContributorName", true];
+            _crate setVariable ["FLO_DevelopmentTargetObjectiveId", _attr get "developmentTargetObjectiveId", true];
+        };
+        {
+            _x params ["_itemClass", "_count", "_itemType"];
+            switch (_itemType) do {
+                case "weapon": { _crate addWeaponCargoGlobal [_itemClass, _count]; };
+                case "magazine": { _crate addMagazineCargoGlobal [_itemClass, _count]; };
+                case "backpack": { _crate addBackpackCargoGlobal [_itemClass, _count]; };
+                case "item": { _crate addItemCargoGlobal [_itemClass, _count]; };
+            };
+        } forEach _items;
+        [_crate, true, [0,2,0], 0] remoteExec ["ace_dragging_fnc_setDraggable", 0, _crate];
+        _loadedCrates = _loadedCrates + 1;
+    } forEach (keys _crateHash);
+    ["INIT", 3, format ["Restored %1 supply crates from current save", _loadedCrates]] call FLO_fnc_log;
+
+    // Restore the current dual-commander state.
+    if (isNil "FLO_GTN_ResourceManager") then {
+        FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
     };
 
-    // Restore GTN state (dual schema only)
-    if ("aiCommanders" in _savedData) then {
-        if (isNil "FLO_GTN_ResourceManager") then {
-            FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
-        };
-
-        private _cmd = _savedData get "aiCommanders";
-        if (!isNil "_cmd" && {_cmd isEqualType createHashMap}) then {
-            private _eastState = _cmd getOrDefault ["EAST", createHashMap];
-            private _westState = _cmd getOrDefault ["WEST", createHashMap];
-            private _gtnWasEnabled = (_eastState getOrDefault ["gtnEnabled", false]) || (_westState getOrDefault ["gtnEnabled", false]);
-
-            if (_gtnWasEnabled) then {
-                FLO_GTN_ResourceManager call ["_initializeGTN", []];
-            };
-
-            diag_log "[FLO_INIT_P5] Dual GTN state restored";
-        };
-    } else {
-        if ("aiCommander" in _savedData) then {
-            diag_log "[FLO_INIT_P5] Legacy GTN save payload detected (aiCommander) - intentionally ignored";
-        };
+    private _cmd = _savedData get "aiCommanders";
+    private _commanderKeys = keys _cmd;
+    private _unexpectedCommanderKeys = _commanderKeys select {!(_x in ["EAST", "WEST"])};
+    if (count _commanderKeys != 2 || {_unexpectedCommanderKeys isNotEqualTo []}) then {
+        throw format ["Current save has invalid commander keys %1", _commanderKeys];
     };
+    private _eastState = _cmd get "EAST";
+    private _westState = _cmd get "WEST";
+    {
+        _x params ["_sideKey", "_state"];
+        if !(_state isEqualType createHashMap) then {
+            throw format ["Saved %1 commander state has invalid type %2", _sideKey, typeName _state];
+        };
+        if (count (keys _state) != 1 || {!("gtnEnabled" in _state)}) then {
+            throw format ["Saved %1 commander state has invalid fields %2", _sideKey, keys _state];
+        };
+        if !((_state get "gtnEnabled") isEqualType true) then {
+            throw format ["Saved %1 commander gtnEnabled has invalid type", _sideKey];
+        };
+    } forEach [["EAST", _eastState], ["WEST", _westState]];
+    private _gtnWasEnabled = (_eastState get "gtnEnabled") || (_westState get "gtnEnabled");
+
+    if (_gtnWasEnabled) then {
+        FLO_GTN_ResourceManager call ["_initializeGTN", []];
+    };
+
+    ["INIT", 3, "Dual GTN state restored"] call FLO_fnc_log;
 
     // Restore IDS Logistics placed entities
-    if ("idsLogisticsEntities" in _savedData) then {
-        private _idsEntities = _savedData get "idsLogisticsEntities";
-        private _loadedIDS = 0;
-
-        // Initialize the array if needed
-        if (isNil "IDS_Logistics_PlacedEntities") then { IDS_Logistics_PlacedEntities = []; };
-
-        {
-            private _entityData = _x;
-            private _className = _entityData getOrDefault ["class", ""];
-
-            if (_className != "" && {isClass (configFile >> "CfgVehicles" >> _className)}) then {
-                private _entity = createVehicle [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
-
-                if (!isNull _entity) then {
-                    _entity setPosASL (_entityData getOrDefault ["posASL", [0,0,0]]);
-                    _entity setDir (_entityData getOrDefault ["direction", 0]);
-                    _entity setVectorUp (_entityData getOrDefault ["vectorUp", [0,0,1]]);
-                    _entity setDamage (_entityData getOrDefault ["damage", 0]);
-                    _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
-
-                    // Add to placed entities array for tracking
-                    IDS_Logistics_PlacedEntities pushBack _entity;
-                    _loadedIDS = _loadedIDS + 1;
-                };
-            };
-        } forEach _idsEntities;
-
-        diag_log format ["[FLO_INIT_P5] Restored %1 IDS Logistics entities", _loadedIDS];
+    if !(IDS_Logistics_PlacedEntities isEqualType []) then {
+        throw format ["IDS Logistics runtime registry has invalid type %1", typeName IDS_Logistics_PlacedEntities];
     };
+    private _idsEntities = _savedData get "idsLogisticsEntities";
+    private _requiredIdsTypes = [
+        ["class", ""], ["posASL", []], ["direction", 0], ["vectorUp", []], ["damage", 0]
+    ];
+    private _requiredIdsFields = _requiredIdsTypes apply { _x # 0 };
+    private _loadedIDS = 0;
+    {
+        private _entityData = _x;
+        if !(_entityData isEqualType createHashMap) then {
+            throw format ["Saved IDS entity %1 has invalid record type %2", _forEachIndex, typeName _entityData];
+        };
+        private _unexpectedIdsFields = (keys _entityData) select {
+            !(_x in _requiredIdsFields)
+        };
+        if (_unexpectedIdsFields isNotEqualTo []) then {
+            throw format [
+                "Saved IDS entity %1 has unexpected fields %2",
+                _forEachIndex,
+                _unexpectedIdsFields
+            ];
+        };
+        {
+            _x params ["_field", "_prototype"];
+            if !(_field in _entityData) then {
+                throw format ["Saved IDS entity %1 is missing required field %2", _forEachIndex, _field];
+            };
+            private _value = _entityData get _field;
+            if !(_value isEqualType _prototype) then {
+                throw format ["Saved IDS entity %1 field %2 has invalid type %3", _forEachIndex, _field, typeName _value];
+            };
+        } forEach _requiredIdsTypes;
+
+        private _className = _entityData get "class";
+        if (_className == "" || {!isClass (configFile >> "CfgVehicles" >> _className)}) then {
+            throw format ["Saved IDS entity %1 has invalid class %2", _forEachIndex, _className];
+        };
+        private _entity = createVehicle [_className, [0,0,0], [], 0, "CAN_COLLIDE"];
+        if (isNull _entity) then {
+            throw format ["Failed to restore saved IDS entity %1 of type %2", _forEachIndex, _className];
+        };
+        _entity setPosASL (_entityData get "posASL");
+        _entity setDir (_entityData get "direction");
+        _entity setVectorUp (_entityData get "vectorUp");
+        _entity setDamage (_entityData get "damage");
+        _entity setVariable ["IDS_Logistics_isPlacedEntity", true, true];
+        IDS_Logistics_PlacedEntities pushBack _entity;
+        _loadedIDS = _loadedIDS + 1;
+    } forEach _idsEntities;
+    ["INIT", 3, format ["Restored %1 IDS Logistics entities from current save", _loadedIDS]] call FLO_fnc_log;
 
     // Trigger load completion event
     ["flo_mission_load_completed", [true, _savedData]] call CBA_fnc_globalEvent;
 
-    diag_log "[FLO_INIT_P5] Entity restoration complete";
+    ["INIT", 3, "Current-version entity restoration complete"] call FLO_fnc_log;
 };
 
 // ============================================
@@ -583,8 +870,6 @@ if (!isNil "FLO_fnc_gtnCommanderVisualDebug" && {FLO_GTN_CommanderDebugEnabled})
     };
 };
 
-diag_log "[FLO_INIT_P5] Legacy mission content retired";
-
 // ============================================
 // Aftermath Cleanup
 // ============================================
@@ -633,8 +918,6 @@ if (!isNil "FLO_fnc_civilianMissionManager") then {
     diag_log "[FLO_INIT_P5] WARNING: FLO_fnc_civilianMissionManager not found";
 };
 
-diag_log "[FLO_INIT_P5] Legacy intel reveal system retired";
-
 // ============================================
 // Config Cache (if not already initialized)
 // ============================================
@@ -645,11 +928,6 @@ if (isNil "FLO_ConfigCache") then {
         diag_log "[FLO_INIT_P5] Config cache initialized";
     };
 };
-
-// ============================================
-// Routing System
-// ============================================
-diag_log format ["[FLO_INIT_P5] Routing mode active: %1", FLO_PF_Mode];
 
 if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_fnc_virtualizationResumeSavedRoutes"}) then {
     private _resumedRoutes = [] call FLO_fnc_virtualizationResumeSavedRoutes;

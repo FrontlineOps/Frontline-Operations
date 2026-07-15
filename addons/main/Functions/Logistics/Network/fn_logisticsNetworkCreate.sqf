@@ -35,88 +35,148 @@ private _stats = createHashMapFromArray [
     ["supplyShipments", 0]
 ];
 
-if (_savedState isEqualType createHashMap) then {
-    if ("stats" in _savedState) then {
-        private _savedStats = _savedState get "stats";
-        if !(_savedStats isEqualType createHashMap) then {
-            throw format ["Invalid saved logistics stats for %1", _network get "_managedSideKey"];
-        };
-        {
-            if (_x in _savedStats) then { _stats set [_x, _savedStats get _x]; };
-        } forEach (keys _stats);
+if (_savedState isNotEqualTo false) then {
+    if !(_savedState isEqualType createHashMap) then {
+        throw format ["Invalid saved logistics state for %1: %2", _managedSideKey, typeName _savedState];
+    };
+    private _requiredStateFields = [
+        "initialComposition",
+        "stats",
+        "lastReinforcementTarget",
+        "reinforcementQueue",
+        "nextDispatchAt",
+        "nodes",
+        "hqNodeId",
+        "hqObjectiveId",
+        "initialInfrastructureSeeded",
+        "lastNodeRefillAtDateNum"
+    ];
+    private _missingStateFields = _requiredStateFields select { !(_x in _savedState) };
+    if (_missingStateFields isNotEqualTo []) then {
+        throw format ["Saved %1 logistics state is missing fields %2", _managedSideKey, _missingStateFields];
+    };
+    private _unexpectedStateFields = (keys _savedState) select { !(_x in _requiredStateFields) };
+    if (_unexpectedStateFields isNotEqualTo []) then {
+        throw format ["Saved %1 logistics state has unsupported fields %2", _managedSideKey, _unexpectedStateFields];
     };
 
-    if ("initialComposition" in _savedState) then { _network set ["_initialComposition", _savedState get "initialComposition"]; };
-    if ("lastReinforcementTarget" in _savedState) then { _network set ["_lastReinforcementTarget", _savedState get "lastReinforcementTarget"]; };
-    if ("reinforcementQueue" in _savedState) then { _network set ["_reinforcementQueue", +(_savedState get "reinforcementQueue")]; };
-    if ("hqObjectiveId" in _savedState) then { _network set ["_hqObjectiveId", _savedState get "hqObjectiveId"]; };
+    private _savedStats = _savedState get "stats";
+    if !(_savedStats isEqualType createHashMap) then {
+        throw format ["Invalid saved logistics stats for %1", _managedSideKey];
+    };
+    private _missingStatFields = (keys _stats) select { !(_x in _savedStats) };
+    private _unexpectedStatFields = (keys _savedStats) select { !(_x in _stats) };
+    if (_missingStatFields isNotEqualTo [] || {_unexpectedStatFields isNotEqualTo []}) then {
+        throw format [
+            "Saved %1 logistics stats have missing=%2 unsupported=%3",
+            _managedSideKey,
+            _missingStatFields,
+            _unexpectedStatFields
+        ];
+    };
+    _stats = createHashMap;
+    {
+        _stats set [_x, _y];
+    } forEach _savedStats;
 
-    if ("nodes" in _savedState) then {
-        private _savedNodes = _savedState get "nodes";
-        if !(_savedNodes isEqualType createHashMap) then {
-            throw format ["Invalid saved logistics nodes for %1", _network get "_managedSideKey"];
+    private _initialComposition = _savedState get "initialComposition";
+    private _lastReinforcementTarget = _savedState get "lastReinforcementTarget";
+    private _reinforcementQueue = _savedState get "reinforcementQueue";
+    private _hqObjectiveId = _savedState get "hqObjectiveId";
+    if !(_initialComposition isEqualType createHashMap) then {
+        throw format ["Invalid saved %1 initial composition", _managedSideKey];
+    };
+    if !(_lastReinforcementTarget isEqualType "" && {_reinforcementQueue isEqualType []} && {_hqObjectiveId isEqualType ""}) then {
+        throw format ["Invalid saved %1 logistics routing state", _managedSideKey];
+    };
+    _network set ["_initialComposition", _initialComposition];
+    _network set ["_lastReinforcementTarget", _lastReinforcementTarget];
+    _network set ["_reinforcementQueue", +_reinforcementQueue];
+    _network set ["_hqObjectiveId", _hqObjectiveId];
+
+    private _savedNodes = _savedState get "nodes";
+    if !(_savedNodes isEqualType createHashMap) then {
+        throw format ["Invalid saved logistics nodes for %1", _managedSideKey];
+    };
+
+    private _requiredNodeFields = [
+        "id", "sideKey", "type", "anchorKind", "anchorId", "objectiveId", "position", "state",
+        "throughput", "deliveryCount", "lastPlayerDeliveryAmount", "lastPlayerDeliveryAtDateNum",
+        "lastPlayerContributorName", "requiredDeliveries", "establishAtDateNum", "baseNetId", "upstreamNodeId"
+    ];
+    private _typeConfigMap = _network get "NODE_TYPE_CONFIG";
+    private _restoredNodes = createHashMap;
+    {
+        private _nodeId = _x;
+        private _savedNode = _y;
+        if !(_nodeId isEqualType "" && {_nodeId != ""} && {_savedNode isEqualType createHashMap}) then {
+            throw format ["Invalid saved %1 logistics node %2", _managedSideKey, _nodeId];
         };
-
-        private _typeConfigMap = _network get "NODE_TYPE_CONFIG";
-        private _restoredNodes = createHashMap;
-        private _foreignNodeIds = [];
-        {
-            private _nodeId = _x;
-            private _savedNode = _y;
-            if !(_savedNode isEqualType createHashMap) then {
-                throw format ["Invalid saved logistics node %1", _nodeId];
-            };
-            private _nodeSideKey = _savedNode get "sideKey";
-            if !(_nodeSideKey isEqualType "" && {_nodeSideKey in ["WEST", "EAST"]}) then {
-                throw format ["Invalid saved logistics node side for %1: %2", _nodeId, _nodeSideKey];
-            };
-            if (_nodeSideKey != _managedSideKey) then {
-                _foreignNodeIds pushBack _nodeId;
-                continue;
-            };
-
-            private _node = createHashMap;
-            {
-                _node set [_x, _savedNode get _x];
-            } forEach (keys _savedNode);
-
-            private _type = _node get "type";
-            private _typeConfig = _typeConfigMap get _type;
-            _typeConfig params ["_throughputMax", "_refillAmount", "_commanderSource", "_capabilities"];
-            _node set ["throughputMax", _throughputMax];
-            _node set ["throughput", ((_node get "throughput") max 0) min _throughputMax];
-            _node set ["refillAmount", _refillAmount];
-            _node set ["commanderSource", _commanderSource];
-            _node set ["capabilities", +_capabilities];
-            _node set ["position", +(_node get "position")];
-            _node set ["baseNetId", ""];
-            if !("lastPlayerDeliveryAmount" in _node) then { _node set ["lastPlayerDeliveryAmount", 0]; };
-            if !("lastPlayerDeliveryAtDateNum" in _node) then { _node set ["lastPlayerDeliveryAtDateNum", -1]; };
-            if !("lastPlayerContributorName" in _node) then { _node set ["lastPlayerContributorName", ""]; };
-            _restoredNodes set [_nodeId, _node];
-        } forEach _savedNodes;
-        _network set ["_nodes", _restoredNodes];
-
-        if (_foreignNodeIds isNotEqualTo []) then {
-            ["LOGISTICS", 2, format [
-                "Repaired shared-node save contamination for %1 by removing %2 foreign nodes: %3",
+        private _missingNodeFields = _requiredNodeFields select { !(_x in _savedNode) };
+        private _unexpectedNodeFields = (keys _savedNode) select { !(_x in _requiredNodeFields) };
+        if (_missingNodeFields isNotEqualTo [] || {_unexpectedNodeFields isNotEqualTo []}) then {
+            throw format [
+                "Saved %1 logistics node %2 has missing=%3 unsupported=%4",
                 _managedSideKey,
-                count _foreignNodeIds,
-                _foreignNodeIds
-            ]] call FLO_fnc_log;
+                _nodeId,
+                _missingNodeFields,
+                _unexpectedNodeFields
+            ];
+        };
+        if ((_savedNode get "id") != _nodeId || {(_savedNode get "sideKey") != _managedSideKey}) then {
+            throw format ["Saved %1 logistics node %2 has inconsistent identity", _managedSideKey, _nodeId];
         };
 
-        _network set ["_hqNodeId", _savedState get "hqNodeId"];
-        _network set ["_initialInfrastructureSeeded", _savedState get "initialInfrastructureSeeded"];
-        _network set ["_lastNodeRefillAtDateNum", _savedState get "lastNodeRefillAtDateNum"];
+        private _type = _savedNode get "type";
+        private _typeConfig = _typeConfigMap get _type;
+        if !(_typeConfig isEqualType [] && {(count _typeConfig) == 4}) then {
+            throw format ["Saved %1 logistics node %2 has invalid type %3", _managedSideKey, _nodeId, _type];
+        };
+        _typeConfig params ["_throughputMax", "_refillAmount", "_commanderSource", "_capabilities"];
+        private _throughput = _savedNode get "throughput";
+        if !(_throughput isEqualType 0 && {_throughput >= 0} && {_throughput <= _throughputMax}) then {
+            throw format ["Saved %1 logistics node %2 has invalid throughput %3", _managedSideKey, _nodeId, _throughput];
+        };
+        if ((_savedNode get "state") == "ESTABLISHING") then {
+            if (_type != "DEPOT" || {(_savedNode get "requiredDeliveries") != (_network get "DEPOT_REQUIRED_DELIVERIES")}) then {
+                throw format ["Saved %1 logistics node %2 has invalid establishment state", _managedSideKey, _nodeId];
+            };
+        } else {
+            if ((_savedNode get "state") != "CONNECTED") then {
+                throw format ["Saved %1 logistics node %2 has invalid state %3", _managedSideKey, _nodeId, _savedNode get "state"];
+            };
+        };
+
+        private _node = createHashMap;
+        {
+            _node set [_x, _y];
+        } forEach _savedNode;
+        _node set ["position", +(_savedNode get "position")];
+        _node set ["throughputMax", _throughputMax];
+        _node set ["refillAmount", _refillAmount];
+        _node set ["commanderSource", _commanderSource];
+        _node set ["capabilities", +_capabilities];
+        _restoredNodes set [_nodeId, _node];
+    } forEach _savedNodes;
+    _network set ["_nodes", _restoredNodes];
+
+    private _hqNodeId = _savedState get "hqNodeId";
+    private _initialInfrastructureSeeded = _savedState get "initialInfrastructureSeeded";
+    private _lastNodeRefillAtDateNum = _savedState get "lastNodeRefillAtDateNum";
+    if !(_hqNodeId isEqualType "" && {_initialInfrastructureSeeded isEqualType false} && {_lastNodeRefillAtDateNum isEqualType 0}) then {
+        throw format ["Invalid saved %1 logistics infrastructure state", _managedSideKey];
     };
+    _network set ["_hqNodeId", _hqNodeId];
+    _network set ["_initialInfrastructureSeeded", _initialInfrastructureSeeded];
+    _network set ["_lastNodeRefillAtDateNum", _lastNodeRefillAtDateNum];
 
-    if ("nextDispatchAt" in _savedState) then {
-        private _savedNextDispatchAt = _savedState get "nextDispatchAt";
-        private _maxDelay = _network get "DISPATCH_MAX_INTERVAL";
-        if (_savedNextDispatchAt > time && {(_savedNextDispatchAt - time) <= _maxDelay}) then {
-            _dispatchDelay = _savedNextDispatchAt - time;
-        };
+    private _savedNextDispatchAt = _savedState get "nextDispatchAt";
+    if !(_savedNextDispatchAt isEqualType 0 && {_savedNextDispatchAt >= 0}) then {
+        throw format ["Invalid saved %1 logistics dispatch deadline %2", _managedSideKey, _savedNextDispatchAt];
+    };
+    private _maxDelay = _network get "DISPATCH_MAX_INTERVAL";
+    if (_savedNextDispatchAt > time && {(_savedNextDispatchAt - time) <= _maxDelay}) then {
+        _dispatchDelay = _savedNextDispatchAt - time;
     };
 };
 

@@ -1,4 +1,4 @@
-/* Evaluates strategic capacity for one to three concurrent operations. */
+/* Plans every affordable formal promotion from mature canonical probes. */
 params ["_director"];
 
 private _state = _director get "_state";
@@ -17,7 +17,6 @@ private _activeOperationIds = _order select {
     ((_operations get _x) get "phase") != "RECOVERY"
 };
 private _currentCount = count _activeOperationIds;
-private _maximumCount = _config get "operationMaximumCount";
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _availableGroupIds = _commander call ["_getAvailableGroups", [count (keys _groups)]];
@@ -30,50 +29,7 @@ private _activeAttackGroups = 0;
         _activeAttackGroups = _activeAttackGroups + 1;
     };
 } forEach _groups;
-
-private _offensiveGroups = floor ((count _availableGroupIds) * (_config get "operationOffensivePoolFraction"));
-_offensiveGroups = _offensiveGroups + _activeAttackGroups;
-private _forceSlots = 0;
-if (_offensiveGroups >= (_config get "operationMainMinimumGroups")) then {
-    _forceSlots = 1 + floor (
-        (_offensiveGroups - (_config get "operationMainMinimumGroups"))
-        / (_config get "operationSupportMinimumGroups")
-    );
-};
-_forceSlots = _forceSlots min _maximumCount;
-
-private _network = FLO_Logistics_Networks get _sideKey;
-private _activeSupplyNodes = [_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
-private _qualifyingSupplySourceIds = [];
-{
-    if ((_y get "throughput") >= (_config get "operationLogisticsMinimumSupply")) then {
-        _qualifyingSupplySourceIds pushBack _x;
-    };
-} forEach _activeSupplyNodes;
-private _logisticsSlots = (count _qualifyingSupplySourceIds) min _maximumCount;
-
-private _treasury = FLO_SideResources get _sideKey;
-private _operationCommitted = 0;
-{
-    private _reservation = _y;
-    if ((_reservation get "category") == "OPERATION") then {
-        _operationCommitted = _operationCommitted + (_reservation get "remaining");
-    };
-} forEach (_treasury get "_reservations");
-private _availableResources = [_treasury] call FLO_fnc_sideResourcesGetAvailable;
-private _operationEnvelope = (_availableResources + _operationCommitted) min (
-    floor ((_treasury get "_balance") * (_config get "operationCommitmentFraction"))
-);
-private _treasurySlots = floor (_operationEnvelope / (_config get "operationSupportBudgetMinimum"));
-_treasurySlots = _treasurySlots min _maximumCount;
-if (_currentCount > 0) then { _treasurySlots = _treasurySlots max 1; };
-if (_currentCount < _maximumCount) then {
-    private _nextRole = ["SUPPORTING_EFFORT", "MAIN_EFFORT"] select (_currentCount == 0);
-    private _nextBudget = [_director, _sideKey, _nextRole] call FLO_fnc_campaignCalculateOperationBudget;
-    if (_nextBudget <= 0) then {
-        _treasurySlots = _currentCount;
-    };
-};
+private _offensiveGroups = (count _availableGroupIds) + _activeAttackGroups;
 
 private _worldObjectives = (_commander get "_worldState") call ["_getObjectives", []];
 private _threatenedObjectives = 0;
@@ -89,70 +45,93 @@ private _forceDeficit = 0;
     _forceDeficit = _forceDeficit + (((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0);
 } forEach _worldObjectives;
 
-private _pressureCap = _maximumCount;
-if (_threatenedObjectives >= 3 || {_forceDeficit >= 12}) then {
-    _pressureCap = 1;
-} else {
-    if (_threatenedObjectives >= 1 || {_forceDeficit >= 5}) then {
-        _pressureCap = 2;
-    };
-};
-
-private _baseCapacity = _forceSlots min _logisticsSlots min _treasurySlots min _pressureCap min _maximumCount;
-private _excludedObjectiveIds = [];
-private _claimedSupplySourceObjectiveIds = [];
-private _targetPositions = [];
+private _network = FLO_Logistics_Networks get _sideKey;
+private _activeSupplyNodes = [_network] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;
+private _qualifyingSupplySourceCount = 0;
 {
-    private _operation = _operations get _x;
-    private _objectiveId = _operation get "objectiveId";
-    _excludedObjectiveIds pushBack _objectiveId;
-    if (_objectiveId in FLO_Objectives) then {
-        _targetPositions pushBack ((FLO_Objectives get _objectiveId) get "position");
+    if ((_y get "throughput") >= (_config get "operationLogisticsMinimumSupply")) then {
+        _qualifyingSupplySourceCount = _qualifyingSupplySourceCount + 1;
     };
-    private _supplySourceObjectiveId = _operation get "supplySourceObjectiveId";
-    if (_supplySourceObjectiveId != "") then {
-        _claimedSupplySourceObjectiveIds pushBackUnique _supplySourceObjectiveId;
+} forEach _activeSupplyNodes;
+
+private _treasury = FLO_SideResources get _sideKey;
+private _operationCommitted = 0;
+{
+    if ((_y get "category") == "OPERATION") then {
+        _operationCommitted = _operationCommitted + (_y get "remaining");
     };
+} forEach (_treasury get "_reservations");
+private _availableResources = [_treasury] call FLO_fnc_sideResourcesGetAvailable;
+private _capRemaining = ((floor ((_treasury get "_balance") * (_config get "operationCommitmentFraction"))) - _operationCommitted) max 0;
+private _planningAvailable = _availableResources;
+private _planningCapRemaining = _capRemaining;
+
+private _excludedObjectiveIds = [];
+{
+    _excludedObjectiveIds pushBack ((_operations get _x) get "objectiveId");
 } forEach _order;
 
+private _promotableProbeCount = 0;
+{
+    private _front = _y;
+    if ((_front get "sideKey") != _sideKey) then { continue };
+    private _objectiveId = _front get "objectiveId";
+    if (_objectiveId in _excludedObjectiveIds) then { continue };
+    if (([_director, _sideKey, _objectiveId] call FLO_fnc_campaignGetPromotableProbeGroups) isNotEqualTo []) then {
+        _promotableProbeCount = _promotableProbeCount + 1;
+    };
+} forEach (_state get "frontlineProbes");
+
 private _plannedSelections = [];
-private _registrySlots = (_maximumCount - (count _order)) max 0;
-private _additionalSlots = ((_baseCapacity - _currentCount) max 0) min _registrySlots;
-for "_i" from 1 to _additionalSlots do {
-    private _selection = [
+private _canPlan = _order isEqualTo [] || {_activeOperationIds isNotEqualTo []};
+private _rankedSelections = [];
+if (_canPlan) then {
+    _rankedSelections = [
         _director,
         _side,
         _excludedObjectiveIds,
-        _claimedSupplySourceObjectiveIds,
-        _targetPositions
+        [],
+        []
     ] call FLO_fnc_campaignSelectTarget;
-    private _objectiveId = _selection get "objectiveId";
-    if (_objectiveId == "") exitWith {};
+};
+private _rankableProbeCount = count _rankedSelections;
 
+{
+    private _selection = _x;
+    private _priorityRole = ["SUPPORTING_EFFORT", "MAIN_EFFORT"] select (
+        _order isEqualTo [] && {_plannedSelections isEqualTo []}
+    );
+    private _budget = [
+        _director,
+        _sideKey,
+        _priorityRole,
+        _planningAvailable,
+        _planningCapRemaining
+    ] call FLO_fnc_campaignCalculateOperationBudget;
+    if (_budget <= 0) exitWith {};
+
+    _selection set ["plannedBudget", _budget];
     _plannedSelections pushBack _selection;
-    _excludedObjectiveIds pushBack _objectiveId;
-    _claimedSupplySourceObjectiveIds pushBackUnique (_selection get "supplySourceObjectiveId");
-    _targetPositions pushBack (_selection get "assaultLandAnchor");
-};
+    _planningAvailable = _planningAvailable - _budget;
+    _planningCapRemaining = _planningCapRemaining - _budget;
+} forEach _rankedSelections;
 
-private _axisSlots = (_currentCount + (count _plannedSelections)) min _maximumCount;
-private _desiredCount = _baseCapacity min _axisSlots;
-private _reason = "FULL_CAPACITY";
-if (_desiredCount < _maximumCount) then {
-    _reason = if (_axisSlots < _baseCapacity) then {
-        "AXIS_LIMIT"
+private _desiredCount = _currentCount + (count _plannedSelections);
+private _reason = if (_plannedSelections isNotEqualTo []) then {
+    "MATURE_PROBES_READY"
+} else {
+    if (_rankableProbeCount > 0) then {
+        "TREASURY_LIMIT"
     } else {
-        if (_forceSlots == _baseCapacity) then {
-            "FORCE_LIMIT"
-        } else {
-            if (_logisticsSlots == _baseCapacity) then {
-                "LOGISTICS_LIMIT"
-            } else {
-                ["DEFENSIVE_PRESSURE", "TREASURY_LIMIT"] select (_treasurySlots == _baseCapacity);
-            };
-        };
-    };
+        ["NO_MATURE_PROBE", "LOGISTICS_OR_TERRAIN_LIMIT"] select (_promotableProbeCount > 0)
+    }
 };
+private _treasurySlots = _currentCount + floor (
+    ((_availableResources min _capRemaining) max 0) / (_config get "operationSupportBudgetMinimum")
+);
+private _axisSlots = _currentCount + _rankableProbeCount;
+private _forceSlots = _axisSlots;
+private _logisticsSlots = [0, _axisSlots] select (_qualifyingSupplySourceCount > 0);
 
 private _metrics = createHashMapFromArray [
     ["availableGroups", count _availableGroupIds],
@@ -162,9 +141,13 @@ private _metrics = createHashMapFromArray [
     ["logisticsSlots", _logisticsSlots],
     ["treasurySlots", _treasurySlots],
     ["axisSlots", _axisSlots],
-    ["pressureCap", _pressureCap],
+    ["pressureCap", _axisSlots],
     ["threatenedObjectives", _threatenedObjectives],
-    ["forceDeficit", _forceDeficit]
+    ["forceDeficit", _forceDeficit],
+    ["qualifyingSupplySourceCount", _qualifyingSupplySourceCount],
+    ["promotableProbeCount", _promotableProbeCount],
+    ["rankableProbeCount", _rankableProbeCount],
+    ["plannedCommitment", _availableResources - _planningAvailable]
 ];
 
 createHashMapFromArray [

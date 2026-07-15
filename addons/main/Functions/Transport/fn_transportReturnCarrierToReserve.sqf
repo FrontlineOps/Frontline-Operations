@@ -27,7 +27,10 @@ private _waypoints = [
     [_reservePos, "MOVE", "SAFE", "NORMAL", "COLUMN", "GREEN", _completionRadius]
 ];
 
-[_groupId, _waypoints, false, true, "TRANSPORT_RTB"] call FLO_fnc_updateVirtualGroupWaypoints;
+if !([_groupId, _waypoints, true, "TRANSPORT_RTB"] call FLO_fnc_updateVirtualGroupWaypoints) exitWith {
+    ["TRANSPORT", 2, format ["Could not route released transport %1 back to reserve", _groupId]] call FLO_fnc_log;
+    false
+};
 [_groupId, createHashMapFromArray [["executionState", "RTB"]]] call FLO_fnc_virtualizationPatchGroup;
 
 ["TRANSPORT", 3, format [

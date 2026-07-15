@@ -74,9 +74,10 @@ if (_hasPerf) then {
     _perf set ["dispatchCreateTransitMs", (_perf get "dispatchCreateTransitMs") + ((diag_tickTime - _transitT0) * 1000)];
 };
 
+private _organicGroupIds = [];
 if (_groupType in ["motorized", "mechanized"]) then {
     private _organicT0 = diag_tickTime;
-    [_newGroupId, true, _targetPos] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
+    _organicGroupIds = [_newGroupId, true, _targetPos] call FLO_fnc_virtualizationCreateOrganicPackageDismount;
     if (_hasPerf) then {
         _perf set ["dispatchCreateOrganicMs", (_perf get "dispatchCreateOrganicMs") + ((diag_tickTime - _organicT0) * 1000)];
     };
@@ -100,13 +101,32 @@ if (_groupType isEqualTo "static_aa") then {
     };
 };
 
-private _usesRoadRouting = !(_groupType in ["helicopter", "air", "jet", "boat", "naval", "submarine"]);
 private _allowTrails = _groupType in ["infantry"];
 private _sourceTag = ["LOGI_REINF", "LOGI_STATIC_AA"] select (_groupType isEqualTo "static_aa");
 private _waypointT0 = diag_tickTime;
-[_newGroupId, _wps, _usesRoadRouting, _allowTrails, _sourceTag] call FLO_fnc_updateVirtualGroupWaypoints;
+private _routeCommitted = [_newGroupId, _wps, _allowTrails, _sourceTag] call FLO_fnc_updateVirtualGroupWaypoints;
 if (_hasPerf) then {
     _perf set ["dispatchCreateWaypointMs", (_perf get "dispatchCreateWaypointMs") + ((diag_tickTime - _waypointT0) * 1000)];
+};
+
+if (!_routeCommitted) exitWith {
+    if (_organicGroupIds isNotEqualTo []) then {
+        [_newGroupId, _organicGroupIds, "", ""] call FLO_fnc_virtualizationRollbackOrganicPackageCreation;
+    };
+    [_newGroupId] call FLO_fnc_virtualizationRemoveGroup;
+    ["LOGISTICS", 2, format [
+        "Rejected %1 replacement dispatch to %2 because no land route was available",
+        _groupType,
+        _deliveryObjectiveId
+    ]] call FLO_fnc_log;
+    ""
+};
+
+if (_organicGroupIds isNotEqualTo []) then {
+    private _newGroupData = [_newGroupId] call FLO_fnc_virtualizationGetGroup;
+    [_newGroupId, createHashMapFromArray [
+        ["dismountAtWaypoint", count (_newGroupData get "waypoints") - 1]
+    ]] call FLO_fnc_virtualizationPatchGroup;
 };
 
 _newGroupId

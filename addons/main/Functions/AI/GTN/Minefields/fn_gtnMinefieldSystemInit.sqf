@@ -68,15 +68,26 @@ FLO_MinefieldBuild = createHashMapFromArray [
     };
 } forEach allMapMarkers;
 
-if (!isNil "FLO_SavedGameData" && {!isNil "FLO_IsLoadedSave"} && {FLO_IsLoadedSave}) then {
-    if ("minefieldObjectiveCooldowns" in FLO_SavedGameData && {(FLO_SavedGameData get "minefieldObjectiveCooldowns") isEqualType createHashMap}) then {
-        FLO_MinefieldObjectiveCooldowns = FLO_SavedGameData get "minefieldObjectiveCooldowns";
+if (FLO_IsLoadedSave) then {
+    private _restored = 0;
+    private _restoreError = "";
+    try {
+        _restored = [
+            FLO_SavedGameData get "minefields",
+            FLO_SavedGameData get "minefieldObjectiveCooldowns"
+        ] call FLO_fnc_minefieldRestoreSavedFields;
+    } catch {
+        _restoreError = _exception;
+    };
+    if (_restoreError != "") then {
+        ["MINEFIELD", 2, format [
+            "Rejected current minefield save state before publication: %1",
+            _restoreError
+        ]] call FLO_fnc_log;
+        throw format ["GTN minefield restore failed: %1", _restoreError];
     };
 
-    if ("minefields" in FLO_SavedGameData) then {
-        private _restored = [FLO_SavedGameData get "minefields"] call FLO_fnc_minefieldRestoreSavedFields;
-        ["MINEFIELD", 3, format ["Restored %1 GTN-controlled minefields", _restored]] call FLO_fnc_log;
-    };
+    ["MINEFIELD", 3, format ["Restored %1 GTN-controlled minefields", _restored]] call FLO_fnc_log;
 };
 
 ["FLO_Objective_Flipped", {

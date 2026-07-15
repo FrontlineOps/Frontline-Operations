@@ -18,7 +18,6 @@ if (_activationUnitCap <= 0) then {
 };
 
 createHashMapFromArray [
-    ["schemaVersion", 1],
     ["groups", createHashMap],
     ["config", createHashMapFromArray [
         ["activationDistance", _activationDistance],
@@ -27,8 +26,7 @@ createHashMapFromArray [
         ["activationRetryCooldown", 10],
         ["movementDeadbandMeters", 8],
         ["positionEventCellSize", 150],
-        ["enabled", true],
-        ["debugMode", false]
+        ["enabled", true]
     ]],
     ["archetypes", call FLO_fnc_virtualizationCreateArchetypeCatalog],
     ["spatial", createHashMap],

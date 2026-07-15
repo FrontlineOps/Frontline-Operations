@@ -119,24 +119,14 @@ if (_hasPendingObjectiveDuplicate) exitWith {
     false
 };
 
-private _requestSeq = (_cmdr get "_playerSupportRequestSeq") + 1;
-_cmdr set ["_playerSupportRequestSeq", _requestSeq];
-
-private _requestId = format ["%1_PSR_%2", _cmdr get "_sideKey", _requestSeq];
 private _request = createHashMapFromArray [
-    ["id", _requestId],
     ["type", _type],
     ["side", _requestSide],
     ["requesterUnit", _requester],
-    ["requesterOwner", owner _requester],
     ["requesterUid", _requesterUid],
-    ["requesterName", name _requester],
-    ["objectiveId", _validation get "objectiveId"],
     ["cooldownKey", _objectiveLockKey],
     ["targetLabel", _validation get "targetLabel"],
     ["targetPos", +_targetPos],
-    ["dispatchPos", +(_validation get "dispatchPos")],
-    ["createdAt", diag_tickTime],
     ["expiresAt", diag_tickTime + (_config get "playerSupportRequestExpireSeconds")]
 ];
 
@@ -145,10 +135,9 @@ _cmdr set ["_playerSupportRequests", _requests];
 
 [_requestSide, "HQ", format ["HQ copies %1 request for %2. Stand by.", _type, _validation get "targetLabel"]] call FLO_fnc_gtnBroadcastCommanderRadioMessage;
 ["GTN Player Support", 3, format [
-    "%1 queued %2 request %3 for %4",
+    "%1 queued %2 request for %3",
     name _requester,
     _type,
-    _requestId,
     _validation get "targetLabel"
 ]] call FLO_fnc_log;
 

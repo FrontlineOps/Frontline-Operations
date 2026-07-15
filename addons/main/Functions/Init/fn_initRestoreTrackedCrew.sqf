@@ -17,7 +17,10 @@ params ["_entity", "_type", "_attr", "_trackedCrewTypes"];
 
 if !(_type in _trackedCrewTypes) exitWith {};
 
-private _restoreCrew = if ("hadAICrew" in _attr) then { _attr get "hadAICrew" } else { true };
+private _restoreCrew = _attr get "hadAICrew";
+if !(_restoreCrew isEqualType true) then {
+    throw format ["Saved tracked asset %1 has invalid hadAICrew state", _type];
+};
 if (!_restoreCrew) exitWith {};
 
 if (getText (configFile >> "CfgVehicles" >> _type >> "crew") != "") then {

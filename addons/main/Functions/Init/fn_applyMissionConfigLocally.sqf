@@ -2,9 +2,9 @@
  * Function: FLO_fnc_applyMissionConfigLocally
  * Author: Frontline Operations Development Group
  * Description:
- *   Hydrates legacy client-side config globals from the authoritative
- *   FLO_MissionConfig bundle so startup does not need to publicVariable
- *   every handle separately.
+ *   Publishes the active client-side config references from the authoritative
+ *   FLO_MissionConfig bundle so startup does not need to publicVariable every
+ *   handle separately.
  *
  * Arguments: None
  *
@@ -73,14 +73,6 @@ if (isNil "FLO_EastGTN_GarrisonHandle") then {
     FLO_EastGTN_GarrisonHandle = _config get "eastGTNGarrisonHandle";
 };
 
-FLO_DifficultyHandle = FLO_EastDifficultyHandle;
-FLO_GTN_AttackCoverageHandle = FLO_EastGTN_AttackCoverageHandle;
-FLO_GTN_DefenseCoverageHandle = FLO_EastGTN_DefenseCoverageHandle;
-FLO_GTN_TempoHandle = FLO_EastGTN_TempoHandle;
-FLO_GTN_ForceGrowthHandle = FLO_EastGTN_ForceGrowthHandle;
-FLO_GTN_GarrisonHandle = FLO_EastGTN_GarrisonHandle;
-
-EnemyPrec = _config get "enemyPresence";
 FLO_ObjectiveSizeThreshold = _config get "objectiveSizeThreshold";
 FLO_VirtualizationDistance = _config get "virtualizationDistance";
 FLO_VirtualizationUnitCap = _config get "virtualizationUnitCap";

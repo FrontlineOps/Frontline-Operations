@@ -22,19 +22,9 @@ private _emitAverage = {
     _pairs apply { [_x select 1, _x select 0] }
 };
 
-private _emitCurrentQueueBySource = {
-    []
-};
-
-private _emitActiveSource = {
-    ""
-};
-
 private _sourceStats = FLO_PF_SourceStats;
 
 [
-    ["activeSource", call _emitActiveSource],
-    ["queuedPlusActive", call _emitCurrentQueueBySource],
     ["attempts", [(_sourceStats get "attempts")] call _emitSorted],
     ["newSearch", [(_sourceStats get "newSearch")] call _emitSorted],
     ["cacheHit", [(_sourceStats get "cacheHit")] call _emitSorted],

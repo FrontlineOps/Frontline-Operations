@@ -1,4 +1,4 @@
-private _metrics = FLO_PF_Scheduler call ["GetMetrics"];
+private _metrics = FLO_PF_Metrics;
 private _cache = count (keys FLO_PF_RequestCache);
 private _resolvedCount = _metrics get "resolvedCount";
 private _resolvedMsAvg = if (_resolvedCount > 0) then { (_metrics get "resolvedMsTotal") / _resolvedCount } else { 0 };

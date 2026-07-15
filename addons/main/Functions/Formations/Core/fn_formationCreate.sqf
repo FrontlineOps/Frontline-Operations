@@ -10,11 +10,24 @@ params [
 if ((count _memberIds) < 3 || {(count _memberIds) > 6}) then {
     throw format ["Cannot form %1 %2 with %3 groups", _sideKey, _branch, count _memberIds];
 };
+if (_homeObjectiveId == "") then {
+    throw format ["Cannot form %1 %2 without a deployment objective", _sideKey, _branch];
+};
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _strength = 0;
 {
     if !(_x in _groups) then { throw format ["Cannot form a unit from missing group %1", _x]; };
-    _strength = _strength + ((_groups get _x) get "unitCount");
+    private _groupData = _groups get _x;
+    private _memberSideKey = ([(_groupData get "side")] call FLO_fnc_gtnSideContext) get "sideKey";
+    private _memberBranch = [_groupData] call FLO_fnc_formationClassifyBranch;
+    if (
+        _memberSideKey != _sideKey
+        || {_memberBranch != _branch}
+        || {(_groupData get "homeObjective") != _homeObjectiveId}
+    ) then {
+        throw format ["Cannot form %1 from incompatible group %2 at %3", _homeObjectiveId, _x, _groupData get "homeObjective"];
+    };
+    _strength = _strength + (_groupData get "unitCount");
 } forEach _memberIds;
 
 private _sequenceKey = format ["%1:%2", _sideKey, _branch];

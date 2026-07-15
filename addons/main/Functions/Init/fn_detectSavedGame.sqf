@@ -1,8 +1,4 @@
-/*
- * Detects an explicitly requested save, migrates supported schemas, and
- * returns the authoritative mission configuration used by Phase 1.
- */
-
+/* Validates an explicitly requested save against the exact current universe version and shape. */
 if (!isServer) exitWith { [false, nil] };
 
 ["SAVE_DETECT", 3, "Checking for saved game data"] call FLO_fnc_log;
@@ -14,7 +10,6 @@ if (_launchMode isEqualTo 2) exitWith {
     saveMissionProfileNamespace;
     [false, nil]
 };
-
 if (_launchMode != 1) exitWith {
     ["SAVE_DETECT", 3, "Fresh setup selected; saved progress will not auto-load"] call FLO_fnc_log;
     [false, nil]
@@ -26,215 +21,138 @@ if (isNil "_saveData") exitWith {
     [false, nil]
 };
 if !(_saveData isEqualType createHashMap) exitWith {
-    ["SAVE_DETECT", 2, "Save data has an invalid type; opening fresh setup"] call FLO_fnc_log;
+    ["SAVE_DETECT", 2, "Saved campaign has an invalid payload type and was not loaded"] call FLO_fnc_log;
     [false, nil]
 };
 
-private _requiredRootKeys = ["time", "markers", "saveVersion"];
-private _missingRootKeys = _requiredRootKeys select { !(_x in _saveData) };
-if (_missingRootKeys isNotEqualTo []) exitWith {
-    ["SAVE_DETECT", 2, format ["Save is missing required root keys: %1", _missingRootKeys]] call FLO_fnc_log;
+if !("saveVersion" in _saveData) exitWith {
+    ["SAVE_DETECT", 2, "Saved campaign has no universal save version and was not loaded"] call FLO_fnc_log;
     [false, nil]
 };
-
-private _supportedSaveVersions = [18, 19, 20, 21, 22, 23, 24];
 private _saveVersion = _saveData get "saveVersion";
-if !(_saveVersion in _supportedSaveVersions) exitWith {
+if !(_saveVersion isEqualType 0) exitWith {
     ["SAVE_DETECT", 2, format [
-        "Save version %1 is unsupported; supported versions are %2",
+        "Saved campaign version has invalid type %1 and was not loaded",
+        typeName _saveVersion
+    ]] call FLO_fnc_log;
+    [false, nil]
+};
+private _currentSaveVersion = FLO_MissionSaveVersion;
+if (_saveVersion != _currentSaveVersion) exitWith {
+    ["SAVE_DETECT", 2, format [
+        "Saved campaign version %1 is incompatible with current version %2 and was not loaded",
         _saveVersion,
-        _supportedSaveVersions
+        _currentSaveVersion
     ]] call FLO_fnc_log;
     [false, nil]
 };
 
-private _missingCampaignKeys = [];
-if (_saveVersion in [20, 21, 22, 23, 24]) then {
-    private _requiredCampaignKeys = ["config", "objectives", "virtualGroups", "campaignOperation"];
-    if (_saveVersion >= 21) then {
-        _requiredCampaignKeys append ["sideResources", "logisticsNetworkBySide"];
-    };
-    if (_saveVersion >= 22) then {
-        _requiredCampaignKeys pushBack "baseDeploymentState";
-    };
-    _missingCampaignKeys = _requiredCampaignKeys select { !(_x in _saveData) };
-};
-if (_missingCampaignKeys isNotEqualTo []) exitWith {
-    ["SAVE_DETECT", 2, format [
-        "Version %1 save is missing campaign keys: %2",
-        _saveVersion,
-        _missingCampaignKeys
-    ]] call FLO_fnc_log;
-    [false, nil]
-};
-
-if !("config" in _saveData) exitWith {
-    ["SAVE_DETECT", 2, "Save has no mission configuration"] call FLO_fnc_log;
-    [false, nil]
-};
-private _configData = _saveData get "config";
-if !(_configData isEqualType createHashMap) exitWith {
-    ["SAVE_DETECT", 2, "Saved mission configuration is not a HashMap"] call FLO_fnc_log;
-    [false, nil]
-};
-
-private _migrationError = "";
-if (_saveVersion < 21) then {
-    if !("moneyHandle" in _configData) then {
-        _migrationError = "Legacy save config is missing moneyHandle";
-    } else {
-        private _legacyMoney = _configData get "moneyHandle";
-        if !(_legacyMoney isEqualType createHashMap && {"value" in _legacyMoney}) then {
-            _migrationError = "Legacy save moneyHandle is malformed";
-        } else {
-            private _legacyMoneyValue = _legacyMoney get "value";
-            if !(_legacyMoneyValue isEqualType 0 && {_legacyMoneyValue >= 0}) then {
-                _migrationError = format ["Legacy save money value is invalid: %1", _legacyMoneyValue];
-            };
-        };
-    };
-
-    _configData set ["startingResources", 5000];
-
-    if !("startPosition" in _configData) then {
-        private _migratedStartPosition = [];
-        if ("logisticsNetworkBySide" in _saveData && {"objectives" in _saveData}) then {
-            private _legacyNetworks = _saveData get "logisticsNetworkBySide";
-            private _legacyObjectives = _saveData get "objectives";
-            if (_legacyNetworks isEqualType createHashMap && {"WEST" in _legacyNetworks}) then {
-                private _legacyWestNetwork = _legacyNetworks get "WEST";
-                if (_legacyWestNetwork isEqualType createHashMap && {"hqObjectiveId" in _legacyWestNetwork}) then {
-                    private _legacyHqObjectiveId = _legacyWestNetwork get "hqObjectiveId";
-                    if (_legacyHqObjectiveId in _legacyObjectives) then {
-                        _migratedStartPosition = +((_legacyObjectives get _legacyHqObjectiveId) get "position");
-                    };
-                };
-            };
-        };
-
-        if (_migratedStartPosition isEqualTo []) then {
-            private _savedMarkers = _saveData get "markers";
-            {
-                if ((toLower _x) find "respawn_west" == 0) exitWith {
-                    _migratedStartPosition = +((_savedMarkers get _x) get "pos");
-                };
-            } forEach (keys _savedMarkers);
-        };
-
-        if (_migratedStartPosition isEqualTo []) then {
-            _migrationError = "Legacy save has no recoverable WEST start position";
-        } else {
-            _configData set ["startPosition", _migratedStartPosition];
-        };
-    };
-};
-
-if (_migrationError != "") exitWith {
-    ["SAVE_DETECT", 2, _migrationError] call FLO_fnc_log;
-    [false, nil]
-};
-
-private _legacyFactionMigrationError = "";
-if (_saveVersion < 24) then {
-    private _legacyFactionKeys = ["friendlyHandle", "enemyHandle", "civilianHandle"];
-    private _missingLegacyFactionKeys = _legacyFactionKeys select { !(_x in _configData) };
-    if (_missingLegacyFactionKeys isNotEqualTo []) then {
-        _legacyFactionMigrationError = format [
-            "Legacy save is missing faction handles: %1",
-            _missingLegacyFactionKeys
-        ];
-    } else {
-        private _legacyBluforHandle = _configData get "friendlyHandle";
-        private _legacyOpforHandle = _configData get "enemyHandle";
-        private _legacyCivilianHandle = _configData get "civilianHandle";
-        try {
-            if (([_legacyBluforHandle] call FLO_fnc_factionHandleSide) != 1) then {
-                throw format [
-                    "Legacy friendly faction %1 is not native BLUFOR",
-                    _legacyBluforHandle get "name"
-                ];
-            };
-            if (([_legacyOpforHandle] call FLO_fnc_factionHandleSide) != 0) then {
-                throw format [
-                    "Legacy enemy faction %1 is not native OPFOR",
-                    _legacyOpforHandle get "name"
-                ];
-            };
-            if (([_legacyCivilianHandle] call FLO_fnc_factionHandleSide) != 3) then {
-                throw format [
-                    "Legacy civilian faction %1 is not native civilian",
-                    _legacyCivilianHandle get "name"
-                ];
-            };
-        } catch {
-            _legacyFactionMigrationError = format [
-                "Save version %1 cannot migrate to native faction sides: %2",
-                _saveVersion,
-                _exception
-            ];
-        };
-
-        if (_legacyFactionMigrationError == "") then {
-            if ((_legacyBluforHandle get "name") isEqualTo "CUSTOM_PLAYER_FACTION") then {
-                _legacyBluforHandle set ["name", "CUSTOM_BLUFOR_FACTION"];
-            };
-            _legacyBluforHandle set ["side", 1];
-            _legacyOpforHandle set ["side", 0];
-            _legacyCivilianHandle set ["side", 3];
-
-            _configData set ["bluforHandle", _legacyBluforHandle];
-            _configData set ["opforHandle", _legacyOpforHandle];
-            _configData set ["civilianHandle", _legacyCivilianHandle];
-            _configData set ["playerSideKey", "WEST"];
-            _configData deleteAt "friendlyHandle";
-            _configData deleteAt "enemyHandle";
-
-            ["SAVE_DETECT", 3, format [
-                "Migrated mission save %1 faction roles to native-side config schema 24",
-                _saveVersion
-            ]] call FLO_fnc_log;
-        };
-    };
-};
-
-if (_legacyFactionMigrationError != "") exitWith {
-    ["SAVE_DETECT", 2, _legacyFactionMigrationError + ". Opening fresh setup."] call FLO_fnc_log;
-    [false, nil]
-};
-
-private _requiredConfigKeys = [
-    "bluforHandle",
-    "opforHandle",
-    "civilianHandle",
-    "playerSideKey",
-    "westDifficultyHandle",
-    "eastDifficultyHandle",
-    "westGTNAttackCoverageHandle",
-    "eastGTNAttackCoverageHandle",
-    "westGTNDefenseCoverageHandle",
-    "eastGTNDefenseCoverageHandle",
-    "westGTNTempoHandle",
-    "eastGTNTempoHandle",
-    "westGTNForceGrowthHandle",
-    "eastGTNForceGrowthHandle",
-    "westGTNGarrisonHandle",
-    "eastGTNGarrisonHandle",
-    "reputationHandle",
-    "objectiveSizeThreshold",
-    "virtualizationDistance",
-    "virtualizationUnitCap",
-    "startingTerritoryWestRatio",
-    "enemyPrec",
-    "startingResources",
-    "startPosition"
+private _requiredRootTypes = [
+    ["time", []],
+    ["markers", createHashMap],
+    ["vehicles", createHashMap],
+    ["objects", createHashMap],
+    ["crates", createHashMap],
+    ["minefields", []],
+    ["minefieldObjectiveCooldowns", createHashMap],
+    ["fobs", []],
+    ["ops", []],
+    ["config", createHashMap],
+    ["objectives", createHashMap],
+    ["virtualGroups", createHashMap],
+    ["aiCommanders", createHashMap],
+    ["campaignOperation", createHashMap],
+    ["sideResources", createHashMap],
+    ["logisticsNetworkBySide", createHashMap],
+    ["baseDeploymentState", createHashMap],
+    ["idsLogisticsEntities", []]
 ];
-private _missingConfigKeys = _requiredConfigKeys select { !(_x in _configData) };
-if (_missingConfigKeys isNotEqualTo []) exitWith {
-    ["SAVE_DETECT", 2, format ["Save config is missing required keys: %1", _missingConfigKeys]] call FLO_fnc_log;
-    [false, nil]
+{
+    _x params ["_key", "_prototype"];
+    if !(_key in _saveData) then {
+        private _error = format ["Current mission save is missing required root field %1", _key];
+        ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+        throw _error;
+    };
+    private _value = _saveData get _key;
+    if !(_value isEqualType _prototype) then {
+        private _error = format [
+            "Current mission save root field %1 has invalid type %2",
+            _key,
+            typeName _value
+        ];
+        ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+        throw _error;
+    };
+} forEach _requiredRootTypes;
+private _requiredRootKeys = ["saveVersion"] + (_requiredRootTypes apply {_x # 0});
+private _unexpectedRootKeys = (keys _saveData) select {!(_x in _requiredRootKeys)};
+if (_unexpectedRootKeys isNotEqualTo []) then {
+    private _error = format ["Current mission save has unexpected root fields %1", _unexpectedRootKeys];
+    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+    throw _error;
 };
 
-private _nativeConfigError = "";
+private _configData = _saveData get "config";
+private _requiredConfigTypes = [
+    ["bluforHandle", createHashMap],
+    ["opforHandle", createHashMap],
+    ["civilianHandle", createHashMap],
+    ["playerSideKey", ""],
+    ["reputationHandle", createHashMap],
+    ["westDifficultyHandle", createHashMap],
+    ["eastDifficultyHandle", createHashMap],
+    ["westGTNAttackCoverageHandle", createHashMap],
+    ["eastGTNAttackCoverageHandle", createHashMap],
+    ["westGTNDefenseCoverageHandle", createHashMap],
+    ["eastGTNDefenseCoverageHandle", createHashMap],
+    ["westGTNTempoHandle", createHashMap],
+    ["eastGTNTempoHandle", createHashMap],
+    ["westGTNForceGrowthHandle", createHashMap],
+    ["eastGTNForceGrowthHandle", createHashMap],
+    ["westGTNGarrisonHandle", createHashMap],
+    ["eastGTNGarrisonHandle", createHashMap],
+    ["westFactionTuningHandle", createHashMap],
+    ["eastFactionTuningHandle", createHashMap],
+    ["startingResources", 0],
+    ["objectiveSizeThreshold", 0],
+    ["virtualizationDistance", 0],
+    ["virtualizationUnitCap", 0],
+    ["startingTerritoryWestRatio", 0],
+    ["startPosition", []]
+];
+{
+    _x params ["_key", "_prototype"];
+    if !(_key in _configData) then {
+        private _error = format ["Current mission configuration is missing required field %1", _key];
+        ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+        throw _error;
+    };
+    private _value = _configData get _key;
+    if !(_value isEqualType _prototype) then {
+        private _error = format [
+            "Current mission configuration field %1 has invalid type %2",
+            _key,
+            typeName _value
+        ];
+        ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+        throw _error;
+    };
+} forEach _requiredConfigTypes;
+private _requiredConfigKeys = _requiredConfigTypes apply {_x # 0};
+private _unexpectedConfigKeys = (keys _configData) select {!(_x in _requiredConfigKeys)};
+if (_unexpectedConfigKeys isNotEqualTo []) then {
+    private _error = format ["Current mission configuration has unexpected fields %1", _unexpectedConfigKeys];
+    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+    throw _error;
+};
+if ((count (_configData get "startPosition")) < 2) then {
+    private _error = "Current mission configuration startPosition is malformed";
+    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+    throw _error;
+};
+
+private _configError = "";
 try {
     if (([_configData get "bluforHandle"] call FLO_fnc_factionHandleSide) != 1) then {
         throw "Saved BLUFOR handle is not config side 1";
@@ -249,27 +167,24 @@ try {
         throw format ["Saved player side %1 is invalid", _configData get "playerSideKey"];
     };
 } catch {
-    _nativeConfigError = _exception;
+    _configError = _exception;
 };
-if (_nativeConfigError != "") exitWith {
-    ["SAVE_DETECT", 2, format ["Saved faction configuration is invalid: %1", _nativeConfigError]] call FLO_fnc_log;
-    [false, nil]
+if (_configError != "") then {
+    private _error = format ["Current mission faction configuration is invalid: %1", _configError];
+    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+    throw _error;
 };
 
-_saveData set ["config", _configData];
 FLO_SavedGameData = _saveData;
 publicVariable "FLO_SavedGameData";
-
 private _missionConfig = createHashMap;
 {
     _missionConfig set [_x, _configData get _x];
 } forEach (keys _configData);
-_missionConfig set ["enemyPresence", _configData get "enemyPrec"];
 
 ["SAVE_DETECT", 3, format [
-    "Validated mission save version %1 for player side %2",
+    "Validated current mission save version %1 for player side %2",
     _saveVersion,
     _configData get "playerSideKey"
 ]] call FLO_fnc_log;
-
 [true, _missionConfig]

@@ -12,7 +12,7 @@ private _pfhId = [{
     [] call FLO_fnc_objectiveDevelopmentTick;
 }, FLO_ObjectiveDevelopmentConfig get "tickInterval", []] call CBA_fnc_addPerFrameHandler;
 FLO_ObjectiveDevelopmentRuntime set ["pfhId", _pfhId];
-["ECONOMY", 2, format [
+["ECONOMY", 3, format [
     "Objective Development worker started capacity WEST=%1 EAST=%2",
     [west] call FLO_fnc_objectiveDevelopmentGetProjectCapacity,
     [east] call FLO_fnc_objectiveDevelopmentGetProjectCapacity

@@ -256,9 +256,6 @@ _display closeDisplay 1;
     private _virtualizationUnitCapValue = parseNumber _virtualizationUnitCap;
     private _territoryRatioWestValue = (parseNumber ((_territoryRatio splitString "%") select 0)) / 100;
 
-	// Legacy compatibility value (not consumed by current systems)
-	private _enemyPresence = 2;
-
 	// Prompt for starting location with the map visible.
 	titleText ["", "BLACK IN", 1, true, true];
 
@@ -322,7 +319,6 @@ _display closeDisplay 1;
 		["westFactionTuningHandle", _westFactionTuningHandle],
 		["eastFactionTuningHandle", _eastFactionTuningHandle],
 		["startingResources", 5000],
-		["enemyPresence", _enemyPresence],
 		["objectiveSizeThreshold", _objectiveSizeThreshold],
 		["virtualizationDistance", _virtualizationDistanceValue],
         ["virtualizationUnitCap", _virtualizationUnitCapValue],
@@ -379,9 +375,6 @@ _display closeDisplay 1;
             _respawnMarker setMarkerTypeLocal "hd_start";
             _respawnMarker setMarkerTextLocal "Respawn";
         };
-
-		// Set MarLOCC for backwards compatibility
-		MarLOCC = 1;
 
 		titleText ["Deploying...", "BLACK FADED", 0.1, true, true];
 		hintSilent "Mission ready. Deploying...";

@@ -26,12 +26,7 @@ if (count _start > 2) then { _start set [2, 0]; } else { _start pushBack 0; };
 if (count _end > 2) then { _end set [2, 0]; } else { _end pushBack 0; };
 
 private _dist = _start distance2D _end;
-if (_dist <= 5) exitWith {
-    [false, 0, _start, [], [], _end]
-};
-
-private _segments = ceil (_dist / (_sampleStep max 25));
-if (_segments < 2) then { _segments = 2; };
+private _segments = (ceil (_dist / (_sampleStep max 10))) max 1;
 
 private _crossesWater = false;
 private _sampleCount = 0;
@@ -41,7 +36,7 @@ private _lastWater = [];
 private _firstLandAfter = [];
 private _prevSample = +_start;
 
-for "_i" from 1 to (_segments - 1) do {
+for "_i" from 0 to _segments do {
     private _t = _i / _segments;
     private _sample = [
         ((_start select 0) + (((_end select 0) - (_start select 0)) * _t)),
@@ -64,10 +59,6 @@ for "_i" from 1 to (_segments - 1) do {
     };
 
     _prevSample = +_sample;
-};
-
-if (_crossesWater && {_firstLandAfter isEqualTo []}) then {
-    _firstLandAfter = +_end;
 };
 
 [

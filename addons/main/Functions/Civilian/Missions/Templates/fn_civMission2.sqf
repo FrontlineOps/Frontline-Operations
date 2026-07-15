@@ -38,14 +38,20 @@ if ((FLO_ReputationHandle get "value") < 7) then {
     for "_i" from 1 to 4 do {
         _grp1 createUnit [selectRandom _hostileUnits, _ambushPos, [], 0, "NONE"];
     };
-    [_grp1, _deliveryPos, 200] call FLO_fnc_taskPatrol;
+    if !([_grp1, _deliveryPos, 200] call FLO_fnc_taskPatrol) then {
+        { deleteVehicle _x; } forEach units _grp1;
+        deleteGroup _grp1;
+    };
 
     private _grp2 = createGroup [_hostileSide, true];
     private _ambushPos2 = [_deliveryPos, 50, 150, 3, 0, 20, 0] call BIS_fnc_findSafePos;
     for "_i" from 1 to 4 do {
         _grp2 createUnit [selectRandom _hostileUnits, _ambushPos2, [], 0, "NONE"];
     };
-    [_grp2, _deliveryPos, 100] call FLO_fnc_taskPatrol;
+    if !([_grp2, _deliveryPos, 100] call FLO_fnc_taskPatrol) then {
+        { deleteVehicle _x; } forEach units _grp2;
+        deleteGroup _grp2;
+    };
 };
 
 private _trigger = createTrigger ["EmptyDetector", _deliveryPos, false];

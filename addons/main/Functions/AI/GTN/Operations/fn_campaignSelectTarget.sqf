@@ -1,4 +1,4 @@
-/* Selects one reachable target on an unclaimed logistics axis. */
+/* Ranks every mature unattached canonical probe for formal promotion. */
 params [
     "_director",
     ["_side", sideUnknown, [east]],
@@ -20,15 +20,13 @@ private _frontline = _commander call ["_getAttackFrontlineEnemyObjectives", []];
 private _config = _director get "_config";
 private _minimumSamples = _config get "opportunityMinimumSamples";
 private _minimumSourceSupply = _config get "operationLogisticsMinimumSupply";
-private _axisSeparation = _config get "operationAxisSeparationMeters";
 private _opportunities = (_director get "_state") get "opportunities";
 private _sideOpportunities = createHashMap;
 private _terrainRejected = 0;
 private _excludedRejected = 0;
-private _axisRejected = 0;
+private _immatureRejected = 0;
 private _noIntegratedSourceRejected = 0;
 private _noSupplySourceRejected = 0;
-private _claimedSupplySourceRejected = 0;
 
 {
     if ((_y get "sideKey") == _sideKey && {(_y get "sampleCount") >= _minimumSamples}) then {
@@ -45,19 +43,15 @@ private _ranked = [];
         continue;
     };
 
+    private _probeGroupIds = [_director, _sideKey, _objectiveId] call FLO_fnc_campaignGetPromotableProbeGroups;
+    if (_probeGroupIds isEqualTo []) then {
+        _immatureRejected = _immatureRejected + 1;
+        continue;
+    };
+
     private _objectivePosition = [_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor;
     if (_objectivePosition isEqualTo []) then {
         _terrainRejected = _terrainRejected + 1;
-        continue;
-    };
-    private _axisTooClose = false;
-    {
-        if ((_objectivePosition distance2D _x) < _axisSeparation) exitWith {
-            _axisTooClose = true;
-        };
-    } forEach _existingTargetPositions;
-    if (_axisTooClose) then {
-        _axisRejected = _axisRejected + 1;
         continue;
     };
 
@@ -68,7 +62,6 @@ private _ranked = [];
     };
 
     private _sourcePairs = [];
-    private _hasReachableSupply = false;
     {
         private _attackSourceObjectiveId = _x;
         private _supplySourceObjectiveId = [
@@ -78,19 +71,13 @@ private _ranked = [];
             _minimumSourceSupply
         ] call FLO_fnc_logisticsNetworkFindSupplySourceObjective;
         if (_supplySourceObjectiveId == "") then { continue };
-        _hasReachableSupply = true;
-        if (_supplySourceObjectiveId in _claimedSupplySourceObjectiveIds) then { continue };
         if !(_supplySourceObjectiveId in _activeSupplyNodes) then {
             throw format ["Reachable supply source %1 is absent from active logistics state", _supplySourceObjectiveId];
         };
         _sourcePairs pushBack [_attackSourceObjectiveId, _supplySourceObjectiveId];
     } forEach _attackSourceObjectiveIds;
     if (_sourcePairs isEqualTo []) then {
-        if (_hasReachableSupply) then {
-            _claimedSupplySourceRejected = _claimedSupplySourceRejected + 1;
-        } else {
-            _noSupplySourceRejected = _noSupplySourceRejected + 1;
-        };
+        _noSupplySourceRejected = _noSupplySourceRejected + 1;
         continue;
     };
 
@@ -119,68 +106,74 @@ private _ranked = [];
     };
     if (_objective get "contested") then { _score = _score + 40; };
     if (_objective get "underAttack") then { _score = _score + 20; };
+    _score = _score + 1200;
 
-    _ranked pushBack [_score, _objectiveId, _sourcePairs, _fromOpportunity, _objectivePosition];
+    _ranked pushBack [
+        _score,
+        _objectiveId,
+        _sourcePairs,
+        _fromOpportunity,
+        _objectivePosition,
+        _probeGroupIds
+    ];
 } forEach _frontline;
 
 _ranked sort false;
 if (_ranked isEqualTo []) exitWith {
     ["CAMPAIGN", 4, format [
-        "No campaign target for %1: frontline=%2 excluded=%3 terrain=%4 axis=%5 noIntegratedSource=%6 noSupply=%7 supplyClaimed=%8",
+        "No promotable campaign front for %1: frontline=%2 excluded=%3 immature=%4 terrain=%5 noIntegratedSource=%6 noSupply=%7",
         _sideKey,
         count _frontline,
         _excludedRejected,
+        _immatureRejected,
         _terrainRejected,
-        _axisRejected,
         _noIntegratedSourceRejected,
-        _noSupplySourceRejected,
-        _claimedSupplySourceRejected
+        _noSupplySourceRejected
     ]] call FLO_fnc_log;
-    createHashMapFromArray [
-        ["objectiveId", ""],
-        ["sourceObjectiveIds", []],
-        ["supportObjectiveIds", []],
-        ["supplySourceObjectiveId", ""],
-        ["fromOpportunity", false],
-        ["assaultLandAnchor", []]
-    ]
+    []
 };
 
-private _selected = _ranked select 0;
-private _objectiveId = _selected select 1;
-private _sourcePairs = _selected select 2;
-private _assaultLandAnchor = _selected select 4;
-private _supplyRanking = [];
-private _rankedSupplyIds = [];
+private _selections = [];
 {
-    private _supplySourceObjectiveId = _x select 1;
-    if (_supplySourceObjectiveId in _rankedSupplyIds) then { continue };
-    _rankedSupplyIds pushBack _supplySourceObjectiveId;
-    _supplyRanking pushBack [
-        (_activeSupplyNodes get _supplySourceObjectiveId) get "throughput",
-        _supplySourceObjectiveId
+    private _selected = _x;
+    private _objectiveId = _selected select 1;
+    private _sourcePairs = _selected select 2;
+    private _assaultLandAnchor = _selected select 4;
+    private _supplyRanking = [];
+    private _rankedSupplyIds = [];
+    {
+        private _supplySourceObjectiveId = _x select 1;
+        if (_supplySourceObjectiveId in _rankedSupplyIds) then { continue };
+        _rankedSupplyIds pushBack _supplySourceObjectiveId;
+        _supplyRanking pushBack [
+            (_activeSupplyNodes get _supplySourceObjectiveId) get "throughput",
+            _supplySourceObjectiveId
+        ];
+    } forEach _sourcePairs;
+    _supplyRanking sort false;
+
+    private _selectedSupplySourceObjectiveId = (_supplyRanking select 0) select 1;
+    private _sourceObjectiveIds = (_sourcePairs select {
+        (_x select 1) == _selectedSupplySourceObjectiveId
+    }) apply { _x select 0 };
+    private _supportObjectiveIds = +_sourceObjectiveIds;
+    private _objective = FLO_Objectives get _objectiveId;
+    {
+        private _linked = FLO_Objectives get _x;
+        if ((_linked get "owner") isEqualTo _side && {[_x] call FLO_fnc_campaignIsObjectiveIntegrated}) then {
+            _supportObjectiveIds pushBackUnique _x;
+        };
+    } forEach (_objective get "linkedObjectives");
+
+    _selections pushBack createHashMapFromArray [
+        ["objectiveId", _objectiveId],
+        ["sourceObjectiveIds", _sourceObjectiveIds],
+        ["supportObjectiveIds", _supportObjectiveIds],
+        ["supplySourceObjectiveId", _selectedSupplySourceObjectiveId],
+        ["fromOpportunity", _selected select 3],
+        ["assaultLandAnchor", _assaultLandAnchor],
+        ["probeGroupIds", +(_selected select 5)]
     ];
-} forEach _sourcePairs;
-_supplyRanking sort false;
+} forEach _ranked;
 
-private _selectedSupplySourceObjectiveId = (_supplyRanking select 0) select 1;
-private _sourceObjectiveIds = (_sourcePairs select {
-    (_x select 1) == _selectedSupplySourceObjectiveId
-}) apply { _x select 0 };
-private _supportObjectiveIds = +_sourceObjectiveIds;
-private _objective = FLO_Objectives get _objectiveId;
-{
-    private _linked = FLO_Objectives get _x;
-    if ((_linked get "owner") isEqualTo _side && {[_x] call FLO_fnc_campaignIsObjectiveIntegrated}) then {
-        _supportObjectiveIds pushBackUnique _x;
-    };
-} forEach (_objective get "linkedObjectives");
-
-createHashMapFromArray [
-    ["objectiveId", _objectiveId],
-    ["sourceObjectiveIds", _sourceObjectiveIds],
-    ["supportObjectiveIds", _supportObjectiveIds],
-    ["supplySourceObjectiveId", _selectedSupplySourceObjectiveId],
-    ["fromOpportunity", _selected select 3],
-    ["assaultLandAnchor", _assaultLandAnchor]
-]
+_selections

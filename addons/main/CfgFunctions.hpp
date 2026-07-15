@@ -67,6 +67,8 @@ class FLO {
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
         class gtnReleaseCompletedAttackAssignments {};
+        class gtnRetaskAttackRoute {};
+        class gtnRequestFrontlineArtillery {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
     };
@@ -75,6 +77,7 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\Core\Logic";
 
         class gtnAllocateAttackTrackPools {};
+        class gtnCreateAttackTrack {};
         class gtnBuildDefenseObjectiveProfiles {};
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
@@ -97,6 +100,7 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\Intel";
 
         class gtnApproximateCommanderMarkerPosition {};
+        class gtnBuildFrontlineSupportPicture {};
         class gtnBuildKnownEnemyGroupPicture {};
         class gtnBuildObservedRealEnemyTarget {};
         class gtnBuildCommanderIntelPicture {};
@@ -152,7 +156,6 @@ class FLO {
         class gtnMarkTaskSucceeded {};
         class gtnTaskEnemySide {};
         class gtnTaskMissing {};
-        class gtnTaskNormalizeSide {};
         class gtnTaskSideKey {};
         class gtnTaskTypeFromKind {};
     };
@@ -193,7 +196,6 @@ class FLO {
         class gtnAirTaskOrder           {};
         class gtnAirApplyVirtualCASEffect {};
         class gtnAirAuthorizeSortie {};
-        class gtnAirCollectObjectiveTargetIds {};
         class gtnAirDefenseActivateAgainstLiveAircraft {};
         class gtnAirDefenseGetState {};
         class gtnAirDefenseProcessContacts {};
@@ -231,6 +233,7 @@ class FLO {
     class AITasks {
         file = "\z\flo\addons\main\Functions\AI\Tasks";
 
+        class taskApplyRoute {};
         class taskPatrol {};
     };
 
@@ -251,11 +254,13 @@ class FLO {
         file = "\z\flo\addons\main\Functions\Store";
 
         class storeAddInventoryItem {};
+        class storeAddKitsWebEventHandler {};
         class storeAddWebEventHandler {};
         class storeAppendCatalogItem {};
         class storeAppendContainerCargoItems {};
         class storeAppendGearMagazine {};
         class storeAppendGearWeapon {};
+        class storeAppendSupportItems {};
         class storeAppendUnitGear {};
         class storeApplyKit {};
         class storeApplyWeaponLine {};
@@ -263,6 +268,9 @@ class FLO {
         class storeBuildCatalogItem {};
         class storeBuildCategoryPayload {};
         class storeBuildHydratePayload {};
+        class storeBuildKitsPayload {};
+        class storeBuildOptionalModIndex {};
+        class storeBuildSupportCatalog {};
         class storeCategoryForVehicle {};
         class storeCategoryForWeapon {};
         class storeCapabilityForCategory {};
@@ -272,18 +280,27 @@ class FLO {
         class storeDeployBase {};
         class storeDropGearItems {};
         class storeDropGearAddCount {};
+        class storeGearVisionTraits {};
         class storeHandleUiEvent {};
+        class storeHandleKitsUiEvent {};
         class storeIsItemBackedMagazine {};
         class storeIsMineMagazine {};
-        class storeLegacyVehiclePrice {};
+        class storeCollectVehicleWeapons {};
         class storeKitAccumulateLine {};
         class storeKitAppendCargo {};
         class storeKitCategoryForClass {};
         class storeKitDisplayName {};
         class storeNormalizeRuntimeRadioClass {};
         class storeOpenDialog {};
+        class storeOpenKitsDialog {};
+        class storeOptionalModForConfig {};
         class storePreInit { preInit = 1; };
+        class storeMagazineCombatTraits {};
+        class storePriceAttachment {};
         class storePriceClass {};
+        class storePriceVehicle {};
+        class storeReadConfigVisionTree {};
+        class storeReadVisionTraits {};
         class storeReceiveResponse {};
         class storeRecruitAI {};
         class storeRequestCategory {};
@@ -300,7 +317,10 @@ class FLO {
         class storeSpawnSupplyShipment {};
         class storeThroughputCost {};
         class storeUpdateDialog {};
+        class storeUpdateKitsDialog {};
         class storeValidateAccess {};
+        class storeVehicleConfigTraits {};
+        class storeWeaponCombatPrice {};
         class storeWeaponAttachments {};
         class storeWebAction {};
     };
@@ -310,6 +330,7 @@ class FLO {
 
         class baseConfigureContainerActions {};
         class baseConfigureMainActions {};
+        class baseCountSiegeForces {};
         class baseCreateMarker {};
         class baseCreateTriggers {};
         class baseDeployAddWebEventHandler {};
@@ -327,14 +348,13 @@ class FLO {
         class baseDeployUpdateDialog {};
         class baseDeployValidateState {};
         class baseDeployWebAction {};
+        class baseMonitorSiege {};
     };
 
     class Factions {
         file = "\z\flo\addons\main\Functions\Factions";
 
-        class factionApplyAutoBluforGlobals {};
-        class factionApplyAutoOpforGlobals {};
-        class factionApplyAutoGlobals {};
+        class factionBuildAutoSelectionCatalog {};
         class factionBuildAutoCivilianCatalog {};
         class factionBuildAutoIndex {};
         class factionBuildMergedAutoCivilianCatalog {};
@@ -359,6 +379,8 @@ class FLO {
         class factionGetTuningFieldSpecs {};
         class factionGetVariableArray {};
         class factionBuildCompositionDefaultsHandle {};
+        class factionBuildCustomCivilianCatalog {};
+        class factionBuildCustomMilitaryCatalog {};
         class factionHandleSource {};
         class factionHandleSide {};
         class factionUnitIsOfficer {};

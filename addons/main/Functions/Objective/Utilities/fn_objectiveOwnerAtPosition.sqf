@@ -2,7 +2,7 @@
  * Function: FLO_fnc_objectiveOwnerAtPosition
  * Author: Frontline Operations Development Group
  * Description:
- *   Returns the normalized owner of the objective containing a position.
+ *   Returns the owner of the objective containing a position.
  *
  * Arguments:
  * 0: Position <ARRAY>
@@ -21,4 +21,4 @@ private _owner = sideUnknown;
     };
 } forEach (keys FLO_Objectives);
 
-[_owner] call FLO_fnc_objectiveNormalizeOwner
+_owner

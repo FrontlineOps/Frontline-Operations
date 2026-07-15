@@ -12,7 +12,6 @@ class IDS_Logistics {
         class pickupEntity {};
         class placeEntity {};
         class startPlacement {};
-        class testLoadEntities {};
         class updateEntityPlacement {};
     };
 
@@ -20,9 +19,7 @@ class IDS_Logistics {
         file = "\z\flo\addons\main\IDS_Logistics\functions\server";
 
         class finalizeEntity {};
-        class loadEntities {};
         class onEntityKilled {};
-        class saveEntities {};
         class toggleEntityVisibility {};
     };
 

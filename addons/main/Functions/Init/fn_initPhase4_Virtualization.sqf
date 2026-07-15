@@ -41,10 +41,7 @@ if (!isNil "FLO_IsLoadedSave" && {FLO_IsLoadedSave} && {!isNil "FLO_SavedGameDat
 
         private _savedGroups = _savedData get "virtualGroups";
         private _restoreT0 = diag_tickTime;
-        private _loadedCount = [
-            _savedGroups,
-            _savedData get "saveVersion"
-        ] call FLO_fnc_virtualizationRestoreRegistry;
+        private _loadedCount = [_savedGroups] call FLO_fnc_virtualizationRestoreRegistry;
         private _restoreMs = (diag_tickTime - _restoreT0) * 1000;
         diag_log format ["[FLO_INIT_P4] Restored %1 virtual groups from save", _loadedCount];
 

@@ -17,7 +17,7 @@ disableSerialization;
 if (!isNull (uiNamespace getVariable ["FLO_FactionDialog", displayNull])) exitWith { true };
 
 ["INIT_CLIENT", 3, "Launching faction selection dialog for setup admin"] call FLO_fnc_log;
-private _opened = createDialog "factionselect_dialog2";
+private _opened = createDialog "FLO_FactionSelectDialog";
 if (!_opened) then {
     ["INIT_CLIENT", 1, "Failed to create faction selection dialog"] call FLO_fnc_log;
 };

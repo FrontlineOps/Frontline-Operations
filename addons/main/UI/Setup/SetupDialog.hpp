@@ -1329,9 +1329,3 @@ class FLO_FactionSelectDialog
 		};
 	};
 };
-
-// ============================================================================
-// LEGACY ALIAS (for backward compatibility)
-// ============================================================================
-
-class factionselect_dialog2: FLO_FactionSelectDialog {};

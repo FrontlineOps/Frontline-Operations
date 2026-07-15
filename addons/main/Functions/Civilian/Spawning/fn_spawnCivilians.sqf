@@ -17,6 +17,9 @@ if (isNil "FLO_CivilianConfig") then {
 
 private _densityConfig = FLO_CivilianConfig get "DENSITY";
 private _locationTypes = FLO_CivilianConfig get "CIV_LOCATION_TYPES";
+private _civilianCatalog = FLO_FactionCatalog get "CIVILIAN";
+private _civilianMen = _civilianCatalog get "men";
+private _civilianVehicles = _civilianCatalog get "vehicles";
 private _roleCounts = createHashMap;
 private _poiCaches = createHashMap;
 private _allLocations = [];
@@ -29,6 +32,7 @@ private _allLocations = [];
 } forEach _locationTypes;
 
 private _createdCount = 0;
+private _rejectedCount = 0;
 
 {
     _x params ["_location", "_locationType"];
@@ -66,13 +70,17 @@ private _createdCount = 0;
 
         private _profile = [_objectiveId, _locationType, "civilian", _spawnPos] call FLO_fnc_civilianBuildRoleProfile;
         private _groupId = [_spawnPos, "civilian", nil, _objectiveId, 1, civilian] call FLO_fnc_createVirtualGroup;
-        if (_groupId == "") then { continue };
+        if (_groupId == "") then {
+            _rejectedCount = _rejectedCount + 1;
+            continue;
+        };
 
         [_groupId, _profile, _objectiveId, _profile get "anchorPos"] call FLO_fnc_civilianConfigureVirtualGroup;
 
-        private _groupData = [_groupId] call FLO_fnc_virtualizationGetGroup;
-        private _plan = [_groupData, _ambientContext, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
-        [_groupId, _plan] call FLO_fnc_civilianApplyRoutinePlan;
+        if !([_groupId, _ambientContext, _poiCache] call FLO_fnc_civilianApplyInitialRoutine) then {
+            _rejectedCount = _rejectedCount + 1;
+            continue;
+        };
 
         private _role = _profile get "role";
         _roleCounts set [_role, (_roleCounts getOrDefault [_role, 0]) + 1];
@@ -80,20 +88,24 @@ private _createdCount = 0;
     };
 
     for "_i" from 1 to _carCount do {
-        if (isNil "CivVehArray" || {CivVehArray isEqualTo []}) then { continue };
+        if (_civilianVehicles isEqualTo []) then { continue };
 
         private _parkingData = [(_objective get "position"), _objectiveRadius, 4] call FLO_fnc_getRoadParkingPos;
         _parkingData params ["_parkPos", "_parkDir"];
 
         private _groupId = [_parkPos, "civilianVehicle", nil, _objectiveId, 1, civilian] call FLO_fnc_createVirtualGroup;
-        if (_groupId == "") then { continue };
+        if (_groupId == "") then {
+            _rejectedCount = _rejectedCount + 1;
+            continue;
+        };
 
         private _profile = [_objectiveId, _locationType, "civilianVehicle", _parkPos] call FLO_fnc_civilianBuildRoleProfile;
         [_groupId, _profile, _objectiveId, _parkPos, _parkDir] call FLO_fnc_civilianConfigureVirtualGroup;
 
-        private _groupData = [_groupId] call FLO_fnc_virtualizationGetGroup;
-        private _plan = [_groupData, _ambientContext, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
-        [_groupId, _plan] call FLO_fnc_civilianApplyRoutinePlan;
+        if !([_groupId, _ambientContext, _poiCache] call FLO_fnc_civilianApplyInitialRoutine) then {
+            _rejectedCount = _rejectedCount + 1;
+            continue;
+        };
 
         _roleCounts set ["driver", (_roleCounts getOrDefault ["driver", 0]) + 1];
         _createdCount = _createdCount + 1;
@@ -123,7 +135,9 @@ private _createdCount = 0;
         while {true} do {
             private _buildingPos = _building buildingPos _index;
             if (_buildingPos isEqualTo [0, 0, 0]) exitWith {};
-            _buildingPositions pushBack _buildingPos;
+            if !(surfaceIsWater _buildingPos) then {
+                _buildingPositions pushBack _buildingPos;
+            };
             _index = _index + 1;
         };
     } forEach _buildings;
@@ -133,20 +147,24 @@ private _createdCount = 0;
 
     {
         if (_forEachIndex >= _buildingCount) exitWith {};
-        if (isNil "CivMenArray" || {CivMenArray isEqualTo []}) exitWith {};
+        if (_civilianMen isEqualTo []) exitWith {};
 
-        private _unitType = selectRandom CivMenArray;
+        private _unitType = selectRandom _civilianMen;
         private _buildingPos = _x;
         private _groupId = [_buildingPos, "civ_building", nil, _objectiveId, 1, civilian, _unitType] call FLO_fnc_createVirtualGroup;
-        if (_groupId == "") then { continue };
+        if (_groupId == "") then {
+            _rejectedCount = _rejectedCount + 1;
+            continue;
+        };
 
         private _profile = [_objectiveId, _locationType, "civ_building", _buildingPos] call FLO_fnc_civilianBuildRoleProfile;
 
         [_groupId, _profile, _objectiveId, _buildingPos] call FLO_fnc_civilianConfigureVirtualGroup;
 
-        private _groupData = [_groupId] call FLO_fnc_virtualizationGetGroup;
-        private _plan = [_groupData, _ambientContext, _poiCache, diag_tickTime] call FLO_fnc_civilianPlanRoutine;
-        [_groupId, _plan] call FLO_fnc_civilianApplyRoutinePlan;
+        if !([_groupId, _ambientContext, _poiCache] call FLO_fnc_civilianApplyInitialRoutine) then {
+            _rejectedCount = _rejectedCount + 1;
+            continue;
+        };
 
         private _role = _profile get "role";
         _roleCounts set [_role, (_roleCounts getOrDefault [_role, 0]) + 1];
@@ -154,10 +172,11 @@ private _createdCount = 0;
     } forEach _buildingPositions;
 } forEach _allLocations;
 
-["CIVILIAN", 2, format [
-    "Created %1 civilian groups across %2 populated locations | roles=%3",
+["CIVILIAN", 3, format [
+    "Created %1 civilian groups across %2 populated locations | rejected=%3 roles=%4",
     _createdCount,
     count _allLocations,
+    _rejectedCount,
     _roleCounts
 ]] call FLO_fnc_log;
 
