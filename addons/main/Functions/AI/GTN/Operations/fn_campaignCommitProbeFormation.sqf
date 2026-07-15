@@ -16,6 +16,7 @@ private _formationState = _state get "formationState";
 private _formations = _formationState get "formations";
 private _formation = _formations get _formationId;
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
+[_state] call FLO_fnc_campaignValidateProbeOwnership;
 if ((_formation get "role") != "RESERVE" || {(_formation get "roleOperationId") != ""}) then {
     private _message = format [
         "Probe formation %1 is not an unowned reserve (%2/%3)",

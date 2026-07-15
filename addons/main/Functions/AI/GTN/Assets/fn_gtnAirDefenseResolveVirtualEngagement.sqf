@@ -2,10 +2,11 @@
 params [
     ["_airGroupId", "", [""]],
     ["_routeStart", [0, 0, 0], [[]]],
-    ["_routeEnd", [0, 0, 0], [[]]]
+    ["_routeEnd", [0, 0, 0], [[]]],
+    ["_groups", createHashMap, [createHashMap]],
+    ["_contactIndex", createHashMap, [createHashMap]]
 ];
 
-private _groups = call FLO_fnc_virtualizationGetGroupMap;
 if !(_airGroupId in _groups) exitWith { createHashMapFromArray [["status", "DESTROYED"], ["aaGroupId", ""], ["losses", 0]] };
 
 private _airData = _groups get _airGroupId;
@@ -16,16 +17,14 @@ if !((_airData get "groupType") in ["helicopter", "air", "jet"]) then {
 private _state = call FLO_fnc_gtnAirDefenseGetState;
 private _airSide = _airData get "side";
 private _enemySide = [east, west] select (_airSide isEqualTo east);
+private _enemySideKey = [_enemySide] call FLO_fnc_sideKey;
+private _aaGroupIds = (_contactIndex get "aaGroupIdsBySide") get _enemySideKey;
 private _candidates = [];
 
 {
     private _aaId = _x;
-    private _aaData = _y;
+    private _aaData = _groups get _aaId;
     private _aaType = _aaData get "groupType";
-    if !(_aaType in ["static_aa", "mobile_aa"]) then { continue };
-    if ((_aaData get "side") isNotEqualTo _enemySide) then { continue };
-    if ((_aaData get "unitCount") <= 0) then { continue };
-    if ((_aaData get "replacementState") != "") then { continue };
 
     private _engagementRange = [_state get "mobileEngagementRange", _state get "staticEngagementRange"] select (_aaType == "static_aa");
     private _routeDistance = [(_aaData get "position"), _routeStart, _routeEnd] call FLO_fnc_gtnAirDistancePointToSegment2D;
@@ -38,13 +37,17 @@ private _candidates = [];
     if (_pairKey in _pairReadyAt && {diag_tickTime < (_pairReadyAt get _pairKey)}) then { continue };
     private _priority = parseNumber (_aaType != "static_aa");
     _candidates pushBack [_priority, _routeDistance, _aaId, _aaData, _pairKey];
-} forEach _groups;
+} forEach _aaGroupIds;
 
 if (_candidates isEqualTo []) exitWith { createHashMapFromArray [["status", "CLEAR"], ["aaGroupId", ""], ["losses", 0]] };
 _candidates sort true;
 (_candidates select 0) params ["_priority", "_distance", "_aaId", "_aaData", "_pairKey"];
 
-if (_aaData get "isActive") exitWith {
+private _engagementObserved = [
+    [_routeStart, _routeEnd],
+    _aaData get "position"
+] call FLO_fnc_gtnAirDefenseIsObservedEngagement;
+if (_engagementObserved) exitWith {
     private _aaPos = _aaData get "position";
     private _spawnPos = _aaPos getPos [1200, _aaPos getDir _routeEnd];
     _spawnPos set [2, 500];
@@ -57,8 +60,15 @@ if (_aaData get "isActive") exitWith {
             private _vehicles = [_realGroup] call FLO_fnc_virtualizationCollectRealGroupVehicles;
             if (_vehicles isNotEqualTo []) then { _aircraft = _vehicles select 0; };
         };
-        if (!isNull _aircraft) then { [_aircraft, _airSide] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft; };
-        createHashMapFromArray [["status", "PHYSICAL"], ["aaGroupId", _aaId], ["losses", 0]]
+        if (!isNull _aircraft) then {
+            [_aircraft, _airSide, _groups, _contactIndex, true] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
+        };
+        if (_aaData get "isActive") then {
+            createHashMapFromArray [["status", "PHYSICAL"], ["aaGroupId", _aaId], ["losses", 0]]
+        } else {
+            [_airGroupId, false] call FLO_fnc_gtnAirParkCombatGroupOffMap;
+            createHashMapFromArray [["status", "ABORTED"], ["aaGroupId", _aaId], ["losses", 0]]
+        }
     } else {
         createHashMapFromArray [["status", "ABORTED"], ["aaGroupId", _aaId], ["losses", 0]]
     }
@@ -100,7 +110,7 @@ if (_requestedLoss > 0) then {
 };
 
 private _status = "ABORTED";
-if !(_airGroupId in (call FLO_fnc_virtualizationGetGroupMap)) then { _status = "DESTROYED"; };
+if !(_airGroupId in _groups) then { _status = "DESTROYED"; };
 ["GTN Air Defense", 3, format [
     "%1 %2 engaged virtual aircraft %3: %4 exposure=%5/%6 losses=%7",
     _enemySide,

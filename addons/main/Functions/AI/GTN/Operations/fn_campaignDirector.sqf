@@ -73,6 +73,7 @@ private _director = createHashMapObject [[
     ["_config", _config],
     ["_state", _state],
     ["_pfhId", -1],
+    ["_groupRemovedEhId", -1],
     ["_lastUpdateAt", -1],
     ["_pendingOperationPromotions", []],
 
@@ -735,6 +736,11 @@ private _director = createHashMapObject [[
     ["_start", {
         if ((_self get "_pfhId") >= 0) exitWith { true };
         FLO_CampaignDirector = _self;
+        private _groupRemovedEhId = ["FLO_Virtualization_GroupRemoved", {
+            params ["_groupId"];
+            [FLO_CampaignDirector, _groupId] call FLO_fnc_campaignHandleGroupRemoved;
+        }] call CBA_fnc_addEventHandler;
+        _self set ["_groupRemovedEhId", _groupRemovedEhId];
         private _interval = (_self get "_config") get "updateInterval";
         private _pfhId = [{
             params ["_args"];

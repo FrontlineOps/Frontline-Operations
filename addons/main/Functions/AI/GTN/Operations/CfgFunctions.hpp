@@ -26,6 +26,7 @@ class GTNOperations {
     class campaignGetPhaseDuration {};
     class campaignGetOperationReservation {};
     class campaignGetReachableAttackSources {};
+    class campaignHandleGroupRemoved {};
     class campaignIntegrateObjective {};
     class campaignIsObjectiveIntegrated {};
     class campaignObjectiveName {};

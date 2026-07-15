@@ -422,7 +422,14 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 _missions set [_gid, _missionRecord];
                 private _duration = _self call ["_getVirtualMissionDuration", [_missionType]];
                 private _tVirtual = diag_tickTime;
-                private _intercept = [_gid, _ingressPos, _targetPos] call FLO_fnc_gtnAirDefenseResolveVirtualEngagement;
+                private _airDefenseContactIndex = [_groups] call FLO_fnc_gtnAirDefenseBuildContactIndex;
+                private _intercept = [
+                    _gid,
+                    _ingressPos,
+                    _targetPos,
+                    _groups,
+                    _airDefenseContactIndex
+                ] call FLO_fnc_gtnAirDefenseResolveVirtualEngagement;
                 private _interceptStatus = _intercept get "status";
 
                 if (_interceptStatus == "PHYSICAL") exitWith {
@@ -433,7 +440,13 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     private _vehicle = _vehicles select 0;
                     _missionRecord set ["mode", "REAL"];
                     _missions set [_gid, _missionRecord];
-                    [_vehicle, _requestSide] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
+                    [
+                        _vehicle,
+                        _requestSide,
+                        _groups,
+                        _airDefenseContactIndex,
+                        true
+                    ] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
                     [_vehicle, _gid, "REAL"]
                 };
 
@@ -498,7 +511,14 @@ if (isNil "FLO_GTNAirAssetManager") then {
             _missionRecord set ["mode", "REAL"];
             _missions set [_gid, _missionRecord];
             [_realGroup] call CBA_fnc_clearWaypoints;
-            [_veh, _requestSide] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
+            private _airDefenseContactIndex = [_groups] call FLO_fnc_gtnAirDefenseBuildContactIndex;
+            [
+                _veh,
+                _requestSide,
+                _groups,
+                _airDefenseContactIndex,
+                false
+            ] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
             _self call ["_recordRequestPerf", [
                 (diag_tickTime - _tRequest) * 1000,
                 _missionType,

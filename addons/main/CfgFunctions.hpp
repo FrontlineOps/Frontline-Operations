@@ -197,7 +197,9 @@ class FLO {
         class gtnAirApplyVirtualCASEffect {};
         class gtnAirAuthorizeSortie {};
         class gtnAirDefenseActivateAgainstLiveAircraft {};
+        class gtnAirDefenseBuildContactIndex {};
         class gtnAirDefenseGetState {};
+        class gtnAirDefenseIsObservedEngagement {};
         class gtnAirDefenseProcessContacts {};
         class gtnAirDefenseResolveVirtualEngagement {};
         class gtnAirDefenseStartContactWorker {};
