@@ -14,13 +14,15 @@ if (isNil "_groupData") exitWith { false };
 private _directPassengerIds = +(_groupData get "attachedGroups");
 private _catastrophicManifest = [];
 private _catastrophicPassengerUnits = 0;
-if (_catastrophicPassengerLoss) then {
-    if (_groupData get "isActive") then {
-        private _message = format ["Catastrophic virtual carrier removal received active group %1", _groupId];
-        ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
-        throw _message;
-    };
+if (_catastrophicPassengerLoss && {_groupData get "isActive"}) exitWith {
+    ["VIRTUALIZATION", 2, format [
+        "Rejected catastrophic virtual carrier removal group=%1 reason=ACTIVE_PHYSICAL",
+        _groupId
+    ]] call FLO_fnc_log;
+    false
+};
 
+if (_catastrophicPassengerLoss) then {
     _catastrophicManifest = [_groupId] call FLO_fnc_virtualizationCollectTransportManifest;
     {
         private _passengerData = _groups get _x;

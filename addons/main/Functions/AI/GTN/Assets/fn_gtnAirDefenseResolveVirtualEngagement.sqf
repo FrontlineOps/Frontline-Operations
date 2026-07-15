@@ -48,6 +48,15 @@ private _engagementObserved = [
     [_routeStart, _routeEnd],
     _aaData get "position"
 ] call FLO_fnc_gtnAirDefenseIsObservedEngagement;
+private _activeHandoff = [
+    _airGroupId,
+    _airData,
+    _groups,
+    _contactIndex,
+    _aaId
+] call FLO_fnc_gtnAirDefenseHandoffActivatedAircraft;
+if ((keys _activeHandoff) isNotEqualTo []) exitWith { _activeHandoff };
+
 if (_engagementObserved && {!_transportCarrier}) exitWith {
     [_airGroupId, _routeStart] call FLO_fnc_virtualizationUpdateGroupPosition;
     [_airGroupId, createHashMapFromArray [["forceVirtual", false], ["noWaypoints", false]]] call FLO_fnc_virtualizationPatchGroup;
@@ -100,6 +109,15 @@ if (_airType == "jet") then {
     _lossThreshold = _lossThreshold + (_state get "jetExposureThresholdBonus");
 };
 
+_activeHandoff = [
+    _airGroupId,
+    _airData,
+    _groups,
+    _contactIndex,
+    _aaId
+] call FLO_fnc_gtnAirDefenseHandoffActivatedAircraft;
+if ((keys _activeHandoff) isNotEqualTo []) exitWith { _activeHandoff };
+
 private _requestedLoss = parseNumber (_exposureCount >= _lossThreshold);
 private _appliedLoss = 0;
 if (_requestedLoss > 0) then {
@@ -112,6 +130,15 @@ if (_requestedLoss > 0) then {
 } else {
     _exposureByAircraft set [_airGroupId, [_exposureCount, diag_tickTime]];
 };
+
+_activeHandoff = [
+    _airGroupId,
+    _airData,
+    _groups,
+    _contactIndex,
+    _aaId
+] call FLO_fnc_gtnAirDefenseHandoffActivatedAircraft;
+if ((keys _activeHandoff) isNotEqualTo []) exitWith { _activeHandoff };
 
 private _status = "ABORTED";
 if !(_airGroupId in _groups) then { _status = "DESTROYED"; };

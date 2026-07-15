@@ -199,6 +199,7 @@ class FLO {
         class gtnAirDefenseActivateAgainstLiveAircraft {};
         class gtnAirDefenseBuildContactIndex {};
         class gtnAirDefenseGetState {};
+        class gtnAirDefenseHandoffActivatedAircraft {};
         class gtnAirDefenseIsObservedEngagement {};
         class gtnAirDefenseProcessContacts {};
         class gtnAirDefenseResolveVirtualEngagement {};

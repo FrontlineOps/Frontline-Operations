@@ -12,14 +12,22 @@ private _currentCount = _groupData get "unitCount";
 private _loss = ((floor _requestedLoss) max 0) min _currentCount;
 if (_loss <= 0) exitWith { 0 };
 
+if (_groupData get "isActive") exitWith {
+    ["GTN Combat", 2, format [
+        "Rejected abstract group loss group=%1 reason=ACTIVE_PHYSICAL",
+        _groupId
+    ]] call FLO_fnc_log;
+    0
+};
+
 private _newCount = _currentCount - _loss;
 if (_newCount <= 0) exitWith {
-    if (!isNil "FLO_GTN_VirtualCombatResumeStates") then {
+    private _catastrophicPassengerLoss = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
+    private _removed = [_groupId, _catastrophicPassengerLoss] call FLO_fnc_virtualizationRemoveGroup;
+    if (_removed && {!isNil "FLO_GTN_VirtualCombatResumeStates"}) then {
         FLO_GTN_VirtualCombatResumeStates deleteAt _groupId;
     };
-    private _catastrophicPassengerLoss = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
-    [_groupId, _catastrophicPassengerLoss] call FLO_fnc_virtualizationRemoveGroup;
-    _loss
+    [0, _loss] select _removed
 };
 
 private _changes = createHashMapFromArray [["unitCount", _newCount]];
@@ -28,6 +36,14 @@ private _composition = +(_groupData get "comp");
 if (_tracksAssets && {(count _composition) > _newCount}) then {
     _composition resize _newCount;
     _changes set ["comp", _composition];
+};
+
+if (_groupData get "isActive") exitWith {
+    ["GTN Combat", 2, format [
+        "Rejected abstract group loss group=%1 reason=ACTIVE_PHYSICAL",
+        _groupId
+    ]] call FLO_fnc_log;
+    0
 };
 
 [_groupId, _changes] call FLO_fnc_virtualizationPatchGroup;

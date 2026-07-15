@@ -440,13 +440,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     private _vehicle = _vehicles select 0;
                     _missionRecord set ["mode", "REAL"];
                     _missions set [_gid, _missionRecord];
-                    [
-                        _vehicle,
-                        _requestSide,
-                        _groups,
-                        _airDefenseContactIndex,
-                        true
-                    ] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
                     [_vehicle, _gid, "REAL"]
                 };
 
