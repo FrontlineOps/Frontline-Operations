@@ -2,11 +2,40 @@
  * Function: FLO_fnc_virtualizationRemoveGroup
  */
 
-params [["_groupId", "", [""]]];
+params [
+    ["_groupId", "", [""]],
+    ["_catastrophicPassengerLoss", false, [false]],
+    ["_emitCatastrophicLog", true, [true]]
+];
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _groupData = _groups get _groupId;
 if (isNil "_groupData") exitWith { false };
+private _directPassengerIds = +(_groupData get "attachedGroups");
+private _catastrophicManifest = [];
+private _catastrophicPassengerUnits = 0;
+if (_catastrophicPassengerLoss) then {
+    if (_groupData get "isActive") then {
+        private _message = format ["Catastrophic virtual carrier removal received active group %1", _groupId];
+        ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
+        throw _message;
+    };
+
+    _catastrophicManifest = [_groupId] call FLO_fnc_virtualizationCollectTransportManifest;
+    {
+        private _passengerData = _groups get _x;
+        if (_passengerData get "isActive") then {
+            private _message = format [
+                "Catastrophic virtual carrier removal %1 contains active passenger %2",
+                _groupId,
+                _x
+            ];
+            ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
+            throw _message;
+        };
+        _catastrophicPassengerUnits = _catastrophicPassengerUnits + (_passengerData get "unitCount");
+    } forEach _catastrophicManifest;
+};
 private _availableTransports = FLO_TransportPool get "available";
 private _activeTransports = FLO_TransportPool get "active";
 
@@ -19,9 +48,11 @@ private _detachIndex = 0;
 
     private _attachedTo = [_otherData] call FLO_fnc_virtualizationGetTransportAttachment;
     if (_attachedTo == _groupId) then {
+        if (_catastrophicPassengerLoss) then { continue };
         private _offsetDir = (_detachIndex * 45) mod 360;
         if ([_otherId, _offsetDir] call FLO_fnc_transportDetach) then {
             _detachIndex = _detachIndex + 1;
+            [_otherId, "CARRIER_REMOVAL"] call FLO_fnc_transportApplyPostDismountWaypoint;
         } else {
             ["VIRTUALIZATION", 2, format [
                 "Clearing stale transport attachment on %1 while removing carrier %2",
@@ -93,6 +124,30 @@ private _removedSnapshot = [_groupId] call FLO_fnc_virtualizationSnapshotGroup;
 ["cleanup", _groupId] call FLO_fnc_virtualizationDebugManager;
 _groups deleteAt _groupId;
 call FLO_fnc_virtualizationTouchRegistry;
+
+if (_catastrophicPassengerLoss) then {
+    {
+        if !([_x, true, false] call FLO_fnc_virtualizationRemoveGroup) then {
+            private _message = format [
+                "Catastrophic carrier removal %1 could not remove passenger %2 after successful preflight",
+                _groupId,
+                _x
+            ];
+            ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
+            throw _message;
+        };
+    } forEach _directPassengerIds;
+
+    if (_emitCatastrophicLog && {_catastrophicManifest isNotEqualTo []}) then {
+        ["TRANSPORT", 3, format [
+            "Catastrophic virtual carrier loss carrier=%1 passengerGroups=%2 passengerUnits=%3",
+            _groupId,
+            count _catastrophicManifest,
+            _catastrophicPassengerUnits
+        ]] call FLO_fnc_log;
+    };
+};
+
 ["FLO_Virtualization_GroupRemoved", [_groupId, _removedSnapshot]] call CBA_fnc_localEvent;
 
 ["VIRTUALIZATION", 4, format ["Removed group %1", _groupId]] call FLO_fnc_log;

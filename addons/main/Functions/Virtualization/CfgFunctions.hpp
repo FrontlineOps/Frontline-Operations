@@ -54,6 +54,7 @@ class VirtualizationRegistry {
     class virtualizationGetGroup         {};
     class virtualizationQueryGroupIds    {};
     class virtualizationAddGroup         {};
+    class virtualizationCollectTransportManifest {};
     class virtualizationRemoveGroup      {};
     class virtualizationUpdateOwnedGroupPosition {};
     class virtualizationUpdateGroupPosition {};

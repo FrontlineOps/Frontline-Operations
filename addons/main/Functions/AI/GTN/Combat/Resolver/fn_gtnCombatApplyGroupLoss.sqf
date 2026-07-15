@@ -17,7 +17,8 @@ if (_newCount <= 0) exitWith {
     if (!isNil "FLO_GTN_VirtualCombatResumeStates") then {
         FLO_GTN_VirtualCombatResumeStates deleteAt _groupId;
     };
-    [_groupId] call FLO_fnc_virtualizationRemoveGroup;
+    private _catastrophicPassengerLoss = [_groupData] call FLO_fnc_virtualizationIsTransportCarrier;
+    [_groupId, _catastrophicPassengerLoss] call FLO_fnc_virtualizationRemoveGroup;
     _loss
 };
 

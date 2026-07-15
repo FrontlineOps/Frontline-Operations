@@ -13,6 +13,7 @@ private _airData = _groups get _airGroupId;
 if !((_airData get "groupType") in ["helicopter", "air", "jet"]) then {
     throw format ["Air-defense resolver received non-air group %1", _airGroupId];
 };
+private _transportCarrier = [_airData] call FLO_fnc_virtualizationIsTransportCarrier;
 
 private _state = call FLO_fnc_gtnAirDefenseGetState;
 private _airSide = _airData get "side";
@@ -47,11 +48,8 @@ private _engagementObserved = [
     [_routeStart, _routeEnd],
     _aaData get "position"
 ] call FLO_fnc_gtnAirDefenseIsObservedEngagement;
-if (_engagementObserved) exitWith {
-    private _aaPos = _aaData get "position";
-    private _spawnPos = _aaPos getPos [1200, _aaPos getDir _routeEnd];
-    _spawnPos set [2, 500];
-    [_airGroupId, _spawnPos] call FLO_fnc_virtualizationUpdateGroupPosition;
+if (_engagementObserved && {!_transportCarrier}) exitWith {
+    [_airGroupId, _routeStart] call FLO_fnc_virtualizationUpdateGroupPosition;
     [_airGroupId, createHashMapFromArray [["forceVirtual", false], ["noWaypoints", false]]] call FLO_fnc_virtualizationPatchGroup;
     if ([_airGroupId] call FLO_fnc_virtualizationForceActivateGroup) then {
         private _realGroup = _airData get "realGroup";
@@ -64,6 +62,12 @@ if (_engagementObserved) exitWith {
             [_aircraft, _airSide, _groups, _contactIndex, true] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
         };
         if (_aaData get "isActive") then {
+            ["GTN Air Defense", 3, format [
+                "Observed engagement handed aircraft %1 to physical simulation at %2 against AA %3",
+                _airGroupId,
+                _routeStart,
+                _aaId
+            ]] call FLO_fnc_log;
             createHashMapFromArray [["status", "PHYSICAL"], ["aaGroupId", _aaId], ["losses", 0]]
         } else {
             [_airGroupId, false] call FLO_fnc_gtnAirParkCombatGroupOffMap;
@@ -112,11 +116,13 @@ if (_requestedLoss > 0) then {
 private _status = "ABORTED";
 if !(_airGroupId in _groups) then { _status = "DESTROYED"; };
 ["GTN Air Defense", 3, format [
-    "%1 %2 engaged virtual aircraft %3: %4 exposure=%5/%6 losses=%7",
+    "%1 %2 engaged virtual aircraft %3: %4 mode=ABSTRACT transport=%5 observed=%6 exposure=%7/%8 losses=%9",
     _enemySide,
     _aaId,
     _airGroupId,
     _status,
+    _transportCarrier,
+    _engagementObserved,
     _exposureCount,
     _lossThreshold,
     _appliedLoss
