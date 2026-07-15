@@ -2,7 +2,7 @@
 params ["_groupData"];
 
 if (_groupData get "transportRole") exitWith { "" };
-if ((_groupData get "attachedTo") != "" || {(_groupData get "mountedIn") != ""}) exitWith { "" };
+if ((_groupData get "organicPackageRole") == "dismount") exitWith { "" };
 
 switch (_groupData get "groupType") do {
     case "infantry": { "infantry" };
