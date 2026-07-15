@@ -1,4 +1,4 @@
-/* Seeds a formal assault ledger from its already committed probe formations. */
+/* Seeds a formal assault ledger from its already committed probe groups. */
 params [
     "_director",
     ["_operationId", "", [""]],
@@ -30,7 +30,7 @@ private _front = if ((keys _frontOverride) isEqualTo []) then {
 if (isNil "_front" || {(_front get "formalOperationId") != _operationId}) then {
     throw format ["Operation %1 has no attached probe front to adopt", _operationId];
 };
-if ((_front get "stage") != "ASSAULT" || {!(_front get "promotionReady")}) then {
+if ((_front get "stage") != "ASSAULT") then {
     throw format ["Operation %1 tried to adopt unready probe stage %2", _operationId, _front get "stage"];
 };
 

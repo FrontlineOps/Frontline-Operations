@@ -43,7 +43,6 @@ private _desired = createHashMap;
 _metrics set ["frontlineCount", count (keys _desired)];
 
 private _removeIds = [];
-private _formationOwnershipChanged = false;
 {
     private _probeId = _x;
     private _front = _y;
@@ -54,22 +53,8 @@ private _formationOwnershipChanged = false;
     _removeIds pushBack _probeId;
 } forEach _fronts;
 {
-    private _front = _fronts get _x;
-    private _formations = ((_state get "formationState") get "formations");
-    {
-        if !(_x in _formations) then { continue };
-        private _formation = _formations get _x;
-        if ((_formation get "roleOperationId") == (_front get "probeId")) then {
-            _formation set ["roleOperationId", ""];
-            _formationOwnershipChanged = true;
-        };
-    } forEach (_front get "formationIds");
     _fronts deleteAt _x;
 } forEach _removeIds;
-if (_formationOwnershipChanged) then {
-    private _formationState = _state get "formationState";
-    _formationState set ["revision", (_formationState get "revision") + 1];
-};
 if (_removeIds isNotEqualTo []) then {
     _metrics set ["removedCount", count _removeIds];
     _metrics set ["changed", true];

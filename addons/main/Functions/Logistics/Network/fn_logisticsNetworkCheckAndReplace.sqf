@@ -424,12 +424,13 @@ for "_i" from 1 to _batchSize do {
             _perf set ["dispatchBookkeepingMs", (_perf get "dispatchBookkeepingMs") + ((diag_tickTime - _bookkeepingT0) * 1000)];
 
             ["LOGISTICS", 3, format [
-                "Created %1 reinforcement %2 -> %3 (requested %4, cost: %5)",
+                "Created %1 reinforcement %2 -> %3 requested=%4 treasury=%5 localSupplies=%6",
                 _groupType,
                 _sourceObjId,
                 _deliveryObjectiveId,
                 _requestedObjectiveId,
-                _cost
+                _cost,
+                _throughputCost
             ]] call FLO_fnc_log;
         } else {
             [_net, _sourceNodeId, _throughputCost, "Replacement creation refund"] call FLO_fnc_logisticsNetworkRestoreThroughput;

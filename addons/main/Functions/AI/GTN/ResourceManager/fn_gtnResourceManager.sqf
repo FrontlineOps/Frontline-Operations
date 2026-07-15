@@ -208,7 +208,6 @@ private _resourceManager = createHashMapObject [[
         private _map = _self get "_gtnCommandersBySide";
         if ((keys _map) isNotEqualTo []) exitWith {
             FLO_GTN_CommandersBySide = _map;
-            [(_director call ["_getState", []]) get "formationState", _director, _self] call FLO_fnc_formationInitialize;
             {
                 _y call ["_start", []];
                 _self call ["_startCommanderLoop", [_y]];
@@ -227,7 +226,6 @@ private _resourceManager = createHashMapObject [[
         // Keep commander objects server-local. They contain circular references
         // and are not safe to publicVariable.
         FLO_GTN_CommandersBySide = _self get "_gtnCommandersBySide";
-        [(_director call ["_getState", []]) get "formationState", _director, _self] call FLO_fnc_formationInitialize;
         {
             _y call ["_start", []];
             _self call ["_startCommanderLoop", [_y]];
@@ -247,7 +245,7 @@ private _resourceManager = createHashMapObject [[
     }]
 ]];
 
-// Complete GTN and formation initialization before dependent Phase 5 systems start.
+// Complete GTN initialization before dependent Phase 5 systems start.
 _resourceManager call ["_initializeGTN", []];
 
 _resourceManager

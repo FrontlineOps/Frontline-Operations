@@ -57,7 +57,9 @@ if (!_forceVirtual && {_nearestDist <= _activationDist} && {!_isActive}) exitWit
             _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];
             _virtStats set ["deferredGroupsLast", ((_virtStats get "deferredGroupsLast") - ([0, 1] select (_activationDeferred))) max 0];
         } else {
-            _groupData set ["activationRetryAt", diag_tickTime + _activationRetryCooldown];
+            private _routeRetryAt = _groupData get "landRouteRetryAt";
+            private _retryAt = (diag_tickTime + _activationRetryCooldown) max _routeRetryAt;
+            _groupData set ["activationRetryAt", _retryAt];
             _virtStats set ["activationBlocksTotal", (_virtStats get "activationBlocksTotal") + 1];
             _virtStats set ["activationBlocksThisBatch", (_virtStats get "activationBlocksThisBatch") + 1];
             _virtStats set ["activeUnitsLast", FLO_VirtUpdate get "activeUnitCount"];

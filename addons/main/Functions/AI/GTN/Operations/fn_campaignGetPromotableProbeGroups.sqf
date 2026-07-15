@@ -23,7 +23,6 @@ if ((_front get "sideKey") != _sideKey || {(_front get "objectiveId") != _object
 };
 if (
     (_front get "stage") != "ASSAULT"
-    || {!(_front get "promotionReady")}
     || {(_front get "formalOperationId") != ""}
 ) exitWith { [] };
 

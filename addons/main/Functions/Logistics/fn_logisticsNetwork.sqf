@@ -7,16 +7,28 @@ if (!isServer) exitWith {};
 if ((keys FLO_Logistics_Networks) isNotEqualTo []) exitWith {};
 
 private _groupCosts = createHashMapFromArray [
-    ["infantry", 300],
-    ["motorized", 800],
-    ["mechanized", 1600],
-    ["mobile_aa", 1800],
-    ["armor", 2400],
-    ["helicopter", 2200],
-    ["air", 3500],
-    ["jet", 5000],
-    ["artillery", 3000],
-    ["static_aa", 2600]
+    ["infantry", 150],
+    ["motorized", 400],
+    ["mechanized", 800],
+    ["mobile_aa", 900],
+    ["armor", 1200],
+    ["helicopter", 1100],
+    ["air", 1750],
+    ["jet", 2500],
+    ["artillery", 1500],
+    ["static_aa", 1300]
+];
+private _groupThroughputCosts = createHashMapFromArray [
+    ["infantry", 50],
+    ["motorized", 75],
+    ["mechanized", 100],
+    ["mobile_aa", 125],
+    ["helicopter", 150],
+    ["armor", 175],
+    ["static_aa", 200],
+    ["artillery", 225],
+    ["air", 250],
+    ["jet", 275]
 ];
 
 private _nodeTypeConfig = createHashMapFromArray [
@@ -30,7 +42,7 @@ private _logisticsClass = [
     ["#type", "LogisticsNetwork"],
 
     ["GROUP_COSTS", _groupCosts],
-    ["GROUP_THROUGHPUT_COSTS", _groupCosts],
+    ["GROUP_THROUGHPUT_COSTS", _groupThroughputCosts],
     ["NODE_TYPE_CONFIG", _nodeTypeConfig],
     ["CHECK_INTERVAL", 15],
     ["BLUFOR_DETECT_RANGE", 2000],
@@ -64,7 +76,7 @@ private _logisticsClass = [
     ["SUPPLY_CHAIN_SOFT_REFRESH_INTERVAL", 60],
     ["NODE_OBJECTIVE_LINK_RADIUS", 3000],
     ["NODE_DELIVERY_RADIUS", 20],
-    ["NODE_REFILL_INTERVAL", 180],
+    ["NODE_REFILL_INTERVAL", 60],
     ["SHIPMENT_THROUGHPUT", 1500],
     ["DEPOT_COST", 500],
     ["DEPOT_MIN_SOURCE_HOPS", 1],

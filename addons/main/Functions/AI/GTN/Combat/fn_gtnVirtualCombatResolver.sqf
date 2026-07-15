@@ -166,14 +166,15 @@ private _pfhId = [{
             count _westRefs
         ] call FLO_fnc_gtnCombatRecordEvent;
         [
-            "FLO_GTN_VirtualCombatResolved",
-            [_event, _eastRefs apply { _x select 0 }, _westRefs apply { _x select 0 }]
-        ] call CBA_fnc_localEvent;
+            _outcome,
+            _eastRefs apply { _x select 0 },
+            _westRefs apply { _x select 0 }
+        ] call FLO_fnc_gtnCombatRecordExperience;
 
         [_event, _combatMarkerTTL] call FLO_fnc_gtnCombatUpdateMarker;
 
         ["GTN_COMBAT", 3, format [
-            "%1 round %2 at %3m: E power=%4 W power=%5 momentum=%6 winner=%7 decisive=%8 E %9->%10 W %11->%12 artillery=%13",
+            "%1 round %2 at %3m: E power=%4 W power=%5 momentum=%6 winner=%7 decisive=%8 decisiveLossPct=%9 E %10->%11 W %12->%13 artillery=%14",
             _zoneId,
             _outcome get "roundCount",
             round _contactDist,
@@ -182,6 +183,7 @@ private _pfhId = [{
             round (_outcome get "momentum"),
             _outcome get "winner",
             _outcome get "decisive",
+            round ((_outcome get "decisiveLossPct") * 100),
             _outcome get "eastBefore",
             _outcome get "eastAfter",
             _outcome get "westBefore",

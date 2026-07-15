@@ -63,18 +63,20 @@ _handlers set ["FLO_Virtualization_GroupPatched", ["FLO_Virtualization_GroupPatc
     };
 }] call CBA_fnc_addEventHandler];
 
-{
-    private _eventName = _x;
-    _handlers set [_eventName, [_eventName, {
-        params ["_groupId", "_groupData"];
-        if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
-            [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
-        };
-    }] call CBA_fnc_addEventHandler];
-} forEach [
-    "FLO_Virtualization_GroupActivated",
-    "FLO_Virtualization_GroupDeactivated"
-];
+_handlers set ["FLO_Virtualization_GroupActivated", ["FLO_Virtualization_GroupActivated", {
+    params ["_groupId", "_groupData", "_realGroup"];
+    if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
+        [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
+    };
+    [_groupId, _realGroup] call FLO_fnc_gtnCombatApplyGroupSkills;
+}] call CBA_fnc_addEventHandler];
+
+_handlers set ["FLO_Virtualization_GroupDeactivated", ["FLO_Virtualization_GroupDeactivated", {
+    params ["_groupId", "_groupData"];
+    if ([_groupData] call FLO_fnc_gtnCombatAffectsClassification) then {
+        [true] call FLO_fnc_gtnCombatMarkClassificationDirty;
+    };
+}] call CBA_fnc_addEventHandler];
 
 _handlers set ["FLO_Virtualization_TransportRelationshipChanged", ["FLO_Virtualization_TransportRelationshipChanged", {
     [true] call FLO_fnc_gtnCombatMarkClassificationDirty;

@@ -14,7 +14,7 @@ class GTNOperations {
     class campaignCollectOpportunities {};
     class campaignCreateState {};
     class campaignCommitAssaultWave {};
-    class campaignCommitProbeFormation {};
+    class campaignCommitProbeGroup {};
     class campaignConcentrateProbeMass {};
     class campaignConfigureOffensiveState {};
     class campaignDirector {};
@@ -46,7 +46,8 @@ class GTNOperations {
     class campaignRequestSnapshot {};
     class campaignResolveAssaultLandAnchor {};
     class campaignSelectTarget {};
-    class campaignSelectProbeFormation {};
+    class campaignSelectDoctrine {};
+    class campaignSelectProbeGroup {};
     class campaignSerializeFrontlineProbes {};
     class campaignSetProbeStage {};
     class campaignSideFromKey {};

@@ -61,7 +61,6 @@ private _releaseIds = [];
                 && {(_front get "sideKey") == (_cmdr get "_sideKey")}
                 && {(_front get "objectiveId") == _objectiveId}
                 && {_groupId in (_front get "committedGroupIds")}
-                && {(_front get "stage") != "REGROUP"}
                 && {_objectiveId in _objectives}
                 && {((_objectives get _objectiveId) get "owner") == _enemySide};
         };

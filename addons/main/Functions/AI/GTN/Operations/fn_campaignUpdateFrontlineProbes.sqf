@@ -7,7 +7,7 @@ private _metrics = createHashMapFromArray [
     ["evaluatedCount", 0],
     ["createdCount", 0],
     ["removedCount", 0],
-    ["committedFormationCount", 0],
+    ["committedGroupCount", 0],
     ["stageCounts", createHashMap],
     ["supportContactCount", 0],
     ["selectionRejections", createHashMap]
@@ -46,7 +46,6 @@ for "_offset" from 0 to ((count _probeIds) - 1) do {
 };
 _cmdr set ["_probeEvaluationCursor", (_cursor + 1) mod (count _probeIds)];
 
-private _commitAvailable = true;
 private _changed = _reconcile get "changed";
 private _stageCounts = _metrics get "stageCounts";
 private _selectionDiagnostics = _metrics get "selectionRejections";
@@ -62,16 +61,12 @@ private _selectionDiagnostics = _metrics get "selectionRejections";
         _cmdr,
         _front,
         _support,
-        _commitAvailable,
         _selectionDiagnostics
     ] call FLO_fnc_campaignEvaluateProbeFront;
     _metrics set ["evaluatedCount", (_metrics get "evaluatedCount") + 1];
     if (_result get "changed") then { _changed = true; };
     if (_result get "committed") then {
-        _metrics set ["committedFormationCount", 1];
-    };
-    if (_result get "selectionAttempted") then {
-        _commitAvailable = false;
+        _metrics set ["committedGroupCount", (_metrics get "committedGroupCount") + 1];
     };
     private _stage = _front get "stage";
     private _stageCount = if (_stage in _stageCounts) then { _stageCounts get _stage } else { 0 };
@@ -80,10 +75,18 @@ private _selectionDiagnostics = _metrics get "selectionRejections";
 
 if (("ATTEMPTS" in _selectionDiagnostics) && {(_selectionDiagnostics get "ATTEMPTS") > 0}) then {
     ["CAMPAIGN", 4, format [
-        "Probe formation selection %1: committed=%2 rejectionCounts=%3",
+        "Probe group selection %1: committed=%2 rejectionCounts=%3",
         _sideKey,
-        _metrics get "committedFormationCount",
+        _metrics get "committedGroupCount",
         _selectionDiagnostics
+    ]] call FLO_fnc_log;
+};
+if ((_metrics get "committedGroupCount") > 0) then {
+    ["CAMPAIGN", 3, format [
+        "Probe task forces expanded side=%1 groups=%2 evaluatedFronts=%3",
+        _sideKey,
+        _metrics get "committedGroupCount",
+        _metrics get "evaluatedCount"
     ]] call FLO_fnc_log;
 };
 

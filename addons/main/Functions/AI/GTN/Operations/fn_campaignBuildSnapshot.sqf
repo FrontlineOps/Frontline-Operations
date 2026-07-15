@@ -19,16 +19,17 @@ private _enemySide = [_viewerSide] call FLO_fnc_gtnTaskEnemySide;
 private _enemySideKey = ([_enemySide] call FLO_fnc_gtnSideContext) get "sideKey";
 private _viewerSideName = ["BLUFOR", "OPFOR"] select (_viewerSide isEqualTo east);
 private _state = _director get "_state";
-private _formationState = _state get "formationState";
-private _viewerDoctrine = (_formationState get "doctrineBySide") get _viewerSideKey;
-private _formationRows = [_viewerSideKey] call FLO_fnc_formationBuildSnapshot;
 private _operationsMap = _state get "operations";
 private _operationRows = [];
 
 {
     private _operationId = _x;
-    _operationRows pushBack ([_operationsMap get _operationId, _viewerSideKey, _treasury, _forEachIndex == 0] call FLO_fnc_campaignBuildOperationSnapshot);
+    _operationRows pushBack ([_operationsMap get _operationId, _viewerSideKey, _forEachIndex == 0] call FLO_fnc_campaignBuildOperationSnapshot);
 } forEach (_state get "operationOrder");
+private _viewerDoctrine = "ECONOMY_OF_FORCE";
+if (_operationRows isNotEqualTo []) then {
+    _viewerDoctrine = (_operationRows select 0) get "doctrine";
+};
 
 private _emptyThreatSector = createHashMapFromArray [
     ["operationId", ""],
@@ -45,36 +46,11 @@ private _primaryOperation = createHashMapFromArray [
     ["isPrimary", true],
     ["role", "PROBING"],
     ["phase", "PROBING"],
-    ["actualPhase", "PROBING"],
     ["targetVisible", false],
     ["targetId", ""],
     ["targetName", "Active Front"],
-    ["targetPosition", []],
-    ["intelLevel", "NONE"],
-    ["intelReason", "NO_ACTIVE_OPERATION"],
     ["threatSector", _emptyThreatSector],
-    ["sourceObjectiveIds", []],
-    ["supportObjectiveIds", []],
-    ["supplySourceObjectiveId", ""],
-    ["supportPosture", "CONTACT"],
-    ["remainingSeconds", round (([call FLO_fnc_operationalDateNumber, _state get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds) max 0)],
-    ["result", ""],
-    ["transitionReason", _state get "transitionReason"],
-    ["resourceBudget", 0],
-    ["resourceSpent", 0],
-    ["resourceRemaining", 0],
-    ["resourceReleased", 0],
-    ["assaultOpeningDelaySeconds", 0],
-    ["doctrine", _viewerDoctrine],
-    ["shapingStatus", "NONE"],
-    ["shapingFormationId", ""],
-    ["shapingObjectiveId", ""],
-    ["shapingObjectiveName", ""],
-    ["exploitationStatus", "NONE"],
-    ["exploitationFormationId", ""],
-    ["exploitationObjectiveId", ""],
-    ["exploitationObjectiveName", ""],
-    ["drawdownPending", false]
+    ["doctrine", _viewerDoctrine]
 ];
 if (_operationRows isNotEqualTo []) then {
     _primaryOperation = _operationRows select 0;
@@ -100,8 +76,9 @@ private _supportObjectiveIds = [];
         };
         _visibleTargetIntents set [_targetId, _intent];
     };
-    { _sourceObjectiveIds pushBackUnique _x; } forEach (_operation get "sourceObjectiveIds");
-    { _supportObjectiveIds pushBackUnique _x; } forEach (_operation get "supportObjectiveIds");
+    private _operationState = _operationsMap get (_operation get "id");
+    { _sourceObjectiveIds pushBackUnique _x; } forEach (_operationState get "sourceObjectiveIds");
+    { _supportObjectiveIds pushBackUnique _x; } forEach (_operationState get "supportObjectiveIds");
 } forEach _operationRows;
 
 private _viewerOpportunityObjectives = createHashMap;
@@ -207,26 +184,6 @@ if (_playerObjectiveId != "") then {
     };
 };
 
-private _activeOperationCount = {
-    ((_operationsMap get _x) get "phase") != "RECOVERY"
-} count (_state get "operationOrder");
-private _viewerOwnsInitiative = (_state get "initiativeSideKey") == _viewerSideKey;
-private _scaleMetrics = createHashMapFromArray [
-    ["availableGroups", 0],
-    ["activeAttackGroups", 0],
-    ["offensiveGroups", 0],
-    ["forceSlots", 0],
-    ["logisticsSlots", 0],
-    ["treasurySlots", 0],
-    ["axisSlots", 0],
-    ["pressureCap", 0],
-    ["threatenedObjectives", 0],
-    ["forceDeficit", 0]
-];
-if (_viewerOwnsInitiative) then {
-    _scaleMetrics = +(_state get "scaleMetrics");
-};
-
 createHashMapFromArray [
     ["revision", _state get "revision"],
     ["generatedAt", diag_tickTime],
@@ -238,14 +195,6 @@ createHashMapFromArray [
     ["operation", _primaryOperation],
     ["operations", _operationRows],
     ["threatSectors", _threatSectors],
-    ["scale", createHashMapFromArray [
-        ["visible", _viewerOwnsInitiative],
-        ["currentCount", _activeOperationCount],
-        ["registryCount", count _operationRows],
-        ["desiredCount", [0, _state get "desiredOperationCount"] select _viewerOwnsInitiative],
-        ["reason", ["CLASSIFIED", _state get "scaleReason"] select _viewerOwnsInitiative],
-        ["metrics", _scaleMetrics]
-    ]],
     ["lastCompletedOperationId", _state get "lastCompletedOperationId"],
     ["lastCompletedResult", _state get "lastCompletedResult"],
     ["player", createHashMapFromArray [
@@ -264,7 +213,6 @@ createHashMapFromArray [
     ["logistics", _logistics],
     ["enemyLogisticsIntel", _enemyLogisticsIntel],
     ["doctrine", _viewerDoctrine],
-    ["formations", _formationRows],
     ["opportunities", _opportunityRows],
     ["objectives", _nodes]
 ]

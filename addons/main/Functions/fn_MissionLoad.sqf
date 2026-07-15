@@ -17,7 +17,7 @@
 
 if (!isServer) exitWith {false};
 
-FLO_MissionSaveVersion = 26;
+FLO_MissionSaveVersion = 27;
 
 ["LOAD", 3, "PreInit: mission shell ready for addon bootstrap"] call FLO_fnc_log;
 

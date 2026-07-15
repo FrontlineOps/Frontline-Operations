@@ -14,6 +14,7 @@ createHashMapFromArray [
     ["spawnClass", ""],
     ["homeObjective", ""],
     ["unitCount", 0],
+    ["combatExperience", 20],
     ["side", east],
     ["isActive", false],
     ["activeInitialUnitCount", 0],

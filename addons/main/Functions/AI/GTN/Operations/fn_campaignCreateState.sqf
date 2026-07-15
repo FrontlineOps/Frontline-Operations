@@ -32,7 +32,7 @@ if (_restoreSavedState) exitWith {
         "frontlineProbes", "operationOrder", "primaryOperationId", "desiredOperationCount",
         "lastScaleEvaluationAtDateNum", "scaleUpCandidateSinceDateNum",
         "scaleDownCandidateSinceDateNum", "scaleReason", "scaleMetrics",
-        "lastCompletedOperationId", "lastCompletedResult", "opportunities", "formationState",
+        "lastCompletedOperationId", "lastCompletedResult", "opportunities",
         "phase", "phaseStartedAtDateNum", "phaseEndsAtDateNum", "transitionReason"
     ];
     private _missingStateFields = _requiredStateFields select { !(_x in _savedState) };
@@ -164,10 +164,6 @@ if (_restoreSavedState) exitWith {
         ];
     } forEach _savedOpportunities;
 
-    private _formationState = [
-        _savedState get "formationState",
-        true
-    ] call FLO_fnc_formationCreateState;
     private _frontlineProbes = [_savedState get "frontlineProbes"] call FLO_fnc_campaignSerializeFrontlineProbes;
     {
         _y set ["lastContactAt", -1];
@@ -351,7 +347,6 @@ if (_restoreSavedState) exitWith {
         ["lastCompletedOperationId", _savedState get "lastCompletedOperationId"],
         ["lastCompletedResult", _savedState get "lastCompletedResult"],
         ["opportunities", _opportunities],
-        ["formationState", _formationState],
         ["phase", toUpper (_savedState get "phase")],
         ["phaseStartedAtDateNum", _savedState get "phaseStartedAtDateNum"],
         ["phaseEndsAtDateNum", _savedState get "phaseEndsAtDateNum"],
@@ -402,7 +397,6 @@ createHashMapFromArray [
     ["lastCompletedOperationId", ""],
     ["lastCompletedResult", ""],
     ["opportunities", createHashMap],
-    ["formationState", [createHashMap, false] call FLO_fnc_formationCreateState],
     ["operationId", ""],
     ["phase", "PROBING"],
     ["phaseStartedAtDateNum", _now],

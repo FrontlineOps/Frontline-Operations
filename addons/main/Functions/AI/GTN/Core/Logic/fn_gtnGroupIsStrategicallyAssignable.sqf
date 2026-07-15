@@ -12,7 +12,7 @@
  *   1: Own side <SIDE>
  *   2: Allowed group types <ARRAY> - Optional
  *   3: Allowed current orders <ARRAY> - Optional. Empty skips order filtering.
- *   4: Allowed formation reservation owner <STRING> - Optional
+ *   4: Allowed campaign reservation owner <STRING> - Optional
  *   5: Rejection counters <HASHMAP> - Optional
  *
  * Return Value:
@@ -51,20 +51,10 @@ if ((_groupData get "attachedTo") != "" || {(_groupData get "mountedIn") != ""})
     ["TRANSPORT_BOUND"] call _reject
 };
 
-private _formationReserved = false;
-if (!isNil "FLO_FormationState") then {
-    private _groupId = _groupData get "id";
-    private _groupToFormation = FLO_FormationState get "groupToFormation";
-    if (_groupId in _groupToFormation) then {
-        private _formation = (FLO_FormationState get "formations") get (_groupToFormation get _groupId);
-        private _reservationId = _formation get "roleOperationId";
-        _formationReserved = (
-            _reservationId != ""
-            && {_reservationId != _reservationOwnerId}
-        );
-    };
+private _reservationId = _groupData get "campaignOperationId";
+if (_reservationId != "" && {_reservationId != _reservationOwnerId}) exitWith {
+    ["CAMPAIGN_RESERVED"] call _reject
 };
-if (_formationReserved) exitWith { ["FORMATION_RESERVED"] call _reject };
 
 private _currentOrder = _groupData get "commanderOrder";
 if (_allowedOrders isNotEqualTo [] && {_currentOrder != ""} && {!(_currentOrder in _allowedOrders)}) exitWith {

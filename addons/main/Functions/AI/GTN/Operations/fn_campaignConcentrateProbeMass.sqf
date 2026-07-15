@@ -1,4 +1,4 @@
-/* Transfers whole formations from lower-maturity probes into an assault-ready front. */
+/* Transfers one lower-maturity probe's complete group task force to a ready front. */
 params [
     "_director",
     "_cmdr",
@@ -8,196 +8,173 @@ params [
 ];
 
 private _metrics = createHashMapFromArray [
-    ["movedFormationCount", 0],
     ["movedGroupCount", 0],
     ["donorProbeIds", []],
     ["assaultMassReady", false]
 ];
-if ((_recipient get "formalOperationId") != "") exitWith { _metrics };
-if ((_recipient get "stage") != "REINFORCE_SUCCESS") exitWith { _metrics };
+if ((_recipient get "formalOperationId") != "" || {(_recipient get "stage") != "REINFORCE_SUCCESS"}) exitWith { _metrics };
 
-private _recordDiagnostic = {
+private _recordRejection = {
     params ["_reason"];
     private _count = if (_reason in _diagnostics) then { _diagnostics get _reason } else { 0 };
     _diagnostics set [_reason, _count + 1];
 };
-
 private _state = _director get "_state";
+[_state] call FLO_fnc_campaignValidateProbeOwnership;
 private _fronts = _state get "frontlineProbes";
-private _formationState = _state get "formationState";
-private _formations = _formationState get "formations";
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
-private _config = _director get "_config";
-private _sideKey = _recipient get "sideKey";
-private _ownSide = _cmdr get "_ownSide";
-private _minimumMass = _config get "probeAssaultMinimumGroups";
-private _maximumReinforcements = _config get "probeMaximumReinforcementFormations";
-private _reinforcementSlots = _maximumReinforcements - (_recipient get "reinforcementCount");
-if (_currentActiveCount >= _minimumMass || {_reinforcementSlots <= 0}) exitWith {
-    _metrics set ["assaultMassReady", _currentActiveCount >= _minimumMass];
+private _minimumMass = (_director get "_config") get "probeAssaultMinimumGroups";
+if (_currentActiveCount >= _minimumMass) exitWith {
+    _metrics set ["assaultMassReady", true];
     _metrics
 };
 
-private _eligibleDonorStages = ["PROBE", "DEVELOP_CONTACT", "STALLED", "SUPPORT", "SHIFT_AXIS"];
 private _candidateRows = [];
 {
     private _donorProbeId = _x;
     private _donor = _y;
     if (_donorProbeId == (_recipient get "probeId")) then { continue };
-    if ((_donor get "sideKey") != _sideKey) then { continue };
-    if ((_donor get "formalOperationId") != "") then { ["CONCENTRATION_FORMAL_OWNER"] call _recordDiagnostic; continue };
-    if !((_donor get "stage") in _eligibleDonorStages) then { ["CONCENTRATION_DONOR_MATURITY"] call _recordDiagnostic; continue };
-
-    private _donorFormationIds = _donor get "formationIds";
-    if ((count _donorFormationIds) != 1) then { ["CONCENTRATION_DONOR_WIDTH"] call _recordDiagnostic; continue };
-    private _formationId = _donorFormationIds select 0;
-    if !(_formationId in _formations) then {
-        private _message = format ["Probe concentration donor %1 references missing formation %2", _donorProbeId, _formationId];
-        ["CAMPAIGN", 1, _message] call FLO_fnc_log;
-        throw _message;
-    };
-    private _formation = _formations get _formationId;
-    if (
-        (_formation get "role") != "MAIN"
-        || {(_formation get "roleOperationId") != _donorProbeId}
-    ) then { ["CONCENTRATION_FORMATION_ROLE"] call _recordDiagnostic; continue };
-
-    private _memberIds = (_formation get "memberIds") select {
-        _x in _groups && {((_groups get _x) get "unitCount") > 0}
-    };
-    if ((count _memberIds) < 3 || {(count _memberIds) > 6}) then {
-        ["CONCENTRATION_MEMBER_COUNT"] call _recordDiagnostic;
+    if ((_donor get "sideKey") != (_recipient get "sideKey")) then { continue };
+    if ((_donor get "formalOperationId") != "") then { ["CONCENTRATION_FORMAL_OWNER"] call _recordRejection; continue };
+    if !((_donor get "stage") in ["PROBE", "DEVELOP_CONTACT", "STALLED", "SUPPORT", "SHIFT_AXIS"]) then {
+        ["CONCENTRATION_DONOR_MATURITY"] call _recordRejection;
         continue;
     };
-    private _donorGroupIds = _donor get "committedGroupIds";
-    if (
-        (count _donorGroupIds) != (count _memberIds)
-        || {(count (_donorGroupIds arrayIntersect _memberIds)) != (count _memberIds)}
-    ) then { ["CONCENTRATION_PARTIAL_FORMATION"] call _recordDiagnostic; continue };
-
-    private _allOwnedAndAssignable = {
+    private _donorGroupIds = +(_donor get "committedGroupIds");
+    if (_donorGroupIds isEqualTo []) then { ["CONCENTRATION_EMPTY_DONOR"] call _recordRejection; continue };
+    private _allAssignable = {
+        if !(_x in _groups) exitWith { false };
         private _groupData = _groups get _x;
-        (_groupData get "commanderOrder") == "ATTACK"
+        (_groupData get "unitCount") > 0
+        && {(_groupData get "commanderOrder") == "ATTACK"}
         && {(_groupData get "campaignOperationId") == _donorProbeId}
         && {(_groupData get "attackObjective") == (_donor get "objectiveId")}
-        && {
-            [
-                _groupData,
-                _ownSide,
-                ["infantry", "motorized", "mechanized", "armor"],
-                [],
-                _donorProbeId,
-                _diagnostics
-            ] call FLO_fnc_gtnGroupIsStrategicallyAssignable
-        }
-    } count _memberIds == count _memberIds;
-    if (!_allOwnedAndAssignable) then { ["CONCENTRATION_GROUP_ASSIGNABILITY"] call _recordDiagnostic; continue };
-
+        && {[
+            _groupData,
+            _cmdr get "_ownSide",
+            ["infantry", "motorized", "mechanized", "armor"],
+            [],
+            _donorProbeId,
+            _diagnostics
+        ] call FLO_fnc_gtnGroupIsStrategicallyAssignable}
+    } count _donorGroupIds == count _donorGroupIds;
+    if (!_allAssignable) then { ["CONCENTRATION_GROUP_ASSIGNABILITY"] call _recordRejection; continue };
     _candidateRows pushBack [
         _donor get "progressSamples",
         _donor get "contactSamples",
+        count _donorGroupIds,
         _donor get "createdAtDateNum",
-        _donorProbeId,
-        _formationId,
-        _memberIds
+        _donorProbeId
     ];
 } forEach _fronts;
 
+if (_candidateRows isEqualTo []) exitWith { _metrics };
 _candidateRows sort true;
-private _mass = _currentActiveCount;
-private _donorProbeIds = [];
-private _movedFormationCount = 0;
-private _movedGroupCount = 0;
-private _recoverySeconds = _config get "probeConcentrationDonorRecoverySeconds";
-
-{
-    if (_mass >= _minimumMass || {_reinforcementSlots <= 0}) exitWith {};
-    private _donorProbeId = _x select 3;
-    private _formationId = _x select 4;
-    private _memberIds = _x select 5;
-    if ((_cmdr get "_strategicOrderBudgetRemaining") < count _memberIds) then {
-        ["CONCENTRATION_ORDER_BUDGET"] call _recordDiagnostic;
-        continue;
-    };
-
-    [_state] call FLO_fnc_campaignValidateProbeOwnership;
-    private _donor = _fronts get _donorProbeId;
-    private _formation = _formations get _formationId;
-    private _donorSnapshot = createHashMapFromArray [
-        ["formationIds", +(_donor get "formationIds")],
-        ["committedGroupIds", +(_donor get "committedGroupIds")],
-        ["committedUnitBaseline", _donor get "committedUnitBaseline"]
-    ];
-    private _formationSnapshot = createHashMapFromArray [
-        ["role", _formation get "role"],
-        ["roleMemberIds", +(_formation get "roleMemberIds")],
-        ["roleObjectiveId", _formation get "roleObjectiveId"],
-        ["roleOperationId", _formation get "roleOperationId"],
-        ["roleStartedAtDateNum", _formation get "roleStartedAtDateNum"],
-        ["roleEndsAtDateNum", _formation get "roleEndsAtDateNum"],
-        ["returnObjectiveId", _formation get "returnObjectiveId"]
-    ];
-
-    _donor set ["formationIds", []];
-    _donor set ["committedGroupIds", []];
-    _donor set ["committedUnitBaseline", 0];
-    _formation set ["role", "RESERVE"];
-    _formation set ["roleMemberIds", []];
-    _formation set ["roleObjectiveId", ""];
-    _formation set ["roleOperationId", ""];
-    _formation set ["roleStartedAtDateNum", -1];
-    _formation set ["roleEndsAtDateNum", -1];
-    _formation set ["returnObjectiveId", ""];
-
-    private _selection = createHashMapFromArray [
-        ["formationId", _formationId],
-        ["memberIds", _memberIds]
-    ];
-    private _commitSucceeded = false;
-    private _commitException = "";
-    try {
-        _commitSucceeded = [_director, _cmdr, _recipient, _selection, true]
-            call FLO_fnc_campaignCommitProbeFormation;
-    } catch {
-        _commitException = _exception;
-    };
-
-    if (!_commitSucceeded) then {
-        {
-            _donor set [_x, _y];
-        } forEach _donorSnapshot;
-        {
-            _formation set [_x, _y];
-        } forEach _formationSnapshot;
-        if (_commitException != "") then { throw _commitException };
-        ["CONCENTRATION_COMMIT_FAILED"] call _recordDiagnostic;
-        continue;
-    };
-
-    [_director, _cmdr, _donor, "MASS_CONCENTRATED", _recoverySeconds]
-        call FLO_fnc_campaignReleaseProbeFront;
-    _donorProbeIds pushBack _donorProbeId;
-    _movedFormationCount = _movedFormationCount + 1;
-    _movedGroupCount = _movedGroupCount + count _memberIds;
-    _mass = _mass + count _memberIds;
-    _reinforcementSlots = _reinforcementSlots - 1;
-} forEach _candidateRows;
-
-_metrics set ["movedFormationCount", _movedFormationCount];
-_metrics set ["movedGroupCount", _movedGroupCount];
-_metrics set ["donorProbeIds", _donorProbeIds];
-_metrics set ["assaultMassReady", _mass >= _minimumMass];
-
-if (_movedFormationCount > 0) then {
-    ["CAMPAIGN", 3, format [
-        "Probe mass concentrated recipient=%1 donors=%2 formations=%3 groups=%4 mass=%5/%6",
-        _recipient get "probeId",
-        _donorProbeIds,
-        _movedFormationCount,
-        _movedGroupCount,
-        _mass,
-        _minimumMass
-    ]] call FLO_fnc_log;
+private _donorProbeId = (_candidateRows select 0) select 4;
+private _donor = _fronts get _donorProbeId;
+private _donorGroupIds = +(_donor get "committedGroupIds");
+if ((_cmdr get "_strategicOrderBudgetRemaining") < count _donorGroupIds) exitWith {
+    ["CONCENTRATION_ORDER_BUDGET"] call _recordRejection;
+    _metrics
 };
 
+private _routeMutableFields = [
+    "waypoints", "currentWaypointIndex", "autoPatrol", "patrolConfig", "virtualSpeed",
+    "lastMoveTime", "virtualMoveCarryMeters", "loiterStartTime", "pathToken", "pathTargetPos",
+    "pathAllowTrails", "pathStartedAt", "pathSource", "pathWaypointSettings"
+];
+private _groupPatchMutableFields = [
+    "state", "lastStateChangeTime", "noWaypoints", "idleHelicopterParked", "missionLock", "missionType",
+    "executionState", "commanderOrder", "orderTargetPos", "orderMode", "attackObjective",
+    "campaignOperationId", "defendObjective", "defendLeaseIssuedAt", "defendLeaseUntil",
+    "garrisonPosition", "garrisonObjective", "postDismountWaypoint"
+];
+private _groupSnapshots = createHashMap;
+{
+    private _groupData = _groups get _x;
+    private _snapshot = createHashMapFromArray [
+        ["position", +(_groupData get "position")],
+        ["transportAttachment", [_groupData] call FLO_fnc_virtualizationGetTransportAttachment]
+    ];
+    {
+        _snapshot set [_x, [_groupData get _x] call FLO_fnc_virtualizationCloneValue];
+    } forEach (_groupPatchMutableFields + _routeMutableFields);
+    _groupSnapshots set [_x, _snapshot];
+} forEach _donorGroupIds;
+private _donorSnapshot = [_donor] call FLO_fnc_virtualizationCloneValue;
+private _recipientSnapshot = [_recipient] call FLO_fnc_virtualizationCloneValue;
+private _budgetRemaining = _cmdr get "_strategicOrderBudgetRemaining";
+private _taskedGroups = +(_cmdr get "_gtnTaskedGroups");
+private _assignmentCache = [_cmdr get "_objectiveAssignmentCache"] call FLO_fnc_virtualizationCloneValue;
+private _eligibilityCacheDirty = _cmdr get "_availabilityCacheDirty";
+private _transferSucceeded = true;
+private _transferException = "";
+try {
+    [_director, _cmdr, _donor, "MASS_CONCENTRATED", false] call FLO_fnc_campaignReleaseProbeFront;
+    {
+        if !([_director, _cmdr, _recipient, _x] call FLO_fnc_campaignCommitProbeGroup) exitWith {
+            _transferSucceeded = false;
+        };
+    } forEach _donorGroupIds;
+} catch {
+    _transferSucceeded = false;
+    _transferException = _exception;
+};
+
+if (!_transferSucceeded) exitWith {
+    {
+        private _groupId = _x;
+        private _snapshot = _groupSnapshots get _groupId;
+        private _groupData = _groups get _groupId;
+        private _previousAttachment = _snapshot get "transportAttachment";
+        private _currentAttachment = [_groupData] call FLO_fnc_virtualizationGetTransportAttachment;
+        if (_previousAttachment == "" && {_currentAttachment != ""}) then {
+            [_groupId, 0] call FLO_fnc_transportDetach;
+            [_currentAttachment] call FLO_fnc_transportPoolRelease;
+        };
+        private _changes = createHashMap;
+        {
+            _changes set [_x, _snapshot get _x];
+        } forEach _groupPatchMutableFields;
+        [_groupId, _changes] call FLO_fnc_virtualizationPatchGroup;
+        [_groupId, _snapshot get "position"] call FLO_fnc_virtualizationUpdateGroupPosition;
+        [_groupId, _snapshot] call FLO_fnc_virtualizationRestoreRouteState;
+    } forEach _donorGroupIds;
+    {
+        _donor set [_x, [_y] call FLO_fnc_virtualizationCloneValue];
+    } forEach _donorSnapshot;
+    {
+        _recipient set [_x, [_y] call FLO_fnc_virtualizationCloneValue];
+    } forEach _recipientSnapshot;
+    _cmdr set ["_strategicOrderBudgetRemaining", _budgetRemaining];
+    _cmdr set ["_gtnTaskedGroups", _taskedGroups];
+    _cmdr set ["_objectiveAssignmentCache", _assignmentCache];
+    _cmdr set ["_availabilityCacheDirty", _eligibilityCacheDirty];
+    [_state] call FLO_fnc_campaignValidateProbeOwnership;
+    ["CAMPAIGN", 2, format [
+        "Probe mass transfer rolled back recipient=%1 donor=%2 groups=%3",
+        _recipient get "probeId",
+        _donorProbeId,
+        count _donorGroupIds
+    ]] call FLO_fnc_log;
+    if (_transferException != "") then {
+        ["CAMPAIGN", 1, format ["Probe mass transfer failed: %1", _transferException]] call FLO_fnc_log;
+        throw _transferException;
+    };
+    _metrics
+};
+
+[_state] call FLO_fnc_campaignValidateProbeOwnership;
+private _mass = _currentActiveCount + count _donorGroupIds;
+_metrics set ["movedGroupCount", count _donorGroupIds];
+_metrics set ["donorProbeIds", [_donorProbeId]];
+_metrics set ["assaultMassReady", _mass >= _minimumMass];
+["CAMPAIGN", 3, format [
+    "Probe mass concentrated recipient=%1 donor=%2 groups=%3 mass=%4/%5",
+    _recipient get "probeId",
+    _donorProbeId,
+    count _donorGroupIds,
+    _mass,
+    _minimumMass
+]] call FLO_fnc_log;
 _metrics

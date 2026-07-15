@@ -73,8 +73,11 @@ private _activeSupplyNodes = _net get "_activeSupplyNodes";
 
 private _resources = FLO_SideResources get (_net get "_managedSideKey");
 private _groupCosts = _net get "GROUP_COSTS";
+private _groupThroughputCosts = _net get "GROUP_THROUGHPUT_COSTS";
 private _groundCost = _groupCosts get "motorized";
 private _airCost = _groupCosts get "helicopter";
+private _groundThroughputCost = _groupThroughputCosts get "motorized";
+private _airThroughputCost = _groupThroughputCosts get "helicopter";
 private _groundCreateCap = (_net get "TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK") min _groundMissing;
 private _airCreateCap = (_net get "TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK") min _airMissing;
 
@@ -100,7 +103,7 @@ for "_i" from 1 to _groundCreateCap do {
 
     private _reservationId = format ["TRANSPORT:%1:GROUND:%2:%3", _sideKey, round (diag_tickTime * 1000), _i];
     if !(_resources call ["reserve", [_reservationId, _groundCost, "TRANSPORT", "Ground transport reserve", "COMMANDER", _spawnObjectiveId]]) exitWith {};
-    if !([_net, _sourceNodeId, _groundCost, "Ground transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
+    if !([_net, _sourceNodeId, _groundThroughputCost, "Ground transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
         _resources call ["releaseReservation", [_reservationId, "Ground reserve source local supplies changed"]];
     };
     private _objectiveReserveCount = if (_spawnObjectiveId in _groundByObjective) then {
@@ -112,7 +115,7 @@ for "_i" from 1 to _groundCreateCap do {
 
     private _groupId = [_managedSide, "ground", _spawnObjectiveId, _spawnPos] call FLO_fnc_transportCreateReserveCarrier;
     if (_groupId isEqualTo "") then {
-        [_net, _sourceNodeId, _groundCost, "Ground reserve creation refund"] call FLO_fnc_logisticsNetworkRestoreThroughput;
+        [_net, _sourceNodeId, _groundThroughputCost, "Ground reserve creation refund"] call FLO_fnc_logisticsNetworkRestoreThroughput;
         _resources call ["releaseReservation", [_reservationId, "Ground reserve creation failed"]];
         continue;
     };
@@ -124,11 +127,13 @@ for "_i" from 1 to _groundCreateCap do {
     _groundByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
     [_net, "motorized", _groundCost] call FLO_fnc_logisticsNetworkRecordReplacement;
 
-    ["LOGISTICS", 2, format [
-        "Replenished dedicated ground transport reserve %1 for %2 at supply node %3",
+    ["LOGISTICS", 3, format [
+        "Replenished dedicated ground transport reserve %1 for %2 at supply node %3 treasury=%4 localSupplies=%5",
         _groupId,
         _sideKey,
-        _spawnObjectiveId
+        _spawnObjectiveId,
+        _groundCost,
+        _groundThroughputCost
     ]] call FLO_fnc_log;
 };
 
@@ -154,7 +159,7 @@ for "_i" from 1 to _airCreateCap do {
 
     private _reservationId = format ["TRANSPORT:%1:AIR:%2:%3", _sideKey, round (diag_tickTime * 1000), _i];
     if !(_resources call ["reserve", [_reservationId, _airCost, "TRANSPORT", "Air transport reserve", "COMMANDER", _spawnObjectiveId]]) exitWith {};
-    if !([_net, _sourceNodeId, _airCost, "Air transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
+    if !([_net, _sourceNodeId, _airThroughputCost, "Air transport reserve"] call FLO_fnc_logisticsNetworkConsumeThroughput) exitWith {
         _resources call ["releaseReservation", [_reservationId, "Air reserve source local supplies changed"]];
     };
     private _objectiveReserveCount = if (_spawnObjectiveId in _airByObjective) then {
@@ -166,7 +171,7 @@ for "_i" from 1 to _airCreateCap do {
 
     private _groupId = [_managedSide, "air", _spawnObjectiveId, _spawnPos] call FLO_fnc_transportCreateReserveCarrier;
     if (_groupId isEqualTo "") then {
-        [_net, _sourceNodeId, _airCost, "Air reserve creation refund"] call FLO_fnc_logisticsNetworkRestoreThroughput;
+        [_net, _sourceNodeId, _airThroughputCost, "Air reserve creation refund"] call FLO_fnc_logisticsNetworkRestoreThroughput;
         _resources call ["releaseReservation", [_reservationId, "Air reserve creation failed"]];
         continue;
     };
@@ -178,11 +183,13 @@ for "_i" from 1 to _airCreateCap do {
     _airByObjective set [_spawnObjectiveId, _objectiveReserveCount + 1];
     [_net, "helicopter", _airCost] call FLO_fnc_logisticsNetworkRecordReplacement;
 
-    ["LOGISTICS", 2, format [
-        "Replenished dedicated air transport reserve %1 for %2 at supply node %3",
+    ["LOGISTICS", 3, format [
+        "Replenished dedicated air transport reserve %1 for %2 at supply node %3 treasury=%4 localSupplies=%5",
         _groupId,
         _sideKey,
-        _spawnObjectiveId
+        _spawnObjectiveId,
+        _airCost,
+        _airThroughputCost
     ]] call FLO_fnc_log;
 };
 

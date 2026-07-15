@@ -2181,22 +2181,6 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
-        private _formationIndex = FLO_FormationState get "groupToFormation";
-        if (_groupId in _formationIndex) then {
-            private _formation = (FLO_FormationState get "formations") get (_formationIndex get _groupId);
-            private _reservedBy = _formation get "roleOperationId";
-            if (_reservedBy != "" && {_reservedBy != _campaignOperationId}) then {
-                throw format ["Formation %1 is reserved by %2, cannot assign %3", _formation get "formationId", _reservedBy, _campaignOperationId];
-            };
-            private _roleMembers = +(_formation get "roleMemberIds");
-            _roleMembers pushBackUnique _groupId;
-            _formation set ["role", "MAIN"];
-            _formation set ["roleMemberIds", _roleMembers];
-            _formation set ["roleObjectiveId", _objectiveId];
-            _formation set ["roleOperationId", _campaignOperationId];
-            _formation set ["roleStartedAtDateNum", call FLO_fnc_operationalDateNumber];
-            _formation set ["roleEndsAtDateNum", -1];
-        };
         [_self, "ATTACK", _groupId, _gData get "groupType", _objectiveId, _routeMs, _assignMs, _transportMs, _orderMs] call FLO_fnc_gtnLogStrategicOrderPerf;
 
         if (_objectiveId != "") then {

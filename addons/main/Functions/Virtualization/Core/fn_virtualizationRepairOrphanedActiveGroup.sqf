@@ -86,31 +86,75 @@ if (!isNull _replacementRealGroup) exitWith {
     true
 };
 
-if (_recoverableCount <= 0) exitWith {
-    if (_attachedPassengerCount > 0) then {
-        [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
-    };
+private _retirementCandidate = [_groupData] call FLO_fnc_virtualizationCloneValue;
+[_retirementCandidate] call FLO_fnc_virtualizationClearRealGroup;
+[_retirementCandidate] call FLO_fnc_virtualizationClearRealVehicles;
+_retirementCandidate set ["isActive", false];
+_retirementCandidate set ["unitCount", 0];
+_retirementCandidate set ["comp", []];
+_retirementCandidate set ["lastStateChangeTime", diag_tickTime];
+_retirementCandidate set ["nextProcessAt", 0];
 
-    ["VIRTUALIZATION", 2, format [
-        "Removing orphaned active group %1 (%2) because no recoverable live assets remain",
-        _groupId,
-        _groupType
-    ]] call FLO_fnc_log;
-    [_groupId] call FLO_fnc_virtualizationRemoveGroup;
-    true
+// The doomed carrier must end transport execution before ordinary removal
+// validates and detaches its surviving passenger relationships.
+_retirementCandidate set ["dismountAtWaypoint", -1];
+_retirementCandidate set ["transportInsertMode", ""];
+_retirementCandidate set ["transportInsertPos", []];
+_retirementCandidate set ["transportLandCommandIssued", false];
+_retirementCandidate set ["transportUnloadCommandIssued", false];
+_retirementCandidate set ["transportUnloadIssuedAt", -1];
+if ((_retirementCandidate get "executionState") == "TRANSPORT") then {
+    _retirementCandidate set ["executionState", ""];
 };
+if ((_retirementCandidate get "missionLock") == "TRANSPORT") then {
+    _retirementCandidate set ["missionLock", ""];
+    _retirementCandidate set ["missionType", ""];
+};
+
+[_retirementCandidate, _groupId] call FLO_fnc_virtualizationValidateGroup;
+{
+    _groupData set [_x, _retirementCandidate get _x];
+} forEach [
+    "realGroup",
+    "activeInitialUnitCount",
+    "realVehicles",
+    "isActive",
+    "unitCount",
+    "comp",
+    "lastStateChangeTime",
+    "nextProcessAt",
+    "dismountAtWaypoint",
+    "transportInsertMode",
+    "transportInsertPos",
+    "transportLandCommandIssued",
+    "transportUnloadCommandIssued",
+    "transportUnloadIssuedAt",
+    "executionState",
+    "missionLock",
+    "missionType"
+];
+call FLO_fnc_virtualizationTouchRegistry;
 
 if (_attachedPassengerCount > 0) then {
     [_groupId, _groupData] call FLO_fnc_virtualizationDeactivateMountedPassengers;
 };
-[_groupData] call FLO_fnc_virtualizationClearRealGroup;
-[_groupData] call FLO_fnc_virtualizationClearRealVehicles;
+
+if !([_groupId] call FLO_fnc_virtualizationRemoveGroup) then {
+    private _message = format [
+        "Failed to remove coherently retired orphan group %1 (%2)",
+        _groupId,
+        _groupType
+    ];
+    ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
+    throw _message;
+};
 
 ["VIRTUALIZATION", 3, format [
-    "Removed orphaned active group %1 (%2) after its operational crew was lost; %3 abandoned assets remain physical",
+    "Removed orphaned active group %1 (%2) after operational crew loss; abandonedAssets=%3 passengerGroups=%4",
     _groupId,
     _groupType,
-    _recoverableCount
+    _recoverableCount,
+    _attachedPassengerCount
 ]] call FLO_fnc_log;
 
-[_groupId] call FLO_fnc_virtualizationRemoveGroup
+true

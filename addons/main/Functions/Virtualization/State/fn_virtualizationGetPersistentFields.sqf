@@ -13,6 +13,7 @@
     "spawnClass",
     "homeObjective",
     "unitCount",
+    "combatExperience",
     "side",
     "state",
     "waypoints",

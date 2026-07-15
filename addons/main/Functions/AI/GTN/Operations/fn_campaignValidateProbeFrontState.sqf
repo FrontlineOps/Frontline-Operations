@@ -17,10 +17,8 @@ private _required = createHashMapFromArray [
     ["primarySourceObjectiveId", ""],
     ["stage", ""],
     ["stageReason", ""],
-    ["formationIds", []],
     ["committedGroupIds", []],
     ["committedUnitBaseline", 0],
-    ["reinforcementCount", 0],
     ["contactSamples", 0],
     ["progressSamples", 0],
     ["stalledSamples", 0],
@@ -41,7 +39,6 @@ private _required = createHashMapFromArray [
     ["supportAttemptCount", 0],
     ["nextActionAtDateNum", 0],
     ["axisRevision", 0],
-    ["promotionReady", false],
     ["formalOperationId", ""],
     ["createdAtDateNum", 0],
     ["stageChangedAtDateNum", 0],
@@ -79,7 +76,7 @@ if (_objectiveId == "" || {_probeId != ([_sideKey, _objectiveId] call FLO_fnc_ca
 
 private _validStages = [
     "PROBE", "DEVELOP_CONTACT", "REINFORCE_SUCCESS", "COMMIT_SUPPORT", "ASSAULT",
-    "STALLED", "SUPPORT", "SHIFT_AXIS", "REGROUP"
+    "STALLED", "SUPPORT", "SHIFT_AXIS"
 ];
 if !((_front get "stage") in _validStages) then {
     [format ["Probe front %1 has invalid stage %2", _probeId, _front get "stage"]] call _fail;
@@ -97,19 +94,12 @@ if ((count _sources) != (count (_sources arrayIntersect _sources))) then {
         [format ["Probe front %1 has negative counter %2=%3", _probeId, _x, _front get _x]] call _fail;
     };
 } forEach [
-    "committedUnitBaseline", "reinforcementCount", "contactSamples", "progressSamples", "stalledSamples",
+    "committedUnitBaseline", "contactSamples", "progressSamples", "stalledSamples",
     "lastActiveGroupCount", "lastUnitCount", "lastArrivedCount", "lastContactCount",
     "reinforcementProgressCheckpoint", "supportProgressCheckpoint", "supportMissionCount",
     "artilleryMissionCount", "airMissionCount", "evaluatedSupportMissionCount", "supportAttemptCount", "axisRevision"
 ];
-if ((_front get "reinforcementCount") > 2) then {
-    [format ["Probe front %1 exceeds two reinforcement formations", _probeId]] call _fail;
-};
 if ((_front get "evaluatedSupportMissionCount") > (_front get "supportMissionCount")) then {
     [format ["Probe front %1 evaluated more support missions than were authorized", _probeId]] call _fail;
 };
-if ((_front get "promotionReady") != ((_front get "stage") == "ASSAULT")) then {
-    [format ["Probe front %1 promotion flag does not match stage %2", _probeId, _front get "stage"]] call _fail;
-};
-
 true

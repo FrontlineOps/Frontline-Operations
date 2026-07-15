@@ -37,7 +37,7 @@ private _committedGroups = createHashMap;
     if ((_operation get "phase") != "ASSAULT") then {
         [format ["Probe front %1 retains inactive operation %2", _probeId, _operationId]] call _fail;
     };
-    if ((_front get "stage") != "ASSAULT" || {!(_front get "promotionReady")}) then {
+    if ((_front get "stage") != "ASSAULT") then {
         [format ["Probe front %1 attaches operation %2 from immature stage %3", _probeId, _operationId, _front get "stage"]] call _fail;
     };
     if (

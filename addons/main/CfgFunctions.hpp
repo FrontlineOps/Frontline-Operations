@@ -139,7 +139,6 @@ class FLO {
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
     #include "Functions\AI\GTN\Operations\CfgFunctions.hpp"
-    #include "Functions\Formations\CfgFunctions.hpp"
     #include "Functions\UI\CfgFunctions.hpp"
     #include "Functions\Notifications\CfgFunctions.hpp"
 

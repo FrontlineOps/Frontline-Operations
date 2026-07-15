@@ -12,7 +12,7 @@ if (_previousStage == _nextStage) exitWith { false };
 
 private _validStages = [
     "PROBE", "DEVELOP_CONTACT", "REINFORCE_SUCCESS", "COMMIT_SUPPORT", "ASSAULT",
-    "STALLED", "SUPPORT", "SHIFT_AXIS", "REGROUP"
+    "STALLED", "SUPPORT", "SHIFT_AXIS"
 ];
 if !(_nextStage in _validStages) then {
     ["CAMPAIGN", 1, format ["Probe front %1 received invalid stage %2", _probeId, _nextStage]] call FLO_fnc_log;
@@ -22,7 +22,6 @@ if !(_nextStage in _validStages) then {
 _front set ["stage", _nextStage];
 _front set ["stageReason", _reason];
 _front set ["stageChangedAtDateNum", call FLO_fnc_operationalDateNumber];
-_front set ["promotionReady", _nextStage == "ASSAULT"];
 [_probeId, _front] call FLO_fnc_campaignValidateProbeFrontState;
 
 ["CAMPAIGN", 3, format [

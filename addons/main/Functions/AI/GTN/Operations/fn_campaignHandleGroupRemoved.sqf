@@ -33,6 +33,20 @@ if ((count _owners) != 1) then {
 private _committedGroupIds = +(_front get "committedGroupIds");
 _committedGroupIds deleteAt (_committedGroupIds find _groupId);
 _front set ["committedGroupIds", _committedGroupIds];
+if (_committedGroupIds isEqualTo [] && {(_front get "formalOperationId") == ""}) then {
+    _front set ["committedUnitBaseline", 0];
+    _front set ["contactSamples", 0];
+    _front set ["progressSamples", 0];
+    _front set ["stalledSamples", 0];
+    _front set ["bestDistance", 1e12];
+    _front set ["lastEnemyCount", -1];
+    _front set ["lastActiveGroupCount", 0];
+    _front set ["lastUnitCount", 0];
+    _front set ["lastArrivedCount", 0];
+    _front set ["lastContested", false];
+    _front set ["nextActionAtDateNum", call FLO_fnc_operationalDateNumber];
+    [_front, "PROBE", "TASK_FORCE_DESTROYED"] call FLO_fnc_campaignSetProbeStage;
+};
 _state set ["revision", (_state get "revision") + 1];
 
 ["CAMPAIGN", 4, format [

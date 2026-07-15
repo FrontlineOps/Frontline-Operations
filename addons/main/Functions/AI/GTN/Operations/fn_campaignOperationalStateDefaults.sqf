@@ -1,11 +1,5 @@
-/* Returns persisted doctrine, shaping, and exploitation defaults. */
+/* Returns persisted operation doctrine defaults. */
 createHashMapFromArray [
     ["doctrine", "ECONOMY_OF_FORCE"],
-    ["assaultOpeningEligibleAtDateNum", -1],
-    ["shapingStatus", "NONE"],
-    ["shapingFormationId", ""],
-    ["shapingObjectiveId", ""],
-    ["exploitationStatus", "NONE"],
-    ["exploitationFormationId", ""],
-    ["exploitationObjectiveId", ""]
+    ["assaultOpeningEligibleAtDateNum", -1]
 ]

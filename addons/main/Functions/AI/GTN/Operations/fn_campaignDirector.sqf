@@ -23,14 +23,10 @@ private _config = createHashMapFromArray [
     ["operationSupportBudgetFraction", 0.125],
     ["operationSupportBudgetMinimum", 600],
     ["operationSupportBudgetMaximum", 1500],
-    ["probeFormationMinimumReadiness", 50],
     ["probeCommitmentPaceSeconds", 90],
-    ["probeConcentrationDonorRecoverySeconds", 180],
     ["probeProgressDistanceMeters", 150],
     ["probeMinimumContactConfidence", 0.25],
     ["probeContactSamplesForReinforcement", 2],
-    ["probeMaximumReinforcementFormations", 2],
-    ["probeMinimumCombatEffectiveness", 0.45],
     ["probeStalledSampleThreshold", 3],
     ["probeSupportFailureSampleThreshold", 6],
     ["probeAssaultMinimumGroups", 8],
@@ -135,13 +131,7 @@ private _director = createHashMapObject [[
                 ["assaultLastContested", _operation get "assaultLastContested"],
                 ["assaultStatus", _operation get "assaultStatus"],
                 ["doctrine", _operation get "doctrine"],
-                ["assaultOpeningEligibleAtDateNum", _operation get "assaultOpeningEligibleAtDateNum"],
-                ["shapingStatus", _operation get "shapingStatus"],
-                ["shapingFormationId", _operation get "shapingFormationId"],
-                ["shapingObjectiveId", _operation get "shapingObjectiveId"],
-                ["exploitationStatus", _operation get "exploitationStatus"],
-                ["exploitationFormationId", _operation get "exploitationFormationId"],
-                ["exploitationObjectiveId", _operation get "exploitationObjectiveId"]
+                ["assaultOpeningEligibleAtDateNum", _operation get "assaultOpeningEligibleAtDateNum"]
             ]];
         } forEach (_current get "operations");
 
@@ -163,7 +153,6 @@ private _director = createHashMapObject [[
             ["lastCompletedOperationId", _current get "lastCompletedOperationId"],
             ["lastCompletedResult", _current get "lastCompletedResult"],
             ["opportunities", +(_current get "opportunities")],
-            ["formationState", [_current get "formationState"] call FLO_fnc_formationSerializeState],
             ["phase", _current get "phase"],
             ["phaseStartedAtDateNum", _current get "phaseStartedAtDateNum"],
             ["phaseEndsAtDateNum", _current get "phaseEndsAtDateNum"],
@@ -267,6 +256,8 @@ private _director = createHashMapObject [[
         _selection = _currentSelections select _currentSelectionIndex;
         private _supplySourceObjectiveId = _selection get "supplySourceObjectiveId";
         private _probeGroupIds = +(_selection get "probeGroupIds");
+        private _probeId = [_attackerSideKey, _objectiveId] call FLO_fnc_campaignProbeId;
+        private _front = (_current get "frontlineProbes") get _probeId;
 
         private _budget = [
             _self,
@@ -327,18 +318,13 @@ private _director = createHashMapObject [[
         {
             _operation set [_x, _y];
         } forEach (call FLO_fnc_campaignOperationalStateDefaults);
-        private _doctrines = (_current get "formationState") get "doctrineBySide";
-        _operation set ["doctrine", _doctrines get _attackerSideKey];
+        _operation set ["doctrine", [_operation, _front] call FLO_fnc_campaignSelectDoctrine];
         private _coverage = ([_attackerSide, "attackCoverage"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
         private _coverageScale = (((_coverage - 0.5) / 0.75) max 0) min 1;
         [_operation, _self get "_config", _coverageScale] call FLO_fnc_campaignConfigureOffensiveState;
         [_operation] call FLO_fnc_campaignValidateOperationalState;
 
         [_current] call FLO_fnc_campaignValidateProbeOwnership;
-        private _probeId = [_attackerSideKey, _objectiveId] call FLO_fnc_campaignProbeId;
-        private _front = (_current get "frontlineProbes") get _probeId;
-        private _formationState = _current get "formationState";
-        private _formations = _formationState get "formations";
         private _reservationId = format ["OPERATION:%1", _operationId];
         private _treasury = FLO_SideResources get _attackerSideKey;
         if !(_treasury call ["reserve", [
@@ -360,28 +346,13 @@ private _director = createHashMapObject [[
         _operation set ["resourceBudget", _budget];
 
         private _previousRevision = _current get "revision";
-        private _previousFormationRevision = _formationState get "revision";
         private _previousOrder = +_order;
         private _patchedGroupIds = [];
-        private _patchedFormationIds = [];
         try {
             {
                 [_x, createHashMapFromArray [["campaignOperationId", _operationId]]] call FLO_fnc_virtualizationPatchGroup;
                 _patchedGroupIds pushBack _x;
             } forEach _probeGroupIds;
-            {
-                private _formation = _formations get _x;
-                if ((_formation get "roleOperationId") != _probeId) then {
-                    throw format [
-                        "Operation %1 cannot adopt formation %2 owned by %3",
-                        _operationId,
-                        _x,
-                        _formation get "roleOperationId"
-                    ];
-                };
-                _formation set ["roleOperationId", _operationId];
-                _patchedFormationIds pushBack _x;
-            } forEach (_front get "formationIds");
             _front set ["formalOperationId", _operationId];
             [_self, _operationId, _operation, _front] call FLO_fnc_campaignAdoptProbeAssaultState;
 
@@ -390,7 +361,6 @@ private _director = createHashMapObject [[
             _current set ["sequence", _sequence];
             _current set ["operationOrder", _order];
             _current set ["revision", _previousRevision + 1];
-            _formationState set ["revision", (_formationState get "revision") + 1];
             [_current] call FLO_fnc_campaignSyncPrimaryProjection;
             [
                 _current get "frontlineProbes",
@@ -403,16 +373,12 @@ private _director = createHashMapObject [[
             _treasury call ["releaseReservation", [_reservationId, "Formal operation promotion rolled back"]];
             _front set ["formalOperationId", ""];
             {
-                (_formations get _x) set ["roleOperationId", _probeId];
-            } forEach _patchedFormationIds;
-            {
                 [_x, createHashMapFromArray [["campaignOperationId", _probeId]]] call FLO_fnc_virtualizationPatchGroup;
             } forEach _patchedGroupIds;
             if (_operationId in _operations) then { _operations deleteAt _operationId; };
             _current set ["sequence", _sequence - 1];
             _current set ["operationOrder", _previousOrder];
             _current set ["revision", _previousRevision];
-            _formationState set ["revision", _previousFormationRevision];
             [_current] call FLO_fnc_campaignSyncPrimaryProjection;
             ["CAMPAIGN", 1, format [
                 "Operation %1 promotion rolled back: %2",

@@ -19,8 +19,25 @@ if !(_homeObjective in FLO_Objectives) then {
     throw format ["Combat aircraft %1 references missing home objective %2", _groupId, _homeObjective];
 };
 
+private _deactivationSucceeded = true;
+private _removedDuringDeactivation = false;
 if (_groupData get "isActive") then {
-    if !([_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup) exitWith { false };
+    _deactivationSucceeded = [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
+    if (_deactivationSucceeded) then {
+        if (_groupId in _groups) then {
+            _groupData = _groups get _groupId;
+        } else {
+            _removedDuringDeactivation = true;
+        };
+    };
+};
+if (!_deactivationSucceeded) exitWith { false };
+if (_removedDuringDeactivation) exitWith {
+    ["GTN Air Asset Manager", 3, format [
+        "Air asset %1 removed during reserve parking after zero-strength synchronization",
+        _groupId
+    ]] call FLO_fnc_log;
+    true
 };
 
 private _homePos = (FLO_Objectives get _homeObjective) get "position";

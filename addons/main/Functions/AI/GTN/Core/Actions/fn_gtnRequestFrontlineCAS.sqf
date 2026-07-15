@@ -44,7 +44,7 @@ private _bestScore = -1e12;
     private _probeId = _x;
     private _front = _y;
     if ((_front get "sideKey") != _sideKey) then { continue };
-    if ((_front get "stage") in ["SHIFT_AXIS", "REGROUP"]) then { continue };
+    if ((_front get "stage") == "SHIFT_AXIS") then { continue };
     private _objectiveId = _front get "objectiveId";
     if !(_objectiveId in _objectives) then {
         throw format ["Frontline CAS probe %1 references missing objective %2", _probeId, _objectiveId];

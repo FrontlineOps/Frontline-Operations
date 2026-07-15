@@ -77,7 +77,22 @@ if !([_transportId, _waypoints, true, _orderTag] call FLO_fnc_updateVirtualGroup
     throw format ["FLO_fnc_transportCommitMissionPlan: preflighted route failed for %1", _transportId];
 };
 
-private _dismountWaypointIndex = count (_transportData get "waypoints") - 1;
+private _committedTransportData = [_transportId] call FLO_fnc_transportGetTrackedGroup;
+private _committedWaypoints = _committedTransportData get "waypoints";
+private _dismountWaypointIndex = _committedWaypoints findIf {
+    ((_x select 0) distance2D _insertPos) < 1
+};
+if (_dismountWaypointIndex < 0) then {
+    private _message = format [
+        "Committed transport route lost insert endpoint carrier=%1 passenger=%2 insert=%3 waypoints=%4",
+        _transportId,
+        _infantryGroupId,
+        _insertPos,
+        count _committedWaypoints
+    ];
+    ["TRANSPORT", 1, _message] call FLO_fnc_log;
+    throw _message;
+};
 
 private _carrierChanges = createHashMapFromArray [
     ["dismountAtWaypoint", _dismountWaypointIndex],
