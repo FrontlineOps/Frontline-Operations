@@ -1,8 +1,8 @@
 /*
  * Function: FLO_fnc_campaignDirector
  * Description:
- *   Owns theater initiative and promotes mature canonical probes into one
- *   main effort plus as many support efforts as authoritative funding allows.
+ *   Owns theater initiative and opens direct assaults against connected enemy
+ *   frontline objectives as authoritative funding allows.
  */
 
 params [
@@ -23,13 +23,6 @@ private _config = createHashMapFromArray [
     ["operationSupportBudgetFraction", 0.125],
     ["operationSupportBudgetMinimum", 600],
     ["operationSupportBudgetMaximum", 1500],
-    ["probeCommitmentPaceSeconds", 90],
-    ["probeProgressDistanceMeters", 150],
-    ["probeMinimumContactConfidence", 0.25],
-    ["probeContactSamplesForReinforcement", 2],
-    ["probeStalledSampleThreshold", 3],
-    ["probeSupportFailureSampleThreshold", 6],
-    ["probeAssaultMinimumGroups", 8],
     ["mainAssaultPackageMinimum", 24],
     ["mainAssaultPackageMaximum", 30],
     ["mainAssaultActiveTarget", 10],
@@ -70,9 +63,8 @@ private _director = createHashMapObject [[
     ["_config", _config],
     ["_state", _state],
     ["_pfhId", -1],
-    ["_groupRemovedEhId", -1],
     ["_lastUpdateAt", -1],
-    ["_pendingOperationPromotions", []],
+    ["_pendingOperationAdmissions", []],
 
     ["_getState", {
         _self get "_state"
@@ -84,12 +76,6 @@ private _director = createHashMapObject [[
 
     ["_serialize", {
         private _current = _self get "_state";
-        [
-            _current get "frontlineProbes",
-            _current get "operations",
-            _current get "operationOrder"
-        ] call FLO_fnc_campaignValidateProbeRegistry;
-        [_current] call FLO_fnc_campaignValidateProbeOwnership;
         private _serializedOperations = createHashMap;
         {
             private _operationId = _x;
@@ -141,13 +127,10 @@ private _director = createHashMapObject [[
             ["initiativeSideKey", _current get "initiativeSideKey"],
             ["defenderSideKey", _current get "defenderSideKey"],
             ["operations", _serializedOperations],
-            ["frontlineProbes", [_current get "frontlineProbes"] call FLO_fnc_campaignSerializeFrontlineProbes],
             ["operationOrder", +(_current get "operationOrder")],
             ["primaryOperationId", _current get "primaryOperationId"],
             ["desiredOperationCount", _current get "desiredOperationCount"],
             ["lastScaleEvaluationAtDateNum", _current get "lastScaleEvaluationAtDateNum"],
-            ["scaleUpCandidateSinceDateNum", _current get "scaleUpCandidateSinceDateNum"],
-            ["scaleDownCandidateSinceDateNum", _current get "scaleDownCandidateSinceDateNum"],
             ["scaleReason", _current get "scaleReason"],
             ["scaleMetrics", +(_current get "scaleMetrics")],
             ["lastCompletedOperationId", _current get "lastCompletedOperationId"],
@@ -160,52 +143,50 @@ private _director = createHashMapObject [[
         ]
     }],
 
-    ["_extendProbing", {
+    ["_extendIdle", {
         params [
             ["_durationSeconds", 120, [0]],
             ["_reason", "INSUFFICIENT_CAPACITY", [""]]
         ];
         private _current = _self get "_state";
         if ((_current get "operationOrder") isNotEqualTo []) then {
-            throw "Cannot extend empty campaign probing while operations exist";
+            throw "Cannot extend idle campaign planning while operations exist";
         };
-        _self set ["_pendingOperationPromotions", []];
+        _self set ["_pendingOperationAdmissions", []];
         private _now = call FLO_fnc_operationalDateNumber;
-        _current set ["phase", "PROBING"];
+        _current set ["phase", "IDLE"];
         _current set ["phaseStartedAtDateNum", _now];
         _current set ["phaseEndsAtDateNum", [_now, _durationSeconds] call FLO_fnc_dateNumberAddSeconds];
         _current set ["transitionReason", _reason];
         _current set ["revision", (_current get "revision") + 1];
         [_current] call FLO_fnc_campaignSyncPrimaryProjection;
-        ["CAMPAIGN", 3, format ["Campaign target probing deferred %1s (%2)", _durationSeconds, _reason]] call FLO_fnc_log;
+        ["CAMPAIGN", 3, format ["Direct frontline planning deferred %1s (%2)", _durationSeconds, _reason]] call FLO_fnc_log;
     }],
 
-    ["_enterProbing", {
+    ["_enterIdle", {
         params [
             ["_reason", "INITIATIVE_TRANSFER", [""]],
             ["_durationSeconds", 0, [0]]
         ];
         private _current = _self get "_state";
         if ((_current get "operationOrder") isNotEqualTo []) then {
-            throw format ["Cannot enter empty campaign probing with active operations: %1", _current get "operationOrder"];
+            throw format ["Cannot enter idle campaign planning with active operations: %1", _current get "operationOrder"];
         };
-        _self set ["_pendingOperationPromotions", []];
+        _self set ["_pendingOperationAdmissions", []];
 
         private _nextInitiativeSideKey = _current get "defenderSideKey";
         private _nextDefenderSideKey = _current get "initiativeSideKey";
         private _now = call FLO_fnc_operationalDateNumber;
         _current set ["initiativeSideKey", _nextInitiativeSideKey];
         _current set ["defenderSideKey", _nextDefenderSideKey];
-        _current set ["phase", "PROBING"];
+        _current set ["phase", "IDLE"];
         _current set ["phaseStartedAtDateNum", _now];
         _current set ["phaseEndsAtDateNum", [_now, _durationSeconds] call FLO_fnc_dateNumberAddSeconds];
         _current set ["transitionReason", _reason];
         _current set ["desiredOperationCount", 0];
-        _current set ["scaleUpCandidateSinceDateNum", -1];
-        _current set ["scaleDownCandidateSinceDateNum", -1];
         _current set ["revision", (_current get "revision") + 1];
         [_current] call FLO_fnc_campaignSyncPrimaryProjection;
-        ["FLO_Campaign_OperationChanged", [_current get "revision", "", "PROBING"]] call CBA_fnc_localEvent;
+        ["FLO_Campaign_OperationChanged", [_current get "revision", "", "IDLE"]] call CBA_fnc_localEvent;
         ["CAMPAIGN", 3, format ["Initiative transferred to %1 (%2)", _nextInitiativeSideKey, _reason]] call FLO_fnc_log;
     }],
 
@@ -247,7 +228,7 @@ private _director = createHashMapObject [[
         };
         if (_currentSelectionIndex < 0) exitWith {
             ["CAMPAIGN", 4, format [
-                "Skipped stale formal promotion for %1/%2 because its front, land anchor, probe mass, or logistics axis changed",
+                "Skipped stale direct assault for %1/%2 because its frontline link, land anchor, or logistics axis changed",
                 _attackerSideKey,
                 _objectiveId
             ]] call FLO_fnc_log;
@@ -255,9 +236,6 @@ private _director = createHashMapObject [[
         };
         _selection = _currentSelections select _currentSelectionIndex;
         private _supplySourceObjectiveId = _selection get "supplySourceObjectiveId";
-        private _probeGroupIds = +(_selection get "probeGroupIds");
-        private _probeId = [_attackerSideKey, _objectiveId] call FLO_fnc_campaignProbeId;
-        private _front = (_current get "frontlineProbes") get _probeId;
 
         private _budget = [
             _self,
@@ -266,7 +244,7 @@ private _director = createHashMapObject [[
         ] call FLO_fnc_campaignCalculateOperationBudget;
         if (_budget <= 0) exitWith {
             ["CAMPAIGN", 4, format [
-                "Skipped formal promotion for %1/%2 because its %3 budget is no longer reservable",
+                "Skipped direct assault for %1/%2 because its %3 budget is no longer reservable",
                 _attackerSideKey,
                 _objectiveId,
                 _priorityRole
@@ -302,7 +280,7 @@ private _director = createHashMapObject [[
                 [_self, "ASSAULT"] call FLO_fnc_campaignGetPhaseDuration
             ] call FLO_fnc_dateNumberAddSeconds],
             ["result", ""],
-            ["transitionReason", "MATURE_PROBE_PROMOTED"],
+            ["transitionReason", "DIRECT_FRONTLINE_ASSAULT"],
             ["defenderIntelLevel", "TARGET"],
             ["defenderIntelReason", "PHASE_COMMITMENT"],
             ["intelContactAfter", diag_tickTime],
@@ -318,13 +296,12 @@ private _director = createHashMapObject [[
         {
             _operation set [_x, _y];
         } forEach (call FLO_fnc_campaignOperationalStateDefaults);
-        _operation set ["doctrine", [_operation, _front] call FLO_fnc_campaignSelectDoctrine];
+        _operation set ["doctrine", [_operation] call FLO_fnc_campaignSelectDoctrine];
         private _coverage = ([_attackerSide, "attackCoverage"] call FLO_fnc_gtnGetSideCommanderHandle) get "value";
         private _coverageScale = (((_coverage - 0.5) / 0.75) max 0) min 1;
         [_operation, _self get "_config", _coverageScale] call FLO_fnc_campaignConfigureOffensiveState;
         [_operation] call FLO_fnc_campaignValidateOperationalState;
 
-        [_current] call FLO_fnc_campaignValidateProbeOwnership;
         private _reservationId = format ["OPERATION:%1", _operationId];
         private _treasury = FLO_SideResources get _attackerSideKey;
         if !(_treasury call ["reserve", [
@@ -336,7 +313,7 @@ private _director = createHashMapObject [[
             _objectiveId
         ]]) exitWith {
             ["CAMPAIGN", 4, format [
-                "Skipped formal promotion for %1 because reservation %2 changed before commit",
+                "Skipped direct assault for %1 because reservation %2 changed before commit",
                 _objectiveId,
                 _reservationId
             ]] call FLO_fnc_log;
@@ -347,41 +324,23 @@ private _director = createHashMapObject [[
 
         private _previousRevision = _current get "revision";
         private _previousOrder = +_order;
-        private _patchedGroupIds = [];
         try {
-            {
-                [_x, createHashMapFromArray [["campaignOperationId", _operationId]]] call FLO_fnc_virtualizationPatchGroup;
-                _patchedGroupIds pushBack _x;
-            } forEach _probeGroupIds;
-            _front set ["formalOperationId", _operationId];
-            [_self, _operationId, _operation, _front] call FLO_fnc_campaignAdoptProbeAssaultState;
-
             _operations set [_operationId, _operation];
             _order pushBack _operationId;
             _current set ["sequence", _sequence];
             _current set ["operationOrder", _order];
             _current set ["revision", _previousRevision + 1];
             [_current] call FLO_fnc_campaignSyncPrimaryProjection;
-            [
-                _current get "frontlineProbes",
-                _current get "operations",
-                _current get "operationOrder"
-            ] call FLO_fnc_campaignValidateProbeRegistry;
-            [_current] call FLO_fnc_campaignValidateProbeOwnership;
             [_self] call FLO_fnc_campaignValidateOperationBudget;
         } catch {
-            _treasury call ["releaseReservation", [_reservationId, "Formal operation promotion rolled back"]];
-            _front set ["formalOperationId", ""];
-            {
-                [_x, createHashMapFromArray [["campaignOperationId", _probeId]]] call FLO_fnc_virtualizationPatchGroup;
-            } forEach _patchedGroupIds;
+            _treasury call ["releaseReservation", [_reservationId, "Direct assault admission rolled back"]];
             if (_operationId in _operations) then { _operations deleteAt _operationId; };
             _current set ["sequence", _sequence - 1];
             _current set ["operationOrder", _previousOrder];
             _current set ["revision", _previousRevision];
             [_current] call FLO_fnc_campaignSyncPrimaryProjection;
             ["CAMPAIGN", 1, format [
-                "Operation %1 promotion rolled back: %2",
+                "Operation %1 direct assault admission rolled back: %2",
                 _operationId,
                 _exception
             ]] call FLO_fnc_log;
@@ -392,7 +351,7 @@ private _director = createHashMapObject [[
         ["FLO_Campaign_OperationChanged", [_current get "revision", _operationId, "ASSAULT"]] call CBA_fnc_localEvent;
 
         ["CAMPAIGN", 3, format [
-            "Operation %1 promoted as %2 assault: %3 attacks %4 from logistics axis %5 (%6)",
+            "Operation %1 opened as %2 direct assault: %3 attacks %4 from logistics axis %5 (%6)",
             _operationId,
             _priorityRole,
             _attackerSideKey,
@@ -423,25 +382,6 @@ private _director = createHashMapObject [[
             private _treasury = FLO_SideResources get (_operation get "attackerSideKey");
             if !(_reservationId in (_treasury get "_reservations")) then {
                 throw format ["Operation %1 treasury reservation %2 is missing before completion", _operationId, _reservationId];
-            };
-        };
-
-        if ((_operation get "phase") == "ASSAULT") then {
-            private _probeId = [
-                _operation get "attackerSideKey",
-                _operation get "objectiveId"
-            ] call FLO_fnc_campaignProbeId;
-            private _fronts = _current get "frontlineProbes";
-            if !(_probeId in _fronts) then {
-                throw format ["Operation %1 cannot complete without probe front %2", _operationId, _probeId];
-            };
-            if (((_fronts get _probeId) get "formalOperationId") != _operationId) then {
-                throw format ["Operation %1 does not own probe front %2 before completion", _operationId, _probeId];
-            };
-            private _attackerSide = [_operation get "attackerSideKey"] call FLO_fnc_campaignSideFromKey;
-            private _cmdr = (_self get "_resourceManager") call ["_getCommanderBySide", [_attackerSide]];
-            if (isNil "_cmdr") then {
-                throw format ["Operation %1 cannot complete without commander %2", _operationId, _attackerSide];
             };
         };
 
@@ -486,15 +426,15 @@ private _director = createHashMapObject [[
         _current set ["revision", (_current get "revision") + 1];
 
         if (_order isEqualTo []) then {
-            _self call ["_enterProbing", ["OPERATIONS_RECOVERED", 0]];
+            _self call ["_enterIdle", ["OPERATIONS_RECOVERED", 0]];
         } else {
             [_current] call FLO_fnc_campaignSyncPrimaryProjection;
             ["FLO_Campaign_OperationChanged", [_current get "revision", _current get "primaryOperationId", _current get "phase"]] call CBA_fnc_localEvent;
         };
     }],
 
-    ["_drainPendingPromotion", {
-        private _pending = _self get "_pendingOperationPromotions";
+    ["_drainPendingAdmission", {
+        private _pending = _self get "_pendingOperationAdmissions";
         if (_pending isEqualTo []) exitWith { "" };
 
         private _current = _self get "_state";
@@ -505,7 +445,7 @@ private _director = createHashMapObject [[
         if ((keys _operations) isNotEqualTo [] && {_activeOperationIds isEqualTo []}) exitWith { "" };
 
         private _selection = _pending deleteAt 0;
-        _self set ["_pendingOperationPromotions", _pending];
+        _self set ["_pendingOperationAdmissions", _pending];
         private _priorityRole = ["SUPPORTING_EFFORT", "MAIN_EFFORT"] select (_activeOperationIds isEqualTo []);
         _self call ["_beginOperation", [_selection, _priorityRole]]
     }],
@@ -520,21 +460,18 @@ private _director = createHashMapObject [[
         _current set ["lastScaleEvaluationAtDateNum", _now];
         _current set ["scaleReason", _evaluation get "reason"];
         _current set ["scaleMetrics", _evaluation get "metrics"];
-        _current set ["scaleUpCandidateSinceDateNum", -1];
-        _current set ["scaleDownCandidateSinceDateNum", -1];
 
-        _self set ["_pendingOperationPromotions", +(_evaluation get "plannedSelections")];
+        _self set ["_pendingOperationAdmissions", +(_evaluation get "plannedSelections")];
 
         _current set ["revision", (_current get "revision") + 1];
         [_current] call FLO_fnc_campaignSyncPrimaryProjection;
         private _metrics = _evaluation get "metrics";
         ["CAMPAIGN", 4, format [
-            "Probe admission %1 current=%2 desired=%3 mature=%4 rankable=%5 treasurySlots=%6 sources=%7",
+            "Direct frontline admission %1 current=%2 desired=%3 rankable=%4 treasurySlots=%5 sources=%6",
             _evaluation get "reason",
             _currentCount,
             _desiredCount,
-            _metrics get "promotableProbeCount",
-            _metrics get "rankableProbeCount",
+            _metrics get "rankableTargetCount",
             _metrics get "treasurySlots",
             _metrics get "qualifyingSupplySourceCount"
         ]] call FLO_fnc_log;
@@ -550,22 +487,20 @@ private _director = createHashMapObject [[
         _current set ["scaleMetrics", _evaluation get "metrics"];
 
         if ((_evaluation get "desiredCount") <= 0) exitWith {
-            _self call ["_extendProbing", [(_self get "_config") get "capacityRetrySeconds", _evaluation get "reason"]];
+            _self call ["_extendIdle", [(_self get "_config") get "capacityRetrySeconds", _evaluation get "reason"]];
         };
 
         private _plannedSelections = _evaluation get "plannedSelections";
         if (_plannedSelections isEqualTo []) then {
             throw "Campaign scale evaluation returned positive capacity without a target selection";
         };
-        _self set ["_pendingOperationPromotions", +_plannedSelections];
-        private _mainOperationId = _self call ["_drainPendingPromotion", []];
+        _self set ["_pendingOperationAdmissions", +_plannedSelections];
+        private _mainOperationId = _self call ["_drainPendingAdmission", []];
         if (_mainOperationId == "") exitWith {
-            if ((_self get "_pendingOperationPromotions") isEqualTo []) then {
-                _self call ["_extendProbing", [(_self get "_config") get "capacityRetrySeconds", "PROMOTION_REVALIDATION_FAILED"]];
+            if ((_self get "_pendingOperationAdmissions") isEqualTo []) then {
+                _self call ["_extendIdle", [(_self get "_config") get "capacityRetrySeconds", "ADMISSION_REVALIDATION_FAILED"]];
             };
         };
-        _current set ["scaleUpCandidateSinceDateNum", -1];
-        _current set ["scaleDownCandidateSinceDateNum", -1];
     }],
 
     ["_onObjectiveFlipped", {
@@ -666,15 +601,15 @@ private _director = createHashMapObject [[
         private _order = _current get "operationOrder";
         private _now = call FLO_fnc_operationalDateNumber;
         if (_order isEqualTo []) exitWith {
-            if ((_current get "phase") != "PROBING") then {
+            if ((_current get "phase") != "IDLE") then {
                 throw format ["Empty campaign registry has phase %1", _current get "phase"];
             };
             private _deadlineReached = ([_now, _current get "phaseEndsAtDateNum"] call FLO_fnc_dateNumberDeltaSeconds) <= 0;
             if (_deadlineReached) then {
-                if ((_self get "_pendingOperationPromotions") isEqualTo []) then {
+                if ((_self get "_pendingOperationAdmissions") isEqualTo []) then {
                     _self call ["_startCycle", []];
                 } else {
-                    _self call ["_drainPendingPromotion", []];
+                    _self call ["_drainPendingAdmission", []];
                 };
             };
         };
@@ -685,8 +620,8 @@ private _director = createHashMapObject [[
             };
         } forEach (+_order);
 
-        if ((_self get "_pendingOperationPromotions") isNotEqualTo []) then {
-            _self call ["_drainPendingPromotion", []];
+        if ((_self get "_pendingOperationAdmissions") isNotEqualTo []) then {
+            _self call ["_drainPendingAdmission", []];
         };
 
         _current = _self get "_state";
@@ -703,11 +638,6 @@ private _director = createHashMapObject [[
     ["_start", {
         if ((_self get "_pfhId") >= 0) exitWith { true };
         FLO_CampaignDirector = _self;
-        private _groupRemovedEhId = ["FLO_Virtualization_GroupRemoved", {
-            params ["_groupId"];
-            [FLO_CampaignDirector, _groupId] call FLO_fnc_campaignHandleGroupRemoved;
-        }] call CBA_fnc_addEventHandler;
-        _self set ["_groupRemovedEhId", _groupRemovedEhId];
         private _interval = (_self get "_config") get "updateInterval";
         private _pfhId = [{
             params ["_args"];
@@ -715,7 +645,7 @@ private _director = createHashMapObject [[
             _directorRef call ["_update", []];
         }, _interval, [_self]] call CBA_fnc_addPerFrameHandler;
         _self set ["_pfhId", _pfhId];
-        ["CAMPAIGN", 3, format ["Campaign director started (%1s, mature-probe operation width)", _interval]] call FLO_fnc_log;
+        ["CAMPAIGN", 3, format ["Campaign director started (%1s, direct connected-frontline assaults)", _interval]] call FLO_fnc_log;
         true
     }]
 ]];

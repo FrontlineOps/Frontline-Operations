@@ -15,7 +15,7 @@
  *   4: Target position <ARRAY>
  *   5: Route source tag <STRING>
  *   6: Objective ID <STRING>
- *   7: Order mode <STRING> - MOVE only
+ *   7: Order mode <STRING> - MOVE or GARRISON
  *   8: Defend lease issued at <NUMBER>
  *   9: Defend lease until <NUMBER>
  *   10: Campaign operation ID <STRING> - ATTACK only
@@ -80,7 +80,7 @@ switch (_order) do {
         [_groupData, _targetPos, _objectiveId, _leaseIssuedAt, _leaseUntil] call FLO_fnc_virtualizationAssignDefendOrder;
     };
     case "GARRISON": {
-        [_groupData, _targetPos, _objectiveId] call FLO_fnc_virtualizationAssignGarrisonOrder;
+        [_groupData, _targetPos, _objectiveId, _orderMode] call FLO_fnc_virtualizationAssignGarrisonOrder;
     };
     default {
         throw format [

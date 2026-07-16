@@ -21,17 +21,15 @@ private _emptyScaleMetrics = createHashMapFromArray [
     ["threatenedObjectives", 0],
     ["forceDeficit", 0],
     ["qualifyingSupplySourceCount", 0],
-    ["promotableProbeCount", 0],
-    ["rankableProbeCount", 0],
+    ["rankableTargetCount", 0],
     ["plannedCommitment", 0]
 ];
 
 if (_restoreSavedState) exitWith {
     private _requiredStateFields = [
         "sequence", "revision", "initiativeSideKey", "defenderSideKey", "operations",
-        "frontlineProbes", "operationOrder", "primaryOperationId", "desiredOperationCount",
-        "lastScaleEvaluationAtDateNum", "scaleUpCandidateSinceDateNum",
-        "scaleDownCandidateSinceDateNum", "scaleReason", "scaleMetrics",
+        "operationOrder", "primaryOperationId", "desiredOperationCount",
+        "lastScaleEvaluationAtDateNum", "scaleReason", "scaleMetrics",
         "lastCompletedOperationId", "lastCompletedResult", "opportunities",
         "phase", "phaseStartedAtDateNum", "phaseEndsAtDateNum", "transitionReason"
     ];
@@ -163,11 +161,6 @@ if (_restoreSavedState) exitWith {
             ]
         ];
     } forEach _savedOpportunities;
-
-    private _frontlineProbes = [_savedState get "frontlineProbes"] call FLO_fnc_campaignSerializeFrontlineProbes;
-    {
-        _y set ["lastContactAt", -1];
-    } forEach _frontlineProbes;
 
     private _validOperationPhases = ["ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
     private _validIntelLevels = ["TARGET"];
@@ -313,7 +306,7 @@ if (_restoreSavedState) exitWith {
     } forEach _operationOrder;
 
     if (_operationOrder isEqualTo []) then {
-        if (_primaryOperationId != "" || {(toUpper (_savedState get "phase")) != "PROBING"}) then {
+        if (_primaryOperationId != "" || {(toUpper (_savedState get "phase")) != "IDLE"}) then {
             throw "Saved empty campaign has an invalid primary operation or phase";
         };
     } else {
@@ -327,21 +320,16 @@ if (_restoreSavedState) exitWith {
             throw "Saved campaign phase does not match its primary operation";
         };
     };
-    [_frontlineProbes, _operations, _operationOrder] call FLO_fnc_campaignValidateProbeRegistry;
-
     private _state = createHashMapFromArray [
         ["sequence", _savedState get "sequence"],
         ["revision", _savedState get "revision"],
         ["initiativeSideKey", _initiativeSideKey],
         ["defenderSideKey", _defenderSideKey],
         ["operations", _operations],
-        ["frontlineProbes", _frontlineProbes],
         ["operationOrder", _operationOrder],
         ["primaryOperationId", _primaryOperationId],
         ["desiredOperationCount", _savedState get "desiredOperationCount"],
         ["lastScaleEvaluationAtDateNum", _savedState get "lastScaleEvaluationAtDateNum"],
-        ["scaleUpCandidateSinceDateNum", _savedState get "scaleUpCandidateSinceDateNum"],
-        ["scaleDownCandidateSinceDateNum", _savedState get "scaleDownCandidateSinceDateNum"],
         ["scaleReason", _savedState get "scaleReason"],
         ["scaleMetrics", +_savedScaleMetrics],
         ["lastCompletedOperationId", _savedState get "lastCompletedOperationId"],
@@ -385,20 +373,17 @@ createHashMapFromArray [
     ["initiativeSideKey", _initiativeSideKey],
     ["defenderSideKey", _defenderSideKey],
     ["operations", createHashMap],
-    ["frontlineProbes", createHashMap],
     ["operationOrder", []],
     ["primaryOperationId", ""],
     ["desiredOperationCount", 0],
     ["lastScaleEvaluationAtDateNum", -1],
-    ["scaleUpCandidateSinceDateNum", -1],
-    ["scaleDownCandidateSinceDateNum", -1],
-    ["scaleReason", "INITIAL_PROBING"],
+    ["scaleReason", "INITIAL_DIRECT_FRONTLINE_PLANNING"],
     ["scaleMetrics", _emptyScaleMetrics],
     ["lastCompletedOperationId", ""],
     ["lastCompletedResult", ""],
     ["opportunities", createHashMap],
     ["operationId", ""],
-    ["phase", "PROBING"],
+    ["phase", "IDLE"],
     ["phaseStartedAtDateNum", _now],
     ["phaseEndsAtDateNum", _now],
     ["attackerSideKey", _initiativeSideKey],
@@ -406,7 +391,7 @@ createHashMapFromArray [
     ["sourceObjectiveIds", []],
     ["supportObjectiveIds", []],
     ["result", ""],
-    ["transitionReason", "INITIAL_PROBING"],
+    ["transitionReason", "INITIAL_DIRECT_FRONTLINE_PLANNING"],
     ["defenderIntelLevel", "NONE"],
     ["defenderIntelReason", "NO_ACTIVE_OPERATION"],
     ["resourceReservationId", ""],

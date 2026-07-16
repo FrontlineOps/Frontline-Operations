@@ -25,6 +25,8 @@ createHashMapFromArray [
         ["activationResumeCap", ((_activationUnitCap - 20) max 0)],
         ["activationRetryCooldown", 10],
         ["landRouteBlockedRetrySeconds", 30],
+        ["buildingGarrisonApplyDistance", 80],
+        ["buildingGarrisonSearchRadius", 200],
         ["movementDeadbandMeters", 8],
         ["positionEventCellSize", 150],
         ["enabled", true]

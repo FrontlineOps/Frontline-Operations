@@ -164,7 +164,7 @@
 
         .operation-strip {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 2fr) minmax(140px, 1fr);
             gap: 1px;
             padding: 9px 12px;
             background:
@@ -204,7 +204,6 @@
         }
 
         .operation-value.cyan { color: var(--cyan); }
-        .operation-value.amber { color: var(--amber); }
         .operation-value.green { color: var(--green); }
 
         .operation-select {
@@ -915,7 +914,7 @@
             }
 
             .operation-strip {
-                grid-template-columns: minmax(120px, 1fr) repeat(2, minmax(76px, auto));
+                grid-template-columns: minmax(120px, 1fr) minmax(76px, auto);
                 padding-right: 6px;
                 padding-left: 6px;
             }
@@ -1075,10 +1074,6 @@
                     <span class="badge-label">Role</span>
                     <span class="operation-value cyan" id="operation-role">Connecting</span>
                 </div>
-                <div class="operation-cell">
-                    <span class="badge-label">Phase</span>
-                    <span class="operation-value amber" id="phase-badge">Connecting</span>
-                </div>
             </div>
 
             <div class="top-actions">
@@ -1186,7 +1181,7 @@
                             <h2 class="guide-title" id="guide-title">Your first five minutes</h2>
                             <p class="guide-lede">FLO is one persistent side campaign, not a chain of disconnected tasks. Your purchases, captures, deliveries, and combat decisions change the same theater picture used by every player and the AI commander.</p>
                             <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>1. Read the Operation</strong><p>Check the selected operation, role, and phase before choosing where to go. Switch operations from the top selector when several fronts are active.</p></div>
+                                <div class="guide-phase"><strong>1. Read the Operation</strong><p>Check the selected operation and role before choosing where to go. Switch operations from the top selector when several fronts are active.</p></div>
                                 <div class="guide-phase"><strong>2. Locate Yourself</strong><p>Use the player-center control and map markers to compare your position with the main effort, supporting fronts, and footholds.</p></div>
                                 <div class="guide-phase"><strong>3. Check Sustainment</strong><p>Review Available treasury and the nearest node's Local Supplies. Both are required for most purchases and support requests.</p></div>
                                 <div class="guide-phase"><strong>4. Choose a Role</strong><p>Join the main effort, secure its logistics, defend a threatened area, or create a future opportunity away from the operation.</p></div>
@@ -1199,15 +1194,15 @@
                         <article class="guide-page" data-guide-page="1">
                             <p class="guide-kicker">02 / Campaign Cycle</p>
                             <h2 class="guide-title">How the theater advances</h2>
-                            <p class="guide-lede">Each operation moves through five phases. The phase tells you whether command is testing the front, committing an assault, or securing a gain.</p>
+                            <p class="guide-lede">The campaign alternates direct planning with four formal operation phases, showing whether command is assaulting, securing, consolidating, or recovering.</p>
                             <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>Probing</strong><p>Groups continuously test every reachable enemy front. Useful contact draws additional groups, artillery, and aircraft; a mature probe can absorb a lower-priority probe's temporary task force to reach assault mass.</p></div>
+                                <div class="guide-phase"><strong>Planning</strong><p>Command ranks enemy objectives directly linked to the friendly frontline, then opens every land- and supply-valid assault the treasury can sustain.</p></div>
                                 <div class="guide-phase"><strong>Assault</strong><p>A doctrine-adjusted opening force commits as one mass. Follow-on waves replace losses or exploit progress at controlled intervals.</p></div>
                                 <div class="guide-phase"><strong>Secure</strong><p>Friendly forces hold the target, defeat remaining resistance, and prevent the objective from reversing.</p></div>
                                 <div class="guide-phase"><strong>Consolidate</strong><p>The captured objective is connected to command and logistics. Normal campaign benefits begin once integration succeeds.</p></div>
-                                <div class="guide-phase"><strong>Recovery</strong><p>Surviving groups and unused funds release directly, and command quickly resumes probing for the next operation.</p></div>
+                                <div class="guide-phase"><strong>Recovery</strong><p>Surviving groups and unused funds release directly, and command quickly resumes direct frontline planning.</p></div>
                             </div>
-                            <div class="guide-callout">The theater can run one main operation and as many supporting operations as mature probes, logistics, and available treasury can sustain. Connected player count never changes that width.</div>
+                            <div class="guide-callout">The theater can run one main operation and as many supporting operations as connected frontline targets, logistics, and available treasury can sustain. Connected player count never changes that width.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="2">
@@ -1216,25 +1211,25 @@
                             <p class="guide-lede">An operation is a funded campaign commitment with its own target, source, temporary group task force, opening mass, follow-on limit, and current phase state.</p>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Main Effort</h3><p>The primary axis receives the largest opening force, priority funding, and the clearest command intent. Only one operation owns this role.</p></div>
-                                <div class="guide-block"><h3>Supporting Efforts</h3><p>Additional operations may open wherever mature frontline probes, logistics, and available treasury can sustain them.</p></div>
+                                <div class="guide-block"><h3>Supporting Efforts</h3><p>Additional operations may open against any connected enemy frontline objective that logistics and available treasury can sustain.</p></div>
                                 <div class="guide-block"><h3>Opening Mass</h3><p>Command waits for the required package, then commits it atomically. It does not pretend one or two isolated squads are a full assault.</p></div>
                                 <div class="guide-block"><h3>Approach Corridors</h3><p>Groups receive compact parallel lanes so the temporary task force converges on the same battle instead of scattering across the objective.</p></div>
                                 <div class="guide-block"><h3>Follow-On Waves</h3><p>Once a formal assault begins, later groups reinforce it only within the operation's committed assault package.</p></div>
-                                <div class="guide-block"><h3>Temporary Ownership</h3><p>A group belongs to only one probe or operation at a time. Survivors return directly to the command pool when that ownership ends.</p></div>
+                                <div class="guide-block"><h3>Temporary Ownership</h3><p>A maneuver group belongs to only one operation at a time. Garrison groups remain protected at their objectives; assault survivors return directly to the command pool when operation ownership ends.</p></div>
                                 <div class="guide-block"><h3>Allocation</h3><p>Command reserves part of the shared treasury for each operation. Unused allocation returns when the operation ends or withdraws.</p></div>
                                 <div class="guide-block"><h3>Support Area</h3><p>The source objective, routes, depots, artillery, and transports behind an operation are part of the fight even when they are not on the target.</p></div>
                             </div>
-                            <div class="guide-callout">Activity outside active operations is not ignored. Sustained pressure can become a reported opportunity that command evaluates while probing the front.</div>
+                            <div class="guide-callout">Activity outside active operations is not ignored. Sustained pressure can become a reported opportunity that command weighs during direct frontline planning.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="3">
                             <p class="guide-kicker">04 / Task Forces and Experience</p>
                             <h2 class="guide-title">Groups improve; task forces stay temporary</h2>
-                            <p class="guide-lede">Each combat group keeps its own experience across campaign saves. Probes and operations assemble the groups they need directly, then release survivors without a readiness, regroup, or recovery cooldown.</p>
+                            <p class="guide-lede">Each combat group keeps its own experience across campaign saves. Operations assemble surplus maneuver groups directly, while static and patrol garrisons remain assigned to their objectives.</p>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Rank</h3><p>Groups progress from GREEN to REGULAR, VETERAN, and ELITE. Every surviving virtual-combat round adds experience; decisive winners gain more.</p></div>
                                 <div class="guide-block"><h3>Combat Quality</h3><p>Experience improves remote combat power and scales every physical combat skill, including accuracy, from 0.37 to 0.98 when the group activates.</p></div>
-                                <div class="guide-block"><h3>Direct Commitment</h3><p>Every reachable frontline objective can maintain a probe. Command adds one eligible group at a time so the entire front is tested before mass concentrates.</p></div>
+                                <div class="guide-block"><h3>Direct Commitment</h3><p>Every connected enemy frontline objective is an immediate assault candidate. Command commits only eligible surplus groups after baseline building and patrol garrisons are filled.</p></div>
                                 <div class="guide-block"><h3>Breakthrough</h3><p>Masses two additional opening groups and one additional follow-on group on a priority assault.</p></div>
                                 <div class="guide-block"><h3>Counterattack</h3><p>Adds one opening group when command responds to pressure and attempts to reverse enemy momentum.</p></div>
                                 <div class="guide-block"><h3>Economy of Force</h3><p>Uses the minimum package on a lower-priority axis: eight opening groups for the main effort, five for support, and follow-ons of no more than four.</p></div>
@@ -1346,7 +1341,7 @@
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Friendly Picture</h3><p>Your side sees its active operations, objective control, logistics network, node stock, routes, treasury, and reported opportunities.</p></div>
                                 <div class="guide-block"><h3>Enemy Logistics Intel</h3><p>Enemy HQs and supply nodes appear only through recovered intelligence. Reports reveal captured information temporarily and then expire.</p></div>
-                                <div class="guide-block"><h3>Defender Warning</h3><p>When an enemy probe becomes a committed operation, defenders receive the confirmed assault objective. Background probe activity remains part of the wider frontline picture.</p></div>
+                                <div class="guide-block"><h3>Defender Warning</h3><p>When an enemy operation opens, defenders receive the confirmed assault objective while other contact remains part of the wider frontline picture.</p></div>
                                 <div class="guide-block"><h3>Classified Doctrine</h3><p>Your own side can inspect its active operation doctrine. Enemy doctrine remains hidden behind the normal intelligence picture.</p></div>
                                 <div class="guide-block"><h3>Session Order</h3><p>Read intent, locate yourself, check Available treasury and Local Supplies, choose a role, then use support and intelligence views as the situation demands.</p></div>
                                 <div class="guide-block"><h3>When Plans Change</h3><p>Reopen Command Net after phase transitions, captures, route failures, support denials, or new opportunity reports. The theater picture is persistent and dynamic.</p></div>
@@ -1427,7 +1422,7 @@
                 var target = operation.targetVisible
                     ? operation.targetName
                     : (operation.threatSector && operation.threatSector.visible ? "SECTOR " + operation.threatSector.grid : "UNDISCLOSED");
-                return role + " / " + target + " / " + readable(operation.phase);
+                return role + " / " + target;
             }
 
             function renderOperationSelector() {
@@ -1437,7 +1432,7 @@
                 if (operations.length === 0) {
                     var empty = document.createElement("option");
                     empty.value = "";
-                    empty.textContent = "Active Front / Probing";
+                    empty.textContent = "Active Front";
                     select.appendChild(empty);
                     select.disabled = true;
                     activeOperationId = "";
@@ -1644,7 +1639,6 @@
                 var summary = snapshot.summary;
 
                 text("operation-role", readable(operation.role));
-                text("phase-badge", readable(operation.phase));
 
                 text("metric-friendly", summary.friendlyObjectives);
                 text("metric-enemy", summary.enemyObjectives);

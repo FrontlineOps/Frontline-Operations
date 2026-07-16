@@ -20,9 +20,9 @@ class FLO_OperationsDialog {
 
         class Map: FLO_RscMap {
             idc = 9952;
-            x = "safeZoneX + (safeZoneW * 0.175)";
+            x = "safeZoneX";
             y = "safeZoneY + (safeZoneH * 0.085)";
-            w = "safeZoneW * 0.635";
+            w = "safeZoneW * 0.81";
             h = "safeZoneH * 0.87";
             colorBackground[] = {0.035, 0.065, 0.08, 1};
             colorOutside[] = {0.012, 0.025, 0.035, 1};

@@ -1,4 +1,4 @@
-/* Plans every affordable formal promotion from mature canonical probes. */
+/* Plans every affordable direct assault against the connected enemy frontline. */
 params ["_director"];
 
 private _state = _director get "_state";
@@ -66,36 +66,17 @@ private _capRemaining = ((floor ((_treasury get "_balance") * (_config get "oper
 private _planningAvailable = _availableResources;
 private _planningCapRemaining = _capRemaining;
 
-private _excludedObjectiveIds = [];
-{
-    _excludedObjectiveIds pushBack ((_operations get _x) get "objectiveId");
-} forEach _order;
-
-private _promotableProbeCount = 0;
-{
-    private _front = _y;
-    if ((_front get "sideKey") != _sideKey) then { continue };
-    private _objectiveId = _front get "objectiveId";
-    if (_objectiveId in _excludedObjectiveIds) then { continue };
-    if (([_director, _sideKey, _objectiveId] call FLO_fnc_campaignGetPromotableProbeGroups) isNotEqualTo []) then {
-        _promotableProbeCount = _promotableProbeCount + 1;
-    };
-} forEach (_state get "frontlineProbes");
+private _excludedObjectiveIds = _order apply {
+    (_operations get _x) get "objectiveId"
+};
+private _rankedSelections = [
+    _director,
+    _side,
+    _excludedObjectiveIds
+] call FLO_fnc_campaignSelectTarget;
+private _rankableTargetCount = count _rankedSelections;
 
 private _plannedSelections = [];
-private _canPlan = _order isEqualTo [] || {_activeOperationIds isNotEqualTo []};
-private _rankedSelections = [];
-if (_canPlan) then {
-    _rankedSelections = [
-        _director,
-        _side,
-        _excludedObjectiveIds,
-        [],
-        []
-    ] call FLO_fnc_campaignSelectTarget;
-};
-private _rankableProbeCount = count _rankedSelections;
-
 {
     private _selection = _x;
     private _priorityRole = ["SUPPORTING_EFFORT", "MAIN_EFFORT"] select (
@@ -118,35 +99,28 @@ private _rankableProbeCount = count _rankedSelections;
 
 private _desiredCount = _currentCount + (count _plannedSelections);
 private _reason = if (_plannedSelections isNotEqualTo []) then {
-    "MATURE_PROBES_READY"
+    "DIRECT_FRONTLINE_TARGETS_READY"
 } else {
-    if (_rankableProbeCount > 0) then {
-        "TREASURY_LIMIT"
-    } else {
-        ["NO_MATURE_PROBE", "LOGISTICS_OR_TERRAIN_LIMIT"] select (_promotableProbeCount > 0)
-    }
+    ["NO_DIRECT_FRONTLINE_TARGET", "TREASURY_LIMIT"] select (_rankableTargetCount > 0)
 };
 private _treasurySlots = _currentCount + floor (
     ((_availableResources min _capRemaining) max 0) / (_config get "operationSupportBudgetMinimum")
 );
-private _axisSlots = _currentCount + _rankableProbeCount;
-private _forceSlots = _axisSlots;
-private _logisticsSlots = [0, _axisSlots] select (_qualifyingSupplySourceCount > 0);
+private _axisSlots = _currentCount + _rankableTargetCount;
 
 private _metrics = createHashMapFromArray [
     ["availableGroups", count _availableGroupIds],
     ["activeAttackGroups", _activeAttackGroups],
     ["offensiveGroups", _offensiveGroups],
-    ["forceSlots", _forceSlots],
-    ["logisticsSlots", _logisticsSlots],
+    ["forceSlots", _axisSlots],
+    ["logisticsSlots", [0, _axisSlots] select (_qualifyingSupplySourceCount > 0)],
     ["treasurySlots", _treasurySlots],
     ["axisSlots", _axisSlots],
     ["pressureCap", _axisSlots],
     ["threatenedObjectives", _threatenedObjectives],
     ["forceDeficit", _forceDeficit],
     ["qualifyingSupplySourceCount", _qualifyingSupplySourceCount],
-    ["promotableProbeCount", _promotableProbeCount],
-    ["rankableProbeCount", _rankableProbeCount],
+    ["rankableTargetCount", _rankableTargetCount],
     ["plannedCommitment", _availableResources - _planningAvailable]
 ];
 

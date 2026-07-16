@@ -135,8 +135,6 @@ private _gtnCommander = createHashMapObject [[
     ["_frontlineCASLocks", createHashMap],
     ["_frontlineSupportPicture", createHashMap],
     ["_frontlineSupportPictureBuiltAt", -1],
-    ["_lastProbeEvaluationAt", -1],
-    ["_probeEvaluationCursor", 0],
     ["_playerSupportRequests", []],
     ["_playerSupportPlayerCooldowns", createHashMap],
     ["_playerSupportObjectiveLocks", createHashMap],
@@ -205,7 +203,8 @@ private _gtnCommander = createHashMapObject [[
         ["frontlineCAPContactFreshSeconds", 360], // Ignore stale air contacts for CAP scoring
         ["frontlineCAPContactRadiusMeters", 4000], // Friendly frontline sectors only count air contacts in their local airspace
         ["frontlineCAPObjectiveLockSeconds", 720], // CAP missions loiter for a while; keep sectors locked longer than CAS
-        ["probeEvaluationIntervalSeconds", 30], // Hidden probe evidence and topology share one bounded strategic cadence
+        ["frontlineSupportPictureIntervalSeconds", 30], // Re-associate maintained contacts with the current direct frontline on a bounded cadence
+        ["frontlineSupportMinimumConfidence", 0.25], // Autonomous fires require maintained contact confidence
         ["frontlineSupportContactMaxAgeSeconds", 900], // Match the maintained World State contact retention window
         ["frontlineSupportContactFreshSeconds", 240], // Exact virtual target identities require recent maintained contact
         ["frontlineSupportAssociationRadius", 2000], // Associate reported contacts with their nearest reachable frontline axis
@@ -215,7 +214,7 @@ private _gtnCommander = createHashMapObject [[
         ["frontlineArtilleryRounds", 6], // Autonomous frontline missions use the standard six-round battery package
         ["frontlineArtilleryFreshAccuracy", 100], // Fresh observed contacts receive ordinary dispersion
         ["frontlineArtilleryStaleAccuracy", 190], // Old contact areas widen as positional uncertainty grows
-        ["frontlineCASMinAttackers", 0], // Maintained contacts remain eligible during regroup; active probe mass still increases target score
+        ["frontlineCASMinAttackers", 0], // Maintained contacts remain eligible without an existing ground commitment; active attackers increase target score
         ["frontlineCASMinScore", 80], // Prevent trivial objectives from consuming air support
         ["frontlineCASObjectiveLockSeconds", 420], // Cooldown per objective so repeated cycles do not spam CAS on the same target
         ["frontlineCASRetrySeconds", 90], // Failed sortie authorization is retried on a bounded cadence
@@ -240,7 +239,7 @@ private _gtnCommander = createHashMapObject [[
         ["strategicOrderAssignmentsPerCycle", 16], // Carries one twelve-group opening plus bounded defense/garrison work
         ["attackAssignmentsPerCycle", 12], // Supports the largest atomic doctrine opening without splitting its mass
         ["defenseAssignmentsPerCycle", 3], // 10-second baseline defense assignment cap for one commander slice
-        ["garrisonAssignmentsPerCycle", 2], // 10-second baseline garrison assignment cap for one commander slice
+        ["garrisonAssignmentsPerCycle", 16], // Baseline defense may consume the full slice so assault pools cannot strip still-ungarrisoned objectives
         ["maxTrackTasksPerCycle", 2] // Primitive burst cap per track per commander update
     ]],
     
@@ -264,7 +263,7 @@ private _gtnCommander = createHashMapObject [[
             ["worldState", 0],
             ["intelPublish", 0],
             ["attackAssignments", 0],
-            ["frontlineProbes", 0],
+            ["frontlineSupport", 0],
             ["garrisons", 0],
             ["allocateTracks", 0],
             ["trackPhases", 0],
@@ -334,7 +333,7 @@ private _gtnCommander = createHashMapObject [[
             ["worldState", 0],
             ["intelPublish", 0],
             ["attackAssignments", 0],
-            ["frontlineProbes", 0],
+            ["frontlineSupport", 0],
             ["garrisons", 0],
             ["allocateTracks", 0],
             ["trackPhases", 0],
@@ -440,16 +439,16 @@ private _gtnCommander = createHashMapObject [[
         _phaseMs set ["attackAssignments", (diag_tickTime - _tPhase) * 1000];
         _self set ["_objectiveAssignmentCache", [_self] call FLO_fnc_gtnBuildObjectiveAssignmentCache];
 
-        // Reconcile and evaluate continuous probe fronts from the maintained picture.
+        // Re-associate maintained contacts with the current direct enemy frontline.
         _tPhase = diag_tickTime;
-        private _probeMetrics = [
-            _self get "_campaignDirector",
-            _self
-        ] call FLO_fnc_campaignUpdateFrontlineProbes;
-        _phaseMs set ["frontlineProbes", (diag_tickTime - _tPhase) * 1000];
-        if (_probeMetrics get "run") then {
-            _self set ["_objectiveAssignmentCache", [_self] call FLO_fnc_gtnBuildObjectiveAssignmentCache];
+        private _supportPictureRan = (_self get "_frontlineSupportPictureBuiltAt") < 0
+            || {_now - (_self get "_frontlineSupportPictureBuiltAt") >= (((_self get "_config") get "frontlineSupportPictureIntervalSeconds") max 1)};
+        if (_supportPictureRan) then {
+            private _frontline = _self call ["_getAttackFrontlineEnemyObjectives", []];
+            _self set ["_frontlineSupportPicture", [_self, _frontline] call FLO_fnc_gtnBuildFrontlineSupportPicture];
+            _self set ["_frontlineSupportPictureBuiltAt", _now];
         };
+        _phaseMs set ["frontlineSupport", (diag_tickTime - _tPhase) * 1000];
 
         // Maintain standing garrisons before building mobile attack pools.
         private _garrisonMetrics = createHashMapFromArray [
@@ -545,7 +544,7 @@ private _gtnCommander = createHashMapObject [[
             ["worldState", _wsPerf],
             ["intelPublish", _intelPublishMetrics],
             ["attackAssignments", _attackAssignmentMetrics],
-            ["frontlineProbes", _probeMetrics],
+            ["frontlineSupportPictureRan", _supportPictureRan],
             ["garrisons", _garrisonMetrics],
             ["allocation", _allocationMetrics],
             ["trackPhases", _trackPhaseMetrics],
@@ -570,7 +569,7 @@ private _gtnCommander = createHashMapObject [[
             _perf set ["slowCycles", (_perf get "slowCycles") + 1];
 
             diag_log format [
-                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 probes=%13 garrisons=%14 minefields=%15 allocate=%16 phases=%17 execute=%18 cap=%19 artillery=%20 cas=%21 playerSupport=%22 defense=%23 staticAA=%24",
+                "[FLO][PERF] GTN commander %1 cycle %2 groups registry=%3 own=%4 available=%5 tasked=%6 tracks=%7 in %8 ms | normalize=%9 ws=%10 intel=%11 attack=%12 support=%13 garrisons=%14 minefields=%15 allocate=%16 phases=%17 execute=%18 cap=%19 artillery=%20 cas=%21 playerSupport=%22 defense=%23 staticAA=%24",
                 _self get "_sideKey",
                 _cycleIndex,
                 _metrics get "registryGroupCount",
@@ -583,7 +582,7 @@ private _gtnCommander = createHashMapObject [[
                 _phaseMs get "worldState",
                 _phaseMs get "intelPublish",
                 _phaseMs get "attackAssignments",
-                _phaseMs get "frontlineProbes",
+                _phaseMs get "frontlineSupport",
                 _phaseMs get "garrisons",
                 _phaseMs get "minefields",
                 _phaseMs get "allocateTracks",
@@ -2319,7 +2318,7 @@ private _gtnCommander = createHashMapObject [[
 
     // Order group to hold a standing garrison on an owned objective.
     ["_orderGroupGarrison", {
-        params ["_groupId", "_pos", ["_objectiveId", ""], ["_consumeAssignmentBudget", false, [true]]];
+        params ["_groupId", "_routePlan", ["_objectiveId", ""], ["_consumeAssignmentBudget", false, [true]]];
 
         private _groups = call FLO_fnc_virtualizationGetGroupMap;
         private _gData = _groups get _groupId;
@@ -2328,9 +2327,18 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
+        if !(_routePlan isEqualType createHashMap) then {
+            throw format ["Cannot order garrison %1 with route-plan type %2", _groupId, typeName _routePlan];
+        };
+        private _pos = _routePlan get "targetPos";
+        private _waypoints = _routePlan get "waypoints";
+        private _orderMode = _routePlan get "orderMode";
         if (!(_pos isEqualType []) || {count _pos < 2}) exitWith {
             ["GTN", 2, format["Cannot order garrison - invalid destination for %1: %2", _groupId, _pos]] call FLO_fnc_log;
             false
+        };
+        if (_waypoints isEqualTo [] || {!(_orderMode in ["GARRISON_BUILDING", "GARRISON_PATROL"])}) then {
+            throw format ["Cannot order garrison %1 with invalid route mode/topology %2/%3", _groupId, _orderMode, count _waypoints];
         };
 
         private _ownSide = _self get "_ownSide";
@@ -2354,6 +2362,7 @@ private _gtnCommander = createHashMapObject [[
         if (
             (_gData get "commanderOrder") == "GARRISON"
             && {(_gData get "garrisonObjective") == _objectiveId}
+            && {(_gData get "orderMode") == _orderMode}
             && {_hasRouteContext}
             && {_sameHoldPos}
         ) exitWith {
@@ -2368,13 +2377,16 @@ private _gtnCommander = createHashMapObject [[
             false
         };
 
-        private _formation = selectRandom ["STAG COLUMN", "WEDGE", "VEE", "DIAMOND", "LINE", "COLUMN"];
-        private _waypoints = [
-            [_pos, "MOVE", "SAFE", "FULL", _formation, "GREEN", 35],
-            [_pos, "GUARD", "SAFE", "LIMITED", _formation, "GREEN", 50]
-        ];
-
-        private _commitResult = [_groupId, _gData, "GARRISON", _waypoints, _pos, "GTN_GARRISON", _objectiveId] call FLO_fnc_virtualizationCommitCommanderOrder;
+        private _commitResult = [
+            _groupId,
+            _gData,
+            "GARRISON",
+            _waypoints,
+            _pos,
+            _orderMode,
+            _objectiveId,
+            _orderMode
+        ] call FLO_fnc_virtualizationCommitCommanderOrder;
         _commitResult params ["_commitSuccess", "_routeMs", "_assignMs", "_transportMs", "_orderMs"];
         if (!_commitSuccess) exitWith {
             if (_consumeAssignmentBudget) then {
@@ -2415,7 +2427,7 @@ private _gtnCommander = createHashMapObject [[
 
         _self call ["_taskGroups", [[_groupId]]];
 
-        ["GTN", 5, format["Ordered group %1 to garrison %2", _groupId, _objectiveId]] call FLO_fnc_log;
+        ["GTN", 5, format["Ordered group %1 to garrison %2 mode=%3", _groupId, _objectiveId, _orderMode]] call FLO_fnc_log;
         true
     }],
 

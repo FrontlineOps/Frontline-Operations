@@ -18,14 +18,12 @@ if !(_ws call ["_isAssetAvailable", ["artillery"]]) exitWith { _metrics };
 _metrics set ["assetAvailable", true];
 if ((_cmdr get "_frontlineSupportPictureBuiltAt") < 0) exitWith { _metrics };
 
-private _director = _cmdr get "_campaignDirector";
-private _state = _director call ["_getState", []];
-private _fronts = _state get "frontlineProbes";
 private _picture = _cmdr get "_frontlineSupportPicture";
-private _sideKey = _cmdr get "_sideKey";
 private _ownSide = _cmdr get "_ownSide";
 private _enemySide = _cmdr get "_enemySide";
 private _objectives = _ws call ["_getObjectives", []];
+private _frontline = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
+private _attackCounts = ((_cmdr get "_objectiveAssignmentCache") get "attackCounts");
 private _config = _cmdr get "_config";
 private _locks = _cmdr get "_frontlineArtilleryLocks";
 private _now = diag_tickTime;
@@ -38,17 +36,14 @@ private _expiredLocks = [];
 } forEach (keys _locks);
 { _locks deleteAt _x; } forEach _expiredLocks;
 
-private _bestProbeId = "";
 private _bestObjectiveId = "";
 private _bestScore = -1e12;
 {
-    private _probeId = _x;
-    private _front = _y;
-    if ((_front get "sideKey") != _sideKey) then { continue };
-    if ((_front get "stage") == "SHIFT_AXIS") then { continue };
-    private _objectiveId = _front get "objectiveId";
+    private _objectiveId = _x;
+    private _contact = _y;
+    if !(_objectiveId in _frontline) then { continue };
     if !(_objectiveId in _objectives) then {
-        throw format ["Frontline artillery probe %1 references missing objective %2", _probeId, _objectiveId];
+        throw format ["Frontline artillery picture references missing objective %1", _objectiveId];
     };
     if (((_objectives get _objectiveId) get "owner") isNotEqualTo _enemySide) then { continue };
     _metrics set ["candidateCount", (_metrics get "candidateCount") + 1];
@@ -56,34 +51,27 @@ private _bestScore = -1e12;
         _metrics set ["lockedCount", (_metrics get "lockedCount") + 1];
         continue;
     };
-    private _contact = _picture get _probeId;
     if ((_contact get "reportCount") <= 0) then { continue };
-    if ((_contact get "confidence") < ((_director get "_config") get "probeMinimumContactConfidence")) then { continue };
-
-    private _stageBonus = switch (_front get "stage") do {
-        case "DEVELOP_CONTACT": { 20 };
-        case "REINFORCE_SUCCESS": { 35 };
-        case "COMMIT_SUPPORT": { 60 };
-        case "ASSAULT": { 70 };
-        case "STALLED": { 50 };
-        case "SUPPORT": { 65 };
-        default { 0 };
+    if ((_contact get "confidence") < (_config get "frontlineSupportMinimumConfidence")) then { continue };
+    private _activeAttackers = if (_objectiveId in _attackCounts) then {
+        _attackCounts get _objectiveId
+    } else {
+        0
     };
-    private _score = (_contact get "score") + _stageBonus + ((_front get "lastActiveGroupCount") * 3);
+    private _score = (_contact get "score") + (_activeAttackers * 3);
     _metrics set ["eligibleCount", (_metrics get "eligibleCount") + 1];
     if (_score > _bestScore) then {
-        _bestProbeId = _probeId;
         _bestObjectiveId = _objectiveId;
         _bestScore = _score;
     };
-} forEach _fronts;
+} forEach _picture;
 
-if (_bestProbeId == "" || {_bestScore < (_config get "frontlineArtilleryMinScore")}) exitWith { _metrics };
+if (_bestObjectiveId == "" || {_bestScore < (_config get "frontlineArtilleryMinScore")}) exitWith { _metrics };
 private _manager = _cmdr get "_artilleryManager";
 private _requestStatus = [_manager, _ownSide, _bestObjectiveId] call FLO_fnc_gtnArtilleryCanRequestMission;
 if !(_requestStatus select 0) exitWith { _metrics };
 
-private _contact = _picture get _bestProbeId;
+private _contact = _picture get _bestObjectiveId;
 private _fresh = (_contact get "freshReportCount") > 0;
 private _accuracy = [
     _config get "frontlineArtilleryStaleAccuracy",
@@ -110,13 +98,6 @@ _metrics set ["requestedCount", 1];
 _metrics set ["selectedObjective", _bestObjectiveId];
 _metrics set ["selectedScore", _bestScore];
 _metrics set ["authorized", _authorized];
-[
-    _director,
-    _sideKey,
-    _bestObjectiveId,
-    "ARTILLERY",
-    _authorized
-] call FLO_fnc_campaignRecordProbeSupport;
 _locks set [
     _bestObjectiveId,
     _now + ([

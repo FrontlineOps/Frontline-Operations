@@ -30,7 +30,7 @@ private _endpointIndexes = [];
 private _cursor = +_startPos;
 private _segmentCount = 0;
 private _failedReason = "";
-private _loopAnchorPos = +_startPos;
+private _loopAnchorPos = +((_waypoints select 0) select 0);
 if (count _loopAnchorPos > 2) then {
     _loopAnchorPos set [2, 0];
 } else {

@@ -82,6 +82,7 @@ class FLO {
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
         class gtnBuildObjectiveAssignmentCache {};
+        class gtnBuildObjectiveGarrisonRoute {};
         class gtnGetSideClientOwners {};
         class gtnMarkCommanderStateDirty {};
         class gtnGetCachedReserveBands {};
@@ -237,6 +238,9 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\Tasks";
 
         class taskApplyRoute {};
+        class taskGarrison {};
+        class taskReleaseGarrison {};
+        class taskReleaseGarrisonUnit {};
         class taskPatrol {};
     };
 

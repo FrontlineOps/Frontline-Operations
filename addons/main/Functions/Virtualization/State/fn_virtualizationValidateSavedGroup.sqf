@@ -63,5 +63,6 @@ if (_combatExperience < 0 || {_combatExperience > 100}) then {
     _savedData get "pathTargetPos",
     _savedData get "pathWaypointSettings"
 ] call FLO_fnc_virtualizationValidateWaypointState;
+[_savedData, _groupId] call FLO_fnc_virtualizationValidateCommanderOrderState;
 
 true

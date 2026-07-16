@@ -1,10 +1,8 @@
-/* Ranks every mature unattached canonical probe for formal promotion. */
+/* Ranks untargeted enemy objectives directly connected to the friendly frontline. */
 params [
     "_director",
     ["_side", sideUnknown, [east]],
-    ["_excludedObjectiveIds", [], [[]]],
-    ["_claimedSupplySourceObjectiveIds", [], [[]]],
-    ["_existingTargetPositions", [], [[]]]
+    ["_excludedObjectiveIds", [], [[]]]
 ];
 
 private _manager = _director get "_resourceManager";
@@ -24,7 +22,6 @@ private _opportunities = (_director get "_state") get "opportunities";
 private _sideOpportunities = createHashMap;
 private _terrainRejected = 0;
 private _excludedRejected = 0;
-private _immatureRejected = 0;
 private _noIntegratedSourceRejected = 0;
 private _noSupplySourceRejected = 0;
 
@@ -40,12 +37,6 @@ private _ranked = [];
     private _objective = _y;
     if (_objectiveId in _excludedObjectiveIds) then {
         _excludedRejected = _excludedRejected + 1;
-        continue;
-    };
-
-    private _probeGroupIds = [_director, _sideKey, _objectiveId] call FLO_fnc_campaignGetPromotableProbeGroups;
-    if (_probeGroupIds isEqualTo []) then {
-        _immatureRejected = _immatureRejected + 1;
         continue;
     };
 
@@ -106,26 +97,23 @@ private _ranked = [];
     };
     if (_objective get "contested") then { _score = _score + 40; };
     if (_objective get "underAttack") then { _score = _score + 20; };
-    _score = _score + 1200;
 
     _ranked pushBack [
         _score,
         _objectiveId,
         _sourcePairs,
         _fromOpportunity,
-        _objectivePosition,
-        _probeGroupIds
+        _objectivePosition
     ];
 } forEach _frontline;
 
 _ranked sort false;
 if (_ranked isEqualTo []) exitWith {
     ["CAMPAIGN", 4, format [
-        "No promotable campaign front for %1: frontline=%2 excluded=%3 immature=%4 terrain=%5 noIntegratedSource=%6 noSupply=%7",
+        "No direct frontline assault target for %1: frontline=%2 excluded=%3 terrain=%4 noIntegratedSource=%5 noSupply=%6",
         _sideKey,
         count _frontline,
         _excludedRejected,
-        _immatureRejected,
         _terrainRejected,
         _noIntegratedSourceRejected,
         _noSupplySourceRejected
@@ -138,7 +126,6 @@ private _selections = [];
     private _selected = _x;
     private _objectiveId = _selected select 1;
     private _sourcePairs = _selected select 2;
-    private _assaultLandAnchor = _selected select 4;
     private _supplyRanking = [];
     private _rankedSupplyIds = [];
     {
@@ -171,8 +158,7 @@ private _selections = [];
         ["supportObjectiveIds", _supportObjectiveIds],
         ["supplySourceObjectiveId", _selectedSupplySourceObjectiveId],
         ["fromOpportunity", _selected select 3],
-        ["assaultLandAnchor", _assaultLandAnchor],
-        ["probeGroupIds", +(_selected select 5)]
+        ["assaultLandAnchor", _selected select 4]
     ];
 } forEach _ranked;
 

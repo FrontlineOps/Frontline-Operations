@@ -94,6 +94,7 @@ if (!_isActive && {(_groupData get "realVehicles") isNotEqualTo []}) then {
     _groupData get "pathTargetPos",
     _groupData get "pathWaypointSettings"
 ] call FLO_fnc_virtualizationValidateWaypointState;
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateCommanderOrderState;
 private _attachedTo = _groupData get "attachedTo";
 private _attachedType = _groupData get "attachedType";
 private _mountedIn = _groupData get "mountedIn";

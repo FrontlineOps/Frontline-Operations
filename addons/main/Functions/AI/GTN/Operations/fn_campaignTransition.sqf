@@ -26,10 +26,6 @@ if (_durationSeconds < 0) then {
 };
 private _phaseEndsAtDateNum = [_now, _durationSeconds] call FLO_fnc_dateNumberAddSeconds;
 
-if (_previousPhase == "ASSAULT" && {_nextPhase in ["SECURE", "RECOVERY"]}) then {
-    [_director, _operationId, _reason] call FLO_fnc_campaignDetachOperationProbe;
-};
-
 _operation set ["phase", _nextPhase];
 _operation set ["phaseStartedAtDateNum", _now];
 _operation set ["phaseEndsAtDateNum", _phaseEndsAtDateNum];

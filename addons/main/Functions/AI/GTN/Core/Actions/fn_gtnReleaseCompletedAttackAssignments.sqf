@@ -3,8 +3,8 @@
  * Author: Frontline Operations Development Group
  *
  * Description:
- *   Retains ATTACK orders owned by an active formal operation or canonical
- *   persistent probe front. Expired and mismatched orders return to reserve.
+ *   Retains ATTACK orders owned by an active formal operation. Expired and
+ *   mismatched orders return to reserve.
  *
  * Arguments:
  * 0: GTN Commander <HASHMAP>
@@ -31,7 +31,6 @@ if (isNil "_director") then {
 
 private _state = _director call ["_getState", []];
 private _operations = _state get "operations";
-private _fronts = _state get "frontlineProbes";
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
@@ -54,16 +53,6 @@ private _releaseIds = [];
             && {(_operation get "objectiveId") == _objectiveId}
             && {_objectiveId in _objectives}
             && {((_objectives get _objectiveId) get "owner") == _enemySide};
-    } else {
-        if (_operationId in _fronts) then {
-            private _front = _fronts get _operationId;
-            _retain = (_front get "formalOperationId") == ""
-                && {(_front get "sideKey") == (_cmdr get "_sideKey")}
-                && {(_front get "objectiveId") == _objectiveId}
-                && {_groupId in (_front get "committedGroupIds")}
-                && {_objectiveId in _objectives}
-                && {((_objectives get _objectiveId) get "owner") == _enemySide};
-        };
     };
 
     if (!_retain) then {

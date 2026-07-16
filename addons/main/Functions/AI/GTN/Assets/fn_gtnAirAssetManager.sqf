@@ -366,7 +366,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
             _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
-            private _routePositions = [_requestSide, _targetPos] call FLO_fnc_gtnAirResolveReserveRoutePositions;
+            private _routePositions = [_gdata] call FLO_fnc_gtnAirResolveReserveRoutePositions;
             _routePositions params ["_reservePos", "_ingressPos", "_egressPos"];
             private _missionId = format ["AIR_%1_%2_%3", [_requestSide] call FLO_fnc_sideKey, _gid, round (diag_tickTime * 1000)];
             private _missionRecord = createHashMapFromArray [
@@ -584,10 +584,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 [0,0,0]
             };
             private _gData = _groups get _groupId;
-            private _homeObjective = _gData get "homeObjective";
-            if (_homeObjective == "") then { throw format ["Air group %1 has no homeObjective", _groupId]; };
-            private _homePos = (FLO_Objectives get _homeObjective) get "position";
-            ([_gData get "side", _homePos] call FLO_fnc_gtnAirResolveReserveRoutePositions) select 2
+            ([_gData] call FLO_fnc_gtnAirResolveReserveRoutePositions) select 2
         }],
 
         // Send aircraft to RTB - works for both active (real) and virtual groups

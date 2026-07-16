@@ -23,6 +23,9 @@ private _metrics = createHashMapFromArray [
     ["assignedGroups", 0],
     ["openedObjectives", 0],
     ["reinforcedObjectives", 0],
+    ["buildingOrders", 0],
+    ["buildingFallbacks", 0],
+    ["patrolOrders", 0],
     ["reserveBandBuilds", 0],
     ["assignmentPasses", 0],
     ["releaseMs", 0],
@@ -238,6 +241,13 @@ while {_continueAllocation && {_available isNotEqualTo []}} do {
 
         private _objectiveId = _x get "objectiveId";
         private _objectivePos = _x get "objectivePos";
+        private _assignedHereBefore = if (_objectiveId in _assignedByObjective) then {
+            _assignedByObjective get _objectiveId
+        } else {
+            0
+        };
+        private _slotIndex = (_x get "activeGarrisons") + _assignedHereBefore;
+        private _buildingSlot = (_slotIndex mod 2) == 0;
         private _reserveBands = if ("reserveBands" in _x) then {
             _x get "reserveBands"
         } else {
@@ -252,6 +262,7 @@ while {_continueAllocation && {_available isNotEqualTo []}} do {
         private _tSelection = diag_tickTime;
         private _bestGroupId = "";
         private _bestIndex = -1;
+        private _bestRolePenalty = 2;
         private _bestBand = 10;
         private _bestDist = 1e12;
 
@@ -262,10 +273,21 @@ while {_continueAllocation && {_available isNotEqualTo []}} do {
                 _band = _reserveBands get _homeObjective;
             };
 
+            private _rolePenalty = 0;
+            if (_buildingSlot && {(_gData get "groupType") != "infantry"}) then {
+                _rolePenalty = 1;
+            };
             private _distToObjective = _groupPos distance2D _objectivePos;
-            if (_band < _bestBand || {_band == _bestBand && {_distToObjective < _bestDist}}) then {
+            if (
+                _rolePenalty < _bestRolePenalty
+                || {_rolePenalty == _bestRolePenalty && {
+                    _band < _bestBand
+                    || {_band == _bestBand && {_distToObjective < _bestDist}}
+                }}
+            ) then {
                 _bestGroupId = _groupId;
                 _bestIndex = _i;
+                _bestRolePenalty = _rolePenalty;
                 _bestBand = _band;
                 _bestDist = _distToObjective;
             };
@@ -279,10 +301,18 @@ while {_continueAllocation && {_available isNotEqualTo []}} do {
         } else {
             []
         };
-        private _garrisonPos = [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
+        private _selectedGroupData = (_available select _bestIndex) select 1;
+        private _routePlan = [
+            _cmdr,
+            _objectiveId,
+            _claimedPositions,
+            _slotIndex,
+            _selectedGroupData get "groupType"
+        ] call FLO_fnc_gtnBuildObjectiveGarrisonRoute;
+        private _garrisonPos = _routePlan get "targetPos";
 
         private _tOrder = diag_tickTime;
-        private _ordered = _cmdr call ["_orderGroupGarrison", [_bestGroupId, _garrisonPos, _objectiveId, true]];
+        private _ordered = _cmdr call ["_orderGroupGarrison", [_bestGroupId, _routePlan, _objectiveId, true]];
         _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
 
         if (_ordered) then {
@@ -293,11 +323,16 @@ while {_continueAllocation && {_available isNotEqualTo []}} do {
             _claimedPositions pushBack _garrisonPos;
             _garrisonPositionsByObjective set [_objectiveId, _claimedPositions];
 
-            private _assignedHere = if (_objectiveId in _assignedByObjective) then {
-                _assignedByObjective get _objectiveId
+            if ((_routePlan get "orderMode") == "GARRISON_BUILDING") then {
+                _metrics set ["buildingOrders", (_metrics get "buildingOrders") + 1];
+                if !(_routePlan get "usedBuilding") then {
+                    _metrics set ["buildingFallbacks", (_metrics get "buildingFallbacks") + 1];
+                };
             } else {
-                0
+                _metrics set ["patrolOrders", (_metrics get "patrolOrders") + 1];
             };
+
+            private _assignedHere = _assignedHereBefore;
 
             if (_assignedHere == 0) then {
                 if ((_x get "activeGarrisons") > 0) then {
@@ -320,9 +355,12 @@ while {_continueAllocation && {_available isNotEqualTo []}} do {
 _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 ["GTN", 3, format [
-    "Baseline garrison allocation: released=%1 assigned=%2 opened=%3 reinforced=%4 candidates=%5 eligible=%6 reserveBands=%7 passes=%8",
+    "Baseline garrison allocation: released=%1 assigned=%2 building=%3 patrol=%4 buildingFallback=%5 opened=%6 reinforced=%7 candidates=%8 eligible=%9 reserveBands=%10 passes=%11",
     _metrics get "releasedGroups",
     _metrics get "assignedGroups",
+    _metrics get "buildingOrders",
+    _metrics get "patrolOrders",
+    _metrics get "buildingFallbacks",
     _metrics get "openedObjectives",
     _metrics get "reinforcedObjectives",
     _metrics get "candidateObjectives",
@@ -333,10 +371,13 @@ _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 if ((_metrics get "totalMs") >= 20) then {
     diag_log format [
-        "[FLO][PERF] GTN garrison allocation %1 released=%2 assigned=%3 opened=%4 reinforced=%5 candidates=%6 eligible=%7 reserveBands=%8 passes=%9 release=%10 build=%11 reserve=%12 select=%13 order=%14 total=%15",
+        "[FLO][PERF] GTN garrison allocation %1 released=%2 assigned=%3 building=%4 patrol=%5 fallback=%6 opened=%7 reinforced=%8 candidates=%9 eligible=%10 reserveBands=%11 passes=%12 release=%13 build=%14 reserve=%15 select=%16 order=%17 total=%18",
         _cmdr get "_sideKey",
         _metrics get "releasedGroups",
         _metrics get "assignedGroups",
+        _metrics get "buildingOrders",
+        _metrics get "patrolOrders",
+        _metrics get "buildingFallbacks",
         _metrics get "openedObjectives",
         _metrics get "reinforcedObjectives",
         _metrics get "candidateObjectives",

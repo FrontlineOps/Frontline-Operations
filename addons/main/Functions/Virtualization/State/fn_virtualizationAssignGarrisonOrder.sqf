@@ -8,12 +8,17 @@
  * 0: Group data <HASHMAP>
  * 1: Target position <ARRAY>
  * 2: Objective ID <STRING>
+ * 3: Garrison route mode <STRING>
  *
  * Return Value:
  * BOOL - True when the state was applied
  */
 
-params ["_groupData", "_targetPos", "_objectiveId"];
+params ["_groupData", "_targetPos", "_objectiveId", "_orderMode"];
+
+if !(_orderMode in ["GARRISON_BUILDING", "GARRISON_PATROL"]) then {
+    throw format ["FLO_fnc_virtualizationAssignGarrisonOrder: invalid mode %1", _orderMode];
+};
 
 private _missionLock = _groupData get "missionLock";
 private _replacementState = _groupData get "replacementState";
@@ -30,6 +35,6 @@ if (_missionLock != "" || {_replacementState != ""}) then {
 _groupData set ["garrisonObjective", _objectiveId];
 _groupData set ["garrisonPosition", _targetPos];
 _groupData set ["orderTargetPos", _targetPos];
-_groupData set ["orderMode", "GARRISON"];
+_groupData set ["orderMode", _orderMode];
 
 true

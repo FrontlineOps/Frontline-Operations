@@ -44,8 +44,8 @@ private _emptyThreatSector = createHashMapFromArray [
 private _primaryOperation = createHashMapFromArray [
     ["id", ""],
     ["isPrimary", true],
-    ["role", "PROBING"],
-    ["phase", "PROBING"],
+    ["role", "IDLE"],
+    ["phase", "IDLE"],
     ["targetVisible", false],
     ["targetId", ""],
     ["targetName", "Active Front"],
