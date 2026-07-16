@@ -20,7 +20,6 @@ params [
 
 private _metrics = createHashMapFromArray [
     ["emptyPoolSkips", 0],
-    ["phaseSkips", 0],
     ["planCalls", 0],
     ["plansCreated", 0],
     ["planTaskTotal", 0],
@@ -47,17 +46,6 @@ private _goal = _track get "goal";
 _metrics set ["processedTrackId", _trackId];
 
 if (_status == "IDLE") then {
-    if (_goal == "capture_priority_objective" && {(_track get "phase") != "assault"}) exitWith {
-        _metrics set ["phaseSkips", 1];
-        ["GTN", 4, format[
-            "Track %1 phase=%2 objective=%3 - holding attack execution",
-            _trackId,
-            _track get "phase",
-            _track get "phaseObjectiveId"
-        ]] call FLO_fnc_log;
-        _metrics
-    };
-
     private _pool = _track get "groupPool";
     if (_pool isEqualTo []) exitWith {
         _metrics set ["emptyPoolSkips", 1];

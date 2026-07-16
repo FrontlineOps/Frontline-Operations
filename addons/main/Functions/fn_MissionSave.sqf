@@ -446,9 +446,6 @@ try {
             ["WEST", createHashMapFromArray [["gtnEnabled", _westEnabled]]]
         ];
         _data set ["aiCommanders", _aiCommanders];
-
-        private _campaignDirector = FLO_GTN_ResourceManager call ["_getCampaignDirector", []];
-        _data set ["campaignOperation", _campaignDirector call ["_serialize", []]];
     };
     ["SAVE", 3, "Objectives and dual GTN state saved"] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
@@ -499,7 +496,6 @@ private _requiredRootTypes = [
     ["objectives", createHashMap],
     ["virtualGroups", createHashMap],
     ["aiCommanders", createHashMap],
-    ["campaignOperation", createHashMap],
     ["baseDeploymentState", createHashMap],
     ["sideResources", createHashMap],
     ["logisticsNetworkBySide", createHashMap],

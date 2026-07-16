@@ -14,6 +14,5 @@
 params ["_state"];
 
 _state set ["primaryTaskId", ""];
-_state set ["operationId", ""];
+_state set ["assignmentId", ""];
 _state set ["objectiveId", ""];
-_state set ["role", ""];

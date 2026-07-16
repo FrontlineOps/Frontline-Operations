@@ -1,7 +1,7 @@
 /*
  * Function: FLO_fnc_operationsDrawMap
  * Description:
- *   Draws cached operation markers over the native Arma terrain map.
+ *   Draws cached frontline attack markers over the native Arma terrain map.
  */
 
 params ["_map"];
@@ -62,40 +62,6 @@ private _objectiveDrawCount = 0;
         "right"
     ];
 } forEach FLO_OperationsMapEnemyLogisticsIntelDrawData;
-
-{
-    private _threatSector = _x;
-    private _sectorPosition = _threatSector get "position";
-    _map drawEllipse [
-        _sectorPosition,
-        _threatSector get "longAxis",
-        _threatSector get "shortAxis",
-        _threatSector get "direction",
-        [1, 1, 1, 0.18],
-        "#(rgb,8,8,3)color(1,0.72,0.29,0.18)"
-    ];
-    _map drawEllipse [
-        _sectorPosition,
-        _threatSector get "longAxis",
-        _threatSector get "shortAxis",
-        _threatSector get "direction",
-        [1, 0.72, 0.29, 0.9],
-        ""
-    ];
-    _map drawIcon [
-        FLO_OperationsMapIntelIcon,
-        [1, 0.72, 0.29, 1],
-        _sectorPosition,
-        24,
-        24,
-        0,
-        format ["%1 / GRID %2", _threatSector get "label", _threatSector get "grid"],
-        2,
-        0.034,
-        "RobotoCondensedBold",
-        "right"
-    ];
-} forEach FLO_OperationsMapThreatSectors;
 
 {
     _x params [

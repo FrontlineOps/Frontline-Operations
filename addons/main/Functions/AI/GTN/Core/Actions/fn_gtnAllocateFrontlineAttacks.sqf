@@ -1,244 +1,280 @@
 /*
  * Function: FLO_fnc_gtnAllocateFrontlineAttacks
- * Author: Frontline Operations Development Group
- *
  * Description:
- *   Assigns a track's available groups to its exact campaign operation.
- *
- * Arguments:
- * 0: GTN Commander <HASHMAP>
- * 1: Track <HASHMAP>
- *
- * Return Value:
- * Metrics <HASHMAP>
+ *   Fills direct ATTACK deficits across every connected enemy frontline
+ *   objective from the post-garrison, post-defense surplus pool.
  */
 
-params ["_cmdr", "_track"];
+params [
+    ["_cmdr", nil],
+    ["_candidateGroupIds", [], [[]]]
+];
 
 private _metrics = createHashMapFromArray [
-    ["phase", ""],
-    ["phaseObjective", ""],
-    ["poolCount", 0],
+    ["poolCount", count _candidateGroupIds],
+    ["frontlineObjectives", 0],
     ["candidateObjectives", 0],
+    ["saturatedObjectives", 0],
+    ["disconnectedObjectives", 0],
+    ["landRejectedObjectives", 0],
     ["assignedGroups", 0],
     ["openedObjectives", 0],
     ["reinforcedObjectives", 0],
-    ["startingAttackers", 0],
-    ["replacementOrders", 0],
-    ["preflightSkipped", false],
-    ["remainingPool", 0],
+    ["effectiveCap", 0],
+    ["routeRejected", 0],
+    ["remainingPool", count _candidateGroupIds],
     ["candidateBuildMs", 0],
-    ["nearestSelectionMs", 0],
+    ["reserveBandMs", 0],
+    ["selectionMs", 0],
     ["orderMs", 0],
     ["totalMs", 0]
 ];
 
-private _tTotal = diag_tickTime;
-private _pool = +(_track get "groupPool");
-_metrics set ["poolCount", count _pool];
-_metrics set ["remainingPool", count _pool];
-if (_pool isEqualTo []) exitWith { _metrics };
-
-private _director = _cmdr get "_campaignDirector";
-if (isNil "_director") then {
-    throw "FLO_fnc_gtnAllocateFrontlineAttacks: commander has no campaign director";
-};
-
-private _state = _director call ["_getState", []];
-private _operations = _state get "operations";
-private _phase = _track get "phase";
-private _objectiveId = _track get "phaseObjectiveId";
-private _operationId = _track get "phaseOperationId";
-_metrics set ["phase", _phase];
-_metrics set ["phaseObjective", _objectiveId];
-
-if (_phase != "assault") exitWith { _metrics };
-if (_objectiveId == "" || {_operationId == ""}) then {
-    throw "FLO_fnc_gtnAllocateFrontlineAttacks: offensive track has no objective or operation id";
-};
-if !(_operationId in _operations) then {
-    throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: track operation %1 is missing", _operationId];
-};
-private _operation = _operations get _operationId;
-if (
-    (_operation get "phase") != "ASSAULT"
-    || {(_operation get "objectiveId") != _objectiveId}
-    || {(_operation get "attackerSideKey") != (_cmdr get "_sideKey")}
-) then {
-    throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: stale track binding %1/%2", _operationId, _objectiveId];
-};
+if (isNil "_cmdr" || {_candidateGroupIds isEqualTo []}) exitWith { _metrics };
 if !(_cmdr call ["_hasStrategicOrderBudget", []]) exitWith { _metrics };
 
+private _startedAt = diag_tickTime;
 private _ownSide = _cmdr get "_ownSide";
-private _enemySide = _cmdr get "_enemySide";
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
-private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
-private _objective = _objectives get _objectiveId;
-if ((_objective get "owner") != _enemySide) exitWith { _metrics };
-if (([_objectiveId, _objective] call FLO_fnc_campaignResolveAssaultLandAnchor) isEqualTo []) exitWith {
-    ["CAMPAIGN", 2, format [
-        "Operation %1 withdrawing before dispatch: objective %2 has no ground-assault anchor",
-        _operationId,
-        _objectiveId
-    ]] call FLO_fnc_log;
-    _director call ["_completeOperation", [_operationId, "NO_TARGET", "NO_LAND_ASSAULT_ANCHOR"]];
-    _track set ["groupPool", []];
-    _metrics set ["preflightSkipped", true];
-    _metrics set ["remainingPool", 0];
-    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
-    _metrics
-};
-
-private _tCandidateBuild = diag_tickTime;
-private _attackCap = _operation get "assaultActiveTarget";
 private _assignmentCache = _cmdr get "_objectiveAssignmentCache";
 private _activeAttackCounts = _assignmentCache get "attackCounts";
-private _attackCountsByOperation = _assignmentCache get "attackCountsByOperation";
-private _attackGroupsByOperation = _assignmentCache get "attackGroupsByOperation";
-private _attackGroupIds = _assignmentCache get "attackGroupIds";
-private _activeAttackers = if (_operationId in _attackCountsByOperation) then {
-    _attackCountsByOperation get _operationId
-} else {
-    0
-};
-private _startingAttackers = _activeAttackers;
-_metrics set ["startingAttackers", _startingAttackers];
-private _deficit = (_attackCap - _activeAttackers) max 0;
-private _sourceObjectives = _cmdr call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
-_metrics set ["candidateBuildMs", (diag_tickTime - _tCandidateBuild) * 1000];
-
-if (_deficit <= 0 || {_sourceObjectives isEqualTo []}) exitWith { _metrics };
-_metrics set ["candidateObjectives", 1];
-
-private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
-private _poolEntries = [];
-{
-    private _gData = _groups get _x;
-    if (isNil "_gData") then {
-        throw format ["FLO_fnc_gtnAllocateFrontlineAttacks: pool group %1 is missing", _x];
-    };
-    if !([_gData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
-
-    _poolEntries pushBack _x;
-} forEach _pool;
-
-private _decision = _track get "offensiveWaveDecision";
-private _quota = _decision get "quota";
+private _frontlineObjectives = _cmdr call ["_getAttackFrontlineEnemyObjectives", []];
+_metrics set ["frontlineObjectives", count (keys _frontlineObjectives)];
+private _config = _cmdr get "_config";
+private _attackCap = [
+    _config get "attackCoverageMultiplier",
+    _config get "attackObjectiveGroupCap"
+] call FLO_fnc_gtnResolveAttackCoverageCap;
+_metrics set ["effectiveCap", _attackCap];
+private _reserveGraphDepth = ((_cmdr get "_config") get "attackReserveGraphDepth");
+private _fallbackBand = _reserveGraphDepth + 1;
 private _assignmentLimit = [_cmdr, "attackAssignmentsPerCycle"] call FLO_fnc_gtnGetTempoScaledAssignmentLimit;
-private _strategicBudgetRemaining = _cmdr get "_strategicOrderBudgetRemaining";
-if (
-    _quota <= 0
-    || {(count _poolEntries) < _quota}
-    || {_assignmentLimit < _quota}
-    || {_strategicBudgetRemaining < _quota}
-) exitWith {
-    _track set ["groupPool", []];
-    _metrics set ["preflightSkipped", true];
-    _metrics set ["remainingPool", 0];
-    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
-    ["GTN", 3, format [
-        "Operation %1 wave preflight held: quota=%2 eligible=%3 assignmentLimit=%4 strategicBudget=%5",
-        _operationId,
-        _quota,
-        count _poolEntries,
-        _assignmentLimit,
-        _strategicBudgetRemaining
-    ]] call FLO_fnc_log;
+private _idleStrategicOrders = ["PATROL", "DEFEND", ""];
+
+private _candidateBuildStartedAt = diag_tickTime;
+private _rankedCandidates = [];
+{
+    private _objectiveId = _x;
+    private _objective = _frontlineObjectives get _objectiveId;
+    private _activeAttackers = if (_objectiveId in _activeAttackCounts) then {
+        _activeAttackCounts get _objectiveId
+    } else {
+        0
+    };
+    private _deficit = (_attackCap - _activeAttackers) max 0;
+    if (_deficit <= 0) then {
+        _metrics set ["saturatedObjectives", (_metrics get "saturatedObjectives") + 1];
+        continue
+    };
+
+    private _sourceObjectives = _cmdr call ["_getFriendlyAttackSourceObjectives", [_objectiveId]];
+    if (_sourceObjectives isEqualTo []) then {
+        _metrics set ["disconnectedObjectives", (_metrics get "disconnectedObjectives") + 1];
+        continue
+    };
+
+    private _attackPos = [_objectiveId, _objective] call FLO_fnc_gtnResolveAttackLandAnchor;
+    if (_attackPos isEqualTo []) then {
+        _metrics set ["landRejectedObjectives", (_metrics get "landRejectedObjectives") + 1];
+        continue
+    };
+
+    private _pressure = ((_objective get "enemyCount") - (_objective get "friendlyCount")) max 0;
+    _rankedCandidates pushBack [
+        -_pressure,
+        -(_objective get "priority"),
+        _objectiveId,
+        createHashMapFromArray [
+            ["objectiveId", _objectiveId],
+            ["attackPos", _attackPos],
+            ["sourceObjectives", _sourceObjectives],
+            ["activeAttackers", _activeAttackers],
+            ["deficit", _deficit]
+        ]
+    ];
+} forEach (keys _frontlineObjectives);
+_rankedCandidates sort true;
+private _candidateObjectives = _rankedCandidates apply { _x select 3 };
+_metrics set ["candidateBuildMs", (diag_tickTime - _candidateBuildStartedAt) * 1000];
+_metrics set ["candidateObjectives", count _candidateObjectives];
+if (_candidateObjectives isEqualTo []) exitWith {
+    _metrics set ["totalMs", (diag_tickTime - _startedAt) * 1000];
     _metrics
 };
 
-private _approachSourcePos = _track get "frontSectorAnchorPos";
-private _approachRoutes = [
-    _director,
-    _objectiveId,
-    _objective,
-    _approachSourcePos,
-    _poolEntries,
-    _groups
-] call FLO_fnc_campaignBuildAssaultApproachLanes;
-private _routePreflightFailed = false;
+private _poolEntries = [];
+private _poolEntryById = createHashMap;
+private _poolBucketsByHomeObjective = createHashMap;
+private _fallbackPoolIds = [];
 {
     private _groupId = _x;
-    private _semanticWaypoints = (_approachRoutes get _groupId) apply {
-        [_x, "MOVE", "AWARE", "FULL", "STAG COLUMN", "YELLOW", 25]
-    };
-    private _preflight = [
-        (_groups get _groupId) get "position",
-        _semanticWaypoints,
-        true,
-        "GTN_ATTACK_PREFLIGHT",
-        false
-    ] call FLO_fnc_virtualizationResolveLandWaypoints;
-    if !(_preflight select 0) then {
-        _routePreflightFailed = true;
-    };
-} forEach (_poolEntries select [0, _quota]);
+    private _groupData = _groups get _groupId;
+    if (isNil "_groupData") then { continue };
+    if !([_groupData, _ownSide, ["infantry", "motorized", "mechanized", "armor"], _idleStrategicOrders] call FLO_fnc_gtnGroupIsStrategicallyAssignable) then { continue };
 
-if (_routePreflightFailed) exitWith {
-    _track set ["groupPool", []];
-    _metrics set ["preflightSkipped", true];
-    _metrics set ["remainingPool", 0];
-    _metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
-    ["GTN", 2, format ["Operation %1 wave held because one or more groups have no land route", _operationId]] call FLO_fnc_log;
-    _metrics
-};
-private _stop = false;
+    private _homeObjective = _groupData get "homeObjective";
+    _poolEntries pushBack _groupId;
+    _poolEntryById set [_groupId, createHashMapFromArray [
+        ["homeObjective", _homeObjective],
+        ["position", _groupData get "position"]
+    ]];
 
-while {!_stop && {_poolEntries isNotEqualTo []} && {_deficit > 0}} do {
-    if ((_metrics get "assignedGroups") >= _assignmentLimit || {!(_cmdr call ["_hasStrategicOrderBudget", []])}) exitWith {
-        _stop = true;
-    };
-
-    private _tSelection = diag_tickTime;
-    private _groupId = _poolEntries deleteAt 0;
-    _metrics set ["nearestSelectionMs", (_metrics get "nearestSelectionMs") + ((diag_tickTime - _tSelection) * 1000)];
-
-    private _tOrder = diag_tickTime;
-    private _approachRoute = _approachRoutes get _groupId;
-    private _ordered = _cmdr call ["_orderGroupAttack", [_groupId, _approachRoute, _objectiveId, true, _operationId]];
-    _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _tOrder) * 1000)];
-
-    if (_ordered) then {
-        _deficit = _deficit - 1;
-        _activeAttackers = _activeAttackers + 1;
-        _activeAttackCounts set [_objectiveId, _activeAttackers];
-        _attackCountsByOperation set [_operationId, _activeAttackers];
-        private _operationGroups = if (_operationId in _attackGroupsByOperation) then {
-            _attackGroupsByOperation get _operationId
+    if (_homeObjective == "") then {
+        _fallbackPoolIds pushBack _groupId;
+    } else {
+        private _bucket = if (_homeObjective in _poolBucketsByHomeObjective) then {
+            _poolBucketsByHomeObjective get _homeObjective
         } else {
             []
         };
-        _operationGroups pushBack _groupId;
-        _attackGroupsByOperation set [_operationId, _operationGroups];
-        _attackGroupIds pushBackUnique _groupId;
-        _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
+        _bucket pushBack _groupId;
+        _poolBucketsByHomeObjective set [_homeObjective, _bucket];
     };
+} forEach _candidateGroupIds;
+
+private _assignedByObjective = createHashMap;
+private _poolHomeObjectiveIds = keys _poolBucketsByHomeObjective;
+private _continueAllocation = true;
+while {_continueAllocation && {_poolEntries isNotEqualTo []}} do {
+    _continueAllocation = false;
+    private _stopAllocation = false;
+
+    {
+        if (_stopAllocation) then { continue };
+        if ((_metrics get "assignedGroups") >= _assignmentLimit || {!(_cmdr call ["_hasStrategicOrderBudget", []])}) then {
+            _stopAllocation = true;
+            continue;
+        };
+
+        private _deficit = _x get "deficit";
+        if (_deficit <= 0) then { continue };
+
+        private _objectiveId = _x get "objectiveId";
+        private _attackPos = _x get "attackPos";
+        private _reserveBands = if ("reserveBands" in _x) then {
+            _x get "reserveBands"
+        } else {
+            private _reserveStartedAt = diag_tickTime;
+            private _bands = [_cmdr, _x get "sourceObjectives", _reserveGraphDepth] call FLO_fnc_gtnGetCachedReserveBands;
+            _metrics set ["reserveBandMs", (_metrics get "reserveBandMs") + ((diag_tickTime - _reserveStartedAt) * 1000)];
+            _x set ["reserveBands", _bands];
+            _bands
+        };
+        private _bandedSources = if ("bandedSources" in _x) then {
+            _x get "bandedSources"
+        } else {
+            private _banded = [];
+            { _banded pushBack [_reserveBands get _x, _x]; } forEach (keys _reserveBands);
+            _banded sort true;
+            _x set ["bandedSources", _banded];
+            _banded
+        };
+
+        private _selectionStartedAt = diag_tickTime;
+        private _bestGroupId = "";
+        private _bestBand = 1e12;
+        private _bestDistance = 1e12;
+        {
+            _x params ["_band", "_sourceObjectiveId"];
+            if (_band > _bestBand) exitWith {};
+            if !(_sourceObjectiveId in _poolBucketsByHomeObjective) then { continue };
+            {
+                if !(_x in _poolEntryById) then { continue };
+                private _distance = ((_poolEntryById get _x) get "position") distance2D _attackPos;
+                if (_band < _bestBand || {_band == _bestBand && {_distance < _bestDistance}}) then {
+                    _bestGroupId = _x;
+                    _bestBand = _band;
+                    _bestDistance = _distance;
+                };
+            } forEach (_poolBucketsByHomeObjective get _sourceObjectiveId);
+        } forEach _bandedSources;
+
+        if (_bestGroupId == "") then {
+            {
+                if !(_x in _poolEntryById) then { continue };
+                private _distance = ((_poolEntryById get _x) get "position") distance2D _attackPos;
+                if (_fallbackBand < _bestBand || {_fallbackBand == _bestBand && {_distance < _bestDistance}}) then {
+                    _bestGroupId = _x;
+                    _bestBand = _fallbackBand;
+                    _bestDistance = _distance;
+                };
+            } forEach _fallbackPoolIds;
+            {
+                if (_x in _reserveBands) then { continue };
+                {
+                    if !(_x in _poolEntryById) then { continue };
+                    private _distance = ((_poolEntryById get _x) get "position") distance2D _attackPos;
+                    if (_fallbackBand < _bestBand || {_fallbackBand == _bestBand && {_distance < _bestDistance}}) then {
+                        _bestGroupId = _x;
+                        _bestBand = _fallbackBand;
+                        _bestDistance = _distance;
+                    };
+                } forEach (_poolBucketsByHomeObjective get _x);
+            } forEach _poolHomeObjectiveIds;
+        };
+        _metrics set ["selectionMs", (_metrics get "selectionMs") + ((diag_tickTime - _selectionStartedAt) * 1000)];
+        if (_bestGroupId == "") then { continue };
+
+        private _orderStartedAt = diag_tickTime;
+        private _ordered = _cmdr call ["_orderGroupAttack", [_bestGroupId, _attackPos, _objectiveId, true]];
+        _metrics set ["orderMs", (_metrics get "orderMs") + ((diag_tickTime - _orderStartedAt) * 1000)];
+
+        _poolEntryById deleteAt _bestGroupId;
+        _poolEntries deleteAt (_poolEntries find _bestGroupId);
+        if (_ordered) then {
+            _x set ["deficit", _deficit - 1];
+            _metrics set ["assignedGroups", (_metrics get "assignedGroups") + 1];
+            _continueAllocation = true;
+
+            private _assignedHere = if (_objectiveId in _assignedByObjective) then { _assignedByObjective get _objectiveId } else { 0 };
+            if (_assignedHere == 0) then {
+                if ((_x get "activeAttackers") > 0) then {
+                    _metrics set ["reinforcedObjectives", (_metrics get "reinforcedObjectives") + 1];
+                } else {
+                    _metrics set ["openedObjectives", (_metrics get "openedObjectives") + 1];
+                };
+            };
+            _assignedByObjective set [_objectiveId, _assignedHere + 1];
+        } else {
+            _metrics set ["routeRejected", (_metrics get "routeRejected") + 1];
+        };
+    } forEach _candidateObjectives;
+
+    if (_stopAllocation) then { _continueAllocation = false };
 };
+
+_metrics set ["remainingPool", count _poolEntries];
+_metrics set ["totalMs", (diag_tickTime - _startedAt) * 1000];
 
 if ((_metrics get "assignedGroups") > 0) then {
-    private _openingComplete = !(_decision get "openingCommit") || {_activeAttackers >= _attackCap};
-    [_director, _operationId, _metrics get "assignedGroups", _openingComplete] call FLO_fnc_campaignCommitAssaultWave;
-    if (_startingAttackers > 0) then {
-        _metrics set ["reinforcedObjectives", 1];
-        _metrics set ["replacementOrders", _metrics get "assignedGroups"];
-    } else {
-        _metrics set ["openedObjectives", 1];
-    };
+    ["GTN", 3, format [
+        "%1 direct attacks assigned=%2 opened=%3 reinforced=%4 fronts=%5 cap=%6 remaining=%7",
+        _cmdr get "_sideKey",
+        _metrics get "assignedGroups",
+        _metrics get "openedObjectives",
+        _metrics get "reinforcedObjectives",
+        _metrics get "candidateObjectives",
+        _metrics get "effectiveCap",
+        _metrics get "remainingPool"
+    ]] call FLO_fnc_log;
 };
-
-_track set ["groupPool", _poolEntries];
-_metrics set ["remainingPool", count (_track get "groupPool")];
-_metrics set ["totalMs", (diag_tickTime - _tTotal) * 1000];
 
 if ((_metrics get "totalMs") >= 20) then {
     diag_log format [
-        "[FLO][PERF] GTN operation attack allocation %1 op=%2 objective=%3 pool=%4 assigned=%5 nearest=%6 order=%7 total=%8",
+        "[FLO][PERF] GTN direct attacks %1 fronts=%2 eligible=%3 full=%4 disconnected=%5 noLand=%6 cap=%7 pool=%8 assigned=%9 routeRejected=%10 build=%11 reserve=%12 select=%13 order=%14 total=%15",
         _cmdr get "_sideKey",
-        _operationId,
-        _objectiveId,
+        _metrics get "frontlineObjectives",
+        _metrics get "candidateObjectives",
+        _metrics get "saturatedObjectives",
+        _metrics get "disconnectedObjectives",
+        _metrics get "landRejectedObjectives",
+        _metrics get "effectiveCap",
         _metrics get "poolCount",
         _metrics get "assignedGroups",
-        _metrics get "nearestSelectionMs",
+        _metrics get "routeRejected",
+        _metrics get "candidateBuildMs",
+        _metrics get "reserveBandMs",
+        _metrics get "selectionMs",
         _metrics get "orderMs",
         _metrics get "totalMs"
     ];

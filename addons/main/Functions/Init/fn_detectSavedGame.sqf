@@ -61,7 +61,6 @@ private _requiredRootTypes = [
     ["objectives", createHashMap],
     ["virtualGroups", createHashMap],
     ["aiCommanders", createHashMap],
-    ["campaignOperation", createHashMap],
     ["sideResources", createHashMap],
     ["logisticsNetworkBySide", createHashMap],
     ["baseDeploymentState", createHashMap],

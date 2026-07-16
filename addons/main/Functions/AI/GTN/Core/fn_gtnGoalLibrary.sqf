@@ -6,7 +6,6 @@
  * Goal Task Network goal library for the current frontline allocation model.
  * The live GTN path only uses:
  * - protect_critical_assets -> prim_allocate_frontline_defense
- * - capture_priority_objective -> prim_allocate_frontline_attacks
  *
  * Arguments:
  * None
@@ -16,13 +15,12 @@
  *
  * Example:
  * private _goalLib = call FLO_fnc_gtnGoalLibrary;
- * private _goal = _goalLib call ["_getGoal", ["capture_priority_objective"]];
+ * private _goal = _goalLib call ["_getGoal", ["protect_critical_assets"]];
  */
 
 ["GTN", 3, "Initializing GTN Goal Library"] call FLO_fnc_log;
 
 #define GOAL_STRATEGIC "STRATEGIC"
-#define GOAL_OPERATIONAL "OPERATIONAL"
 
 private _goalLibrary = createHashMapObject [[
     ["_goals", createHashMap],
@@ -121,53 +119,9 @@ private _goalLibrary = createHashMapObject [[
             ]]
         ]]];
 
-        _self call ["_registerGoal", [createHashMapFromArray [
-            ["id", "capture_priority_objective"],
-            ["type", GOAL_OPERATIONAL],
-            ["description", "Spend the shared offensive pool across valid frontline attack objectives"],
-            ["preconditions", {
-                params ["_ws", "_params"];
-                count (keys (_ws call ["_getFrontlineEnemyObjectives", []])) > 0
-            }],
-            ["methods", [
-                createHashMapFromArray [
-                    ["id", "frontline_allocation"],
-                    ["score", {
-                        params ["_ws", "_params", "_planner"];
-                        private _forces = _ws call ["_getForces", []];
-                        private _available = _forces get "availableGroups";
-                        if (_available < 1) exitWith { -1 };
-
-                        private _frontlineObjectives = _ws call ["_getFrontlineEnemyObjectives", []];
-                        private _score = 30 + ((count (keys _frontlineObjectives)) * 5);
-                        if (_available >= 6) then { _score = _score + 10 };
-                        if (_available >= 12) then { _score = _score + 15 };
-                        if (_available >= 20) then { _score = _score + 20 };
-
-                        private _situation = _ws call ["_getTacticalSituation", []];
-                        if ((_situation get "momentum") > 0) then {
-                            _score = _score + 10;
-                        };
-
-                        _score
-                    }],
-                    ["subtasks", [
-                        ["prim_allocate_frontline_attacks", []]
-                    ]]
-                ]
-            ]]
-        ]]];
     }],
 
     ["_registerPrimitives", {
-        _self call ["_registerPrimitive", [createHashMapFromArray [
-            ["id", "prim_allocate_frontline_attacks"],
-            ["description", "Allocate attack groups across current frontline objectives"],
-            ["handler", "GTN_allocateFrontlineAttacks"],
-            ["timeout", 30],
-            ["completionCheck", { true }]
-        ]]];
-
         _self call ["_registerPrimitive", [createHashMapFromArray [
             ["id", "prim_allocate_frontline_defense"],
             ["description", "Allocate defense groups across threatened objectives"],

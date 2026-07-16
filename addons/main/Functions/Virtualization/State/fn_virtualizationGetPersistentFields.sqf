@@ -39,7 +39,6 @@
     "orderTargetPos",
     "orderMode",
     "attackObjective",
-    "campaignOperationId",
     "defendObjective",
     "defendLeaseIssuedAt",
     "defendLeaseUntil",

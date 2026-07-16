@@ -392,7 +392,7 @@ class FLO_FactionSelectDialog
 			x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
 			y = FLO_Q(FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H));
 			w = FLO_Q(FACTION_SIDE_FIELD_W);
-			tooltip = "How heavily the WEST commander fills per-objective attack caps";
+			tooltip = "How many groups WEST assigns to each connected frontline attack, up to six";
 		};
 
 		class LabelWestDefenseCoverage: FLO_RscText_Label
@@ -506,7 +506,7 @@ class FLO_FactionSelectDialog
 			x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
 			y = FLO_Q(FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H));
 			w = FLO_Q(FACTION_SIDE_FIELD_W);
-			tooltip = "How heavily the EAST commander fills per-objective attack caps";
+			tooltip = "How many groups EAST assigns to each connected frontline attack, up to six";
 		};
 
 		class LabelEastDefenseCoverage: FLO_RscText_Label

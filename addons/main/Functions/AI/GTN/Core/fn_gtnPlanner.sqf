@@ -16,7 +16,7 @@
  *
  * Example:
  * private _planner = [_goalLib, _worldState] call FLO_fnc_gtnPlanner;
- * private _plan = _planner call ["_plan", ["capture_priority_objective", []]];
+ * private _plan = _planner call ["_plan", ["protect_critical_assets", []]];
  */
 
 params [["_goalLibrary", nil], ["_worldState", nil]];

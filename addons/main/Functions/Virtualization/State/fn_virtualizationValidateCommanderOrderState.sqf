@@ -8,6 +8,15 @@ private _order = _groupData get "commanderOrder";
 if !(_order in ["", "MOVE", "ATTACK", "DEFEND", "GARRISON"]) then {
     throw format ["Virtual group %1 has unsupported commander order %2", _groupId, _order];
 };
+if (_order == "ATTACK") exitWith {
+    if ((_groupData get "attackObjective") == "") then {
+        throw format ["Virtual ATTACK group %1 has no objective", _groupId];
+    };
+    if ((_groupData get "waypoints") isEqualTo []) then {
+        throw format ["Virtual ATTACK group %1 has no route", _groupId];
+    };
+    true
+};
 if (_order != "GARRISON") exitWith { true };
 
 private _objectiveId = _groupData get "garrisonObjective";

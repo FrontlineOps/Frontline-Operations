@@ -38,7 +38,7 @@ if (FLO_IsLoadedSave) then {
         ["underAttack", true], ["captureTime", 0], ["capturedAtDateNum", 0],
         ["capturedFrom", sideUnknown], ["captureGrowthEligibleAtDateNum", 0],
         ["captureGrowthPending", true], ["campaignIntegrationState", ""],
-        ["campaignOperationId", ""], ["campaignCapturedBySideKey", ""],
+        ["campaignCapturedBySideKey", ""],
         ["campaignBenefitsPending", true], ["name", ""], ["markerIds", []],
         ["linkedObjectives", []], ["mergedCount", 0], ["revenueLevel", 0],
         ["developmentLevel", 0], ["developmentProject", createHashMap]

@@ -29,24 +29,17 @@ switch (_event) do {
     case "operations::mapTarget": {
         ["TARGET"] call FLO_fnc_operationsFocusMap;
     };
-    case "operations::mapOperation": {
-        private _operationId = _data get "operationId";
+    case "operations::mapAttack": {
+        private _attackId = _data get "attackId";
         private _matched = false;
         {
-            if ((_x get "id") != _operationId) then { continue };
+            if ((_x get "id") != _attackId) then { continue };
             private _targetId = _x get "targetId";
-            if (_targetId != "") then {
-                ["OBJECTIVE", _targetId] call FLO_fnc_operationsFocusMap;
-            } else {
-                private _sector = _x get "threatSector";
-                if (_sector get "visible") then {
-                    ["POSITION", "", _sector get "position"] call FLO_fnc_operationsFocusMap;
-                };
-            };
+            ["OBJECTIVE", _targetId] call FLO_fnc_operationsFocusMap;
             _matched = true;
-        } forEach (FLO_OperationsLastSnapshot get "operations");
+        } forEach (FLO_OperationsLastSnapshot get "attacks");
         if (!_matched) then {
-            ["UI", 4, format ["Unknown operation focus request: %1", _operationId]] call FLO_fnc_log;
+            ["UI", 4, format ["Unknown attack focus request: %1", _attackId]] call FLO_fnc_log;
         };
     };
     case "operations::selectObjective": {

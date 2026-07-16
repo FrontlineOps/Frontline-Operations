@@ -1,18 +1,4 @@
-/*
- * Function: FLO_fnc_gtnReleaseCompletedAttackAssignments
- * Author: Frontline Operations Development Group
- *
- * Description:
- *   Retains ATTACK orders owned by an active formal operation. Expired and
- *   mismatched orders return to reserve.
- *
- * Arguments:
- * 0: GTN Commander <HASHMAP>
- *
- * Return Value:
- * Metrics <HASHMAP>
- */
-
+/* Releases direct ATTACK groups whose objective is missing or no longer enemy-held. */
 params ["_cmdr"];
 
 private _metrics = createHashMapFromArray [
@@ -24,52 +10,42 @@ private _attackGroupIds = +((_cmdr get "_objectiveAssignmentCache") get "attackG
 _metrics set ["taskedCount", count _attackGroupIds];
 if (_attackGroupIds isEqualTo []) exitWith { _metrics };
 
-private _director = _cmdr get "_campaignDirector";
-if (isNil "_director") then {
-    throw "FLO_fnc_gtnReleaseCompletedAttackAssignments: commander has no campaign director";
-};
-
-private _state = _director call ["_getState", []];
-private _operations = _state get "operations";
-
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
 private _objectives = (_cmdr get "_worldState") call ["_getObjectives", []];
 private _enemySide = _cmdr get "_enemySide";
 private _releaseIds = [];
-
 {
-    private _groupId = _x;
-    private _gData = _groups get _groupId;
-    if (isNil "_gData") then { continue };
-    if ((_gData get "commanderOrder") != "ATTACK") then { continue };
+    private _groupData = _groups get _x;
+    if (isNil "_groupData") then { continue };
+    if ((_groupData get "commanderOrder") != "ATTACK") then { continue };
 
-    private _operationId = _gData get "campaignOperationId";
-    private _objectiveId = _gData get "attackObjective";
-    private _retain = false;
-    if (_operationId in _operations) then {
-        private _operation = _operations get _operationId;
-        _retain = (_operation get "phase") == "ASSAULT"
-            && {(_operation get "attackerSideKey") == (_cmdr get "_sideKey")}
-            && {(_operation get "objectiveId") == _objectiveId}
-            && {_objectiveId in _objectives}
-            && {((_objectives get _objectiveId) get "owner") == _enemySide};
+    private _objectiveId = _groupData get "attackObjective";
+    if (_objectiveId == "") then {
+        ["GTN", 1, format ["ATTACK group %1 has no objective", _x]] call FLO_fnc_log;
+        throw format ["ATTACK group %1 has no objective", _x];
+    };
+    if !(_objectiveId in _objectives) then {
+        private _message = format ["ATTACK group %1 references missing objective %2", _x, _objectiveId];
+        ["GTN", 1, _message] call FLO_fnc_log;
+        throw _message;
     };
 
-    if (!_retain) then {
-        _releaseIds pushBack _groupId;
+    private _objective = _objectives get _objectiveId;
+    if ((_objective get "owner") != _enemySide) then {
+        _releaseIds pushBack _x;
     };
 } forEach _attackGroupIds;
 
 {
-    private _gData = _groups get _x;
-    [_x, [], true, "GTN_OPERATION_RELEASE"] call FLO_fnc_updateVirtualGroupWaypoints;
-    [_gData] call FLO_fnc_virtualizationClearMissionLock;
+    private _groupData = _groups get _x;
+    [_x, [], true, "GTN_ATTACK_RELEASE"] call FLO_fnc_updateVirtualGroupWaypoints;
+    [_groupData] call FLO_fnc_virtualizationClearMissionLock;
 } forEach _releaseIds;
 
 if (_releaseIds isNotEqualTo []) then {
     _cmdr call ["_releaseGroups", [_releaseIds, ""]];
     _metrics set ["releasedCount", count _releaseIds];
-    ["GTN", 3, format ["Released %1 expired operation attack assignments", count _releaseIds]] call FLO_fnc_log;
+    ["GTN", 3, format ["%1 released %2 completed direct attack assignments", _cmdr get "_sideKey", count _releaseIds]] call FLO_fnc_log;
 };
 
 _metrics

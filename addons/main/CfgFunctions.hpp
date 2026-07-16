@@ -67,7 +67,6 @@ class FLO {
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
         class gtnReleaseCompletedAttackAssignments {};
-        class gtnRetaskAttackRoute {};
         class gtnRequestFrontlineArtillery {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
@@ -76,8 +75,6 @@ class FLO {
     class GTNCoreLogic {
         file = "\z\flo\addons\main\Functions\AI\GTN\Core\Logic";
 
-        class gtnAllocateAttackTrackPools {};
-        class gtnCreateAttackTrack {};
         class gtnBuildDefenseObjectiveProfiles {};
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
@@ -90,11 +87,11 @@ class FLO {
         class gtnGetTempoScaledAssignmentLimit {};
         class gtnBuildObjectiveReserveBands {};
         class gtnExecuteTrackCycle {};
-        class gtnGetAttackPressureProfile {};
         class gtnGroupIsStrategicallyAssignable {};
         class gtnLogStrategicOrderPerf {};
         class gtnPickObjectiveGarrisonPosition {};
-        class gtnUpdateAttackTrackPhases {};
+        class gtnResolveAttackCoverageCap {};
+        class gtnResolveAttackLandAnchor {};
     };
 
     class GTNIntel {

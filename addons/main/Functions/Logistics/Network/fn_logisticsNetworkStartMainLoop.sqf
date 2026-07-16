@@ -67,7 +67,7 @@ _net set ["_loopStarted", true];
                         if (_dt > 0.01) then {
                             private _perf = _net get "_lastPerf";
                             diag_log format [
-                                "[FLO][PERF] Logistics %1 total=%2ms queue=%3 needed=%4 targets=%5 attempted=%6 created=%7 status=%8 | phases refresh=%9 compose=%10 reserve=%11 target=%12 dispatch=%13 | failures pool=%14 funds=%15 target=%16 delivery=%17 supply=%18 changed=%19 create=%20 | resources=%21->%22",
+                                "[FLO][PERF] Logistics %1 total=%2ms queue=%3 needed=%4 targets=%5 attempted=%6 created=%7 status=%8 | phases refresh=%9 compose=%10 reserve=%11 target=%12 dispatch=%13 | failures pool=%14 funds=%15 target=%16 delivery=%17 supply=%18 changed=%19 create=%20 | targetReject notIntegrated=%21 secureRatio=%22 collapseInbound=%23 inboundCap=%24 batchCap=%25 | resources=%26->%27",
                                 _net get "_managedSideKey",
                                 _dt * 1000,
                                 count (_net get "_reinforcementQueue"),
@@ -88,6 +88,11 @@ _net set ["_loopStarted", true];
                                 _perf get "failNoSupplySource",
                                 _perf get "failSupplyChanged",
                                 _perf get "failCreateReplacement",
+                                _perf get "targetRejectNotIntegrated",
+                                _perf get "targetRejectSecureRatio",
+                                _perf get "targetRejectCollapseInboundCap",
+                                _perf get "targetRejectInboundCap",
+                                _perf get "targetRejectBatchCap",
                                 _perf get "resourcesBefore",
                                 _perf get "resourcesAfter"
                             ];

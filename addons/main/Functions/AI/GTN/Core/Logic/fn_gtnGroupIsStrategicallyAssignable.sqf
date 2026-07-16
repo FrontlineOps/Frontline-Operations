@@ -12,8 +12,7 @@
  *   1: Own side <SIDE>
  *   2: Allowed group types <ARRAY> - Optional
  *   3: Allowed current orders <ARRAY> - Optional. Empty skips order filtering.
- *   4: Allowed campaign reservation owner <STRING> - Optional
- *   5: Rejection counters <HASHMAP> - Optional
+ *   4: Rejection counters <HASHMAP> - Optional
  *
  * Return Value:
  *   BOOL
@@ -24,7 +23,6 @@ params [
     ["_ownSide", east, [east]],
     ["_allowedGroupTypes", [], [[]]],
     ["_allowedOrders", [], [[]]],
-    ["_reservationOwnerId", "", [""]],
     ["_rejectionCounts", createHashMap, [createHashMap]]
 ];
 
@@ -49,11 +47,6 @@ if ((_groupData get "missionLock") != "") exitWith { ["MISSION_LOCK"] call _reje
 if ((_groupData get "replacementState") != "") exitWith { ["REPLACEMENT"] call _reject };
 if ((_groupData get "attachedTo") != "" || {(_groupData get "mountedIn") != ""}) exitWith {
     ["TRANSPORT_BOUND"] call _reject
-};
-
-private _reservationId = _groupData get "campaignOperationId";
-if (_reservationId != "" && {_reservationId != _reservationOwnerId}) exitWith {
-    ["CAMPAIGN_RESERVED"] call _reject
 };
 
 private _currentOrder = _groupData get "commanderOrder";

@@ -108,14 +108,14 @@ switch (toUpper _alertType) do {
     };
     case "INTEL_COMMANDER_TARGET": {
         private _objectiveName = if ((count _payload) >= 1) then { _payload select 0 } else { "" };
-        private _phase = if ((count _payload) >= 2) then { toUpper (_payload select 1) } else { "" };
+        private _intent = if ((count _payload) >= 2) then { toUpper (_payload select 1) } else { "" };
         _markerText = if (_objectiveName != "") then {
             format ["ENY TARGET %1", _objectiveName]
         } else {
             "ENY TARGET"
         };
-        if (_phase == "ASSAULT") then {
-            _markerText = _markerText + " (ASSAULT)";
+        if (_intent != "") then {
+            _markerText = _markerText + format [" (%1)", _intent];
         };
         _markerColor = if ((count _payload) >= 3) then { _payload select 2 } else { _markerColor };
         _iconMarkerType = "mil_objective";

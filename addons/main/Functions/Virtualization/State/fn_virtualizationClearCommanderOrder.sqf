@@ -16,7 +16,6 @@ params ["_groupData"];
 _groupData set ["orderTargetPos", []];
 _groupData set ["orderMode", ""];
 _groupData set ["attackObjective", ""];
-_groupData set ["campaignOperationId", ""];
 _groupData set ["defendObjective", ""];
 _groupData set ["defendLeaseIssuedAt", -1];
 _groupData set ["defendLeaseUntil", -1];

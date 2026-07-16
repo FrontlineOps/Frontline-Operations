@@ -18,7 +18,7 @@ private _resourceManager = createHashMapObject [[
     ["_virtGroupRemovedEH", -1],
     ["_dirtyEventEhIds", createHashMap],
     ["_loopPfhsBySide", createHashMap],
-    ["_campaignDirector", nil],
+    ["_integrationPfhId", -1],
 
     ["_sideKey", {
         params ["_side"];
@@ -35,10 +35,6 @@ private _resourceManager = createHashMapObject [[
 
     ["_getAllCommanders", {
         _self get "_gtnCommandersBySide"
-    }],
-
-    ["_getCampaignDirector", {
-        _self get "_campaignDirector"
     }],
 
     ["_onVirtualGroupRemoved", {
@@ -92,8 +88,6 @@ private _resourceManager = createHashMapObject [[
                 _mgr call ["_markCommanderDirty", [_newOwner, "OBJECTIVE_FLIPPED", [_objectiveId, _previousOwner, _newOwner]]];
             };
 
-            private _director = _mgr get "_campaignDirector";
-            _director call ["_onObjectiveFlipped", [_objectiveId, _previousOwner, _newOwner]];
         }] call CBA_fnc_addEventHandler];
 
         _ehIds set ["supplyChainChanged", ["FLO_Logistics_SupplyChainChanged", {
@@ -158,6 +152,16 @@ private _resourceManager = createHashMapObject [[
         };
     }],
 
+    ["_startIntegrationLoop", {
+        if ((_self get "_integrationPfhId") >= 0) exitWith {};
+
+        private _pfhId = [{
+            [] call FLO_fnc_campaignProcessIntegrations;
+        }, 30] call CBA_fnc_addPerFrameHandler;
+        _self set ["_integrationPfhId", _pfhId];
+        ["CAMPAIGN", 3, "Territory integration worker started (30s)"] call FLO_fnc_log;
+    }],
+
     ["_initializeSideCommander", {
         params ["_side"];
 
@@ -169,13 +173,8 @@ private _resourceManager = createHashMapObject [[
         private _gtn = [_self, _sideCtx] call FLO_fnc_gtnCommander;
 
         if (!isNil "_gtn") then {
-            private _director = _self get "_campaignDirector";
-            if (isNil "_director") then {
-                throw "GTN Resource Manager created a commander before the campaign director";
-            };
-            _gtn set ["_campaignDirector", _director];
             (_self get "_gtnCommandersBySide") set [_key, _gtn];
-            ["GTN Resource Manager", 2, format["%1 commander initialized", _key]] call FLO_fnc_log;
+            ["GTN Resource Manager", 3, format["%1 commander initialized", _key]] call FLO_fnc_log;
         } else {
             ["GTN Resource Manager", 1, format["Failed to initialize %1 commander", _key]] call FLO_fnc_log;
         };
@@ -187,23 +186,8 @@ private _resourceManager = createHashMapObject [[
         ["GTN Resource Manager", 3, "Initializing dual GTN subsystem"] call FLO_fnc_log;
 
         _self call ["_bindVirtualizationEvents", []];
-
-        private _director = _self get "_campaignDirector";
-        if (isNil "_director") then {
-            private _restoreCampaignState = FLO_IsLoadedSave;
-            private _savedCampaignState = if (_restoreCampaignState) then {
-                FLO_SavedGameData get "campaignOperation"
-            } else {
-                createHashMap
-            };
-
-            _director = [
-                _self,
-                _savedCampaignState,
-                _restoreCampaignState
-            ] call FLO_fnc_campaignDirector;
-            _self set ["_campaignDirector", _director];
-        };
+        _self call ["_bindDirtyEvents", []];
+        _self call ["_startIntegrationLoop", []];
 
         private _map = _self get "_gtnCommandersBySide";
         if ((keys _map) isNotEqualTo []) exitWith {
@@ -212,7 +196,6 @@ private _resourceManager = createHashMapObject [[
                 _y call ["_start", []];
                 _self call ["_startCommanderLoop", [_y]];
             } forEach _map;
-            _director call ["_start", []];
             ["GTN Resource Manager", 3, "Dual GTN already initialized"] call FLO_fnc_log;
         };
 
@@ -230,9 +213,6 @@ private _resourceManager = createHashMapObject [[
             _y call ["_start", []];
             _self call ["_startCommanderLoop", [_y]];
         } forEach FLO_GTN_CommandersBySide;
-        _self call ["_bindDirtyEvents", []];
-        _director call ["_start", []];
-
         // Publish only lightweight side status for clients/debug UI.
         private _pubState = createHashMapFromArray [
             ["EAST", !isNil {(_self get "_gtnCommandersBySide") get "EAST"}],
@@ -241,7 +221,7 @@ private _resourceManager = createHashMapObject [[
         FLO_GTN_CommandersBySideState = _pubState;
         publicVariable "FLO_GTN_CommandersBySideState";
 
-        ["GTN Resource Manager", 2, format["Dual GTN ready (%1 commanders)", count (keys (_self get "_gtnCommandersBySide"))]] call FLO_fnc_log;
+        ["GTN Resource Manager", 3, format["Dual GTN ready (%1 commanders)", count (keys (_self get "_gtnCommandersBySide"))]] call FLO_fnc_log;
     }]
 ]];
 

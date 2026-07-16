@@ -4,7 +4,7 @@ if (FLO_OperationsKeybindInitialized) exitWith { true };
 [
     "FLO",
     "openOperationsPanel",
-    ["Open Operations Panel", "Open the FLO theater operations panel."],
+    ["Open Command Net", "Open the FLO theater command net."],
     { [] call FLO_fnc_operationsOpenDialog; true },
     {},
     [24, [true, true, false]],
