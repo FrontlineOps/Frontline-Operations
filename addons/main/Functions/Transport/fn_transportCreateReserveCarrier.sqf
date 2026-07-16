@@ -66,7 +66,6 @@ if (_groupId isEqualTo "") exitWith { "" };
 [_groupId, [selectRandom _assetPool]] call FLO_fnc_virtualizationSetAssetCompositionById;
 [_groupId, createHashMapFromArray [
     ["transportRole", true],
-    ["commanderOrder", "TRANSPORT"],
     ["homeObjective", _reserveObjectiveId]
 ]] call FLO_fnc_virtualizationPatchGroup;
 private _groupData = [_groupId] call FLO_fnc_transportGetTrackedGroup;
