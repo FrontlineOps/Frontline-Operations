@@ -85,9 +85,10 @@ if (_realWaypoints isNotEqualTo [] && {_currentWpIndex < count _realWaypoints}) 
         private _wpPos = waypointPosition _wp;
 
         if ([_wpPos] call FLO_fnc_validateGroupPosition) then {
+            private _realWaypointType = toUpper (waypointType _wp);
             private _savedWaypoint = [
                 _wpPos,
-                waypointType _wp,
+                _realWaypointType,
                 waypointBehaviour _wp,
                 waypointSpeed _wp,
                 waypointFormation _wp,
@@ -96,11 +97,36 @@ if (_realWaypoints isNotEqualTo [] && {_currentWpIndex < count _realWaypoints}) 
             ];
 
             private _matchedIndex = -1;
+            private _positionMatches = [];
+            private _typeMatches = [];
             if (_authoritativeCursor < count _authoritativeWaypoints) then {
                 for "_candidateIndex" from _authoritativeCursor to (count _authoritativeWaypoints - 1) do {
                     private _candidate = _authoritativeWaypoints select _candidateIndex;
-                    if (((_candidate select 0) distance2D _wpPos) < 1) exitWith {
-                        _matchedIndex = _candidateIndex;
+                    if (((_candidate select 0) distance2D _wpPos) < 1) then {
+                        _positionMatches pushBack _candidateIndex;
+                        private _candidateType = toUpper (_candidate select 1);
+                        if (_candidateType == _realWaypointType) then {
+                            _typeMatches pushBack _candidateIndex;
+                        };
+                    };
+                };
+            };
+
+            if (_typeMatches isNotEqualTo []) then {
+                _matchedIndex = _typeMatches select 0;
+            } else {
+                if ((count _positionMatches) == 1) then {
+                    _matchedIndex = _positionMatches select 0;
+                } else {
+                    if ((count _positionMatches) > 1) then {
+                        ["VIRTUALIZATION", 1, format [
+                            "Ambiguous physical waypoint capture group=%1 position=%2 type=%3 candidates=%4",
+                            _groupId,
+                            _wpPos,
+                            _realWaypointType,
+                            _positionMatches
+                        ]] call FLO_fnc_log;
+                        throw format ["Ambiguous physical waypoint capture for %1", _groupId];
                     };
                 };
             };
