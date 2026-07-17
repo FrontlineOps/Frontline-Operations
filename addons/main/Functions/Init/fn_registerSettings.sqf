@@ -27,13 +27,32 @@ if (isNil "_settingsFn") exitWith {
 private _campaignLaunchMode = [
     "FLO_CampaignLaunchMode",
     "LIST",
-    ["Campaign launch mode", "Fresh setup opens the FLO setup dialog. Continue saved progress loads a valid saved campaign. Reset saved progress deletes the saved campaign and opens fresh setup."],
+    ["Campaign launch mode", "Continue loads valid saved progress when available and opens setup when no save exists. Reset deletes saved progress and opens setup."],
     ["FLO", "Campaign"],
-    [[0, 1, 2], ["Fresh setup", "Continue saved progress", "Reset saved progress"], 0],
+    [[1, 2], ["Continue saved progress", "Reset saved progress"], 0],
     1
 ];
 
 _campaignLaunchMode call _settingsFn;
+
+FLO_AutosavePFH = -1;
+FLO_MissionSaveInProgress = false;
+
+private _autosaveInterval = [
+    "FLO_AutosaveIntervalMinutes",
+    "LIST",
+    ["Automatic save interval", "How often the server saves campaign progress after initialization. Disabled leaves saving manual."],
+    ["FLO", "Campaign"],
+    [[0, 5, 10, 15, 30, 60], ["Disabled", "Every 5 minutes", "Every 10 minutes", "Every 15 minutes", "Every 30 minutes", "Every 60 minutes"], 1],
+    1,
+    {
+        if (isServer && {!isNil "FLO_MissionReady"} && {FLO_MissionReady}) then {
+            call FLO_fnc_saveConfigureAutosave;
+        };
+    }
+];
+
+_autosaveInterval call _settingsFn;
 
 private _debugLevel = [
     "FLO_Debug_Level",

@@ -167,6 +167,7 @@ class VirtualizationState {
     class virtualizationValidateGroup {};
     class virtualizationValidateSavedGroup {};
     class virtualizationValidateCommanderOrderState {};
+    class virtualizationResolveRouteCompletionState {};
     class virtualizationValidateWaypointState {};
     class virtualizationValidateRegistry {};
     class virtualizationSerializeRegistry {};

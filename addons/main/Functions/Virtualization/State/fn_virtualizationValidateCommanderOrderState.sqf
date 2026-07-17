@@ -12,8 +12,18 @@ if (_order == "ATTACK") exitWith {
     if ((_groupData get "attackObjective") == "") then {
         throw format ["Virtual ATTACK group %1 has no objective", _groupId];
     };
-    if ((_groupData get "waypoints") isEqualTo []) then {
-        throw format ["Virtual ATTACK group %1 has no route", _groupId];
+    private _waypoints = _groupData get "waypoints";
+    private _state = _groupData get "state";
+    if (_waypoints isEqualTo [] && {_state != "holding"}) then {
+        private _error = format [
+            "Virtual ATTACK group %1 has no route while state=%2 objective=%3 target=%4",
+            _groupId,
+            _state,
+            _groupData get "attackObjective",
+            _groupData get "orderTargetPos"
+        ];
+        ["VIRTUALIZATION", 1, _error] call FLO_fnc_log;
+        throw _error;
     };
     true
 };

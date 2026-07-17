@@ -12,8 +12,10 @@ class FLO {
     class Save {
         file = "\z\flo\addons\main\Functions\Save";
 
+        class saveConfigureAutosave {};
         class saveGetAllCargo {};
         class saveGetCompressedDamage {};
+        class saveRequest {};
     };
 
     // === INITIALIZATION PHASE SYSTEM ===

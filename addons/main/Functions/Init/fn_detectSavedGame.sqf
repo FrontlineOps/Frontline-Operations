@@ -2,16 +2,17 @@
 if (!isServer) exitWith { [false, nil] };
 
 ["SAVE_DETECT", 3, "Checking for saved game data"] call FLO_fnc_log;
-private _launchMode = missionNamespace getVariable ["FLO_CampaignLaunchMode", 0];
+private _launchMode = FLO_CampaignLaunchMode;
+if !(_launchMode in [1, 2]) then {
+    private _error = format ["Campaign launch mode %1 is unsupported", _launchMode];
+    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
+    throw _error;
+};
 
 if (_launchMode isEqualTo 2) exitWith {
     ["SAVE_DETECT", 3, "Reset saved progress requested"] call FLO_fnc_log;
     missionProfileNamespace setVariable ["FLO_MissionData", nil];
     saveMissionProfileNamespace;
-    [false, nil]
-};
-if (_launchMode != 1) exitWith {
-    ["SAVE_DETECT", 3, "Fresh setup selected; saved progress will not auto-load"] call FLO_fnc_log;
     [false, nil]
 };
 
