@@ -9,7 +9,7 @@ FLO_GTN_PlayerTasks = createHashMap;
     params ["_interval"];
     waitUntil {
         sleep 1;
-        FLO_MissionReady && {!isNil "FLO_GTN_CommandersBySide"}
+        FLO_MissionReady && {keys (call FLO_fnc_gtnGetCommandersBySide) isNotEqualTo []}
     };
 
     while {FLO_GTN_PlayerTaskBridgeRunning} do {

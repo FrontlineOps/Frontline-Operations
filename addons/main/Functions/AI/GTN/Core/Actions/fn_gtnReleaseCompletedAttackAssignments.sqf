@@ -38,8 +38,11 @@ private _releaseIds = [];
 
 {
     private _groupData = _groups get _x;
-    [_x, [], true, "GTN_ATTACK_RELEASE"] call FLO_fnc_updateVirtualGroupWaypoints;
+    [_groupData] call FLO_fnc_virtualizationClearCommanderOrder;
     [_groupData] call FLO_fnc_virtualizationClearMissionLock;
+    if !([_x, [], true, "GTN_ATTACK_RELEASE"] call FLO_fnc_updateVirtualGroupWaypoints) then {
+        ["GTN", 2, format ["Route clear was rejected while releasing completed ATTACK group %1", _x]] call FLO_fnc_log;
+    };
 } forEach _releaseIds;
 
 if (_releaseIds isNotEqualTo []) then {

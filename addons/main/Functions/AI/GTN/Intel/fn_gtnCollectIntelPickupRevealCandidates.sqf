@@ -22,7 +22,9 @@ private _enemySideCtx = [_enemySide] call FLO_fnc_gtnSideContext;
 private _enemySideKey = _enemySideCtx get "sideKey";
 private _enemyColor = ["ColorBLUFOR", "ColorOPFOR"] select (_enemySide isEqualTo east);
 
-private _enemyCommander = FLO_GTN_CommandersBySide get _enemySideKey;
+private _enemyCommander = [_enemySide] call FLO_fnc_gtnGetCommanderBySide;
+if (isNil "_enemyCommander") exitWith { _candidates };
+
 private _assignmentCache = _enemyCommander get "_objectiveAssignmentCache";
 private _attackCounts = _assignmentCache get "attackCounts";
 

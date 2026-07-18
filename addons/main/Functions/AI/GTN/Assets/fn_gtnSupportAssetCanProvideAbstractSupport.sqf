@@ -29,8 +29,9 @@ private _objectiveId = _groupData get "homeObjective";
 if (_objectiveId == "") then {
     _objectiveId = [(_groupData get "position")] call FLO_fnc_getNearestObjective;
 };
-private _sideKey = ([_side] call FLO_fnc_gtnSideContext) get "sideKey";
-private _commander = FLO_GTN_CommandersBySide get _sideKey;
+private _commander = [_side] call FLO_fnc_gtnGetCommanderBySide;
+if (isNil "_commander") exitWith { false };
+
 private _worldState = _commander get "_worldState";
 private _objectiveState = (_worldState call ["_getObjectives", []]) get _objectiveId;
 private _owner = _objectiveState get "owner";

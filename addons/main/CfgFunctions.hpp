@@ -175,6 +175,10 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\ResourceManager";
 
         class gtnResourceManager    {};
+        class gtnResourceManagerProxy {};
+        class gtnGetResourceManager {};
+        class gtnGetCommandersBySide {};
+        class gtnGetCommanderBySide {};
         class gtnConfig             {};
     };
 
@@ -391,6 +395,7 @@ class FLO {
         class factionIsUnsignedInt {};
         class factionMergePairs {};
         class factionApplyTuningOverrides {};
+        class factionApplyAutoFriendlyGlobals {};
         class factionBuildTuningHandle {};
         class factionPickUnitByRole {};
         class factionSanitizeCompositionForCatalog {};

@@ -656,8 +656,11 @@ if (FLO_IsLoadedSave) then {
     ["INIT", 3, format ["Restored %1 supply crates from current save", _loadedCrates]] call FLO_fnc_log;
 
     // Restore the current dual-commander state.
-    if (isNil "FLO_GTN_ResourceManager") then {
+    private _liveGtnManager = call FLO_fnc_gtnGetResourceManager;
+    if (isNil "_liveGtnManager") then {
         FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
+    } else {
+        FLO_GTN_ResourceManager = call FLO_fnc_gtnResourceManagerProxy;
     };
 
     private _cmd = _savedData get "aiCommanders";
@@ -797,9 +800,11 @@ if (isNil "FLO_GTN_CombatLastByObjective") then {
 
 diag_log "[FLO_INIT_P5] Starting GTN Resource Manager...";
 if (!isNil "FLO_fnc_gtnResourceManager") then {
-    if (isNil "FLO_GTN_ResourceManager") then {
+    private _liveGtnManager = call FLO_fnc_gtnGetResourceManager;
+    if (isNil "_liveGtnManager") then {
         FLO_GTN_ResourceManager = [] call FLO_fnc_gtnResourceManager;
     } else {
+        FLO_GTN_ResourceManager = call FLO_fnc_gtnResourceManagerProxy;
         FLO_GTN_ResourceManager call ["_initializeGTN", []];
     };
     diag_log "[FLO_INIT_P5] GTN Resource Manager started";

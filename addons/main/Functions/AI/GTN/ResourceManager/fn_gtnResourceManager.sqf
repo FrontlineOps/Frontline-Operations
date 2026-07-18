@@ -10,6 +10,11 @@
 
 ["GTN Resource Manager", 3, "Starting GTN Resource Manager"] call FLO_fnc_log;
 
+private _existingManager = call FLO_fnc_gtnGetResourceManager;
+if (!isNil "_existingManager") exitWith {
+    call FLO_fnc_gtnResourceManagerProxy
+};
+
 private _config = call FLO_fnc_gtnConfig;
 
 private _resourceManager = createHashMapObject [[
@@ -49,10 +54,11 @@ private _resourceManager = createHashMapObject [[
         private _ehId = _self get "_virtGroupRemovedEH";
         if (_ehId >= 0) exitWith {};
 
-        missionNamespace setVariable ["FLO_GTN_ResourceManagerRef", _self];
+        uiNamespace setVariable ["FLO_GTN_ResourceManagerLive", _self];
         private _newEhId = ["FLO_Virtualization_GroupRemoved", {
             params ["_groupId"];
-            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            private _mgr = call FLO_fnc_gtnGetResourceManager;
+            if (isNil "_mgr") exitWith {};
             _mgr call ["_onVirtualGroupRemoved", [_groupId]];
         }] call CBA_fnc_addEventHandler;
 
@@ -73,12 +79,12 @@ private _resourceManager = createHashMapObject [[
         private _ehIds = _self get "_dirtyEventEhIds";
         if ((keys _ehIds) isNotEqualTo []) exitWith {};
 
-        missionNamespace setVariable ["FLO_GTN_ResourceManagerRef", _self];
+        uiNamespace setVariable ["FLO_GTN_ResourceManagerLive", _self];
 
         _ehIds set ["objectiveFlipped", ["FLO_Objective_Flipped", {
             params ["_objectiveId", "_previousOwner", "_newOwner"];
 
-            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            private _mgr = call FLO_fnc_gtnGetResourceManager;
             if (isNil "_mgr") exitWith {};
 
             if (_previousOwner in [east, west]) then {
@@ -93,7 +99,7 @@ private _resourceManager = createHashMapObject [[
         _ehIds set ["supplyChainChanged", ["FLO_Logistics_SupplyChainChanged", {
             params ["_managedSide", "_hqObjectiveId", "_nodeIds", "_signature"];
 
-            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            private _mgr = call FLO_fnc_gtnGetResourceManager;
             if (isNil "_mgr") exitWith {};
 
             _mgr call ["_markCommanderDirty", [_managedSide, "SUPPLY_CHAIN_CHANGED", [_hqObjectiveId, _nodeIds, _signature]]];
@@ -102,7 +108,7 @@ private _resourceManager = createHashMapObject [[
         _ehIds set ["artilleryMissionStateChanged", ["FLO_GTN_ArtilleryMissionStateChanged", {
             params ["_side", "_missionId", "_state"];
 
-            private _mgr = missionNamespace getVariable "FLO_GTN_ResourceManagerRef";
+            private _mgr = call FLO_fnc_gtnGetResourceManager;
             if (isNil "_mgr") exitWith {};
 
             _mgr call ["_markCommanderDirty", [_side, "ARTILLERY_STATE_CHANGED", [_missionId, _state]]];
@@ -191,7 +197,14 @@ private _resourceManager = createHashMapObject [[
 
         private _map = _self get "_gtnCommandersBySide";
         if ((keys _map) isNotEqualTo []) exitWith {
-            FLO_GTN_CommandersBySide = _map;
+            uiNamespace setVariable ["FLO_GTN_CommandersBySideLive", _map];
+            private _pubState = createHashMapFromArray [
+                ["EAST", !isNil {_map get "EAST"}],
+                ["WEST", !isNil {_map get "WEST"}]
+            ];
+            FLO_GTN_CommandersBySide = _pubState;
+            FLO_GTN_CommandersBySideState = _pubState;
+            publicVariable "FLO_GTN_CommandersBySideState";
             {
                 _y call ["_start", []];
                 _self call ["_startCommanderLoop", [_y]];
@@ -207,17 +220,18 @@ private _resourceManager = createHashMapObject [[
         } forEach _sides;
 
         // Keep commander objects server-local. They contain circular references
-        // and are not safe to publicVariable.
-        FLO_GTN_CommandersBySide = _self get "_gtnCommandersBySide";
+        // and are not safe to publish or leave in missionNamespace.
+        uiNamespace setVariable ["FLO_GTN_CommandersBySideLive", _self get "_gtnCommandersBySide"];
         {
             _y call ["_start", []];
             _self call ["_startCommanderLoop", [_y]];
-        } forEach FLO_GTN_CommandersBySide;
+        } forEach (_self get "_gtnCommandersBySide");
         // Publish only lightweight side status for clients/debug UI.
         private _pubState = createHashMapFromArray [
             ["EAST", !isNil {(_self get "_gtnCommandersBySide") get "EAST"}],
             ["WEST", !isNil {(_self get "_gtnCommandersBySide") get "WEST"}]
         ];
+        FLO_GTN_CommandersBySide = _pubState;
         FLO_GTN_CommandersBySideState = _pubState;
         publicVariable "FLO_GTN_CommandersBySideState";
 
@@ -225,7 +239,9 @@ private _resourceManager = createHashMapObject [[
     }]
 ]];
 
+uiNamespace setVariable ["FLO_GTN_ResourceManagerLive", _resourceManager];
+
 // Complete GTN initialization before dependent Phase 5 systems start.
 _resourceManager call ["_initializeGTN", []];
 
-_resourceManager
+call FLO_fnc_gtnResourceManagerProxy

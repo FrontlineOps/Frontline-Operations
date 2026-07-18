@@ -119,14 +119,15 @@ if (_realWaypoints isNotEqualTo [] && {_currentWpIndex < count _realWaypoints}) 
                     _matchedIndex = _positionMatches select 0;
                 } else {
                     if ((count _positionMatches) > 1) then {
-                        ["VIRTUALIZATION", 1, format [
-                            "Ambiguous physical waypoint capture group=%1 position=%2 type=%3 candidates=%4",
+                        _matchedIndex = _positionMatches select 0;
+                        ["VIRTUALIZATION", 2, format [
+                            "Collapsed duplicate physical waypoint capture group=%1 position=%2 type=%3 candidates=%4 selected=%5",
                             _groupId,
                             _wpPos,
                             _realWaypointType,
-                            _positionMatches
+                            _positionMatches,
+                            _matchedIndex
                         ]] call FLO_fnc_log;
-                        throw format ["Ambiguous physical waypoint capture for %1", _groupId];
                     };
                 };
             };
@@ -188,6 +189,7 @@ if (_realWaypoints isNotEqualTo [] && {_currentWpIndex >= count _realWaypoints})
     _groupData set ["waypoints", []];
     _groupData set ["currentWaypointIndex", 0];
     _groupData set ["dismountAtWaypoint", -1];
+    [_groupData, [_groupData] call FLO_fnc_virtualizationResolveRouteCompletionState] call FLO_fnc_virtualizationSetRuntimeState;
     ["VIRTUALIZATION", 4, format ["Group %1 completed all waypoints - clearing virtual waypoints", _groupId]] call FLO_fnc_log;
 };
 
