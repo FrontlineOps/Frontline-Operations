@@ -170,6 +170,7 @@ class VirtualizationState {
     class virtualizationResolveRouteCompletionState {};
     class virtualizationValidateWaypointState {};
     class virtualizationValidateRegistry {};
+    class virtualizationNormalizeSavedLandRoute {};
     class virtualizationSerializeRegistry {};
     class virtualizationRestoreRegistry {};
     class virtualizationRebuildDerivedState {};
