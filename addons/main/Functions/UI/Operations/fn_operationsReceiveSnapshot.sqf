@@ -7,10 +7,10 @@ FLO_OperationsLastSnapshot = _snapshot;
 
 private _objectiveIds = (_snapshot get "objectives") apply { _x get "id" };
 if !(FLO_OperationsSelectedObjectiveId in _objectiveIds) then {
-    private _operationTargetId = (_snapshot get "operation") get "targetId";
+    private _attackTargetId = (_snapshot get "attack") get "targetId";
     private _playerObjectiveId = (_snapshot get "player") get "objectiveId";
-    FLO_OperationsSelectedObjectiveId = if (_operationTargetId in _objectiveIds) then {
-        _operationTargetId
+    FLO_OperationsSelectedObjectiveId = if (_attackTargetId in _objectiveIds) then {
+        _attackTargetId
     } else {
         ["", _playerObjectiveId] select (_playerObjectiveId in _objectiveIds)
     };

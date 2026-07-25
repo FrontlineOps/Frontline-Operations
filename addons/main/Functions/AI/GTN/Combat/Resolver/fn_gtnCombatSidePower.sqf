@@ -27,8 +27,8 @@ private _armor = 0;
 
     private _type = _gData get "groupType";
     private _weight = [_type] call FLO_fnc_gtnCombatTypeWeight;
-    private _formationMultiplier = [_groupId] call FLO_fnc_formationGetCombatMultiplier;
-    _power = _power + (_count * _weight * _formationMultiplier);
+    private _experienceMultiplier = [_gData get "combatExperience"] call FLO_fnc_gtnCombatGetExperienceMultiplier;
+    _power = _power + (_count * _weight * _experienceMultiplier);
     _units = _units + _count;
 
     if (_type isEqualTo "infantry") then { _inf = _inf + _count };

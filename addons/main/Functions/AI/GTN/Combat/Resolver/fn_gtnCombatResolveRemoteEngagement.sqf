@@ -63,7 +63,7 @@ if (!_decisive && {_roundCount >= 3} && {abs _momentum >= 30}) then {
     _decisive = true;
     _winner = if (_momentum >= 0) then { east } else { west };
 };
-if (!_decisive && {_roundCount >= 8}) then {
+if (!_decisive && {_roundCount >= 12}) then {
     _decisive = true;
     _winner = if (_eastEffectivePower == _westEffectivePower) then {
         [west, east] select (_roundSignal >= 0)
@@ -76,8 +76,15 @@ private _eastPressure = _westEffectivePower / _powerTotal;
 private _westPressure = _eastEffectivePower / _powerTotal;
 private _eastLossPct = (0.02 + (_eastPressure * 0.06)) max 0.02 min 0.08;
 private _westLossPct = (0.02 + (_westPressure * 0.06)) max 0.02 min 0.08;
+private _decisiveLossPct = 0;
 if (_decisive) then {
-    if (_winner isEqualTo east) then { _westLossPct = 1; } else { _eastLossPct = 1; };
+    private _decisiveLossScale = ((_effectiveRatio - 1) / 1.5) max 0 min 1;
+    _decisiveLossPct = 0.15 + (_decisiveLossScale * 0.05);
+    if (_winner isEqualTo east) then {
+        _westLossPct = _decisiveLossPct;
+    } else {
+        _eastLossPct = _decisiveLossPct;
+    };
 };
 
 private _eastLosses = [_groups, _eastRefs, _eastLossPct] call FLO_fnc_gtnCombatApplyAttrition;
@@ -87,6 +94,7 @@ if (_decisive) then { _engagements deleteAt _zoneId; };
 createHashMapFromArray [
     ["winner", _winner],
     ["decisive", _decisive],
+    ["decisiveLossPct", _decisiveLossPct],
     ["margin", abs _powerBalance],
     ["friction", _friction],
     ["momentum", _momentum],

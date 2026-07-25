@@ -24,11 +24,8 @@ if (_waypoints isNotEqualTo []) exitWith {
     [_groupData, "moving"] call FLO_fnc_virtualizationSetRuntimeState;
 };
 
-private _commanderOrder = _groupData get "commanderOrder";
 private _replacementState = _groupData get "replacementState";
-private _holdAtDestination = _commanderOrder in ["ATTACK", "DEFEND"] || {([_groupData] call FLO_fnc_virtualizationGetAADeployState) == "DEPLOYED"};
-
-[_groupData, [["idle", "holding"] select (_holdAtDestination), "moving"] select (_replacementState != "")] call FLO_fnc_virtualizationSetRuntimeState;
+[_groupData, [_groupData] call FLO_fnc_virtualizationResolveRouteCompletionState] call FLO_fnc_virtualizationSetRuntimeState;
 _groupData set ["currentWaypointIndex", 0];
 
 if (_replacementState == "REINFORCE") then {

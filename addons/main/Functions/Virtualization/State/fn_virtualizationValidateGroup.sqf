@@ -56,6 +56,10 @@ if ((_groupData get "groupType") == "") then {
 if ((_groupData get "unitCount") < 0) then {
     throw format ["Virtual group %1 has negative unit count %2", _groupId, _groupData get "unitCount"];
 };
+private _combatExperience = _groupData get "combatExperience";
+if (_combatExperience < 0 || {_combatExperience > 100}) then {
+    throw format ["Virtual group %1 has invalid combat experience %2", _groupId, _combatExperience];
+};
 
 private _isActive = _groupData get "isActive";
 private _realGroup = _groupData get "realGroup";
@@ -90,6 +94,7 @@ if (!_isActive && {(_groupData get "realVehicles") isNotEqualTo []}) then {
     _groupData get "pathTargetPos",
     _groupData get "pathWaypointSettings"
 ] call FLO_fnc_virtualizationValidateWaypointState;
+[_groupData, _groupId] call FLO_fnc_virtualizationValidateCommanderOrderState;
 private _attachedTo = _groupData get "attachedTo";
 private _attachedType = _groupData get "attachedType";
 private _mountedIn = _groupData get "mountedIn";
@@ -115,6 +120,55 @@ if (_mountedIn != "" && {_mountedIn != _attachedTo}) then {
 };
 if ((_groupData get "isTransport") != (_attachedGroups isNotEqualTo [])) then {
     throw format ["Virtual group %1 carrier flag does not match its passenger manifest", _groupId];
+};
+if (_attachedGroups isEqualTo []) then {
+    private _retainsCarrierInsertState = (
+        (_groupData get "dismountAtWaypoint") != -1
+        || {(_groupData get "transportInsertMode") != ""}
+        || {(_groupData get "transportInsertPos") isNotEqualTo []}
+        || {_groupData get "transportLandCommandIssued"}
+        || {_groupData get "transportUnloadCommandIssued"}
+        || {(_groupData get "transportUnloadIssuedAt") != -1}
+        || {(_groupData get "executionState") == "TRANSPORT"}
+    );
+    if (_retainsCarrierInsertState) then {
+        throw format ["Virtual group %1 empty passenger manifest retains carrier insert state", _groupId];
+    };
+};
+if (_attachedGroups isNotEqualTo [] && {(_groupData get "executionState") == "TRANSPORT"}) then {
+    private _dismountIndex = _groupData get "dismountAtWaypoint";
+    private _insertMode = _groupData get "transportInsertMode";
+    private _insertPos = _groupData get "transportInsertPos";
+    private _missionLock = _groupData get "missionLock";
+    private _missionType = _groupData get "missionType";
+    if (
+        _dismountIndex < 0
+        || {!(_insertMode in ["GROUND", "AIR_LAND", "AIR_DROP"])}
+        || {count _insertPos < 2}
+        || {_missionLock != "TRANSPORT"}
+        || {_missionType != _insertMode}
+    ) then {
+        throw format [
+            "Virtual group %1 transport execution has no authoritative dismount endpoint: index=%2 mode=%3 insert=%4 lock=%5 missionType=%6",
+            _groupId,
+            _dismountIndex,
+            _insertMode,
+            _insertPos,
+            _missionLock,
+            _missionType
+        ];
+    };
+
+    private _dismountPos = ((_groupData get "waypoints") select _dismountIndex) select 0;
+    if ((_dismountPos distance2D _insertPos) >= 1) then {
+        throw format [
+            "Virtual group %1 transport execution has no authoritative dismount endpoint: index=%2 waypoint=%3 insert=%4",
+            _groupId,
+            _dismountIndex,
+            _dismountPos,
+            _insertPos
+        ];
+    };
 };
 if ((count _attachedGroups) != (count (_attachedGroups arrayIntersect _attachedGroups))) then {
     throw format ["Virtual group %1 has duplicate passenger references", _groupId];

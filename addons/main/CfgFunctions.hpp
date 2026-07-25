@@ -12,8 +12,10 @@ class FLO {
     class Save {
         file = "\z\flo\addons\main\Functions\Save";
 
+        class saveConfigureAutosave {};
         class saveGetAllCargo {};
         class saveGetCompressedDamage {};
+        class saveRequest {};
     };
 
     // === INITIALIZATION PHASE SYSTEM ===
@@ -67,7 +69,6 @@ class FLO {
         class gtnAllocateFrontlineAttacks {};
         class gtnAllocateFrontlineDefense {};
         class gtnReleaseCompletedAttackAssignments {};
-        class gtnRetaskAttackRoute {};
         class gtnRequestFrontlineArtillery {};
         class gtnRequestFrontlineCAP {};
         class gtnRequestFrontlineCAS {};
@@ -76,12 +77,11 @@ class FLO {
     class GTNCoreLogic {
         file = "\z\flo\addons\main\Functions\AI\GTN\Core\Logic";
 
-        class gtnAllocateAttackTrackPools {};
-        class gtnCreateAttackTrack {};
         class gtnBuildDefenseObjectiveProfiles {};
         class gtnBuildObjectiveDemandSignature {};
         class gtnBuildFriendlyObjectiveOwnershipSignature {};
         class gtnBuildObjectiveAssignmentCache {};
+        class gtnBuildObjectiveGarrisonRoute {};
         class gtnGetSideClientOwners {};
         class gtnMarkCommanderStateDirty {};
         class gtnGetCachedReserveBands {};
@@ -89,11 +89,11 @@ class FLO {
         class gtnGetTempoScaledAssignmentLimit {};
         class gtnBuildObjectiveReserveBands {};
         class gtnExecuteTrackCycle {};
-        class gtnGetAttackPressureProfile {};
         class gtnGroupIsStrategicallyAssignable {};
         class gtnLogStrategicOrderPerf {};
         class gtnPickObjectiveGarrisonPosition {};
-        class gtnUpdateAttackTrackPhases {};
+        class gtnResolveAttackCoverageCap {};
+        class gtnResolveAttackLandAnchor {};
     };
 
     class GTNIntel {
@@ -139,7 +139,6 @@ class FLO {
 
     #include "Functions\AI\GTN\Combat\CfgFunctions.hpp"
     #include "Functions\AI\GTN\Operations\CfgFunctions.hpp"
-    #include "Functions\Formations\CfgFunctions.hpp"
     #include "Functions\UI\CfgFunctions.hpp"
     #include "Functions\Notifications\CfgFunctions.hpp"
 
@@ -176,6 +175,10 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\GTN\ResourceManager";
 
         class gtnResourceManager    {};
+        class gtnResourceManagerProxy {};
+        class gtnGetResourceManager {};
+        class gtnGetCommandersBySide {};
+        class gtnGetCommanderBySide {};
         class gtnConfig             {};
     };
 
@@ -197,7 +200,10 @@ class FLO {
         class gtnAirApplyVirtualCASEffect {};
         class gtnAirAuthorizeSortie {};
         class gtnAirDefenseActivateAgainstLiveAircraft {};
+        class gtnAirDefenseBuildContactIndex {};
         class gtnAirDefenseGetState {};
+        class gtnAirDefenseHandoffActivatedAircraft {};
+        class gtnAirDefenseIsObservedEngagement {};
         class gtnAirDefenseProcessContacts {};
         class gtnAirDefenseResolveVirtualEngagement {};
         class gtnAirDefenseStartContactWorker {};
@@ -205,6 +211,7 @@ class FLO {
         class gtnAirInitializeOffMapReserves {};
         class gtnAirParkCombatGroupOffMap {};
         class gtnAirResolveReserveRoutePositions {};
+        class gtnAirTryRevirtualizeLiveMission {};
         class gtnBroadcastCommanderRadioMessage {};
         class gtnBroadcastArtilleryRadio {};
         class gtnBuildArtilleryMissionRecord {};
@@ -234,6 +241,9 @@ class FLO {
         file = "\z\flo\addons\main\Functions\AI\Tasks";
 
         class taskApplyRoute {};
+        class taskGarrison {};
+        class taskReleaseGarrison {};
+        class taskReleaseGarrisonUnit {};
         class taskPatrol {};
     };
 
@@ -385,6 +395,7 @@ class FLO {
         class factionIsUnsignedInt {};
         class factionMergePairs {};
         class factionApplyTuningOverrides {};
+        class factionApplyAutoFriendlyGlobals {};
         class factionBuildTuningHandle {};
         class factionPickUnitByRole {};
         class factionSanitizeCompositionForCatalog {};

@@ -9,17 +9,27 @@
  * Arguments:
  *   0: Logistics network object <HASHMAP>
  *   1: Requested objective ID <STRING>
+ *   2: Required Local Supplies <NUMBER>
+ *   3: Objective IDs that cannot act as sources <ARRAY>
  *
  * Return Value:
  *   STRING - Delivery objective ID
  */
 
-params ["_net", "_requestedObjectiveId"];
+params [
+    "_net",
+    "_requestedObjectiveId",
+    ["_requiredThroughput", 0, [0]],
+    ["_blockedObjectives", [], [[]]]
+];
 
 if (_requestedObjectiveId == "") exitWith { "" };
 
 private _deliveryCache = _net get "_dispatchDeliveryObjectiveCache";
-if (_requestedObjectiveId in _deliveryCache) exitWith { _deliveryCache get _requestedObjectiveId };
+private _sortedBlocked = +_blockedObjectives;
+_sortedBlocked sort true;
+private _cacheKey = format ["%1:%2:%3", _requestedObjectiveId, _requiredThroughput, _sortedBlocked joinString ","];
+if (_cacheKey in _deliveryCache) exitWith { _deliveryCache get _cacheKey };
 
 private _objectives = FLO_Objectives;
 private _requestedObjective = _objectives get _requestedObjectiveId;
@@ -29,11 +39,15 @@ private _enemySide = _net get "_enemySide";
 private _friendlyCountKey = ["bluforCount", "opforCount"] select (_managedSide isEqualTo east);
 private _enemyCountKey = ["opforCount", "bluforCount"] select (_managedSide isEqualTo east);
 private _sourceableCache = _net get "_dispatchSourceableCache";
-private _requestedCanSource = if (_requestedObjectiveId in _sourceableCache) then {
-    _sourceableCache get _requestedObjectiveId
+private _requestedSourceKey = format ["%1:%2:%3", _requestedObjectiveId, _requiredThroughput, _sortedBlocked joinString ","];
+private _requestedCanSource = if (_requestedSourceKey in _sourceableCache) then {
+    _sourceableCache get _requestedSourceKey
 } else {
-    private _canSource = ([_net, _requestedObjectiveId, []] call FLO_fnc_logisticsNetworkFindSupplySourceObjective) != "";
-    _sourceableCache set [_requestedObjectiveId, _canSource];
+    private _canSource = (
+        [_net, _requestedObjectiveId, _blockedObjectives, _requiredThroughput]
+        call FLO_fnc_logisticsNetworkFindSupplySourceObjective
+    ) != "";
+    _sourceableCache set [_requestedSourceKey, _canSource];
     _canSource
 };
 
@@ -61,17 +75,21 @@ private _candidateIds = [];
 
 _candidateIds = _candidateIds - [_requestedObjectiveId];
 _candidateIds = _candidateIds select {
-    if (_x in _sourceableCache) then {
-        _sourceableCache get _x
+    private _sourceKey = format ["%1:%2:%3", _x, _requiredThroughput, _sortedBlocked joinString ","];
+    if (_sourceKey in _sourceableCache) then {
+        _sourceableCache get _sourceKey
     } else {
-        private _canSource = ([_net, _x, []] call FLO_fnc_logisticsNetworkFindSupplySourceObjective) != "";
-        _sourceableCache set [_x, _canSource];
+        private _canSource = (
+            [_net, _x, _blockedObjectives, _requiredThroughput]
+            call FLO_fnc_logisticsNetworkFindSupplySourceObjective
+        ) != "";
+        _sourceableCache set [_sourceKey, _canSource];
         _canSource
     }
 };
 if (_candidateIds isEqualTo []) exitWith {
     private _fallbackObjectiveId = ["", _requestedObjectiveId] select (_requestedCanSource);
-    _deliveryCache set [_requestedObjectiveId, _fallbackObjectiveId];
+    _deliveryCache set [_cacheKey, _fallbackObjectiveId];
     _fallbackObjectiveId
 };
 
@@ -84,7 +102,7 @@ if (_enemyObjectiveIds isEqualTo []) exitWith {
     } else {
         _candidateIds select 0
     };
-    _deliveryCache set [_requestedObjectiveId, _fallbackObjectiveId];
+    _deliveryCache set [_cacheKey, _fallbackObjectiveId];
     _fallbackObjectiveId
 };
 
@@ -131,7 +149,7 @@ if (_candidateRows isEqualTo []) exitWith {
     } else {
         _candidateIds select 0
     };
-    _deliveryCache set [_requestedObjectiveId, _fallbackObjectiveId];
+    _deliveryCache set [_cacheKey, _fallbackObjectiveId];
     _fallbackObjectiveId
 };
 
@@ -153,6 +171,6 @@ private _bestScore = -1e12;
     };
 } forEach _candidateRows;
 
-_deliveryCache set [_requestedObjectiveId, _bestObjectiveId];
+_deliveryCache set [_cacheKey, _bestObjectiveId];
 
 _bestObjectiveId

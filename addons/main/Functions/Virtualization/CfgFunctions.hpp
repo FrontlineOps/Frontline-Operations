@@ -54,6 +54,7 @@ class VirtualizationRegistry {
     class virtualizationGetGroup         {};
     class virtualizationQueryGroupIds    {};
     class virtualizationAddGroup         {};
+    class virtualizationCollectTransportManifest {};
     class virtualizationRemoveGroup      {};
     class virtualizationUpdateOwnedGroupPosition {};
     class virtualizationUpdateGroupPosition {};
@@ -165,8 +166,11 @@ class VirtualizationState {
     class virtualizationGetRouteOwnedFields {};
     class virtualizationValidateGroup {};
     class virtualizationValidateSavedGroup {};
+    class virtualizationValidateCommanderOrderState {};
+    class virtualizationResolveRouteCompletionState {};
     class virtualizationValidateWaypointState {};
     class virtualizationValidateRegistry {};
+    class virtualizationNormalizeSavedLandRoute {};
     class virtualizationSerializeRegistry {};
     class virtualizationRestoreRegistry {};
     class virtualizationRebuildDerivedState {};
@@ -208,6 +212,7 @@ class VirtualizationState {
     class virtualizationClearMountedIn {};
     class virtualizationGetMountedTransport {};
     class virtualizationTransportChainContains {};
+    class virtualizationResetCarrierInsertState {};
     class virtualizationLinkTransportGroups {};
     class virtualizationUnlinkTransportGroups {};
     class virtualizationPruneTransportPassenger {};

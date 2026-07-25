@@ -41,10 +41,7 @@ if (!isNil "FLO_CivilianManager") then {
     };
 };
 
-if (isNil "FLO_GTN_CommandersBySide") exitWith { _package };
-
-private _sideKey = [_reportingSide] call FLO_fnc_sideKey;
-private _commander = FLO_GTN_CommandersBySide get _sideKey;
+private _commander = [_reportingSide] call FLO_fnc_gtnGetCommanderBySide;
 if (isNil "_commander") exitWith { _package };
 
 private _worldState = _commander get "_worldState";

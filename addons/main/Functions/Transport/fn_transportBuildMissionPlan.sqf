@@ -94,17 +94,18 @@ if (_carrierType != "helicopter") then {
         };
         _enemyOwned = _objectiveOwner != _side;
 
-        private _sideKey = [_side] call FLO_fnc_sideKey;
-        private _gtnCommander = FLO_GTN_CommandersBySide get _sideKey;
-        private _worldState = _gtnCommander get "_worldState";
-        private _objectiveState = (_worldState call ["_getObjectives", []]) get _objectiveId;
-        if (!isNil "_objectiveState") then {
-            _underPressure = (_objectiveState get "contested") || { _objectiveState get "underAttack" };
-        };
+        private _gtnCommander = [_side] call FLO_fnc_gtnGetCommanderBySide;
+        if (!isNil "_gtnCommander") then {
+            private _worldState = _gtnCommander get "_worldState";
+            private _objectiveState = (_worldState call ["_getObjectives", []]) get _objectiveId;
+            if (!isNil "_objectiveState") then {
+                _underPressure = (_objectiveState get "contested") || { _objectiveState get "underAttack" };
+            };
 
-        private _objectiveAnalysis = _worldState call ["_getObjectiveAnalysis", [_objectiveId]];
-        if (!isNil "_objectiveAnalysis") then {
-            _hasAA = _objectiveAnalysis get "hasAA";
+            private _objectiveAnalysis = _worldState call ["_getObjectiveAnalysis", [_objectiveId]];
+            if (!isNil "_objectiveAnalysis") then {
+                _hasAA = _objectiveAnalysis get "hasAA";
+            };
         };
     };
 

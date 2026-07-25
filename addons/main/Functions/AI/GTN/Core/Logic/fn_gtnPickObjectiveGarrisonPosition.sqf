@@ -41,6 +41,7 @@ for "_i" from 1 to _sampleCount do {
     _candidatePos set [2, 0];
 
     if !([_candidatePos, _objective] call FLO_fnc_isPositionInObjective) then { continue };
+    if (surfaceIsWater _candidatePos) then { continue };
 
     private _nearestClaim = _radius;
     {
@@ -63,4 +64,11 @@ for "_i" from 1 to _sampleCount do {
 
 if ((count _bestPos) >= 2) exitWith { _bestPos };
 
-[_objectiveId] call FLO_fnc_getRandomObjectivePos
+private _fallback = [_objectiveId] call FLO_fnc_getRandomObjectivePos;
+if (surfaceIsWater _fallback) then {
+    _fallback = [_center, _radius] call FLO_fnc_getSafeLandPos;
+};
+if (count _fallback < 2 || {surfaceIsWater _fallback} || {!([_fallback, _objective] call FLO_fnc_isPositionInObjective)}) then {
+    throw format ["Objective %1 has no valid land garrison position", _objectiveId];
+};
+_fallback

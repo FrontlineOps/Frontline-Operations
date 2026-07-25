@@ -14,6 +14,16 @@
  */
 
 if (!isServer) exitWith { false };
+if (FLO_MissionSaveInProgress) exitWith {
+    ["SAVE", 2, "Rejected concurrent mission save request"] call FLO_fnc_log;
+    false
+};
+
+FLO_MissionSaveInProgress = true;
+private _saveResult = false;
+private _saveException = "";
+try {
+_saveResult = call {
 
 private _saveStartTime = diag_tickTime;
 private _saveVersion = FLO_MissionSaveVersion;
@@ -446,9 +456,6 @@ try {
             ["WEST", createHashMapFromArray [["gtnEnabled", _westEnabled]]]
         ];
         _data set ["aiCommanders", _aiCommanders];
-
-        private _campaignDirector = FLO_GTN_ResourceManager call ["_getCampaignDirector", []];
-        _data set ["campaignOperation", _campaignDirector call ["_serialize", []]];
     };
     ["SAVE", 3, "Objectives and dual GTN state saved"] call FLO_fnc_log;
 } catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
@@ -499,7 +506,6 @@ private _requiredRootTypes = [
     ["objectives", createHashMap],
     ["virtualGroups", createHashMap],
     ["aiCommanders", createHashMap],
-    ["campaignOperation", createHashMap],
     ["baseDeploymentState", createHashMap],
     ["sideResources", createHashMap],
     ["logisticsNetworkBySide", createHashMap],
@@ -540,3 +546,15 @@ if (_isValid) then {
     ["SAVE", 1, "Validation failed"] call FLO_fnc_log;
     false
 };
+};
+} catch {
+    _saveException = _exception;
+};
+
+FLO_MissionSaveInProgress = false;
+if (_saveException != "") then {
+    ["SAVE", 1, format ["Mission save aborted by exception: %1", _saveException]] call FLO_fnc_log;
+    throw _saveException;
+};
+
+_saveResult

@@ -18,7 +18,6 @@ private _sideKey = ([_owner] call FLO_fnc_gtnSideContext) get "sideKey";
 private _treasury = FLO_SideResources get _sideKey;
 private _captureReward = _treasury get "OBJECTIVE_CAPTURE_REWARD";
 private _network = FLO_Logistics_Networks get _sideKey;
-private _forceGrowth = _network get "OBJECTIVE_CAPTURE_FORCE_GROWTH";
 private _growthDelaySeconds = _network get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS";
 
 [
@@ -31,13 +30,11 @@ private _growthDelaySeconds = _network get "OBJECTIVE_CAPTURE_GROWTH_DELAY_SECON
     true
 ] call FLO_fnc_sideResourcesAddResources;
 
-if (_forceGrowth > 0) then {
-    _objective set [
-        "captureGrowthEligibleAtDateNum",
-        [call FLO_fnc_operationalDateNumber, _growthDelaySeconds] call FLO_fnc_dateNumberAddSeconds
-    ];
-    _objective set ["captureGrowthPending", true];
-};
+_objective set [
+    "captureGrowthEligibleAtDateNum",
+    [call FLO_fnc_operationalDateNumber, _growthDelaySeconds] call FLO_fnc_dateNumberAddSeconds
+];
+_objective set ["captureGrowthPending", true];
 
 _objective set ["campaignBenefitsPending", false];
 FLO_Objectives set [_objectiveId, _objective];

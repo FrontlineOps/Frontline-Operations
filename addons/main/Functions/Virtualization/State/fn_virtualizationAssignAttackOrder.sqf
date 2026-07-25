@@ -1,27 +1,8 @@
-/*
- * Function: FLO_fnc_virtualizationAssignAttackOrder
- * Author: Frontline Operations Development Group
- * Description:
- *   Applies canonical commander attack-order state to a virtual group.
- *
- * Arguments:
- * 0: Group data <HASHMAP>
- * 1: Target position <ARRAY>
- * 2: Objective ID <STRING>
- * 3: Campaign operation ID <STRING>
- *
- * Return Value:
- * BOOL - True when the state was applied
- */
+/* Applies canonical direct ATTACK state to a virtual group. */
+params ["_groupData", "_targetPos", "_objectiveId"];
 
-params ["_groupData", "_targetPos", "_objectiveId", "_campaignOperationId"];
-
-if (_objectiveId == "" || {_campaignOperationId == ""}) then {
-    throw format [
-        "FLO_fnc_virtualizationAssignAttackOrder: objective and operation are required (%1, %2)",
-        _objectiveId,
-        _campaignOperationId
-    ];
+if (_objectiveId == "") then {
+    throw "FLO_fnc_virtualizationAssignAttackOrder: objective is required";
 };
 
 private _missionLock = _groupData get "missionLock";
@@ -37,8 +18,6 @@ if (_missionLock != "" || {_replacementState != ""}) then {
 [_groupData] call FLO_fnc_virtualizationClearCommanderOrder;
 [_groupData, "ATTACK"] call FLO_fnc_virtualizationSetCommanderOrder;
 _groupData set ["attackObjective", _objectiveId];
-_groupData set ["campaignOperationId", _campaignOperationId];
 _groupData set ["orderTargetPos", _targetPos];
 _groupData set ["orderMode", "COMBAT"];
-
 true

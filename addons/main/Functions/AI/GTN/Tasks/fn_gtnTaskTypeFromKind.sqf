@@ -1,6 +1,6 @@
 /*
  * Function: FLO_fnc_gtnTaskTypeFromKind
- * Description: Maps an operation task kind to a BIS task type.
+ * Description: Maps a direct commander task kind to a BIS task type.
  */
 
 params ["_kind"];

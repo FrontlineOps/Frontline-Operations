@@ -91,6 +91,17 @@ try {
     if !(_playerSideKey in ["WEST", "EAST"]) then {
         throw format ["Unsupported player side key %1", _playerSideKey];
     };
+    {
+        private _growthValue = (FLO_MissionConfig get _x) get "value";
+        if !(_growthValue in [1, 2, 3]) then {
+            throw format ["Mission config %1 must select 1, 2, or 3 growth groups, got %2", _x, _growthValue];
+        };
+    } forEach ["westGTNForceGrowthHandle", "eastGTNForceGrowthHandle"];
+
+    private _objectiveSizeThreshold = FLO_MissionConfig get "objectiveSizeThreshold";
+    if !(_objectiveSizeThreshold in [4, 8, 12, 24]) then {
+        throw format ["Mission config objectiveSizeThreshold must be one of 4, 8, 12, or 24, got %1", _objectiveSizeThreshold];
+    };
 } catch {
     _configError = _exception;
 };

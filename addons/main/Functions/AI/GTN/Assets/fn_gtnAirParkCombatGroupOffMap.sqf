@@ -11,27 +11,35 @@ private _groupType = _groupData get "groupType";
 if !(_groupType in ["helicopter", "air", "jet"]) exitWith { false };
 if (_groupData get "transportRole") exitWith { false };
 
-private _homeObjective = _groupData get "homeObjective";
-if (_homeObjective == "") then {
-    throw format ["Combat aircraft %1 has no homeObjective", _groupId];
-};
-if !(_homeObjective in FLO_Objectives) then {
-    throw format ["Combat aircraft %1 references missing home objective %2", _groupId, _homeObjective];
-};
+private _routePositions = [_groupData] call FLO_fnc_gtnAirResolveReserveRoutePositions;
+_routePositions params ["_reservePos", "_ingressPos"];
 
+private _deactivationSucceeded = true;
+private _removedDuringDeactivation = false;
 if (_groupData get "isActive") then {
-    if !([_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup) exitWith { false };
+    _deactivationSucceeded = [_groupId, _groupData] call FLO_fnc_deactivateVirtualGroup;
+    if (_deactivationSucceeded) then {
+        if (_groupId in _groups) then {
+            _groupData = _groups get _groupId;
+        } else {
+            _removedDuringDeactivation = true;
+        };
+    };
 };
-
-private _homePos = (FLO_Objectives get _homeObjective) get "position";
-private _routePositions = [_groupData get "side", _homePos] call FLO_fnc_gtnAirResolveReserveRoutePositions;
-private _reservePos = _routePositions select 0;
+if (!_deactivationSucceeded) exitWith { false };
+if (_removedDuringDeactivation) exitWith {
+    ["GTN Air Asset Manager", 3, format [
+        "Air asset %1 removed during reserve parking after zero-strength synchronization",
+        _groupId
+    ]] call FLO_fnc_log;
+    true
+};
 
 [_groupId, [], false, "GTN_AIR_RESERVE"] call FLO_fnc_updateVirtualGroupWaypoints;
 private _changes = createHashMapFromArray [
     ["forceVirtual", true],
     ["noWaypoints", true],
-    ["direction", [90, 270] select ((_groupData get "side") isEqualTo east)]
+    ["direction", _reservePos getDir _ingressPos]
 ];
 if (_clearMissionState) then {
     _changes set ["missionLock", ""];
@@ -40,5 +48,13 @@ if (_clearMissionState) then {
 };
 [_groupId, _changes] call FLO_fnc_virtualizationPatchGroup;
 [_groupId, _reservePos] call FLO_fnc_virtualizationUpdateGroupPosition;
+
+["GTN Air", 5, format [
+    "Parked combat-air group %1 home=%2 reserve=%3 ingress=%4",
+    _groupId,
+    _groupData get "homeObjective",
+    _reservePos,
+    _ingressPos
+]] call FLO_fnc_log;
 
 true

@@ -30,15 +30,11 @@ private _endpointIndexes = [];
 private _cursor = +_startPos;
 private _segmentCount = 0;
 private _failedReason = "";
-private _loopAnchorPos = +_startPos;
-if (count _loopAnchorPos > 2) then {
-    _loopAnchorPos set [2, 0];
-} else {
-    _loopAnchorPos pushBack 0;
-};
 private _hasCycle = false;
 
 {
+    if (_failedReason != "") then { continue };
+
     private _semanticIndex = _forEachIndex;
     private _endpoint = +_x;
     private _wpType = toUpper (_endpoint select 1);
@@ -49,8 +45,9 @@ private _hasCycle = false;
             throw format ["FLO_fnc_virtualizationResolveLandWaypoints: CYCLE must be the final waypoint of a multi-waypoint route (%1)", _semanticIndex];
         };
         _hasCycle = true;
-        _targetPos = +_loopAnchorPos;
-        _endpoint set [0, +_loopAnchorPos];
+        // Physical and virtual loop execution both restart at emitted waypoint zero.
+        _targetPos = +((_resolvedWaypoints select 0) select 0);
+        _endpoint set [0, +_targetPos];
     };
 
     private _pathResult = [_cursor, _targetPos, _allowTrails, _sourceTag] call FLO_fnc_findRoadPath;
@@ -90,7 +87,8 @@ if (_failedReason != "") exitWith {
 if (_closeLoop
     && {!_hasCycle}
     && {count _waypoints > 1}
-    && {_cursor distance2D _loopAnchorPos > 1}) then {
+    && {_cursor distance2D ((_resolvedWaypoints select 0) select 0) > 1}) then {
+    private _loopAnchorPos = +((_resolvedWaypoints select 0) select 0);
     private _closure = [_cursor, _loopAnchorPos, _allowTrails, _sourceTag] call FLO_fnc_findRoadPath;
     _closure params ["_closureResolved", "_closurePositions"];
     _segmentCount = _segmentCount + 1;

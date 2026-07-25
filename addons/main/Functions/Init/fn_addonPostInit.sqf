@@ -16,6 +16,10 @@ if (isServer) then {
         };
         missionNamespace setVariable ["FLO_AddonServerBootstrapStarted", true, true];
 
+        uiNamespace setVariable ["FLO_GTN_ResourceManagerLive", nil];
+        uiNamespace setVariable ["FLO_GTN_CommandersBySideLive", createHashMap];
+        FLO_GTN_ResourceManager = call FLO_fnc_gtnResourceManagerProxy;
+
         private _globalVars = createHashMapFromArray [
             ["FLO_StartingLocationComplete", 0],
             ["FLO_Objectives_Debug", false],

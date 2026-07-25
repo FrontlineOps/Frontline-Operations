@@ -105,6 +105,8 @@ if (_allSuccess) then {
     FLO_MissionReady = true;
     publicVariable "FLO_InitPhase";
     publicVariable "FLO_MissionReady";
+
+    call FLO_fnc_saveConfigureAutosave;
     
     diag_log "[FLO_INIT] ========================================";
     diag_log "[FLO_INIT] ALL PHASES COMPLETE - MISSION READY";

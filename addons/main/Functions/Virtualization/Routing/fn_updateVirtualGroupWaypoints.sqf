@@ -36,6 +36,7 @@ private _sourceTag = ["VG_GENERIC", _requestSource] select (_requestSource != ""
 private _routeWaypoints = _sanitizedWaypoints;
 private _routeAllowed = true;
 private _routeFailureReason = "";
+private _routeDeferred = false;
 
 if (_movementDomain == "LAND" && {_sanitizedWaypoints isNotEqualTo []}) then {
     private _currentPos = if (_groupData get "isActive") then {
@@ -48,28 +49,59 @@ if (_movementDomain == "LAND" && {_sanitizedWaypoints isNotEqualTo []}) then {
     } else {
         +(_groupData get "position")
     };
-    private _routeResult = [_currentPos, _sanitizedWaypoints, _allowTrails, _sourceTag, _closeLoop] call FLO_fnc_virtualizationResolveLandWaypoints;
-    _routeResult params ["_resolved", "_resolvedWaypoints", "_reason"];
+    private _retryPending = (
+        _groupData get "landRouteStartBlocked"
+        && {diag_tickTime < (_groupData get "landRouteRetryAt")}
+    );
+    if (_retryPending && {surfaceIsWater _currentPos}) then {
+        _routeDeferred = true;
+    } else {
+        private _routeResult = [_currentPos, _sanitizedWaypoints, _allowTrails, _sourceTag, _closeLoop] call FLO_fnc_virtualizationResolveLandWaypoints;
+        _routeResult params ["_resolved", "_resolvedWaypoints", "_reason"];
 
-    _routeAllowed = _resolved;
-    _routeFailureReason = _reason;
-    if (_resolved) then {
-        _routeWaypoints = _resolvedWaypoints;
+        _routeAllowed = _resolved;
+        _routeFailureReason = _reason;
+        if (_resolved) then {
+            _routeWaypoints = _resolvedWaypoints;
+        };
     };
 };
 
+if (_routeDeferred) exitWith { false };
+
 if (!_routeAllowed) exitWith {
-    ["VIRTUALIZATION", 2, format [
-        "Rejected LAND route group=%1 source=%2 reason=%3 semanticWaypoints=%4",
-        _groupId,
-        _sourceTag,
-        _routeFailureReason,
-        count _sanitizedWaypoints
-    ]] call FLO_fnc_log;
+    if (_routeFailureReason == "START_IN_WATER") then {
+        private _alreadyBlocked = _groupData get "landRouteStartBlocked";
+        private _retrySeconds = ["landRouteBlockedRetrySeconds"] call FLO_fnc_virtualizationGetConfigValue;
+        _groupData set ["landRouteStartBlocked", true];
+        _groupData set ["landRouteRetryAt", diag_tickTime + _retrySeconds];
+        if (!_alreadyBlocked) then {
+            ["VIRTUALIZATION", 2, format [
+                "Rejected LAND route group=%1 source=%2 reason=%3 semanticWaypoints=%4 retrySeconds=%5",
+                _groupId,
+                _sourceTag,
+                _routeFailureReason,
+                count _sanitizedWaypoints,
+                _retrySeconds
+            ]] call FLO_fnc_log;
+        };
+    } else {
+        ["VIRTUALIZATION", 2, format [
+            "Rejected LAND route group=%1 source=%2 reason=%3 semanticWaypoints=%4",
+            _groupId,
+            _sourceTag,
+            _routeFailureReason,
+            count _sanitizedWaypoints
+        ]] call FLO_fnc_log;
+    };
     false
 };
 
 private _candidate = [_groupData] call FLO_fnc_virtualizationCloneValue;
+if (_movementDomain == "LAND" && {_routeWaypoints isNotEqualTo []}) then {
+    _candidate set ["landRouteStartBlocked", false];
+    _candidate set ["landRouteRetryAt", -1];
+};
 if (_routeWaypoints isNotEqualTo []) then {
     [_candidate] call FLO_fnc_virtualizationClearPathRequest;
     _candidate set ["waypoints", _routeWaypoints];
@@ -122,7 +154,7 @@ if (_candidate get "isActive") then {
 if (!_physicalRouteAllowed) exitWith { false };
 
 private _committedFields = call FLO_fnc_virtualizationGetRouteOwnedFields;
-_committedFields append ["idleHelicopterParked", "nextProcessAt", "state"];
+_committedFields append ["idleHelicopterParked", "nextProcessAt", "state", "landRouteStartBlocked", "landRouteRetryAt"];
 {
     _groupData set [_x, [_candidate get _x] call FLO_fnc_virtualizationCloneValue];
 } forEach _committedFields;

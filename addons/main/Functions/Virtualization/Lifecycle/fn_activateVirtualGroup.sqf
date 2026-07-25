@@ -63,7 +63,33 @@ private _isTransport = [_groupData] call FLO_fnc_virtualizationIsTransportCarrie
 // Resolve a safe spawn position without changing authoritative virtual state.
 // The position is committed only after every spawn step succeeds.
 _position = [_position] call FLO_fnc_getSafeUnvirtualizePos;
-_waypoints = [_groupId, _position, _allWaypoints, _currentWpIdx, _generatedPatrol] call FLO_fnc_virtualizationGetRemainingWaypoints;
+private _remainingRouteResult = [_groupId, _position, _allWaypoints, _currentWpIdx, _generatedPatrol] call FLO_fnc_virtualizationGetRemainingWaypoints;
+_remainingRouteResult params ["_routeAllowed", "_remainingWaypoints", "_routeFailureReason"];
+if (!_routeAllowed) exitWith {
+    if (_routeFailureReason == "START_IN_WATER") then {
+        private _alreadyBlocked = _groupData get "landRouteStartBlocked";
+        private _retrySeconds = ["landRouteBlockedRetrySeconds"] call FLO_fnc_virtualizationGetConfigValue;
+        _groupData set ["landRouteStartBlocked", true];
+        _groupData set ["landRouteRetryAt", diag_tickTime + _retrySeconds];
+        if (!_alreadyBlocked) then {
+            ["VIRTUALIZATION", 2, format [
+                "Activation LAND route deferred group=%1 reason=%2 retrySeconds=%3",
+                _groupId,
+                _routeFailureReason,
+                _retrySeconds
+            ]] call FLO_fnc_log;
+        };
+    } else {
+        ["VIRTUALIZATION", 2, format [
+            "Activation LAND route rejected group=%1 reason=%2 retrySeconds=%3",
+            _groupId,
+            _routeFailureReason,
+            ["activationRetryCooldown"] call FLO_fnc_virtualizationGetConfigValue
+        ]] call FLO_fnc_log;
+    };
+    false
+};
+_waypoints = _remainingWaypoints;
 private _newDismountIndex = -1;
 if ((_groupData get "dismountAtWaypoint") >= 0) then {
     private _insertPos = _groupData get "transportInsertPos";
@@ -122,6 +148,8 @@ if !([_groupId, _position] call FLO_fnc_virtualizationUpdateGroupPosition) exitW
 // Commit the remaining route only after activation succeeded.
 _groupData set ["waypoints", _waypoints];
 _groupData set ["currentWaypointIndex", 0];
+_groupData set ["landRouteStartBlocked", false];
+_groupData set ["landRouteRetryAt", -1];
 if (_newDismountIndex >= 0) then {
     _groupData set ["dismountAtWaypoint", _newDismountIndex];
 };

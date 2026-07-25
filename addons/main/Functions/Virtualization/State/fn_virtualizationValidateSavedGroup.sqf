@@ -49,6 +49,10 @@ if !([_savedData get "spawnPosition"] call FLO_fnc_validateGroupPosition) then {
 if ((_savedData get "unitCount") < 0) then {
     throw format ["Saved virtual group %1 has negative unit count", _groupId];
 };
+private _combatExperience = _savedData get "combatExperience";
+if (_combatExperience < 0 || {_combatExperience > 100}) then {
+    throw format ["Saved virtual group %1 has invalid combat experience %2", _groupId, _combatExperience];
+};
 
 [
     _groupId,
@@ -59,5 +63,6 @@ if ((_savedData get "unitCount") < 0) then {
     _savedData get "pathTargetPos",
     _savedData get "pathWaypointSettings"
 ] call FLO_fnc_virtualizationValidateWaypointState;
+[_savedData, _groupId] call FLO_fnc_virtualizationValidateCommanderOrderState;
 
 true

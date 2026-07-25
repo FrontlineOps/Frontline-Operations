@@ -9,7 +9,7 @@ FLO_ObjectiveDevelopmentConfig = createHashMapFromArray [
     ["developmentCapacityValueFraction", 0.25],
     ["supplyPerTreasury", 15],
     ["minimumSupplyRequired", 6000],
-    ["commanderSupplyPerTick", 300],
+    ["commanderSupplyPerTick", 100],
     ["playerContributionFraction", 0.25],
     ["shipmentAmount", 1500],
     ["assignmentRadius", 25],

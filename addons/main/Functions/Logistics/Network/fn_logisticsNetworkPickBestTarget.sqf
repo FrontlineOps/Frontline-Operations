@@ -15,6 +15,7 @@
  *   3: Inbound requested-objective counts <HASHMAP> - Default empty map
  *   4: Recent dispatch counts <HASHMAP> - Default empty map
  *   5: Batch requested-objective counts <HASHMAP> - Default empty map
+ *   6: Aggregate target rejection counts <HASHMAP> - Default empty map
  *
  * Return Value:
  *   STRING - Selected objective ID or empty string
@@ -26,7 +27,8 @@ params [
     ["_groupType", "infantry"],
     ["_inboundCounts", createHashMap],
     ["_recentDispatchCounts", createHashMap],
-    ["_batchDispatchCounts", createHashMap]
+    ["_batchDispatchCounts", createHashMap],
+    ["_targetRejectionCounts", createHashMap]
 ];
 
 if (_candidates isEqualTo []) exitWith { "" };
@@ -81,9 +83,19 @@ if (_groupType isEqualTo "static_aa") exitWith {
     selectRandom _bestCandidates
 };
 
-_available = _available select {
-    [_net, _x, _groupType, _inboundCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkCanDispatchToObjective
-};
+private _eligible = [];
+{
+    private _reason = [_net, _x, _groupType, _inboundCounts, _batchDispatchCounts] call FLO_fnc_logisticsNetworkGetDispatchTargetRejectionReason;
+    if (_reason == "") then {
+        _eligible pushBack _x;
+    } else {
+        if !(_reason in _targetRejectionCounts) then {
+            _targetRejectionCounts set [_reason, 0];
+        };
+        _targetRejectionCounts set [_reason, (_targetRejectionCounts get _reason) + 1];
+    };
+} forEach _available;
+_available = _eligible;
 if (_available isEqualTo []) exitWith { "" };
 
 private _managedSide = _net get "_managedSide";

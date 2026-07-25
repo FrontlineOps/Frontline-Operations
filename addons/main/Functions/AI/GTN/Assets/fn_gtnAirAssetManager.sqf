@@ -366,7 +366,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
             };
             _phaseLiveMs = (diag_tickTime - _tLive) * 1000;
 
-            private _routePositions = [_requestSide, _targetPos] call FLO_fnc_gtnAirResolveReserveRoutePositions;
+            private _routePositions = [_gdata] call FLO_fnc_gtnAirResolveReserveRoutePositions;
             _routePositions params ["_reservePos", "_ingressPos", "_egressPos"];
             private _missionId = format ["AIR_%1_%2_%3", [_requestSide] call FLO_fnc_sideKey, _gid, round (diag_tickTime * 1000)];
             private _missionRecord = createHashMapFromArray [
@@ -422,7 +422,14 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 _missions set [_gid, _missionRecord];
                 private _duration = _self call ["_getVirtualMissionDuration", [_missionType]];
                 private _tVirtual = diag_tickTime;
-                private _intercept = [_gid, _ingressPos, _targetPos] call FLO_fnc_gtnAirDefenseResolveVirtualEngagement;
+                private _airDefenseContactIndex = [_groups] call FLO_fnc_gtnAirDefenseBuildContactIndex;
+                private _intercept = [
+                    _gid,
+                    _ingressPos,
+                    _targetPos,
+                    _groups,
+                    _airDefenseContactIndex
+                ] call FLO_fnc_gtnAirDefenseResolveVirtualEngagement;
                 private _interceptStatus = _intercept get "status";
 
                 if (_interceptStatus == "PHYSICAL") exitWith {
@@ -433,7 +440,6 @@ if (isNil "FLO_GTNAirAssetManager") then {
                     private _vehicle = _vehicles select 0;
                     _missionRecord set ["mode", "REAL"];
                     _missions set [_gid, _missionRecord];
-                    [_vehicle, _requestSide] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
                     [_vehicle, _gid, "REAL"]
                 };
 
@@ -498,7 +504,14 @@ if (isNil "FLO_GTNAirAssetManager") then {
             _missionRecord set ["mode", "REAL"];
             _missions set [_gid, _missionRecord];
             [_realGroup] call CBA_fnc_clearWaypoints;
-            [_veh, _requestSide] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
+            private _airDefenseContactIndex = [_groups] call FLO_fnc_gtnAirDefenseBuildContactIndex;
+            [
+                _veh,
+                _requestSide,
+                _groups,
+                _airDefenseContactIndex,
+                false
+            ] call FLO_fnc_gtnAirDefenseActivateAgainstLiveAircraft;
             _self call ["_recordRequestPerf", [
                 (diag_tickTime - _tRequest) * 1000,
                 _missionType,
@@ -571,10 +584,7 @@ if (isNil "FLO_GTNAirAssetManager") then {
                 [0,0,0]
             };
             private _gData = _groups get _groupId;
-            private _homeObjective = _gData get "homeObjective";
-            if (_homeObjective == "") then { throw format ["Air group %1 has no homeObjective", _groupId]; };
-            private _homePos = (FLO_Objectives get _homeObjective) get "position";
-            ([_gData get "side", _homePos] call FLO_fnc_gtnAirResolveReserveRoutePositions) select 2
+            ([_gData] call FLO_fnc_gtnAirResolveReserveRoutePositions) select 2
         }],
 
         // Send aircraft to RTB - works for both active (real) and virtual groups

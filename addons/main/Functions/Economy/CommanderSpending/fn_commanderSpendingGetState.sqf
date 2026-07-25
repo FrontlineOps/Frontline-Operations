@@ -11,40 +11,14 @@ if !(_incomeInterval isEqualType 0 && {_incomeInterval > 0}) then {
     throw format ["Invalid %1 commander income interval: %2", _treasury get "_sideKey", _incomeInterval];
 };
 private _incomePerMinute = (_incomeCycle * 60) / _incomeInterval;
-private _windowSeconds = _policy get "windowSeconds";
-private _now = call FLO_fnc_operationalDateNumber;
-private _recentCommanderSpend = 0;
-private _recentByCategory = createHashMap;
-private _recentCountByCategory = createHashMap;
-
-{
-    if ((_x get "actor") != "COMMANDER") then { continue };
-    if !((_x get "kind") in ["COMMIT", "DEBIT"]) then { continue };
-    private _ageSeconds = [(_x get "dateNum"), _now] call FLO_fnc_dateNumberDeltaSeconds;
-    if (_ageSeconds < 0 || {_ageSeconds > _windowSeconds}) then { continue };
-
-    private _amount = _x get "amount";
-    private _category = _x get "category";
-    _recentCommanderSpend = _recentCommanderSpend + _amount;
-    private _categorySpend = if (_category in _recentByCategory) then {
-        _recentByCategory get _category
-    } else {
-        0
-    };
-    _recentByCategory set [_category, _categorySpend + _amount];
-    private _categoryCount = if (_category in _recentCountByCategory) then {
-        _recentCountByCategory get _category
-    } else {
-        0
-    };
-    _recentCountByCategory set [_category, _categoryCount + 1];
-} forEach (_treasury get "_ledger");
 
 private _reserveFloor = (_policy get "reserveMinimum")
     max (round (_balance * (_policy get "reserveBalanceFraction")))
     max (round (_incomePerMinute * ((_policy get "reserveIncomeSeconds") / 60)));
 private _emergencyReserve = _policy get "emergencyReserve";
-private _baseWindowBudget = (_incomePerMinute * (_windowSeconds / 60)) max (_policy get "bootstrapWindowBudget");
+private _developmentIncomeBasis = (
+    _incomePerMinute * ((_policy get "developmentIncomeHorizonSeconds") / 60)
+) max (_policy get "developmentBootstrapIncome");
 private _balancedRunway = (_policy get "balancedRunwayMinimum")
     max (_incomePerMinute * ((_policy get "balancedRunwaySeconds") / 60));
 private _surplusFloor = _reserveFloor + _balancedRunway;
@@ -72,9 +46,5 @@ createHashMapFromArray [
     ["reserveFloor", _reserveFloor],
     ["emergencyReserve", _emergencyReserve],
     ["surplusFloor", _surplusFloor],
-    ["recentCommanderSpend", _recentCommanderSpend],
-    ["recentByCategory", _recentByCategory],
-    ["recentCountByCategory", _recentCountByCategory],
-    ["baseWindowBudget", _baseWindowBudget],
-    ["windowSeconds", _windowSeconds]
+    ["developmentIncomeBasis", _developmentIncomeBasis]
 ]

@@ -105,6 +105,7 @@ if (_savedState isNotEqualTo false) then {
         "lastPlayerContributorName", "requiredDeliveries", "establishAtDateNum", "baseNetId", "upstreamNodeId"
     ];
     private _typeConfigMap = _network get "NODE_TYPE_CONFIG";
+    private _validNodeStates = ["CONNECTED", "STRAINED", "ISOLATED", "DISABLED", "ESTABLISHING"];
     private _restoredNodes = createHashMap;
     {
         private _nodeId = _x;
@@ -137,13 +138,13 @@ if (_savedState isNotEqualTo false) then {
         if !(_throughput isEqualType 0 && {_throughput >= 0} && {_throughput <= _throughputMax}) then {
             throw format ["Saved %1 logistics node %2 has invalid throughput %3", _managedSideKey, _nodeId, _throughput];
         };
-        if ((_savedNode get "state") == "ESTABLISHING") then {
+        private _savedState = _savedNode get "state";
+        if !(_savedState in _validNodeStates) then {
+            throw format ["Saved %1 logistics node %2 has invalid state %3", _managedSideKey, _nodeId, _savedState];
+        };
+        if (_savedState == "ESTABLISHING") then {
             if (_type != "DEPOT" || {(_savedNode get "requiredDeliveries") != (_network get "DEPOT_REQUIRED_DELIVERIES")}) then {
                 throw format ["Saved %1 logistics node %2 has invalid establishment state", _managedSideKey, _nodeId];
-            };
-        } else {
-            if ((_savedNode get "state") != "CONNECTED") then {
-                throw format ["Saved %1 logistics node %2 has invalid state %3", _managedSideKey, _nodeId, _savedNode get "state"];
             };
         };
 
@@ -186,6 +187,7 @@ _network set ["_supplyChainDirty", true];
 _network set ["_objectiveSideIndexDirty", true];
 _network set ["_lastSupplyChainRefreshAt", -1];
 _network set ["_lastUpdate", time];
+_network set ["_nextDepotPlanningAtTick", diag_tickTime];
 
 if (_dispatchDelay < 0) then {
     private _minInterval = _network get "DISPATCH_MIN_INTERVAL";

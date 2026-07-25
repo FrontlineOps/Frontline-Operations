@@ -16,6 +16,9 @@ if (_leaderBehavior isEqualTo "COMBAT") then {
         _state = "moving";
     };
 };
+if ((_groupData get "waypoints") isEqualTo []) then {
+    _state = [_groupData] call FLO_fnc_virtualizationResolveRouteCompletionState;
+};
 
 [_groupData, _state] call FLO_fnc_virtualizationSetRuntimeState;
 

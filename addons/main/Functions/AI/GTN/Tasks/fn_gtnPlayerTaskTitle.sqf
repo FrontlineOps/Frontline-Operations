@@ -1,6 +1,6 @@
 /*
  * Function: FLO_fnc_gtnPlayerTaskTitle
- * Description: Builds the title for an operation-owned BIS task.
+ * Description: Builds the title for a direct commander BIS task.
  */
 
 params ["_kind", "_objectiveId"];

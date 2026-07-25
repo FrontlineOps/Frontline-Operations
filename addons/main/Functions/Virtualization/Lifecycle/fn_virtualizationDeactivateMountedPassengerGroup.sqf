@@ -30,7 +30,7 @@ if (isNull _realGroup) exitWith {
 };
 
 [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupPosition;
-[_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupWaypoints;
+private _canonicalWaypointCount = count (_groupData get "waypoints");
 [_groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupRuntimeState;
 private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationSyncRealGroupOutcome;
 _syncResult params ["", "_syncedCount"];
@@ -70,9 +70,11 @@ call FLO_fnc_virtualizationTouchRegistry;
     [_groupId, [_groupId] call FLO_fnc_virtualizationSnapshotGroup]
 ] call CBA_fnc_localEvent;
 ["VIRTUALIZATION", 3, format [
-    "Virtualized mounted passenger group %1 from carrier %2",
+    "Virtualized mounted passenger group %1 from carrier %2 with canonical route preserved waypoints=%3 commanderOrder=%4",
     _groupId,
-    _carrierGroupId
+    _carrierGroupId,
+    _canonicalWaypointCount,
+    _groupData get "commanderOrder"
 ]] call FLO_fnc_log;
 
 true

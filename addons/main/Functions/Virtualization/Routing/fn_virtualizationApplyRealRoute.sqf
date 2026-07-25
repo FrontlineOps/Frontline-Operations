@@ -10,6 +10,10 @@ params ["_groupId", "_groupData"];
 private _realGroup = _groupData get "realGroup";
 if (isNull _realGroup) exitWith { false };
 
+if (_realGroup getVariable ["FLO_buildingGarrisonAttempted", false]) then {
+    [_realGroup] call FLO_fnc_taskReleaseGarrison;
+};
+
 private _homeObjective = _groupData get "homeObjective";
 if (_homeObjective isEqualTo "civ_building") then {
     {

@@ -341,7 +341,6 @@ if (isNil "FLO_GTN_CommanderDebugMarkers") then { FLO_GTN_CommanderDebugMarkers 
                 private _shortId = if ((count _groupId) > 7) then { _groupId select [7] } else { _groupId };
                 private _groupMarkerType = switch (_groupOrder) do {
                     case "ATTACK": { "mil_arrow" };
-                    case "ASSAULT": { "mil_arrow" };
                     case "DEFEND": { "mil_triangle" };
                     case "RECON": { "mil_marker" };
                     case "RETREAT": { "mil_warning" };

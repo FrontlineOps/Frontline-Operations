@@ -3,6 +3,9 @@
  * Description:
  *   Returns the remaining activation route and revalidates LAND geometry from
  *   the actual activation position without skipping required detour pivots.
+ *
+ * Return Value:
+ *   [Allowed, Remaining waypoints, Rejection reason] <ARRAY>
  */
 
 params [
@@ -37,11 +40,11 @@ if (_movementDomain != "LAND" || {_allWaypoints isEqualTo []}) exitWith {
         };
     };
 
+    private _remainingWaypoints = +_allWaypoints;
     if (_remainingIndex > 0 && {_remainingIndex < count _allWaypoints}) then {
-        _allWaypoints select [_remainingIndex, count _allWaypoints - _remainingIndex]
-    } else {
-        +_allWaypoints
-    }
+        _remainingWaypoints = _allWaypoints select [_remainingIndex, count _allWaypoints - _remainingIndex];
+    };
+    [true, _remainingWaypoints, ""]
 };
 
 private _routeResult = [
@@ -52,9 +55,6 @@ private _routeResult = [
     "ACTIVATION_REBASE"
 ] call FLO_fnc_virtualizationResolveLandRouteContinuation;
 _routeResult params ["_resolved", "_resolvedWaypoints", "_reason"];
-if (!_resolved) then {
-    ["VIRTUALIZATION", 1, format ["Activation route rebase failed group=%1 reason=%2", _groupId, _reason]] call FLO_fnc_log;
-    throw format ["FLO_fnc_virtualizationGetRemainingWaypoints: no land route for %1", _groupId];
-};
+if (!_resolved) exitWith { [false, [], _reason] };
 
-_resolvedWaypoints
+[true, _resolvedWaypoints, ""]

@@ -24,8 +24,9 @@ params [
 if !(_side in [east, west]) exitWith { false };
 if !([_position] call FLO_fnc_validateGroupPosition) exitWith { false };
 
-private _sideKey = [_side] call FLO_fnc_sideKey;
-private _gtnCommander = FLO_GTN_CommandersBySide get _sideKey;
+private _gtnCommander = [_side] call FLO_fnc_gtnGetCommanderBySide;
+if (isNil "_gtnCommander") exitWith { false };
+
 private _worldState = _gtnCommander get "_worldState";
 private _enemyIntel = _worldState call ["_getEnemyIntel", []];
 private _knownGroupPicture = _worldState call ["_getKnownEnemyGroupPicture", []];

@@ -32,6 +32,7 @@ if (_civilianRoutineState == "protest") then {
 _groupData set ["spawnPosition", +(_savedData get "spawnPosition")];
 _groupData set ["direction", _savedData get "direction"];
 _groupData set ["spawnClass", _savedData get "spawnClass"];
+_groupData set ["combatExperience", _savedData get "combatExperience"];
 [_groupData, _savedData get "comp"] call FLO_fnc_virtualizationSetAssetComposition;
 _groupData set ["waypoints", _savedData get "waypoints"];
 _groupData set ["currentWaypointIndex", _savedData get "currentWaypointIndex"];

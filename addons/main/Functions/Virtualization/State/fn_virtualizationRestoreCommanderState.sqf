@@ -12,7 +12,6 @@ if (_commanderOrder == "") exitWith { true };
 _groupData set ["orderTargetPos", _savedData get "orderTargetPos"];
 _groupData set ["orderMode", _savedData get "orderMode"];
 _groupData set ["attackObjective", _savedData get "attackObjective"];
-_groupData set ["campaignOperationId", _savedData get "campaignOperationId"];
 _groupData set ["defendObjective", _savedData get "defendObjective"];
 _groupData set ["defendLeaseIssuedAt", _savedData get "defendLeaseIssuedAt"];
 _groupData set ["defendLeaseUntil", _savedData get "defendLeaseUntil"];

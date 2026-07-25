@@ -1,10 +1,9 @@
-/* Aggregates maintained past and present enemy contacts by canonical probe front. */
+/* Aggregates maintained enemy contacts by current enemy frontline objective. */
 params [
     "_cmdr",
-    ["_fronts", createHashMap, [createHashMap]]
+    ["_frontline", createHashMap, [createHashMap]]
 ];
 
-private _sideKey = _cmdr get "_sideKey";
 private _ws = _cmdr get "_worldState";
 private _objectives = _ws call ["_getObjectives", []];
 private _enemyIntel = _ws call ["_getEnemyIntel", []];
@@ -21,17 +20,14 @@ private _rows = [];
 private _picture = createHashMap;
 
 {
-    private _front = _y;
-    if ((_front get "sideKey") != _sideKey) then { continue };
-    private _objectiveId = _front get "objectiveId";
+    private _objectiveId = _x;
     if !(_objectiveId in _objectives) then {
         throw format ["Frontline support picture references missing objective %1", _objectiveId];
     };
     private _objective = _objectives get _objectiveId;
     private _objectivePos = +(_objective get "position");
-    _rows pushBack [_x, _objectivePos, (_objective get "radius") + _associationRadius];
-    _picture set [_x, createHashMapFromArray [
-        ["probeId", _x],
+    _rows pushBack [_objectiveId, _objectivePos, (_objective get "radius") + _associationRadius];
+    _picture set [_objectiveId, createHashMapFromArray [
         ["objectiveId", _objectiveId],
         ["targetPos", _objectivePos],
         ["reportCount", 0],
@@ -47,7 +43,7 @@ private _picture = createHashMap;
         ["sumY", 0],
         ["sumWeight", 0]
     ]];
-} forEach _fronts;
+} forEach _frontline;
 
 if (_rows isEqualTo []) exitWith { _picture };
 
@@ -57,19 +53,19 @@ if (_rows isEqualTo []) exitWith { _picture };
     if (_age < 0 || {_age > _maxAge}) then { continue };
     if ((toLower _contactType) in ["air", "helicopter", "plane"]) then { continue };
 
-    private _bestProbeId = "";
+    private _bestObjectiveId = "";
     private _bestDistance = 1e12;
     {
-        _x params ["_probeId", "_objectivePos", "_maximumDistance"];
+        _x params ["_objectiveId", "_objectivePos", "_maximumDistance"];
         private _distance = _contactPos distance2D _objectivePos;
         if (_distance <= _maximumDistance && {_distance < _bestDistance}) then {
-            _bestProbeId = _probeId;
+            _bestObjectiveId = _objectiveId;
             _bestDistance = _distance;
         };
     } forEach _rows;
-    if (_bestProbeId == "") then { continue };
+    if (_bestObjectiveId == "") then { continue };
 
-    private _entry = _picture get _bestProbeId;
+    private _entry = _picture get _bestObjectiveId;
     private _weight = ((_confidence max 0.1) * ((_strength max 1) min 20));
     _entry set ["reportCount", (_entry get "reportCount") + 1];
     if (_age <= _freshAge) then {
@@ -90,18 +86,18 @@ if (_rows isEqualTo []) exitWith { _picture };
     private _age = _now - (_known get "lastSeen");
     if (_age < 0 || {_age > _freshAge}) then { continue };
     private _knownPos = _known get "position";
-    private _bestProbeId = "";
+    private _bestObjectiveId = "";
     private _bestDistance = 1e12;
     {
-        _x params ["_probeId", "_objectivePos", "_maximumDistance"];
+        _x params ["_objectiveId", "_objectivePos", "_maximumDistance"];
         private _distance = _knownPos distance2D _objectivePos;
         if (_distance <= _maximumDistance && {_distance < _bestDistance}) then {
-            _bestProbeId = _probeId;
+            _bestObjectiveId = _objectiveId;
             _bestDistance = _distance;
         };
     } forEach _rows;
-    if (_bestProbeId == "") then { continue };
-    private _entry = _picture get _bestProbeId;
+    if (_bestObjectiveId == "") then { continue };
+    private _entry = _picture get _bestObjectiveId;
     private _targetIds = _entry get "targetGroupIds";
     _targetIds pushBackUnique _groupId;
     _entry set ["targetGroupIds", _targetIds];

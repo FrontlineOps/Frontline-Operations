@@ -4,8 +4,7 @@
  *
  * Description:
  * Goal Task Network plan executor for the current frontline allocation model.
- * The live executor only needs to bridge two primitives:
- * - prim_allocate_frontline_attacks
+ * The live executor bridges the mobile-defense primitive:
  * - prim_allocate_frontline_defense
  *
  * Arguments:
@@ -262,25 +261,6 @@ private _executor = createHashMapObject [[
     }],
 
     ["_registerHandlers", {
-        _self call ["_registerHandler", ["prim_allocate_frontline_attacks", {
-            params ["_ctx"];
-            private _cmdr = _ctx get "commander";
-            private _taskNode = _ctx get "taskNode";
-            private _track = _taskNode get "_trackRef";
-            if (isNil "_track") exitWith {
-                _ctx set ["status", "FAILED"];
-                false
-            };
-
-            private _metrics = _cmdr call ["_allocateFrontlineAttacks", [_track]];
-            private _primData = _taskNode getOrDefault ["primitiveData", createHashMap];
-            _primData set ["metrics", _metrics];
-            _taskNode set ["primitiveData", _primData];
-
-            _ctx set ["status", "SUCCESS"];
-            true
-        }]];
-
         _self call ["_registerHandler", ["prim_allocate_frontline_defense", {
             params ["_ctx"];
             private _cmdr = _ctx get "commander";

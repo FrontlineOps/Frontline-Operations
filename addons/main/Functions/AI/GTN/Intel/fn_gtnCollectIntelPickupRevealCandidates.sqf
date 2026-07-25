@@ -22,29 +22,19 @@ private _enemySideCtx = [_enemySide] call FLO_fnc_gtnSideContext;
 private _enemySideKey = _enemySideCtx get "sideKey";
 private _enemyColor = ["ColorBLUFOR", "ColorOPFOR"] select (_enemySide isEqualTo east);
 
-private _enemyCommander = FLO_GTN_CommandersBySide get _enemySideKey;
-private _tracks = _enemyCommander get "_tracks";
-private _seenTargetObjectives = createHashMap;
+private _enemyCommander = [_enemySide] call FLO_fnc_gtnGetCommanderBySide;
+if (isNil "_enemyCommander") exitWith { _candidates };
+
+private _assignmentCache = _enemyCommander get "_objectiveAssignmentCache";
+private _attackCounts = _assignmentCache get "attackCounts";
 
 {
-    if ((_x get "goal") != "capture_priority_objective") then { continue };
-
-    private _objectiveId = _x get "phaseObjectiveId";
-    if (_objectiveId == "" || {_objectiveId in _seenTargetObjectives}) then { continue };
+    private _objectiveId = _x;
+    private _attackerCount = _y;
     if !(_objectiveId in FLO_Objectives) then { continue };
 
     private _objective = FLO_Objectives get _objectiveId;
     if ((_objective get "owner") != _playerSide) then { continue };
-
-    _seenTargetObjectives set [_objectiveId, true];
-
-    private _phase = _x get "phase";
-    private _phasePriority = switch (_phase) do {
-        case "assault": { 300 };
-        case "staging": { 200 };
-        case "spent": { 100 };
-        default { 50 };
-    };
 
     _candidates pushBack (createHashMapFromArray [
         ["category", "commander_target"],
@@ -55,15 +45,15 @@ private _seenTargetObjectives = createHashMap;
         ["position", _objective get "position"],
         ["radius", ((_objective get "radius") max 150) min 450],
         ["duration", 300],
-        ["priority", 3000 + _phasePriority + (_objective get "priority")],
-        ["message", format ["Recovered enemy comms: commander target identified at %1.", _objective get "name"]],
+        ["priority", 3000 + (_attackerCount * 50) + (_objective get "priority")],
+        ["message", format ["Recovered enemy comms: %1 attack groups ordered toward %2.", _attackerCount, _objective get "name"]],
         ["payload", [
             _objective get "name",
-            _phase,
+            format ["ATTACK x%1", _attackerCount],
             _enemyColor
         ]]
     ]);
-} forEach _tracks;
+} forEach _attackCounts;
 
 private _enemyNetwork = FLO_Logistics_Networks get _enemySideKey;
 [_enemyNetwork] call FLO_fnc_logisticsNetworkEnsureSupplyChainFresh;

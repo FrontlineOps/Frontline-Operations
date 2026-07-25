@@ -29,7 +29,14 @@ private _validatedGroups = createHashMap;
                 _savedData get "patrolConfig"
             ] call FLO_fnc_virtualizationValidateLandRoute;
             if !(_routeValidation select 0) then {
-                throw format ["Unsafe saved LAND route: %1", _routeValidation select 1];
+                private _normalized = [
+                    _savedData,
+                    _groupId,
+                    _routeValidation select 1
+                ] call FLO_fnc_virtualizationNormalizeSavedLandRoute;
+                if (!_normalized) then {
+                    throw format ["Unsafe saved LAND route: %1", _routeValidation select 1];
+                };
             };
         };
     } catch {

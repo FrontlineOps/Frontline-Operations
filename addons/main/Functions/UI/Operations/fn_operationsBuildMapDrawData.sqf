@@ -7,7 +7,6 @@
 
 params ["_snapshot"];
 
-FLO_OperationsMapThreatSectors = _snapshot get "threatSectors";
 private _drawData = [];
 {
     private _owner = _x get "owner";
@@ -20,16 +19,12 @@ private _drawData = [];
     private _integrationState = _x get "integrationState";
     private _contested = _x get "contested";
     private _underAttack = _x get "underAttack";
-    private _isMainEffort = _intent in ["MAIN_EFFORT", "DEFEND_MAIN"];
+    private _isMainEffort = _intent == "ATTACK";
     private _isSpecial = _intent != "NONE" || {_integrationState != "INTEGRATED"} || {_contested} || {_underAttack};
     private _intentColor = switch (_intent) do {
-        case "MAIN_EFFORT";
-        case "DEFEND_MAIN": { [1, 0.72, 0.29, 1] };
-        case "SUPPORTING_EFFORT";
-        case "DEFEND_SUPPORT": { [0.145, 0.843, 1, 1] };
-        case "SUPPORT": { [0.65, 1, 0.35, 0.95] };
-        case "FOOTHOLD";
-        case "OPPORTUNITY": { [1, 0.72, 0.29, 0.95] };
+        case "ATTACK": { [1, 0.72, 0.29, 1] };
+        case "DEFEND": { [0.145, 0.843, 1, 1] };
+        case "FOOTHOLD": { [1, 0.72, 0.29, 0.95] };
         case "SCREEN": { [0.65, 0.72, 0.78, 0.85] };
         default { [0.65, 0.72, 0.78, 0] };
     };

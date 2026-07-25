@@ -35,7 +35,11 @@ private _aliveUnitCount = count _aliveUnits;
 if (_aliveUnitCount <= 0) exitWith { false };
 
 if ([_groupData] call FLO_fnc_virtualizationIsTransportCarrier) then {
+    private _passengerIds = +([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);
     [_groupId] call FLO_fnc_transportDetachAll;
+    {
+        [_x, "CARRIER_DESTROYED_CREW_SURVIVED"] call FLO_fnc_transportApplyPostDismountWaypoint;
+    } forEach _passengerIds;
 };
 
 if ((_groupData get "mountedIn") != "") then {

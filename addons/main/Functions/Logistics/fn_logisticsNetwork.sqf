@@ -7,16 +7,28 @@ if (!isServer) exitWith {};
 if ((keys FLO_Logistics_Networks) isNotEqualTo []) exitWith {};
 
 private _groupCosts = createHashMapFromArray [
-    ["infantry", 300],
-    ["motorized", 800],
-    ["mechanized", 1600],
-    ["mobile_aa", 1800],
-    ["armor", 2400],
-    ["helicopter", 2200],
-    ["air", 3500],
-    ["jet", 5000],
-    ["artillery", 3000],
-    ["static_aa", 2600]
+    ["infantry", 150],
+    ["motorized", 400],
+    ["mechanized", 800],
+    ["mobile_aa", 900],
+    ["armor", 1200],
+    ["helicopter", 1100],
+    ["air", 1750],
+    ["jet", 2500],
+    ["artillery", 1500],
+    ["static_aa", 1300]
+];
+private _groupThroughputCosts = createHashMapFromArray [
+    ["infantry", 50],
+    ["motorized", 75],
+    ["mechanized", 100],
+    ["mobile_aa", 125],
+    ["helicopter", 150],
+    ["armor", 175],
+    ["static_aa", 200],
+    ["artillery", 225],
+    ["air", 250],
+    ["jet", 275]
 ];
 
 private _nodeTypeConfig = createHashMapFromArray [
@@ -30,18 +42,13 @@ private _logisticsClass = [
     ["#type", "LogisticsNetwork"],
 
     ["GROUP_COSTS", _groupCosts],
-    ["GROUP_THROUGHPUT_COSTS", _groupCosts],
+    ["GROUP_THROUGHPUT_COSTS", _groupThroughputCosts],
     ["NODE_TYPE_CONFIG", _nodeTypeConfig],
     ["CHECK_INTERVAL", 15],
     ["BLUFOR_DETECT_RANGE", 2000],
     ["DISPATCH_MIN_INTERVAL", 30],
     ["DISPATCH_MAX_INTERVAL", 90],
-    ["REPLACEMENT_DISPATCH_CAPS", createHashMapFromArray [
-        ["ROUTINE", 1],
-        ["OPERATIONAL", 2],
-        ["PRESSURED", 3],
-        ["CRITICAL", 6]
-    ]],
+    ["REPLACEMENT_DISPATCH_BATCH_SIZE", 6],
     ["REPLACEMENT_PRIORITY_ORDER", [
         "infantry",
         "motorized",
@@ -69,15 +76,17 @@ private _logisticsClass = [
     ["SUPPLY_CHAIN_SOFT_REFRESH_INTERVAL", 60],
     ["NODE_OBJECTIVE_LINK_RADIUS", 3000],
     ["NODE_DELIVERY_RADIUS", 20],
-    ["NODE_REFILL_INTERVAL", 180],
+    ["NODE_REFILL_INTERVAL", 60],
     ["SHIPMENT_THROUGHPUT", 1500],
     ["DEPOT_COST", 500],
     ["DEPOT_MIN_SOURCE_HOPS", 1],
     ["DEPOT_REQUIRED_DELIVERIES", 1],
     ["DEPOT_AUTO_ESTABLISH_SECONDS", 120],
+    ["DEPOT_PLANNING_INTERVAL", 120],
+    ["DEPOT_TERRITORY_OBJECTIVES_PER_NODE", 10],
     ["TRANSPORT_RESERVE_REPLENISH_GROUND_PER_CHECK", 1],
     ["TRANSPORT_RESERVE_REPLENISH_AIR_PER_CHECK", 1],
-    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", 0],
+    ["OBJECTIVE_CAPTURE_FORCE_GROWTH", 2],
     ["OBJECTIVE_CAPTURE_GROWTH_DELAY_SECONDS", 900],
 
     ["_initialComposition", nil],
@@ -99,6 +108,7 @@ private _logisticsClass = [
     ["_hqNodeId", ""],
     ["_hqObjectiveId", ""],
     ["_initialInfrastructureSeeded", false],
+    ["_nextDepotPlanningAtTick", 0],
     ["_lastNodeRefillAtDateNum", -1],
     ["_supplyRouteInfo", createHashMap],
     ["_activeSupplyNodes", createHashMap],
@@ -193,7 +203,11 @@ try {
             _savedPayload = _savedBySide get _sideKey;
         };
         private _network = createHashMapObject [_logisticsClass, [_side, _savedPayload]];
-        _network set ["OBJECTIVE_CAPTURE_FORCE_GROWTH", (([_side, "forceGrowth"] call FLO_fnc_gtnGetSideCommanderHandle) get "value")];
+        private _forceGrowth = (([_side, "forceGrowth"] call FLO_fnc_gtnGetSideCommanderHandle) get "value");
+        if !(_forceGrowth in [1, 2, 3]) then {
+            throw format ["%1 force growth must be 1, 2, or 3 groups per capture, got %2", _sideKey, _forceGrowth];
+        };
+        _network set ["OBJECTIVE_CAPTURE_FORCE_GROWTH", _forceGrowth];
         _initializedNetworks set [_sideKey, _network];
     } forEach [east, west];
 } catch {

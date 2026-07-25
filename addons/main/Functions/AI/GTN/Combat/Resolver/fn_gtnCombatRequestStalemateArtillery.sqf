@@ -1,4 +1,4 @@
-/* Requests one paid artillery mission to break a stalled operation engagement. */
+/* Requests one paid artillery mission to break a stalled direct-attack engagement. */
 params [
     ["_zoneId", "", [""]],
     ["_zonePos", [0, 0, 0], [[]]],
@@ -28,7 +28,6 @@ private _westAttackRefs = [];
     private _groupData = _groups get _groupId;
     if ((_groupData get "unitCount") <= 0) then { continue };
     if ((_groupData get "commanderOrder") != "ATTACK") then { continue };
-    if ((_groupData get "campaignOperationId") == "") then { continue };
     _eastAttackRefs pushBack [_groupId, _groupData];
 } forEach _eastRefs;
 {
@@ -37,7 +36,6 @@ private _westAttackRefs = [];
     private _groupData = _groups get _groupId;
     if ((_groupData get "unitCount") <= 0) then { continue };
     if ((_groupData get "commanderOrder") != "ATTACK") then { continue };
-    if ((_groupData get "campaignOperationId") == "") then { continue };
     _westAttackRefs pushBack [_groupId, _groupData];
 } forEach _westRefs;
 
@@ -75,10 +73,9 @@ if ([_targetPos] call FLO_fnc_virtualizationIsPositionWithinActivationRange) exi
 
 private _objectiveId = ((_attackerRefs select 0) select 1) get "attackObjective";
 if (_objectiveId == "") then {
-    private _nearestObjectiveId = [_targetPos] call FLO_fnc_getNearestObjective;
-    if (_nearestObjectiveId != "" && {(_targetPos distance2D ((FLO_Objectives get _nearestObjectiveId) get "position")) <= 1000}) then {
-        _objectiveId = _nearestObjectiveId;
-    };
+    private _message = format ["Stalemate artillery received ATTACK group %1 without an objective", (_attackerRefs select 0) select 0];
+    ["VIRTUAL COMBAT", 1, _message] call FLO_fnc_log;
+    throw _message;
 };
 
 private _targetContext = createHashMapFromArray [
@@ -102,7 +99,7 @@ _engagement set ["artilleryReadyAt", diag_tickTime + (_manager get "virtualComba
 _engagement set ["artilleryMissionCount", (_engagement get "artilleryMissionCount") + 1];
 _engagement set ["lastArtillerySide", _sideKey];
 
-["GTN_COMBAT", 2, format [
+["GTN_COMBAT", 3, format [
     "%1 committed artillery to stalled engagement %2 after round %3",
     _sideKey,
     _zoneId,

@@ -8,8 +8,9 @@
         :root {
             --header-height: 8.5vh;
             --footer-height: 4.5vh;
-            --left-width: 17.5vw;
+            --brand-width: 17.5vw;
             --right-width: 19vw;
+            --actions-width: 22vw;
             --bg: #03080e;
             --panel: rgba(12, 22, 32, 0.92);
             --panel-strong: rgba(16, 30, 42, 0.96);
@@ -93,13 +94,13 @@
         .topbar {
             display: grid;
             min-width: 0;
-            grid-template-columns: var(--left-width) minmax(0, 1fr) var(--right-width);
+            grid-template-columns: var(--brand-width) minmax(0, 1fr) var(--actions-width);
             background: var(--panel);
             box-shadow: 0 16px 42px rgba(0, 0, 0, 0.36);
         }
 
         .brand,
-        .operation-strip,
+        .attack-strip,
         .top-actions {
             position: relative;
             display: flex;
@@ -145,7 +146,6 @@
         .brand-subtitle,
         .eyebrow,
         .metric-label,
-        .phase-step,
         .footer,
         .badge-label {
             text-transform: uppercase;
@@ -161,9 +161,9 @@
             white-space: nowrap;
         }
 
-        .operation-strip {
+        .attack-strip {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 2fr) minmax(140px, 1fr);
             gap: 1px;
             padding: 9px 12px;
             background:
@@ -171,7 +171,7 @@
                 var(--panel);
         }
 
-        .operation-cell {
+        .attack-cell {
             display: flex;
             min-width: 0;
             height: 100%;
@@ -181,7 +181,7 @@
             border-left: 1px solid var(--line);
         }
 
-        .operation-cell:first-child {
+        .attack-cell:first-child {
             border-left: 0;
         }
 
@@ -191,7 +191,7 @@
             font-weight: 800;
         }
 
-        .operation-value {
+        .attack-value {
             margin-top: 4px;
             overflow: hidden;
             color: var(--text);
@@ -202,11 +202,10 @@
             white-space: nowrap;
         }
 
-        .operation-value.cyan { color: var(--cyan); }
-        .operation-value.amber { color: var(--amber); }
-        .operation-value.green { color: var(--green); }
+        .attack-value.cyan { color: var(--cyan); }
+        .attack-value.green { color: var(--green); }
 
-        .operation-select {
+        .attack-select {
             width: 100%;
             min-width: 0;
             margin-top: 3px;
@@ -222,8 +221,8 @@
             text-transform: uppercase;
         }
 
-        .operation-select:focus { border-bottom-color: var(--cyan); }
-        .operation-select option { background: var(--panel); color: var(--text); }
+        .attack-select:focus { border-bottom-color: var(--cyan); }
+        .attack-select option { background: var(--panel); color: var(--text); }
 
         .top-actions {
             justify-content: flex-end;
@@ -259,11 +258,29 @@
             box-shadow: inset 0 0 0 1px rgba(255, 77, 94, 0.65);
         }
 
+        .top-guide-button {
+            display: flex;
+            height: 38px;
+            align-items: center;
+            gap: 8px;
+            padding: 0 13px;
+            color: var(--text);
+            background: rgba(255, 184, 74, 0.09);
+            box-shadow: inset 3px 0 0 var(--amber), inset 0 0 0 1px rgba(255, 184, 74, 0.28);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .top-guide-button span { color: var(--amber); font-size: 16px; }
+        .top-guide-button:hover { background: rgba(255, 184, 74, 0.16); }
+
         .workspace {
             display: grid;
             min-width: 0;
             min-height: 0;
-            grid-template-columns: var(--left-width) minmax(0, 1fr) var(--right-width);
+            grid-template-columns: minmax(0, 1fr) var(--right-width);
         }
 
         .sidebar {
@@ -274,7 +291,6 @@
             background: var(--panel);
         }
 
-        .sidebar.left { border-right: 1px solid var(--line-strong); }
         .sidebar.right { border-left: 1px solid var(--line-strong); }
 
         .section {
@@ -299,170 +315,6 @@
             color: var(--cyan);
             font-size: 11px;
             font-weight: 900;
-        }
-
-        .intent-role {
-            color: var(--amber);
-            font-size: 14px;
-            font-weight: 900;
-            text-transform: uppercase;
-        }
-
-        .intent-target {
-            margin-top: 6px;
-            overflow-wrap: anywhere;
-            color: var(--text);
-            font-size: 28px;
-            font-weight: 900;
-            line-height: 1.06;
-            text-transform: uppercase;
-        }
-
-        .intent-copy {
-            margin-top: 14px;
-            color: var(--secondary);
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .guide-launcher {
-            display: grid;
-            width: 100%;
-            min-height: 64px;
-            grid-template-columns: 36px minmax(0, 1fr) 20px;
-            align-items: center;
-            gap: 12px;
-            margin-top: 18px;
-            padding: 11px 13px;
-            color: var(--text);
-            background: rgba(255, 184, 74, 0.09);
-            box-shadow: inset 3px 0 0 var(--amber), inset 0 0 0 1px rgba(255, 184, 74, 0.28);
-            text-align: left;
-        }
-
-        .guide-launcher:hover {
-            background: rgba(255, 184, 74, 0.16);
-            box-shadow: inset 3px 0 0 var(--amber), inset 0 0 0 1px rgba(255, 184, 74, 0.52);
-        }
-
-        .guide-launcher-icon {
-            display: grid;
-            width: 36px;
-            height: 36px;
-            place-items: center;
-            border: 1px solid var(--amber);
-            color: var(--amber);
-            font-size: 18px;
-            font-weight: 900;
-        }
-
-        .guide-launcher-copy {
-            min-width: 0;
-        }
-
-        .guide-launcher-copy strong,
-        .guide-launcher-copy span {
-            display: block;
-            overflow-wrap: anywhere;
-            text-transform: uppercase;
-        }
-
-        .guide-launcher-copy strong {
-            font-size: 12px;
-            font-weight: 900;
-        }
-
-        .guide-launcher-copy span {
-            margin-top: 3px;
-            color: var(--muted);
-            font-size: 9px;
-        }
-
-        .guide-launcher-arrow {
-            color: var(--amber);
-            font-size: 18px;
-            font-weight: 900;
-            text-align: right;
-        }
-
-        .phase-list {
-            display: grid;
-            gap: 5px;
-        }
-
-        .phase-step {
-            position: relative;
-            min-height: 34px;
-            padding: 9px 10px 8px 28px;
-            color: var(--muted);
-            background: rgba(20, 34, 48, 0.42);
-            box-shadow: inset 0 0 0 1px rgba(103, 232, 255, 0.06);
-            font-size: 11px;
-            font-weight: 900;
-        }
-
-        .phase-step::before {
-            position: absolute;
-            top: 12px;
-            left: 11px;
-            width: 8px;
-            height: 8px;
-            content: "";
-            border: 1px solid var(--muted);
-        }
-
-        .phase-step.complete {
-            color: var(--secondary);
-        }
-
-        .phase-step.complete::before {
-            border-color: var(--green);
-            background: var(--green);
-            box-shadow: 0 0 10px rgba(167, 255, 90, 0.28);
-        }
-
-        .phase-step.active {
-            color: var(--text);
-            background: rgba(24, 58, 82, 0.92);
-            box-shadow: inset 3px 0 0 var(--cyan), inset 0 0 0 1px var(--line-strong);
-        }
-
-        .phase-step.active::before {
-            border-color: var(--cyan);
-            background: var(--cyan);
-            box-shadow: 0 0 12px rgba(37, 215, 255, 0.4);
-        }
-
-        .phase-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-top: 12px;
-            color: var(--muted);
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-
-        .phase-meta strong {
-            overflow-wrap: anywhere;
-            color: var(--green);
-            text-align: right;
-        }
-
-        .status-note {
-            padding: 13px 14px;
-            border-left: 3px solid var(--amber);
-            color: #f1d7a7;
-            background: rgba(255, 184, 74, 0.09);
-            font-size: 12px;
-            line-height: 1.45;
-        }
-
-        .status-note.nominal {
-            border-left-color: var(--green);
-            color: #d8ffc0;
-            background: rgba(167, 255, 90, 0.07);
         }
 
         .map-portal {
@@ -509,7 +361,7 @@
             font-weight: 900;
         }
 
-        .sustainment-doctrine {
+        .sustainment-posture {
             margin-top: 12px;
         }
 
@@ -805,7 +657,7 @@
             line-height: 1.55;
         }
 
-        .guide-phase-grid {
+        .guide-step-grid {
             display: grid;
             margin-top: 28px;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -813,7 +665,7 @@
             border-left: 1px solid var(--line-strong);
         }
 
-        .guide-phase {
+        .guide-step {
             min-width: 0;
             min-height: 112px;
             padding: 16px;
@@ -822,7 +674,7 @@
             background: rgba(20, 34, 48, 0.45);
         }
 
-        .guide-phase strong,
+        .guide-step strong,
         .guide-block h3,
         .guide-node strong {
             display: block;
@@ -832,14 +684,14 @@
             text-transform: uppercase;
         }
 
-        .guide-phase:nth-child(1) strong { color: var(--secondary); }
-        .guide-phase:nth-child(2) strong { color: var(--cyan); }
-        .guide-phase:nth-child(3) strong { color: var(--red); }
-        .guide-phase:nth-child(4) strong { color: var(--amber); }
-        .guide-phase:nth-child(5) strong { color: var(--green); }
-        .guide-phase:nth-child(6) strong { color: var(--secondary); }
+        .guide-step:nth-child(1) strong { color: var(--secondary); }
+        .guide-step:nth-child(2) strong { color: var(--cyan); }
+        .guide-step:nth-child(3) strong { color: var(--red); }
+        .guide-step:nth-child(4) strong { color: var(--amber); }
+        .guide-step:nth-child(5) strong { color: var(--green); }
+        .guide-step:nth-child(6) strong { color: var(--secondary); }
 
-        .guide-phase p,
+        .guide-step p,
         .guide-block p,
         .guide-node p {
             margin-top: 8px;
@@ -982,7 +834,7 @@
                 font-size: 12px;
             }
 
-            .operation-value {
+            .attack-value {
                 font-size: 21px;
             }
 
@@ -997,36 +849,11 @@
                 padding: 22px;
             }
 
-            .intent-role {
-                font-size: 16px;
-            }
-
-            .intent-target {
-                font-size: 34px;
-            }
-
-            .intent-copy {
-                font-size: 16px;
-            }
-
-            .phase-step {
-                min-height: 42px;
-                padding: 12px 12px 10px 32px;
-                font-size: 13px;
-            }
-
-            .phase-step::before {
-                top: 15px;
-                left: 13px;
-            }
-
-            .phase-meta,
             .data-row,
             .empty-state {
                 font-size: 13px;
             }
 
-            .status-note,
             .list-row-title {
                 font-size: 14px;
             }
@@ -1085,17 +912,17 @@
                 font-size: 17px;
             }
 
-            .operation-strip {
-                grid-template-columns: minmax(120px, 1fr) repeat(3, minmax(76px, auto));
+            .attack-strip {
+                grid-template-columns: minmax(120px, 1fr) minmax(76px, auto);
                 padding-right: 6px;
                 padding-left: 6px;
             }
 
-            .operation-cell {
+            .attack-cell {
                 padding: 0 8px;
             }
 
-            .operation-value {
+            .attack-value {
                 font-size: 14px;
             }
 
@@ -1113,10 +940,6 @@
 
             .section {
                 padding: 13px;
-            }
-
-            .intent-target {
-                font-size: 22px;
             }
 
             .guide-overlay {
@@ -1158,7 +981,7 @@
             }
 
             .brand,
-            .operation-strip,
+            .attack-strip,
             .top-actions {
                 min-height: 64px;
                 border-right: 0;
@@ -1169,7 +992,6 @@
                 grid-template-columns: 1fr;
             }
 
-            .sidebar.left,
             .sidebar.right {
                 border: 0;
             }
@@ -1217,7 +1039,7 @@
                 padding: 20px;
             }
 
-            .guide-phase-grid,
+            .guide-step-grid,
             .guide-grid,
             .guide-node-grid {
                 grid-template-columns: 1fr;
@@ -1240,28 +1062,21 @@
                 </div>
             </div>
 
-            <div class="operation-strip">
-                <div class="operation-cell">
-                    <span class="badge-label">Operations <span id="operation-count">0</span></span>
-                    <select class="operation-select" id="operation-select" aria-label="Select operation">
-                        <option value="">No active operation</option>
+            <div class="attack-strip">
+                <div class="attack-cell">
+                    <span class="badge-label">Frontline Attacks <span id="attack-count">0</span></span>
+                    <select class="attack-select" id="attack-select" aria-label="Select frontline attack">
+                        <option value="">No active attack</option>
                     </select>
                 </div>
-                <div class="operation-cell">
-                    <span class="badge-label">Role</span>
-                    <span class="operation-value cyan" id="operation-role">Connecting</span>
-                </div>
-                <div class="operation-cell">
-                    <span class="badge-label">Phase</span>
-                    <span class="operation-value amber" id="phase-badge">Connecting</span>
-                </div>
-                <div class="operation-cell">
-                    <span class="badge-label">Time</span>
-                    <span class="operation-value green" id="phase-timer">--:--</span>
+                <div class="attack-cell">
+                    <span class="badge-label">Groups</span>
+                    <span class="attack-value cyan" id="attack-strength">Connecting</span>
                 </div>
             </div>
 
             <div class="top-actions">
+                <button class="top-guide-button" id="guide-button" type="button" aria-label="Open campaign field guide"><span>?</span>Field Guide</button>
                 <button class="icon-button" id="development-button" title="Open Regional Development" aria-label="Open Regional Development">&#9651;</button>
                 <button class="icon-button" id="fit-button" title="Fit theater" aria-label="Fit theater">&#9635;</button>
                 <button class="icon-button" id="player-button" title="Center on player" aria-label="Center on player">&#8853;</button>
@@ -1272,54 +1087,6 @@
         </header>
 
         <main class="workspace">
-            <aside class="sidebar left">
-                <section class="section">
-                    <p class="eyebrow">Commander's Intent</p>
-                    <p class="intent-role" id="intent-role">Awaiting Orders</p>
-                    <h1 class="intent-target" id="intent-target">Command Net Offline</h1>
-                    <p class="intent-copy" id="intent-copy">Waiting for the server's current operational picture.</p>
-                    <button class="guide-launcher" id="guide-button" type="button" aria-label="Open campaign field guide">
-                        <span class="guide-launcher-icon">?</span>
-                        <span class="guide-launcher-copy"><strong>Campaign Field Guide</strong><span>Operations / logistics / support</span></span>
-                        <span class="guide-launcher-arrow">&#8594;</span>
-                    </button>
-                </section>
-
-                <section class="section">
-                    <p class="eyebrow">Campaign Phase</p>
-                    <div class="phase-list" id="phase-list"></div>
-                    <div class="phase-meta">
-                        <span>Support Posture</span>
-                        <strong id="support-posture">--</strong>
-                    </div>
-                    <div class="phase-meta">
-                        <span>Shaping</span>
-                        <strong id="operation-shaping">--</strong>
-                    </div>
-                    <div class="phase-meta">
-                        <span>Exploitation</span>
-                        <strong id="operation-exploitation">--</strong>
-                    </div>
-                    <div class="phase-meta">
-                        <span>Operation Allocation</span>
-                        <strong id="operation-allocation">--</strong>
-                    </div>
-                    <div class="phase-meta">
-                        <span>Theater Width</span>
-                        <strong id="operation-width">--</strong>
-                    </div>
-                    <div class="phase-meta">
-                        <span>Scale Driver</span>
-                        <strong id="operation-scale">--</strong>
-                    </div>
-                </section>
-
-                <section class="section">
-                    <p class="eyebrow">Your Position</p>
-                    <div class="status-note" id="player-note">Position unavailable.</div>
-                </section>
-            </aside>
-
             <section class="map-portal" aria-label="Arma theater map"></section>
 
             <aside class="sidebar right">
@@ -1329,7 +1096,6 @@
                         <div class="metric"><span class="metric-value" id="metric-friendly">--</span><span class="metric-label">Friendly Objectives</span></div>
                         <div class="metric"><span class="metric-value" id="metric-enemy">--</span><span class="metric-label">Enemy Objectives</span></div>
                         <div class="metric"><span class="metric-value" id="metric-footholds">--</span><span class="metric-label">Footholds</span></div>
-                        <div class="metric"><span class="metric-value" id="metric-opportunities">--</span><span class="metric-label">Opportunities</span></div>
                     </div>
                 </section>
 
@@ -1341,12 +1107,7 @@
                         <div class="metric"><span class="metric-value" id="metric-committed">--</span><span class="metric-label">Committed</span></div>
                         <div class="metric"><span class="metric-value" id="metric-income">--</span><span class="metric-label">Income / Min</span></div>
                     </div>
-                    <div class="data-list sustainment-doctrine" id="sustainment-doctrine"></div>
-                </section>
-
-                <section class="section">
-                    <p class="eyebrow">Friendly Formations</p>
-                    <div class="row-list" id="formation-list"><div class="empty-state">No formed units.</div></div>
+                    <div class="data-list sustainment-posture" id="sustainment-posture"></div>
                 </section>
 
                 <section class="section">
@@ -1363,11 +1124,6 @@
                     <p class="eyebrow">Selected Objective</p>
                     <h2 class="selected-name" id="selected-name">None Selected</h2>
                     <div class="data-list" id="selected-data"></div>
-                </section>
-
-                <section class="section">
-                    <p class="eyebrow">Reported Opportunities</p>
-                    <div class="row-list" id="opportunity-list"><div class="empty-state">No active reports.</div></div>
                 </section>
 
                 <section class="section">
@@ -1392,7 +1148,7 @@
                 <header class="guide-header">
                     <div class="guide-heading">
                         <strong>Frontline Operations Field Guide</strong>
-                        <span id="guide-mode-label">Campaign doctrine and sustainment</span>
+                        <span id="guide-mode-label">Command mode and sustainment</span>
                     </div>
                     <button class="icon-button close" id="guide-close-button" title="Close field guide" aria-label="Close field guide">&#10005;</button>
                 </header>
@@ -1401,8 +1157,8 @@
                     <nav class="guide-nav" aria-label="Field guide sections">
                         <button class="guide-tab active" data-guide-index="0"><span class="guide-tab-index">01</span><span class="guide-tab-label">Start Here</span></button>
                         <button class="guide-tab" data-guide-index="1"><span class="guide-tab-index">02</span><span class="guide-tab-label">Campaign Cycle</span></button>
-                        <button class="guide-tab" data-guide-index="2"><span class="guide-tab-index">03</span><span class="guide-tab-label">Operations</span></button>
-                        <button class="guide-tab" data-guide-index="3"><span class="guide-tab-index">04</span><span class="guide-tab-label">Formations and Doctrine</span></button>
+                        <button class="guide-tab" data-guide-index="2"><span class="guide-tab-index">03</span><span class="guide-tab-label">Frontline Attacks</span></button>
+                        <button class="guide-tab" data-guide-index="3"><span class="guide-tab-index">04</span><span class="guide-tab-label">Groups and Experience</span></button>
                         <button class="guide-tab" data-guide-index="4"><span class="guide-tab-index">05</span><span class="guide-tab-label">Player Role and Capture</span></button>
                         <button class="guide-tab" data-guide-index="5"><span class="guide-tab-index">06</span><span class="guide-tab-label">Shared Treasury</span></button>
                         <button class="guide-tab" data-guide-index="6"><span class="guide-tab-index">07</span><span class="guide-tab-label">Logistics</span></button>
@@ -1417,76 +1173,74 @@
                             <p class="guide-kicker">01 / Start Here</p>
                             <h2 class="guide-title" id="guide-title">Your first five minutes</h2>
                             <p class="guide-lede">FLO is one persistent side campaign, not a chain of disconnected tasks. Your purchases, captures, deliveries, and combat decisions change the same theater picture used by every player and the AI commander.</p>
-                            <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>1. Read Intent</strong><p>Check the commander's intent, active operation, and phase status before choosing where to go. Probing is ongoing; committed phases show a timer.</p></div>
-                                <div class="guide-phase"><strong>2. Locate Yourself</strong><p>Read Your Position. It tells you whether you are in the main effort, a support area, a foothold, or outside command's current plan.</p></div>
-                                <div class="guide-phase"><strong>3. Check Sustainment</strong><p>Review Available treasury and the nearest node's Local Supplies. Both are required for most purchases and support requests.</p></div>
-                                <div class="guide-phase"><strong>4. Choose a Role</strong><p>Join the main effort, secure its logistics, defend a threatened area, or create a future opportunity away from the operation.</p></div>
-                                <div class="guide-phase"><strong>5. Finish the Fight</strong><p>Capturing an objective starts the hold. Stay through SECURE so enemy pressure cannot immediately reverse the gain.</p></div>
-                                <div class="guide-phase"><strong>6. Recheck Command</strong><p>Return to Command Net when the phase changes, a route fails, or the commander redirects the theater.</p></div>
+                            <div class="guide-step-grid">
+                                <div class="guide-step"><strong>1. Read the Front</strong><p>Check the current attack targets and group counts before choosing where to go. Switch targets from the top selector when several fronts are active.</p></div>
+                                <div class="guide-step"><strong>2. Locate Yourself</strong><p>Use the player-center control and map markers to compare your position with current attacks, defenses, and footholds.</p></div>
+                                <div class="guide-step"><strong>3. Check Sustainment</strong><p>Review Available treasury and the nearest node's Local Supplies. Both are required for most purchases and support requests.</p></div>
+                                <div class="guide-step"><strong>4. Choose a Role</strong><p>Join an attack, secure its logistics, or defend a threatened friendly objective.</p></div>
+                                <div class="guide-step"><strong>5. Finish the Fight</strong><p>Capturing an objective starts the foothold hold. Keep it connected so it becomes secured territory.</p></div>
+                                <div class="guide-step"><strong>6. Recheck Command</strong><p>Return to Command Net after captures, route failures, or changes in the frontline attack list.</p></div>
                             </div>
-                            <div class="guide-callout">Best first move: follow the main effort and remain through SECURE. When that is already covered, protect its logistics or report pressure at another objective.</div>
+                            <div class="guide-callout">Best first move: join a listed frontline attack and remain through capture. When that is already covered, protect logistics or defend a threatened friendly objective.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="1">
                             <p class="guide-kicker">02 / Campaign Cycle</p>
                             <h2 class="guide-title">How the theater advances</h2>
-                            <p class="guide-lede">Each operation moves through five phases. The phase tells you whether command is testing the front, committing an assault, or securing a gain.</p>
-                            <div class="guide-phase-grid">
-                                <div class="guide-phase"><strong>Probing</strong><p>Formations continuously test reachable enemy fronts. Ground gained and useful contact can draw whole reinforcing formations, artillery, and aircraft; failed commitments regroup instead of replacing destroyed groups forever. Probing has no fixed deadline.</p></div>
-                                <div class="guide-phase"><strong>Assault</strong><p>A doctrine-adjusted opening force commits as one mass. Follow-on waves replace losses or exploit progress at controlled intervals.</p></div>
-                                <div class="guide-phase"><strong>Secure</strong><p>Friendly forces hold the target, defeat remaining resistance, and prevent the objective from reversing.</p></div>
-                                <div class="guide-phase"><strong>Consolidate</strong><p>The captured objective is connected to command and logistics. Normal campaign benefits begin once integration succeeds.</p></div>
-                                <div class="guide-phase"><strong>Recovery</strong><p>Orders and unused funds release, formations rebuild, and command quickly resumes probing for the next operation.</p></div>
+                            <p class="guide-lede">Each commander protects garrisons and mobile defense first, then sends the remaining maneuver groups directly toward connected enemy frontline objectives.</p>
+                            <div class="guide-step-grid">
+                                <div class="guide-step"><strong>Garrison</strong><p>Building teams and local patrols hold friendly objectives and cannot be pulled into attacks.</p></div>
+                                <div class="guide-step"><strong>Defend</strong><p>A mobile reserve remains available for friendly objectives under pressure.</p></div>
+                                <div class="guide-step"><strong>Attack</strong><p>Surplus groups spread across connected enemy objectives. Attack Coverage sets 2, 4, 5, or 6 groups per target.</p></div>
+                                <div class="guide-step"><strong>Capture</strong><p>Attack groups release after ownership changes and become available for new orders.</p></div>
+                                <div class="guide-step"><strong>Integrate</strong><p>A held foothold becomes secured after the hold period and a friendly supply or base connection.</p></div>
                             </div>
-                            <div class="guide-callout">The theater can run one main operation and as many supporting operations as mature probes, logistics, and available treasury can sustain. Connected player count never changes that width.</div>
+                            <div class="guide-callout">Every connected enemy frontline objective can be attacked at the same time when surplus groups exist. Player count and treasury do not gate movement orders.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="2">
-                            <p class="guide-kicker">03 / Operations</p>
-                            <h2 class="guide-title">Main effort, support, and tempo</h2>
-                            <p class="guide-lede">An operation is a funded campaign commitment with its own target, source, assigned formations, opening mass, follow-on limit, and current phase state.</p>
+                            <p class="guide-kicker">03 / Frontline Attacks</p>
+                            <h2 class="guide-title">Direct orders across the front</h2>
+                            <p class="guide-lede">A frontline attack is simply a set of groups with direct orders to one connected enemy objective.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Main Effort</h3><p>The primary axis receives the largest opening force, priority funding, and the clearest command intent. Only one operation owns this role.</p></div>
-                                <div class="guide-block"><h3>Supporting Efforts</h3><p>Additional operations may open wherever mature frontline probes, logistics, and available treasury can sustain them.</p></div>
-                                <div class="guide-block"><h3>Opening Mass</h3><p>Command waits for the required package, then commits it atomically. It does not pretend one or two isolated squads are a full assault.</p></div>
-                                <div class="guide-block"><h3>Approach Corridors</h3><p>Groups receive compact parallel lanes so formations converge on the same battle instead of scattering across the objective.</p></div>
-                                <div class="guide-block"><h3>Follow-On Waves</h3><p>Probe commitments are finite and formation-based: destroyed groups do not reopen their slots. Once a formal assault begins, later waves reinforce or exploit momentum only within its committed assault package.</p></div>
-                                <div class="guide-block"><h3>Shaping and Feints</h3><p>Deception forces use movement orders toward another credible target. They do not count as the operation's committed ATTACK mass.</p></div>
-                                <div class="guide-block"><h3>Allocation</h3><p>Command reserves part of the shared treasury for each operation. Unused allocation returns when the operation ends or withdraws.</p></div>
-                                <div class="guide-block"><h3>Support Area</h3><p>The source objective, routes, depots, artillery, and transports behind an operation are part of the fight even when they are not on the target.</p></div>
+                                <div class="guide-block"><h3>Current Target</h3><p>The selector lists every objective that currently owns one or more friendly ATTACK groups.</p></div>
+                                <div class="guide-block"><h3>Group Limit</h3><p>Each objective owns at most six attackers so another front can receive available groups.</p></div>
+                                <div class="guide-block"><h3>Immediate Orders</h3><p>Command does not wait for a package or phase. An eligible surplus group receives its ATTACK route as soon as an objective has room.</p></div>
+                                <div class="guide-block"><h3>Connected Front</h3><p>A target is valid when it is enemy-held and linked to at least one friendly integrated objective.</p></div>
+                                <div class="guide-block"><h3>Fair Distribution</h3><p>Assignments cycle across valid targets so one battle does not absorb every available group.</p></div>
+                                <div class="guide-block"><h3>Protected Garrisons</h3><p>Building and patrol garrisons remain at their objectives. Only eligible mobile surplus groups enter the attack pool.</p></div>
+                                <div class="guide-block"><h3>Automatic Release</h3><p>When a target is captured or stops being a valid enemy objective, its ATTACK groups return to command for reassignment.</p></div>
+                                <div class="guide-block"><h3>No Attack Funding Gate</h3><p>Movement orders do not reserve treasury. Support, logistics, replacements, and development still use the shared economy.</p></div>
                             </div>
-                            <div class="guide-callout">Activity outside active operations is not ignored. Sustained pressure can become a reported opportunity that command evaluates while probing the front.</div>
+                            <div class="guide-callout">Direct attacks are deliberately simple: protect the friendly line, then fill every connected enemy target to its Attack Coverage cap while surplus forces remain. Six groups is the hard ceiling.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="3">
-                            <p class="guide-kicker">04 / Formations and Doctrine</p>
-                            <h2 class="guide-title">Named units with persistent experience</h2>
-                            <p class="guide-lede">Command groups compatible forces into named formations of three to six groups. Each formation keeps a lead group, branch, readiness, experience, rank, role, objective, and battle history across campaign saves.</p>
+                            <p class="guide-kicker">04 / Groups and Experience</p>
+                            <h2 class="guide-title">Groups improve and keep their own record</h2>
+                            <p class="guide-lede">Each combat group keeps its own experience across campaign saves. Command assigns surplus maneuver groups directly, while static and patrol garrisons remain assigned to their objectives.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Rank</h3><p>Formations progress from GREEN to REGULAR, VETERAN, and ELITE. Surviving combat and successful operations build experience.</p></div>
-                                <div class="guide-block"><h3>Readiness</h3><p>Movement and combat drain readiness. Connected reserve and recovery rebuild it. Readiness changes both virtual combat power and the physical AI skill applied when units activate.</p></div>
-                                <div class="guide-block"><h3>Breakthrough</h3><p>Masses two additional opening groups and one additional follow-on group, then may exploit a linked weak objective after success.</p></div>
-                                <div class="guide-block"><h3>Deception</h3><p>Sends a temporary ASSAULT-only feint toward a separate credible target before the main opening. Survivors return when the feint expires.</p></div>
-                                <div class="guide-block"><h3>Elastic Defense</h3><p>Withdraws a pressured formation from a bounded, noncritical salient to preserve it. Capitals and critical objectives are never abandoned this way.</p></div>
-                                <div class="guide-block"><h3>Counterattack</h3><p>Adds one opening group when command responds to pressure and attempts to reverse enemy momentum.</p></div>
-                                <div class="guide-block"><h3>Economy of Force</h3><p>Uses the minimum package on a lower-priority axis: eight opening groups for the main effort, five for support, and follow-ons of no more than four.</p></div>
-                                <div class="guide-block"><h3>Command Roster</h3><p>Command Net lists your side's formations, rank, readiness, role, active strength, and current objective. Enemy formation doctrine remains classified.</p></div>
+                                <div class="guide-block"><h3>Rank</h3><p>Groups progress from GREEN to REGULAR, VETERAN, and ELITE. Every surviving virtual-combat round adds experience; decisive winners gain more.</p></div>
+                                <div class="guide-block"><h3>Combat Quality</h3><p>Experience improves remote combat power and scales every physical combat skill, including accuracy, from 0.37 to 0.98 when the group activates.</p></div>
+                                <div class="guide-block"><h3>Direct Assignment</h3><p>Every connected enemy frontline objective is an immediate candidate after baseline building and patrol garrisons are filled.</p></div>
+                                <div class="guide-block"><h3>Real Eligibility</h3><p>Combat, transport, replacement transit, mission locks, and an existing strategic order prevent conflicting assignment.</p></div>
+                                <div class="guide-block"><h3>Home Axis</h3><p>Command prefers surplus groups from friendly objectives connected to the target before widening to the rest of the reserve.</p></div>
+                                <div class="guide-block"><h3>Persistence</h3><p>Experience and the current direct order save with the group. There is no permanent formation or second assignment layer.</p></div>
                             </div>
-                            <div class="guide-callout">Doctrine changes how forces are committed; commander spending posture changes how money is protected. They are separate systems.</div>
+                            <div class="guide-callout">Group skill ranges from 0.37 to 0.98. Experience affects both virtual combat power and physical AI accuracy.</div>
                         </article>
 
                         <article class="guide-page" data-guide-page="4">
                             <p class="guide-kicker">05 / Player Role and Capture</p>
                             <h2 class="guide-title">Presence starts the capture; control finishes it</h2>
-                            <p class="guide-lede">Players are the flexible force between command intent and battlefield reality. Your role depends on where you fight, what the active operation needs, and whether the area can be held after contact.</p>
+                            <p class="guide-lede">Players are the flexible force between command intent and battlefield reality. Your role depends on where you fight and whether the area can be held after contact.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Main or Support Effort</h3><p>Fight on command's selected axis, help create local superiority, and remain after the marker changes so SECURE can complete.</p></div>
+                                <div class="guide-block"><h3>Join an Attack</h3><p>Fight at any listed target, help create local superiority, and remain after the marker changes so the foothold can hold.</p></div>
                                 <div class="guide-block"><h3>Logistics and Security</h3><p>Protect source objectives, routes, bases, shipments, artillery, and transports. An isolated network can stop replacements and purchases.</p></div>
-                                <div class="guide-block"><h3>Opportunity</h3><p>Pressure away from an active operation can create a report for command. It is useful reconnaissance and shaping, not an instant new operation.</p></div>
+                                <div class="guide-block"><h3>Other Contact</h3><p>Pressure away from a listed attack is still useful reconnaissance and may expose a new connected frontline target after ownership changes.</p></div>
                                 <div class="guide-block"><h3>Sustained Dominance</h3><p>Objective ownership requires maintained friendly control. A drive-by or momentary enemy absence is not enough to secure campaign ownership.</p></div>
-                                <div class="guide-block"><h3>Active Target Capture</h3><p>Capturing the operation target advances it into SECURE and CONSOLIDATE. Friendly presence must survive the counterpressure.</p></div>
-                                <div class="guide-block"><h3>Unsupported Foothold</h3><p>An off-operation capture becomes a foothold. Hold it and connect it to friendly command and logistics before expecting normal campaign benefits.</p></div>
+                                <div class="guide-block"><h3>Target Capture</h3><p>Capturing an enemy objective releases its ATTACK groups for later orders. Friendly presence must survive the counterpressure.</p></div>
+                                <div class="guide-block"><h3>Unsupported Foothold</h3><p>A newly captured objective remains a foothold until the hold time and friendly command or logistics connection succeed.</p></div>
                             </div>
                             <div class="guide-callout">Leaving immediately after capture can reverse the gain. The Your Position panel always states your relationship to command's current effort.</div>
                         </article>
@@ -1494,14 +1248,14 @@
                         <article class="guide-page" data-guide-page="5">
                             <p class="guide-kicker">06 / Shared Treasury</p>
                             <h2 class="guide-title">Every purchase is a theater decision</h2>
-                            <p class="guide-lede">Players and the AI commander spend the same side treasury. Store purchases, recruits, vehicles, construction, tactical support, replacements, operations, and development all compete for the same money.</p>
+                            <p class="guide-lede">Players and the AI commander spend the same side treasury. Store purchases, recruits, vehicles, construction, tactical support, replacements, and development all compete for the same money.</p>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Balance</h3><p>Total unspent side resources. Fresh EAST and WEST campaigns begin with 5,000 each.</p></div>
-                                <div class="guide-block"><h3>Committed</h3><p>Money reserved for active operations or funded projects. It remains in the balance but unrelated spending cannot use it.</p></div>
+                                <div class="guide-block"><h3>Committed</h3><p>Money reserved for funded projects. It remains in the balance but unrelated spending cannot use it.</p></div>
                                 <div class="guide-block"><h3>Available</h3><p>Balance minus commitments. Store checkout and normal commander spending use this amount.</p></div>
                                 <div class="guide-block"><h3>Income</h3><p>Connected and secured objectives pay every 30 seconds. The displayed rate is normalized per minute; contested pressure reduces each batch.</p></div>
                                 <div class="guide-block"><h3>Spending Posture</h3><p>EMERGENCY, CONSERVE, BALANCED, and SURPLUS decide how aggressively command spends and how much reserve it protects.</p></div>
-                                <div class="guide-block"><h3>Competing Priorities</h3><p>Operation reservations protect offensives, but support, replacements, player purchases, shipments, and development still draw from what remains available.</p></div>
+                                <div class="guide-block"><h3>Competing Priorities</h3><p>Support, replacements, player purchases, shipments, and development all draw from the same available balance.</p></div>
                             </div>
                             <div class="guide-callout">A player's purchase has a real campaign cost, and the commander's spending affects what players can afford. Check Available before committing to a plan.</div>
                         </article>
@@ -1511,14 +1265,14 @@
                             <h2 class="guide-title">Shared funds authorize; local supplies fulfill</h2>
                             <p class="guide-lede">Local Supplies are the stock currently held at one node. Supply Limit is the maximum it can hold. Most purchases and replacements require both shared treasury and enough Local Supplies at the node fulfilling the request.</p>
                             <div class="guide-node-grid">
-                                <div class="guide-node"><strong>HQ</strong><span class="guide-node-stat">10,000 limit / +2,500 per 3 min</span><p>The network root. It supports all Store categories and commander force packages.</p></div>
-                                <div class="guide-node"><strong>Depot</strong><span class="guide-node-stat">6,000 limit / +800 per 3 min</span><p>Full forward sustainment and a commander replacement source.</p></div>
-                                <div class="guide-node"><strong>FOB</strong><span class="guide-node-stat">4,000 limit / +400 per 3 min</span><p>Full player Store access and a commander replacement source.</p></div>
-                                <div class="guide-node"><strong>COP</strong><span class="guide-node-stat">800 limit / +100 per 3 min</span><p>Light gear, recruits, and cars. It cannot source commander replacements.</p></div>
+                                <div class="guide-node"><strong>HQ</strong><span class="guide-node-stat">10,000 limit / +2,500 per 1 min</span><p>The network root. It supports all Store categories and commander force packages.</p></div>
+                                <div class="guide-node"><strong>Depot</strong><span class="guide-node-stat">6,000 limit / +800 per 1 min</span><p>Full forward sustainment and a commander replacement source.</p></div>
+                                <div class="guide-node"><strong>FOB</strong><span class="guide-node-stat">4,000 limit / +400 per 1 min</span><p>Full player Store access and a commander replacement source.</p></div>
+                                <div class="guide-node"><strong>COP</strong><span class="guide-node-stat">800 limit / +100 per 1 min</span><p>Light gear, recruits, and cars. It cannot source commander replacements.</p></div>
                             </div>
                             <div class="guide-grid">
                                 <div class="guide-block"><h3>Node States</h3><p>CONNECTED works normally. STRAINED is pressured or low on stock. ISOLATED has no valid friendly route. DISABLED has lost its anchor.</p></div>
-                                <div class="guide-block"><h3>Forward Depots</h3><p>A completed operation can establish a depot for 500 resources at the next connected objective. One shipment activates it immediately, or rear-echelon supply completes it after two minutes.</p></div>
+                                <div class="guide-block"><h3>Forward Depots</h3><p>Command can establish a depot for 500 resources at a suitable owned objective. One shipment activates it immediately, or rear-echelon supply completes it after two minutes.</p></div>
                                 <div class="guide-block"><h3>Supply Shipment</h3><p>A shipment costs 300 treasury and 300 Local Supplies at its origin. Deliver it to another friendly node for up to 1,500 supplies.</p></div>
                                 <div class="guide-block"><h3>Project Contribution</h3><p>A shipment may instead be assigned to a funded Development project and delivered inside its objective area to accelerate construction.</p></div>
                             </div>
@@ -1574,14 +1328,14 @@
                         <article class="guide-page" data-guide-page="10">
                             <p class="guide-kicker">11 / Command Intelligence</p>
                             <h2 class="guide-title">Act on what your side actually knows</h2>
-                            <p class="guide-lede">Command Net combines commander intent, operations, formations, objective state, sustainment, player position, opportunities, footholds, and maintained intelligence into the primary campaign picture.</p>
+                            <p class="guide-lede">Command Net combines frontline attacks, objective state, sustainment, footholds, and maintained intelligence into the primary campaign picture.</p>
                             <div class="guide-grid">
-                                <div class="guide-block"><h3>Friendly Picture</h3><p>Your side sees its own logistics network and formation roster, including node stock, routes, readiness, rank, roles, and current assignments.</p></div>
+                                <div class="guide-block"><h3>Friendly Picture</h3><p>Your side sees its current attacks, objective control, logistics network, node stock, routes, treasury, and maintained reports.</p></div>
                                 <div class="guide-block"><h3>Enemy Logistics Intel</h3><p>Enemy HQs and supply nodes appear only through recovered intelligence. Reports reveal captured information temporarily and then expire.</p></div>
-                                <div class="guide-block"><h3>Defender Warning</h3><p>When an enemy probe becomes a committed operation, defenders receive the confirmed assault objective. Background probe activity remains part of the wider frontline picture.</p></div>
-                                <div class="guide-block"><h3>Classified Doctrine</h3><p>Your own side can inspect formation doctrine and status. Enemy shaping details and formation orders remain hidden until normal intelligence exposes activity.</p></div>
+                                <div class="guide-block"><h3>Recovered Orders</h3><p>Enemy command targets appear only when recovered intelligence reveals their current direct ATTACK assignments.</p></div>
+                                <div class="guide-block"><h3>Imperfect Intelligence</h3><p>Enemy logistics and orders remain hidden until the side obtains and maintains a valid report.</p></div>
                                 <div class="guide-block"><h3>Session Order</h3><p>Read intent, locate yourself, check Available treasury and Local Supplies, choose a role, then use support and intelligence views as the situation demands.</p></div>
-                                <div class="guide-block"><h3>When Plans Change</h3><p>Reopen Command Net after phase transitions, captures, route failures, support denials, or new opportunity reports. The theater picture is persistent and dynamic.</p></div>
+                                <div class="guide-block"><h3>When Orders Change</h3><p>Reopen Command Net after captures, route failures, support denials, or new intelligence reports. The theater picture is persistent and dynamic.</p></div>
                             </div>
                             <div class="guide-callout">You are ready. Enter the theater, support the current intent, and return here whenever the campaign state stops being clear.</div>
                         </article>
@@ -1603,11 +1357,9 @@
         (function () {
             "use strict";
 
-            var phaseOrder = ["ASSAULT", "SECURE", "CONSOLIDATE", "RECOVERY"];
             var snapshot = null;
             var selectedId = "";
-            var activeOperationId = "";
-            var phaseDeadlineMs = 0;
+            var activeAttackId = "";
             var guideIndex = 0;
             var guidePageCount = 11;
 
@@ -1637,17 +1389,6 @@
                 return state.replace(/_/g, " ");
             }
 
-            function formatTimer(seconds) {
-                var total = Math.max(0, Math.floor(Number(seconds) || 0));
-                var hours = Math.floor(total / 3600);
-                var minutes = Math.floor((total % 3600) / 60);
-                var secs = total % 60;
-                if (hours > 0) {
-                    return hours + ":" + String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
-                }
-                return String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
-            }
-
             function formatAge(seconds) {
                 var value = Math.max(0, Math.floor(Number(seconds) || 0));
                 if (value < 60) { return value + "s"; }
@@ -1658,48 +1399,47 @@
                 return String(Math.round(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
 
-            function activeOperation() {
-                if (snapshot && snapshot.operations) {
-                    for (var i = 0; i < snapshot.operations.length; i += 1) {
-                        if (snapshot.operations[i].id === activeOperationId) { return snapshot.operations[i]; }
+            function activeAttack() {
+                if (snapshot && snapshot.attacks) {
+                    for (var i = 0; i < snapshot.attacks.length; i += 1) {
+                        if (snapshot.attacks[i].id === activeAttackId) { return snapshot.attacks[i]; }
                     }
                 }
-                return snapshot ? snapshot.operation : null;
+                return snapshot ? snapshot.attack : null;
             }
 
-            function operationLabel(operation) {
-                var role = operation.isPrimary ? "MAIN" : "SUPPORT";
-                var target = operation.targetVisible
-                    ? operation.targetName
-                    : (operation.threatSector && operation.threatSector.visible ? "SECTOR " + operation.threatSector.grid : "UNDISCLOSED");
-                return role + " / " + target + " / " + readable(operation.phase);
+            function attackLabel(attack) {
+                var target = attack.targetVisible
+                    ? attack.targetName
+                    : "ACTIVE FRONT";
+                return "ATTACK / " + target + " / " + attack.attackerCount + "/" + attack.attackerCap;
             }
 
-            function renderOperationSelector() {
-                var select = byId("operation-select");
+            function renderAttackSelector() {
+                var select = byId("attack-select");
                 select.innerHTML = "";
-                var operations = snapshot.operations || [];
-                if (operations.length === 0) {
+                var attacks = snapshot.attacks || [];
+                if (attacks.length === 0) {
                     var empty = document.createElement("option");
                     empty.value = "";
-                    empty.textContent = "Active Front / Probing";
+                    empty.textContent = "Active Front";
                     select.appendChild(empty);
                     select.disabled = true;
-                    activeOperationId = "";
+                    activeAttackId = "";
                 } else {
                     select.disabled = false;
                     var activeFound = false;
-                    for (var i = 0; i < operations.length; i += 1) {
+                    for (var i = 0; i < attacks.length; i += 1) {
                         var option = document.createElement("option");
-                        option.value = operations[i].id;
-                        option.textContent = operationLabel(operations[i]);
+                        option.value = attacks[i].id;
+                        option.textContent = attackLabel(attacks[i]);
                         select.appendChild(option);
-                        if (operations[i].id === activeOperationId) { activeFound = true; }
+                        if (attacks[i].id === activeAttackId) { activeFound = true; }
                     }
-                    if (!activeFound) { activeOperationId = operations[0].id; }
-                    select.value = activeOperationId;
+                    if (!activeFound) { activeAttackId = attacks[0].id; }
+                    select.value = activeAttackId;
                 }
-                text("operation-count", String(operations.length));
+                text("attack-count", String(attacks.length));
             }
 
             function setGuidePage(nextIndex) {
@@ -1723,7 +1463,7 @@
                 var overlay = byId("guide-overlay");
                 overlay.className = "guide-overlay visible" + (onboarding ? " onboarding" : "");
                 overlay.setAttribute("aria-hidden", "false");
-                text("guide-mode-label", onboarding ? "Deployment briefing / complete before entering theater" : "Campaign doctrine and sustainment");
+                text("guide-mode-label", onboarding ? "Deployment briefing / complete before entering theater" : "Command mode and sustainment");
                 setGuidePage(0);
                 send("operations::guideOpen");
             }
@@ -1733,61 +1473,6 @@
                 overlay.className = "guide-overlay";
                 overlay.setAttribute("aria-hidden", "true");
                 send("operations::guideComplete");
-            }
-
-            function setPhaseDeadline(operation) {
-                var remainingSeconds = Number(operation.remainingSeconds);
-                phaseDeadlineMs = remainingSeconds < 0
-                    ? -1
-                    : Date.now() + (Math.max(0, remainingSeconds || 0) * 1000);
-            }
-
-            function renderClock() {
-                if (!snapshot) {
-                    text("phase-timer", "--:--");
-                    return;
-                }
-                if (phaseDeadlineMs < 0) {
-                    text("phase-timer", "ONGOING");
-                    return;
-                }
-                var remainingSeconds = Math.max(0, Math.ceil((phaseDeadlineMs - Date.now()) / 1000));
-                text("phase-timer", formatTimer(remainingSeconds));
-            }
-
-            function intentCopy(operation) {
-                if (!operation.id) {
-                    return "Maintain contact across the front while theater command selects the next concentrated effort.";
-                }
-                if (operation.role === "MAIN_EFFORT") {
-                    if (operation.phase === "ASSAULT") { return "Seize " + operation.targetName + " and defeat resistance inside the objective."; }
-                    if (operation.phase === "SECURE") { return "Hold " + operation.targetName + " while the captured area is secured."; }
-                    if (operation.phase === "CONSOLIDATE") { return "Protect " + operation.targetName + " until supply and command links are established."; }
-                    return "Recover combat power after the completed main effort.";
-                }
-                if (operation.role === "SUPPORTING_EFFORT") {
-                    if (operation.phase === "ASSAULT") { return "Widen the offensive by seizing " + operation.targetName + " without abandoning the main effort."; }
-                    if (operation.phase === "SECURE" || operation.phase === "CONSOLIDATE") { return "Hold " + operation.targetName + " until this supporting gain is secured."; }
-                    return "Withdraw and rebuild the supporting force.";
-                }
-                if (operation.role === "DEFEND_MAIN_EFFORT" || operation.role === "DEFEND_SUPPORTING_EFFORT") {
-                    return "Deny the enemy capture of " + operation.targetName + " and preserve the defensive line.";
-                }
-                return "Screen exposed approaches and support the theater main effort when ordered.";
-            }
-
-            function renderPhases(activePhase) {
-                var list = byId("phase-list");
-                list.innerHTML = "";
-                var activeIndex = phaseOrder.indexOf(activePhase);
-                for (var i = 0; i < phaseOrder.length; i += 1) {
-                    var item = document.createElement("div");
-                    item.className = "phase-step";
-                    if (activeIndex >= 0 && i < activeIndex) { item.className += " complete"; }
-                    if (i === activeIndex) { item.className += " active"; }
-                    item.textContent = phaseOrder[i];
-                    list.appendChild(item);
-                }
             }
 
             function findObjective(id) {
@@ -1920,38 +1605,6 @@
                 return row;
             }
 
-            function formationListRow(formation) {
-                var row = document.createElement(formation.objectiveId ? "button" : "div");
-                if (formation.objectiveId) {
-                    row.type = "button";
-                    row.addEventListener("click", function () { selectObjective(formation.objectiveId, true); });
-                }
-                row.className = "list-row";
-                var title = document.createElement("div");
-                title.className = "list-row-title";
-                title.textContent = formation.name;
-                var status = document.createElement("div");
-                status.className = "list-row-meta";
-                var rank = document.createElement("span");
-                var readiness = document.createElement("span");
-                rank.textContent = readable(formation.rank) + " / " + readable(formation.branch);
-                readiness.textContent = "READINESS " + formation.readiness + "%";
-                status.appendChild(rank);
-                status.appendChild(readiness);
-                var assignment = document.createElement("div");
-                assignment.className = "list-row-meta";
-                var role = document.createElement("span");
-                var strength = document.createElement("span");
-                role.textContent = readable(formation.role) + " / " + formation.objectiveName;
-                strength.textContent = formation.activeCount + " ACTIVE / " + formation.memberCount + " GROUPS";
-                assignment.appendChild(role);
-                assignment.appendChild(strength);
-                row.appendChild(title);
-                row.appendChild(status);
-                row.appendChild(assignment);
-                return row;
-            }
-
             function enemyLogisticsIntelListRow(report) {
                 var row = document.createElement("div");
                 row.className = "list-row";
@@ -1972,92 +1625,27 @@
             }
 
             function renderSnapshot() {
-                var operation = activeOperation();
-                var player = snapshot.player;
+                var attack = activeAttack();
                 var summary = snapshot.summary;
 
-                text("operation-role", readable(operation.role));
-                text("phase-badge", readable(operation.phase));
-                renderClock();
-                text("intent-role", readable(operation.role));
-                var intentTarget = operation.targetVisible ? operation.targetName : (!operation.id ? "Active Front" : "Intent Undisclosed");
-                if (!operation.targetVisible && operation.intelLevel === "SECTOR" && operation.threatSector.visible) {
-                    intentTarget = operation.threatSector.label;
-                }
-                text("intent-target", intentTarget);
-                text("intent-copy", intentCopy(operation));
-                text("support-posture", readable(operation.supportPosture));
-                var shapingLabel = readable(operation.shapingStatus);
-                if (operation.shapingObjectiveName) { shapingLabel += " / " + operation.shapingObjectiveName; }
-                text("operation-shaping", shapingLabel);
-                var exploitationLabel = readable(operation.exploitationStatus);
-                if (operation.exploitationObjectiveName) { exploitationLabel += " / " + operation.exploitationObjectiveName; }
-                text("operation-exploitation", exploitationLabel);
-                text(
-                    "operation-allocation",
-                    operation.resourceBudget > 0
-                        ? (formatResource(operation.resourceSpent) + " SPENT / " + formatResource(operation.resourceBudget))
-                        : "NO ALLOCATION"
-                );
-                if (snapshot.scale.visible) {
-                    text("operation-width", snapshot.scale.currentCount + " ACTIVE / " + snapshot.scale.desiredCount + " ORDERED");
-                    text("operation-scale", readable(snapshot.scale.reason));
-                    byId("operation-scale").title = "FORCE " + snapshot.scale.metrics.forceSlots
-                        + " / LOGISTICS " + snapshot.scale.metrics.logisticsSlots
-                        + " / TREASURY " + snapshot.scale.metrics.treasurySlots
-                        + " / AXES " + snapshot.scale.metrics.axisSlots
-                        + " / PRESSURE CAP " + snapshot.scale.metrics.pressureCap;
-                } else {
-                    text("operation-width", snapshot.scale.registryCount + " DETECTED");
-                    text("operation-scale", "CAPACITY CLASSIFIED");
-                    byId("operation-scale").title = "";
-                }
-                renderPhases(operation.phase);
-
-                var note = byId("player-note");
-                note.className = "status-note";
-                if (player.status === "OFF_OPERATION") {
-                    note.textContent = "You are outside active operations. Local activity is reported as a future command opportunity.";
-                } else if (player.status === "IN_FOOTHOLD") {
-                    note.textContent = "You are holding unsupported territory. Supply access or a local base is required to secure it.";
-                } else if (player.status === "OUTSIDE_OBJECTIVE") {
-                    note.textContent = "You are outside a recognized objective at grid " + player.grid + ".";
-                } else {
-                    note.className += " nominal";
-                    note.textContent = readable(player.status) + " / GRID " + player.grid;
-                }
+                text("attack-strength", attack.id ? (attack.attackerCount + " / " + attack.attackerCap) : "IDLE");
 
                 text("metric-friendly", summary.friendlyObjectives);
                 text("metric-enemy", summary.enemyObjectives);
                 text("metric-footholds", summary.footholds);
-                text("metric-opportunities", summary.opportunities);
                 text("metric-treasury", formatResource(snapshot.economy.balance));
                 text("metric-available", formatResource(snapshot.economy.available));
                 text("metric-committed", formatResource(snapshot.economy.committed));
                 text("metric-income", "+" + formatResource(snapshot.economy.incomePerMinute));
                 var spending = snapshot.economy.commanderSpending;
-                var doctrine = byId("sustainment-doctrine");
-                doctrine.innerHTML = "";
-                appendDataRow(doctrine, "Operational Doctrine", readable(snapshot.doctrine));
-                appendDataRow(doctrine, "Spending Posture", readable(spending.posture));
-                appendDataRow(doctrine, "Protected Reserve", formatResource(spending.reserveFloor));
-                appendDataRow(
-                    doctrine,
-                    "Routine Window",
-                    formatResource(spending.recentCommanderSpend) + " / " + formatResource(spending.baseWindowBudget)
-                );
-                renderRows("formation-list", snapshot.formations, "No formed units.", formationListRow);
+                var posturePanel = byId("sustainment-posture");
+                posturePanel.innerHTML = "";
+                appendDataRow(posturePanel, "Command Mode", "Direct Frontline");
+                appendDataRow(posturePanel, "Spending Posture", readable(spending.posture));
+                appendDataRow(posturePanel, "Protected Reserve", formatResource(spending.reserveFloor));
+                appendDataRow(posturePanel, "Emergency Reserve", formatResource(spending.emergencyReserve));
                 renderRows("logistics-list", snapshot.logistics.nodes, "No logistics nodes.", logisticsListRow);
                 renderRows("enemy-logistics-intel-list", snapshot.enemyLogisticsIntel, "No current reports.", enemyLogisticsIntelListRow);
-                renderRows("opportunity-list", snapshot.opportunities, "No active reports.", function (row) {
-                    return objectiveListRow(
-                        row.objectiveId,
-                        row.name,
-                        readable(row.status) + " / " + row.sampleCount + " reports",
-                        formatAge(row.ageSeconds) + " ago"
-                    );
-                });
-
                 var footholds = [];
                 for (var i = 0; i < snapshot.objectives.length; i += 1) {
                     var objective = snapshot.objectives[i];
@@ -2077,11 +1665,10 @@
 
             function applySnapshot(nextSnapshot) {
                 snapshot = nextSnapshot;
-                renderOperationSelector();
-                var operation = activeOperation();
-                setPhaseDeadline(operation);
+                renderAttackSelector();
+                var attack = activeAttack();
                 if (!selectedId || !findObjective(selectedId)) {
-                    selectedId = operation.targetId || snapshot.player.objectiveId || "";
+                    selectedId = attack.targetId || snapshot.player.objectiveId || "";
                 }
                 renderSnapshot();
                 renderSelected();
@@ -2092,21 +1679,20 @@
             byId("development-button").addEventListener("click", function () { send("operations::developmentOpen"); });
             byId("player-button").addEventListener("click", function () { send("operations::mapPlayer"); });
             byId("target-button").addEventListener("click", function () {
-                var operation = activeOperation();
-                if (operation && operation.id) {
-                    send("operations::mapOperation", { operationId: operation.id });
+                var attack = activeAttack();
+                if (attack && attack.id) {
+                    send("operations::mapAttack", { attackId: attack.id });
                 } else {
                     send("operations::mapTarget");
                 }
             });
-            byId("operation-select").addEventListener("change", function () {
-                activeOperationId = this.value;
-                var operation = activeOperation();
-                setPhaseDeadline(operation);
-                if (operation.targetId) {
-                    selectedId = operation.targetId;
+            byId("attack-select").addEventListener("change", function () {
+                activeAttackId = this.value;
+                var attack = activeAttack();
+                if (attack.targetId) {
+                    selectedId = attack.targetId;
                     renderSelected();
-                    send("operations::selectObjective", { objectiveId: operation.targetId });
+                    send("operations::selectObjective", { objectiveId: attack.targetId });
                 }
                 renderSnapshot();
             });
@@ -2127,8 +1713,6 @@
                     setGuidePage(Number(this.getAttribute("data-guide-index")));
                 });
             }
-            window.setInterval(renderClock, 1000);
-
             window.FLOOperations = {
                 applySnapshot: applySnapshot,
                 selectObjective: function (objectiveId) { selectObjective(objectiveId, false); },
@@ -2137,14 +1721,14 @@
 
             function demoSnapshot(screening) {
                 var nodes = [
-                    ["obj_1", "Kavala", [3600, 12800, 0], "WEST", "SUPPORT"],
-                    ["obj_2", "Agios Dionysios", [9200, 14400, 0], "WEST", "SUPPORT"],
-                    ["obj_3", "Athira", [14000, 18800, 0], "WEST", screening ? "DEFEND_MAIN" : "SUPPORT"],
+                    ["obj_1", "Kavala", [3600, 12800, 0], "WEST", "NONE"],
+                    ["obj_2", "Agios Dionysios", [9200, 14400, 0], "WEST", "SCREEN"],
+                    ["obj_3", "Athira", [14000, 18800, 0], "WEST", screening ? "DEFEND" : "SCREEN"],
                     ["obj_4", "Zaros", [9100, 8700, 0], "WEST", "NONE"],
-                    ["obj_5", "Pyrgos", [16800, 12700, 0], "EAST", screening ? "NONE" : "MAIN_EFFORT"],
-                    ["obj_6", "Charkia", [21400, 16800, 0], "EAST", screening ? "NONE" : "SUPPORTING_EFFORT"],
+                    ["obj_5", "Pyrgos", [16800, 12700, 0], "EAST", screening ? "NONE" : "ATTACK"],
+                    ["obj_6", "Charkia", [21400, 16800, 0], "EAST", screening ? "NONE" : "ATTACK"],
                     ["obj_7", "Sofia Approach", [15100, 6500, 0], "WEST", "FOOTHOLD"],
-                    ["obj_8", "Panagia", [20800, 9500, 0], "EAST", "OPPORTUNITY"],
+                    ["obj_8", "Panagia", [20800, 9500, 0], "EAST", "NONE"],
                     ["obj_9", "Sofia", [25500, 13200, 0], "EAST", "NONE"]
                 ];
                 var objectives = [];
@@ -2157,45 +1741,26 @@
                         contested: nodes[i][0] === "obj_5" && !screening, underAttack: nodes[i][0] === "obj_5" && !screening, intent: nodes[i][4]
                     });
                 }
-                var operation = {
-                    id: screening ? "OP_EAST_08" : "OP_WEST_07", isPrimary: true,
-                    role: screening ? "DEFEND_MAIN_EFFORT" : "MAIN_EFFORT", phase: "ASSAULT", actualPhase: "ASSAULT", targetVisible: true,
-                    targetId: screening ? "obj_3" : "obj_5", targetName: screening ? "Athira" : "Pyrgos", targetPosition: screening ? [14000, 18800, 0] : [16800, 12700, 0],
-                    intelLevel: "TARGET", intelReason: screening ? "FORMAL_OPERATION" : "COMMANDER_INTENT",
-                    threatSector: { operationId: screening ? "OP_EAST_08" : "OP_WEST_07", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
-                    sourceObjectiveIds: screening ? [] : ["obj_2", "obj_4"], supportObjectiveIds: screening ? [] : ["obj_1", "obj_3"],
-                    supportPosture: "COMMITTED", remainingSeconds: screening ? 784 : 1126, result: "", transitionReason: "MATURE_PROBE_PROMOTED",
-                    resourceBudget: screening ? 0 : 2100, resourceSpent: screening ? 0 : 800, resourceRemaining: screening ? 0 : 1300, resourceReleased: 0, drawdownPending: false,
-                    shapingStatus: screening ? "CLASSIFIED" : "FEINT_RETURN", shapingObjectiveName: screening ? "" : "Panagia",
-                    exploitationStatus: screening ? "CLASSIFIED" : "READY", exploitationObjectiveName: ""
+                var attack = {
+                    id: screening ? "" : "ATTACK_WEST_obj_5", isPrimary: true,
+                    role: screening ? "IDLE" : "ATTACKING", targetVisible: !screening,
+                    targetId: screening ? "obj_3" : "obj_5", targetName: screening ? "Athira" : "Pyrgos",
+                    attackerCount: screening ? 0 : 6, attackerCap: 6
                 };
-                var supportOperation = {
-                    id: "OP_WEST_08", isPrimary: false, role: "SUPPORTING_EFFORT", phase: "ASSAULT", actualPhase: "ASSAULT", targetVisible: true,
-                    targetId: "obj_6", targetName: "Charkia", targetPosition: [21400, 16800, 0], intelLevel: "TARGET", intelReason: "COMMANDER_INTENT",
-                    threatSector: { operationId: "OP_WEST_08", visible: false, position: [], longAxis: 0, shortAxis: 0, direction: 0, grid: "", label: "" },
-                    sourceObjectiveIds: ["obj_3"], supportObjectiveIds: ["obj_1"], supportPosture: "COMMITTED", remainingSeconds: 948,
-                    result: "", transitionReason: "MATURE_PROBE_PROMOTED", resourceBudget: 600, resourceSpent: 0, resourceRemaining: 600, resourceReleased: 0, drawdownPending: false
+                var supportingAttack = {
+                    id: "ATTACK_WEST_obj_6", isPrimary: false, role: "ATTACKING", targetVisible: true,
+                    targetId: "obj_6", targetName: "Charkia",
+                    attackerCount: 4, attackerCap: 6
                 };
-                var operations = screening ? [operation] : [operation, supportOperation];
+                var attacks = screening ? [] : [attack, supportingAttack];
                 return {
-                    revision: 27, viewerSide: "WEST", viewerSideName: "BLUFOR", enemySide: "EAST", worldSize: 30720,
-                    doctrine: screening ? "CLASSIFIED" : "BREAKTHROUGH",
-                    formations: screening ? [] : [
-                        { id: "FORM_WEST_MOT_1", name: "74th Motorized Regiment", branch: "MOTORIZED", rank: "VETERAN", readiness: 82, role: "ATTACK", activeCount: 4, memberCount: 5, objectiveId: "obj_5", objectiveName: "Pyrgos" },
-                        { id: "FORM_WEST_INF_1", name: "12th Infantry Battalion", branch: "INFANTRY", rank: "REGULAR", readiness: 94, role: "RESERVE", activeCount: 0, memberCount: 4, objectiveId: "", objectiveName: "THEATER RESERVE" }
-                    ],
-                    operation: operation,
-                    operations: operations,
-                    threatSectors: operation.threatSector.visible ? [operation.threatSector] : [],
-                    scale: {
-                        visible: !screening, currentCount: operations.length, registryCount: operations.length, desiredCount: screening ? 0 : 2,
-                        reason: screening ? "CLASSIFIED" : "LOGISTICS_LIMIT",
-                        metrics: { availableGroups: 31, activeAttackGroups: 8, offensiveGroups: 26, forceSlots: 2, logisticsSlots: 2, treasurySlots: 3, axisSlots: 2, pressureCap: 3, threatenedObjectives: 0, forceDeficit: 0 }
-                    },
+                    revision: 29, viewerSide: "WEST", viewerSideName: "BLUFOR", enemySide: "EAST", worldSize: 30720,
+                    attack: attack,
+                    attacks: attacks,
                     player: screening
-                        ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "DEFENDING_MAIN_EFFORT" }
-                        : { grid: "168127", position: [15700, 12100, 0], objectiveId: "obj_5", status: "IN_MAIN_EFFORT" },
-                    summary: { friendlyObjectives: 5, enemyObjectives: 4, footholds: 1, opportunities: 1 },
+                        ? { grid: "140188", position: [14000, 18800, 0], objectiveId: "obj_3", status: "IN_DEFENSE" }
+                        : { grid: "168127", position: [15700, 12100, 0], objectiveId: "obj_5", status: "IN_ATTACK" },
+                    summary: { friendlyObjectives: 5, enemyObjectives: 4, footholds: 1 },
                     economy: {
                         balance: 7420,
                         available: 5320,
@@ -2207,9 +1772,7 @@
                             reserveFloor: 2226,
                             emergencyReserve: 300,
                             surplusFloor: 3426,
-                            recentCommanderSpend: 0,
-                            baseWindowBudget: 300,
-                            windowSeconds: 180
+                            developmentIncomeBasis: 300
                         },
                         ledger: []
                     },
@@ -2217,9 +1780,9 @@
                         hqNodeId: "NODE_WEST_HQ",
                         summary: { connected: 2, strained: 1, isolated: 0, establishing: 1, disabled: 0 },
                         nodes: [
-                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, resupplyAmount: 2500, resupplyIntervalSeconds: 180, deliveryCount: 0, lastPlayerDeliveryAmount: 0, lastPlayerDeliveryAgeSeconds: -1, lastPlayerContributorName: "", requiredDeliveries: 0 },
-                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, resupplyAmount: 800, resupplyIntervalSeconds: 180, deliveryCount: 1, lastPlayerDeliveryAmount: 1500, lastPlayerDeliveryAgeSeconds: 120, lastPlayerContributorName: "Suzuki", requiredDeliveries: 0 },
-                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, resupplyAmount: 400, resupplyIntervalSeconds: 180, deliveryCount: 1, lastPlayerDeliveryAmount: 0, lastPlayerDeliveryAgeSeconds: -1, lastPlayerContributorName: "", requiredDeliveries: 2 }
+                            { id: "NODE_WEST_HQ", type: "HQ", state: "CONNECTED", position: [3600, 12800, 0], objectiveId: "obj_1", objectiveName: "Kavala", grid: "036128", throughput: 8200, throughputMax: 10000, resupplyAmount: 2500, resupplyIntervalSeconds: 60, deliveryCount: 0, lastPlayerDeliveryAmount: 0, lastPlayerDeliveryAgeSeconds: -1, lastPlayerContributorName: "", requiredDeliveries: 0 },
+                            { id: "NODE_WEST_DEPOT", type: "DEPOT", state: "STRAINED", position: [9200, 14400, 0], objectiveId: "obj_2", objectiveName: "Agios Dionysios", grid: "092144", throughput: 1250, throughputMax: 6000, resupplyAmount: 800, resupplyIntervalSeconds: 60, deliveryCount: 1, lastPlayerDeliveryAmount: 1500, lastPlayerDeliveryAgeSeconds: 120, lastPlayerContributorName: "Suzuki", requiredDeliveries: 0 },
+                            { id: "NODE_WEST_FOB", type: "FOB", state: "ESTABLISHING", position: [14000, 18800, 0], objectiveId: "obj_3", objectiveName: "Athira", grid: "140188", throughput: 650, throughputMax: 4000, resupplyAmount: 400, resupplyIntervalSeconds: 60, deliveryCount: 1, lastPlayerDeliveryAmount: 0, lastPlayerDeliveryAgeSeconds: -1, lastPlayerContributorName: "", requiredDeliveries: 2 }
                         ],
                         routes: [
                             { fromNodeId: "NODE_WEST_HQ", toNodeId: "NODE_WEST_DEPOT", from: [3600, 12800, 0], to: [9200, 14400, 0], state: "CONNECTED" },
@@ -2229,7 +1792,6 @@
                     enemyLogisticsIntel: [
                         { type: "DEPOT", position: [20800, 9500, 0], objectiveName: "Panagia", grid: "208095", radius: 300, ageSeconds: 42, remainingSeconds: 258 }
                     ],
-                    opportunities: [{ objectiveId: "obj_8", name: "Panagia", status: "ASSAULT", sampleCount: 6, ageSeconds: 82 }],
                     objectives: objectives
                 };
             }

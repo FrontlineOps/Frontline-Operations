@@ -5,7 +5,7 @@
  *   Applies one GTN commander order through the canonical virtualization order
  *   pipeline: route update, commander-order state, then optional reassignment
  *   transport request. This keeps order application consistent while leaving
- *   commander doctrine and target selection outside virtualization.
+ *   commander target selection outside virtualization.
  *
  * Arguments:
  *   0: Group ID <STRING>
@@ -15,10 +15,9 @@
  *   4: Target position <ARRAY>
  *   5: Route source tag <STRING>
  *   6: Objective ID <STRING>
- *   7: Order mode <STRING> - MOVE only
+ *   7: Order mode <STRING> - MOVE or GARRISON
  *   8: Defend lease issued at <NUMBER>
  *   9: Defend lease until <NUMBER>
- *   10: Campaign operation ID <STRING> - ATTACK only
  *
  * Return Value:
  *   ARRAY - [success, routeMs, assignMs, transportMs, orderMs]
@@ -34,8 +33,7 @@ params [
     ["_objectiveId", "", [""]],
     ["_orderMode", "", [""]],
     ["_leaseIssuedAt", -1, [0]],
-    ["_leaseUntil", -1, [0]],
-    ["_campaignOperationId", "", [""]]
+    ["_leaseUntil", -1, [0]]
 ];
 
 if (_groupId == "") then {
@@ -51,12 +49,8 @@ if (!(_targetPos isEqualType []) || {count _targetPos < 2}) then {
 };
 
 private _order = toUpper _orderType;
-if (_order == "ATTACK" && {_objectiveId == "" || {_campaignOperationId == ""}}) then {
-    throw format [
-        "FLO_fnc_virtualizationCommitCommanderOrder: ATTACK requires objective and campaign operation (%1, %2)",
-        _objectiveId,
-        _campaignOperationId
-    ];
+if (_order == "ATTACK" && {_objectiveId == ""}) then {
+    throw "FLO_fnc_virtualizationCommitCommanderOrder: ATTACK requires an objective";
 };
 private _orderStart = diag_tickTime;
 
@@ -74,13 +68,13 @@ switch (_order) do {
         [_groupData, _targetPos, _orderMode] call FLO_fnc_virtualizationAssignMoveOrder;
     };
     case "ATTACK": {
-        [_groupData, _targetPos, _objectiveId, _campaignOperationId] call FLO_fnc_virtualizationAssignAttackOrder;
+        [_groupData, _targetPos, _objectiveId] call FLO_fnc_virtualizationAssignAttackOrder;
     };
     case "DEFEND": {
         [_groupData, _targetPos, _objectiveId, _leaseIssuedAt, _leaseUntil] call FLO_fnc_virtualizationAssignDefendOrder;
     };
     case "GARRISON": {
-        [_groupData, _targetPos, _objectiveId] call FLO_fnc_virtualizationAssignGarrisonOrder;
+        [_groupData, _targetPos, _objectiveId, _orderMode] call FLO_fnc_virtualizationAssignGarrisonOrder;
     };
     default {
         throw format [

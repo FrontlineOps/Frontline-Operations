@@ -104,7 +104,7 @@ private _updateCandidate = {
     if ((_groupData get "missionLock") != "") then { continue };
 
     private _commanderOrder = _groupData get "commanderOrder";
-    if (_commanderOrder != "" && {!(_commanderOrder in ["PATROL", "DEFEND", "", "TRANSPORT"])}) then { continue };
+    if !(_commanderOrder in ["", "DEFEND"]) then { continue };
 
     private _groupType = _groupData get "groupType";
     private _transportRole = _groupData get "transportRole";

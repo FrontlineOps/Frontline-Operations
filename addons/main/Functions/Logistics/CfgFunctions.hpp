@@ -30,6 +30,7 @@ class LogisticsNetwork {
     class logisticsNetworkFindReinforcementTargets {};
     class logisticsNetworkFindSpawnPosition {};
     class logisticsNetworkGetComposition {};
+    class logisticsNetworkGetDispatchTargetRejectionReason {};
     class logisticsNetworkGetReplacementUrgency {};
     class logisticsNetworkGetNodeForBase {};
     class logisticsNetworkGetSideSnapshot {};
@@ -51,6 +52,7 @@ class LogisticsNetwork {
     class logisticsNetworkRegisterBaseNode {};
     class logisticsNetworkReplenishTransportReserves {};
     class logisticsNetworkMarkSupplyChainDirty {};
+    class logisticsNetworkMaintainDepotCoverage {};
     class logisticsNetworkRecordDelivery {};
     class logisticsNetworkRecordReplacement {};
     class logisticsNetworkRecordTargetDispatch {};

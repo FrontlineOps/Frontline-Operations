@@ -77,6 +77,12 @@ private _eastDifficulty = ([_display, 1972] call FLO_fnc_factionDialogGetSelecti
 private _eastTempo = ([_display, 1973] call FLO_fnc_factionDialogGetSelection) select 0;
 private _eastForceGrowth = ([_display, 1974] call FLO_fnc_factionDialogGetSelection) select 0;
 private _eastGarrison = ([_display, 1975] call FLO_fnc_factionDialogGetSelection) select 0;
+private _objectiveSizeThresholdMap = createHashMapFromArray [
+    ["Small", 4],
+    ["Medium", 8],
+    ["Large", 12],
+    ["Huge", 24]
+];
 
 private _selectionErrors =
     (["BLUFOR", _bluforFactionSelections] call FLO_fnc_factionDialogValidateFactionSelections) +
@@ -113,9 +119,17 @@ if (_bluforFaction isEqualTo "" ||
     _territoryRatio isEqualTo "") exitWith {
 	
 	["UI", 2, "Faction dialog validation failed - empty selections"] call FLO_fnc_log;
-	hint "Please select all options before starting the mission.";
+    hint "Please select all options before starting the mission.";
 	_startBtn ctrlEnable true;
 };
+
+if !(_objectiveSize in _objectiveSizeThresholdMap) exitWith {
+    ["UI", 2, format ["Faction dialog validation failed - unsupported objective size %1", _objectiveSize]] call FLO_fnc_log;
+    hint "Objective size selection is invalid.";
+    _startBtn ctrlEnable true;
+};
+
+private _objectiveSizeThreshold = _objectiveSizeThresholdMap get _objectiveSize;
 
 private _westFactionTuningSpecs = ["BLUFOR"] call FLO_fnc_factionGetTuningFieldSpecs;
 private _eastFactionTuningSpecs = ["OPFOR"] call FLO_fnc_factionGetTuningFieldSpecs;
@@ -163,6 +177,7 @@ _display closeDisplay 1;
     _eastTempo,
     _eastForceGrowth,
     _eastGarrison,
+    _objectiveSizeThreshold,
     _bluforFactionSelections,
     _opforFactionSelections,
     _civilianFactionSelections,
@@ -191,6 +206,7 @@ _display closeDisplay 1;
         "_eastTempo",
         "_eastForceGrowth",
         "_eastGarrison",
+        "_objectiveSizeThreshold",
 		"_bluforFactionSelections",
 		"_opforFactionSelections",
         "_civilianFactionSelections",
@@ -232,7 +248,6 @@ _display closeDisplay 1;
     ];
 
     private _forceGrowthMap = createHashMapFromArray [
-        ["None _ 0 Groups Per Capture", 0],
         ["Low _ 1 Group Per Capture", 1],
         ["Standard _ 2 Groups Per Capture", 2],
         ["High _ 3 Groups Per Capture", 3]
@@ -251,7 +266,6 @@ _display closeDisplay 1;
     private _westGarrisonHandle = [_westGarrison] call FLO_fnc_factionDialogBuildGarrisonHandle;
     private _eastGarrisonHandle = [_eastGarrison] call FLO_fnc_factionDialogBuildGarrisonHandle;
 
-	private _objectiveSizeThreshold = _objectiveSize;
 	private _virtualizationDistanceValue = parseNumber _virtualizationDistance;
     private _virtualizationUnitCapValue = parseNumber _virtualizationUnitCap;
     private _territoryRatioWestValue = (parseNumber ((_territoryRatio splitString "%") select 0)) / 100;

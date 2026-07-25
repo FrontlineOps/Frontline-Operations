@@ -13,15 +13,8 @@
 
 diag_log "[ADV_INDEX] Starting fast objective indexing...";
 
-private _objectiveSizeThreshold = FLO_ObjectiveSizeThreshold;
-private _clusterThresholdMap = createHashMapFromArray [
-    ["Small", 4],
-    ["Medium", 8],
-    ["Large", 12],
-    ["Huge", 24]
-];
-private _clusterMinStructures = _clusterThresholdMap get _objectiveSizeThreshold;
-diag_log format ["[ADV_INDEX] Cluster size threshold=%1 (%2 min structures)", _objectiveSizeThreshold, _clusterMinStructures];
+private _clusterMinStructures = FLO_ObjectiveSizeThreshold;
+diag_log format ["[ADV_INDEX] Cluster size threshold=%1 min structures", _clusterMinStructures];
 
 // === PHASE 1: Get all map locations with their sizes ===
 private _center = [worldSize/2, worldSize/2, 0];
@@ -181,7 +174,6 @@ private _objectiveIndex = 0;
         ["captureGrowthEligibleAtDateNum", -1],
         ["captureGrowthPending", false],
         ["campaignIntegrationState", "INTEGRATED"],
-        ["campaignOperationId", ""],
         ["campaignCapturedBySideKey", ""],
         ["campaignBenefitsPending", false],
         ["name", _name],
@@ -284,7 +276,6 @@ if (count _uncoveredBuildings >= _clusterMinStructures) then {
             ["captureGrowthEligibleAtDateNum", -1],
             ["captureGrowthPending", false],
             ["campaignIntegrationState", "INTEGRATED"],
-            ["campaignOperationId", ""],
             ["campaignCapturedBySideKey", ""],
             ["campaignBenefitsPending", false],
             ["name", ""],

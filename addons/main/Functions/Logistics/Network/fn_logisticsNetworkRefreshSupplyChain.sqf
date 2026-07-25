@@ -120,7 +120,7 @@ private _now = call FLO_fnc_operationalDateNumber;
             _node set ["deliveryCount", _node get "requiredDeliveries"];
             _node set ["throughput", (_node get "throughput") max (((_node get "refillAmount") * 2) min (_node get "throughputMax"))];
             _stillEstablishing = false;
-            ["LOGISTICS", 2, format ["Autonomous rear-echelon delivery activated node %1", _x]] call FLO_fnc_log;
+            ["LOGISTICS", 3, format ["Autonomous rear-echelon delivery activated node %1", _x]] call FLO_fnc_log;
         };
     };
     if (_stillEstablishing) then {

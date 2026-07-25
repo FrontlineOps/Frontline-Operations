@@ -30,10 +30,26 @@ private _candidate = [_carrierData] call FLO_fnc_virtualizationCloneValue;
 _candidate set ["attachedGroups", _passengerIds];
 _candidate set ["isTransport", _passengerIds isNotEqualTo []];
 _candidate set ["nextProcessAt", 0];
+if (_passengerIds isEqualTo []) then {
+    [_candidate, _carrierGroupId] call FLO_fnc_virtualizationResetCarrierInsertState;
+};
 [_candidate, _carrierGroupId] call FLO_fnc_virtualizationValidateGroup;
 {
     _carrierData set [_x, _candidate get _x];
-} forEach ["attachedGroups", "isTransport", "nextProcessAt"];
+} forEach [
+    "attachedGroups",
+    "isTransport",
+    "dismountAtWaypoint",
+    "transportInsertMode",
+    "transportInsertPos",
+    "transportLandCommandIssued",
+    "transportUnloadCommandIssued",
+    "transportUnloadIssuedAt",
+    "executionState",
+    "missionLock",
+    "missionType",
+    "nextProcessAt"
+];
 call FLO_fnc_virtualizationTouchRegistry;
 [
     "FLO_Virtualization_TransportRelationshipChanged",

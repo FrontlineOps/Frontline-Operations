@@ -5,6 +5,27 @@
  */
 
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
+private _orphanedActiveGroups = [];
+{
+    if ((_y get "isActive") && {isNull (_y get "realGroup")}) then {
+        _orphanedActiveGroups pushBack _x;
+    };
+} forEach _groups;
+
+if (_orphanedActiveGroups isNotEqualTo []) then {
+    ["VIRTUALIZATION", 2, format [
+        "Repairing %1 orphaned active group(s) before registry validation: %2",
+        count _orphanedActiveGroups,
+        _orphanedActiveGroups
+    ]] call FLO_fnc_log;
+
+    {
+        [_x] call FLO_fnc_virtualizationRepairOrphanedActiveGroup;
+    } forEach _orphanedActiveGroups;
+
+    _groups = call FLO_fnc_virtualizationGetGroupMap;
+};
+
 private _realGroups = createHashMap;
 private _spatial = call FLO_fnc_virtualizationGetSpatialState;
 private _spatialGrid = _spatial get "grid";

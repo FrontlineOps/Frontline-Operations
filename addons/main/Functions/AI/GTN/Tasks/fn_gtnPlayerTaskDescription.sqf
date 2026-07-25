@@ -1,6 +1,6 @@
 /*
  * Function: FLO_fnc_gtnPlayerTaskDescription
- * Description: Builds the description for an operation-owned BIS task.
+ * Description: Builds the description for a direct commander BIS task.
  */
 
 params ["_kind", "_objectiveId"];

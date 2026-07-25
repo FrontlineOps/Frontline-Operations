@@ -20,6 +20,18 @@ if (!isNull _leader && {alive _leader}) then {
     [_groupId, _groupData, _realGroup] call FLO_fnc_transportProcessActiveCarrier;
     [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationParkIdleHelicopter;
 
+    private _isBuildingGarrison = (_groupData get "commanderOrder") == "GARRISON"
+        && {(_groupData get "orderMode") == "GARRISON_BUILDING"}
+        && {(_groupData get "groupType") == "infantry"};
+    if (_isBuildingGarrison && {!(_realGroup getVariable ["FLO_buildingGarrisonAttempted", false])}) then {
+        private _garrisonAnchor = _groupData get "garrisonPosition";
+        private _applyDistance = ["buildingGarrisonApplyDistance"] call FLO_fnc_virtualizationGetConfigValue;
+        if (_realPos distance2D _garrisonAnchor <= _applyDistance) then {
+            private _searchRadius = ["buildingGarrisonSearchRadius"] call FLO_fnc_virtualizationGetConfigValue;
+            [_realGroup, _garrisonAnchor, _searchRadius] call FLO_fnc_taskGarrison;
+        };
+    };
+
     if (_replacementState == "REINFORCE") then {
         private _reinforcementTargetPos = _groupData get "reinforcementTargetPos";
         if (count _reinforcementTargetPos >= 2 && {_realPos distance2D _reinforcementTargetPos <= 300}) then {

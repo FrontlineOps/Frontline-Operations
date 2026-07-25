@@ -50,7 +50,6 @@ FLO_OperationsMapDrawData = [];
 FLO_OperationsMapNodeDrawData = [];
 FLO_OperationsMapRouteDrawData = [];
 FLO_OperationsMapEnemyLogisticsIntelDrawData = [];
-FLO_OperationsMapThreatSectors = [];
 FLO_OperationsMapInitialized = false;
 FLO_OperationsSelectedObjectiveId = "";
 FLO_OperationsMapDrawPerfStartedAt = diag_tickTime;

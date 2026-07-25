@@ -29,9 +29,23 @@ _postWp params [
     ["_orderType", "ORGANIC_PACKAGE", [""]]
 ];
 
-private _waypoints = [
-    [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 50]
-];
+private _commanderOrder = _infData get "commanderOrder";
+private _canonicalWaypoints = _infData get "waypoints";
+private _waypoints = [];
+if (_commanderOrder != "") then {
+    if (_canonicalWaypoints isEqualTo []) then {
+        throw format [
+            "Transport passenger %1 has commander order %2 without a canonical route",
+            _infantryGroupId,
+            _commanderOrder
+        ];
+    };
+    _waypoints = +_canonicalWaypoints;
+} else {
+    _waypoints = [
+        [_targetPos, "MOVE", "COMBAT", "NORMAL", "WEDGE", "RED", 50]
+    ];
+};
 if !([_infantryGroupId, _waypoints, true, _sourceTag] call FLO_fnc_updateVirtualGroupWaypoints) exitWith {
     ["TRANSPORT", 2, format ["Retained post-dismount task for %1 because no land route was available", _infantryGroupId]] call FLO_fnc_log;
     false
@@ -44,9 +58,11 @@ if ((_infData get "missionLock") == "TRANSPORT") then {
 [_infantryGroupId, _changes] call FLO_fnc_virtualizationPatchGroup;
 
 ["TRANSPORT", 3, format [
-    "Set post-dismount %1 waypoint for %2",
+    "Restored post-dismount %1 route for %2 waypoints=%3 commanderOrder=%4",
     _orderType,
-    _infantryGroupId
+    _infantryGroupId,
+    count _waypoints,
+    _commanderOrder
 ]] call FLO_fnc_log;
 
 true

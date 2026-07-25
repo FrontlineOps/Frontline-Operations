@@ -20,6 +20,8 @@ class GTNCombatResolver {
     class gtnCombatEnterState {};
     class gtnCombatExitState {};
     class gtnCombatGetClassification {};
+    class gtnCombatGetExperienceMultiplier {};
+    class gtnCombatGetExperienceRank {};
     class gtnCombatGetState {};
     class gtnCombatGetZones {};
     class gtnCombatIsDirectCombatGroup {};
@@ -28,7 +30,9 @@ class GTNCombatResolver {
     class gtnCombatMarkClassificationDirty {};
     class gtnCombatMarkerId {};
     class gtnCombatPrepareRealGroupForCombat {};
+    class gtnCombatApplyGroupSkills {};
     class gtnCombatRecordEvent {};
+    class gtnCombatRecordExperience {};
     class gtnCombatRegisterVirtualizationEvents {};
     class gtnCombatRequestStalemateArtillery {};
     class gtnCombatResolveZoneDescriptor {};
