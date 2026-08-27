@@ -67,9 +67,6 @@ if (FLO_IsLoadedSave) then {
         ["containerDir", 0],
         ["containerVectorUp", []]
     ];
-    private _requiredBaseRecordFields = _requiredBaseRecordTypes apply { _x # 0 };
-    private _containerRecordFields = _containerRecordTypes apply { _x # 0 };
-
     // Restore FOBs
     private _fobArray = _savedData get "fobs";
     {
@@ -100,21 +97,6 @@ if (FLO_IsLoadedSave) then {
                 };
             } forEach _containerRecordTypes;
         };
-        private _allowedFobFields = +_requiredBaseRecordFields;
-        if (_containerFieldCount > 0) then {
-            _allowedFobFields append _containerRecordFields;
-        };
-        private _unexpectedFobFields = (keys _fobData) select {
-            !(_x in _allowedFobFields)
-        };
-        if (_unexpectedFobFields isNotEqualTo []) then {
-            throw format [
-                "Saved FOB %1 has unexpected fields %2",
-                _forEachIndex,
-                _unexpectedFobFields
-            ];
-        };
-
         private _buildingType = _fobData get "buildingType";
         private _buildingPos = _fobData get "buildingPosASL";
         private _baseSideKey = _fobData get "baseSideKey";
@@ -196,21 +178,6 @@ if (FLO_IsLoadedSave) then {
                 };
             } forEach _containerRecordTypes;
         };
-        private _allowedOpFields = +_requiredBaseRecordFields;
-        if (_containerFieldCount > 0) then {
-            _allowedOpFields append _containerRecordFields;
-        };
-        private _unexpectedOpFields = (keys _opData) select {
-            !(_x in _allowedOpFields)
-        };
-        if (_unexpectedOpFields isNotEqualTo []) then {
-            throw format [
-                "Saved OP %1 has unexpected fields %2",
-                _forEachIndex,
-                _unexpectedOpFields
-            ];
-        };
-
         private _buildingType = _opData get "buildingType";
         private _buildingPos = _opData get "buildingPosASL";
         private _baseSideKey = _opData get "baseSideKey";
@@ -302,7 +269,6 @@ if (FLO_IsLoadedSave) then {
         ["pos", []], ["type", ""], ["brush", ""], ["shape", ""],
         ["size", []], ["text", ""], ["dir", 0], ["color", ""], ["alpha", 0]
     ];
-    private _requiredMarkerFields = _requiredMarkerTypes apply { _x # 0 };
     private _loadedMarkers = 0;
     {
         private _markerName = _x;
@@ -312,16 +278,6 @@ if (FLO_IsLoadedSave) then {
         };
         if !(_attr isEqualType createHashMap) then {
             throw format ["Saved marker %1 has invalid record type %2", _markerName, typeName _attr];
-        };
-        private _unexpectedMarkerFields = (keys _attr) select {
-            !(_x in _requiredMarkerFields)
-        };
-        if (_unexpectedMarkerFields isNotEqualTo []) then {
-            throw format [
-                "Saved marker %1 has unexpected fields %2",
-                _markerName,
-                _unexpectedMarkerFields
-            ];
         };
         {
             _x params ["_field", "_prototype"];
@@ -375,7 +331,6 @@ if (FLO_IsLoadedSave) then {
         ["engineOn", true], ["hadAICrew", true], ["storeVehicle", true],
         ["mobileRespawnVehicle", true], ["supportVehicleRoles", []]
     ];
-    private _requiredVehicleFields = _requiredVehicleTypes apply { _x # 0 };
     private _loadedVehicles = 0;
     {
         private _vehId = _x;
@@ -385,16 +340,6 @@ if (FLO_IsLoadedSave) then {
         };
         if !(_attr isEqualType createHashMap) then {
             throw format ["Saved vehicle %1 has invalid record type %2", _vehId, typeName _attr];
-        };
-        private _unexpectedVehicleFields = (keys _attr) select {
-            !(_x in _requiredVehicleFields)
-        };
-        if (_unexpectedVehicleFields isNotEqualTo []) then {
-            throw format [
-                "Saved vehicle %1 has unexpected fields %2",
-                _vehId,
-                _unexpectedVehicleFields
-            ];
         };
         {
             _x params ["_field", "_prototype"];
@@ -464,7 +409,6 @@ if (FLO_IsLoadedSave) then {
         ["type", ""], ["posASL", []], ["vectorDirAndUp", []],
         ["damage", 0], ["hadAICrew", true]
     ];
-    private _requiredObjectFields = _requiredObjectTypes apply { _x # 0 };
     private _loadedObjects = 0;
     {
         private _objId = _x;
@@ -474,16 +418,6 @@ if (FLO_IsLoadedSave) then {
         };
         if !(_attr isEqualType createHashMap) then {
             throw format ["Saved object %1 has invalid record type %2", _objId, typeName _attr];
-        };
-        private _unexpectedObjectFields = (keys _attr) select {
-            !(_x in _requiredObjectFields)
-        };
-        if (_unexpectedObjectFields isNotEqualTo []) then {
-            throw format [
-                "Saved object %1 has unexpected fields %2",
-                _objId,
-                _unexpectedObjectFields
-            ];
         };
         {
             _x params ["_field", "_prototype"];
@@ -534,8 +468,6 @@ if (FLO_IsLoadedSave) then {
         ["logisticsThroughput", 0], ["logisticsContributorUID", ""],
         ["logisticsContributorName", ""], ["developmentTargetObjectiveId", ""]
     ];
-    private _requiredCrateFields = _requiredCrateTypes apply { _x # 0 };
-    private _shipmentRecordFields = _shipmentRecordTypes apply { _x # 0 };
     private _loadedCrates = 0;
     {
         private _crateId = _x;
@@ -578,21 +510,6 @@ if (FLO_IsLoadedSave) then {
                 throw format ["Saved logistics shipment %1 has invalid origin or throughput", _crateId];
             };
         };
-        private _allowedCrateFields = +_requiredCrateFields;
-        if (_shipmentFieldCount > 0) then {
-            _allowedCrateFields append _shipmentRecordFields;
-        };
-        private _unexpectedCrateFields = (keys _attr) select {
-            !(_x in _allowedCrateFields)
-        };
-        if (_unexpectedCrateFields isNotEqualTo []) then {
-            throw format [
-                "Saved crate %1 has unexpected fields %2",
-                _crateId,
-                _unexpectedCrateFields
-            ];
-        };
-
         private _type = _attr get "type";
         private _pos = _attr get "posASL";
         private _vectorDirAndUp = _attr get "vectorDirAndUp";
@@ -665,8 +582,8 @@ if (FLO_IsLoadedSave) then {
 
     private _cmd = _savedData get "aiCommanders";
     private _commanderKeys = keys _cmd;
-    private _unexpectedCommanderKeys = _commanderKeys select {!(_x in ["EAST", "WEST"])};
-    if (count _commanderKeys != 2 || {_unexpectedCommanderKeys isNotEqualTo []}) then {
+    private _missingCommanderKeys = ["EAST", "WEST"] select {!(_x in _cmd)};
+    if (_missingCommanderKeys isNotEqualTo []) then {
         throw format ["Current save has invalid commander keys %1", _commanderKeys];
     };
     private _eastState = _cmd get "EAST";
@@ -676,7 +593,7 @@ if (FLO_IsLoadedSave) then {
         if !(_state isEqualType createHashMap) then {
             throw format ["Saved %1 commander state has invalid type %2", _sideKey, typeName _state];
         };
-        if (count (keys _state) != 1 || {!("gtnEnabled" in _state)}) then {
+        if !("gtnEnabled" in _state) then {
             throw format ["Saved %1 commander state has invalid fields %2", _sideKey, keys _state];
         };
         if !((_state get "gtnEnabled") isEqualType true) then {
@@ -699,22 +616,11 @@ if (FLO_IsLoadedSave) then {
     private _requiredIdsTypes = [
         ["class", ""], ["posASL", []], ["direction", 0], ["vectorUp", []], ["damage", 0]
     ];
-    private _requiredIdsFields = _requiredIdsTypes apply { _x # 0 };
     private _loadedIDS = 0;
     {
         private _entityData = _x;
         if !(_entityData isEqualType createHashMap) then {
             throw format ["Saved IDS entity %1 has invalid record type %2", _forEachIndex, typeName _entityData];
-        };
-        private _unexpectedIdsFields = (keys _entityData) select {
-            !(_x in _requiredIdsFields)
-        };
-        if (_unexpectedIdsFields isNotEqualTo []) then {
-            throw format [
-                "Saved IDS entity %1 has unexpected fields %2",
-                _forEachIndex,
-                _unexpectedIdsFields
-            ];
         };
         {
             _x params ["_field", "_prototype"];

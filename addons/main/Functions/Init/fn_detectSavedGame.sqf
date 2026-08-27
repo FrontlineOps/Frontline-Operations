@@ -85,14 +85,6 @@ private _requiredRootTypes = [
         throw _error;
     };
 } forEach _requiredRootTypes;
-private _requiredRootKeys = ["saveVersion"] + (_requiredRootTypes apply {_x # 0});
-private _unexpectedRootKeys = (keys _saveData) select {!(_x in _requiredRootKeys)};
-if (_unexpectedRootKeys isNotEqualTo []) then {
-    private _error = format ["Current mission save has unexpected root fields %1", _unexpectedRootKeys];
-    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
-    throw _error;
-};
-
 private _configData = _saveData get "config";
 private _requiredConfigTypes = [
     ["bluforHandle", createHashMap],
@@ -139,13 +131,6 @@ private _requiredConfigTypes = [
         throw _error;
     };
 } forEach _requiredConfigTypes;
-private _requiredConfigKeys = _requiredConfigTypes apply {_x # 0};
-private _unexpectedConfigKeys = (keys _configData) select {!(_x in _requiredConfigKeys)};
-if (_unexpectedConfigKeys isNotEqualTo []) then {
-    private _error = format ["Current mission configuration has unexpected fields %1", _unexpectedConfigKeys];
-    ["SAVE_DETECT", 1, _error] call FLO_fnc_log;
-    throw _error;
-};
 if ((count (_configData get "startPosition")) < 2) then {
     private _error = "Current mission configuration startPosition is malformed";
     ["SAVE_DETECT", 1, _error] call FLO_fnc_log;

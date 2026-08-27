@@ -5,11 +5,6 @@ if !(_state isEqualType createHashMap) then {
 };
 
 private _expectedKeys = ["WEST", "EAST"];
-private _unexpectedKeys = (keys _state) select { !(_x in _expectedKeys) };
-if (_unexpectedKeys isNotEqualTo []) then {
-    throw format ["Base deployment claim state has unexpected keys: %1", _unexpectedKeys];
-};
-
 {
     if !(_x in _state) then {
         throw format ["Base deployment claim state is missing %1", _x];

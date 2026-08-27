@@ -30,11 +30,6 @@ private _missing = _requiredKeys select { !(_x in _project) };
 if (_missing isNotEqualTo []) then {
     throw format ["Development project %1 is missing fields %2", _objectiveId, _missing];
 };
-private _unexpected = (keys _project) select { !(_x in _requiredKeys) };
-if (_unexpected isNotEqualTo []) then {
-    throw format ["Development project %1 has unsupported fields %2", _objectiveId, _unexpected];
-};
-
 private _owner = _objective get "owner";
 if !(_owner in [west, east]) then {
     throw format ["Development project %1 has unsupported owner %2", _objectiveId, _owner];

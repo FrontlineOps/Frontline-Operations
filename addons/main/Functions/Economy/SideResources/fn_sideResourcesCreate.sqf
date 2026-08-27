@@ -23,10 +23,6 @@ if (_savedPayload isNotEqualTo objNull) then {
     if (_missingFields isNotEqualTo []) then {
         throw format ["Saved %1 treasury is missing fields %2", _sideKey, _missingFields];
     };
-    private _unexpectedFields = (keys _savedPayload) select { !(_x in _requiredFields) };
-    if (_unexpectedFields isNotEqualTo []) then {
-        throw format ["Saved %1 treasury has unsupported fields %2", _sideKey, _unexpectedFields];
-    };
     _balance = _savedPayload get "balance";
     _reservations = _savedPayload get "reservations";
     _ledger = _savedPayload get "ledger";

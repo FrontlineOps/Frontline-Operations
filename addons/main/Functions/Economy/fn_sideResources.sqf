@@ -112,10 +112,6 @@ try {
         if (_missingSides isNotEqualTo []) then {
             throw format ["Saved sideResources is missing sides %1", _missingSides];
         };
-        private _unexpectedSides = (keys _savedResources) select { !(_x in ["WEST", "EAST"]) };
-        if (_unexpectedSides isNotEqualTo []) then {
-            throw format ["Saved sideResources has unsupported sides %1", _unexpectedSides];
-        };
     };
 
     {

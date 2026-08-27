@@ -17,11 +17,6 @@ try {
         if (_missingFields isNotEqualTo []) then {
             throw format ["Saved base deployment state is missing fields %1", _missingFields];
         };
-        private _unexpectedFields = (keys _savedState) select { !(_x in ["firstFOBClaimedBySide"]) };
-        if (_unexpectedFields isNotEqualTo []) then {
-            throw format ["Saved base deployment state has unsupported fields %1", _unexpectedFields];
-        };
-
         private _savedClaims = _savedState get "firstFOBClaimedBySide";
         [_savedClaims] call FLO_fnc_baseDeployValidateState;
         _claims set ["WEST", _savedClaims get "WEST"];

@@ -9,11 +9,6 @@ private _requiredKeys = ["id", "name", "items"];
         throw format ["Store saved-kit record %1 is missing %2", _recordIndex, _x];
     };
 } forEach _requiredKeys;
-private _unexpectedKeys = (keys _record) select {!(_x in _requiredKeys)};
-if (_unexpectedKeys isNotEqualTo []) then {
-    throw format ["Store saved-kit record %1 has unexpected fields %2", _recordIndex, _unexpectedKeys];
-};
-
 private _id = _record get "id";
 private _name = _record get "name";
 private _items = _record get "items";

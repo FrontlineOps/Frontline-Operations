@@ -43,7 +43,6 @@ if (FLO_IsLoadedSave) then {
         ["linkedObjectives", []], ["mergedCount", 0], ["revenueLevel", 0],
         ["developmentLevel", 0], ["developmentProject", createHashMap]
     ];
-    private _requiredObjectiveFields = _requiredObjectiveTypes apply { _x # 0 };
     {
         private _objId = _x;
         if !(_objId isEqualType "" && {_objId != ""}) then {
@@ -52,16 +51,6 @@ if (FLO_IsLoadedSave) then {
         private _objData = _savedObjectives get _objId;
         if !(_objData isEqualType createHashMap) then {
             throw format ["Saved objective %1 has invalid record type %2", _objId, typeName _objData];
-        };
-        private _unexpectedObjectiveFields = (keys _objData) select {
-            !(_x in _requiredObjectiveFields)
-        };
-        if (_unexpectedObjectiveFields isNotEqualTo []) then {
-            throw format [
-                "Saved objective %1 has unexpected fields %2",
-                _objId,
-                _unexpectedObjectiveFields
-            ];
         };
         {
             _x params ["_field", "_prototype"];
