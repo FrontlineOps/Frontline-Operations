@@ -185,13 +185,8 @@ try {
             throw format ["Invalid saved logisticsNetworkBySide payload: %1", typeName _savedBySide];
         };
         private _missingSides = ["WEST", "EAST"] select { !(_x in _savedBySide) };
-        private _unexpectedSides = (keys _savedBySide) select { !(_x in ["WEST", "EAST"]) };
-        if (_missingSides isNotEqualTo [] || {_unexpectedSides isNotEqualTo []}) then {
-            throw format [
-                "Saved logistics networks have missing=%1 unsupported=%2",
-                _missingSides,
-                _unexpectedSides
-            ];
+        if (_missingSides isNotEqualTo []) then {
+            throw format ["Saved logistics networks are missing sides %1", _missingSides];
         };
     };
 

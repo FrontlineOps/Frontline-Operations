@@ -27,15 +27,6 @@ private _persistentFields = call FLO_fnc_virtualizationGetPersistentFields;
     };
 } forEach _persistentFields;
 
-private _unexpectedFields = (keys _savedData) select { !(_x in _persistentFields) };
-if (_unexpectedFields isNotEqualTo []) then {
-    throw format [
-        "Saved virtual group %1 contains fields outside the current record contract: %2",
-        _expectedId,
-        _unexpectedFields
-    ];
-};
-
 private _groupId = _savedData get "id";
 if (_expectedId == "" || {_groupId != _expectedId}) then {
     throw format ["Saved virtual group key/id mismatch: key=%1 record=%2", _expectedId, _groupId];

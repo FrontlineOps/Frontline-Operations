@@ -55,24 +55,13 @@ if (_savedState isNotEqualTo false) then {
     if (_missingStateFields isNotEqualTo []) then {
         throw format ["Saved %1 logistics state is missing fields %2", _managedSideKey, _missingStateFields];
     };
-    private _unexpectedStateFields = (keys _savedState) select { !(_x in _requiredStateFields) };
-    if (_unexpectedStateFields isNotEqualTo []) then {
-        throw format ["Saved %1 logistics state has unsupported fields %2", _managedSideKey, _unexpectedStateFields];
-    };
-
     private _savedStats = _savedState get "stats";
     if !(_savedStats isEqualType createHashMap) then {
         throw format ["Invalid saved logistics stats for %1", _managedSideKey];
     };
     private _missingStatFields = (keys _stats) select { !(_x in _savedStats) };
-    private _unexpectedStatFields = (keys _savedStats) select { !(_x in _stats) };
-    if (_missingStatFields isNotEqualTo [] || {_unexpectedStatFields isNotEqualTo []}) then {
-        throw format [
-            "Saved %1 logistics stats have missing=%2 unsupported=%3",
-            _managedSideKey,
-            _missingStatFields,
-            _unexpectedStatFields
-        ];
+    if (_missingStatFields isNotEqualTo []) then {
+        throw format ["Saved %1 logistics stats are missing fields %2", _managedSideKey, _missingStatFields];
     };
     _stats = createHashMap;
     {
@@ -114,15 +103,8 @@ if (_savedState isNotEqualTo false) then {
             throw format ["Invalid saved %1 logistics node %2", _managedSideKey, _nodeId];
         };
         private _missingNodeFields = _requiredNodeFields select { !(_x in _savedNode) };
-        private _unexpectedNodeFields = (keys _savedNode) select { !(_x in _requiredNodeFields) };
-        if (_missingNodeFields isNotEqualTo [] || {_unexpectedNodeFields isNotEqualTo []}) then {
-            throw format [
-                "Saved %1 logistics node %2 has missing=%3 unsupported=%4",
-                _managedSideKey,
-                _nodeId,
-                _missingNodeFields,
-                _unexpectedNodeFields
-            ];
+        if (_missingNodeFields isNotEqualTo []) then {
+            throw format ["Saved %1 logistics node %2 is missing fields %3", _managedSideKey, _nodeId, _missingNodeFields];
         };
         if ((_savedNode get "id") != _nodeId || {(_savedNode get "sideKey") != _managedSideKey}) then {
             throw format ["Saved %1 logistics node %2 has inconsistent identity", _managedSideKey, _nodeId];

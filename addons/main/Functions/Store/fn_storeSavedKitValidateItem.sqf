@@ -9,11 +9,6 @@ private _requiredKeys = ["className", "entryKind", "category", "name", "priceVal
         throw format ["Store saved kit %1 line %2 is missing %3", _kitId, _lineIndex, _x];
     };
 } forEach _requiredKeys;
-private _unexpectedKeys = (keys _entry) select {!(_x in _requiredKeys)};
-if (_unexpectedKeys isNotEqualTo []) then {
-    throw format ["Store saved kit %1 line %2 has unexpected fields %3", _kitId, _lineIndex, _unexpectedKeys];
-};
-
 private _className = _entry get "className";
 private _entryKind = _entry get "entryKind";
 private _category = _entry get "category";
