@@ -17,7 +17,7 @@ if (remoteExecutedOwner > 2 && {_owner != remoteExecutedOwner}) exitWith {
     false
 };
 
-if ((admin _owner) <= 0) exitWith {
+if !([_requester] call FLO_fnc_saveCanRequest) exitWith {
     ["SAVE", 2, format ["Rejected manual save request from non-admin owner %1", _owner]] call FLO_fnc_log;
     ["Saving campaign progress requires a logged-in admin.", "warning", false, _owner] call FLO_fnc_sendNotification;
     false
@@ -28,12 +28,12 @@ if (FLO_MissionSaveInProgress) exitWith {
     false
 };
 
-["SAVE", 3, format ["Manual save requested by admin owner %1", _owner]] call FLO_fnc_log;
-private _saved = call FLO_fnc_MissionSave;
-if (_saved) then {
-    ["Campaign progress saved.", "success", false, _owner] call FLO_fnc_sendNotification;
-} else {
-    ["Campaign progress was not saved. Check the server RPT for the rejected state.", "error", false, _owner] call FLO_fnc_sendNotification;
+["SAVE", 3, "Authorized manual campaign save requested"] call FLO_fnc_log;
+// Spawn locally after authentication so the worker owns a server-local execution context.
+[_owner] spawn {
+    params ["_owner"];
+    if !([_owner] call FLO_fnc_saveStart) then {
+        ["Campaign saving is already in progress or initialization is incomplete.", "warning", false, _owner] call FLO_fnc_sendNotification;
+    };
 };
-
-_saved
+true

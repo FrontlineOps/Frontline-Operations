@@ -20,7 +20,7 @@ if (_intervalMinutes == 0) exitWith {
 
 FLO_AutosavePFH = [{
     if (!FLO_MissionReady || {FLO_MissionSaveInProgress}) exitWith {};
-    [] spawn FLO_fnc_MissionSave;
+    [] call FLO_fnc_saveStart;
 }, _intervalMinutes * 60, []] call CBA_fnc_addPerFrameHandler;
 
 ["SAVE", 3, format [

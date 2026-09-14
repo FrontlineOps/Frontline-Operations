@@ -13,9 +13,10 @@
  *   [] call FLO_fnc_MissionSave;
  */
 
+params [["_queuedSequence", -1, [0]]];
 if (!isServer) exitWith { false };
-if (remoteExecutedOwner > 2 && {admin remoteExecutedOwner <= 0}) exitWith {
-    ["SAVE", 2, "Rejected direct campaign save from a non-admin remote caller"] call FLO_fnc_log;
+if (remoteExecutedOwner > 2) exitWith {
+    ["SAVE", 2, "Rejected direct remote save; clients must use the authenticated save request"] call FLO_fnc_log;
     false
 };
 if (!FLO_MissionReady) exitWith {
@@ -24,8 +25,15 @@ if (!FLO_MissionReady) exitWith {
 };
 private _acquiredSave = false;
 isNil {
-    if (!FLO_MissionSaveInProgress) then {
+    private _queued = (FLO_SaveStatus get "phase") == "QUEUED";
+    private _ownsQueue = _queued && {_queuedSequence == FLO_SaveSequence};
+    if (!FLO_MissionSaveInProgress && {(!_queued && {_queuedSequence == -1}) || {_ownsQueue}}) then {
+        // Direct local callers own a new generation; an older worker's completion
+        // monitor must never release this transaction's lock.
+        if (!_ownsQueue) then { FLO_SaveSequence = FLO_SaveSequence + 1 };
         FLO_MissionSaveInProgress = true;
+        FLO_SaveStatus set ["phase", "SAVING"];
+        FLO_SaveStatus set ["lastAttemptAt", diag_tickTime];
         _acquiredSave = true;
     };
 };
@@ -38,8 +46,6 @@ private _saveResult = false;
 private _saveException = "";
 try {
 _saveResult = call {
-
-private _saveStartTime = diag_tickTime;
 
 ["SAVE", 3, "Starting mission save..."] call FLO_fnc_log;
 
@@ -316,9 +322,6 @@ try {
 
 [_data] call FLO_fnc_saveValidateCampaignRoot;
 if !([_data] call FLO_fnc_saveCommitCampaignData) exitWith { false };
-private _saveTime = diag_tickTime - _saveStartTime;
-["SAVE", 3, format ["Save complete in %1s", round (_saveTime * 100) / 100]] call FLO_fnc_log;
-["flo_mission_save_completed", [true]] call CBA_fnc_globalEvent;
 true
 
 };
@@ -326,10 +329,10 @@ true
     _saveException = _exception;
 };
 
-FLO_MissionSaveInProgress = false;
 if (_saveException != "") then {
-    ["SAVE", 1, format ["Mission save aborted by exception: %1", _saveException]] call FLO_fnc_log;
     _saveResult = false;
 };
-
-_saveResult
+if (isNil "_saveResult") then { _saveResult = false; _saveException = "Save returned no transaction outcome" };
+if !(_saveResult isEqualType true) then { _saveResult = false; _saveException = "Save returned an invalid transaction outcome" };
+if (_saveException == "" && {!_saveResult}) then { _saveException = "Campaign validation or disk write rejected; see preceding SAVE error" };
+[_saveResult, _saveException] call FLO_fnc_saveFinish

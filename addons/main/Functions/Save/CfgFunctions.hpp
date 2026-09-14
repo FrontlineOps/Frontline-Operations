@@ -9,6 +9,10 @@ class Save {
     file = "\z\flo\addons\main\Functions\Save";
 
     class saveConfigureAutosave {};
+    class saveStart {};
+    class saveCanRequest {};
+    class saveFinish {};
+    class saveGetStatus {};
     class saveCaptureCampaignState {};
     class saveCommitCampaignData {};
     class saveGetAllCargo {};
