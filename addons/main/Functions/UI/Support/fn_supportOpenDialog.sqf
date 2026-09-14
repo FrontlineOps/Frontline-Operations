@@ -47,7 +47,7 @@ _map ctrlAddEventHandler ["MouseButtonClick", {
 // Arma browser control event (not yet listed in HEMTT event metadata).
 private _webDialogEvent = "JSDialog";
 _browser ctrlAddEventHandler [_webDialogEvent, FLO_fnc_supportHandleUiEvent];
-[_browser, ["LoadFile", "\z\flo\addons\main\UI\Support\index.html"]] call FLO_fnc_supportWebAction;
+[_browser, ["LoadFile", "\z\flo\addons\main\UI\Support\index.html"]] call FLO_fnc_uiWebAction;
 [] call FLO_fnc_supportRequestSnapshot;
 
 [{

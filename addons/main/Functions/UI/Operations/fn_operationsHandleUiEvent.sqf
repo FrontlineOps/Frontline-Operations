@@ -17,8 +17,12 @@ switch (_event) do {
             [FLO_fnc_operationsShowGuide, []] call CBA_fnc_execNextFrame;
         };
     };
+    case "operations::mapFocus": {};
     case "operations::refresh": {
         [] call FLO_fnc_operationsRequestSnapshot;
+    };
+    case "operations::save": {
+        [player] remoteExecCall ["FLO_fnc_saveRequest", 2];
     };
     case "operations::mapFit": {
         ["FIT"] call FLO_fnc_operationsFocusMap;
@@ -66,8 +70,8 @@ switch (_event) do {
 };
 
 if (!isNull _map && {ctrlShown _map}) then {
-    [_map] call FLO_fnc_operationsRestoreMapFocus;
-    [FLO_fnc_operationsRestoreMapFocus, [_map]] call CBA_fnc_execNextFrame;
+    [_map] call FLO_fnc_uiRestoreMapFocus;
+    [FLO_fnc_uiRestoreMapFocus, [_map]] call CBA_fnc_execNextFrame;
 };
 
 true

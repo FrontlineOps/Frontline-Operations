@@ -21,7 +21,7 @@ if (FLO_OperationsBrowserReady) then {
             "if (window.FLOOperations) { window.FLOOperations.selectObjective(%1); }",
             toJSON _objectiveId
         ];
-        [_control, ["ExecJS", _script]] call FLO_fnc_operationsWebAction;
+        [_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;
     };
 };
 

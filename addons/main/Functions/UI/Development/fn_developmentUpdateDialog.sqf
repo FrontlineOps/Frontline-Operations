@@ -9,4 +9,4 @@ private _script = format [
     "if (window.FLODevelopment) { window.FLODevelopment.applySnapshot(%1); }",
     toJSON _snapshot
 ];
-_control ctrlWebBrowserAction ["ExecJS", _script];
+[_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;

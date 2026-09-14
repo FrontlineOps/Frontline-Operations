@@ -114,7 +114,7 @@ _groupIds sort true;
             } else {
                 if (_groupData get "isActive") then {
                     _status = "AIRBORNE";
-                    _statusDetail = "PHYSICAL SIMULATION";
+                    _statusDetail = "CURRENTLY FLYING";
                 } else {
                     if ([_groupData] call FLO_fnc_gtnSupportAssetCanProvideAbstractSupport) then {
                         _status = "AVAILABLE";

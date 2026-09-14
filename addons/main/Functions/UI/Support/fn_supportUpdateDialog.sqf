@@ -31,5 +31,5 @@ private _script = format [
     "if (window.FLOSupport) { window.FLOSupport.applySnapshot(%1); }",
     toJSON _snapshot
 ];
-[_control, ["ExecJS", _script]] call FLO_fnc_supportWebAction;
+[_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;
 true

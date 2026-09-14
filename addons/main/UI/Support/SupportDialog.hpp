@@ -20,10 +20,10 @@ class FLO_SupportDialog {
 
         class Map: FLO_RscMap {
             idc = 9972;
-            x = "safeZoneX + (safeZoneW * 0.23)";
-            y = "safeZoneY + (safeZoneH * 0.085)";
-            w = "safeZoneW * 0.56";
-            h = "safeZoneH * 0.915";
+            x = "safeZoneX";
+            y = "safeZoneY + ((safeZoneH * 0.08) max (56 * pixelH) min (72 * pixelH))";
+            w = "safeZoneW * 0.66";
+            h = "safeZoneH - ((safeZoneH * 0.08) max (56 * pixelH) min (72 * pixelH)) - ((safeZoneH * 0.06) max (40 * pixelH) min (48 * pixelH))";
             colorBackground[] = {0.035, 0.065, 0.08, 1};
             colorOutside[] = {0.012, 0.025, 0.035, 1};
             colorSea[] = {0.04, 0.13, 0.18, 1};

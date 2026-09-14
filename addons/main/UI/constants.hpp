@@ -11,25 +11,25 @@
 // COLOR PALETTE
 // ============================================================================
 
-// Primary brand colors (deep red theme)
-#define FLO_COLOR_PRIMARY           {0.50, 0.10, 0.10, 1.00}
-#define FLO_COLOR_PRIMARY_HOVER     {0.60, 0.15, 0.15, 1.00}
-#define FLO_COLOR_ACCENT            {0.85, 0.35, 0.35, 1.00}
+// Primary interface colors
+#define FLO_COLOR_PRIMARY           {0.16, 0.35, 0.48, 1.00}
+#define FLO_COLOR_PRIMARY_HOVER     {0.22, 0.45, 0.60, 1.00}
+#define FLO_COLOR_ACCENT            {0.54, 0.78, 0.93, 1.00}
 
 // Neutral/background colors
-#define FLO_COLOR_BACKGROUND        {0.08, 0.08, 0.08, 0.92}
-#define FLO_COLOR_BACKGROUND_SOLID  {0.06, 0.06, 0.06, 1.00}
-#define FLO_COLOR_SURFACE           {0.12, 0.12, 0.12, 1.00}
-#define FLO_COLOR_SURFACE_HOVER     {0.18, 0.18, 0.18, 1.00}
-#define FLO_COLOR_HEADER            {0.15, 0.15, 0.20, 1.00}
-#define FLO_COLOR_BORDER            {0.25, 0.25, 0.25, 1.00}
+#define FLO_COLOR_BACKGROUND        {0.06, 0.11, 0.15, 0.98}
+#define FLO_COLOR_BACKGROUND_SOLID  {0.06, 0.11, 0.15, 1.00}
+#define FLO_COLOR_SURFACE           {0.09, 0.16, 0.22, 1.00}
+#define FLO_COLOR_SURFACE_HOVER     {0.13, 0.23, 0.31, 1.00}
+#define FLO_COLOR_HEADER            {0.09, 0.16, 0.22, 1.00}
+#define FLO_COLOR_BORDER            {0.23, 0.33, 0.42, 1.00}
 
 // Text colors
 #define FLO_COLOR_TEXT              {1.00, 1.00, 1.00, 1.00}
 #define FLO_COLOR_TEXT_SECONDARY    {0.85, 0.85, 0.85, 1.00}
 #define FLO_COLOR_TEXT_MUTED        {0.70, 0.70, 0.70, 1.00}
 #define FLO_COLOR_TEXT_DISABLED     {0.50, 0.50, 0.50, 1.00}
-#define FLO_COLOR_TEXT_TITLE        {0.85, 0.35, 0.35, 1.00}
+#define FLO_COLOR_TEXT_TITLE        {0.75, 0.88, 0.97, 1.00}
 
 // Semantic colors
 #define FLO_COLOR_SUCCESS           {0.35, 0.85, 0.35, 1.00}
@@ -47,15 +47,15 @@
 #define FLO_COLOR_BUTTON_ACTIVE     {0.35, 0.35, 0.35, 1.00}
 #define FLO_COLOR_BUTTON_DISABLED   {0.15, 0.15, 0.15, 1.00}
 
-#define FLO_COLOR_INPUT_BG          {0.10, 0.10, 0.10, 1.00}
+#define FLO_COLOR_INPUT_BG          {0.06, 0.12, 0.17, 1.00}
 #define FLO_COLOR_INPUT_BORDER      {0.30, 0.30, 0.30, 1.00}
-#define FLO_COLOR_INPUT_FOCUS       {0.50, 0.20, 0.20, 1.00}
+#define FLO_COLOR_INPUT_FOCUS       {0.16, 0.35, 0.48, 1.00}
 
 #define FLO_COLOR_SCROLLBAR         {0.40, 0.40, 0.40, 0.80}
 #define FLO_COLOR_SCROLLBAR_ACTIVE  {0.60, 0.60, 0.60, 1.00}
 
 // Selection colors
-#define FLO_COLOR_SELECT_BG         {0.50, 0.15, 0.15, 0.85}
+#define FLO_COLOR_SELECT_BG         {0.16, 0.35, 0.48, 1.00}
 #define FLO_COLOR_SELECT_TEXT       {1.00, 1.00, 1.00, 1.00}
 
 // Tooltip colors

@@ -25,6 +25,6 @@ class Base {
     class baseDeploySerializeState {};
     class baseDeployUpdateDialog {};
     class baseDeployValidateState {};
-    class baseDeployWebAction {};
+
     class baseMonitorSiege {};
 };

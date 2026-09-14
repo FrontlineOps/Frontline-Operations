@@ -5,6 +5,9 @@ private _event = _eventData get "event";
 private _data = _eventData get "data";
 
 switch (_event) do {
+    case "support::refresh": {
+        [] call FLO_fnc_supportRequestSnapshot;
+    };
     case "support::ready": {
         uiNamespace setVariable ["FLO_SupportControl", _control];
         FLO_SupportBrowserReady = true;
@@ -43,4 +46,9 @@ switch (_event) do {
     };
 };
 
+private _map = uiNamespace getVariable ["FLO_SupportMapControl", controlNull];
+if (!isNull _map && {ctrlShown _map}) then {
+    [_map] call FLO_fnc_uiRestoreMapFocus;
+    [FLO_fnc_uiRestoreMapFocus, [_map]] call CBA_fnc_execNextFrame;
+};
 true

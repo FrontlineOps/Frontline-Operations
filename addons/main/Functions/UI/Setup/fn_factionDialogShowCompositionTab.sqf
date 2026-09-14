@@ -21,37 +21,13 @@ if (isNull _display) exitWith {
     ["UI", 1, "Cannot switch composition tab - display is null"] call FLO_fnc_log;
 };
 
-private _objectiveVisible = (toLower _tab) isEqualTo "objectives";
-private _compositionVisible = !_objectiveVisible;
-private _objectiveControls = uiNamespace getVariable ["FLO_FactionObjectiveGroupControls", []];
-
-private _anchor = _display displayCtrl 2096;
-private _bottomCtrl = _display displayCtrl 2093;
-if (isNull _anchor || {isNull _bottomCtrl}) exitWith {
-    ["UI", 1, "Cannot switch composition tab - anchor controls are missing"] call FLO_fnc_log;
-};
-
-private _parent = ctrlParentControlsGroup _anchor;
-private _anchorPos = ctrlPosition _anchor;
-private _bottomPos = ctrlPosition _bottomCtrl;
-private _top = (_anchorPos select 1) - ((_anchorPos select 3) * 1.8);
-private _bottom = (_bottomPos select 1) + (_bottomPos select 3) + 0.01;
-
-{
-    private _idc = ctrlIDC _x;
-    private _pos = ctrlPosition _x;
-    private _y = _pos select 1;
-
-    if ((ctrlParentControlsGroup _x) isEqualTo _parent && {_y >= _top} && {_y <= _bottom} && {!(_x in _objectiveControls)} && {!(_idc in [2094, 2095, 2096])}) then {
-        _x ctrlShow _compositionVisible;
-    };
-} forEach (allControls _display);
-
-{
-    _x ctrlShow _objectiveVisible;
-} forEach _objectiveControls;
+private _objectiveSelected = (toLower _tab) isEqualTo "objectives";
+private _objectiveVisible = _objectiveSelected;
+private _compositionVisible = !_objectiveSelected;
+{ _x ctrlShow _compositionVisible } forEach (_display getVariable "FLO_SetupNumericControls");
+{ _x ctrlShow _objectiveVisible } forEach (uiNamespace getVariable ["FLO_FactionObjectiveGroupControls", []]);
 
 (_display displayCtrl 2094) ctrlSetBackgroundColor (if (_compositionVisible) then {[0.35, 0.35, 0.35, 1]} else {[0.20, 0.20, 0.20, 1]});
 (_display displayCtrl 2095) ctrlSetBackgroundColor ([[0.20, 0.20, 0.20, 1], [0.35, 0.35, 0.35, 1]] select (_objectiveVisible));
 
-uiNamespace setVariable ["FLO_FactionCompositionTab", ["composition", "objectives"] select (_objectiveVisible)];
+uiNamespace setVariable ["FLO_FactionCompositionTab", ["composition", "objectives"] select _objectiveSelected];

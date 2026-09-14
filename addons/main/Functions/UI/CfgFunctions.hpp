@@ -1,6 +1,8 @@
 class UI {
     file = "\z\flo\addons\main\Functions\UI";
 
+    class uiRestoreMapFocus {};
+    class uiWebAction {};
     class initClientUI { postInit = 1; };
     class initClientUIPreInit { preInit = 1; };
 
@@ -28,6 +30,7 @@ class UISetup {
     class shouldOpenFactionDialog {};
     class openFactionDialog {};
     class factionDialogOnLoad {};
+    class factionDialogInitializeLayout {};
     class factionDialogOnUnload {};
     class factionDialogAddFactionItems {};
     class factionDialogAddItems {};
@@ -67,11 +70,10 @@ class OperationsUI {
     class operationsPreInit { preInit = 1; };
     class operationsReceiveSnapshot {};
     class operationsRequestSnapshot {};
-    class operationsRestoreMapFocus {};
     class operationsSelectObjective {};
     class operationsShowGuide {};
     class operationsUpdateDialog {};
-    class operationsWebAction {};
+
 };
 
 class DevelopmentUI {
@@ -102,5 +104,5 @@ class SupportUI {
     class supportRequestSnapshot {};
     class supportRequestSnapshotServer {};
     class supportUpdateDialog {};
-    class supportWebAction {};
+
 };

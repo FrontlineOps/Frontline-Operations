@@ -10,4 +10,4 @@ private _script = format [
     toJSON _snapshot
 ];
 
-[_control, ["ExecJS", _script]] call FLO_fnc_operationsWebAction;
+[_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;

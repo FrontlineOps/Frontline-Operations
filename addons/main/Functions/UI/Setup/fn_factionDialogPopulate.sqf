@@ -235,7 +235,6 @@ _civilianCombo ctrlAddEventHandler ["LBSelChanged", {
 [_display] call FLO_fnc_factionDialogCreateObjectiveGroupControls;
 [_display, "BLUFOR", 1955] call FLO_fnc_factionDialogFillCompositionDefaults;
 [_display, "OPFOR", 1956] call FLO_fnc_factionDialogFillCompositionDefaults;
-["composition"] call FLO_fnc_factionDialogShowCompositionTab;
 
 ["UI", 3, format [
     "Faction dialog dropdowns populated (BLUFOR=%1, OPFOR=%2, civilian=%3)",

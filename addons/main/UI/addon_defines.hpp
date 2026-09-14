@@ -8,7 +8,6 @@
 #include "addon_macros.hpp"
 #include "constants.hpp"
 
-class IGUIBack;
 class RscButton;
 class RscCheckbox;
 class RscCombo;

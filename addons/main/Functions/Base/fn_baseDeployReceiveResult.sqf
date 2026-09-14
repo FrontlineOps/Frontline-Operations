@@ -16,11 +16,11 @@ if (!isNull _control) then {
         ["message", _message]
     ];
     private _script = format [
-        "if (window.FOOFDeploy) { window.FOOFDeploy.receiveResult(%1); }",
+        "if (window.FLODeploy) { window.FLODeploy.receiveResult(%1); }",
         toJSON _payload
     ];
 
-    [_control, ["ExecJS", _script]] call FLO_fnc_baseDeployWebAction;
+    [_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;
 
     FLO_BaseDeployRenderKey = "";
     [] call FLO_fnc_baseDeployUpdateDialog;

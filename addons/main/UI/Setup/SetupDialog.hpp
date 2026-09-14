@@ -20,9 +20,9 @@
 #define FLO_Q(value) FLO_DIALOG_STRINGIFY(value)
 
 // Keep the window on-screen while the form retains the selected interface scale.
-#define FACTION_FORM_W              (58 * GUI_GRID_W)
-#define FACTION_DIALOG_W            (FACTION_FORM_W min (safeZoneW * 0.96))
-#define FACTION_DIALOG_H            ((42.0 * GUI_GRID_H) min (safeZoneH * 0.96))
+#define FACTION_FORM_W              ((54 * GUI_GRID_W) min (safeZoneW * 0.94))
+#define FACTION_DIALOG_W            (FACTION_FORM_W)
+#define FACTION_DIALOG_H            ((40.0 * GUI_GRID_H) min (safeZoneH * 0.90))
 #define FACTION_FOOTER_H            (2.2 * GUI_GRID_H)
 #define FACTION_BODY_H              (FACTION_DIALOG_H - FACTION_HEADER_H - FACTION_FOOTER_H)
 #define FACTION_DIALOG_X            (safeZoneX + safeZoneW/2 - FACTION_DIALOG_W/2)
@@ -43,9 +43,9 @@
 #define FACTION_HALF_X2             (FACTION_FULL_X + FACTION_HALF_W + FACTION_CARD_GAP_X)
 
 // Card heights
-#define FACTION_CARD_FACTIONS_H     (9.0 * GUI_GRID_H)
-#define FACTION_CARD_COMMANDER_H    (8.9 * GUI_GRID_H)
-#define FACTION_CARD_COMPOSITION_H  (10.8 * GUI_GRID_H)
+#define FACTION_CARD_FACTIONS_H     (8.6 * GUI_GRID_H)
+#define FACTION_CARD_COMMANDER_H    (8.5 * GUI_GRID_H)
+#define FACTION_CARD_COMPOSITION_H  (10.4 * GUI_GRID_H)
 #define FACTION_CARD_MISC_H         (6.8 * GUI_GRID_H)
 
 // Card positions
@@ -80,7 +80,7 @@
 #define FACTION_TUNE_EAST_W         (3.4 * GUI_GRID_W)
 #define FACTION_TUNE_WEST_X(_tableX) (_tableX + FACTION_TUNE_LABEL_W + (0.3 * GUI_GRID_W))
 #define FACTION_TUNE_EAST_X(_tableX) (_tableX + FACTION_TUNE_LABEL_W + FACTION_TUNE_WEST_W + (0.6 * GUI_GRID_W))
-#define FACTION_TUNE_ROW_Y(_row)    (FACTION_CARD_COMPOSITION_Y + ((2.45 + (_row * 0.72)) * GUI_GRID_H))
+#define FACTION_TUNE_ROW_Y(_row)    (FACTION_CARD_COMPOSITION_Y + ((2.05 + (_row * 0.72)) * GUI_GRID_H))
 #define FACTION_TUNE_CELL_H         (0.62 * GUI_GRID_H)
 #define FACTION_TAB_W               (7.4 * GUI_GRID_W)
 #define FACTION_TAB_H               (0.66 * GUI_GRID_H)
@@ -138,13 +138,9 @@ class FLO_FactionTabButton: FLO_RscButton_Secondary
 
 class FLO_FactionCard: FLO_RscSurface
 {
-	colorBackground[] = {0.11, 0.11, 0.11, 0.96};
+	colorBackground[] = FLO_COLOR_SURFACE;
 };
 
-class FLO_FactionCardFrame: FLO_RscFrame
-{
-	colorText[] = {0.28, 0.14, 0.14, 1.00};
-};
 
 // ============================================================================
 // FACTION SELECTION DIALOG
@@ -199,15 +195,6 @@ class FLO_FactionSelectDialog
 			h = FLO_Q(FACTION_BODY_H);
 			class Controls
 			{
-				class HeaderSubtitle: FLO_RscText_Muted
-				{
-					idc = FLO_IDC_NONE;
-					text = "Pick the theater, commander posture, and campaign pacing before deployment.";
-					x = FLO_Q(FACTION_FULL_X);
-					y = FLO_Q(0.15 * GUI_GRID_H);
-					w = FLO_Q(FACTION_FULL_W);
-					h = FLO_Q(FACTION_LABEL_H);
-				};
 
 				// ====================================================================
 				// CARD: FACTIONS
@@ -215,21 +202,13 @@ class FLO_FactionSelectDialog
 
 				class CardFactionsBg: FLO_FactionCard
 				{
-					idc = FLO_IDC_NONE;
+					idc = 2400;
 					x = FLO_Q(FACTION_FULL_X);
 					y = FLO_Q(FACTION_CARD_FACTIONS_Y);
 					w = FLO_Q(FACTION_FULL_W);
 					h = FLO_Q(FACTION_CARD_FACTIONS_H);
 				};
 
-				class CardFactionsFrame: FLO_FactionCardFrame
-				{
-					idc = FLO_IDC_NONE;
-					x = FLO_Q(FACTION_FULL_X);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y);
-					w = FLO_Q(FACTION_FULL_W);
-					h = FLO_Q(FACTION_CARD_FACTIONS_H);
-				};
 
 				class CardFactionsTitle: FLO_RscText_Title
 				{
@@ -260,22 +239,12 @@ class FLO_FactionSelectDialog
 					tooltip = "Choose the human campaign side. Players must use matching BLUFOR or OPFOR lobby slots.";
 				};
 
-				class CardFactionsHint: FLO_RscText_Muted
-				{
-					idc = FLO_IDC_NONE;
-					text = "Each catalog is locked to its native Arma side. Select multiple factions to merge pools for that side.";
-					x = FLO_Q(FACTION_FULL_X + (0.8 * GUI_GRID_W));
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.0 * GUI_GRID_H));
-					w = FLO_Q(FACTION_FULL_W - (1.6 * GUI_GRID_W));
-					h = FLO_Q(FACTION_LABEL_H);
-				};
-
 				class LabelBluforFaction: FLO_RscText_Label
 				{
 					idc = FLO_IDC_NONE;
 					text = "BLUFOR Faction(s)";
 					x = FLO_Q(FACTION_THIRD_X1);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.45 * GUI_GRID_H));
 					w = FLO_Q(FACTION_THIRD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -284,7 +253,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_BLUFOR;
 					x = FLO_Q(FACTION_THIRD_X1);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_THIRD_W);
 					tooltip = "Select one or more native BLUFOR factions (config side 1).";
 				};
@@ -294,7 +263,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "OPFOR Faction(s)";
 					x = FLO_Q(FACTION_THIRD_X2);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.45 * GUI_GRID_H));
 					w = FLO_Q(FACTION_THIRD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -303,7 +272,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_OPFOR;
 					x = FLO_Q(FACTION_THIRD_X2);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_THIRD_W);
 					tooltip = "Select one or more native OPFOR factions (config side 0).";
 				};
@@ -313,7 +282,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Civilian Faction(s)";
 					x = FLO_Q(FACTION_THIRD_X3);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.85 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (1.45 * GUI_GRID_H));
 					w = FLO_Q(FACTION_THIRD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -322,7 +291,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_CIVILIAN;
 					x = FLO_Q(FACTION_THIRD_X3);
-					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_FACTIONS_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_THIRD_W);
 					tooltip = "Select one or more native civilian factions (config side 3).";
 				};
@@ -333,21 +302,13 @@ class FLO_FactionSelectDialog
 
 				class CardCommanderBg: FLO_FactionCard
 				{
-					idc = FLO_IDC_NONE;
+					idc = 2401;
 					x = FLO_Q(FACTION_FULL_X);
 					y = FLO_Q(FACTION_CARD_COMMANDER_Y);
 					w = FLO_Q(FACTION_FULL_W);
 					h = FLO_Q(FACTION_CARD_COMMANDER_H);
 				};
 
-				class CardCommanderFrame: FLO_FactionCardFrame
-				{
-					idc = FLO_IDC_NONE;
-					x = FLO_Q(FACTION_FULL_X);
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y);
-					w = FLO_Q(FACTION_FULL_W);
-					h = FLO_Q(FACTION_CARD_COMMANDER_H);
-				};
 
 				class CardCommanderTitle: FLO_RscText_Title
 				{
@@ -359,22 +320,12 @@ class FLO_FactionSelectDialog
 					h = FLO_Q(FACTION_LABEL_H);
 				};
 
-				class CardCommanderHint: FLO_RscText_Muted
-				{
-					idc = FLO_IDC_NONE;
-					text = "Configure each side's commander separately so BLUFOR and OPFOR do not share the same posture.";
-					x = FLO_Q(FACTION_FULL_X + (0.8 * GUI_GRID_W));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (1.0 * GUI_GRID_H));
-					w = FLO_Q(FACTION_FULL_W - (1.6 * GUI_GRID_W));
-					h = FLO_Q(FACTION_LABEL_H);
-				};
-
 				class CommanderWestTitle: FLO_RscText_Title
 				{
 					idc = FLO_IDC_NONE;
 					text = "BLUFOR / WEST";
 					x = FLO_Q(FACTION_SIDE_X1);
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (1.75 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (1.35 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -384,7 +335,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "OPFOR / EAST";
 					x = FLO_Q(FACTION_SIDE_X2);
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (1.75 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (1.35 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -394,7 +345,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Attack Coverage";
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -403,7 +354,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_WEST_ATTACK_COVERAGE;
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How many groups WEST assigns to each connected frontline attack, up to six";
 				};
@@ -413,7 +364,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Defense Coverage";
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -422,7 +373,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_WEST_DEFENSE_COVERAGE;
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How heavily the WEST commander fills defensive slots";
 				};
@@ -432,7 +383,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Aggression";
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -441,7 +392,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_WEST_AGGRESSION;
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How willing the WEST commander is to launch attacks with partial force";
 				};
@@ -451,7 +402,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Tempo";
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -460,7 +411,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_WEST_TEMPO;
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How often the WEST commander runs full decision cycles";
 				};
@@ -470,7 +421,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Force Growth";
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -479,7 +430,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_WEST_FORCE_GROWTH;
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How many extra force slots WEST earns after each secure capture";
 				};
@@ -489,7 +440,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Baseline Garrison";
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -498,7 +449,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_WEST_GARRISON;
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X1));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "Standing defenders WEST keeps before sending groups elsewhere";
 				};
@@ -508,7 +459,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Attack Coverage";
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -517,7 +468,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_EAST_ATTACK_COVERAGE;
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How many groups EAST assigns to each connected frontline attack, up to six";
 				};
@@ -527,7 +478,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Defense Coverage";
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -536,7 +487,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_EAST_DEFENSE_COVERAGE;
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (3.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (2.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How heavily the EAST commander fills defensive slots";
 				};
@@ -546,7 +497,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Aggression";
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -555,7 +506,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_EAST_AGGRESSION;
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How willing the EAST commander is to launch attacks with partial force";
 				};
@@ -565,7 +516,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Tempo";
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -574,7 +525,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_EAST_TEMPO;
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (5.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (4.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How often the EAST commander runs full decision cycles";
 				};
@@ -584,7 +535,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Force Growth";
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -593,7 +544,7 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_EAST_FORCE_GROWTH;
 					x = FLO_Q(FACTION_SIDE_FIELD_X1(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "How many extra force slots EAST earns after each secure capture";
 				};
@@ -603,7 +554,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "Baseline Garrison";
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.55 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.15 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -612,49 +563,31 @@ class FLO_FactionSelectDialog
 				{
 					idc = FLO_IDC_FACTION_COMBO_EAST_GARRISON;
 					x = FLO_Q(FACTION_SIDE_FIELD_X2(FACTION_SIDE_X2));
-					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (7.25 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMMANDER_Y + (6.85 * GUI_GRID_H));
 					w = FLO_Q(FACTION_SIDE_FIELD_W);
 					tooltip = "Standing defenders EAST keeps before sending groups elsewhere";
 				};
 
 				// ====================================================================
-				// CARD: PER NUMERIC FORCE COMPOSITION
+				// CARD: FORCE COMPOSITION
 				// ====================================================================
 
 				class CardCompositionBg: FLO_FactionCard
 				{
-					idc = FLO_IDC_NONE;
+					idc = 2402;
 					x = FLO_Q(FACTION_FULL_X);
 					y = FLO_Q(FACTION_CARD_COMPOSITION_Y);
 					w = FLO_Q(FACTION_FULL_W);
 					h = FLO_Q(FACTION_CARD_COMPOSITION_H);
 				};
 
-				class CardCompositionFrame: FLO_FactionCardFrame
-				{
-					idc = FLO_IDC_NONE;
-					x = FLO_Q(FACTION_FULL_X);
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y);
-					w = FLO_Q(FACTION_FULL_W);
-					h = FLO_Q(FACTION_CARD_COMPOSITION_H);
-				};
 
 				class CardCompositionTitle: FLO_RscText_Title
 				{
 					idc = FLO_IDC_NONE;
-					text = "PER NUMERIC FORCE COMPOSITION";
+					text = "FORCE COMPOSITION";
 					x = FLO_Q(FACTION_FULL_X + (0.8 * GUI_GRID_W));
 					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (0.35 * GUI_GRID_H));
-					w = FLO_Q(FACTION_FULL_W - (1.6 * GUI_GRID_W));
-					h = FLO_Q(FACTION_LABEL_H);
-				};
-
-				class CardCompositionHint: FLO_RscText_Muted
-				{
-					idc = FLO_IDC_NONE;
-					text = "Default faction values load here; use tabs to edit composition and objective groups.";
-					x = FLO_Q(FACTION_FULL_X + (0.8 * GUI_GRID_W));
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.0 * GUI_GRID_H));
 					w = FLO_Q(FACTION_FULL_W - (1.6 * GUI_GRID_W));
 					h = FLO_Q(FACTION_LABEL_H);
 				};
@@ -697,7 +630,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "RESERVES";
 					x = FLO_Q(FACTION_TUNE_RESERVE_X);
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.25 * GUI_GRID_H));
 					w = FLO_Q(FACTION_TUNE_LABEL_W);
 				};
 
@@ -706,7 +639,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "OBJECTIVE CAPS";
 					x = FLO_Q(FACTION_TUNE_CAPS_X);
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.25 * GUI_GRID_H));
 					w = FLO_Q(FACTION_TUNE_LABEL_W);
 				};
 
@@ -715,7 +648,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "GROUP COUNTS";
 					x = FLO_Q(FACTION_TUNE_COUNTS_X);
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.25 * GUI_GRID_H));
 					w = FLO_Q(FACTION_TUNE_LABEL_W);
 				};
 
@@ -724,7 +657,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "BLUFOR";
 					x = FLO_Q(FACTION_TUNE_WEST_X(FACTION_TUNE_RESERVE_X));
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.25 * GUI_GRID_H));
 					w = FLO_Q(FACTION_TUNE_WEST_W);
 				};
 
@@ -733,7 +666,7 @@ class FLO_FactionSelectDialog
 					idc = FLO_IDC_NONE;
 					text = "OPFOR";
 					x = FLO_Q(FACTION_TUNE_EAST_X(FACTION_TUNE_RESERVE_X));
-					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.65 * GUI_GRID_H));
+					y = FLO_Q(FACTION_CARD_COMPOSITION_Y + (1.25 * GUI_GRID_H));
 					w = FLO_Q(FACTION_TUNE_EAST_W);
 				};
 
@@ -1176,21 +1109,13 @@ class FLO_FactionSelectDialog
 
 				class CardCampaignBg: FLO_FactionCard
 				{
-					idc = FLO_IDC_NONE;
+					idc = 2403;
 					x = FLO_Q(FACTION_FULL_X);
 					y = FLO_Q(FACTION_CARD_MISC_Y);
 					w = FLO_Q(FACTION_HALF_W);
 					h = FLO_Q(FACTION_CARD_MISC_H);
 				};
 
-				class CardCampaignFrame: FLO_FactionCardFrame
-				{
-					idc = FLO_IDC_NONE;
-					x = FLO_Q(FACTION_FULL_X);
-					y = FLO_Q(FACTION_CARD_MISC_Y);
-					w = FLO_Q(FACTION_HALF_W);
-					h = FLO_Q(FACTION_CARD_MISC_H);
-				};
 
 				class CardCampaignTitle: FLO_RscText_Title
 				{
@@ -1234,14 +1159,6 @@ class FLO_FactionSelectDialog
 					h = FLO_Q(FACTION_CARD_MISC_H);
 				};
 
-				class CardWorldFrame: FLO_FactionCardFrame
-				{
-					idc = FLO_IDC_NONE;
-					x = FLO_Q(FACTION_HALF_X2);
-					y = FLO_Q(FACTION_CARD_MISC_Y);
-					w = FLO_Q(FACTION_HALF_W);
-					h = FLO_Q(FACTION_CARD_MISC_H);
-				};
 
 				class CardWorldTitle: FLO_RscText_Title
 				{

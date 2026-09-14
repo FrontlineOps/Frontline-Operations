@@ -37,6 +37,7 @@ _display setVariable ["FLO_FactionDialog_EH", _eh];
 
 // Populate dropdowns
 [] call FLO_fnc_factionDialogPopulate;
+[_display] call FLO_fnc_factionDialogInitializeLayout;
 
 ["UI", 3, "Faction dialog loaded"] call FLO_fnc_log;
 
