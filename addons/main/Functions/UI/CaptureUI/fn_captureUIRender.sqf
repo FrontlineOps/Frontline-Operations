@@ -30,5 +30,5 @@ if ((keys FLO_CaptureUI_LatestUpdate) isNotEqualTo []
 };
 
 _script = _script + "}";
-_control ctrlWebBrowserAction ["ExecJS", _script];
+[_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;
 true

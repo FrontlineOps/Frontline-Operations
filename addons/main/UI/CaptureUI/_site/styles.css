@@ -31,7 +31,7 @@ body {
 
 .capture-bar-wrapper {
     position: relative;
-    width: 400px;
+    width: min(400px, calc(100vw - 32px));
 }
 
 .capture-bar {

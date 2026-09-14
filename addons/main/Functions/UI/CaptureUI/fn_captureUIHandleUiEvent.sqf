@@ -4,6 +4,9 @@ private _eventData = fromJSON _message;
 private _event = _eventData get "event";
 
 switch (_event) do {
+    case "captureUI::loadFailed": {
+        ["UI", 1, "Capture HUD could not load its packaged resources"] call FLO_fnc_log;
+    };
     case "captureUI::ready": {
         FLO_CaptureUI_HTMLReady = true;
         [] call FLO_fnc_captureUIRender;

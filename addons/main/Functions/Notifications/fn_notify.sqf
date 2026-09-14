@@ -8,6 +8,7 @@ params [
 if (!hasInterface) exitWith { "" };
 if (_message == "") then { throw "Notification message cannot be empty"; };
 if (_duration <= 0) then { _duration = FLO_NotificationDefaultDuration; };
+if (count _this < 4) then { _duration = _duration max (((count _message) / 18) min 30) };
 
 _type = toLower _type;
 private _style = [_type] call FLO_fnc_notificationStyle;

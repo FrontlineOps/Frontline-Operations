@@ -18,10 +18,10 @@ if (isNull _display) exitWith {
 FLO_NotificationRenderQueued = false;
 
 private _w = 0.285 * safeZoneW;
-private _h = 0.074 * safeZoneH;
+private _minimumH = 0.074 * safeZoneH;
 private _gap = 0.010 * safeZoneH;
 private _x = safeZoneX + safeZoneW - _w - (0.010 * safeZoneW);
-private _y0 = safeZoneY + (0.145 * safeZoneH);
+private _nextY = safeZoneY + (0.145 * safeZoneH);
 private _accentW = 0.0045 * safeZoneW;
 private _padX = 0.010 * safeZoneW;
 private _titleH = 0.024 * safeZoneH;
@@ -52,10 +52,17 @@ for "_i" from 0 to ((count FLO_NotificationActive) - 1) do {
 
     _controls params ["_group", "_bg", "_accent", "_topLine", "_title", "_body"];
 
-    private _y = _y0 + (_i * (_h + _gap));
+    private _y = _nextY;
+    private _bodyW = _w - _accentW - (_padX * 2);
+    _body ctrlSetPosition [_accentW + _padX, 0.036 * safeZoneH, _bodyW, safeZoneH];
+    _body ctrlSetStructuredText (parseText format ["<t color='#F2F7FA' size='0.95'>%1</t>",
+        [_entry get "message"] call FLO_fnc_notificationEscapeStructuredText]);
+    _body ctrlCommit 0;
+    private _bodyH = (ctrlTextHeight _body) min (0.14 * safeZoneH);
+    private _h = _minimumH max (_bodyH + (0.048 * safeZoneH));
+    _nextY = _y + _h + _gap;
     private _accentColor = _style get "accent";
     private _backgroundColor = _style get "background";
-    private _accentHtml = _style get "accentHtml";
 
     _group ctrlSetPosition [_x, _y, _w, _h];
     _group ctrlCommit 0.18;
@@ -77,17 +84,6 @@ for "_i" from 0 to ((count FLO_NotificationActive) - 1) do {
     _title ctrlSetTextColor _accentColor;
     _title ctrlCommit 0;
 
-    _body ctrlSetPosition [
-        _accentW + _padX,
-        0.032 * safeZoneH,
-        _w - _accentW - (_padX * 2),
-        _h - (0.036 * safeZoneH)
-    ];
-    _body ctrlSetStructuredText (parseText format [
-        "<t color='#F2F7FA' size='0.90'>%1</t><br/><t color='%2' size='0.60'>%3</t>",
-        [_entry get "message"] call FLO_fnc_notificationEscapeStructuredText,
-        _accentHtml,
-        "FLO"
-    ]);
+    _body ctrlSetPosition [_accentW + _padX, 0.036 * safeZoneH, _bodyW, _h - (0.044 * safeZoneH)];
     _body ctrlCommit 0;
 };
