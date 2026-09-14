@@ -39,6 +39,12 @@ class Store {
     class storeNormalizeRuntimeRadioClass {};
     class storeOpenDialog {};
     class storeOpenKitsDialog {};
+    class storePreviewOpen {};
+    class storePreviewClose {};
+    class storePreviewEquip {};
+    class storePreviewSelect {};
+    class storePreviewUpdateCamera {};
+    class storePreviewControl {};
     class storePreInit { preInit = 1; };
     class storeMagazineCombatTraits {};
     class storePriceAttachment {};
@@ -67,5 +73,5 @@ class Store {
     class storeVehicleConfigTraits {};
     class storeWeaponCombatPrice {};
     class storeWeaponAttachments {};
-    class storeWebAction {};
+
 };

@@ -6,9 +6,9 @@ private _control = uiNamespace getVariable ["FLO_StoreControl", controlNull];
 if (isNull _control) exitWith {};
 
 private _script = format [
-    "if (window.FOOFStore) { window.FOOFStore.receive(%1, %2); }",
+    "if (window.FLOStore) { window.FLOStore.receive(%1, %2); }",
     toJSON _event,
     toJSON _payload
 ];
 
-[_control, ["ExecJS", _script]] call FLO_fnc_storeWebAction;
+[_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;

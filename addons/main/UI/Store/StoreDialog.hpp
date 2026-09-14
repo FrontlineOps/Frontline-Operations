@@ -4,7 +4,7 @@ class FLO_StoreDialog {
 	idd = 9800;
 	movingEnable = 0;
 	enableSimulation = 1;
-	onUnload = "uiNamespace setVariable ['FLO_StoreControl', controlNull]; FLO_StoreActiveBaseNetId = ''";
+	onUnload = "[_this select 0] call FLO_fnc_storePreviewClose; uiNamespace setVariable ['FLO_StoreControl', controlNull]; FLO_StoreActiveBaseNetId = ''";
 
 	class Controls {
 		class Browser: RscText {

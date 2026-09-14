@@ -16,6 +16,12 @@ switch (_event) do {
     case "store::category": {
         [player, FLO_StoreActiveBaseNetId, _data get "category"] remoteExecCall ["FLO_fnc_storeRequestCategory", 2];
     };
+    case "store::preview": {
+        [ctrlParent _control, _data] call FLO_fnc_storePreviewSelect;
+    };
+    case "store::previewControl": {
+        [ctrlParent _control, _data] call FLO_fnc_storePreviewControl;
+    };
     case "store::checkout": {
         [player, FLO_StoreActiveBaseNetId, _data get "items"] remoteExecCall ["FLO_fnc_storeRequestCheckout", 2];
     };

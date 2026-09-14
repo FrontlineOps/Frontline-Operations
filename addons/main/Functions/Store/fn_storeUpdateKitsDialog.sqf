@@ -6,8 +6,8 @@ private _control = uiNamespace getVariable ["FLO_StoreKitsControl", controlNull]
 if (isNull _control) exitWith {};
 
 private _script = format [
-    "if (window.FLOOKits) { window.FLOOKits.receive(%1); }",
+    "if (window.FLOKits) { window.FLOKits.receive(%1); }",
     toJSON _payload
 ];
 
-[_control, ["ExecJS", _script]] call FLO_fnc_storeWebAction;
+[_control, ["ExecJS", _script]] call FLO_fnc_uiWebAction;

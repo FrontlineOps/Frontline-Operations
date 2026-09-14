@@ -30,5 +30,5 @@ uiNamespace setVariable ["FLO_StoreKitsControl", _control];
 // Arma browser control event (not yet listed in HEMTT event metadata).
 private _webDialogEvent = "JSDialog";
 _control ctrlAddEventHandler [_webDialogEvent, FLO_fnc_storeHandleKitsUiEvent];
-[_control, ["LoadFile", "\z\flo\addons\main\UI\Store\kits.html"]] call FLO_fnc_storeWebAction;
+[_control, ["LoadFile", "\z\flo\addons\main\UI\Store\kits.html"]] call FLO_fnc_uiWebAction;
 true
