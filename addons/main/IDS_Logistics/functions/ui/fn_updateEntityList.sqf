@@ -38,6 +38,10 @@ private _searchText = toLower (ctrlText _searchBox);
 
 // Clear the entities list
 lbClear _entitiesList;
+(_display displayCtrl 9505) ctrlEnable false;
+(_display displayCtrl 9506) ctrlShow false;
+(_display displayCtrl 9504) ctrlSetStructuredText parseText "No matching objects. Change the category or search text.";
+if (_selectedIndex < 0) exitWith {};
 
 // Get the selected category
 private _category = _categoryList lbData _selectedIndex;
@@ -67,4 +71,8 @@ private _categoryEntities = [_category] call IDS_Logistics_fnc_getEntitiesByCate
 } forEach _categoryEntities;
 
 // Auto-select first item if list is not empty
-if (lbSize _entitiesList > 0) then { _entitiesList lbSetCurSel 0; };
+if (lbSize _entitiesList > 0) then {
+    (_display displayCtrl 9505) ctrlEnable true;
+    (_display displayCtrl 9506) ctrlShow true;
+    _entitiesList lbSetCurSel 0;
+};

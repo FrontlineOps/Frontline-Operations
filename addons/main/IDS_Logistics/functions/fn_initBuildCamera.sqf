@@ -489,28 +489,16 @@ IDS_Logistics_cameraKeyDownHandler = (findDisplay 46) displayAddEventHandler ["K
     [_session] call IDS_Logistics_fnc_closeBuildCamera;
 };
 
-// Display camera controls info
-private _bKeyText = ["<t>- <t color='#DDDDDD'>B key</t> - <t color='#888888'>Build menu disabled</t></t><br/>", "<t>- <t color='#DDDDDD'>B key</t> - Open build menu</t><br/>"] select (!IDS_Logistics_BuildMenuDisabled);
-
-private _shiftKeyText = ["<t>- <t color='#DDDDDD'>SHIFT + Left click</t> - <t color='#888888'>Delete entity disabled</t></t><br/>", "<t>- <t color='#DDDDDD'>SHIFT + Left click</t> - Delete entity</t><br/>"] select (!IDS_Logistics_BuildMenuDisabled);
-
+// Keep the complete controls guide legible without repeating key/type labels.
+private _buildText = ["B  Build menu disabled", "B  Open build menu"] select (!IDS_Logistics_BuildMenuDisabled);
+private _deleteText = ["Shift + click  Delete disabled", "Shift + click  Delete object"] select (!IDS_Logistics_BuildMenuDisabled);
 private _controlsInfo = format [
-    "<t color='#AAFFAA' size='1.0'>CONTROLS</t><br/><t align='left'>" +
-    "<t>- <t color='#DDDDDD'>N key</t> - Toggle normal/night vision</t><br/>" +
-    "%1" +
-    "<t>- <t color='#DDDDDD'>T key</t> - Toggle terrain snapping</t><br/>" +
-    "<t>- <t color='#DDDDDD'>C key</t> - Toggle 3d cursor</t><br/>" +
-    "<t>- <t color='#DDDDDD'>Q/Z key</t> - Raise/Lower camera</t><br/>" +
-    "<t>- <t color='#DDDDDD'>Left click</t> - Place entity</t><br/>" +
-    "<t>- <t color='#DDDDDD'>CTRL + Left click</t> - Pick up entity</t><br/>" +
-    "%2" +
-    "<t>- <t color='#DDDDDD'>Right click</t> - Cancel placement</t><br/>" +
-    "<t>- <t color='#DDDDDD'>ESC key</t> - Exit build mode</t><br/>" +
-    "<t>- <t color='#DDDDDD'>CTRL + scroll</t> - Adjust height</t><br/>" +
-    "<t>- <t color='#DDDDDD'>SHIFT + scroll</t> - Rotate entity</t><br/>" +
-    "<t>- <t color='#DDDDDD'>ALT + scroll</t> - Adjust distance</t>",
-    _bKeyText,
-    _shiftKeyText
+    "<t font='PuristaBold'>Build controls</t><br/>" +
+    "%1<br/>N  Normal / night vision<br/>T  Terrain snapping<br/>C  3D cursor<br/>" +
+    "Q / Z  Raise / lower camera<br/>Click  Place object<br/>Ctrl + click  Pick up object<br/>" +
+    "%2<br/>Right click  Cancel placement<br/>Esc  Exit build mode<br/>" +
+    "Ctrl + scroll  Height<br/>Shift + scroll  Rotation<br/>Alt + scroll  Distance",
+    _buildText, _deleteText
 ];
 
 [_controlsInfo, 0] call IDS_Logistics_fnc_cameraHint;

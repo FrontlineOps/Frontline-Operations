@@ -1,11 +1,9 @@
 #include "Defines.hpp"
-
 class IDS_Logistics_BuildMenuDialog {
     idd = 9500;
     movingEnable = 0;
     enableSimulationGlobal = 1;
-    onLoad = "[_this select 0] call IDS_Logistics_fnc_handlePreview;";
-
+    onLoad = "[_this select 0] call IDS_Logistics_fnc_handlePreview";
     class RscObject
     {
         type = CT_OBJECT;
@@ -38,281 +36,75 @@ class IDS_Logistics_BuildMenuDialog {
     };
 
     class ControlsBackground {
-        class Background: IGUIBack {
-            idc = -1;
-            x = "0.1 * safezoneW + safezoneX";
-            y = "0.15 * safezoneH + safezoneY";
-            w = "0.8 * safezoneW";
-            h = "0.7 * safezoneH";
-            colorBackground[] = {0.1, 0.1, 0.1, 0.8};
+        class Background: FLO_RscBackground {
+            idc = -1; x = "safeZoneX + 0.08 * safeZoneW"; y = "safeZoneY + 0.10 * safeZoneH";
+            w = "0.84 * safeZoneW"; h = "0.78 * safeZoneH";
         };
-
-        class HeaderBackground: IGUIBack {
-            idc = -1;
-            x = "0.1 * safezoneW + safezoneX";
-            y = "0.15 * safezoneH + safezoneY";
-            w = "0.8 * safezoneW";
-            h = "0.05 * safezoneH";
-            colorText[] = {1,1,1,1};
-            colorBackground[] = {0.5,0.1,0.1,1};
-            shadow = 1;
-            colorShadow[] = {0,0,0,0.5};
-        };
-
-        // Left side preview section background with distinct color
-        class PreviewBackground: IGUIBack {
-            idc = -1;
-            x = "0.11 * safezoneW + safezoneX";
-            y = "0.21 * safezoneH + safezoneY";
-            w = "0.35 * safezoneW";
-            h = "0.62 * safezoneH";
-            colorBackground[] = {0.18, 0.18, 0.2, 0.9};
-        };
-
-        // Preview frame with subtle blue accent
-        class PreviewFrame: RscFrame {
-            idc = -1;
-            x = "0.12 * safezoneW + safezoneX";
-            y = "0.22 * safezoneH + safezoneY";
-            w = "0.33 * safezoneW";
-            h = "0.46 * safezoneH";
-            colorText[] = {0.5, 0.7, 0.9, 1};
-        };
-
-        // Right side content background with distinct color
-        class RightSideBackground: IGUIBack {
-            idc = -1;
-            x = "0.47 * safezoneW + safezoneX";
-            y = "0.21 * safezoneH + safezoneY";
-            w = "0.42 * safezoneW";
-            h = "0.62 * safezoneH";
-            colorBackground[] = {0.2, 0.2, 0.18, 0.9};
-        };
-
-        // Key info text
-        class KeyInfoText: RscStructuredText {
-            idc = -1;
-            x = "0.4 * safezoneW + safezoneX";
-            y = "0.225 * safezoneH + safezoneY";
-            w = "0.08 * safezoneW";
-            h = "0.07 * safezoneH";
-            text = "W/S: Rotate Up/Down<br/>A/D: Rotate Left/Right<br/>+/-: Zoom In/Out";
-            colorText[] = {0.9, 0.9, 1, 1};
-            size = 0.03;
+        class Preview: FLO_RscSurface {
+            idc = -1; x = "safeZoneX + 0.10 * safeZoneW"; y = "safeZoneY + 0.22 * safeZoneH";
+            w = "0.35 * safeZoneW"; h = "0.44 * safeZoneH";
         };
     };
-
     class Controls {
-        class Title: RscText {
-            idc = -1;
-            text = "Base Building - Select Entity";
-            x = "0.1 * safezoneW + safezoneX";
-            y = "0.15 * safezoneH + safezoneY";
-            w = "0.8 * safezoneW";
-            h = "0.05 * safezoneH";
-            colorText[] = {1, 1, 1, 1};
-            sizeEx = 0.04;
-            style = ST_CENTER;
-        };
+        class Title: FLO_RscText_Title {
+            idc = -1; text = "Base construction";
+            x = "safeZoneX + 0.1 * safeZoneW"; y = "safeZoneY + 0.115 * safeZoneH";
+            w = "0.6 * safeZoneW"; h = "0.045 * safeZoneH";
 
-        // LEFT SIDE - Preview label and entity info
-        class PreviewSectionFrame: RscFrame {
-            idc = -1;
-            x = "0.11 * safezoneW + safezoneX";
-            y = "0.21 * safezoneH + safezoneY";
-            w = "0.35 * safezoneW";
-            h = "0.62 * safezoneH";
-            colorText[] = {0.7, 0.7, 0.7, 1};
         };
-
-        class PreviewLabel: RscText {
-            idc = -1;
-            text = "Preview";
-            x = "0.12 * safezoneW + safezoneX";
-            y = "0.22 * safezoneH + safezoneY";
-            w = "0.33 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorText[] = {0.9, 0.9, 1, 1};
-            sizeEx = 0.035;
-            style = ST_CENTER;
+        class Close: FLO_RscButton_Secondary {
+            idc = -1; text = "Close";
+            x = "safeZoneX + 0.79 * safeZoneW"; y = "safeZoneY + 0.115 * safeZoneH";
+            w = "0.11 * safeZoneW"; h = "0.045 * safeZoneH";
+            action = "closeDialog 0";
         };
+        class PreviewHelp: FLO_RscText_Muted {
+            idc = -1; text = "W/A/S/D: rotate   |   +/-: zoom";
+            x = "safeZoneX + 0.1 * safeZoneW"; y = "safeZoneY + 0.665 * safeZoneH";
+            w = "0.35 * safeZoneW"; h = "0.035 * safeZoneH";
 
-        class EntityInfoLabel: RscText {
-            idc = -1;
-            text = "Entity Information";
-            x = "0.12 * safezoneW + safezoneX";
-            y = "0.685 * safezoneH + safezoneY";
-            w = "0.33 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorText[] = {0.9, 0.9, 1, 1};
-            sizeEx = 0.03;
-            style = ST_CENTER;
         };
+        class EntityInfo: FLO_RscStructuredText {
+            idc = 9504; text = "";
+            x = "safeZoneX + 0.1 * safeZoneW"; y = "safeZoneY + 0.715 * safeZoneH";
+            w = "0.35 * safeZoneW"; h = "0.13 * safeZoneH";
 
-        class EntityInfo: RscStructuredText {
-            idc = 9504;
-            x = "0.12 * safezoneW + safezoneX";
-            y = "0.715 * safezoneH + safezoneY";
-            w = "0.33 * safezoneW";
-            h = "0.105 * safezoneH";
-            colorBackground[] = {0.15, 0.15, 0.17, 1};
-            size = 0.03;
         };
+        class CategoryLabel: FLO_RscText_Label {
+            idc = -1; text = "Category";
+            x = "safeZoneX + 0.48 * safeZoneW"; y = "safeZoneY + 0.185 * safeZoneH";
+            w = "0.19 * safeZoneW"; h = "0.03 * safeZoneH";
 
-        // RIGHT SIDE with frames for visual distinction
-        class RightSideFrame: RscFrame {
-            idc = -1;
-            x = "0.47 * safezoneW + safezoneX";
-            y = "0.21 * safezoneH + safezoneY";
-            w = "0.42 * safezoneW";
-            h = "0.62 * safezoneH";
-            colorText[] = {0.7, 0.7, 0.7, 1};
         };
-
-        // Categories section
-        class CategorySectionFrame: RscFrame {
-            idc = -1;
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.22 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.19 * safezoneH";
-            colorText[] = {0.6, 0.8, 0.6, 1};
-        };
-
-        class CategoryLabel: RscText {
-            idc = -1;
-            text = "Categories";
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.22 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorText[] = {0.8, 1, 0.8, 1};
-            sizeEx = 0.035;
-            style = ST_CENTER;
-        };
-
-        class CategoryList: RscListBox {
-            idc = 9501;
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.26 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.15 * safezoneH";
-            colorBackground[] = {0.17, 0.17, 0.15, 1};
-            rowHeight = 0.05;
-            sizeEx = 0.03;
+        class CategoryList: FLO_RscCombo {
+            idc = 9501; text = "";
+            x = "safeZoneX + 0.48 * safeZoneW"; y = "safeZoneY + 0.22 * safeZoneH";
+            w = "0.19 * safeZoneW"; h = "0.045 * safeZoneH";
             onLBSelChanged = "_this call IDS_Logistics_fnc_updateEntityList";
         };
+        class SearchLabel: FLO_RscText_Label {
+            idc = -1; text = "Search";
+            x = "safeZoneX + 0.69 * safeZoneW"; y = "safeZoneY + 0.185 * safeZoneH";
+            w = "0.19 * safeZoneW"; h = "0.03 * safeZoneH";
 
-        // Search box - keeping original position
-        class SearchSectionFrame: RscFrame {
-            idc = -1;
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.42 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorText[] = {0.7, 0.7, 0.8, 1};
         };
-
-        class SearchLabel: RscText {
-            idc = -1;
-            text = "Search:";
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.42 * safezoneH + safezoneY";
-            w = "0.1 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorText[] = {1, 1, 1, 1};
-            sizeEx = 0.03;
+        class SearchEdit: FLO_RscEdit {
+            idc = 9502; text = "";
+            x = "safeZoneX + 0.69 * safeZoneW"; y = "safeZoneY + 0.22 * safeZoneH";
+            w = "0.19 * safeZoneW"; h = "0.045 * safeZoneH";
+            tooltip = "Filter objects by name"; onKeyUp = "_this call IDS_Logistics_fnc_searchEntities";
         };
-
-        class SearchEdit: RscEdit {
-            idc = 9502;
-            x = "0.58 * safezoneW + safezoneX";
-            y = "0.42 * safezoneH + safezoneY";
-            w = "0.3 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorBackground[] = {0.3, 0.3, 0.3, 1};
-            text = "";
-            tooltip = "Search entities";
-            onKeyUp = "_this call IDS_Logistics_fnc_searchEntities";
-        };
-
-        // Entities section
-        class EntitiesSectionFrame: RscFrame {
-            idc = -1;
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.46 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.28 * safezoneH";
-            colorText[] = {0.8, 0.6, 0.6, 1};
-        };
-
-        class EntitiesLabel: RscText {
-            idc = -1;
-            text = "Entities";
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.46 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.03 * safezoneH";
-            colorText[] = {1, 0.8, 0.8, 1};
-            sizeEx = 0.035;
-            style = ST_CENTER;
-        };
-
-        class EntitiesList: RscListBox {
-            idc = 9503;
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.5 * safezoneH + safezoneY";
-            w = "0.4 * safezoneW";
-            h = "0.24 * safezoneH";
-            colorBackground[] = {0.17, 0.15, 0.15, 1};
-            rowHeight = 0.05;
-            sizeEx = 0.03;
+        class EntitiesList: FLO_RscListBox {
+            idc = 9503; text = "";
+            x = "safeZoneX + 0.48 * safeZoneW"; y = "safeZoneY + 0.285 * safeZoneH";
+            w = "0.4 * safeZoneW"; h = "0.445 * safeZoneH";
             onLBSelChanged = "_this call IDS_Logistics_fnc_updatePreview";
         };
-
-        // Buttons section with a distinct background
-        class ButtonsBackground: IGUIBack {
-            idc = -1;
-            x = "0.47 * safezoneW + safezoneX";
-            y = "0.75 * safezoneH + safezoneY";
-            w = "0.42 * safezoneW";
-            h = "0.08 * safezoneH";
-            colorBackground[] = {0.22, 0.22, 0.22, 1};
-        };
-
-        class ButtonsFrame: RscFrame {
-            idc = -1;
-            x = "0.47 * safezoneW + safezoneX";
-            y = "0.75 * safezoneH + safezoneY";
-            w = "0.42 * safezoneW";
-            h = "0.08 * safezoneH";
-            colorText[] = {0.7, 0.7, 0.7, 1};
-        };
-
-        class SelectButton: RscButton {
-            idc = 9505;
-            text = "Select";
-            x = "0.48 * safezoneW + safezoneX";
-            y = "0.765 * safezoneH + safezoneY";
-            w = "0.19 * safezoneW";
-            h = "0.05 * safezoneH";
-            colorBackground[] = {0.2, 0.6, 0.2, 1};
-            colorBackgroundActive[] = {0.2, 0.8, 0.2, 1};
+        class SelectButton: FLO_RscButton {
+            idc = 9505; text = "Place selected object";
+            x = "safeZoneX + 0.48 * safeZoneW"; y = "safeZoneY + 0.755 * safeZoneH";
+            w = "0.4 * safeZoneW"; h = "0.055 * safeZoneH";
             action = "call IDS_Logistics_fnc_selectEntity";
-            sizeEx = 0.04;
-        };
-
-        class CancelButton: RscButton {
-            idc = -1;
-            text = "Cancel";
-            x = "0.68 * safezoneW + safezoneX";
-            y = "0.765 * safezoneH + safezoneY";
-            w = "0.2 * safezoneW";
-            h = "0.05 * safezoneH";
-            colorBackground[] = {0.6, 0.2, 0.2, 1};
-            colorBackgroundActive[] = {0.8, 0.2, 0.2, 1};
-            action = "closeDialog 0";
-            sizeEx = 0.04;
         };
     };
 };

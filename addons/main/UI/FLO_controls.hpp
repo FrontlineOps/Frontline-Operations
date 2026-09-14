@@ -153,7 +153,7 @@ class FLO_RscCombo: RscCombo
 	colorScrollbar[] = FLO_COLOR_SCROLLBAR;
 	font = "RobotoCondensed";
 	sizeEx = FLO_FONT_SIZE;
-	wholeHeight = "14 * GUI_GRID_H";
+	wholeHeight = "0.45 * safeZoneH";
 };
 
 class FLO_RscEdit: RscEdit

@@ -26,21 +26,25 @@ _display displayCtrl 9506 ctrlEnable false;
 // Store initial values
 uiNamespace setVariable ["IDS_Logistics_previewRotX", 0];
 uiNamespace setVariable ["IDS_Logistics_previewRotY", 0];
-uiNamespace setVariable ["IDS_Logistics_previewZoom", 0.5];
+uiNamespace setVariable ["IDS_Logistics_previewZoom", 0.01];
+_display setVariable ["IDS_Logistics_previewBaseScale", 0.01];
 
 // Add keyDown handler for WASD rotation and +/- zooming
 _display displayAddEventHandler ["KeyDown", {
     params ["_display", "_key", "_shift", "_ctrl", "_alt"];
+    // Typing in search must not rotate the model or swallow W/A/S/D and +/-.
+    if (ctrlType (focusedCtrl _display) == 2 || {!(_key in [17, 31, 30, 32, 13, 12])}) exitWith { false };
     
     private _preview = _display displayCtrl 9506;
     private _rotX = uiNamespace getVariable ["IDS_Logistics_previewRotX", 0];
     private _rotY = uiNamespace getVariable ["IDS_Logistics_previewRotY", 0];
-    private _currentZoom = uiNamespace getVariable ["IDS_Logistics_previewZoom", 0.5];
+    private _currentZoom = uiNamespace getVariable "IDS_Logistics_previewZoom";
     
     // Rotation speed (degrees per frame)
     private _rotationSpeed = 2;
     // Zoom speed
-    private _zoomSpeed = 0.05;
+    private _baseScale = _display getVariable "IDS_Logistics_previewBaseScale";
+    private _zoomSpeed = _baseScale * 0.1;
     
     // Handle WASD keys and +/- for zooming
     switch (_key) do {
@@ -57,12 +61,12 @@ _display displayAddEventHandler ["KeyDown", {
             _rotY = _rotY - _rotationSpeed;
         };
         case 13: { // + key
-            private _newZoom = (_currentZoom + _zoomSpeed) max 0.01 min 0.02;
+            private _newZoom = (_currentZoom + _zoomSpeed) max (_baseScale * 0.5) min (_baseScale * 2);
             uiNamespace setVariable ["IDS_Logistics_previewZoom", _newZoom];
             _preview ctrlSetModelScale _newZoom;
         };
         case 12: { // - key
-            private _newZoom = (_currentZoom - _zoomSpeed) max 0.01 min 0.02;
+            private _newZoom = (_currentZoom - _zoomSpeed) max (_baseScale * 0.5) min (_baseScale * 2);
             uiNamespace setVariable ["IDS_Logistics_previewZoom", _newZoom];
             _preview ctrlSetModelScale _newZoom;
         };
