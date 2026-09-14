@@ -69,6 +69,11 @@ private _nearStep = _sampleStep max 10;
 for "_offset" from ((_waterSpan * 0.8) max _nearStep) to (_offsetStart - 1) step _nearStep do {
     _offsets pushBack _offset;
 };
+// A narrow headland can fit between those probes. Try the remaining 10m
+// offsets only after established coarse and shoreline candidates fail.
+for "_offset" from 10 to ((_offsetStart min FLO_PF_WaterDetourBaseOffset) - 1) step 10 do {
+    _offsets pushBackUnique _offset;
+};
 
 {
     private _offset = _x;

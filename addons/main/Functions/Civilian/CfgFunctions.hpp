@@ -8,6 +8,7 @@ class CivilianCore {
     class civilianBuildRoleProfile {};
 
     class civilianBuildObjectivePoiCache {};
+    class civilianRebaseSavedShorelineRoutine {};
     class civilianResolveObjectiveContext {};
     class civilianRefreshObjectiveContexts {};
     class civilianMergeObjectiveMemory {};

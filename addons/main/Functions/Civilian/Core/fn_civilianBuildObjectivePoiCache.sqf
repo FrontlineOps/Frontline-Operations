@@ -37,8 +37,9 @@ private _objectiveRadius = (_objective get "radius") max 90;
 private _roadLimit = _cfg get "POI_MAX_ROADS";
 private _buildingPosLimit = _cfg get "POI_MAX_BUILDING_POSITIONS";
 private _fallbackLandPos = +_objectivePos;
-if (surfaceIsWater _fallbackLandPos) then {
-    _fallbackLandPos = [_fallbackLandPos, _objectiveRadius] call FLO_fnc_getSafeLandPos;
+// Shoreline classifications can change across native process restarts.
+if (surfaceIsWater _fallbackLandPos || {getTerrainHeightASL _fallbackLandPos < 1}) then {
+    _fallbackLandPos = [_fallbackLandPos, _objectiveRadius, 1] call FLO_fnc_getSafeLandPos;
 };
 if (count _fallbackLandPos >= 2) then {
     if (count _fallbackLandPos > 2) then {
@@ -47,7 +48,7 @@ if (count _fallbackLandPos >= 2) then {
         _fallbackLandPos pushBack 0;
     };
 };
-if (count _fallbackLandPos < 2 || {surfaceIsWater _fallbackLandPos}) then {
+if (count _fallbackLandPos < 2 || {surfaceIsWater _fallbackLandPos} || {getTerrainHeightASL _fallbackLandPos < 1}) then {
     _fallbackLandPos = [];
 };
 
@@ -60,7 +61,7 @@ private _marketPositions = [];
     _roadPos set [2, 0];
 
     if ((_roadPos distance2D _objectivePos) > _objectiveRadius) then { continue };
-    if (surfaceIsWater _roadPos) then { continue };
+    if (surfaceIsWater _roadPos || {getTerrainHeightASL _roadPos < 1}) then { continue };
 
     _roadPositions pushBackUnique _roadPos;
 
@@ -91,7 +92,7 @@ private _buildingPositions = [];
         private _buildingPos = _building buildingPos _index;
         if (_buildingPos isEqualTo [0, 0, 0]) exitWith {};
 
-        if !(surfaceIsWater _buildingPos) then {
+        if (!surfaceIsWater _buildingPos && {getTerrainHeightASL _buildingPos >= 1}) then {
             _buildingPositions pushBack _buildingPos;
         };
         _index = _index + 1;

@@ -18,8 +18,9 @@ params [
     "_routeStartPos"
 ];
 
+if ((_savedData get "waypoints") isEqualTo []) exitWith { false };
+[_savedData, _groupId] call FLO_fnc_civilianRebaseSavedShorelineRoutine;
 private _waypoints = _savedData get "waypoints";
-if (_waypoints isEqualTo []) exitWith { false };
 
 private _currentWaypointIndex = _savedData get "currentWaypointIndex";
 private _loopRoute = (_savedData get "autoPatrol") || {(_savedData get "patrolConfig") isNotEqualTo []};
