@@ -232,6 +232,9 @@ private _gtnCommander = createHashMapObject [[
             ["GTN", 3, "GTN Commander already running"] call FLO_fnc_log;
         };
 
+        // UI snapshots are available before the first scheduled commander cycle.
+        // Seed the maintained objective picture now, including explicit unknown enemy strength.
+        (_self get "_worldState") call ["_senseObjectives", []];
         _self set ["_isRunning", 1];
 
         private _stats = _self get "_stats";

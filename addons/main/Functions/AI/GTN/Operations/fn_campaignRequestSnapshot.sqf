@@ -1,4 +1,4 @@
-/* Validates one client request and returns the direct-attack Command Net. */
+/* Validates one client request and returns its own GTN operations and reports. */
 params [["_player", objNull, [objNull]]];
 if (!isServer || {isNull _player}) exitWith {};
 
@@ -19,12 +19,12 @@ private _startedAt = diag_tickTime;
 private _snapshot = [_player] call FLO_fnc_campaignBuildSnapshot;
 private _elapsed = diag_tickTime - _startedAt;
 if (_elapsed > 0.01) then {
-    diag_log format [
-        "[FLO][PERF] Command Net snapshot side=%1 time=%2ms objectives=%3 attacks=%4",
+    ["CAMPAIGN", 4, format [
+        "[PERF] Command Net snapshot side=%1 time=%2ms objectives=%3 operations=%4",
         _snapshot get "viewerSide",
         round (_elapsed * 100000) / 100,
         count (_snapshot get "objectives"),
-        count (_snapshot get "attacks")
-    ];
+        count (_snapshot get "operations")
+    ]] call FLO_fnc_log;
 };
 [_snapshot] remoteExecCall ["FLO_fnc_operationsReceiveSnapshot", _owner];

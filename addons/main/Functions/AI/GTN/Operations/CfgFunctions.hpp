@@ -3,6 +3,7 @@ class GTNOperations {
 
     class campaignApplyCaptureBenefits {};
     class campaignBuildSnapshot {};
+    class campaignBuildOperationRows {};
     class campaignCanSupportObjective {};
     class campaignClassifyCapture {};
     class campaignFindObjectiveAtPosition {};
