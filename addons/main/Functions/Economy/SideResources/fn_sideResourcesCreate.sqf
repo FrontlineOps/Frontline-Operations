@@ -25,3 +25,6 @@ _treasury set ["_transactionSequence", _state get "transactionSequence"];
 _treasury set ["_lastIncome", _state get "lastIncome"];
 _treasury set ["_lastUpdate", time];
 _treasury set ["_commanderSpendingDenials", createHashMap];
+
+// Derived demand is rebuilt by logistics after creation or restore.
+_treasury set ["_replacementFundingNeed", 0];

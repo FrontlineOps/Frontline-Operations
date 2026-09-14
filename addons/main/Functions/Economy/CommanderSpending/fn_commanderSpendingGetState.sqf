@@ -16,16 +16,18 @@ if !(_incomeInterval isEqualType 0 && {_incomeInterval > 0}) then {
 };
 private _incomePerMinute = (_incomeCycle * 60) / _incomeInterval;
 
-private _reserveFloor = (_policy get "reserveMinimum")
-    max (round (_balance * (_policy get "reserveBalanceFraction")))
-    max (round (_incomePerMinute * ((_policy get "reserveIncomeSeconds") / 60)));
+private _reserveFloor = ((_policy get "reserveMinimum")
+    max (round (_incomePerMinute * ((_policy get "reserveIncomeSeconds") / 60))))
+    min (_policy get "reserveMaximum");
+private _replacementNeed = _treasury get "_replacementFundingNeed";
+private _developmentFloor = _reserveFloor + _replacementNeed;
 private _emergencyReserve = _policy get "emergencyReserve";
 private _developmentIncomeBasis = (
     _incomePerMinute * ((_policy get "developmentIncomeHorizonSeconds") / 60)
 ) max (_policy get "developmentBootstrapIncome");
 private _balancedRunway = (_policy get "balancedRunwayMinimum")
     max (_incomePerMinute * ((_policy get "balancedRunwaySeconds") / 60));
-private _surplusFloor = _reserveFloor + _balancedRunway;
+private _surplusFloor = _developmentFloor + _balancedRunway;
 private _posture = "SURPLUS";
 if (_available <= _emergencyReserve) then {
     _posture = "EMERGENCY";
@@ -50,5 +52,8 @@ createHashMapFromArray [
     ["reserveFloor", _reserveFloor],
     ["emergencyReserve", _emergencyReserve],
     ["surplusFloor", _surplusFloor],
-    ["developmentIncomeBasis", _developmentIncomeBasis]
+    ["developmentIncomeBasis", _developmentIncomeBasis],
+    ["replacementFundingNeed", _replacementNeed],
+    ["developmentFloor", _developmentFloor],
+    ["developmentAvailable", (_available - _developmentFloor) max 0]
 ]

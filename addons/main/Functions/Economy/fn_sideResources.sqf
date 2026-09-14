@@ -6,29 +6,20 @@ if (!isServer) exitWith { createHashMap };
 
 if ((keys FLO_SideResources) isNotEqualTo []) exitWith { FLO_SideResources };
 
+// Working capital protects recovery; costly support and construction wait behind replacements.
 private _commanderSpendingPolicy = createHashMapFromArray [
-    ["reserveMinimum", 1200],
-    ["reserveBalanceFraction", 0.30],
-    ["reserveIncomeSeconds", 540],
-    ["balancedRunwaySeconds", 360],
-    ["emergencyReserve", 300],
-    ["balancedRunwayMinimum", 1200],
-    ["denialLogCooldownSeconds", 30],
-    ["developmentIncomeHorizonSeconds", 180],
-    ["developmentBootstrapIncome", 300],
-    ["developmentFundingFractions", createHashMapFromArray [
-        ["CONSERVE", 0.25],
-        ["BALANCED", 0.50]
-    ]],
-    ["developmentFundingMinimums", createHashMapFromArray [
-        ["CONSERVE", 25],
-        ["BALANCED", 50]
+    ["reserveMinimum", 600], ["reserveMaximum", 2400], ["reserveIncomeSeconds", 120],
+    ["balancedRunwaySeconds", 120], ["balancedRunwayMinimum", 600],
+    ["emergencyReserve", 300], ["denialLogCooldownSeconds", 30],
+    ["developmentIncomeHorizonSeconds", 60], ["developmentBootstrapIncome", 0],
+    ["developmentFundingFractions", createHashMapFromArray [["BALANCED", 0.25]]],
+    ["categoryReserveFractions", createHashMapFromArray [
+        ["OPERATION", 0.5], ["REINFORCEMENT", 0], ["TRANSPORT", 0.25],
+        ["ARTILLERY", 0.5], ["AIR_SUPPORT", 1], ["FORTIFICATION", 1],
+        ["LOGISTICS", 0.25], ["DEVELOPMENT", 1]
     ]],
     ["urgencyReserveMultipliers", createHashMapFromArray [
-        ["ROUTINE", 1],
-        ["OPERATIONAL", 0.90],
-        ["PRESSURED", 0.70],
-        ["CRITICAL", 0]
+        ["ROUTINE", 1], ["OPERATIONAL", 0.75], ["PRESSURED", 0.25], ["CRITICAL", 0]
     ]]
 ];
 
@@ -78,6 +69,7 @@ private _treasuryClass = [
     ["_lastIncome", 0],
     ["_lastUpdate", 0],
     ["_commanderSpendingDenials", createHashMap],
+    ["_replacementFundingNeed", 0],
 
     ["#create", {
         ([_self] + _this) call FLO_fnc_sideResourcesCreate;

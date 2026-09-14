@@ -34,11 +34,11 @@ if !(_strategic isEqualType false && {_commitment isEqualType false} && {_reserv
 private _state = [_treasury] call FLO_fnc_commanderSpendingGetState;
 private _policy = _treasury get "COMMANDER_SPENDING_POLICY";
 private _reserveMultiplier = (_policy get "urgencyReserveMultipliers") get _urgency;
-private _requiredReserve = if (_urgency == "CRITICAL") then {
-    _state get "emergencyReserve"
-} else {
-    round ((_state get "reserveFloor") * _reserveMultiplier)
-};
+private _categoryFraction = (_policy get "categoryReserveFractions") get _category;
+if (_strategic) then { _categoryFraction = _categoryFraction max 1 };
+private _requiredReserve = round (((_state get "reserveFloor") * _categoryFraction * _reserveMultiplier)
+    max ((_state get "emergencyReserve") * _reserveMultiplier));
+if (_category == "DEVELOPMENT") then { _requiredReserve = _state get "developmentFloor" };
 private _postSpendAvailable = _state get "available";
 if (!_reserved) then {
     _postSpendAvailable = _postSpendAvailable - _amount;
@@ -51,13 +51,13 @@ private _maximumAmount = [
 
 private _allowed = true;
 private _reason = "APPROVED";
-if (!_reserved && {_postSpendAvailable < (_state get "emergencyReserve")}) then {
+if (!_reserved && {_postSpendAvailable < 0}) then {
     _allowed = false;
-    _reason = "EMERGENCY_RESERVE";
+    _reason = "INSUFFICIENT_FUNDS";
 } else {
     if (!_reserved && {_postSpendAvailable < _requiredReserve}) then {
         _allowed = false;
-        _reason = "DOCTRINE_RESERVE";
+        _reason = ["OPERATING_RESERVE", "REPLACEMENTS_FIRST"] select (_category == "DEVELOPMENT");
     };
 };
 

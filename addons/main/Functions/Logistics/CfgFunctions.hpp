@@ -17,6 +17,7 @@ class LogisticsNetwork {
     class logisticsNetworkBuildRecentDispatchCounts {};
 
     class logisticsNetworkCheckAndReplace {};
+    class logisticsNetworkUpdateReplacementDemand {};
     class logisticsNetworkReconcileReplacementQueue {};
     class logisticsNetworkTransportReinforcements {};
     class logisticsNetworkDescribeObjectiveSupplyRole {};

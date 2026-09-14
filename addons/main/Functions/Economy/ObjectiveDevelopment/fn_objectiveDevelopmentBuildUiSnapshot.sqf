@@ -69,6 +69,7 @@ createHashMapFromArray [
     ["nextCapacityLevel", _nextCapacityLevel],
     ["levelsToNextCapacity", (_nextCapacityLevel - _totalDevelopmentLevels) max 0],
     ["tickInterval", _config get "tickInterval"],
+    ["incomeIntervalSeconds", _treasury get "UPDATE_INTERVAL"],
     ["investmentInterval", _config get "investmentInterval"],
     ["commanderSupplyPerTick", _config get "commanderSupplyPerTick"],
     ["playerContributionPercent", round ((_config get "playerContributionFraction") * 100)],

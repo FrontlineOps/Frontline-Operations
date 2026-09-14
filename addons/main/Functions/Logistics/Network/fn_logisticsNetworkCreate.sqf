@@ -193,4 +193,6 @@ _network set ["_nextDispatchAt", time + _dispatchDelay];
 
 [_network] call FLO_fnc_logisticsNetworkRefreshSupplyChain;
 [_network] call FLO_fnc_logisticsNetworkValidateNodeOwnership;
+// Development starts before the delayed logistics PFH, including after restore.
+[_network, [_network] call FLO_fnc_logisticsNetworkGetComposition] call FLO_fnc_logisticsNetworkUpdateReplacementDemand;
 [_network] call FLO_fnc_logisticsNetworkStartMainLoop;

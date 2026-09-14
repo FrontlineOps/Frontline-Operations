@@ -83,22 +83,9 @@ _perf set ["captureGrowthPending", _captureGrowthMetrics get "pendingObjectives"
 _perf set ["captureGrowthApplied", _captureGrowthMetrics get "appliedObjectives"];
 
 _phaseT0 = diag_tickTime;
-private _initialComp = _net get "_initialComposition";
 private _currentComp = [_net] call FLO_fnc_logisticsNetworkGetComposition;
 private _groupCosts = _net get "GROUP_COSTS";
-private _neededCounts = createHashMap;
-private _neededTotal = 0;
-{
-    private _type = _x;
-    private _target = _initialComp get _type;
-    private _current = _currentComp getOrDefault [_type, 0];
-
-    if (_current < _target) then {
-        private _missing = _target - _current;
-        _neededCounts set [_type, _missing];
-        _neededTotal = _neededTotal + _missing;
-    };
-} forEach (keys _initialComp);
+([_net, _currentComp] call FLO_fnc_logisticsNetworkUpdateReplacementDemand) params ["_neededCounts", "_neededTotal"];
 _perf set ["compositionMs", (diag_tickTime - _phaseT0) * 1000];
 _perf set ["neededCount", _neededTotal];
 
