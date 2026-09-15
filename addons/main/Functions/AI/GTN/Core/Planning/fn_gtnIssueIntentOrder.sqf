@@ -19,6 +19,9 @@ isNil {
             private _positions = (_cache get "garrisonPositionsByObjective") getOrDefault [_objectiveId, []];
             private _slot = (_cache get "garrisonCounts") getOrDefault [_objectiveId, 0];
             private _route = [_commander, _objectiveId, _positions, _slot, _group get "groupType"] call FLO_fnc_gtnBuildObjectiveGarrisonRoute;
+            if (count _route == 0) exitWith {
+                ["GTN", 4, format ["Rejected garrison order objective=%1 reason=NO_LAND_POSITION", _objectiveId]] call FLO_fnc_log;
+            };
             _accepted = _commander call ["_orderGroupGarrison", [_groupId, _route, _objectiveId, true]];
         };
         default { throw format ["GTN unsupported intent order %1", _order] };

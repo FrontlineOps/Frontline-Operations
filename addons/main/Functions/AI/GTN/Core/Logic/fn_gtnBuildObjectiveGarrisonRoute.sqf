@@ -53,6 +53,7 @@ if (_buildingSlot) exitWith {
     } else {
         [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition
     };
+    if (_targetPos isEqualTo []) exitWith { createHashMap };
     createHashMapFromArray [
         ["orderMode", "GARRISON_BUILDING"],
         ["targetPos", _targetPos],
@@ -68,9 +69,11 @@ private _routePositions = [];
 private _routeClaims = +_claimedPositions;
 for "_routeIndex" from 0 to 2 do {
     private _patrolPos = [_cmdr, _objectiveId, _routeClaims] call FLO_fnc_gtnPickObjectiveGarrisonPosition;
+    if (_patrolPos isEqualTo []) exitWith {};
     _routePositions pushBack _patrolPos;
     _routeClaims pushBack _patrolPos;
 };
+if (count _routePositions != 3) exitWith { createHashMap };
 private _targetPos = _routePositions select 0;
 private _waypoints = _routePositions apply {
     [_x, "MOVE", "SAFE", "LIMITED", _formation, "GREEN", 35]

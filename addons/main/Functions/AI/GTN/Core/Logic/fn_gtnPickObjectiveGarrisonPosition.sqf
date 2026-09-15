@@ -12,7 +12,7 @@
  * 2: Claimed Positions <ARRAY>
  *
  * Return Value:
- * Position <ARRAY>
+ * Position <ARRAY> - Empty when the objective contains no valid land slot.
  */
 
 params [
@@ -63,11 +63,25 @@ for "_i" from 1 to _sampleCount do {
 
 if ((count _bestPos) >= 2) exitWith { _bestPos };
 
+// A coastal cluster may have only a small patch of usable ground. Test its
+// maintained structure positions and center when random dispersion misses it.
+private _anchors = +(_objective get "structurePositions");
+_anchors pushBack _center;
+private _anchorIndex = _anchors findIf {
+    !surfaceIsWater _x && {getTerrainHeightASL _x >= 1}
+        && {[_x, _objective] call FLO_fnc_isPositionInObjective}
+};
+if (_anchorIndex >= 0) exitWith {
+    private _anchor = +(_anchors select _anchorIndex);
+    _anchor set [2, 0];
+    _anchor
+};
+
 private _fallback = [_objectiveId] call FLO_fnc_getRandomObjectivePos;
 if (surfaceIsWater _fallback || {getTerrainHeightASL _fallback < 1}) then {
     _fallback = [_center, _radius, 1] call FLO_fnc_getSafeLandPos;
 };
-if (count _fallback < 2 || {surfaceIsWater _fallback} || {getTerrainHeightASL _fallback < 1} || {!([_fallback, _objective] call FLO_fnc_isPositionInObjective)}) then {
-    throw format ["Objective %1 has no valid land garrison position", _objectiveId];
+if (count _fallback < 2 || {surfaceIsWater _fallback} || {getTerrainHeightASL _fallback < 1} || {!([_fallback, _objective] call FLO_fnc_isPositionInObjective)}) exitWith {
+    []
 };
 _fallback
