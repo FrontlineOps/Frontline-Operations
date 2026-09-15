@@ -97,7 +97,7 @@ try {
     _cfg set ["startPosition", FLO_MissionConfig get "startPosition"];
     _data set ["config", _cfg];
     ["SAVE", 3, format ["Config: %1 items", count keys _cfg]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Config failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Config failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: MARKERS
@@ -123,7 +123,7 @@ try {
     } forEach _markers;
     _data set ["markers", _markerHash];
     ["SAVE", 3, format ["Markers: %1", count _markers]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Markers failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Markers failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: VEHICLES (around installations)
@@ -193,7 +193,7 @@ try {
     } forEach _installationMarkers;
     _data set ["objects", _objHash];
     ["SAVE", 3, format ["Objects: %1; excluded weapon-holder candidates: %2", count _objHash, _skippedWeaponHolders]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Objects failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Objects failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: SUPPLY CRATES
@@ -229,7 +229,7 @@ try {
     _data set ["minefieldObjectiveCooldowns", FLO_MinefieldObjectiveCooldowns];
 
     ["SAVE", 3, format ["Commander minefields: %1", count _minefieldArray]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Commander minefields failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Commander minefields failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: STRUCTURES (FOBs, OPs)
@@ -245,7 +245,7 @@ _data set ["ops", _campaignState get "ops"];
 try {
     _data set ["baseDeploymentState", _campaignState get "baseDeploymentState"];
     ["SAVE", 3, "Base deployment state saved"] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Base deployment state failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Base deployment state failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: SIDE RESOURCES
@@ -255,7 +255,7 @@ try {
     private _sideResData = _campaignState get "sideResources";
         _data set ["sideResources", _sideResData];
         ["SAVE", 3, format ["Side resources saved for %1 sides", count (keys _sideResData)]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Resources failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Resources failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: LOGISTICS NETWORK
@@ -265,7 +265,7 @@ try {
     private _bySide = _campaignState get "logisticsNetworkBySide";
         _data set ["logisticsNetworkBySide", _bySide];
         ["SAVE", 3, format ["Logistics: saved %1 side contexts", count (keys _bySide)]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Logistics failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Logistics failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: VIRTUAL GROUPS
@@ -276,7 +276,7 @@ try {
     _data set ["virtualGroups", _vgHash];
     ["SAVE", 3, format ["Virtual Groups: %1", count _vgHash]] call FLO_fnc_log;
 } catch {
-    ["SAVE", 1, format ["Virtual Groups failed; save transaction rejected: %1", _exception]] call FLO_fnc_log;
+    throw format ["[SAVE] Virtual Groups failed: %1", _exception];
 };
 
 // ============================================================================
@@ -287,7 +287,7 @@ try {
     _data set ["objectives", _campaignState get "objectives"];
     _data set ["aiCommanders", _campaignState get "aiCommanders"];
     ["SAVE", 3, "Objectives and dual GTN state saved"] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["Objectives/GTN failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] Objectives/GTN failed: %1", _exception]; };
 
 // ============================================================================
 // SAVE: IDS LOGISTICS PLACED ENTITIES
@@ -314,7 +314,7 @@ try {
     } forEach IDS_Logistics_PlacedEntities;
     _data set ["idsLogisticsEntities", _idsEntities];
     ["SAVE", 3, format ["IDS Logistics: %1 placed entities", count _idsEntities]] call FLO_fnc_log;
-} catch { ["SAVE", 1, format ["IDS Logistics failed: %1", _exception]] call FLO_fnc_log; };
+} catch { throw format ["[SAVE] IDS Logistics failed: %1", _exception]; };
 
 // ============================================================================
 // FINALIZATION

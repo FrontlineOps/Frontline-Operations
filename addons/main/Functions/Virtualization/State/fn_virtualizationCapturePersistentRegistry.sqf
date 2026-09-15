@@ -37,4 +37,8 @@ private _snapshot = +_groups;
     [_groupData, _realGroup] call FLO_fnc_virtualizationCaptureRealGroupRuntimeState;
 } forEach _snapshot;
 
+// Validate physical ownership while engine handles still describe this capture.
+// Scheduled serialization must not re-read those handles after simulation resumes.
+{ [_y, _x] call FLO_fnc_virtualizationValidateGroup } forEach _snapshot;
+
 _snapshot
