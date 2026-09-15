@@ -2,8 +2,8 @@
  * Function: FLO_fnc_virtualizationRepairOrphanedActiveGroup
  * Author: Frontline Operations Development Group
  * Description:
- *   Repairs an impossible active-group state where virtualization still marks
- *   the group active but its canonical live-engine group handle is gone.
+ *   Resolves physical group loss at its Empty event, before engine deletion,
+ *   or reconciles a group whose handle was already deleted externally.
  *   A surviving operational crew can restore the canonical group handle.
  *   Crewless assets remain abandoned in the physical world while their ghost
  *   virtual combat strength is removed.
@@ -20,7 +20,7 @@ private _groupData = [_groupId] call FLO_fnc_virtualizationRequireGroup;
 
 if !(_groupData get "isActive") exitWith { false };
 private _realGroup = _groupData get "realGroup";
-if (!isNull _realGroup) exitWith { false };
+if (!isNull _realGroup && {(units _realGroup) isNotEqualTo []}) exitWith { false };
 
 private _groupType = _groupData get "groupType";
 private _tracksAssets = [_groupType] call FLO_fnc_virtualizationUsesAssetStrength;
@@ -54,8 +54,8 @@ private _mountedIn = [_groupData] call FLO_fnc_virtualizationGetMountedTransport
 private _attachedPassengerCount = count ([_groupData] call FLO_fnc_virtualizationGetTransportPassengers);
 private _trackedRealVehicles = count (_groupData get "realVehicles");
 
-["VIRTUALIZATION", 2, format [
-    "Active group %1 (%2) lost its realGroup handle while still marked active (missionLock=%3 replacementState=%4 recoverableAssets=%5 attachedTo=%6 mountedIn=%7 transportRole=%8 attachedGroups=%9 trackedVehicles=%10 objective=%11 pos=%12) - repairing",
+["VIRTUALIZATION", [4, 2] select (isNull _realGroup), format [
+    "Resolving empty/deleted active group %1 (%2) (missionLock=%3 replacementState=%4 recoverableAssets=%5 attachedTo=%6 mountedIn=%7 transportRole=%8 attachedGroups=%9 trackedVehicles=%10 objective=%11 pos=%12)",
     _groupId,
     _groupType,
     _groupData get "missionLock",
@@ -73,7 +73,7 @@ private _trackedRealVehicles = count (_groupData get "realVehicles");
 if (!isNull _replacementRealGroup) exitWith {
     [_groupData, _replacementRealGroup] call FLO_fnc_virtualizationSetRealGroup;
     [_groupData, _recoverableAssets] call FLO_fnc_virtualizationSetRealVehicles;
-    _replacementRealGroup setVariable ["FLO_virtualGroupId", _groupId];
+    [_groupId, _replacementRealGroup] call FLO_fnc_virtualizationBindRealGroup;
     [_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
     call FLO_fnc_virtualizationTouchRegistry;
 
@@ -147,6 +147,11 @@ if !([_groupId] call FLO_fnc_virtualizationRemoveGroup) then {
     ];
     ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
     throw _message;
+};
+
+if (!isNull _realGroup) then {
+    ["", _realGroup] call FLO_fnc_virtualizationBindRealGroup;
+    deleteGroup _realGroup;
 };
 
 ["VIRTUALIZATION", 3, format [

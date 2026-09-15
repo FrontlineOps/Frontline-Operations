@@ -64,6 +64,23 @@ if (_oldGroupType in ["helicopter", "jet", "air", "artillery", "static_aa", "mob
     [_groupData] call FLO_fnc_virtualizationClearExecutionState;
 };
 
+// Flight destinations can cross water and cannot become infantry orders.
+// End both owners of the old flight before any save/deactivation captures it.
+if ((([_oldGroupType] call FLO_fnc_virtualizationGetArchetype) get "movementDomain") == "AIR") then {
+    [_realGroup] call CBA_fnc_clearWaypoints;
+    doStop _aliveUnits;
+    [_groupData] call FLO_fnc_virtualizationClearCommanderOrder;
+    _groupData set ["waypoints", []];
+    _groupData set ["currentWaypointIndex", 0];
+    _groupData set ["autoPatrol", false];
+    _groupData set ["patrolConfig", []];
+    _groupData set ["autoPatrolRetry", []];
+    _groupData set ["dismountAtWaypoint", -1];
+    _groupData set ["pathSource", ""];
+    [_groupData, "idle"] call FLO_fnc_virtualizationSetRuntimeState;
+    [_groupData] call FLO_fnc_virtualizationRefreshCurrentWaypointSpeed;
+};
+
 [_groupData, _groupId] call FLO_fnc_virtualizationValidateGroup;
 call FLO_fnc_virtualizationTouchRegistry;
 [

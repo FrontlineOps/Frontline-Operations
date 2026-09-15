@@ -47,6 +47,7 @@ private _canonicalWaypointCount = count (_groupData get "waypoints");
 private _syncResult = [_groupId, _groupData, _realGroup] call FLO_fnc_virtualizationSyncRealGroupOutcome;
 _syncResult params ["", "_syncedCount"];
 
+["", _realGroup] call FLO_fnc_virtualizationBindRealGroup;
 {
     if (!alive _x) then {
         [_x, "corpse"] call FLO_fnc_aftermathRegisterEntity;

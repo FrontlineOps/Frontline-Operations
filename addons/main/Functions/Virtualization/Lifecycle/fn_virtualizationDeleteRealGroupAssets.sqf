@@ -15,6 +15,8 @@ if !([_groupData, _realGroup, false] call FLO_fnc_virtualizationCanDeactivateGro
 
 private _vehiclesToDelete = +(_groupData get "realVehicles");
 if (!isNull _realGroup) then {
+    // Deliberate virtualization owns removal; Empty must not retire its record.
+    ["", _realGroup] call FLO_fnc_virtualizationBindRealGroup;
     _vehiclesToDelete append (assignedVehicles _realGroup);
 };
 _vehiclesToDelete = _vehiclesToDelete arrayIntersect _vehiclesToDelete;

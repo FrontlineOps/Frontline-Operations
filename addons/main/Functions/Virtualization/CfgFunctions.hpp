@@ -97,6 +97,7 @@ class VirtualizationLifecycle {
     class virtualizationDeleteRealGroupAssets {};
     class virtualizationForceActivateGroup {};
     class virtualizationCreateRealGroup {};
+    class virtualizationBindRealGroup {};
     class virtualizationResolveActiveStraggler {};
     class virtualizationRequirePoolEntries {};
     class virtualizationGetGroundCombatVehiclePool {};

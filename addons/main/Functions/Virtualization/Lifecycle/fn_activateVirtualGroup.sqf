@@ -90,6 +90,39 @@ if (!_routeAllowed) exitWith {
     false
 };
 _waypoints = _remainingWaypoints;
+
+_realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtualizationSpawnRealGroup;
+if (isNull _realGroup) exitWith {
+    ["VIRTUALIZATION", 2, format [
+        "Failed to spawn real group for %1 (%2) at %3",
+        _groupId,
+        _groupType,
+        _position
+    ]] call FLO_fnc_log;
+    false
+};
+
+// Collision/road clearance can move the actual spawn away from the position
+// whose LAND route was resolved above. Rebase from the real leader before
+// publishing, retaining every remaining endpoint and transport insertion index.
+if ((([_groupType] call FLO_fnc_virtualizationGetArchetype) get "movementDomain") == "LAND") then {
+    _position = getPosATL vehicle leader _realGroup;
+    try {
+        _remainingRouteResult = [_groupId, _position, _allWaypoints, _currentWpIdx, _generatedPatrol] call FLO_fnc_virtualizationGetRemainingWaypoints;
+    } catch {
+        [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+        throw _exception;
+    };
+    _routeAllowed = _remainingRouteResult select 0;
+    _waypoints = _remainingRouteResult select 1;
+    _routeFailureReason = _remainingRouteResult select 2;
+};
+if (!_routeAllowed) exitWith {
+    [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
+    ["VIRTUALIZATION", 2, format ["Activation route rejected from physical spawn group=%1 reason=%2", _groupId, _routeFailureReason]] call FLO_fnc_log;
+    false
+};
+
 private _newDismountIndex = -1;
 if ((_groupData get "dismountAtWaypoint") >= 0) then {
     private _insertPos = _groupData get "transportInsertPos";
@@ -102,19 +135,9 @@ if ((_groupData get "dismountAtWaypoint") >= 0) then {
             _insertPos,
             count _waypoints
         ]] call FLO_fnc_log;
+        [_groupData, _realGroup, false] call FLO_fnc_virtualizationDeleteRealGroupAssets;
         throw format ["Activation route for %1 lost its transport insert endpoint", _groupId];
     };
-};
-
-_realGroup = [_groupId, _groupData, _position, _spawnPools] call FLO_fnc_virtualizationSpawnRealGroup;
-if (isNull _realGroup) exitWith {
-    ["VIRTUALIZATION", 2, format [
-        "Failed to spawn real group for %1 (%2) at %3",
-        _groupId,
-        _groupType,
-        _position
-    ]] call FLO_fnc_log;
-    false
 };
 
 private _routeCandidate = [_groupData] call FLO_fnc_virtualizationCloneValue;
@@ -163,7 +186,7 @@ _groupData set ["activeInitialUnitCount", count units _realGroup];
 _groupData set ["isActive", true];
 _groupData set ["lastStateChangeTime", diag_tickTime];
 _groupData set ["nextProcessAt", 0];
-_realGroup setVariable ["FLO_virtualGroupId", _groupId];
+[_groupId, _realGroup] call FLO_fnc_virtualizationBindRealGroup;
 
 if (_isTransport) then {
     [_groupId, _groupData, _realGroup, _position, _spawnPools] call FLO_fnc_virtualizationLoadTransportPassengers;
