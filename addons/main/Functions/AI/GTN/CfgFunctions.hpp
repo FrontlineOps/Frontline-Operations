@@ -69,11 +69,14 @@ class GTNCoreLogic {
     class gtnResolveAttackCoverageCap {};
     class gtnResolveAttackLandAnchor {};
     class gtnAdmitGoalAgenda {};
+    class gtnAdmitGoal {};
     class gtnAnalyzeManeuverGroup {};
 
     class gtnBuildGoalAgenda {};
     class gtnBuildStrategicPicture {};
     class gtnExecuteIntents {};
+    class gtnExecuteIntent {};
+    class gtnRunCycleStep {};
     class gtnReleaseObsoleteHolds {};
     class gtnSelectIntentForces {};
     class gtnUpdateCommander {};

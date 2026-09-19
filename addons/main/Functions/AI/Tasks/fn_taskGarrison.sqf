@@ -68,15 +68,15 @@ private _assignmentCount = (count _eligibleUnits) min (count _rankedPositions);
 for "_index" from 0 to (_assignmentCount - 1) do {
     private _unit = _eligibleUnits select _index;
     private _position = (_rankedPositions select _index) select 2;
-    doStop _unit;
     _unit setVehiclePosition [_position, [], 0, "CAN_COLLIDE"];
 
     if ((getPosATL _unit) distance _position > 3) then {
         _metrics set ["rejected", (_metrics get "rejected") + 1];
-        _unit doFollow (leader _group);
         continue;
     };
 
+    // Hold the slot without detaching formation via doStop; its later doFollow
+    // can leave a released leader unable to plan the next group route.
     _unit disableAI "PATH";
     _unit setUnitPos (["UP", "MIDDLE"] select ((_index mod 3) == 2));
     _unit setVariable ["FLO_garrisonPosition", +_position];
@@ -84,11 +84,11 @@ for "_index" from 0 to (_assignmentCount - 1) do {
     private _handlers = [];
     _handlers pushBack ["Hit", _unit addEventHandler ["Hit", {
         params ["_unit"];
-        [_unit, true] call FLO_fnc_taskReleaseGarrisonUnit;
+        [_unit] call FLO_fnc_taskReleaseGarrisonUnit;
     }]];
     _handlers pushBack ["Suppressed", _unit addEventHandler ["Suppressed", {
         params ["_unit"];
-        [_unit, true] call FLO_fnc_taskReleaseGarrisonUnit;
+        [_unit] call FLO_fnc_taskReleaseGarrisonUnit;
     }]];
     _handlers pushBack ["FiredNear", _unit addEventHandler ["FiredNear", {
         params ["_unit", "_shooter", "_distance"];
@@ -97,7 +97,7 @@ for "_index" from 0 to (_assignmentCount - 1) do {
             && {_distance <= 25}
             && {(side _unit) getFriend (side _shooter) < 0.6}
         ) then {
-            [_unit, true] call FLO_fnc_taskReleaseGarrisonUnit;
+            [_unit] call FLO_fnc_taskReleaseGarrisonUnit;
         };
     }]];
     _unit setVariable ["FLO_garrisonEventHandlers", _handlers];

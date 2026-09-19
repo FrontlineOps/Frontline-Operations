@@ -77,6 +77,7 @@ private _gtnCommander = createHashMapObject [[
     ["_isRunning", 0],
     ["_updateInterval", _tempoInterval],
     ["_lastUpdate", 0],
+    ["_updateScript", scriptNull],
     
     ["_tracks", _tracks],
     ["_intents", createHashMap], ["_nextIntentId", 0],
@@ -123,6 +124,7 @@ private _gtnCommander = createHashMapObject [[
     // Configuration
     ["_config", createHashMapFromArray [
         ["goalsAdmittedPerCycle", 12], ["maxActiveGoals", 64],
+        ["cycleFrameBudgetMs", 4], // Soft budget; individual order transactions stay atomic.
         ["operationalReserveShare", 0.15], ["assaultForceRatio", 2],
         ["assaultMinimumPower", 12], ["intentWithdrawalLossFraction", 0.4],
         ["replanInterval", 60],       // Minimum seconds between replans
@@ -203,6 +205,8 @@ private _gtnCommander = createHashMapObject [[
         ["lastCycleMs", 0],
         ["peakCycleMs", 0],
         ["slowCycles", 0],
+        ["cycleWorkMs", 0], ["cycleSliceFrame", -1], ["cycleSliceMs", 0], ["cyclePeakFrameMs", 0],
+        ["lastCycleWorkMs", 0], ["lastCyclePeakFrameMs", 0],
         ["snapshotTotals", [0, 0, 0, 0, 0, 0, 0]],
         ["lastPhaseMs", createHashMapFromArray [
             ["normalizeTasked", 0],
@@ -253,9 +257,14 @@ private _gtnCommander = createHashMapObject [[
 
     // Stop the GTN commander
     ["_stop", {
-        private _intents = _self get "_intents";
-        { [_self, _intents get _x, false, "COMMANDER_STOPPED"] call FLO_fnc_gtnRetireIntent } forEach (keys _intents);
-        _self set ["_isRunning", 0];
+        // Cancel and retire atomically, including when stopped by a scheduled caller.
+        isNil {
+            _self set ["_isRunning", 0];
+            terminate (_self get "_updateScript");
+            _self set ["_updateScript", scriptNull];
+            private _intents = _self get "_intents";
+            { [_self, _intents get _x, false, "COMMANDER_STOPPED"] call FLO_fnc_gtnRetireIntent } forEach (keys _intents);
+        };
         ["GTN", 3, format ["GTN commander %1 stopped", _self get "_sideKey"]] call FLO_fnc_log;
     }],
 

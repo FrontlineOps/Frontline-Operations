@@ -36,29 +36,7 @@ try {
     private _groupId = _x;
     private _savedData = _y;
     try {
-        private _archetype = [_savedData get "groupType"] call FLO_fnc_virtualizationGetArchetype;
-        if ((_archetype get "movementDomain") == "LAND") then {
-            private _routeStartPos = [_savedData, _groupId] call FLO_fnc_virtualizationResolveSavedLandStart;
-            private _routeValidation = [
-                _groupId,
-                _routeStartPos,
-                _savedData get "waypoints",
-                _savedData get "currentWaypointIndex",
-                _savedData get "autoPatrol",
-                _savedData get "patrolConfig"
-            ] call FLO_fnc_virtualizationValidateLandRoute;
-            if !(_routeValidation select 0) then {
-                private _normalized = [
-                    _savedData,
-                    _groupId,
-                    _routeValidation select 1,
-                    _routeStartPos
-                ] call FLO_fnc_virtualizationNormalizeSavedLandRoute;
-                if (!_normalized) then {
-                    throw format ["Unsafe saved LAND route: %1", _routeValidation select 1];
-                };
-            };
-        };
+        [_savedData, _groupId] call FLO_fnc_virtualizationNormalizeSavedLandRoute;
     } catch {
         ["VIRTUALIZATION", 1, format [
             "Rejected current virtual-group record group=%1 reason=%2",

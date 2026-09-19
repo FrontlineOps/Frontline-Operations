@@ -12,7 +12,7 @@ if !(local _group) then {
         (_x getVariable ["FLO_garrisonEventHandlers", []]) isNotEqualTo []
         || {(_x getVariable ["FLO_garrisonPosition", []]) isNotEqualTo []}
     ) then {
-        [_x, true] call FLO_fnc_taskReleaseGarrisonUnit;
+        [_x] call FLO_fnc_taskReleaseGarrisonUnit;
     };
 } forEach units _group;
 

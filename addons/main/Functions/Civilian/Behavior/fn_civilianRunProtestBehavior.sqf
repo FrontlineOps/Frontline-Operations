@@ -22,9 +22,10 @@ private _protestAnims = [
     "Acts_CivilTalking_2",
     "Acts_Ambient_Aggressive"
 ];
+// Probably don't throw literal house sized rocks at them LOL.
 private _throwables = [
-    "Land_Stone_sharp_F",
-    "Land_Stone_small_F",
+    "GrenadeHand_stone",
+    "GrenadeHand_stone",
     "Land_BottlePlastic_V1_F",
     "Land_BottlePlastic_V2_F"
 ];
@@ -61,6 +62,7 @@ while {alive _unit && {_unit getVariable ["FLO_isProtester", false]}} do {
         if ((_lastThrowAt + 8) < diag_tickTime && {_distance < 35} && {(random 1) < (FLO_CivilianConfig get "PROTEST_THROW_CHANCE")}) then {
             private _throwDir = _unit getDir _target;
             private _proj = createVehicle [selectRandom _throwables, (getPosATL _unit) vectorAdd [0, 0, 1.5], [], 0, "CAN_COLLIDE"];
+            if (_proj isKindOf "GrenadeHand_stone") then { _proj setShotParents [_unit, _unit] };
             _proj setVelocity [
                 (sin _throwDir) * (7 + random 2),
                 (cos _throwDir) * (7 + random 2),

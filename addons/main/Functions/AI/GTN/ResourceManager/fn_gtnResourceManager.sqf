@@ -22,7 +22,6 @@ private _resourceManager = createHashMapObject [[
     ["_gtnCommandersBySide", createHashMap],
     ["_virtGroupRemovedEH", -1],
     ["_dirtyEventEhIds", createHashMap],
-    ["_loopPfhsBySide", createHashMap],
     ["_integrationPfhId", -1],
 
     ["_sideKey", {
@@ -118,43 +117,28 @@ private _resourceManager = createHashMapObject [[
     ["_startCommanderLoop", {
         params ["_gtn"];
         if (isNil "_gtn") exitWith {};
-        private _sideKey = _gtn get "_sideKey";
-        private _interval = _gtn get "_updateInterval";
-        private _pfhs = _self get "_loopPfhsBySide";
-
-        if (_sideKey in _pfhs) exitWith {
-            ["GTN", 3, format["%1 execution loop already active", _sideKey]] call FLO_fnc_log;
-        };
-
-        // Deterministic phase offset so both commanders do not spike on the same frame.
-        private _staggerDelay = if (_sideKey isEqualTo "WEST") then { _interval * 0.5 } else { 0 };
-        if (_staggerDelay > 0) then {
-            ["GTN", 3, format["%1 commander stagger delay: %2s", _sideKey, _staggerDelay]] call FLO_fnc_log;
-        };
-
-        [_self, _gtn, _sideKey, _interval] spawn {
-            params ["_mgr", "_commander", "_sideKey", "_interval"];
-            private _staggerDelay = if (_sideKey isEqualTo "WEST") then { _interval * 0.5 } else { 0 };
-            if (_staggerDelay > 0) then { sleep _staggerDelay; };
-
-            ["GTN", 3, format["Starting %1 execution loop (%2s, PFH)", _sideKey, _interval]] call FLO_fnc_log;
-
-            private _pfhId = [{
-                params ["_args", "_pfhId"];
-                _args params ["_mgr", "_cmdr", "_sKey"];
-
-                if ((_cmdr get "_isRunning") != 1) exitWith {
-                    [_pfhId] call CBA_fnc_removePerFrameHandler;
-                    private _pfhs = _mgr get "_loopPfhsBySide";
-                    _pfhs deleteAt _sKey;
-                    ["GTN", 3, format["Stopped %1 execution loop", _sKey]] call FLO_fnc_log;
+        // Own the handle immediately, including the initial stagger, so repeated
+        // starts cannot register overlapping updates or leave a delayed orphan.
+        isNil {
+            if (!scriptDone (_gtn get "_updateScript")) exitWith {
+                ["GTN", 3, format ["%1 execution loop already active", _gtn get "_sideKey"]] call FLO_fnc_log;
+            };
+            private _worker = [_gtn] spawn {
+                params ["_commander"];
+                private _sideKey = _commander get "_sideKey";
+                private _interval = _commander get "_updateInterval";
+                private _staggerDelay = if (_sideKey == "WEST") then { _interval * 0.5 } else { 0 };
+                if (_staggerDelay > 0) then { sleep _staggerDelay };
+                ["GTN", 3, format ["Starting %1 execution loop (%2s, frame-budgeted)", _sideKey, _interval]] call FLO_fnc_log;
+                while {(_commander get "_isRunning") == 1} do {
+                    private _nextUpdate = diag_tickTime + _interval;
+                    _commander call ["_update", []];
+                    // One worker owns the entire cycle; an overrun never queues
+                    // another cycle or launches concurrent planning for this side.
+                    sleep ((_nextUpdate - diag_tickTime) max 0.001);
                 };
-
-                _cmdr call ["_update", []];
-            }, _interval, [_mgr, _commander, _sideKey]] call CBA_fnc_addPerFrameHandler;
-
-            private _pfhs = _mgr get "_loopPfhsBySide";
-            _pfhs set [_sideKey, _pfhId];
+            };
+            _gtn set ["_updateScript", _worker];
         };
     }],
 

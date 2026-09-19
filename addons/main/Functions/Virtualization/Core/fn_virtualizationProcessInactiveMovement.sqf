@@ -33,6 +33,22 @@ if (_waypoints isNotEqualTo [] && {_currentWpIdx < count _waypoints}) then {
     private _distToWp = _position distance2D _wpPos;
     private _completionRadius = _wp param [6, 20];
 
+    // A completion radius may skip a land-route bend. Only advance early when
+    // the actual continuation is safe; otherwise keep travelling to its vertex.
+    if (_distToWp > 0 && {_distToWp <= _completionRadius} && {_wpType != "SENTRY"}
+        && {(([_groupData get "groupType"] call FLO_fnc_virtualizationGetArchetype) get "movementDomain") == "LAND"}) then {
+        private _nextWpIdx = _currentWpIdx + 1;
+        if (_wpType == "CYCLE" || {
+            _nextWpIdx >= count _waypoints
+            && {_wpType in ["MOVE", "LOITER"]}
+            && {(_groupData get "autoPatrol") || {(_groupData get "patrolConfig") isNotEqualTo []}}
+        }) then { _nextWpIdx = 0; };
+        if (_nextWpIdx < count _waypoints) then {
+            private _continuation = [_position, [(_waypoints select _nextWpIdx) select 0], FLO_PF_WaterValidationStep] call FLO_fnc_validateWaterAwarePath;
+            if !(_continuation select 0) then { _completionRadius = 0; };
+        };
+    };
+
     if (_wpType in ["MOVE", "LOITER", "SAD", "DESTROY", "SENTRY", "CYCLE", "GUARD", "HOLD"] && {_distToWp > _completionRadius}) then {
         private _pendingMoveDistance = _carryMeters + (_virtualSpeed * _timeDelta);
         _groupData set ["lastMoveTime", _moveNow];

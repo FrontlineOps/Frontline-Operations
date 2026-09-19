@@ -1,8 +1,5 @@
 /* Releases one live unit from FLO-owned physical building-garrison state. */
-params [
-    ["_unit", objNull, [objNull]],
-    ["_resumeFormation", true, [true]]
-];
+params [["_unit", objNull, [objNull]]];
 
 if (isNull _unit) exitWith { true };
 if !(local _unit) then {
@@ -19,12 +16,5 @@ _unit setVariable ["FLO_garrisonEventHandlers", nil];
 _unit setVariable ["FLO_garrisonPosition", nil];
 _unit enableAI "PATH";
 _unit setUnitPos "AUTO";
-
-if (_resumeFormation && {alive _unit}) then {
-    private _group = group _unit;
-    if !(isNull _group) then {
-        _unit doFollow (leader _group);
-    };
-};
 
 true

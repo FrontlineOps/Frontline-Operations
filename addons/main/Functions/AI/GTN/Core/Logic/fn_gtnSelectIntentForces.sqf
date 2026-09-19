@@ -6,7 +6,10 @@ private _picture = _world get "_strategicPicture";
 private _objectives = _world get "_objectives";
 private _target = (_objectives get _stageId) get "position";
 private _groups = call FLO_fnc_virtualizationGetGroupMap;
-private _bands = [_commander, [_stageId], 3] call FLO_fnc_gtnGetCachedReserveBands;
+// For single-group holds, an eligible home force is always in the best band.
+// Do not walk the rest of the graph or rank remote forces once band zero exists.
+private _preferLocal = _kind != "CAPTURE" && {((_objectives get _stageId) get "owner") == (_commander get "_ownSide")};
+private _localOnly = false;
 private _ranked = [];
 {
     private _fact = _y;
@@ -15,14 +18,24 @@ private _ranked = [];
     if ((_group get "commanderIntent") != "") then { continue };
     if ((_group get "groupType") == "infantry" && {(_group get "unitCount") < 3}) then { continue };
     private _home = _group get "homeObjective";
+    if (_localOnly && {_home != _stageId}) then { continue };
+    if (_preferLocal && {_home == _stageId} && {!_localOnly}) then {
+        _localOnly = true;
+        _ranked = [];
+    };
     private _pressure = if (_home in _picture) then { (_picture get _home) get "threat" } else { 0 };
     if (_kind == "CAPTURE" && {_pressure >= 20}) then { continue };
-    private _band = _bands getOrDefault [_home, 4];
     private _role = parseNumber ((_group get "groupType") != "infantry");
-    _ranked pushBack [_band, _pressure, _role, (_fact get "position") distance2D _target, _x];
+    _ranked pushBack [_home, _pressure, _role, (_fact get "position") distance2D _target, _x];
 } forEach _facts;
-_ranked sort true;
 if (_ranked isEqualTo []) exitWith { [] };
+if (_localOnly) then {
+    { _x set [0, 0] } forEach _ranked;
+} else {
+    private _bands = [_commander, [_stageId], 3] call FLO_fnc_gtnGetCachedReserveBands;
+    { _x set [0, _bands getOrDefault [_x select 0, 4]] } forEach _ranked;
+};
+_ranked sort true;
 if (_kind != "CAPTURE") exitWith { [(_ranked select 0) select 4] };
 private _reserve = ceil ((count _ranked) * ((_commander get "_config") get "operationalReserveShare"));
 private _cap = ([(_commander get "_config") get "attackCoverageMultiplier", (_commander get "_config") get "attackObjectiveGroupCap"] call FLO_fnc_gtnResolveAttackCoverageCap) min ((count _ranked) - _reserve);

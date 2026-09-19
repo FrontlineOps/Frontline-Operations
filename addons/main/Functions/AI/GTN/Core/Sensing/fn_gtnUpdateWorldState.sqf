@@ -33,38 +33,31 @@ private _meta = createHashMapFromArray [
     ["enemyIntelSenseRan", false]
 ];
 private _cycleStart = diag_tickTime;
-private _tPhase = diag_tickTime;
 
-// Run all sensors
-_self call ["_senseObjectives", [true]];
-_phaseMs set ["objectives", (diag_tickTime - _tPhase) * 1000];
-
-_tPhase = diag_tickTime;
-_self call ["_senseForces", []];
-_phaseMs set ["forces", (diag_tickTime - _tPhase) * 1000];
+// Each sensor publishes its own state atomically; suspend only between sensors.
+private _commander = _self get "_commander";
+private _cyclePerf = _commander get "_perf";
+private _sensorStep = {
+    params ["_code", "_arguments", "_name"];
+    private _before = _cyclePerf get "cycleWorkMs";
+    [_commander, _code, _arguments] call FLO_fnc_gtnRunCycleStep;
+    _phaseMs set [_name, (_cyclePerf get "cycleWorkMs") - _before];
+};
+[{ params ["_world"]; _world call ["_senseObjectives", [true]] }, [_self], "objectives"] call _sensorStep;
+[{ params ["_world"]; _world call ["_senseForces", []] }, [_self], "forces"] call _sensorStep;
 if (_lastSupportAssetsSense < 0 || {_now - _lastSupportAssetsSense >= _supportAssetSenseInterval}) then {
-    _tPhase = diag_tickTime;
-    _self call ["_senseSupportAssets", []];
-    _phaseMs set ["supportAssets", (diag_tickTime - _tPhase) * 1000];
+    [{ params ["_world"]; _world call ["_senseSupportAssets", []] }, [_self], "supportAssets"] call _sensorStep;
     _meta set ["supportSenseRan", true];
     _self set ["_lastSupportAssetsSense", _now];
 };
 if (_lastEnemyIntelSense < 0 || {_now - _lastEnemyIntelSense >= _enemyIntelSenseInterval}) then {
-    _tPhase = diag_tickTime;
-    _self call ["_senseEnemyIntel", []];
-    _phaseMs set ["enemyIntel", (diag_tickTime - _tPhase) * 1000];
+    [{ params ["_world"]; _world call ["_senseEnemyIntel", []] }, [_self], "enemyIntel"] call _sensorStep;
     _meta set ["enemyIntelSenseRan", true];
     _self set ["_lastEnemyIntelSense", _now];
 };
-_tPhase = diag_tickTime;
-[_self] call FLO_fnc_gtnSenseVirtualScouts;
-_phaseMs set ["scouts", (diag_tickTime - _tPhase) * 1000];
-_tPhase = diag_tickTime;
-[_self] call FLO_fnc_gtnApplyObjectiveObservations;
-_phaseMs set ["objectiveIntel", (diag_tickTime - _tPhase) * 1000];
-_tPhase = diag_tickTime;
-_self call ["_senseTacticalSituation", []];
-_phaseMs set ["tacticalSituation", (diag_tickTime - _tPhase) * 1000];
+[FLO_fnc_gtnSenseVirtualScouts, [_self], "scouts"] call _sensorStep;
+[FLO_fnc_gtnApplyObjectiveObservations, [_self], "objectiveIntel"] call _sensorStep;
+[{ params ["_world"]; _world call ["_senseTacticalSituation", []] }, [_self], "tacticalSituation"] call _sensorStep;
 
 _self set ["_lastUpdate", _now];
 

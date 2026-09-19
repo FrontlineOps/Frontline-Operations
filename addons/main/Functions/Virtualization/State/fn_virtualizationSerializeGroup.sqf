@@ -39,5 +39,8 @@ _savedData set ["timerElapsedOffsets", createHashMapFromArray [
 ]];
 
 [_savedData, _groupId] call FLO_fnc_virtualizationValidateSavedGroup;
+// Never replace a valid campaign with terrain state that restore must reject.
+// Normalization owns only this detached record, not the running group or orders.
+[_savedData, _groupId] call FLO_fnc_virtualizationNormalizeSavedLandRoute;
 _savedData
 

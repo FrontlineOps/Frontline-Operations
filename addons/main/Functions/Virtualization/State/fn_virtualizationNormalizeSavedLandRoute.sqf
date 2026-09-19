@@ -1,24 +1,35 @@
 /*
  * Function: FLO_fnc_virtualizationNormalizeSavedLandRoute
  * Description:
- *   Rebuilds derived current LAND route geometry during restore when
- *   exact terrain validation rejects the saved continuation. The saved record
+ *   Enforces the same LAND terrain contract at save and restore boundaries,
+ *   rebuilding geometry when exact validation rejects the continuation. The record
  *   shape must already be current and structurally valid; this only rebases
  *   canonical route waypoints from the validated movement origin. Attached
  *   passengers retain their carrier position and defer ingress until dismount.
  *
  * Return Value:
- *   BOOL - True when route geometry was normalized and revalidated
+ *   BOOL - True when safe to persist or restore; throws otherwise
  */
 
 params [
     ["_savedData", createHashMap, [createHashMap]],
-    ["_groupId", "", [""]],
-    ["_failureReason", "", [""]],
-    "_routeStartPos"
+    ["_groupId", "", [""]]
 ];
 
-if ((_savedData get "waypoints") isEqualTo []) exitWith { false };
+private _archetype = [_savedData get "groupType"] call FLO_fnc_virtualizationGetArchetype;
+if ((_archetype get "movementDomain") != "LAND" || {(_savedData get "waypoints") isEqualTo []}) exitWith { true };
+private _routeStartPos = [_savedData, _groupId] call FLO_fnc_virtualizationResolveSavedLandStart;
+private _routeValidation = [
+    _groupId,
+    _routeStartPos,
+    _savedData get "waypoints",
+    _savedData get "currentWaypointIndex",
+    _savedData get "autoPatrol",
+    _savedData get "patrolConfig"
+] call FLO_fnc_virtualizationValidateLandRoute;
+if (_routeValidation select 0) exitWith { true };
+private _failureReason = _routeValidation select 1;
+
 [_savedData, _groupId] call FLO_fnc_civilianRebaseSavedShorelineRoutine;
 private _waypoints = _savedData get "waypoints";
 
@@ -26,9 +37,9 @@ private _currentWaypointIndex = _savedData get "currentWaypointIndex";
 private _loopRoute = (_savedData get "autoPatrol") || {(_savedData get "patrolConfig") isNotEqualTo []};
 private _pathSource = _savedData get "pathSource";
 private _sourceTag = if (_pathSource == "") then {
-    "SAVE_RESTORE"
+    "PERSISTENCE"
 } else {
-    format ["SAVE_RESTORE_%1", _pathSource]
+    format ["PERSISTENCE_%1", _pathSource]
 };
 
 private _routeResult = [
@@ -40,15 +51,16 @@ private _routeResult = [
 ] call FLO_fnc_virtualizationResolveLandRouteContinuation;
 _routeResult params ["_resolved", "_resolvedWaypoints", "_resolverReason", "_metrics", "_endpointIndexes"];
 
-if (!_resolved || {_resolvedWaypoints isEqualTo []}) exitWith {
-    ["VIRTUALIZATION", 2, format [
-        "Saved LAND route normalization failed group=%1 originalReason=%2 resolverReason=%3 waypoints=%4",
+if (!_resolved || {_resolvedWaypoints isEqualTo []}) then {
+    private _message = format [
+        "Unsafe saved LAND route group=%1 originalReason=%2 resolverReason=%3 waypoints=%4",
         _groupId,
         _failureReason,
         _resolverReason,
         count _waypoints
-    ]] call FLO_fnc_log;
-    false
+    ];
+    ["VIRTUALIZATION", 1, _message] call FLO_fnc_log;
+    throw _message;
 };
 
 private _dismountIndex = _savedData get "dismountAtWaypoint";
@@ -83,7 +95,7 @@ _savedData set ["waypoints", _resolvedWaypoints];
 _savedData set ["currentWaypointIndex", 0];
 
 [_savedData, _groupId] call FLO_fnc_virtualizationValidateSavedGroup;
-private _routeValidation = [
+_routeValidation = [
     _groupId,
     _routeStartPos,
     _savedData get "waypoints",

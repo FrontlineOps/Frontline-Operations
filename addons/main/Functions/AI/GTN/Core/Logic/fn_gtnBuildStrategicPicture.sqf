@@ -11,21 +11,23 @@ private _routes = _network get "_supplyRouteInfo";
 // Rebuild from this cycle's sensed ownership; retain multiplicity and exclude
 // the scored objective exactly as the original two-hop traversal did.
 private _enemyAdjacency = createHashMap;
-{
-    if ((_y get "owner") != _ownSide) then { continue };
-    private _enemyLinks = createHashMap;
-    private _total = 0;
+[_commander, {
     {
-        if (((_objectives get _x) get "owner") == _enemySide) then {
-            _enemyLinks set [_x, (_enemyLinks getOrDefault [_x, 0]) + 1];
-            _total = _total + 1;
-        };
-    } forEach (_y get "linkedObjectives");
-    _enemyAdjacency set [_x, [_total, _enemyLinks]];
-} forEach _objectives;
-{
-    private _id = _x;
-    private _objective = _y;
+        if ((_y get "owner") != _ownSide) then { continue };
+        private _enemyLinks = createHashMap;
+        private _total = 0;
+        {
+            if (((_objectives get _x) get "owner") == _enemySide) then {
+                _enemyLinks set [_x, (_enemyLinks getOrDefault [_x, 0]) + 1];
+                _total = _total + 1;
+            };
+        } forEach (_y get "linkedObjectives");
+        _enemyAdjacency set [_x, [_total, _enemyLinks]];
+    } forEach _objectives;
+}] call FLO_fnc_gtnRunCycleStep;
+// Keep the new picture private while scoring one objective per atomic step.
+private _scoreObjective = {
+    params ["_id", "_objective"];
     private _friendlyLinks = 0;
     private _hostileLinks = 0;
     private _exposedFlanks = 0;
@@ -59,7 +61,12 @@ private _enemyAdjacency = createHashMap;
         ["defenseScore", _value + _threat + _supplyExposure * 12],
         ["attackScore", _value + _friendlyLinks * 8 + _freshness * 10 - _hostileLinks * 4 - _exposedFlanks * 4 - _supplyExposure * 10 - _pressure]
     ]];
+};
+{
+    [_commander, _scoreObjective, [_x, _y]] call FLO_fnc_gtnRunCycleStep;
 } forEach _objectives;
-_world set ["_strategicPicture", _picture];
-[_world, _commander get "_config"] call FLO_fnc_gtnBuildAirThreatPicture;
+[_commander, {
+    _world set ["_strategicPicture", _picture];
+    [_world, _commander get "_config"] call FLO_fnc_gtnBuildAirThreatPicture;
+}] call FLO_fnc_gtnRunCycleStep;
 _picture

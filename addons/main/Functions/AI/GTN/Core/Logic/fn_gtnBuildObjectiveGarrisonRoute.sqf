@@ -33,8 +33,6 @@ if (_buildingSlot) exitWith {
         {
             private _position = _x;
             if (_position isEqualTo [0, 0, 0]) then { continue };
-            if (surfaceIsWater _position || {getTerrainHeightASL _position < 1}) then { continue };
-            if !([_position, _objective] call FLO_fnc_isPositionInObjective) then { continue };
 
             private _nearestClaim = _radius;
             {
@@ -47,9 +45,15 @@ if (_buildingSlot) exitWith {
     } forEach (nearestObjects [_center, ["House"], _radius, true]);
     _rankedPositions sort true;
 
-    private _usedBuilding = _rankedPositions isNotEqualTo [];
+    // Validate in rank order: lower-ranked slots cannot change the first valid target.
+    private _bestIndex = _rankedPositions findIf {
+        private _position = _x select 2;
+        !surfaceIsWater _position && {getTerrainHeightASL _position >= 1}
+            && {[_position, _objective] call FLO_fnc_isPositionInObjective}
+    };
+    private _usedBuilding = _bestIndex >= 0;
     private _targetPos = if (_usedBuilding) then {
-        +((_rankedPositions select 0) select 2)
+        +((_rankedPositions select _bestIndex) select 2)
     } else {
         [_cmdr, _objectiveId, _claimedPositions] call FLO_fnc_gtnPickObjectiveGarrisonPosition
     };
